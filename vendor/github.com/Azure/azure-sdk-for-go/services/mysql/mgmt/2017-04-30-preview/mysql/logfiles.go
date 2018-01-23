@@ -18,6 +18,7 @@ package mysql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // LogFilesClient is the the Microsoft Azure management API provides create, read, update, and delete functionality for
 // Azure MySQL resources including servers, databases, firewall rules, VNET rules, log files and configurations.
 type LogFilesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLogFilesClient creates an instance of the LogFilesClient client.
@@ -43,8 +44,8 @@ func NewLogFilesClientWithBaseURI(baseURI string, subscriptionID string) LogFile
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client LogFilesClient) ListByServer(resourceGroupName string, serverName string) (result LogFileListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client LogFilesClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result LogFileListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mysql.LogFilesClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -66,7 +67,7 @@ func (client LogFilesClient) ListByServer(resourceGroupName string, serverName s
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client LogFilesClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client LogFilesClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -83,14 +84,13 @@ func (client LogFilesClient) ListByServerPreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforMySQL/servers/{serverName}/logFiles", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogFilesClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -141,6 +141,10 @@ type Fsid struct {
 }
 
 const (
+	PathMax = 0x400
+)
+
+const (
 	FADV_NORMAL     = 0x0
 	FADV_RANDOM     = 0x1
 	FADV_SEQUENTIAL = 0x2

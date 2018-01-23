@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // DeletedWebAppsClient is the webSite Management Client
 type DeletedWebAppsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeletedWebAppsClient creates an instance of the DeletedWebAppsClient client.
@@ -39,8 +40,9 @@ func NewDeletedWebAppsClientWithBaseURI(baseURI string, subscriptionID string) D
 }
 
 // List get all deleted apps for a subscription.
-func (client DeletedWebAppsClient) List() (result DeletedWebAppCollection, err error) {
-	req, err := client.ListPreparer()
+func (client DeletedWebAppsClient) List(ctx context.Context) (result DeletedWebAppCollectionPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", nil, "Failure preparing request")
 		return
@@ -48,12 +50,12 @@ func (client DeletedWebAppsClient) List() (result DeletedWebAppCollection, err e
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dwac.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.dwac, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", resp, "Failure responding to request")
 	}
@@ -62,7 +64,7 @@ func (client DeletedWebAppsClient) List() (result DeletedWebAppCollection, err e
 }
 
 // ListPreparer prepares the List request.
-func (client DeletedWebAppsClient) ListPreparer() (*http.Request, error) {
+func (client DeletedWebAppsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -77,14 +79,13 @@ func (client DeletedWebAppsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/deletedSites", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeletedWebAppsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -101,71 +102,29 @@ func (client DeletedWebAppsClient) ListResponder(resp *http.Response) (result De
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DeletedWebAppsClient) ListNextResults(lastResults DeletedWebAppCollection) (result DeletedWebAppCollection, err error) {
-	req, err := lastResults.DeletedWebAppCollectionPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DeletedWebAppsClient) listNextResults(lastResults DeletedWebAppCollection) (result DeletedWebAppCollection, err error) {
+	req, err := lastResults.deletedWebAppCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.DeletedWebAppsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DeletedWebAppsClient) ListComplete(cancel <-chan struct{}) (<-chan DeletedSite, <-chan error) {
-	resultChan := make(chan DeletedSite)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DeletedWebAppsClient) ListComplete(ctx context.Context) (result DeletedWebAppCollectionIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

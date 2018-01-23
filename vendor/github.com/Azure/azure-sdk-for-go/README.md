@@ -19,7 +19,7 @@ $ go get -u github.com/Azure/azure-sdk-for-go/...
 ```
 
 > **IMPORTANT:** We highly suggest vendoring Azure SDK for Go as a dependency. For vendoring dependencies, Azure SDK
-for Go uses [glide](https://github.com/Masterminds/glide).
+for Go uses [dep](https://github.com/golang/dep).
 
 # Versioning
 ## SDK Versions

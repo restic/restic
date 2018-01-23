@@ -35,7 +35,7 @@ func TestProcessPreconditionsForVerify(t *testing.T) {
 			want: nil,
 		},
 		{
-			in:   []Precondition{Exists(true)},
+			in:   []Precondition{Exists},
 			want: &pb.Precondition{&pb.Precondition_Exists{true}},
 		},
 		{
@@ -43,11 +43,11 @@ func TestProcessPreconditionsForVerify(t *testing.T) {
 			want: &pb.Precondition{&pb.Precondition_UpdateTime{aTimestamp}},
 		},
 		{
-			in:      []Precondition{Exists(true), LastUpdateTime(aTime)},
+			in:      []Precondition{Exists, LastUpdateTime(aTime)},
 			wantErr: true,
 		},
 		{
-			in:      []Precondition{Exists(true), Exists(true)},
+			in:      []Precondition{Exists, Exists},
 			wantErr: true,
 		},
 	} {
@@ -78,7 +78,7 @@ func TestProcessPreconditionsForDelete(t *testing.T) {
 			want: nil,
 		},
 		{
-			in:   []Precondition{Exists(true)},
+			in:   []Precondition{Exists},
 			want: &pb.Precondition{&pb.Precondition_Exists{true}},
 		},
 		{
@@ -86,11 +86,11 @@ func TestProcessPreconditionsForDelete(t *testing.T) {
 			want: &pb.Precondition{&pb.Precondition_UpdateTime{aTimestamp}},
 		},
 		{
-			in:      []Precondition{Exists(true), LastUpdateTime(aTime)},
+			in:      []Precondition{Exists, LastUpdateTime(aTime)},
 			wantErr: true,
 		},
 		{
-			in:      []Precondition{Exists(true), Exists(true)},
+			in:      []Precondition{Exists, Exists},
 			wantErr: true,
 		},
 	} {
@@ -122,11 +122,7 @@ func TestProcessPreconditionsForUpdate(t *testing.T) {
 		},
 
 		{
-			in:      []Precondition{Exists(true)},
-			wantErr: true,
-		},
-		{
-			in:      []Precondition{Exists(false)},
+			in:      []Precondition{Exists},
 			wantErr: true,
 		},
 		{
@@ -134,11 +130,11 @@ func TestProcessPreconditionsForUpdate(t *testing.T) {
 			want: &pb.Precondition{&pb.Precondition_UpdateTime{aTimestamp}},
 		},
 		{
-			in:      []Precondition{Exists(true), LastUpdateTime(aTime)},
+			in:      []Precondition{Exists, LastUpdateTime(aTime)},
 			wantErr: true,
 		},
 		{
-			in:      []Precondition{Exists(true), Exists(true)},
+			in:      []Precondition{Exists, Exists},
 			wantErr: true,
 		},
 	} {

@@ -550,7 +550,7 @@ func (s *Operation) MarshalJSON() ([]byte, error) {
 //     }
 //
 // For a description of IAM and its features, see the
-// [IAM developer's guide](https://cloud.google.com/iam).
+// [IAM developer's guide](https://cloud.google.com/iam/docs).
 type Policy struct {
 	// Bindings: Associates a list of `members` to a `role`.
 	// `bindings` with no members will result in an error.
@@ -576,7 +576,7 @@ type Policy struct {
 	// policy is overwritten blindly.
 	Etag string `json:"etag,omitempty"`
 
-	// Version: Version of the `Policy`. The default version is 0.
+	// Version: Deprecated.
 	Version int64 `json:"version,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -622,9 +622,9 @@ type RuntimeConfig struct {
 	//
 	// The `[PROJECT_ID]` must be a valid project ID, and `[CONFIG_NAME]` is
 	// an
-	// arbitrary name that
-	// matches
-	// [0-9A-Za-z](?:[_.A-Za-z0-9-]{0,62}[_.A-Za-z0-9])? regular
+	// arbitrary name that matches
+	// the
+	// `[0-9A-Za-z](?:[_.A-Za-z0-9-]{0,62}[_.A-Za-z0-9])?` regular
 	// expression.
 	// The length of `[CONFIG_NAME]` must be less than 64 characters.
 	//

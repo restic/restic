@@ -37,17 +37,24 @@ var (
 	validFieldName = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,127}$")
 )
 
+const nullableTagOption = "nullable"
+
 func bqTagParser(t reflect.StructTag) (name string, keep bool, other interface{}, err error) {
-	if s := t.Get("bigquery"); s != "" {
-		if s == "-" {
-			return "", false, nil, nil
-		}
-		if !validFieldName.MatchString(s) {
-			return "", false, nil, errInvalidFieldName
-		}
-		return s, true, nil, nil
+	name, keep, opts, err := fields.ParseStandardTag("bigquery", t)
+	if err != nil {
+		return "", false, nil, err
 	}
-	return "", true, nil, nil
+	if name != "" && !validFieldName.MatchString(name) {
+		return "", false, nil, errInvalidFieldName
+	}
+	for _, opt := range opts {
+		if opt != nullableTagOption {
+			return "", false, nil, fmt.Errorf(
+				"bigquery: invalid tag option %q. The only valid option is %q",
+				opt, nullableTagOption)
+		}
+	}
+	return name, keep, opts, nil
 }
 
 var fieldCache = fields.NewCache(bqTagParser, nil, nil)

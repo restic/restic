@@ -18,7 +18,9 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"io"
@@ -29,9 +31,9 @@ import (
 type AccessControlEntryAction string
 
 const (
-	// Deny specifies the deny state for access control entry action.
+	// Deny ...
 	Deny AccessControlEntryAction = "Deny"
-	// Permit specifies the permit state for access control entry action.
+	// Permit ...
 	Permit AccessControlEntryAction = "Permit"
 )
 
@@ -39,11 +41,11 @@ const (
 type AutoHealActionType string
 
 const (
-	// CustomAction specifies the custom action state for auto heal action type.
+	// CustomAction ...
 	CustomAction AutoHealActionType = "CustomAction"
-	// LogEvent specifies the log event state for auto heal action type.
+	// LogEvent ...
 	LogEvent AutoHealActionType = "LogEvent"
-	// Recycle specifies the recycle state for auto heal action type.
+	// Recycle ...
 	Recycle AutoHealActionType = "Recycle"
 )
 
@@ -51,9 +53,9 @@ const (
 type AzureResourceType string
 
 const (
-	// TrafficManager specifies the traffic manager state for azure resource type.
+	// TrafficManager ...
 	TrafficManager AzureResourceType = "TrafficManager"
-	// Website specifies the website state for azure resource type.
+	// Website ...
 	Website AzureResourceType = "Website"
 )
 
@@ -61,25 +63,25 @@ const (
 type BackupItemStatus string
 
 const (
-	// Created specifies the created state for backup item status.
+	// Created ...
 	Created BackupItemStatus = "Created"
-	// Deleted specifies the deleted state for backup item status.
+	// Deleted ...
 	Deleted BackupItemStatus = "Deleted"
-	// DeleteFailed specifies the delete failed state for backup item status.
+	// DeleteFailed ...
 	DeleteFailed BackupItemStatus = "DeleteFailed"
-	// DeleteInProgress specifies the delete in progress state for backup item status.
+	// DeleteInProgress ...
 	DeleteInProgress BackupItemStatus = "DeleteInProgress"
-	// Failed specifies the failed state for backup item status.
+	// Failed ...
 	Failed BackupItemStatus = "Failed"
-	// InProgress specifies the in progress state for backup item status.
+	// InProgress ...
 	InProgress BackupItemStatus = "InProgress"
-	// PartiallySucceeded specifies the partially succeeded state for backup item status.
+	// PartiallySucceeded ...
 	PartiallySucceeded BackupItemStatus = "PartiallySucceeded"
-	// Skipped specifies the skipped state for backup item status.
+	// Skipped ...
 	Skipped BackupItemStatus = "Skipped"
-	// Succeeded specifies the succeeded state for backup item status.
+	// Succeeded ...
 	Succeeded BackupItemStatus = "Succeeded"
-	// TimedOut specifies the timed out state for backup item status.
+	// TimedOut ...
 	TimedOut BackupItemStatus = "TimedOut"
 )
 
@@ -87,11 +89,11 @@ const (
 type BackupRestoreOperationType string
 
 const (
-	// Clone specifies the clone state for backup restore operation type.
+	// Clone ...
 	Clone BackupRestoreOperationType = "Clone"
-	// Default specifies the default state for backup restore operation type.
+	// Default ...
 	Default BackupRestoreOperationType = "Default"
-	// Relocation specifies the relocation state for backup restore operation type.
+	// Relocation ...
 	Relocation BackupRestoreOperationType = "Relocation"
 )
 
@@ -99,15 +101,15 @@ const (
 type BuiltInAuthenticationProvider string
 
 const (
-	// AzureActiveDirectory specifies the azure active directory state for built in authentication provider.
+	// AzureActiveDirectory ...
 	AzureActiveDirectory BuiltInAuthenticationProvider = "AzureActiveDirectory"
-	// Facebook specifies the facebook state for built in authentication provider.
+	// Facebook ...
 	Facebook BuiltInAuthenticationProvider = "Facebook"
-	// Google specifies the google state for built in authentication provider.
+	// Google ...
 	Google BuiltInAuthenticationProvider = "Google"
-	// MicrosoftAccount specifies the microsoft account state for built in authentication provider.
+	// MicrosoftAccount ...
 	MicrosoftAccount BuiltInAuthenticationProvider = "MicrosoftAccount"
-	// Twitter specifies the twitter state for built in authentication provider.
+	// Twitter ...
 	Twitter BuiltInAuthenticationProvider = "Twitter"
 )
 
@@ -115,23 +117,23 @@ const (
 type CertificateOrderActionType string
 
 const (
-	// CertificateIssued specifies the certificate issued state for certificate order action type.
+	// CertificateIssued ...
 	CertificateIssued CertificateOrderActionType = "CertificateIssued"
-	// CertificateOrderCanceled specifies the certificate order canceled state for certificate order action type.
+	// CertificateOrderCanceled ...
 	CertificateOrderCanceled CertificateOrderActionType = "CertificateOrderCanceled"
-	// CertificateOrderCreated specifies the certificate order created state for certificate order action type.
+	// CertificateOrderCreated ...
 	CertificateOrderCreated CertificateOrderActionType = "CertificateOrderCreated"
-	// CertificateRevoked specifies the certificate revoked state for certificate order action type.
+	// CertificateRevoked ...
 	CertificateRevoked CertificateOrderActionType = "CertificateRevoked"
-	// DomainValidationComplete specifies the domain validation complete state for certificate order action type.
+	// DomainValidationComplete ...
 	DomainValidationComplete CertificateOrderActionType = "DomainValidationComplete"
-	// FraudDetected specifies the fraud detected state for certificate order action type.
+	// FraudDetected ...
 	FraudDetected CertificateOrderActionType = "FraudDetected"
-	// OrgNameChange specifies the org name change state for certificate order action type.
+	// OrgNameChange ...
 	OrgNameChange CertificateOrderActionType = "OrgNameChange"
-	// OrgValidationComplete specifies the org validation complete state for certificate order action type.
+	// OrgValidationComplete ...
 	OrgValidationComplete CertificateOrderActionType = "OrgValidationComplete"
-	// SanDrop specifies the san drop state for certificate order action type.
+	// SanDrop ...
 	SanDrop CertificateOrderActionType = "SanDrop"
 )
 
@@ -139,25 +141,25 @@ const (
 type CertificateOrderStatus string
 
 const (
-	// Canceled specifies the canceled state for certificate order status.
+	// Canceled ...
 	Canceled CertificateOrderStatus = "Canceled"
-	// Denied specifies the denied state for certificate order status.
+	// Denied ...
 	Denied CertificateOrderStatus = "Denied"
-	// Expired specifies the expired state for certificate order status.
+	// Expired ...
 	Expired CertificateOrderStatus = "Expired"
-	// Issued specifies the issued state for certificate order status.
+	// Issued ...
 	Issued CertificateOrderStatus = "Issued"
-	// NotSubmitted specifies the not submitted state for certificate order status.
+	// NotSubmitted ...
 	NotSubmitted CertificateOrderStatus = "NotSubmitted"
-	// Pendingissuance specifies the pendingissuance state for certificate order status.
+	// Pendingissuance ...
 	Pendingissuance CertificateOrderStatus = "Pendingissuance"
-	// PendingRekey specifies the pending rekey state for certificate order status.
+	// PendingRekey ...
 	PendingRekey CertificateOrderStatus = "PendingRekey"
-	// Pendingrevocation specifies the pendingrevocation state for certificate order status.
+	// Pendingrevocation ...
 	Pendingrevocation CertificateOrderStatus = "Pendingrevocation"
-	// Revoked specifies the revoked state for certificate order status.
+	// Revoked ...
 	Revoked CertificateOrderStatus = "Revoked"
-	// Unused specifies the unused state for certificate order status.
+	// Unused ...
 	Unused CertificateOrderStatus = "Unused"
 )
 
@@ -165,10 +167,9 @@ const (
 type CertificateProductType string
 
 const (
-	// StandardDomainValidatedSsl specifies the standard domain validated ssl state for certificate product type.
+	// StandardDomainValidatedSsl ...
 	StandardDomainValidatedSsl CertificateProductType = "StandardDomainValidatedSsl"
-	// StandardDomainValidatedWildCardSsl specifies the standard domain validated wild card ssl state for certificate
-	// product type.
+	// StandardDomainValidatedWildCardSsl ...
 	StandardDomainValidatedWildCardSsl CertificateProductType = "StandardDomainValidatedWildCardSsl"
 )
 
@@ -176,13 +177,13 @@ const (
 type Channels string
 
 const (
-	// All specifies the all state for channels.
+	// All ...
 	All Channels = "All"
-	// API specifies the api state for channels.
+	// API ...
 	API Channels = "Api"
-	// Email specifies the email state for channels.
+	// Email ...
 	Email Channels = "Email"
-	// Notification specifies the notification state for channels.
+	// Notification ...
 	Notification Channels = "Notification"
 )
 
@@ -190,11 +191,11 @@ const (
 type CloneAbilityResult string
 
 const (
-	// Cloneable specifies the cloneable state for clone ability result.
+	// Cloneable ...
 	Cloneable CloneAbilityResult = "Cloneable"
-	// NotCloneable specifies the not cloneable state for clone ability result.
+	// NotCloneable ...
 	NotCloneable CloneAbilityResult = "NotCloneable"
-	// PartiallyCloneable specifies the partially cloneable state for clone ability result.
+	// PartiallyCloneable ...
 	PartiallyCloneable CloneAbilityResult = "PartiallyCloneable"
 )
 
@@ -202,11 +203,11 @@ const (
 type ComputeModeOptions string
 
 const (
-	// Dedicated specifies the dedicated state for compute mode options.
+	// Dedicated ...
 	Dedicated ComputeModeOptions = "Dedicated"
-	// Dynamic specifies the dynamic state for compute mode options.
+	// Dynamic ...
 	Dynamic ComputeModeOptions = "Dynamic"
-	// Shared specifies the shared state for compute mode options.
+	// Shared ...
 	Shared ComputeModeOptions = "Shared"
 )
 
@@ -214,27 +215,23 @@ const (
 type ConnectionParameterType string
 
 const (
-	// ConnectionParameterTypeArray specifies the connection parameter type array state for connection parameter type.
+	// ConnectionParameterTypeArray ...
 	ConnectionParameterTypeArray ConnectionParameterType = "array"
-	// ConnectionParameterTypeBool specifies the connection parameter type bool state for connection parameter type.
+	// ConnectionParameterTypeBool ...
 	ConnectionParameterTypeBool ConnectionParameterType = "bool"
-	// ConnectionParameterTypeConnection specifies the connection parameter type connection state for connection parameter
-	// type.
+	// ConnectionParameterTypeConnection ...
 	ConnectionParameterTypeConnection ConnectionParameterType = "connection"
-	// ConnectionParameterTypeInt specifies the connection parameter type int state for connection parameter type.
+	// ConnectionParameterTypeInt ...
 	ConnectionParameterTypeInt ConnectionParameterType = "int"
-	// ConnectionParameterTypeOauthSetting specifies the connection parameter type oauth setting state for connection
-	// parameter type.
+	// ConnectionParameterTypeOauthSetting ...
 	ConnectionParameterTypeOauthSetting ConnectionParameterType = "oauthSetting"
-	// ConnectionParameterTypeObject specifies the connection parameter type object state for connection parameter type.
+	// ConnectionParameterTypeObject ...
 	ConnectionParameterTypeObject ConnectionParameterType = "object"
-	// ConnectionParameterTypeSecureobject specifies the connection parameter type secureobject state for connection
-	// parameter type.
+	// ConnectionParameterTypeSecureobject ...
 	ConnectionParameterTypeSecureobject ConnectionParameterType = "secureobject"
-	// ConnectionParameterTypeSecurestring specifies the connection parameter type securestring state for connection
-	// parameter type.
+	// ConnectionParameterTypeSecurestring ...
 	ConnectionParameterTypeSecurestring ConnectionParameterType = "securestring"
-	// ConnectionParameterTypeString specifies the connection parameter type string state for connection parameter type.
+	// ConnectionParameterTypeString ...
 	ConnectionParameterTypeString ConnectionParameterType = "string"
 )
 
@@ -242,9 +239,9 @@ const (
 type CustomHostNameDNSRecordType string
 
 const (
-	// A specifies the a state for custom host name dns record type.
+	// A ...
 	A CustomHostNameDNSRecordType = "A"
-	// CName specifies the c name state for custom host name dns record type.
+	// CName ...
 	CName CustomHostNameDNSRecordType = "CName"
 )
 
@@ -252,13 +249,13 @@ const (
 type DatabaseServerType string
 
 const (
-	// Custom specifies the custom state for database server type.
+	// Custom ...
 	Custom DatabaseServerType = "Custom"
-	// MySQL specifies the my sql state for database server type.
+	// MySQL ...
 	MySQL DatabaseServerType = "MySql"
-	// SQLAzure specifies the sql azure state for database server type.
+	// SQLAzure ...
 	SQLAzure DatabaseServerType = "SQLAzure"
-	// SQLServer specifies the sql server state for database server type.
+	// SQLServer ...
 	SQLServer DatabaseServerType = "SQLServer"
 )
 
@@ -266,47 +263,47 @@ const (
 type DomainStatus string
 
 const (
-	// DomainStatusActive specifies the domain status active state for domain status.
+	// DomainStatusActive ...
 	DomainStatusActive DomainStatus = "Active"
-	// DomainStatusAwaiting specifies the domain status awaiting state for domain status.
+	// DomainStatusAwaiting ...
 	DomainStatusAwaiting DomainStatus = "Awaiting"
-	// DomainStatusCancelled specifies the domain status cancelled state for domain status.
+	// DomainStatusCancelled ...
 	DomainStatusCancelled DomainStatus = "Cancelled"
-	// DomainStatusConfiscated specifies the domain status confiscated state for domain status.
+	// DomainStatusConfiscated ...
 	DomainStatusConfiscated DomainStatus = "Confiscated"
-	// DomainStatusDisabled specifies the domain status disabled state for domain status.
+	// DomainStatusDisabled ...
 	DomainStatusDisabled DomainStatus = "Disabled"
-	// DomainStatusExcluded specifies the domain status excluded state for domain status.
+	// DomainStatusExcluded ...
 	DomainStatusExcluded DomainStatus = "Excluded"
-	// DomainStatusExpired specifies the domain status expired state for domain status.
+	// DomainStatusExpired ...
 	DomainStatusExpired DomainStatus = "Expired"
-	// DomainStatusFailed specifies the domain status failed state for domain status.
+	// DomainStatusFailed ...
 	DomainStatusFailed DomainStatus = "Failed"
-	// DomainStatusHeld specifies the domain status held state for domain status.
+	// DomainStatusHeld ...
 	DomainStatusHeld DomainStatus = "Held"
-	// DomainStatusJSONConverterFailed specifies the domain status json converter failed state for domain status.
+	// DomainStatusJSONConverterFailed ...
 	DomainStatusJSONConverterFailed DomainStatus = "JsonConverterFailed"
-	// DomainStatusLocked specifies the domain status locked state for domain status.
+	// DomainStatusLocked ...
 	DomainStatusLocked DomainStatus = "Locked"
-	// DomainStatusParked specifies the domain status parked state for domain status.
+	// DomainStatusParked ...
 	DomainStatusParked DomainStatus = "Parked"
-	// DomainStatusPending specifies the domain status pending state for domain status.
+	// DomainStatusPending ...
 	DomainStatusPending DomainStatus = "Pending"
-	// DomainStatusReserved specifies the domain status reserved state for domain status.
+	// DomainStatusReserved ...
 	DomainStatusReserved DomainStatus = "Reserved"
-	// DomainStatusReverted specifies the domain status reverted state for domain status.
+	// DomainStatusReverted ...
 	DomainStatusReverted DomainStatus = "Reverted"
-	// DomainStatusSuspended specifies the domain status suspended state for domain status.
+	// DomainStatusSuspended ...
 	DomainStatusSuspended DomainStatus = "Suspended"
-	// DomainStatusTransferred specifies the domain status transferred state for domain status.
+	// DomainStatusTransferred ...
 	DomainStatusTransferred DomainStatus = "Transferred"
-	// DomainStatusUnknown specifies the domain status unknown state for domain status.
+	// DomainStatusUnknown ...
 	DomainStatusUnknown DomainStatus = "Unknown"
-	// DomainStatusUnlocked specifies the domain status unlocked state for domain status.
+	// DomainStatusUnlocked ...
 	DomainStatusUnlocked DomainStatus = "Unlocked"
-	// DomainStatusUnparked specifies the domain status unparked state for domain status.
+	// DomainStatusUnparked ...
 	DomainStatusUnparked DomainStatus = "Unparked"
-	// DomainStatusUpdated specifies the domain status updated state for domain status.
+	// DomainStatusUpdated ...
 	DomainStatusUpdated DomainStatus = "Updated"
 )
 
@@ -314,9 +311,9 @@ const (
 type DomainType string
 
 const (
-	// Regular specifies the regular state for domain type.
+	// Regular ...
 	Regular DomainType = "Regular"
-	// SoftDeleted specifies the soft deleted state for domain type.
+	// SoftDeleted ...
 	SoftDeleted DomainType = "SoftDeleted"
 )
 
@@ -324,9 +321,9 @@ const (
 type FrequencyUnit string
 
 const (
-	// Day specifies the day state for frequency unit.
+	// Day ...
 	Day FrequencyUnit = "Day"
-	// Hour specifies the hour state for frequency unit.
+	// Hour ...
 	Hour FrequencyUnit = "Hour"
 )
 
@@ -334,13 +331,13 @@ const (
 type HostingEnvironmentStatus string
 
 const (
-	// Deleting specifies the deleting state for hosting environment status.
+	// Deleting ...
 	Deleting HostingEnvironmentStatus = "Deleting"
-	// Preparing specifies the preparing state for hosting environment status.
+	// Preparing ...
 	Preparing HostingEnvironmentStatus = "Preparing"
-	// Ready specifies the ready state for hosting environment status.
+	// Ready ...
 	Ready HostingEnvironmentStatus = "Ready"
-	// Scaling specifies the scaling state for hosting environment status.
+	// Scaling ...
 	Scaling HostingEnvironmentStatus = "Scaling"
 )
 
@@ -348,9 +345,9 @@ const (
 type HostNameType string
 
 const (
-	// Managed specifies the managed state for host name type.
+	// Managed ...
 	Managed HostNameType = "Managed"
-	// Verified specifies the verified state for host name type.
+	// Verified ...
 	Verified HostNameType = "Verified"
 )
 
@@ -358,11 +355,11 @@ const (
 type InternalLoadBalancingMode string
 
 const (
-	// None specifies the none state for internal load balancing mode.
+	// None ...
 	None InternalLoadBalancingMode = "None"
-	// Publishing specifies the publishing state for internal load balancing mode.
+	// Publishing ...
 	Publishing InternalLoadBalancingMode = "Publishing"
-	// Web specifies the web state for internal load balancing mode.
+	// Web ...
 	Web InternalLoadBalancingMode = "Web"
 )
 
@@ -370,32 +367,25 @@ const (
 type KeyVaultSecretStatus string
 
 const (
-	// KeyVaultSecretStatusAzureServiceUnauthorizedToAccessKeyVault specifies the key vault secret status azure service
-	// unauthorized to access key vault state for key vault secret status.
+	// KeyVaultSecretStatusAzureServiceUnauthorizedToAccessKeyVault ...
 	KeyVaultSecretStatusAzureServiceUnauthorizedToAccessKeyVault KeyVaultSecretStatus = "AzureServiceUnauthorizedToAccessKeyVault"
-	// KeyVaultSecretStatusCertificateOrderFailed specifies the key vault secret status certificate order failed state for
-	// key vault secret status.
+	// KeyVaultSecretStatusCertificateOrderFailed ...
 	KeyVaultSecretStatusCertificateOrderFailed KeyVaultSecretStatus = "CertificateOrderFailed"
-	// KeyVaultSecretStatusInitialized specifies the key vault secret status initialized state for key vault secret status.
+	// KeyVaultSecretStatusInitialized ...
 	KeyVaultSecretStatusInitialized KeyVaultSecretStatus = "Initialized"
-	// KeyVaultSecretStatusKeyVaultDoesNotExist specifies the key vault secret status key vault does not exist state for
-	// key vault secret status.
+	// KeyVaultSecretStatusKeyVaultDoesNotExist ...
 	KeyVaultSecretStatusKeyVaultDoesNotExist KeyVaultSecretStatus = "KeyVaultDoesNotExist"
-	// KeyVaultSecretStatusKeyVaultSecretDoesNotExist specifies the key vault secret status key vault secret does not exist
-	// state for key vault secret status.
+	// KeyVaultSecretStatusKeyVaultSecretDoesNotExist ...
 	KeyVaultSecretStatusKeyVaultSecretDoesNotExist KeyVaultSecretStatus = "KeyVaultSecretDoesNotExist"
-	// KeyVaultSecretStatusOperationNotPermittedOnKeyVault specifies the key vault secret status operation not permitted on
-	// key vault state for key vault secret status.
+	// KeyVaultSecretStatusOperationNotPermittedOnKeyVault ...
 	KeyVaultSecretStatusOperationNotPermittedOnKeyVault KeyVaultSecretStatus = "OperationNotPermittedOnKeyVault"
-	// KeyVaultSecretStatusSucceeded specifies the key vault secret status succeeded state for key vault secret status.
+	// KeyVaultSecretStatusSucceeded ...
 	KeyVaultSecretStatusSucceeded KeyVaultSecretStatus = "Succeeded"
-	// KeyVaultSecretStatusUnknown specifies the key vault secret status unknown state for key vault secret status.
+	// KeyVaultSecretStatusUnknown ...
 	KeyVaultSecretStatusUnknown KeyVaultSecretStatus = "Unknown"
-	// KeyVaultSecretStatusUnknownError specifies the key vault secret status unknown error state for key vault secret
-	// status.
+	// KeyVaultSecretStatusUnknownError ...
 	KeyVaultSecretStatusUnknownError KeyVaultSecretStatus = "UnknownError"
-	// KeyVaultSecretStatusWaitingOnCertificateOrder specifies the key vault secret status waiting on certificate order
-	// state for key vault secret status.
+	// KeyVaultSecretStatusWaitingOnCertificateOrder ...
 	KeyVaultSecretStatusWaitingOnCertificateOrder KeyVaultSecretStatus = "WaitingOnCertificateOrder"
 )
 
@@ -403,11 +393,11 @@ const (
 type LinkState string
 
 const (
-	// Authenticated specifies the authenticated state for link state.
+	// Authenticated ...
 	Authenticated LinkState = "Authenticated"
-	// Error specifies the error state for link state.
+	// Error ...
 	Error LinkState = "Error"
-	// Unauthenticated specifies the unauthenticated state for link state.
+	// Unauthenticated ...
 	Unauthenticated LinkState = "Unauthenticated"
 )
 
@@ -415,15 +405,15 @@ const (
 type LogLevel string
 
 const (
-	// LogLevelError specifies the log level error state for log level.
+	// LogLevelError ...
 	LogLevelError LogLevel = "Error"
-	// LogLevelInformation specifies the log level information state for log level.
+	// LogLevelInformation ...
 	LogLevelInformation LogLevel = "Information"
-	// LogLevelOff specifies the log level off state for log level.
+	// LogLevelOff ...
 	LogLevelOff LogLevel = "Off"
-	// LogLevelVerbose specifies the log level verbose state for log level.
+	// LogLevelVerbose ...
 	LogLevelVerbose LogLevel = "Verbose"
-	// LogLevelWarning specifies the log level warning state for log level.
+	// LogLevelWarning ...
 	LogLevelWarning LogLevel = "Warning"
 )
 
@@ -431,14 +421,11 @@ const (
 type ManagedHostingEnvironmentStatus string
 
 const (
-	// ManagedHostingEnvironmentStatusDeleting specifies the managed hosting environment status deleting state for managed
-	// hosting environment status.
+	// ManagedHostingEnvironmentStatusDeleting ...
 	ManagedHostingEnvironmentStatusDeleting ManagedHostingEnvironmentStatus = "Deleting"
-	// ManagedHostingEnvironmentStatusPreparing specifies the managed hosting environment status preparing state for
-	// managed hosting environment status.
+	// ManagedHostingEnvironmentStatusPreparing ...
 	ManagedHostingEnvironmentStatusPreparing ManagedHostingEnvironmentStatus = "Preparing"
-	// ManagedHostingEnvironmentStatusReady specifies the managed hosting environment status ready state for managed
-	// hosting environment status.
+	// ManagedHostingEnvironmentStatusReady ...
 	ManagedHostingEnvironmentStatusReady ManagedHostingEnvironmentStatus = "Ready"
 )
 
@@ -446,9 +433,9 @@ const (
 type ManagedPipelineMode string
 
 const (
-	// Classic specifies the classic state for managed pipeline mode.
+	// Classic ...
 	Classic ManagedPipelineMode = "Classic"
-	// Integrated specifies the integrated state for managed pipeline mode.
+	// Integrated ...
 	Integrated ManagedPipelineMode = "Integrated"
 )
 
@@ -456,13 +443,13 @@ const (
 type NotificationLevel string
 
 const (
-	// Critical specifies the critical state for notification level.
+	// Critical ...
 	Critical NotificationLevel = "Critical"
-	// Information specifies the information state for notification level.
+	// Information ...
 	Information NotificationLevel = "Information"
-	// NonUrgentSuggestion specifies the non urgent suggestion state for notification level.
+	// NonUrgentSuggestion ...
 	NonUrgentSuggestion NotificationLevel = "NonUrgentSuggestion"
-	// Warning specifies the warning state for notification level.
+	// Warning ...
 	Warning NotificationLevel = "Warning"
 )
 
@@ -470,11 +457,11 @@ const (
 type PrincipalType string
 
 const (
-	// PrincipalTypeActiveDirectory specifies the principal type active directory state for principal type.
+	// PrincipalTypeActiveDirectory ...
 	PrincipalTypeActiveDirectory PrincipalType = "ActiveDirectory"
-	// PrincipalTypeConnection specifies the principal type connection state for principal type.
+	// PrincipalTypeConnection ...
 	PrincipalTypeConnection PrincipalType = "Connection"
-	// PrincipalTypeMicrosoftAccount specifies the principal type microsoft account state for principal type.
+	// PrincipalTypeMicrosoftAccount ...
 	PrincipalTypeMicrosoftAccount PrincipalType = "MicrosoftAccount"
 )
 
@@ -482,15 +469,15 @@ const (
 type ProvisioningState string
 
 const (
-	// ProvisioningStateCanceled specifies the provisioning state canceled state for provisioning state.
+	// ProvisioningStateCanceled ...
 	ProvisioningStateCanceled ProvisioningState = "Canceled"
-	// ProvisioningStateDeleting specifies the provisioning state deleting state for provisioning state.
+	// ProvisioningStateDeleting ...
 	ProvisioningStateDeleting ProvisioningState = "Deleting"
-	// ProvisioningStateFailed specifies the provisioning state failed state for provisioning state.
+	// ProvisioningStateFailed ...
 	ProvisioningStateFailed ProvisioningState = "Failed"
-	// ProvisioningStateInProgress specifies the provisioning state in progress state for provisioning state.
+	// ProvisioningStateInProgress ...
 	ProvisioningStateInProgress ProvisioningState = "InProgress"
-	// ProvisioningStateSucceeded specifies the provisioning state succeeded state for provisioning state.
+	// ProvisioningStateSucceeded ...
 	ProvisioningStateSucceeded ProvisioningState = "Succeeded"
 )
 
@@ -498,11 +485,11 @@ const (
 type SiteAvailabilityState string
 
 const (
-	// DisasterRecoveryMode specifies the disaster recovery mode state for site availability state.
+	// DisasterRecoveryMode ...
 	DisasterRecoveryMode SiteAvailabilityState = "DisasterRecoveryMode"
-	// Limited specifies the limited state for site availability state.
+	// Limited ...
 	Limited SiteAvailabilityState = "Limited"
-	// Normal specifies the normal state for site availability state.
+	// Normal ...
 	Normal SiteAvailabilityState = "Normal"
 )
 
@@ -510,15 +497,15 @@ const (
 type SiteLoadBalancing string
 
 const (
-	// LeastRequests specifies the least requests state for site load balancing.
+	// LeastRequests ...
 	LeastRequests SiteLoadBalancing = "LeastRequests"
-	// LeastResponseTime specifies the least response time state for site load balancing.
+	// LeastResponseTime ...
 	LeastResponseTime SiteLoadBalancing = "LeastResponseTime"
-	// RequestHash specifies the request hash state for site load balancing.
+	// RequestHash ...
 	RequestHash SiteLoadBalancing = "RequestHash"
-	// WeightedRoundRobin specifies the weighted round robin state for site load balancing.
+	// WeightedRoundRobin ...
 	WeightedRoundRobin SiteLoadBalancing = "WeightedRoundRobin"
-	// WeightedTotalTraffic specifies the weighted total traffic state for site load balancing.
+	// WeightedTotalTraffic ...
 	WeightedTotalTraffic SiteLoadBalancing = "WeightedTotalTraffic"
 )
 
@@ -526,11 +513,11 @@ const (
 type SslState string
 
 const (
-	// Disabled specifies the disabled state for ssl state.
+	// Disabled ...
 	Disabled SslState = "Disabled"
-	// IPBasedEnabled specifies the ip based enabled state for ssl state.
+	// IPBasedEnabled ...
 	IPBasedEnabled SslState = "IpBasedEnabled"
-	// SniEnabled specifies the sni enabled state for ssl state.
+	// SniEnabled ...
 	SniEnabled SslState = "SniEnabled"
 )
 
@@ -538,9 +525,9 @@ const (
 type StatusOptions string
 
 const (
-	// StatusOptionsPending specifies the status options pending state for status options.
+	// StatusOptionsPending ...
 	StatusOptionsPending StatusOptions = "Pending"
-	// StatusOptionsReady specifies the status options ready state for status options.
+	// StatusOptionsReady ...
 	StatusOptionsReady StatusOptions = "Ready"
 )
 
@@ -548,9 +535,9 @@ const (
 type UnauthenticatedClientAction string
 
 const (
-	// AllowAnonymous specifies the allow anonymous state for unauthenticated client action.
+	// AllowAnonymous ...
 	AllowAnonymous UnauthenticatedClientAction = "AllowAnonymous"
-	// RedirectToLoginPage specifies the redirect to login page state for unauthenticated client action.
+	// RedirectToLoginPage ...
 	RedirectToLoginPage UnauthenticatedClientAction = "RedirectToLoginPage"
 )
 
@@ -558,9 +545,9 @@ const (
 type UsageState string
 
 const (
-	// UsageStateExceeded specifies the usage state exceeded state for usage state.
+	// UsageStateExceeded ...
 	UsageStateExceeded UsageState = "Exceeded"
-	// UsageStateNormal specifies the usage state normal state for usage state.
+	// UsageStateNormal ...
 	UsageStateNormal UsageState = "Normal"
 )
 
@@ -568,1659 +555,6974 @@ const (
 type WorkerSizeOptions string
 
 const (
-	// WorkerSizeOptionsDefault specifies the worker size options default state for worker size options.
+	// WorkerSizeOptionsDefault ...
 	WorkerSizeOptionsDefault WorkerSizeOptions = "Default"
-	// WorkerSizeOptionsLarge specifies the worker size options large state for worker size options.
+	// WorkerSizeOptionsLarge ...
 	WorkerSizeOptionsLarge WorkerSizeOptions = "Large"
-	// WorkerSizeOptionsMedium specifies the worker size options medium state for worker size options.
+	// WorkerSizeOptionsMedium ...
 	WorkerSizeOptionsMedium WorkerSizeOptions = "Medium"
-	// WorkerSizeOptionsSmall specifies the worker size options small state for worker size options.
+	// WorkerSizeOptionsSmall ...
 	WorkerSizeOptionsSmall WorkerSizeOptions = "Small"
 )
 
-// Address is address information for domain registration
+// Address address information for domain registration
 type Address struct {
-	Address1   *string `json:"address1,omitempty"`
-	Address2   *string `json:"address2,omitempty"`
-	City       *string `json:"city,omitempty"`
-	Country    *string `json:"country,omitempty"`
+	// Address1 - Address 1
+	Address1 *string `json:"address1,omitempty"`
+	// Address2 - Address 2
+	Address2 *string `json:"address2,omitempty"`
+	// City - City
+	City *string `json:"city,omitempty"`
+	// Country - Country
+	Country *string `json:"country,omitempty"`
+	// PostalCode - Postal code
 	PostalCode *string `json:"postalCode,omitempty"`
-	State      *string `json:"state,omitempty"`
+	// State - State
+	State *string `json:"state,omitempty"`
 }
 
-// AddressResponse is describes main public ip address and any extra vips
+// AddressResponse describes main public ip address and any extra vips
 type AddressResponse struct {
-	autorest.Response   `json:"-"`
-	ServiceIPAddress    *string             `json:"serviceIpAddress,omitempty"`
-	InternalIPAddress   *string             `json:"internalIpAddress,omitempty"`
-	OutboundIPAddresses *[]string           `json:"outboundIpAddresses,omitempty"`
-	VipMappings         *[]VirtualIPMapping `json:"vipMappings,omitempty"`
+	autorest.Response `json:"-"`
+	// ServiceIPAddress - Main public vip
+	ServiceIPAddress *string `json:"serviceIpAddress,omitempty"`
+	// InternalIPAddress - VNET internal ip address of the hostingEnvironment (App Service Environment) if it is in internal load-balancing mode
+	InternalIPAddress *string `json:"internalIpAddress,omitempty"`
+	// OutboundIPAddresses - IP addresses appearing on outbound connections
+	OutboundIPAddresses *[]string `json:"outboundIpAddresses,omitempty"`
+	// VipMappings - Additional vips
+	VipMappings *[]VirtualIPMapping `json:"vipMappings,omitempty"`
 }
 
-// APIDefinitionInfo is information about the formal API definition for the web app.
+// APIDefinitionInfo information about the formal API definition for the web app.
 type APIDefinitionInfo struct {
+	// URL - The URL of the API definition.
 	URL *string `json:"url,omitempty"`
 }
 
-// APIEntity is API Management
+// APIEntity API Management
 type APIEntity struct {
-	autorest.Response    `json:"-"`
-	ID                   *string             `json:"id,omitempty"`
-	Name                 *string             `json:"name,omitempty"`
-	Kind                 *string             `json:"kind,omitempty"`
-	Location             *string             `json:"location,omitempty"`
-	Type                 *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                 *map[string]*string `json:"tags,omitempty"`
 	*APIEntityProperties `json:"properties,omitempty"`
 }
 
-// APIEntityProperties is
-type APIEntityProperties struct {
-	Name                 *string                          `json:"name,omitempty"`
-	GeneralInformation   *GeneralAPIInformation           `json:"generalInformation,omitempty"`
-	Path                 *string                          `json:"path,omitempty"`
-	RuntimeUrls          *[]string                        `json:"runtimeUrls,omitempty"`
-	Protocols            *[]string                        `json:"protocols,omitempty"`
-	Policies             *APIPolicies                     `json:"policies,omitempty"`
-	BackendService       *BackendServiceDefinition        `json:"backendService,omitempty"`
-	APIDefinitionURL     *string                          `json:"apiDefinitionUrl,omitempty"`
-	Metadata             *map[string]interface{}          `json:"metadata,omitempty"`
-	Capabilities         *[]string                        `json:"capabilities,omitempty"`
-	ConnectionParameters *map[string]*ConnectionParameter `json:"connectionParameters,omitempty"`
-	CreatedTime          *date.Time                       `json:"createdTime,omitempty"`
-	ChangedTime          *date.Time                       `json:"changedTime,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for APIEntity struct.
+func (ae *APIEntity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties APIEntityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ae.APIEntityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ae.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ae.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ae.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ae.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ae.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ae.Tags = &tags
+	}
+
+	return nil
 }
 
-// APIOAuthSettings is oAuth settings for the conenction provider
+// APIEntityProperties ...
+type APIEntityProperties struct {
+	// Name - Name of the API
+	//             the URL path of this API when exposed via APIM
+	Name *string `json:"name,omitempty"`
+	// GeneralInformation - the URL path of this API when exposed via APIM
+	GeneralInformation *GeneralAPIInformation `json:"generalInformation,omitempty"`
+	// Path - the URL path of this API when exposed via APIM
+	Path *string `json:"path,omitempty"`
+	// RuntimeUrls - Read only property returning the runtime endpoints where the API can be called
+	RuntimeUrls *[]string `json:"runtimeUrls,omitempty"`
+	// Protocols - Protocols supported by the front end - http/https
+	Protocols *[]string `json:"protocols,omitempty"`
+	// Policies - Api polcies
+	Policies *APIPolicies `json:"policies,omitempty"`
+	// BackendService - Backend service definition
+	BackendService *BackendServiceDefinition `json:"backendService,omitempty"`
+	// APIDefinitionURL - Api definition Url - url where the swagger can be downloaded from
+	APIDefinitionURL *string `json:"apiDefinitionUrl,omitempty"`
+	// Metadata - Free form object for the data caller wants to store
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Capabilities - Capabilities
+	Capabilities *[]string `json:"capabilities,omitempty"`
+	// ConnectionParameters - Connection parameters
+	ConnectionParameters *map[string]*ConnectionParameter `json:"connectionParameters,omitempty"`
+	// CreatedTime - Timestamp of the connection creation
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Timestamp of last connection change.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+}
+
+// APIOAuthSettings oAuth settings for the conenction provider
 type APIOAuthSettings struct {
-	IdentityProvider *string                                `json:"identityProvider,omitempty"`
-	ClientID         *string                                `json:"clientId,omitempty"`
-	ClientSecret     *string                                `json:"clientSecret,omitempty"`
-	Scopes           *[]string                              `json:"scopes,omitempty"`
-	RedirectURL      *string                                `json:"redirectUrl,omitempty"`
-	Properties       *map[string]interface{}                `json:"properties,omitempty"`
+	// IdentityProvider - Identity provider
+	IdentityProvider *string `json:"identityProvider,omitempty"`
+	// ClientID - Resource provider client id
+	ClientID *string `json:"clientId,omitempty"`
+	// ClientSecret - Client Secret needed for OAuth
+	ClientSecret *string `json:"clientSecret,omitempty"`
+	// Scopes - OAuth scopes
+	Scopes *[]string `json:"scopes,omitempty"`
+	// RedirectURL - Url
+	RedirectURL *string `json:"redirectUrl,omitempty"`
+	// Properties - Read only properties for this oauth setting.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	// CustomParameters - OAuth parameters key is the name of parameter
 	CustomParameters *map[string]*APIOAuthSettingsParameter `json:"customParameters,omitempty"`
 }
 
-// APIOAuthSettingsParameter is oAuth Settings Parameter
+// APIOAuthSettingsParameter oAuth Settings Parameter
 type APIOAuthSettingsParameter struct {
-	Value        *string                 `json:"value,omitempty"`
-	Options      *map[string]interface{} `json:"options,omitempty"`
+	// Value - Value
+	Value *string `json:"value,omitempty"`
+	// Options - Read only: Options available to this parameter
+	Options *map[string]interface{} `json:"options,omitempty"`
+	// UIDefinition - UI definitions per culture as caller can specify the culture
 	UIDefinition *map[string]interface{} `json:"uiDefinition,omitempty"`
 }
 
-// APIPolicies is api policies
+// APIPolicies api policies
 type APIPolicies struct {
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Kind                   *string             `json:"kind,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                   *map[string]*string `json:"tags,omitempty"`
 	*APIPoliciesProperties `json:"properties,omitempty"`
 }
 
-// APIPoliciesProperties is
+// UnmarshalJSON is the custom unmarshaler for APIPolicies struct.
+func (ap *APIPolicies) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties APIPoliciesProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ap.APIPoliciesProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ap.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ap.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ap.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ap.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ap.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ap.Tags = &tags
+	}
+
+	return nil
+}
+
+// APIPoliciesProperties ...
 type APIPoliciesProperties struct {
+	// Content - Content of xml policy
 	Content *string `json:"content,omitempty"`
 }
 
-// ApisCollection is collection of Apis
+// ApisCollection collection of Apis
 type ApisCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]APIEntity `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]APIEntity `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ApisCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ApisCollection) ApisCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ApisCollectionIterator provides access to a complete listing of APIEntity values.
+type ApisCollectionIterator struct {
+	i    int
+	page ApisCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ApisCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ApisCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ApisCollectionIterator) Response() ApisCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ApisCollectionIterator) Value() APIEntity {
+	if !iter.page.NotDone() {
+		return APIEntity{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ac ApisCollection) IsEmpty() bool {
+	return ac.Value == nil || len(*ac.Value) == 0
+}
+
+// apisCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ac ApisCollection) apisCollectionPreparer() (*http.Request, error) {
+	if ac.NextLink == nil || len(to.String(ac.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(ac.NextLink)))
 }
 
-// ApplicationLogsConfig is application logs configuration
+// ApisCollectionPage contains a page of APIEntity values.
+type ApisCollectionPage struct {
+	fn func(ApisCollection) (ApisCollection, error)
+	ac ApisCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ApisCollectionPage) Next() error {
+	next, err := page.fn(page.ac)
+	if err != nil {
+		return err
+	}
+	page.ac = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ApisCollectionPage) NotDone() bool {
+	return !page.ac.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ApisCollectionPage) Response() ApisCollection {
+	return page.ac
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ApisCollectionPage) Values() []APIEntity {
+	if page.ac.IsEmpty() {
+		return nil
+	}
+	return *page.ac.Value
+}
+
+// ApplicationLogsConfig application logs configuration
 type ApplicationLogsConfig struct {
-	FileSystem        *FileSystemApplicationLogsConfig        `json:"fileSystem,omitempty"`
+	// FileSystem - Application logs to file system configuration
+	FileSystem *FileSystemApplicationLogsConfig `json:"fileSystem,omitempty"`
+	// AzureTableStorage - Application logs to azure table storage configuration
 	AzureTableStorage *AzureTableStorageApplicationLogsConfig `json:"azureTableStorage,omitempty"`
-	AzureBlobStorage  *AzureBlobStorageApplicationLogsConfig  `json:"azureBlobStorage,omitempty"`
+	// AzureBlobStorage - Application logs to blob storage configuration
+	AzureBlobStorage *AzureBlobStorageApplicationLogsConfig `json:"azureBlobStorage,omitempty"`
 }
 
-// ArmPlan is the plan object in an ARM, represents a marketplace plan
+// ArmPlan the plan object in an ARM, represents a marketplace plan
 type ArmPlan struct {
-	Name          *string `json:"name,omitempty"`
-	Publisher     *string `json:"publisher,omitempty"`
-	Product       *string `json:"product,omitempty"`
+	// Name - The name
+	Name *string `json:"name,omitempty"`
+	// Publisher - The publisher
+	Publisher *string `json:"publisher,omitempty"`
+	// Product - The product
+	Product *string `json:"product,omitempty"`
+	// PromotionCode - The promotion code
 	PromotionCode *string `json:"promotionCode,omitempty"`
-	Version       *string `json:"version,omitempty"`
+	// Version - Version of product
+	Version *string `json:"version,omitempty"`
 }
 
-// AutoHealActions is autoHealActions - Describes the actions which can be
+// AutoHealActions autoHealActions - Describes the actions which can be
 // taken by the auto-heal module when a rule is triggered.
 type AutoHealActions struct {
-	ActionType              AutoHealActionType    `json:"actionType,omitempty"`
-	CustomAction            *AutoHealCustomAction `json:"customAction,omitempty"`
-	MinProcessExecutionTime *string               `json:"minProcessExecutionTime,omitempty"`
+	// ActionType - ActionType - predefined action to be taken. Possible values include: 'Recycle', 'LogEvent', 'CustomAction'
+	ActionType AutoHealActionType `json:"actionType,omitempty"`
+	// CustomAction - CustomAction - custom action to be taken
+	CustomAction *AutoHealCustomAction `json:"customAction,omitempty"`
+	// MinProcessExecutionTime - MinProcessExecutionTime - minimum time the process must execute
+	//             before taking the action
+	MinProcessExecutionTime *string `json:"minProcessExecutionTime,omitempty"`
 }
 
-// AutoHealCustomAction is autoHealCustomAction - Describes the custom action to be executed
+// AutoHealCustomAction autoHealCustomAction - Describes the custom action to be executed
 // when an auto heal rule is triggered.
 type AutoHealCustomAction struct {
-	Exe        *string `json:"exe,omitempty"`
+	// Exe - Executable to be run
+	Exe *string `json:"exe,omitempty"`
+	// Parameters - Parameters for the executable
 	Parameters *string `json:"parameters,omitempty"`
 }
 
-// AutoHealRules is autoHealRules - describes the rules which can be defined for auto-heal
+// AutoHealRules autoHealRules - describes the rules which can be defined for auto-heal
 type AutoHealRules struct {
+	// Triggers - Triggers - Conditions that describe when to execute the auto-heal actions
 	Triggers *AutoHealTriggers `json:"triggers,omitempty"`
-	Actions  *AutoHealActions  `json:"actions,omitempty"`
+	// Actions - Actions - Actions to be executed when a rule is triggered
+	Actions *AutoHealActions `json:"actions,omitempty"`
 }
 
-// AutoHealTriggers is autoHealTriggers - describes the triggers for auto-heal.
+// AutoHealTriggers autoHealTriggers - describes the triggers for auto-heal.
 type AutoHealTriggers struct {
-	Requests         *RequestsBasedTrigger      `json:"requests,omitempty"`
-	PrivateBytesInKB *int32                     `json:"privateBytesInKB,omitempty"`
-	StatusCodes      *[]StatusCodesBasedTrigger `json:"statusCodes,omitempty"`
-	SlowRequests     *SlowRequestsBasedTrigger  `json:"slowRequests,omitempty"`
+	// Requests - Requests - Defines a rule based on total requests
+	Requests *RequestsBasedTrigger `json:"requests,omitempty"`
+	// PrivateBytesInKB - PrivateBytesInKB - Defines a rule based on private bytes
+	PrivateBytesInKB *int32 `json:"privateBytesInKB,omitempty"`
+	// StatusCodes - StatusCodes - Defines a rule based on status codes
+	StatusCodes *[]StatusCodesBasedTrigger `json:"statusCodes,omitempty"`
+	// SlowRequests - SlowRequests - Defines a rule based on request execution time
+	SlowRequests *SlowRequestsBasedTrigger `json:"slowRequests,omitempty"`
 }
 
-// AzureBlobStorageApplicationLogsConfig is application logs azure blob storage configuration
+// AzureBlobStorageApplicationLogsConfig application logs azure blob storage configuration
 type AzureBlobStorageApplicationLogsConfig struct {
-	Level           LogLevel `json:"level,omitempty"`
-	SasURL          *string  `json:"sasUrl,omitempty"`
-	RetentionInDays *int32   `json:"retentionInDays,omitempty"`
+	// Level - Log level. Possible values include: 'LogLevelOff', 'LogLevelVerbose', 'LogLevelInformation', 'LogLevelWarning', 'LogLevelError'
+	Level LogLevel `json:"level,omitempty"`
+	// SasURL - SAS url to a azure blob container with read/write/list/delete permissions
+	SasURL *string `json:"sasUrl,omitempty"`
+	// RetentionInDays - Retention in days.
+	//             Remove blobs older than X days.
+	//             0 or lower means no retention.
+	RetentionInDays *int32 `json:"retentionInDays,omitempty"`
 }
 
-// AzureBlobStorageHTTPLogsConfig is http logs to azure blob storage configuration
+// AzureBlobStorageHTTPLogsConfig http logs to azure blob storage configuration
 type AzureBlobStorageHTTPLogsConfig struct {
-	SasURL          *string `json:"sasUrl,omitempty"`
-	RetentionInDays *int32  `json:"retentionInDays,omitempty"`
-	Enabled         *bool   `json:"enabled,omitempty"`
+	// SasURL - SAS url to a azure blob container with read/write/list/delete permissions
+	SasURL *string `json:"sasUrl,omitempty"`
+	// RetentionInDays - Retention in days.
+	//             Remove blobs older than X days.
+	//             0 or lower means no retention.
+	RetentionInDays *int32 `json:"retentionInDays,omitempty"`
+	// Enabled - Enabled
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// AzureTableStorageApplicationLogsConfig is application logs to azure table storage configuration
+// AzureTableStorageApplicationLogsConfig application logs to azure table storage configuration
 type AzureTableStorageApplicationLogsConfig struct {
-	Level  LogLevel `json:"level,omitempty"`
-	SasURL *string  `json:"sasUrl,omitempty"`
+	// Level - Log level. Possible values include: 'LogLevelOff', 'LogLevelVerbose', 'LogLevelInformation', 'LogLevelWarning', 'LogLevelError'
+	Level LogLevel `json:"level,omitempty"`
+	// SasURL - SAS url to an azure table with add/query/delete permissions
+	SasURL *string `json:"sasUrl,omitempty"`
 }
 
-// BackendServiceDefinition is API definitions with backend urls
+// BackendServiceDefinition API definitions with backend urls
 type BackendServiceDefinition struct {
-	ID                                  *string             `json:"id,omitempty"`
-	Name                                *string             `json:"name,omitempty"`
-	Kind                                *string             `json:"kind,omitempty"`
-	Location                            *string             `json:"location,omitempty"`
-	Type                                *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                *map[string]*string `json:"tags,omitempty"`
 	*BackendServiceDefinitionProperties `json:"properties,omitempty"`
 }
 
-// BackendServiceDefinitionProperties is
+// UnmarshalJSON is the custom unmarshaler for BackendServiceDefinition struct.
+func (bsd *BackendServiceDefinition) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackendServiceDefinitionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		bsd.BackendServiceDefinitionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		bsd.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		bsd.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		bsd.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		bsd.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		bsd.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		bsd.Tags = &tags
+	}
+
+	return nil
+}
+
+// BackendServiceDefinitionProperties ...
 type BackendServiceDefinitionProperties struct {
-	ServiceURL                    *string                                  `json:"serviceUrl,omitempty"`
+	// ServiceURL - Url from which the swagger payload will be fetched
+	ServiceURL *string `json:"serviceUrl,omitempty"`
+	// HostingEnvironmentServiceUrls - Service Urls per Hosting environment
 	HostingEnvironmentServiceUrls *[]HostingEnvironmentServiceDescriptions `json:"hostingEnvironmentServiceUrls,omitempty"`
 }
 
-// BackupItem is backup description
+// BackupItem backup description
 type BackupItem struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Kind                  *string             `json:"kind,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                  *map[string]*string `json:"tags,omitempty"`
 	*BackupItemProperties `json:"properties,omitempty"`
 }
 
-// BackupItemCollection is collection of Backup Items
-type BackupItemCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]BackupItem `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for BackupItem struct.
+func (bi *BackupItem) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackupItemProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		bi.BackupItemProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		bi.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		bi.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		bi.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		bi.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		bi.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		bi.Tags = &tags
+	}
+
+	return nil
 }
 
-// BackupItemCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client BackupItemCollection) BackupItemCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// BackupItemCollection collection of Backup Items
+type BackupItemCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]BackupItem `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// BackupItemCollectionIterator provides access to a complete listing of BackupItem values.
+type BackupItemCollectionIterator struct {
+	i    int
+	page BackupItemCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *BackupItemCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter BackupItemCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter BackupItemCollectionIterator) Response() BackupItemCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter BackupItemCollectionIterator) Value() BackupItem {
+	if !iter.page.NotDone() {
+		return BackupItem{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (bic BackupItemCollection) IsEmpty() bool {
+	return bic.Value == nil || len(*bic.Value) == 0
+}
+
+// backupItemCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (bic BackupItemCollection) backupItemCollectionPreparer() (*http.Request, error) {
+	if bic.NextLink == nil || len(to.String(bic.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(bic.NextLink)))
 }
 
-// BackupItemProperties is
+// BackupItemCollectionPage contains a page of BackupItem values.
+type BackupItemCollectionPage struct {
+	fn  func(BackupItemCollection) (BackupItemCollection, error)
+	bic BackupItemCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *BackupItemCollectionPage) Next() error {
+	next, err := page.fn(page.bic)
+	if err != nil {
+		return err
+	}
+	page.bic = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page BackupItemCollectionPage) NotDone() bool {
+	return !page.bic.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page BackupItemCollectionPage) Response() BackupItemCollection {
+	return page.bic
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page BackupItemCollectionPage) Values() []BackupItem {
+	if page.bic.IsEmpty() {
+		return nil
+	}
+	return *page.bic.Value
+}
+
+// BackupItemProperties ...
 type BackupItemProperties struct {
-	ID                   *int32                   `json:"id,omitempty"`
-	StorageAccountURL    *string                  `json:"storageAccountUrl,omitempty"`
-	BlobName             *string                  `json:"blobName,omitempty"`
-	Name                 *string                  `json:"name,omitempty"`
-	Status               BackupItemStatus         `json:"status,omitempty"`
-	SizeInBytes          *int64                   `json:"sizeInBytes,omitempty"`
-	Created              *date.Time               `json:"created,omitempty"`
-	Log                  *string                  `json:"log,omitempty"`
-	Databases            *[]DatabaseBackupSetting `json:"databases,omitempty"`
-	Scheduled            *bool                    `json:"scheduled,omitempty"`
-	LastRestoreTimeStamp *date.Time               `json:"lastRestoreTimeStamp,omitempty"`
-	FinishedTimeStamp    *date.Time               `json:"finishedTimeStamp,omitempty"`
-	CorrelationID        *string                  `json:"correlationId,omitempty"`
-	WebsiteSizeInBytes   *int64                   `json:"websiteSizeInBytes,omitempty"`
+	// ID - Id of the backup.
+	ID *int32 `json:"id,omitempty"`
+	// StorageAccountURL - SAS URL for the storage account container which contains this backup
+	StorageAccountURL *string `json:"storageAccountUrl,omitempty"`
+	// BlobName - Name of the blob which contains data for this backup
+	BlobName *string `json:"blobName,omitempty"`
+	// Name - Name of this backup
+	Name *string `json:"name,omitempty"`
+	// Status - Backup status. Possible values include: 'InProgress', 'Failed', 'Succeeded', 'TimedOut', 'Created', 'Skipped', 'PartiallySucceeded', 'DeleteInProgress', 'DeleteFailed', 'Deleted'
+	Status BackupItemStatus `json:"status,omitempty"`
+	// SizeInBytes - Size of the backup in bytes
+	SizeInBytes *int64 `json:"sizeInBytes,omitempty"`
+	// Created - Timestamp of the backup creation
+	Created *date.Time `json:"created,omitempty"`
+	// Log - Details regarding this backup. Might contain an error message.
+	Log *string `json:"log,omitempty"`
+	// Databases - List of databases included in the backup
+	Databases *[]DatabaseBackupSetting `json:"databases,omitempty"`
+	// Scheduled - True if this backup has been created due to a schedule being triggered.
+	Scheduled *bool `json:"scheduled,omitempty"`
+	// LastRestoreTimeStamp - Timestamp of a last restore operation which used this backup.
+	LastRestoreTimeStamp *date.Time `json:"lastRestoreTimeStamp,omitempty"`
+	// FinishedTimeStamp - Timestamp when this backup finished.
+	FinishedTimeStamp *date.Time `json:"finishedTimeStamp,omitempty"`
+	// CorrelationID - Unique correlation identifier. Please use this along with the timestamp while communicating with Azure support.
+	CorrelationID *string `json:"correlationId,omitempty"`
+	// WebsiteSizeInBytes - Size of the original web app which has been backed up
+	WebsiteSizeInBytes *int64 `json:"websiteSizeInBytes,omitempty"`
 }
 
-// BackupRequest is description of a backup which will be performed
+// BackupRequest description of a backup which will be performed
 type BackupRequest struct {
-	autorest.Response        `json:"-"`
-	ID                       *string             `json:"id,omitempty"`
-	Name                     *string             `json:"name,omitempty"`
-	Kind                     *string             `json:"kind,omitempty"`
-	Location                 *string             `json:"location,omitempty"`
-	Type                     *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                     *map[string]*string `json:"tags,omitempty"`
 	*BackupRequestProperties `json:"properties,omitempty"`
 }
 
-// BackupRequestProperties is
+// UnmarshalJSON is the custom unmarshaler for BackupRequest struct.
+func (br *BackupRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackupRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		br.BackupRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		br.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		br.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		br.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		br.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		br.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		br.Tags = &tags
+	}
+
+	return nil
+}
+
+// BackupRequestProperties ...
 type BackupRequestProperties struct {
-	Name              *string                    `json:"name,omitempty"`
-	Enabled           *bool                      `json:"enabled,omitempty"`
-	StorageAccountURL *string                    `json:"storageAccountUrl,omitempty"`
-	BackupSchedule    *BackupSchedule            `json:"backupSchedule,omitempty"`
-	Databases         *[]DatabaseBackupSetting   `json:"databases,omitempty"`
-	Type              BackupRestoreOperationType `json:"type,omitempty"`
+	// Name - Name of the backup
+	Name *string `json:"name,omitempty"`
+	// Enabled - True if the backup schedule is enabled (must be included in that case), false if the backup schedule should be disabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// StorageAccountURL - SAS URL to the container
+	StorageAccountURL *string `json:"storageAccountUrl,omitempty"`
+	// BackupSchedule - Schedule for the backup if it is executed periodically
+	BackupSchedule *BackupSchedule `json:"backupSchedule,omitempty"`
+	// Databases - Databases included in the backup
+	Databases *[]DatabaseBackupSetting `json:"databases,omitempty"`
+	// Type - Type of the backup. Possible values include: 'Default', 'Clone', 'Relocation'
+	Type BackupRestoreOperationType `json:"type,omitempty"`
 }
 
-// BackupSchedule is description of a backup schedule. Describes how often should be the backup performed and what
-// should be the retention policy.
+// BackupSchedule description of a backup schedule. Describes how often should be the backup performed and what should
+// be the retention policy.
 type BackupSchedule struct {
-	FrequencyInterval     *int32        `json:"frequencyInterval,omitempty"`
-	FrequencyUnit         FrequencyUnit `json:"frequencyUnit,omitempty"`
-	KeepAtLeastOneBackup  *bool         `json:"keepAtLeastOneBackup,omitempty"`
-	RetentionPeriodInDays *int32        `json:"retentionPeriodInDays,omitempty"`
-	StartTime             *date.Time    `json:"startTime,omitempty"`
-	LastExecutionTime     *date.Time    `json:"lastExecutionTime,omitempty"`
+	// FrequencyInterval - How often should be the backup executed (e.g. for weekly backup, this should be set to 7 and FrequencyUnit should be set to Day)
+	FrequencyInterval *int32 `json:"frequencyInterval,omitempty"`
+	// FrequencyUnit - How often should be the backup executed (e.g. for weekly backup, this should be set to Day and FrequencyInterval should be set to 7). Possible values include: 'Day', 'Hour'
+	FrequencyUnit FrequencyUnit `json:"frequencyUnit,omitempty"`
+	// KeepAtLeastOneBackup - True if the retention policy should always keep at least one backup in the storage account, regardless how old it is; false otherwise.
+	KeepAtLeastOneBackup *bool `json:"keepAtLeastOneBackup,omitempty"`
+	// RetentionPeriodInDays - After how many days backups should be deleted
+	RetentionPeriodInDays *int32 `json:"retentionPeriodInDays,omitempty"`
+	// StartTime - When the schedule should start working
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// LastExecutionTime - The last time when this schedule was triggered
+	LastExecutionTime *date.Time `json:"lastExecutionTime,omitempty"`
 }
 
-// Certificate is app certificate
+// Certificate app certificate
 type Certificate struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Kind                   *string             `json:"kind,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                   *map[string]*string `json:"tags,omitempty"`
 	*CertificateProperties `json:"properties,omitempty"`
 }
 
-// CertificateCollection is collection of certificates
-type CertificateCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Certificate `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Certificate struct.
+func (c *Certificate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.CertificateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		c.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		c.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		c.Tags = &tags
+	}
+
+	return nil
 }
 
-// CertificateCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CertificateCollection) CertificateCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CertificateCollection collection of certificates
+type CertificateCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]Certificate `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// CertificateCollectionIterator provides access to a complete listing of Certificate values.
+type CertificateCollectionIterator struct {
+	i    int
+	page CertificateCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CertificateCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CertificateCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CertificateCollectionIterator) Response() CertificateCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CertificateCollectionIterator) Value() Certificate {
+	if !iter.page.NotDone() {
+		return Certificate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cc CertificateCollection) IsEmpty() bool {
+	return cc.Value == nil || len(*cc.Value) == 0
+}
+
+// certificateCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cc CertificateCollection) certificateCollectionPreparer() (*http.Request, error) {
+	if cc.NextLink == nil || len(to.String(cc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cc.NextLink)))
 }
 
-// CertificateDetails is certificate Details
+// CertificateCollectionPage contains a page of Certificate values.
+type CertificateCollectionPage struct {
+	fn func(CertificateCollection) (CertificateCollection, error)
+	cc CertificateCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CertificateCollectionPage) Next() error {
+	next, err := page.fn(page.cc)
+	if err != nil {
+		return err
+	}
+	page.cc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CertificateCollectionPage) NotDone() bool {
+	return !page.cc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CertificateCollectionPage) Response() CertificateCollection {
+	return page.cc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CertificateCollectionPage) Values() []Certificate {
+	if page.cc.IsEmpty() {
+		return nil
+	}
+	return *page.cc.Value
+}
+
+// CertificateDetails certificate Details
 type CertificateDetails struct {
-	ID                            *string             `json:"id,omitempty"`
-	Name                          *string             `json:"name,omitempty"`
-	Kind                          *string             `json:"kind,omitempty"`
-	Location                      *string             `json:"location,omitempty"`
-	Type                          *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                          *map[string]*string `json:"tags,omitempty"`
 	*CertificateDetailsProperties `json:"properties,omitempty"`
 }
 
-// CertificateDetailsProperties is
-type CertificateDetailsProperties struct {
-	Version            *int32     `json:"version,omitempty"`
-	SerialNumber       *string    `json:"serialNumber,omitempty"`
-	Thumbprint         *string    `json:"thumbprint,omitempty"`
-	Subject            *string    `json:"subject,omitempty"`
-	NotBefore          *date.Time `json:"notBefore,omitempty"`
-	NotAfter           *date.Time `json:"notAfter,omitempty"`
-	SignatureAlgorithm *string    `json:"signatureAlgorithm,omitempty"`
-	Issuer             *string    `json:"issuer,omitempty"`
-	RawData            *string    `json:"rawData,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CertificateDetails struct.
+func (cd *CertificateDetails) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateDetailsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cd.CertificateDetailsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cd.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cd.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cd.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		cd.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cd.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cd.Tags = &tags
+	}
+
+	return nil
 }
 
-// CertificateEmail is certificate Email
+// CertificateDetailsProperties ...
+type CertificateDetailsProperties struct {
+	// Version - Version
+	Version *int32 `json:"version,omitempty"`
+	// SerialNumber - Serial Number
+	SerialNumber *string `json:"serialNumber,omitempty"`
+	// Thumbprint - Thumbprint
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// Subject - Subject
+	Subject *string `json:"subject,omitempty"`
+	// NotBefore - Valid from
+	NotBefore *date.Time `json:"notBefore,omitempty"`
+	// NotAfter - Valid to
+	NotAfter *date.Time `json:"notAfter,omitempty"`
+	// SignatureAlgorithm - Signature Algorithm
+	SignatureAlgorithm *string `json:"signatureAlgorithm,omitempty"`
+	// Issuer - Issuer
+	Issuer *string `json:"issuer,omitempty"`
+	// RawData - Raw certificate data
+	RawData *string `json:"rawData,omitempty"`
+}
+
+// CertificateEmail certificate Email
 type CertificateEmail struct {
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Kind                        *string             `json:"kind,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                        *map[string]*string `json:"tags,omitempty"`
 	*CertificateEmailProperties `json:"properties,omitempty"`
 }
 
-// CertificateEmailProperties is
+// UnmarshalJSON is the custom unmarshaler for CertificateEmail struct.
+func (ce *CertificateEmail) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateEmailProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ce.CertificateEmailProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ce.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ce.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ce.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ce.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ce.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ce.Tags = &tags
+	}
+
+	return nil
+}
+
+// CertificateEmailProperties ...
 type CertificateEmailProperties struct {
-	EmailID   *string    `json:"emailId,omitempty"`
+	// EmailID - Email id
+	EmailID *string `json:"emailId,omitempty"`
+	// TimeStamp - Time stamp
 	TimeStamp *date.Time `json:"timeStamp,omitempty"`
 }
 
-// CertificateOrder is certificate purchase order
+// CertificateOrder certificate purchase order
 type CertificateOrder struct {
-	autorest.Response           `json:"-"`
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Kind                        *string             `json:"kind,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                        *map[string]*string `json:"tags,omitempty"`
 	*CertificateOrderProperties `json:"properties,omitempty"`
 }
 
-// CertificateOrderAction is represents a certificate action
+// UnmarshalJSON is the custom unmarshaler for CertificateOrder struct.
+func (co *CertificateOrder) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateOrderProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		co.CertificateOrderProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		co.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		co.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		co.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		co.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		co.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		co.Tags = &tags
+	}
+
+	return nil
+}
+
+// CertificateOrderAction represents a certificate action
 type CertificateOrderAction struct {
-	ID                                *string             `json:"id,omitempty"`
-	Name                              *string             `json:"name,omitempty"`
-	Kind                              *string             `json:"kind,omitempty"`
-	Location                          *string             `json:"location,omitempty"`
-	Type                              *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                              *map[string]*string `json:"tags,omitempty"`
 	*CertificateOrderActionProperties `json:"properties,omitempty"`
 }
 
-// CertificateOrderActionProperties is
-type CertificateOrderActionProperties struct {
-	Type      CertificateOrderActionType `json:"type,omitempty"`
-	CreatedAt *date.Time                 `json:"createdAt,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CertificateOrderAction struct.
+func (coa *CertificateOrderAction) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateOrderActionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		coa.CertificateOrderActionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		coa.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		coa.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		coa.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		coa.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		coa.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		coa.Tags = &tags
+	}
+
+	return nil
 }
 
-// CertificateOrderCertificate is class representing the Key Vault container for certificate purchased through Azure
+// CertificateOrderActionProperties ...
+type CertificateOrderActionProperties struct {
+	// Type - Type. Possible values include: 'CertificateIssued', 'CertificateOrderCanceled', 'CertificateOrderCreated', 'CertificateRevoked', 'DomainValidationComplete', 'FraudDetected', 'OrgNameChange', 'OrgValidationComplete', 'SanDrop'
+	Type CertificateOrderActionType `json:"type,omitempty"`
+	// CreatedAt - Time at which the certificate action was performed
+	CreatedAt *date.Time `json:"createdAt,omitempty"`
+}
+
+// CertificateOrderCertificate class representing the Key Vault container for certificate purchased through Azure
 type CertificateOrderCertificate struct {
-	autorest.Response                      `json:"-"`
-	ID                                     *string             `json:"id,omitempty"`
-	Name                                   *string             `json:"name,omitempty"`
-	Kind                                   *string             `json:"kind,omitempty"`
-	Location                               *string             `json:"location,omitempty"`
-	Type                                   *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                   *map[string]*string `json:"tags,omitempty"`
 	*CertificateOrderCertificateProperties `json:"properties,omitempty"`
 }
 
-// CertificateOrderCertificateCollection is collection of ceritificateorder certificates
+// UnmarshalJSON is the custom unmarshaler for CertificateOrderCertificate struct.
+func (coc *CertificateOrderCertificate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateOrderCertificateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		coc.CertificateOrderCertificateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		coc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		coc.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		coc.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		coc.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		coc.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		coc.Tags = &tags
+	}
+
+	return nil
+}
+
+// CertificateOrderCertificateCollection collection of ceritificateorder certificates
 type CertificateOrderCertificateCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]CertificateOrderCertificate `json:"value,omitempty"`
-	NextLink          *string                        `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]CertificateOrderCertificate `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CertificateOrderCertificateCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CertificateOrderCertificateCollection) CertificateOrderCertificateCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CertificateOrderCertificateCollectionIterator provides access to a complete listing of CertificateOrderCertificate
+// values.
+type CertificateOrderCertificateCollectionIterator struct {
+	i    int
+	page CertificateOrderCertificateCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CertificateOrderCertificateCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CertificateOrderCertificateCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CertificateOrderCertificateCollectionIterator) Response() CertificateOrderCertificateCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CertificateOrderCertificateCollectionIterator) Value() CertificateOrderCertificate {
+	if !iter.page.NotDone() {
+		return CertificateOrderCertificate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cocc CertificateOrderCertificateCollection) IsEmpty() bool {
+	return cocc.Value == nil || len(*cocc.Value) == 0
+}
+
+// certificateOrderCertificateCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cocc CertificateOrderCertificateCollection) certificateOrderCertificateCollectionPreparer() (*http.Request, error) {
+	if cocc.NextLink == nil || len(to.String(cocc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cocc.NextLink)))
 }
 
-// CertificateOrderCertificateProperties is
+// CertificateOrderCertificateCollectionPage contains a page of CertificateOrderCertificate values.
+type CertificateOrderCertificateCollectionPage struct {
+	fn   func(CertificateOrderCertificateCollection) (CertificateOrderCertificateCollection, error)
+	cocc CertificateOrderCertificateCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CertificateOrderCertificateCollectionPage) Next() error {
+	next, err := page.fn(page.cocc)
+	if err != nil {
+		return err
+	}
+	page.cocc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CertificateOrderCertificateCollectionPage) NotDone() bool {
+	return !page.cocc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CertificateOrderCertificateCollectionPage) Response() CertificateOrderCertificateCollection {
+	return page.cocc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CertificateOrderCertificateCollectionPage) Values() []CertificateOrderCertificate {
+	if page.cocc.IsEmpty() {
+		return nil
+	}
+	return *page.cocc.Value
+}
+
+// CertificateOrderCertificateProperties ...
 type CertificateOrderCertificateProperties struct {
-	KeyVaultID         *string              `json:"keyVaultId,omitempty"`
-	KeyVaultSecretName *string              `json:"keyVaultSecretName,omitempty"`
-	ProvisioningState  KeyVaultSecretStatus `json:"provisioningState,omitempty"`
+	// KeyVaultID - Key Vault Csm resource Id
+	KeyVaultID *string `json:"keyVaultId,omitempty"`
+	// KeyVaultSecretName - Key Vault secret name
+	KeyVaultSecretName *string `json:"keyVaultSecretName,omitempty"`
+	// ProvisioningState - Status of the Key Vault secret. Possible values include: 'KeyVaultSecretStatusInitialized', 'KeyVaultSecretStatusWaitingOnCertificateOrder', 'KeyVaultSecretStatusSucceeded', 'KeyVaultSecretStatusCertificateOrderFailed', 'KeyVaultSecretStatusOperationNotPermittedOnKeyVault', 'KeyVaultSecretStatusAzureServiceUnauthorizedToAccessKeyVault', 'KeyVaultSecretStatusKeyVaultDoesNotExist', 'KeyVaultSecretStatusKeyVaultSecretDoesNotExist', 'KeyVaultSecretStatusUnknownError', 'KeyVaultSecretStatusUnknown'
+	ProvisioningState KeyVaultSecretStatus `json:"provisioningState,omitempty"`
 }
 
-// CertificateOrderCollection is collection of ceritificate orders
+// CertificateOrderCollection collection of ceritificate orders
 type CertificateOrderCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]CertificateOrder `json:"value,omitempty"`
-	NextLink          *string             `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]CertificateOrder `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CertificateOrderCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CertificateOrderCollection) CertificateOrderCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CertificateOrderCollectionIterator provides access to a complete listing of CertificateOrder values.
+type CertificateOrderCollectionIterator struct {
+	i    int
+	page CertificateOrderCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CertificateOrderCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CertificateOrderCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CertificateOrderCollectionIterator) Response() CertificateOrderCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CertificateOrderCollectionIterator) Value() CertificateOrder {
+	if !iter.page.NotDone() {
+		return CertificateOrder{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (coc CertificateOrderCollection) IsEmpty() bool {
+	return coc.Value == nil || len(*coc.Value) == 0
+}
+
+// certificateOrderCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (coc CertificateOrderCollection) certificateOrderCollectionPreparer() (*http.Request, error) {
+	if coc.NextLink == nil || len(to.String(coc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(coc.NextLink)))
 }
 
-// CertificateOrderProperties is
+// CertificateOrderCollectionPage contains a page of CertificateOrder values.
+type CertificateOrderCollectionPage struct {
+	fn  func(CertificateOrderCollection) (CertificateOrderCollection, error)
+	coc CertificateOrderCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CertificateOrderCollectionPage) Next() error {
+	next, err := page.fn(page.coc)
+	if err != nil {
+		return err
+	}
+	page.coc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CertificateOrderCollectionPage) NotDone() bool {
+	return !page.coc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CertificateOrderCollectionPage) Response() CertificateOrderCollection {
+	return page.coc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CertificateOrderCollectionPage) Values() []CertificateOrder {
+	if page.coc.IsEmpty() {
+		return nil
+	}
+	return *page.coc.Value
+}
+
+// CertificateOrderProperties ...
 type CertificateOrderProperties struct {
-	Certificates                *map[string]*CertificateOrderCertificate `json:"certificates,omitempty"`
-	DistinguishedName           *string                                  `json:"distinguishedName,omitempty"`
-	DomainVerificationToken     *string                                  `json:"domainVerificationToken,omitempty"`
-	ValidityInYears             *int32                                   `json:"validityInYears,omitempty"`
-	KeySize                     *int32                                   `json:"keySize,omitempty"`
-	ProductType                 CertificateProductType                   `json:"productType,omitempty"`
-	AutoRenew                   *bool                                    `json:"autoRenew,omitempty"`
-	ProvisioningState           ProvisioningState                        `json:"provisioningState,omitempty"`
-	Status                      CertificateOrderStatus                   `json:"status,omitempty"`
-	SignedCertificate           *CertificateDetails                      `json:"signedCertificate,omitempty"`
-	Csr                         *string                                  `json:"csr,omitempty"`
-	Intermediate                *CertificateDetails                      `json:"intermediate,omitempty"`
-	Root                        *CertificateDetails                      `json:"root,omitempty"`
-	SerialNumber                *string                                  `json:"serialNumber,omitempty"`
-	LastCertificateIssuanceTime *date.Time                               `json:"lastCertificateIssuanceTime,omitempty"`
-	ExpirationTime              *date.Time                               `json:"expirationTime,omitempty"`
+	// Certificates - State of the Key Vault secret
+	Certificates *map[string]*CertificateOrderCertificate `json:"certificates,omitempty"`
+	// DistinguishedName - Certificate distinguished name
+	DistinguishedName *string `json:"distinguishedName,omitempty"`
+	// DomainVerificationToken - Domain Verification Token
+	DomainVerificationToken *string `json:"domainVerificationToken,omitempty"`
+	// ValidityInYears - Duration in years (must be between 1 and 3)
+	ValidityInYears *int32 `json:"validityInYears,omitempty"`
+	// KeySize - Certificate Key Size
+	KeySize *int32 `json:"keySize,omitempty"`
+	// ProductType - Certificate product type. Possible values include: 'StandardDomainValidatedSsl', 'StandardDomainValidatedWildCardSsl'
+	ProductType CertificateProductType `json:"productType,omitempty"`
+	// AutoRenew - Auto renew
+	AutoRenew *bool `json:"autoRenew,omitempty"`
+	// ProvisioningState - Status of certificate order. Possible values include: 'ProvisioningStateSucceeded', 'ProvisioningStateFailed', 'ProvisioningStateCanceled', 'ProvisioningStateInProgress', 'ProvisioningStateDeleting'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// Status - Current order status. Possible values include: 'Pendingissuance', 'Issued', 'Revoked', 'Canceled', 'Denied', 'Pendingrevocation', 'PendingRekey', 'Unused', 'Expired', 'NotSubmitted'
+	Status CertificateOrderStatus `json:"status,omitempty"`
+	// SignedCertificate - Signed certificate
+	SignedCertificate *CertificateDetails `json:"signedCertificate,omitempty"`
+	// Csr - Last CSR that was created for this order
+	Csr *string `json:"csr,omitempty"`
+	// Intermediate - Intermediate certificate
+	Intermediate *CertificateDetails `json:"intermediate,omitempty"`
+	// Root - Root certificate
+	Root *CertificateDetails `json:"root,omitempty"`
+	// SerialNumber - Current serial number of the certificate
+	SerialNumber *string `json:"serialNumber,omitempty"`
+	// LastCertificateIssuanceTime - Certificate last issuance time
+	LastCertificateIssuanceTime *date.Time `json:"lastCertificateIssuanceTime,omitempty"`
+	// ExpirationTime - Certificate expiration time
+	ExpirationTime *date.Time `json:"expirationTime,omitempty"`
 }
 
-// CertificateProperties is
+// CertificateProperties ...
 type CertificateProperties struct {
-	FriendlyName              *string                    `json:"friendlyName,omitempty"`
-	SubjectName               *string                    `json:"subjectName,omitempty"`
-	HostNames                 *[]string                  `json:"hostNames,omitempty"`
-	PfxBlob                   *string                    `json:"pfxBlob,omitempty"`
-	SiteName                  *string                    `json:"siteName,omitempty"`
-	SelfLink                  *string                    `json:"selfLink,omitempty"`
-	Issuer                    *string                    `json:"issuer,omitempty"`
-	IssueDate                 *date.Time                 `json:"issueDate,omitempty"`
-	ExpirationDate            *date.Time                 `json:"expirationDate,omitempty"`
-	Password                  *string                    `json:"password,omitempty"`
-	Thumbprint                *string                    `json:"thumbprint,omitempty"`
-	Valid                     *bool                      `json:"valid,omitempty"`
-	CerBlob                   *string                    `json:"cerBlob,omitempty"`
-	PublicKeyHash             *string                    `json:"publicKeyHash,omitempty"`
+	// FriendlyName - Friendly name of the certificate
+	FriendlyName *string `json:"friendlyName,omitempty"`
+	// SubjectName - Subject name of the certificate
+	SubjectName *string `json:"subjectName,omitempty"`
+	// HostNames - Host names the certificate applies to
+	HostNames *[]string `json:"hostNames,omitempty"`
+	// PfxBlob - Pfx blob
+	PfxBlob *string `json:"pfxBlob,omitempty"`
+	// SiteName - App name
+	SiteName *string `json:"siteName,omitempty"`
+	// SelfLink - Self link
+	SelfLink *string `json:"selfLink,omitempty"`
+	// Issuer - Certificate issuer
+	Issuer *string `json:"issuer,omitempty"`
+	// IssueDate - Certificate issue Date
+	IssueDate *date.Time `json:"issueDate,omitempty"`
+	// ExpirationDate - Certificate expriration date
+	ExpirationDate *date.Time `json:"expirationDate,omitempty"`
+	// Password - Certificate password
+	Password *string `json:"password,omitempty"`
+	// Thumbprint - Certificate thumbprint
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// Valid - Is the certificate valid?
+	Valid *bool `json:"valid,omitempty"`
+	// CerBlob - Raw bytes of .cer file
+	CerBlob *string `json:"cerBlob,omitempty"`
+	// PublicKeyHash - Public key hash
+	PublicKeyHash *string `json:"publicKeyHash,omitempty"`
+	// HostingEnvironmentProfile - Specification for the hosting environment (App Service Environment) to use for the certificate
 	HostingEnvironmentProfile *HostingEnvironmentProfile `json:"hostingEnvironmentProfile,omitempty"`
 }
 
-// ClassicMobileService is a mobile service
+// ClassicMobileService a mobile service
 type ClassicMobileService struct {
-	autorest.Response               `json:"-"`
-	ID                              *string             `json:"id,omitempty"`
-	Name                            *string             `json:"name,omitempty"`
-	Kind                            *string             `json:"kind,omitempty"`
-	Location                        *string             `json:"location,omitempty"`
-	Type                            *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                            *map[string]*string `json:"tags,omitempty"`
 	*ClassicMobileServiceProperties `json:"properties,omitempty"`
 }
 
-// ClassicMobileServiceCollection is collection of Classic Mobile Services
-type ClassicMobileServiceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]ClassicMobileService `json:"value,omitempty"`
-	NextLink          *string                 `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ClassicMobileService struct.
+func (cms *ClassicMobileService) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClassicMobileServiceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cms.ClassicMobileServiceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cms.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cms.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cms.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		cms.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cms.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cms.Tags = &tags
+	}
+
+	return nil
 }
 
-// ClassicMobileServiceCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ClassicMobileServiceCollection) ClassicMobileServiceCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ClassicMobileServiceCollection collection of Classic Mobile Services
+type ClassicMobileServiceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]ClassicMobileService `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ClassicMobileServiceCollectionIterator provides access to a complete listing of ClassicMobileService values.
+type ClassicMobileServiceCollectionIterator struct {
+	i    int
+	page ClassicMobileServiceCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ClassicMobileServiceCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ClassicMobileServiceCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ClassicMobileServiceCollectionIterator) Response() ClassicMobileServiceCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ClassicMobileServiceCollectionIterator) Value() ClassicMobileService {
+	if !iter.page.NotDone() {
+		return ClassicMobileService{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cmsc ClassicMobileServiceCollection) IsEmpty() bool {
+	return cmsc.Value == nil || len(*cmsc.Value) == 0
+}
+
+// classicMobileServiceCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cmsc ClassicMobileServiceCollection) classicMobileServiceCollectionPreparer() (*http.Request, error) {
+	if cmsc.NextLink == nil || len(to.String(cmsc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cmsc.NextLink)))
 }
 
-// ClassicMobileServiceProperties is
+// ClassicMobileServiceCollectionPage contains a page of ClassicMobileService values.
+type ClassicMobileServiceCollectionPage struct {
+	fn   func(ClassicMobileServiceCollection) (ClassicMobileServiceCollection, error)
+	cmsc ClassicMobileServiceCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ClassicMobileServiceCollectionPage) Next() error {
+	next, err := page.fn(page.cmsc)
+	if err != nil {
+		return err
+	}
+	page.cmsc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ClassicMobileServiceCollectionPage) NotDone() bool {
+	return !page.cmsc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ClassicMobileServiceCollectionPage) Response() ClassicMobileServiceCollection {
+	return page.cmsc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ClassicMobileServiceCollectionPage) Values() []ClassicMobileService {
+	if page.cmsc.IsEmpty() {
+		return nil
+	}
+	return *page.cmsc.Value
+}
+
+// ClassicMobileServiceProperties ...
 type ClassicMobileServiceProperties struct {
+	// Name - Name of the mobile service
 	Name *string `json:"name,omitempty"`
 }
 
-// CloningInfo is represents information needed for cloning operation
+// CloningInfo represents information needed for cloning operation
 type CloningInfo struct {
-	CorrelationID             *string             `json:"correlationId,omitempty"`
-	Overwrite                 *bool               `json:"overwrite,omitempty"`
-	CloneCustomHostNames      *bool               `json:"cloneCustomHostNames,omitempty"`
-	CloneSourceControl        *bool               `json:"cloneSourceControl,omitempty"`
-	SourceWebAppID            *string             `json:"sourceWebAppId,omitempty"`
-	HostingEnvironment        *string             `json:"hostingEnvironment,omitempty"`
-	AppSettingsOverrides      *map[string]*string `json:"appSettingsOverrides,omitempty"`
-	ConfigureLoadBalancing    *bool               `json:"configureLoadBalancing,omitempty"`
-	TrafficManagerProfileID   *string             `json:"trafficManagerProfileId,omitempty"`
-	TrafficManagerProfileName *string             `json:"trafficManagerProfileName,omitempty"`
+	// CorrelationID - Correlation Id of cloning operation. This id ties multiple cloning operations
+	//             together to use the same snapshot
+	CorrelationID *string `json:"correlationId,omitempty"`
+	// Overwrite - Overwrite destination web app
+	Overwrite *bool `json:"overwrite,omitempty"`
+	// CloneCustomHostNames - If true, clone custom hostnames from source web app
+	CloneCustomHostNames *bool `json:"cloneCustomHostNames,omitempty"`
+	// CloneSourceControl - Clone source control from source web app
+	CloneSourceControl *bool `json:"cloneSourceControl,omitempty"`
+	// SourceWebAppID - ARM resource id of the source web app. Web app resource id is of the form
+	//             /subscriptions/{subId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName} for production slots and
+	//             /subscriptions/{subId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/slots/{slotName} for other slots
+	SourceWebAppID *string `json:"sourceWebAppId,omitempty"`
+	// HostingEnvironment - Hosting environment
+	HostingEnvironment *string `json:"hostingEnvironment,omitempty"`
+	// AppSettingsOverrides - Application settings overrides for cloned web app. If specified these settings will override the settings cloned
+	//             from source web app. If not specified, application settings from source web app are retained.
+	AppSettingsOverrides *map[string]*string `json:"appSettingsOverrides,omitempty"`
+	// ConfigureLoadBalancing - If specified configure load balancing for source and clone site
+	ConfigureLoadBalancing *bool `json:"configureLoadBalancing,omitempty"`
+	// TrafficManagerProfileID - ARM resource id of the traffic manager profile to use if it exists. Traffic manager resource id is of the form
+	//             /subscriptions/{subId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{profileName}
+	TrafficManagerProfileID *string `json:"trafficManagerProfileId,omitempty"`
+	// TrafficManagerProfileName - Name of traffic manager profile to create. This is only needed if traffic manager profile does not already exist
+	TrafficManagerProfileName *string `json:"trafficManagerProfileName,omitempty"`
 }
 
-// ConfirmConsentCodeInput is confirm Consent Code Input payload
+// ConfirmConsentCodeInput confirm Consent Code Input payload
 type ConfirmConsentCodeInput struct {
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*ConfirmConsentCodeInputProperties `json:"properties,omitempty"`
 }
 
-// ConfirmConsentCodeInputProperties is
-type ConfirmConsentCodeInputProperties struct {
-	PrincipalType PrincipalType `json:"principalType,omitempty"`
-	TenantID      *string       `json:"tenantId,omitempty"`
-	ObjectID      *string       `json:"objectId,omitempty"`
-	Code          *string       `json:"code,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ConfirmConsentCodeInput struct.
+func (ccci *ConfirmConsentCodeInput) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConfirmConsentCodeInputProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ccci.ConfirmConsentCodeInputProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ccci.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ccci.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ccci.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ccci.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ccci.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ccci.Tags = &tags
+	}
+
+	return nil
 }
 
-// Connection is api Connection
+// ConfirmConsentCodeInputProperties ...
+type ConfirmConsentCodeInputProperties struct {
+	// PrincipalType - Principal type. Possible values include: 'PrincipalTypeActiveDirectory', 'PrincipalTypeConnection', 'PrincipalTypeMicrosoftAccount'
+	PrincipalType PrincipalType `json:"principalType,omitempty"`
+	// TenantID - Tenant Id
+	TenantID *string `json:"tenantId,omitempty"`
+	// ObjectID - AAD object ID. This is userId
+	ObjectID *string `json:"objectId,omitempty"`
+	// Code - Code that was returned during consent flow
+	Code *string `json:"code,omitempty"`
+}
+
+// Connection api Connection
 type Connection struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Kind                  *string             `json:"kind,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                  *map[string]*string `json:"tags,omitempty"`
 	*ConnectionProperties `json:"properties,omitempty"`
 }
 
-// ConnectionCollection is collection of conenctions
-type ConnectionCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Connection `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Connection struct.
+func (c *Connection) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConnectionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.ConnectionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		c.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		c.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		c.Tags = &tags
+	}
+
+	return nil
 }
 
-// ConnectionCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ConnectionCollection) ConnectionCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ConnectionCollection collection of conenctions
+type ConnectionCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]Connection `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ConnectionCollectionIterator provides access to a complete listing of Connection values.
+type ConnectionCollectionIterator struct {
+	i    int
+	page ConnectionCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ConnectionCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ConnectionCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ConnectionCollectionIterator) Response() ConnectionCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ConnectionCollectionIterator) Value() Connection {
+	if !iter.page.NotDone() {
+		return Connection{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cc ConnectionCollection) IsEmpty() bool {
+	return cc.Value == nil || len(*cc.Value) == 0
+}
+
+// connectionCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cc ConnectionCollection) connectionCollectionPreparer() (*http.Request, error) {
+	if cc.NextLink == nil || len(to.String(cc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cc.NextLink)))
 }
 
-// ConnectionError is connection error
+// ConnectionCollectionPage contains a page of Connection values.
+type ConnectionCollectionPage struct {
+	fn func(ConnectionCollection) (ConnectionCollection, error)
+	cc ConnectionCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ConnectionCollectionPage) Next() error {
+	next, err := page.fn(page.cc)
+	if err != nil {
+		return err
+	}
+	page.cc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ConnectionCollectionPage) NotDone() bool {
+	return !page.cc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ConnectionCollectionPage) Response() ConnectionCollection {
+	return page.cc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ConnectionCollectionPage) Values() []Connection {
+	if page.cc.IsEmpty() {
+		return nil
+	}
+	return *page.cc.Value
+}
+
+// ConnectionError connection error
 type ConnectionError struct {
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Kind                       *string             `json:"kind,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	*ConnectionErrorProperties `json:"properties,omitempty"`
 }
 
-// ConnectionErrorProperties is
+// UnmarshalJSON is the custom unmarshaler for ConnectionError struct.
+func (ce *ConnectionError) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConnectionErrorProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ce.ConnectionErrorProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ce.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ce.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ce.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ce.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ce.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ce.Tags = &tags
+	}
+
+	return nil
+}
+
+// ConnectionErrorProperties ...
 type ConnectionErrorProperties struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - code of the status
+	Code *string `json:"code,omitempty"`
+	// Message - Description of the status
 	Message *string `json:"message,omitempty"`
 }
 
-// ConnectionParameter is connection provider parameters
+// ConnectionParameter connection provider parameters
 type ConnectionParameter struct {
-	Type          ConnectionParameterType `json:"type,omitempty"`
-	DefaultValue  *map[string]interface{} `json:"defaultValue,omitempty"`
-	OAuthSettings *APIOAuthSettings       `json:"oAuthSettings,omitempty"`
-	UIDefinition  *map[string]interface{} `json:"uiDefinition,omitempty"`
+	// Type - Type of the parameter. Possible values include: 'ConnectionParameterTypeString', 'ConnectionParameterTypeSecurestring', 'ConnectionParameterTypeSecureobject', 'ConnectionParameterTypeInt', 'ConnectionParameterTypeBool', 'ConnectionParameterTypeObject', 'ConnectionParameterTypeArray', 'ConnectionParameterTypeOauthSetting', 'ConnectionParameterTypeConnection'
+	Type ConnectionParameterType `json:"type,omitempty"`
+	// DefaultValue - Default parameter value
+	DefaultValue *map[string]interface{} `json:"defaultValue,omitempty"`
+	// OAuthSettings - Settings defining OAuth flow for the back end provider
+	OAuthSettings *APIOAuthSettings `json:"oAuthSettings,omitempty"`
+	// UIDefinition - UI definitions
+	UIDefinition *map[string]interface{} `json:"uiDefinition,omitempty"`
 }
 
-// ConnectionProperties is
+// ConnectionProperties ...
 type ConnectionProperties struct {
-	Name                     *string                                        `json:"name,omitempty"`
-	DisplayName              *string                                        `json:"displayName,omitempty"`
-	Statuses                 *[]ConnectionStatus                            `json:"statuses,omitempty"`
-	CustomParameterValues    *map[string]*ParameterCustomLoginSettingValues `json:"customParameterValues,omitempty"`
-	TenantID                 *string                                        `json:"tenantId,omitempty"`
-	ParameterValues          *map[string]*map[string]interface{}            `json:"parameterValues,omitempty"`
-	NonSecretParameterValues *map[string]*map[string]interface{}            `json:"nonSecretParameterValues,omitempty"`
-	Metadata                 *map[string]interface{}                        `json:"metadata,omitempty"`
-	FirstExpirationTime      *date.Time                                     `json:"firstExpirationTime,omitempty"`
-	Keywords                 *[]string                                      `json:"keywords,omitempty"`
-	CreatedTime              *date.Time                                     `json:"createdTime,omitempty"`
-	ChangedTime              *date.Time                                     `json:"changedTime,omitempty"`
-	API                      *ExpandedParentAPIEntity                       `json:"api,omitempty"`
+	// Name - connection name
+	Name *string `json:"name,omitempty"`
+	// DisplayName - display name
+	DisplayName *string `json:"displayName,omitempty"`
+	// Statuses - Status of the connection
+	Statuses *[]ConnectionStatus `json:"statuses,omitempty"`
+	// CustomParameterValues - Custom login setting values.
+	CustomParameterValues *map[string]*ParameterCustomLoginSettingValues `json:"customParameterValues,omitempty"`
+	TenantID              *string                                        `json:"tenantId,omitempty"`
+	// ParameterValues - Tokens/Claim
+	ParameterValues *map[string]*map[string]interface{} `json:"parameterValues,omitempty"`
+	// NonSecretParameterValues - Tokens/Claim
+	NonSecretParameterValues *map[string]*map[string]interface{} `json:"nonSecretParameterValues,omitempty"`
+	Metadata                 *map[string]interface{}             `json:"metadata,omitempty"`
+	// FirstExpirationTime - Time in UTC when the first expiration of OAuth tokens
+	FirstExpirationTime *date.Time `json:"firstExpirationTime,omitempty"`
+	// Keywords - List of Keywords that tag the acl
+	Keywords *[]string `json:"keywords,omitempty"`
+	// CreatedTime - Timestamp of the connection creation
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Timestamp of last connection change.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// API - expanded connection provider name
+	API *ExpandedParentAPIEntity `json:"api,omitempty"`
 }
 
-// ConnectionSecrets is
+// ConnectionSecrets ...
 type ConnectionSecrets struct {
 	autorest.Response `json:"-"`
-	ParameterValues   *map[string]*map[string]interface{} `json:"parameterValues,omitempty"`
-	ConnectionKey     *string                             `json:"connectionKey,omitempty"`
+	// ParameterValues - Tokens/Claim
+	ParameterValues *map[string]*map[string]interface{} `json:"parameterValues,omitempty"`
+	// ConnectionKey - Connection Key
+	ConnectionKey *string `json:"connectionKey,omitempty"`
 }
 
-// ConnectionStatus is connection status
+// ConnectionStatus connection status
 type ConnectionStatus struct {
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Kind                        *string             `json:"kind,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                        *map[string]*string `json:"tags,omitempty"`
 	*ConnectionStatusProperties `json:"properties,omitempty"`
 }
 
-// ConnectionStatusProperties is
-type ConnectionStatusProperties struct {
-	Status *string          `json:"status,omitempty"`
-	Target *string          `json:"target,omitempty"`
-	Error  *ConnectionError `json:"error,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ConnectionStatus struct.
+func (cs *ConnectionStatus) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConnectionStatusProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cs.ConnectionStatusProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cs.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cs.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cs.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		cs.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cs.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cs.Tags = &tags
+	}
+
+	return nil
 }
 
-// ConnectionStringDictionary is string dictionary resource
+// ConnectionStatusProperties ...
+type ConnectionStatusProperties struct {
+	// Status - Status
+	Status *string `json:"status,omitempty"`
+	// Target - Target of the error
+	Target *string `json:"target,omitempty"`
+	// Error - Error details
+	Error *ConnectionError `json:"error,omitempty"`
+}
+
+// ConnectionStringDictionary string dictionary resource
 type ConnectionStringDictionary struct {
 	autorest.Response `json:"-"`
-	ID                *string                              `json:"id,omitempty"`
-	Name              *string                              `json:"name,omitempty"`
-	Kind              *string                              `json:"kind,omitempty"`
-	Location          *string                              `json:"location,omitempty"`
-	Type              *string                              `json:"type,omitempty"`
-	Tags              *map[string]*string                  `json:"tags,omitempty"`
-	Properties        *map[string]*ConnStringValueTypePair `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Connection strings
+	Properties *map[string]*ConnStringValueTypePair `json:"properties,omitempty"`
 }
 
-// ConnStringInfo is represents database connection string information
+// ConnStringInfo represents database connection string information
 type ConnStringInfo struct {
-	Name             *string            `json:"name,omitempty"`
-	ConnectionString *string            `json:"connectionString,omitempty"`
-	Type             DatabaseServerType `json:"type,omitempty"`
+	// Name - Name of connection string
+	Name *string `json:"name,omitempty"`
+	// ConnectionString - Connection string value
+	ConnectionString *string `json:"connectionString,omitempty"`
+	// Type - Type of database. Possible values include: 'MySQL', 'SQLServer', 'SQLAzure', 'Custom'
+	Type DatabaseServerType `json:"type,omitempty"`
 }
 
-// ConnStringValueTypePair is database connection string value to type pair
+// ConnStringValueTypePair database connection string value to type pair
 type ConnStringValueTypePair struct {
-	Value *string            `json:"value,omitempty"`
-	Type  DatabaseServerType `json:"type,omitempty"`
+	// Value - Value of pair
+	Value *string `json:"value,omitempty"`
+	// Type - Type of database. Possible values include: 'MySQL', 'SQLServer', 'SQLAzure', 'Custom'
+	Type DatabaseServerType `json:"type,omitempty"`
 }
 
-// ConsentLink is
+// ConsentLink ...
 type ConsentLink struct {
-	Link               *string   `json:"link,omitempty"`
-	FirstPartyLoginURI *string   `json:"firstPartyLoginUri,omitempty"`
-	DisplayName        *string   `json:"displayName,omitempty"`
-	Status             LinkState `json:"status,omitempty"`
+	// Link - Uri for the consent link
+	Link *string `json:"link,omitempty"`
+	// FirstPartyLoginURI - Uri for first party login
+	FirstPartyLoginURI *string `json:"firstPartyLoginUri,omitempty"`
+	// DisplayName - Display Name of the parameter in the connection provider's oauthSettings
+	DisplayName *string `json:"displayName,omitempty"`
+	// Status - Status of the link. Possible values include: 'Unauthenticated', 'Authenticated', 'Error'
+	Status LinkState `json:"status,omitempty"`
 }
 
-// ConsentLinkInput is connection Constent Link payload
+// ConsentLinkInput connection Constent Link payload
 type ConsentLinkInput struct {
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Kind                        *string             `json:"kind,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                        *map[string]*string `json:"tags,omitempty"`
 	*ConsentLinkInputProperties `json:"properties,omitempty"`
 }
 
-// ConsentLinkInputParameter is
-type ConsentLinkInputParameter struct {
-	PrincipalType PrincipalType `json:"principalType,omitempty"`
-	TenantID      *string       `json:"tenantId,omitempty"`
-	ObjectID      *string       `json:"objectId,omitempty"`
-	ParameterName *string       `json:"parameterName,omitempty"`
-	RedirectURL   *string       `json:"redirectUrl,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ConsentLinkInput struct.
+func (cli *ConsentLinkInput) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConsentLinkInputProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cli.ConsentLinkInputProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cli.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cli.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cli.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		cli.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cli.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cli.Tags = &tags
+	}
+
+	return nil
 }
 
-// ConsentLinkInputProperties is
+// ConsentLinkInputParameter ...
+type ConsentLinkInputParameter struct {
+	// PrincipalType - Principal type. Possible values include: 'PrincipalTypeActiveDirectory', 'PrincipalTypeConnection', 'PrincipalTypeMicrosoftAccount'
+	PrincipalType PrincipalType `json:"principalType,omitempty"`
+	// TenantID - Tenant Id
+	TenantID *string `json:"tenantId,omitempty"`
+	// ObjectID - AAD OID (user or group) if the principal type is ActiveDirectory.
+	//             MSA PUID if the principal type is MicrosoftAccount.
+	ObjectID *string `json:"objectId,omitempty"`
+	// ParameterName - Name of the parameter in the connection provider's oauthSettings
+	ParameterName *string `json:"parameterName,omitempty"`
+	// RedirectURL - Name of the parameter in the connection provider's oauthSettings
+	RedirectURL *string `json:"redirectUrl,omitempty"`
+}
+
+// ConsentLinkInputProperties ...
 type ConsentLinkInputProperties struct {
+	// Parameters - Array of links
 	Parameters *[]ConsentLinkInputParameter `json:"parameters,omitempty"`
 }
 
-// ConsentLinkPayload is collection of consent links
+// ConsentLinkPayload collection of consent links
 type ConsentLinkPayload struct {
 	autorest.Response `json:"-"`
-	Value             *[]ConsentLink `json:"value,omitempty"`
+	// Value - Collection of resources
+	Value *[]ConsentLink `json:"value,omitempty"`
 }
 
-// Contact is contact information for domain registration. If 'Domain Privacy' option is not selected then the contact
+// Contact contact information for domain registration. If 'Domain Privacy' option is not selected then the contact
 // information will be  be made publicly available through the Whois directories as per ICANN requirements.
 type Contact struct {
+	// AddressMailing - Mailing address
 	AddressMailing *Address `json:"addressMailing,omitempty"`
-	Email          *string  `json:"email,omitempty"`
-	Fax            *string  `json:"fax,omitempty"`
-	JobTitle       *string  `json:"jobTitle,omitempty"`
-	NameFirst      *string  `json:"nameFirst,omitempty"`
-	NameLast       *string  `json:"nameLast,omitempty"`
-	NameMiddle     *string  `json:"nameMiddle,omitempty"`
-	Organization   *string  `json:"organization,omitempty"`
-	Phone          *string  `json:"phone,omitempty"`
+	// Email - Email address
+	Email *string `json:"email,omitempty"`
+	// Fax - Fax number
+	Fax *string `json:"fax,omitempty"`
+	// JobTitle - Job title
+	JobTitle *string `json:"jobTitle,omitempty"`
+	// NameFirst - First name
+	NameFirst *string `json:"nameFirst,omitempty"`
+	// NameLast - Last name
+	NameLast *string `json:"nameLast,omitempty"`
+	// NameMiddle - Middle name
+	NameMiddle *string `json:"nameMiddle,omitempty"`
+	// Organization - Organization
+	Organization *string `json:"organization,omitempty"`
+	// Phone - Phone number
+	Phone *string `json:"phone,omitempty"`
 }
 
-// CorsSettings is cross-Origin Resource Sharing (CORS) settings for the web app.
+// CorsSettings cross-Origin Resource Sharing (CORS) settings for the web app.
 type CorsSettings struct {
+	// AllowedOrigins - Gets or sets the list of origins that should be allowed to make cross-origin
+	//             calls (for example: http://example.com:12345). Use "*" to allow all.
 	AllowedOrigins *[]string `json:"allowedOrigins,omitempty"`
 }
 
-// CsmMoveResourceEnvelope is class containing a list of the resources that need to be moved and the resource group
-// they should be moved to
+// CsmMoveResourceEnvelope class containing a list of the resources that need to be moved and the resource group they
+// should be moved to
 type CsmMoveResourceEnvelope struct {
 	TargetResourceGroup *string   `json:"targetResourceGroup,omitempty"`
 	Resources           *[]string `json:"resources,omitempty"`
 }
 
-// CsmPublishingProfileOptions is publishing options for requested profile
+// CsmPublishingProfileOptions publishing options for requested profile
 type CsmPublishingProfileOptions struct {
+	// Format - Name of the format. Valid values are:
+	//             FileZilla3
+	//             WebDeploy -- default
+	//             Ftp
 	Format *string `json:"format,omitempty"`
 }
 
-// CsmSiteRecoveryEntity is class containting details about site recovery operation.
+// CsmSiteRecoveryEntity class containting details about site recovery operation.
 type CsmSiteRecoveryEntity struct {
-	SnapshotTime  *date.Time `json:"snapshotTime,omitempty"`
-	RecoverConfig *bool      `json:"recoverConfig,omitempty"`
-	SiteName      *string    `json:"siteName,omitempty"`
-	SlotName      *string    `json:"slotName,omitempty"`
+	// SnapshotTime - Point in time in which the site recover should be attempted.
+	SnapshotTime *date.Time `json:"snapshotTime,omitempty"`
+	// RecoverConfig - If true, then the website's configuration will be reverted to its state at SnapshotTime
+	RecoverConfig *bool `json:"recoverConfig,omitempty"`
+	// SiteName - [Optional] Destination web app name into which web app should be recovered. This is case when new web app should be created instead.
+	SiteName *string `json:"siteName,omitempty"`
+	// SlotName - [Optional] Destination web app slot name into which web app should be recovered
+	SlotName *string `json:"slotName,omitempty"`
 }
 
-// CsmSlotEntity is class containing deployment slot parameters
+// CsmSlotEntity class containing deployment slot parameters
 type CsmSlotEntity struct {
-	TargetSlot   *string `json:"targetSlot,omitempty"`
-	PreserveVnet *bool   `json:"preserveVnet,omitempty"`
+	// TargetSlot - Set the destination deployment slot during swap operation
+	TargetSlot *string `json:"targetSlot,omitempty"`
+	// PreserveVnet - Get or set the flag indicating it should preserve VNet to the slot during swap
+	PreserveVnet *bool `json:"preserveVnet,omitempty"`
 }
 
-// CsmUsageQuota is usage of the quota resource
+// CsmUsageQuota usage of the quota resource
 type CsmUsageQuota struct {
-	Unit          *string            `json:"unit,omitempty"`
-	NextResetTime *date.Time         `json:"nextResetTime,omitempty"`
-	CurrentValue  *int64             `json:"currentValue,omitempty"`
-	Limit         *int64             `json:"limit,omitempty"`
-	Name          *LocalizableString `json:"name,omitempty"`
+	// Unit - Units of measurement for the quota resourse
+	Unit *string `json:"unit,omitempty"`
+	// NextResetTime - Next reset time for the resource counter
+	NextResetTime *date.Time `json:"nextResetTime,omitempty"`
+	// CurrentValue - The current value of the resource counter
+	CurrentValue *int64 `json:"currentValue,omitempty"`
+	// Limit - The resource limit
+	Limit *int64 `json:"limit,omitempty"`
+	// Name - Quota name
+	Name *LocalizableString `json:"name,omitempty"`
 }
 
-// CsmUsageQuotaCollection is collection of csm usage quotas
+// CsmUsageQuotaCollection collection of csm usage quotas
 type CsmUsageQuotaCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]CsmUsageQuota `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]CsmUsageQuota `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CsmUsageQuotaCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CsmUsageQuotaCollection) CsmUsageQuotaCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CsmUsageQuotaCollectionIterator provides access to a complete listing of CsmUsageQuota values.
+type CsmUsageQuotaCollectionIterator struct {
+	i    int
+	page CsmUsageQuotaCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CsmUsageQuotaCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CsmUsageQuotaCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CsmUsageQuotaCollectionIterator) Response() CsmUsageQuotaCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CsmUsageQuotaCollectionIterator) Value() CsmUsageQuota {
+	if !iter.page.NotDone() {
+		return CsmUsageQuota{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cuqc CsmUsageQuotaCollection) IsEmpty() bool {
+	return cuqc.Value == nil || len(*cuqc.Value) == 0
+}
+
+// csmUsageQuotaCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cuqc CsmUsageQuotaCollection) csmUsageQuotaCollectionPreparer() (*http.Request, error) {
+	if cuqc.NextLink == nil || len(to.String(cuqc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cuqc.NextLink)))
 }
 
-// Csr is certificate signing request object
+// CsmUsageQuotaCollectionPage contains a page of CsmUsageQuota values.
+type CsmUsageQuotaCollectionPage struct {
+	fn   func(CsmUsageQuotaCollection) (CsmUsageQuotaCollection, error)
+	cuqc CsmUsageQuotaCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CsmUsageQuotaCollectionPage) Next() error {
+	next, err := page.fn(page.cuqc)
+	if err != nil {
+		return err
+	}
+	page.cuqc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CsmUsageQuotaCollectionPage) NotDone() bool {
+	return !page.cuqc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CsmUsageQuotaCollectionPage) Response() CsmUsageQuotaCollection {
+	return page.cuqc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CsmUsageQuotaCollectionPage) Values() []CsmUsageQuota {
+	if page.cuqc.IsEmpty() {
+		return nil
+	}
+	return *page.cuqc.Value
+}
+
+// Csr certificate signing request object
 type Csr struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Kind              *string             `json:"kind,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*CsrProperties    `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags           *map[string]*string `json:"tags,omitempty"`
+	*CsrProperties `json:"properties,omitempty"`
 }
 
-// CsrProperties is
+// UnmarshalJSON is the custom unmarshaler for Csr struct.
+func (c *Csr) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CsrProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.CsrProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		c.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		c.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		c.Tags = &tags
+	}
+
+	return nil
+}
+
+// CsrProperties ...
 type CsrProperties struct {
-	Name               *string `json:"name,omitempty"`
-	DistinguishedName  *string `json:"distinguishedName,omitempty"`
-	CsrString          *string `json:"csrString,omitempty"`
-	PfxBlob            *string `json:"pfxBlob,omitempty"`
-	Password           *string `json:"password,omitempty"`
-	PublicKeyHash      *string `json:"publicKeyHash,omitempty"`
+	// Name - Name used to locate CSR object
+	Name *string `json:"name,omitempty"`
+	// DistinguishedName - Distinguished name of certificate to be created
+	DistinguishedName *string `json:"distinguishedName,omitempty"`
+	// CsrString - Actual CSR string created
+	CsrString *string `json:"csrString,omitempty"`
+	// PfxBlob - PFX certifcate of created certificate
+	PfxBlob *string `json:"pfxBlob,omitempty"`
+	// Password - PFX password
+	Password *string `json:"password,omitempty"`
+	// PublicKeyHash - Hash of the certificates public key
+	PublicKeyHash *string `json:"publicKeyHash,omitempty"`
+	// HostingEnvironment - Hosting environment
 	HostingEnvironment *string `json:"hostingEnvironment,omitempty"`
 }
 
-// CustomLoginSettingValue is custom logging setting value
+// CustomLoginSettingValue custom logging setting value
 type CustomLoginSettingValue struct {
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*CustomLoginSettingValueProperties `json:"properties,omitempty"`
 }
 
-// CustomLoginSettingValueProperties is
+// UnmarshalJSON is the custom unmarshaler for CustomLoginSettingValue struct.
+func (clsv *CustomLoginSettingValue) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomLoginSettingValueProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		clsv.CustomLoginSettingValueProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		clsv.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		clsv.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		clsv.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		clsv.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		clsv.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		clsv.Tags = &tags
+	}
+
+	return nil
+}
+
+// CustomLoginSettingValueProperties ...
 type CustomLoginSettingValueProperties struct {
+	// Option - Option selected for this custom login setting value
 	Option *string `json:"option,omitempty"`
 }
 
-// DatabaseBackupSetting is note: properties are serialized in JSON format and stored in DB.
+// DatabaseBackupSetting note: properties are serialized in JSON format and stored in DB.
 // if new properties are added they might not be in the previous data rows
 // so please handle nulls
 type DatabaseBackupSetting struct {
-	DatabaseType         *string `json:"databaseType,omitempty"`
-	Name                 *string `json:"name,omitempty"`
+	// DatabaseType - SqlAzure / MySql
+	DatabaseType *string `json:"databaseType,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	// ConnectionStringName - Contains a connection string name that is linked to the SiteConfig.ConnectionStrings.
+	//             This is used during restore with overwrite connection strings options.
 	ConnectionStringName *string `json:"connectionStringName,omitempty"`
-	ConnectionString     *string `json:"connectionString,omitempty"`
+	// ConnectionString - Contains a connection string to a database which is being backed up/restored. If the restore should happen to a new database, the database name inside is the new one.
+	ConnectionString *string `json:"connectionString,omitempty"`
 }
 
-// DeletedSite is reports deleted site including the timestamp of operation
+// DeletedSite reports deleted site including the timestamp of operation
 type DeletedSite struct {
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Kind                   *string             `json:"kind,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                   *map[string]*string `json:"tags,omitempty"`
 	*DeletedSiteProperties `json:"properties,omitempty"`
 }
 
-// DeletedSiteCollection is collection of deleted sites
-type DeletedSiteCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]DeletedSite `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DeletedSite struct.
+func (ds *DeletedSite) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DeletedSiteProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ds.DeletedSiteProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ds.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ds.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ds.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ds.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ds.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ds.Tags = &tags
+	}
+
+	return nil
 }
 
-// DeletedSiteCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DeletedSiteCollection) DeletedSiteCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DeletedSiteCollection collection of deleted sites
+type DeletedSiteCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]DeletedSite `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// DeletedSiteCollectionIterator provides access to a complete listing of DeletedSite values.
+type DeletedSiteCollectionIterator struct {
+	i    int
+	page DeletedSiteCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DeletedSiteCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DeletedSiteCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DeletedSiteCollectionIterator) Response() DeletedSiteCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DeletedSiteCollectionIterator) Value() DeletedSite {
+	if !iter.page.NotDone() {
+		return DeletedSite{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dsc DeletedSiteCollection) IsEmpty() bool {
+	return dsc.Value == nil || len(*dsc.Value) == 0
+}
+
+// deletedSiteCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dsc DeletedSiteCollection) deletedSiteCollectionPreparer() (*http.Request, error) {
+	if dsc.NextLink == nil || len(to.String(dsc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dsc.NextLink)))
 }
 
-// DeletedSiteProperties is
+// DeletedSiteCollectionPage contains a page of DeletedSite values.
+type DeletedSiteCollectionPage struct {
+	fn  func(DeletedSiteCollection) (DeletedSiteCollection, error)
+	dsc DeletedSiteCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DeletedSiteCollectionPage) Next() error {
+	next, err := page.fn(page.dsc)
+	if err != nil {
+		return err
+	}
+	page.dsc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DeletedSiteCollectionPage) NotDone() bool {
+	return !page.dsc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DeletedSiteCollectionPage) Response() DeletedSiteCollection {
+	return page.dsc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DeletedSiteCollectionPage) Values() []DeletedSite {
+	if page.dsc.IsEmpty() {
+		return nil
+	}
+	return *page.dsc.Value
+}
+
+// DeletedSiteProperties ...
 type DeletedSiteProperties struct {
-	DeletedTimestamp          *date.Time                 `json:"deletedTimestamp,omitempty"`
-	Name                      *string                    `json:"name,omitempty"`
-	State                     *string                    `json:"state,omitempty"`
-	HostNames                 *[]string                  `json:"hostNames,omitempty"`
-	RepositorySiteName        *string                    `json:"repositorySiteName,omitempty"`
-	UsageState                UsageState                 `json:"usageState,omitempty"`
-	Enabled                   *bool                      `json:"enabled,omitempty"`
-	EnabledHostNames          *[]string                  `json:"enabledHostNames,omitempty"`
-	AvailabilityState         SiteAvailabilityState      `json:"availabilityState,omitempty"`
-	HostNameSslStates         *[]HostNameSslState        `json:"hostNameSslStates,omitempty"`
-	ServerFarmID              *string                    `json:"serverFarmId,omitempty"`
-	LastModifiedTimeUtc       *date.Time                 `json:"lastModifiedTimeUtc,omitempty"`
-	SiteConfig                *SiteConfig                `json:"siteConfig,omitempty"`
-	TrafficManagerHostNames   *[]string                  `json:"trafficManagerHostNames,omitempty"`
-	PremiumAppDeployed        *bool                      `json:"premiumAppDeployed,omitempty"`
-	ScmSiteAlsoStopped        *bool                      `json:"scmSiteAlsoStopped,omitempty"`
-	TargetSwapSlot            *string                    `json:"targetSwapSlot,omitempty"`
+	// DeletedTimestamp - Time when the site was deleted
+	DeletedTimestamp *date.Time `json:"deletedTimestamp,omitempty"`
+	// Name - Name of web app
+	Name *string `json:"name,omitempty"`
+	// State - State of the web app
+	State *string `json:"state,omitempty"`
+	// HostNames - Hostnames associated with web app
+	HostNames *[]string `json:"hostNames,omitempty"`
+	// RepositorySiteName - Name of repository site
+	RepositorySiteName *string `json:"repositorySiteName,omitempty"`
+	// UsageState - State indicating whether web app has exceeded its quota usage. Possible values include: 'UsageStateNormal', 'UsageStateExceeded'
+	UsageState UsageState `json:"usageState,omitempty"`
+	// Enabled - True if the site is enabled; otherwise, false. Setting this  value to false disables the site (takes the site off line).
+	Enabled *bool `json:"enabled,omitempty"`
+	// EnabledHostNames - Hostnames for the web app that are enabled. Hostnames need to be assigned and enabled. If some hostnames are assigned but not enabled
+	//             the app is not served on those hostnames
+	EnabledHostNames *[]string `json:"enabledHostNames,omitempty"`
+	// AvailabilityState - Management information availability state for the web app. Possible values are Normal or Limited.
+	//             Normal means that the site is running correctly and that management information for the site is available.
+	//             Limited means that only partial management information for the site is available and that detailed site information is unavailable. Possible values include: 'Normal', 'Limited', 'DisasterRecoveryMode'
+	AvailabilityState SiteAvailabilityState `json:"availabilityState,omitempty"`
+	// HostNameSslStates - Hostname SSL states are  used to manage the SSL bindings for site's hostnames.
+	HostNameSslStates *[]HostNameSslState `json:"hostNameSslStates,omitempty"`
+	ServerFarmID      *string             `json:"serverFarmId,omitempty"`
+	// LastModifiedTimeUtc - Last time web app was modified in UTC
+	LastModifiedTimeUtc *date.Time `json:"lastModifiedTimeUtc,omitempty"`
+	// SiteConfig - Configuration of web app
+	SiteConfig *SiteConfig `json:"siteConfig,omitempty"`
+	// TrafficManagerHostNames - Read-only list of Azure Traffic manager hostnames associated with web app
+	TrafficManagerHostNames *[]string `json:"trafficManagerHostNames,omitempty"`
+	// PremiumAppDeployed - If set indicates whether web app is deployed as a premium app
+	PremiumAppDeployed *bool `json:"premiumAppDeployed,omitempty"`
+	// ScmSiteAlsoStopped - If set indicates whether to stop SCM (KUDU) site when the web app is stopped. Default is false.
+	ScmSiteAlsoStopped *bool `json:"scmSiteAlsoStopped,omitempty"`
+	// TargetSwapSlot - Read-only property that specifies which slot this app will swap into
+	TargetSwapSlot *string `json:"targetSwapSlot,omitempty"`
+	// HostingEnvironmentProfile - Specification for the hosting environment (App Service Environment) to use for the web app
 	HostingEnvironmentProfile *HostingEnvironmentProfile `json:"hostingEnvironmentProfile,omitempty"`
 	MicroService              *string                    `json:"microService,omitempty"`
-	GatewaySiteName           *string                    `json:"gatewaySiteName,omitempty"`
-	ClientAffinityEnabled     *bool                      `json:"clientAffinityEnabled,omitempty"`
-	ClientCertEnabled         *bool                      `json:"clientCertEnabled,omitempty"`
-	HostNamesDisabled         *bool                      `json:"hostNamesDisabled,omitempty"`
-	OutboundIPAddresses       *string                    `json:"outboundIpAddresses,omitempty"`
-	ContainerSize             *int32                     `json:"containerSize,omitempty"`
-	MaxNumberOfWorkers        *int32                     `json:"maxNumberOfWorkers,omitempty"`
-	CloningInfo               *CloningInfo               `json:"cloningInfo,omitempty"`
-	ResourceGroup             *string                    `json:"resourceGroup,omitempty"`
-	IsDefaultContainer        *bool                      `json:"isDefaultContainer,omitempty"`
-	DefaultHostName           *string                    `json:"defaultHostName,omitempty"`
+	// GatewaySiteName - Name of gateway app associated with web app
+	GatewaySiteName *string `json:"gatewaySiteName,omitempty"`
+	// ClientAffinityEnabled - Specifies if the client affinity is enabled when load balancing http request for multiple instances of the web app
+	ClientAffinityEnabled *bool `json:"clientAffinityEnabled,omitempty"`
+	// ClientCertEnabled - Specifies if the client certificate is enabled for the web app
+	ClientCertEnabled *bool `json:"clientCertEnabled,omitempty"`
+	// HostNamesDisabled - Specifies if the public hostnames are disabled the web app.
+	//             If set to true the app is only accessible via API Management process
+	HostNamesDisabled *bool `json:"hostNamesDisabled,omitempty"`
+	// OutboundIPAddresses - List of comma separated IP addresses that this web app uses for outbound connections. Those can be used when configuring firewall rules for databases accessed by this web app.
+	OutboundIPAddresses *string `json:"outboundIpAddresses,omitempty"`
+	// ContainerSize - Size of a function container
+	ContainerSize *int32 `json:"containerSize,omitempty"`
+	// MaxNumberOfWorkers - Maximum number of workers
+	//             This only applies to function container
+	MaxNumberOfWorkers *int32 `json:"maxNumberOfWorkers,omitempty"`
+	// CloningInfo - This is only valid for web app creation. If specified, web app is cloned from
+	//             a source web app
+	CloningInfo *CloningInfo `json:"cloningInfo,omitempty"`
+	// ResourceGroup - Resource group web app belongs to
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// IsDefaultContainer - Site is a default container
+	IsDefaultContainer *bool `json:"isDefaultContainer,omitempty"`
+	// DefaultHostName - Default hostname of the web app
+	DefaultHostName *string `json:"defaultHostName,omitempty"`
 }
 
-// Deployment is represents user crendentials used for publishing activity
+// Deployment represents user crendentials used for publishing activity
 type Deployment struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Kind                  *string             `json:"kind,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                  *map[string]*string `json:"tags,omitempty"`
 	*DeploymentProperties `json:"properties,omitempty"`
 }
 
-// DeploymentCollection is collection of app deployments
-type DeploymentCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Deployment `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Deployment struct.
+func (d *Deployment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DeploymentProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		d.DeploymentProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		d.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		d.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		d.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		d.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		d.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		d.Tags = &tags
+	}
+
+	return nil
 }
 
-// DeploymentCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DeploymentCollection) DeploymentCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DeploymentCollection collection of app deployments
+type DeploymentCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]Deployment `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// DeploymentCollectionIterator provides access to a complete listing of Deployment values.
+type DeploymentCollectionIterator struct {
+	i    int
+	page DeploymentCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DeploymentCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DeploymentCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DeploymentCollectionIterator) Response() DeploymentCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DeploymentCollectionIterator) Value() Deployment {
+	if !iter.page.NotDone() {
+		return Deployment{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dc DeploymentCollection) IsEmpty() bool {
+	return dc.Value == nil || len(*dc.Value) == 0
+}
+
+// deploymentCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dc DeploymentCollection) deploymentCollectionPreparer() (*http.Request, error) {
+	if dc.NextLink == nil || len(to.String(dc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dc.NextLink)))
 }
 
-// DeploymentProperties is
+// DeploymentCollectionPage contains a page of Deployment values.
+type DeploymentCollectionPage struct {
+	fn func(DeploymentCollection) (DeploymentCollection, error)
+	dc DeploymentCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DeploymentCollectionPage) Next() error {
+	next, err := page.fn(page.dc)
+	if err != nil {
+		return err
+	}
+	page.dc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DeploymentCollectionPage) NotDone() bool {
+	return !page.dc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DeploymentCollectionPage) Response() DeploymentCollection {
+	return page.dc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DeploymentCollectionPage) Values() []Deployment {
+	if page.dc.IsEmpty() {
+		return nil
+	}
+	return *page.dc.Value
+}
+
+// DeploymentProperties ...
 type DeploymentProperties struct {
-	ID          *string    `json:"id,omitempty"`
-	Status      *int32     `json:"status,omitempty"`
-	Message     *string    `json:"message,omitempty"`
-	Author      *string    `json:"author,omitempty"`
-	Deployer    *string    `json:"deployer,omitempty"`
-	AuthorEmail *string    `json:"author_email,omitempty"`
-	StartTime   *date.Time `json:"start_time,omitempty"`
-	EndTime     *date.Time `json:"end_time,omitempty"`
-	Active      *bool      `json:"active,omitempty"`
-	Details     *string    `json:"details,omitempty"`
+	// ID - Id
+	ID *string `json:"id,omitempty"`
+	// Status - Status
+	Status *int32 `json:"status,omitempty"`
+	// Message - Message
+	Message *string `json:"message,omitempty"`
+	// Author - Author
+	Author *string `json:"author,omitempty"`
+	// Deployer - Deployer
+	Deployer *string `json:"deployer,omitempty"`
+	// AuthorEmail - AuthorEmail
+	AuthorEmail *string `json:"author_email,omitempty"`
+	// StartTime - StartTime
+	StartTime *date.Time `json:"start_time,omitempty"`
+	// EndTime - EndTime
+	EndTime *date.Time `json:"end_time,omitempty"`
+	// Active - Active
+	Active *bool `json:"active,omitempty"`
+	// Details - Detail
+	Details *string `json:"details,omitempty"`
 }
 
-// Domain is represents a domain
+// Domain represents a domain
 type Domain struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Kind              *string             `json:"kind,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags              *map[string]*string `json:"tags,omitempty"`
 	*DomainProperties `json:"properties,omitempty"`
 }
 
-// DomainAvailablilityCheckResult is domain availablility check result
+// UnmarshalJSON is the custom unmarshaler for Domain struct.
+func (d *Domain) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DomainProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		d.DomainProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		d.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		d.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		d.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		d.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		d.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		d.Tags = &tags
+	}
+
+	return nil
+}
+
+// DomainAvailablilityCheckResult domain availablility check result
 type DomainAvailablilityCheckResult struct {
 	autorest.Response `json:"-"`
-	Name              *string    `json:"name,omitempty"`
-	Available         *bool      `json:"available,omitempty"`
-	DomainType        DomainType `json:"domainType,omitempty"`
+	// Name - Name of the domain
+	Name *string `json:"name,omitempty"`
+	// Available - If true then domain can be purchased using CreateDomain Api
+	Available *bool `json:"available,omitempty"`
+	// DomainType - Domain type. Possible values include: 'Regular', 'SoftDeleted'
+	DomainType DomainType `json:"domainType,omitempty"`
 }
 
-// DomainCollection is collection of domains
+// DomainCollection collection of domains
 type DomainCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]Domain `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]Domain `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DomainCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DomainCollection) DomainCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DomainCollectionIterator provides access to a complete listing of Domain values.
+type DomainCollectionIterator struct {
+	i    int
+	page DomainCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DomainCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DomainCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DomainCollectionIterator) Response() DomainCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DomainCollectionIterator) Value() Domain {
+	if !iter.page.NotDone() {
+		return Domain{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dc DomainCollection) IsEmpty() bool {
+	return dc.Value == nil || len(*dc.Value) == 0
+}
+
+// domainCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dc DomainCollection) domainCollectionPreparer() (*http.Request, error) {
+	if dc.NextLink == nil || len(to.String(dc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dc.NextLink)))
 }
 
-// DomainControlCenterSsoRequest is single sign on request information for domain management
+// DomainCollectionPage contains a page of Domain values.
+type DomainCollectionPage struct {
+	fn func(DomainCollection) (DomainCollection, error)
+	dc DomainCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DomainCollectionPage) Next() error {
+	next, err := page.fn(page.dc)
+	if err != nil {
+		return err
+	}
+	page.dc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DomainCollectionPage) NotDone() bool {
+	return !page.dc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DomainCollectionPage) Response() DomainCollection {
+	return page.dc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DomainCollectionPage) Values() []Domain {
+	if page.dc.IsEmpty() {
+		return nil
+	}
+	return *page.dc.Value
+}
+
+// DomainControlCenterSsoRequest single sign on request information for domain management
 type DomainControlCenterSsoRequest struct {
-	autorest.Response  `json:"-"`
-	URL                *string `json:"url,omitempty"`
-	PostParameterKey   *string `json:"postParameterKey,omitempty"`
+	autorest.Response `json:"-"`
+	// URL - Url where the single sign on request is to be made
+	URL *string `json:"url,omitempty"`
+	// PostParameterKey - Post parameter key
+	PostParameterKey *string `json:"postParameterKey,omitempty"`
+	// PostParameterValue - Post parameter value. Client should use 'application/x-www-form-urlencoded' encoding for this value.
 	PostParameterValue *string `json:"postParameterValue,omitempty"`
 }
 
-// DomainProperties is
+// DomainProperties ...
 type DomainProperties struct {
-	ContactAdmin                *Contact               `json:"contactAdmin,omitempty"`
-	ContactBilling              *Contact               `json:"contactBilling,omitempty"`
-	ContactRegistrant           *Contact               `json:"contactRegistrant,omitempty"`
-	ContactTech                 *Contact               `json:"contactTech,omitempty"`
-	RegistrationStatus          DomainStatus           `json:"registrationStatus,omitempty"`
-	ProvisioningState           ProvisioningState      `json:"provisioningState,omitempty"`
-	NameServers                 *[]string              `json:"nameServers,omitempty"`
-	Privacy                     *bool                  `json:"privacy,omitempty"`
-	CreatedTime                 *date.Time             `json:"createdTime,omitempty"`
-	ExpirationTime              *date.Time             `json:"expirationTime,omitempty"`
-	LastRenewedTime             *date.Time             `json:"lastRenewedTime,omitempty"`
-	AutoRenew                   *bool                  `json:"autoRenew,omitempty"`
-	ReadyForDNSRecordManagement *bool                  `json:"readyForDnsRecordManagement,omitempty"`
-	ManagedHostNames            *[]HostName            `json:"managedHostNames,omitempty"`
-	Consent                     *DomainPurchaseConsent `json:"consent,omitempty"`
-	DomainNotRenewableReasons   *[]string              `json:"domainNotRenewableReasons,omitempty"`
+	// ContactAdmin - Admin contact information
+	ContactAdmin *Contact `json:"contactAdmin,omitempty"`
+	// ContactBilling - Billing contact information
+	ContactBilling *Contact `json:"contactBilling,omitempty"`
+	// ContactRegistrant - Registrant contact information
+	ContactRegistrant *Contact `json:"contactRegistrant,omitempty"`
+	// ContactTech - Technical contact information
+	ContactTech *Contact `json:"contactTech,omitempty"`
+	// RegistrationStatus - Domain registration status. Possible values include: 'DomainStatusActive', 'DomainStatusAwaiting', 'DomainStatusCancelled', 'DomainStatusConfiscated', 'DomainStatusDisabled', 'DomainStatusExcluded', 'DomainStatusExpired', 'DomainStatusFailed', 'DomainStatusHeld', 'DomainStatusLocked', 'DomainStatusParked', 'DomainStatusPending', 'DomainStatusReserved', 'DomainStatusReverted', 'DomainStatusSuspended', 'DomainStatusTransferred', 'DomainStatusUnknown', 'DomainStatusUnlocked', 'DomainStatusUnparked', 'DomainStatusUpdated', 'DomainStatusJSONConverterFailed'
+	RegistrationStatus DomainStatus `json:"registrationStatus,omitempty"`
+	// ProvisioningState - Domain provisioning state. Possible values include: 'ProvisioningStateSucceeded', 'ProvisioningStateFailed', 'ProvisioningStateCanceled', 'ProvisioningStateInProgress', 'ProvisioningStateDeleting'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// NameServers - Name servers
+	NameServers *[]string `json:"nameServers,omitempty"`
+	// Privacy - If true then domain privacy is enabled for this domain
+	Privacy *bool `json:"privacy,omitempty"`
+	// CreatedTime - Domain creation timestamp
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ExpirationTime - Domain expiration timestamp
+	ExpirationTime *date.Time `json:"expirationTime,omitempty"`
+	// LastRenewedTime - Timestamp when the domain was renewed last time
+	LastRenewedTime *date.Time `json:"lastRenewedTime,omitempty"`
+	// AutoRenew - If true then domain will renewed automatically
+	AutoRenew *bool `json:"autoRenew,omitempty"`
+	// ReadyForDNSRecordManagement - If true then Azure can assign this domain to Web Apps. This value will be true if domain registration status is active and it is hosted on name servers Azure has programmatic access to
+	ReadyForDNSRecordManagement *bool `json:"readyForDnsRecordManagement,omitempty"`
+	// ManagedHostNames - All hostnames derived from the domain and assigned to Azure resources
+	ManagedHostNames *[]HostName `json:"managedHostNames,omitempty"`
+	// Consent - Legal agreement consent
+	Consent *DomainPurchaseConsent `json:"consent,omitempty"`
+	// DomainNotRenewableReasons - Reasons why domain is not renewable
+	DomainNotRenewableReasons *[]string `json:"domainNotRenewableReasons,omitempty"`
 }
 
-// DomainPurchaseConsent is domain purchase consent object representing acceptance of applicable legal agreements
+// DomainPurchaseConsent domain purchase consent object representing acceptance of applicable legal agreements
 type DomainPurchaseConsent struct {
-	AgreementKeys *[]string  `json:"agreementKeys,omitempty"`
-	AgreedBy      *string    `json:"agreedBy,omitempty"`
-	AgreedAt      *date.Time `json:"agreedAt,omitempty"`
+	// AgreementKeys - List of applicable legal agreement keys. This list can be retrieved using ListLegalAgreements Api under TopLevelDomain resource
+	AgreementKeys *[]string `json:"agreementKeys,omitempty"`
+	// AgreedBy - Client IP address
+	AgreedBy *string `json:"agreedBy,omitempty"`
+	// AgreedAt - Timestamp when the agreements were accepted
+	AgreedAt *date.Time `json:"agreedAt,omitempty"`
 }
 
-// DomainRecommendationSearchParameters is domain recommendation search parameters
+// DomainRecommendationSearchParameters domain recommendation search parameters
 type DomainRecommendationSearchParameters struct {
-	Keywords                 *string `json:"keywords,omitempty"`
-	MaxDomainRecommendations *int32  `json:"maxDomainRecommendations,omitempty"`
+	// Keywords - Keywords to be used for generating domain recommendations
+	Keywords *string `json:"keywords,omitempty"`
+	// MaxDomainRecommendations - Maximum number of recommendations
+	MaxDomainRecommendations *int32 `json:"maxDomainRecommendations,omitempty"`
 }
 
-// DomainRegistrationInput is domain registration input for validation Api
+// DomainRegistrationInput domain registration input for validation Api
 type DomainRegistrationInput struct {
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*DomainRegistrationInputProperties `json:"properties,omitempty"`
 }
 
-// DomainRegistrationInputProperties is
-type DomainRegistrationInputProperties struct {
-	Name                        *string                `json:"name,omitempty"`
-	ContactAdmin                *Contact               `json:"contactAdmin,omitempty"`
-	ContactBilling              *Contact               `json:"contactBilling,omitempty"`
-	ContactRegistrant           *Contact               `json:"contactRegistrant,omitempty"`
-	ContactTech                 *Contact               `json:"contactTech,omitempty"`
-	RegistrationStatus          DomainStatus           `json:"registrationStatus,omitempty"`
-	ProvisioningState           ProvisioningState      `json:"provisioningState,omitempty"`
-	NameServers                 *[]string              `json:"nameServers,omitempty"`
-	Privacy                     *bool                  `json:"privacy,omitempty"`
-	CreatedTime                 *date.Time             `json:"createdTime,omitempty"`
-	ExpirationTime              *date.Time             `json:"expirationTime,omitempty"`
-	LastRenewedTime             *date.Time             `json:"lastRenewedTime,omitempty"`
-	AutoRenew                   *bool                  `json:"autoRenew,omitempty"`
-	ReadyForDNSRecordManagement *bool                  `json:"readyForDnsRecordManagement,omitempty"`
-	ManagedHostNames            *[]HostName            `json:"managedHostNames,omitempty"`
-	Consent                     *DomainPurchaseConsent `json:"consent,omitempty"`
-	DomainNotRenewableReasons   *[]string              `json:"domainNotRenewableReasons,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DomainRegistrationInput struct.
+func (dri *DomainRegistrationInput) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DomainRegistrationInputProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dri.DomainRegistrationInputProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dri.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dri.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		dri.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		dri.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dri.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		dri.Tags = &tags
+	}
+
+	return nil
 }
 
-// EnabledConfig is enabled configuration
+// DomainRegistrationInputProperties ...
+type DomainRegistrationInputProperties struct {
+	// Name - Name of the domain
+	Name *string `json:"name,omitempty"`
+	// ContactAdmin - Admin contact information
+	ContactAdmin *Contact `json:"contactAdmin,omitempty"`
+	// ContactBilling - Billing contact information
+	ContactBilling *Contact `json:"contactBilling,omitempty"`
+	// ContactRegistrant - Registrant contact information
+	ContactRegistrant *Contact `json:"contactRegistrant,omitempty"`
+	// ContactTech - Technical contact information
+	ContactTech *Contact `json:"contactTech,omitempty"`
+	// RegistrationStatus - Domain registration status. Possible values include: 'DomainStatusActive', 'DomainStatusAwaiting', 'DomainStatusCancelled', 'DomainStatusConfiscated', 'DomainStatusDisabled', 'DomainStatusExcluded', 'DomainStatusExpired', 'DomainStatusFailed', 'DomainStatusHeld', 'DomainStatusLocked', 'DomainStatusParked', 'DomainStatusPending', 'DomainStatusReserved', 'DomainStatusReverted', 'DomainStatusSuspended', 'DomainStatusTransferred', 'DomainStatusUnknown', 'DomainStatusUnlocked', 'DomainStatusUnparked', 'DomainStatusUpdated', 'DomainStatusJSONConverterFailed'
+	RegistrationStatus DomainStatus `json:"registrationStatus,omitempty"`
+	// ProvisioningState - Domain provisioning state. Possible values include: 'ProvisioningStateSucceeded', 'ProvisioningStateFailed', 'ProvisioningStateCanceled', 'ProvisioningStateInProgress', 'ProvisioningStateDeleting'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// NameServers - Name servers
+	NameServers *[]string `json:"nameServers,omitempty"`
+	// Privacy - If true then domain privacy is enabled for this domain
+	Privacy *bool `json:"privacy,omitempty"`
+	// CreatedTime - Domain creation timestamp
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ExpirationTime - Domain expiration timestamp
+	ExpirationTime *date.Time `json:"expirationTime,omitempty"`
+	// LastRenewedTime - Timestamp when the domain was renewed last time
+	LastRenewedTime *date.Time `json:"lastRenewedTime,omitempty"`
+	// AutoRenew - If true then domain will renewed automatically
+	AutoRenew *bool `json:"autoRenew,omitempty"`
+	// ReadyForDNSRecordManagement - If true then Azure can assign this domain to Web Apps. This value will be true if domain registration status is active and it is hosted on name servers Azure has programmatic access to
+	ReadyForDNSRecordManagement *bool `json:"readyForDnsRecordManagement,omitempty"`
+	// ManagedHostNames - All hostnames derived from the domain and assigned to Azure resources
+	ManagedHostNames *[]HostName `json:"managedHostNames,omitempty"`
+	// Consent - Legal agreement consent
+	Consent *DomainPurchaseConsent `json:"consent,omitempty"`
+	// DomainNotRenewableReasons - Reasons why domain is not renewable
+	DomainNotRenewableReasons *[]string `json:"domainNotRenewableReasons,omitempty"`
+}
+
+// EnabledConfig enabled configuration
 type EnabledConfig struct {
+	// Enabled - Enabled
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// ExpandedParentAPIEntity is expanded parent object for expansion
+// ExpandedParentAPIEntity expanded parent object for expansion
 type ExpandedParentAPIEntity struct {
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*ExpandedParentAPIEntityProperties `json:"properties,omitempty"`
 }
 
-// ExpandedParentAPIEntityProperties is
+// UnmarshalJSON is the custom unmarshaler for ExpandedParentAPIEntity struct.
+func (epAe *ExpandedParentAPIEntity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ExpandedParentAPIEntityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		epAe.ExpandedParentAPIEntityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		epAe.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		epAe.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		epAe.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		epAe.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		epAe.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		epAe.Tags = &tags
+	}
+
+	return nil
+}
+
+// ExpandedParentAPIEntityProperties ...
 type ExpandedParentAPIEntityProperties struct {
-	ID     *string                           `json:"id,omitempty"`
+	// ID - Id of connection provider
+	ID *string `json:"id,omitempty"`
+	// Entity - Id of connection provider
 	Entity *ResponseMessageEnvelopeAPIEntity `json:"entity,omitempty"`
 }
 
-// Experiments is class containing Routing in production experiments
+// Experiments class containing Routing in production experiments
 type Experiments struct {
+	// RampUpRules - List of {Microsoft.Web.Hosting.Administration.RampUpRule} objects.
 	RampUpRules *[]RampUpRule `json:"rampUpRules,omitempty"`
 }
 
-// FileSystemApplicationLogsConfig is application logs to file system configuration
+// FileSystemApplicationLogsConfig application logs to file system configuration
 type FileSystemApplicationLogsConfig struct {
+	// Level - Log level. Possible values include: 'LogLevelOff', 'LogLevelVerbose', 'LogLevelInformation', 'LogLevelWarning', 'LogLevelError'
 	Level LogLevel `json:"level,omitempty"`
 }
 
-// FileSystemHTTPLogsConfig is http logs to file system configuration
+// FileSystemHTTPLogsConfig http logs to file system configuration
 type FileSystemHTTPLogsConfig struct {
-	RetentionInMb   *int32 `json:"retentionInMb,omitempty"`
+	// RetentionInMb - Maximum size in megabytes that http log files can use.
+	//             When reached old log files will be removed to make space for new ones.
+	//             Value can range between 25 and 100.
+	RetentionInMb *int32 `json:"retentionInMb,omitempty"`
+	// RetentionInDays - Retention in days.
+	//             Remove files older than X days.
+	//             0 or lower means no retention.
 	RetentionInDays *int32 `json:"retentionInDays,omitempty"`
-	Enabled         *bool  `json:"enabled,omitempty"`
+	// Enabled - Enabled
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// GeneralAPIInformation is general API information
+// GeneralAPIInformation general API information
 type GeneralAPIInformation struct {
-	ID                               *string             `json:"id,omitempty"`
-	Name                             *string             `json:"name,omitempty"`
-	Kind                             *string             `json:"kind,omitempty"`
-	Location                         *string             `json:"location,omitempty"`
-	Type                             *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                             *map[string]*string `json:"tags,omitempty"`
 	*GeneralAPIInformationProperties `json:"properties,omitempty"`
 }
 
-// GeneralAPIInformationProperties is
-type GeneralAPIInformationProperties struct {
-	IconURL               *string                 `json:"iconUrl,omitempty"`
-	DisplayName           *string                 `json:"displayName,omitempty"`
-	Description           *string                 `json:"description,omitempty"`
-	TermsOfUseURL         *string                 `json:"termsOfUseUrl,omitempty"`
-	ConnectionDisplayName *string                 `json:"connectionDisplayName,omitempty"`
-	ConnectionPortalURL   *map[string]interface{} `json:"connectionPortalUrl,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for GeneralAPIInformation struct.
+func (gai *GeneralAPIInformation) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties GeneralAPIInformationProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		gai.GeneralAPIInformationProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		gai.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		gai.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		gai.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		gai.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		gai.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		gai.Tags = &tags
+	}
+
+	return nil
 }
 
-// GeoRegion is geographical region
+// GeneralAPIInformationProperties ...
+type GeneralAPIInformationProperties struct {
+	// IconURL - Icon Url
+	IconURL *string `json:"iconUrl,omitempty"`
+	// DisplayName - Display Name
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - Description
+	Description *string `json:"description,omitempty"`
+	// TermsOfUseURL - a public accessible url of the Terms Of Use Url of this API
+	TermsOfUseURL *string `json:"termsOfUseUrl,omitempty"`
+	// ConnectionDisplayName - DefaultConnectionNameTemplate
+	ConnectionDisplayName *string `json:"connectionDisplayName,omitempty"`
+	// ConnectionPortalURL - ConnectionPortalUrl
+	ConnectionPortalURL *map[string]interface{} `json:"connectionPortalUrl,omitempty"`
+}
+
+// GeoRegion geographical region
 type GeoRegion struct {
-	ID                   *string             `json:"id,omitempty"`
-	Name                 *string             `json:"name,omitempty"`
-	Kind                 *string             `json:"kind,omitempty"`
-	Location             *string             `json:"location,omitempty"`
-	Type                 *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                 *map[string]*string `json:"tags,omitempty"`
 	*GeoRegionProperties `json:"properties,omitempty"`
 }
 
-// GeoRegionCollection is collection of geo regions
-type GeoRegionCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]GeoRegion `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for GeoRegion struct.
+func (gr *GeoRegion) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties GeoRegionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		gr.GeoRegionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		gr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		gr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		gr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		gr.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		gr.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		gr.Tags = &tags
+	}
+
+	return nil
 }
 
-// GeoRegionCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client GeoRegionCollection) GeoRegionCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// GeoRegionCollection collection of geo regions
+type GeoRegionCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]GeoRegion `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// GeoRegionCollectionIterator provides access to a complete listing of GeoRegion values.
+type GeoRegionCollectionIterator struct {
+	i    int
+	page GeoRegionCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *GeoRegionCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter GeoRegionCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter GeoRegionCollectionIterator) Response() GeoRegionCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter GeoRegionCollectionIterator) Value() GeoRegion {
+	if !iter.page.NotDone() {
+		return GeoRegion{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (grc GeoRegionCollection) IsEmpty() bool {
+	return grc.Value == nil || len(*grc.Value) == 0
+}
+
+// geoRegionCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (grc GeoRegionCollection) geoRegionCollectionPreparer() (*http.Request, error) {
+	if grc.NextLink == nil || len(to.String(grc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(grc.NextLink)))
 }
 
-// GeoRegionProperties is
+// GeoRegionCollectionPage contains a page of GeoRegion values.
+type GeoRegionCollectionPage struct {
+	fn  func(GeoRegionCollection) (GeoRegionCollection, error)
+	grc GeoRegionCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *GeoRegionCollectionPage) Next() error {
+	next, err := page.fn(page.grc)
+	if err != nil {
+		return err
+	}
+	page.grc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page GeoRegionCollectionPage) NotDone() bool {
+	return !page.grc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page GeoRegionCollectionPage) Response() GeoRegionCollection {
+	return page.grc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page GeoRegionCollectionPage) Values() []GeoRegion {
+	if page.grc.IsEmpty() {
+		return nil
+	}
+	return *page.grc.Value
+}
+
+// GeoRegionProperties ...
 type GeoRegionProperties struct {
-	Name        *string `json:"name,omitempty"`
+	// Name - Region name
+	Name *string `json:"name,omitempty"`
+	// Description - Region description
 	Description *string `json:"description,omitempty"`
+	// DisplayName - Display name for region
 	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// HandlerMapping is the IIS handler mappings used to define which handler processes HTTP requests with certain
-// extension.
+// HandlerMapping the IIS handler mappings used to define which handler processes HTTP requests with certain extension.
 // For example it is used to configure php-cgi.exe process to handle all HTTP requests with *.php extension.
 type HandlerMapping struct {
-	Extension       *string `json:"extension,omitempty"`
+	// Extension - Requests with this extension will be handled using the specified FastCGI application.
+	Extension *string `json:"extension,omitempty"`
+	// ScriptProcessor - The absolute path to the FastCGI application.
 	ScriptProcessor *string `json:"scriptProcessor,omitempty"`
-	Arguments       *string `json:"arguments,omitempty"`
+	// Arguments - Command-line arguments to be passed to the script processor.
+	Arguments *string `json:"arguments,omitempty"`
 }
 
-// HostingEnvironment is description of an hostingEnvironment (App Service Environment)
+// HostingEnvironment description of an hostingEnvironment (App Service Environment)
 type HostingEnvironment struct {
-	autorest.Response             `json:"-"`
-	ID                            *string             `json:"id,omitempty"`
-	Name                          *string             `json:"name,omitempty"`
-	Kind                          *string             `json:"kind,omitempty"`
-	Location                      *string             `json:"location,omitempty"`
-	Type                          *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                          *map[string]*string `json:"tags,omitempty"`
 	*HostingEnvironmentProperties `json:"properties,omitempty"`
 }
 
-// HostingEnvironmentCollection is collection of hosting environments (App Service Environments)
-type HostingEnvironmentCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]HostingEnvironment `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for HostingEnvironment struct.
+func (he *HostingEnvironment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties HostingEnvironmentProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		he.HostingEnvironmentProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		he.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		he.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		he.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		he.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		he.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		he.Tags = &tags
+	}
+
+	return nil
 }
 
-// HostingEnvironmentCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client HostingEnvironmentCollection) HostingEnvironmentCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// HostingEnvironmentCollection collection of hosting environments (App Service Environments)
+type HostingEnvironmentCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]HostingEnvironment `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// HostingEnvironmentCollectionIterator provides access to a complete listing of HostingEnvironment values.
+type HostingEnvironmentCollectionIterator struct {
+	i    int
+	page HostingEnvironmentCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *HostingEnvironmentCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter HostingEnvironmentCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter HostingEnvironmentCollectionIterator) Response() HostingEnvironmentCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter HostingEnvironmentCollectionIterator) Value() HostingEnvironment {
+	if !iter.page.NotDone() {
+		return HostingEnvironment{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (hec HostingEnvironmentCollection) IsEmpty() bool {
+	return hec.Value == nil || len(*hec.Value) == 0
+}
+
+// hostingEnvironmentCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (hec HostingEnvironmentCollection) hostingEnvironmentCollectionPreparer() (*http.Request, error) {
+	if hec.NextLink == nil || len(to.String(hec.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(hec.NextLink)))
 }
 
-// HostingEnvironmentDiagnostics is diagnostics for a hosting environment (App Service Environment)
+// HostingEnvironmentCollectionPage contains a page of HostingEnvironment values.
+type HostingEnvironmentCollectionPage struct {
+	fn  func(HostingEnvironmentCollection) (HostingEnvironmentCollection, error)
+	hec HostingEnvironmentCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *HostingEnvironmentCollectionPage) Next() error {
+	next, err := page.fn(page.hec)
+	if err != nil {
+		return err
+	}
+	page.hec = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page HostingEnvironmentCollectionPage) NotDone() bool {
+	return !page.hec.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page HostingEnvironmentCollectionPage) Response() HostingEnvironmentCollection {
+	return page.hec
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page HostingEnvironmentCollectionPage) Values() []HostingEnvironment {
+	if page.hec.IsEmpty() {
+		return nil
+	}
+	return *page.hec.Value
+}
+
+// HostingEnvironmentDiagnostics diagnostics for a hosting environment (App Service Environment)
 type HostingEnvironmentDiagnostics struct {
 	autorest.Response `json:"-"`
-	Name              *string `json:"name,omitempty"`
-	DiagnosicsOutput  *string `json:"diagnosicsOutput,omitempty"`
+	// Name - Name/identifier of the diagnostics
+	Name *string `json:"name,omitempty"`
+	// DiagnosicsOutput - Diagnostics output
+	DiagnosicsOutput *string `json:"diagnosicsOutput,omitempty"`
 }
 
-// HostingEnvironmentProfile is specification for a hostingEnvironment (App Service Environment) to use for this
-// resource
+// HostingEnvironmentProfile specification for a hostingEnvironment (App Service Environment) to use for this resource
 type HostingEnvironmentProfile struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource id of the hostingEnvironment (App Service Environment)
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the hostingEnvironment (App Service Environment) (read only)
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type of the hostingEnvironment (App Service Environment) (read only)
 	Type *string `json:"type,omitempty"`
 }
 
-// HostingEnvironmentProperties is
+// HostingEnvironmentProperties ...
 type HostingEnvironmentProperties struct {
-	Name                      *string                      `json:"name,omitempty"`
-	Location                  *string                      `json:"location,omitempty"`
-	ProvisioningState         ProvisioningState            `json:"provisioningState,omitempty"`
-	Status                    HostingEnvironmentStatus     `json:"status,omitempty"`
-	VnetName                  *string                      `json:"vnetName,omitempty"`
-	VnetResourceGroupName     *string                      `json:"vnetResourceGroupName,omitempty"`
-	VnetSubnetName            *string                      `json:"vnetSubnetName,omitempty"`
-	VirtualNetwork            *VirtualNetworkProfile       `json:"virtualNetwork,omitempty"`
-	InternalLoadBalancingMode InternalLoadBalancingMode    `json:"internalLoadBalancingMode,omitempty"`
-	MultiSize                 *string                      `json:"multiSize,omitempty"`
-	MultiRoleCount            *int32                       `json:"multiRoleCount,omitempty"`
-	WorkerPools               *[]WorkerPool                `json:"workerPools,omitempty"`
-	IpsslAddressCount         *int32                       `json:"ipsslAddressCount,omitempty"`
-	DatabaseEdition           *string                      `json:"databaseEdition,omitempty"`
-	DatabaseServiceObjective  *string                      `json:"databaseServiceObjective,omitempty"`
-	UpgradeDomains            *int32                       `json:"upgradeDomains,omitempty"`
-	SubscriptionID            *string                      `json:"subscriptionId,omitempty"`
-	DNSSuffix                 *string                      `json:"dnsSuffix,omitempty"`
-	LastAction                *string                      `json:"lastAction,omitempty"`
-	LastActionResult          *string                      `json:"lastActionResult,omitempty"`
-	AllowedMultiSizes         *string                      `json:"allowedMultiSizes,omitempty"`
-	AllowedWorkerSizes        *string                      `json:"allowedWorkerSizes,omitempty"`
-	MaximumNumberOfMachines   *int32                       `json:"maximumNumberOfMachines,omitempty"`
-	VipMappings               *[]VirtualIPMapping          `json:"vipMappings,omitempty"`
-	EnvironmentCapacities     *[]StampCapacity             `json:"environmentCapacities,omitempty"`
-	NetworkAccessControlList  *[]NetworkAccessControlEntry `json:"networkAccessControlList,omitempty"`
-	EnvironmentIsHealthy      *bool                        `json:"environmentIsHealthy,omitempty"`
-	EnvironmentStatus         *string                      `json:"environmentStatus,omitempty"`
-	ResourceGroup             *string                      `json:"resourceGroup,omitempty"`
-	APIManagementAccountID    *string                      `json:"apiManagementAccountId,omitempty"`
-	Suspended                 *bool                        `json:"suspended,omitempty"`
-	ClusterSettings           *[]NameValuePair             `json:"clusterSettings,omitempty"`
+	// Name - Name of the hostingEnvironment (App Service Environment)
+	Name *string `json:"name,omitempty"`
+	// Location - Location of the hostingEnvironment (App Service Environment), e.g. "West US"
+	Location *string `json:"location,omitempty"`
+	// ProvisioningState - Provisioning state of the hostingEnvironment (App Service Environment). Possible values include: 'ProvisioningStateSucceeded', 'ProvisioningStateFailed', 'ProvisioningStateCanceled', 'ProvisioningStateInProgress', 'ProvisioningStateDeleting'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// Status - Current status of the hostingEnvironment (App Service Environment). Possible values include: 'Preparing', 'Ready', 'Scaling', 'Deleting'
+	Status HostingEnvironmentStatus `json:"status,omitempty"`
+	// VnetName - Name of the hostingEnvironment's (App Service Environment) virtual network
+	VnetName *string `json:"vnetName,omitempty"`
+	// VnetResourceGroupName - Resource group of the hostingEnvironment's (App Service Environment) virtual network
+	VnetResourceGroupName *string `json:"vnetResourceGroupName,omitempty"`
+	// VnetSubnetName - Subnet of the hostingEnvironment's (App Service Environment) virtual network
+	VnetSubnetName *string `json:"vnetSubnetName,omitempty"`
+	// VirtualNetwork - Description of the hostingEnvironment's (App Service Environment) virtual network
+	VirtualNetwork *VirtualNetworkProfile `json:"virtualNetwork,omitempty"`
+	// InternalLoadBalancingMode - Specifies which endpoints to serve internally in the hostingEnvironment's (App Service Environment) VNET. Possible values include: 'None', 'Web', 'Publishing'
+	InternalLoadBalancingMode InternalLoadBalancingMode `json:"internalLoadBalancingMode,omitempty"`
+	// MultiSize - Front-end VM size, e.g. "Medium", "Large"
+	MultiSize *string `json:"multiSize,omitempty"`
+	// MultiRoleCount - Number of front-end instances
+	MultiRoleCount *int32 `json:"multiRoleCount,omitempty"`
+	// WorkerPools - Description of worker pools with worker size ids, VM sizes, and number of workers in each pool
+	WorkerPools *[]WorkerPool `json:"workerPools,omitempty"`
+	// IpsslAddressCount - Number of IP SSL addresses reserved for this hostingEnvironment (App Service Environment)
+	IpsslAddressCount *int32 `json:"ipsslAddressCount,omitempty"`
+	// DatabaseEdition - Edition of the metadata database for the hostingEnvironment (App Service Environment) e.g. "Standard"
+	DatabaseEdition *string `json:"databaseEdition,omitempty"`
+	// DatabaseServiceObjective - Service objective of the metadata database for the hostingEnvironment (App Service Environment) e.g. "S0"
+	DatabaseServiceObjective *string `json:"databaseServiceObjective,omitempty"`
+	// UpgradeDomains - Number of upgrade domains of this hostingEnvironment (App Service Environment)
+	UpgradeDomains *int32 `json:"upgradeDomains,omitempty"`
+	// SubscriptionID - Subscription of the hostingEnvironment (App Service Environment)
+	SubscriptionID *string `json:"subscriptionId,omitempty"`
+	// DNSSuffix - DNS suffix of the hostingEnvironment (App Service Environment)
+	DNSSuffix *string `json:"dnsSuffix,omitempty"`
+	// LastAction - Last deployment action on this hostingEnvironment (App Service Environment)
+	LastAction *string `json:"lastAction,omitempty"`
+	// LastActionResult - Result of the last deployment action on this hostingEnvironment (App Service Environment)
+	LastActionResult *string `json:"lastActionResult,omitempty"`
+	// AllowedMultiSizes - List of comma separated strings describing which VM sizes are allowed for front-ends
+	AllowedMultiSizes *string `json:"allowedMultiSizes,omitempty"`
+	// AllowedWorkerSizes - List of comma separated strings describing which VM sizes are allowed for workers
+	AllowedWorkerSizes *string `json:"allowedWorkerSizes,omitempty"`
+	// MaximumNumberOfMachines - Maximum number of VMs in this hostingEnvironment (App Service Environment)
+	MaximumNumberOfMachines *int32 `json:"maximumNumberOfMachines,omitempty"`
+	// VipMappings - Description of IP SSL mapping for this hostingEnvironment (App Service Environment)
+	VipMappings *[]VirtualIPMapping `json:"vipMappings,omitempty"`
+	// EnvironmentCapacities - Current total, used, and available worker capacities
+	EnvironmentCapacities *[]StampCapacity `json:"environmentCapacities,omitempty"`
+	// NetworkAccessControlList - Access control list for controlling traffic to the hostingEnvironment (App Service Environment)
+	NetworkAccessControlList *[]NetworkAccessControlEntry `json:"networkAccessControlList,omitempty"`
+	// EnvironmentIsHealthy - True/false indicating whether the hostingEnvironment (App Service Environment) is healthy
+	EnvironmentIsHealthy *bool `json:"environmentIsHealthy,omitempty"`
+	// EnvironmentStatus - Detailed message about with results of the last check of the hostingEnvironment (App Service Environment)
+	EnvironmentStatus *string `json:"environmentStatus,omitempty"`
+	// ResourceGroup - Resource group of the hostingEnvironment (App Service Environment)
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// APIManagementAccountID - Api Management Account associated with this Hosting Environment
+	APIManagementAccountID *string `json:"apiManagementAccountId,omitempty"`
+	// Suspended - True/false indicating whether the hostingEnvironment is suspended. The environment can be suspended e.g. when the management endpoint is no longer available
+	//             (most likely because NSG blocked the incoming traffic)
+	Suspended *bool `json:"suspended,omitempty"`
+	// ClusterSettings - Custom settings for changing the behavior of the hosting environment
+	ClusterSettings *[]NameValuePair `json:"clusterSettings,omitempty"`
 }
 
-// HostingEnvironmentServiceDescriptions is back end service per ASE
+// HostingEnvironmentsCreateOrUpdateHostingEnvironmentFuture an abstraction for monitoring and retrieving the results
+// of a long-running operation.
+type HostingEnvironmentsCreateOrUpdateHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsCreateOrUpdateHostingEnvironmentFuture) Result(client HostingEnvironmentsClient) (he HostingEnvironment, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return he, autorest.NewError("web.HostingEnvironmentsCreateOrUpdateHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		he, err = client.CreateOrUpdateHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	he, err = client.CreateOrUpdateHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostingEnvironmentsCreateOrUpdateMultiRolePoolFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsCreateOrUpdateMultiRolePoolFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsCreateOrUpdateMultiRolePoolFuture) Result(client HostingEnvironmentsClient) (wp WorkerPool, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return wp, autorest.NewError("web.HostingEnvironmentsCreateOrUpdateMultiRolePoolFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		wp, err = client.CreateOrUpdateMultiRolePoolResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	wp, err = client.CreateOrUpdateMultiRolePoolResponder(resp)
+	return
+}
+
+// HostingEnvironmentsCreateOrUpdateWorkerPoolFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsCreateOrUpdateWorkerPoolFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsCreateOrUpdateWorkerPoolFuture) Result(client HostingEnvironmentsClient) (wp WorkerPool, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return wp, autorest.NewError("web.HostingEnvironmentsCreateOrUpdateWorkerPoolFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		wp, err = client.CreateOrUpdateWorkerPoolResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	wp, err = client.CreateOrUpdateWorkerPoolResponder(resp)
+	return
+}
+
+// HostingEnvironmentsDeleteHostingEnvironmentFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsDeleteHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsDeleteHostingEnvironmentFuture) Result(client HostingEnvironmentsClient) (so SetObject, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return so, autorest.NewError("web.HostingEnvironmentsDeleteHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		so, err = client.DeleteHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	so, err = client.DeleteHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostingEnvironmentServiceDescriptions back end service per ASE
 type HostingEnvironmentServiceDescriptions struct {
+	// HostingEnvironmentID - Hosting environment Id
 	HostingEnvironmentID *string `json:"hostingEnvironmentId,omitempty"`
-	HostID               *string `json:"hostId,omitempty"`
-	ServiceURL           *string `json:"serviceUrl,omitempty"`
-	UseInternalRouting   *bool   `json:"useInternalRouting,omitempty"`
+	// HostID - Host Id
+	HostID *string `json:"hostId,omitempty"`
+	// ServiceURL - service url to use
+	ServiceURL *string `json:"serviceUrl,omitempty"`
+	// UseInternalRouting - When the backend url is in same ASE, for performance reason this flag can be set to true
+	//             If WebApp.DisableHostNames is also set it improves the security by making the back end accesible only
+	//             via API calls
+	//             Note: calls will fail if this option is used but back end is not on the same ASE
+	UseInternalRouting *bool `json:"useInternalRouting,omitempty"`
 }
 
-// HostName is details of a hostname derived from a domain
+// HostingEnvironmentsResumeHostingEnvironmentAllFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsResumeHostingEnvironmentAllFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsResumeHostingEnvironmentAllFuture) Result(client HostingEnvironmentsClient) (scp SiteCollectionPage, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return scp, autorest.NewError("web.HostingEnvironmentsResumeHostingEnvironmentAllFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		scp, err = client.ResumeHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	scp, err = client.ResumeHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostingEnvironmentsResumeHostingEnvironmentFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsResumeHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsResumeHostingEnvironmentFuture) Result(client HostingEnvironmentsClient) (scp SiteCollectionPage, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return scp, autorest.NewError("web.HostingEnvironmentsResumeHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		scp, err = client.ResumeHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	scp, err = client.ResumeHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostingEnvironmentsSuspendHostingEnvironmentAllFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsSuspendHostingEnvironmentAllFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsSuspendHostingEnvironmentAllFuture) Result(client HostingEnvironmentsClient) (scp SiteCollectionPage, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return scp, autorest.NewError("web.HostingEnvironmentsSuspendHostingEnvironmentAllFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		scp, err = client.SuspendHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	scp, err = client.SuspendHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostingEnvironmentsSuspendHostingEnvironmentFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type HostingEnvironmentsSuspendHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HostingEnvironmentsSuspendHostingEnvironmentFuture) Result(client HostingEnvironmentsClient) (scp SiteCollectionPage, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return scp, autorest.NewError("web.HostingEnvironmentsSuspendHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		scp, err = client.SuspendHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	scp, err = client.SuspendHostingEnvironmentResponder(resp)
+	return
+}
+
+// HostName details of a hostname derived from a domain
 type HostName struct {
-	Name                        *string                     `json:"name,omitempty"`
-	SiteNames                   *[]string                   `json:"siteNames,omitempty"`
-	AzureResourceName           *string                     `json:"azureResourceName,omitempty"`
-	AzureResourceType           AzureResourceType           `json:"azureResourceType,omitempty"`
+	// Name - Name of the hostname
+	Name *string `json:"name,omitempty"`
+	// SiteNames - List of sites the hostname is assigned to. This list will have more than one site only if the hostname is pointing to a Traffic Manager
+	SiteNames *[]string `json:"siteNames,omitempty"`
+	// AzureResourceName - Name of the Azure resource the hostname is assigned to. If it is assigned to a traffic manager then it will be the traffic manager name otherwise it will be the website name
+	AzureResourceName *string `json:"azureResourceName,omitempty"`
+	// AzureResourceType - Type of the Azure resource the hostname is assigned to. Possible values include: 'Website', 'TrafficManager'
+	AzureResourceType AzureResourceType `json:"azureResourceType,omitempty"`
+	// CustomHostNameDNSRecordType - Type of the Dns record. Possible values include: 'CName', 'A'
 	CustomHostNameDNSRecordType CustomHostNameDNSRecordType `json:"customHostNameDnsRecordType,omitempty"`
-	HostNameType                HostNameType                `json:"hostNameType,omitempty"`
+	// HostNameType - Type of the hostname. Possible values include: 'Verified', 'Managed'
+	HostNameType HostNameType `json:"hostNameType,omitempty"`
 }
 
-// HostNameBinding is a host name binding object
+// HostNameBinding a host name binding object
 type HostNameBinding struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Kind                       *string             `json:"kind,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	*HostNameBindingProperties `json:"properties,omitempty"`
 }
 
-// HostNameBindingCollection is collection of host name bindings
-type HostNameBindingCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]HostNameBinding `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for HostNameBinding struct.
+func (hnb *HostNameBinding) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties HostNameBindingProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		hnb.HostNameBindingProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		hnb.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		hnb.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		hnb.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		hnb.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		hnb.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		hnb.Tags = &tags
+	}
+
+	return nil
 }
 
-// HostNameBindingCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client HostNameBindingCollection) HostNameBindingCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// HostNameBindingCollection collection of host name bindings
+type HostNameBindingCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]HostNameBinding `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// HostNameBindingCollectionIterator provides access to a complete listing of HostNameBinding values.
+type HostNameBindingCollectionIterator struct {
+	i    int
+	page HostNameBindingCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *HostNameBindingCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter HostNameBindingCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter HostNameBindingCollectionIterator) Response() HostNameBindingCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter HostNameBindingCollectionIterator) Value() HostNameBinding {
+	if !iter.page.NotDone() {
+		return HostNameBinding{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (hnbc HostNameBindingCollection) IsEmpty() bool {
+	return hnbc.Value == nil || len(*hnbc.Value) == 0
+}
+
+// hostNameBindingCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (hnbc HostNameBindingCollection) hostNameBindingCollectionPreparer() (*http.Request, error) {
+	if hnbc.NextLink == nil || len(to.String(hnbc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(hnbc.NextLink)))
 }
 
-// HostNameBindingProperties is
+// HostNameBindingCollectionPage contains a page of HostNameBinding values.
+type HostNameBindingCollectionPage struct {
+	fn   func(HostNameBindingCollection) (HostNameBindingCollection, error)
+	hnbc HostNameBindingCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *HostNameBindingCollectionPage) Next() error {
+	next, err := page.fn(page.hnbc)
+	if err != nil {
+		return err
+	}
+	page.hnbc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page HostNameBindingCollectionPage) NotDone() bool {
+	return !page.hnbc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page HostNameBindingCollectionPage) Response() HostNameBindingCollection {
+	return page.hnbc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page HostNameBindingCollectionPage) Values() []HostNameBinding {
+	if page.hnbc.IsEmpty() {
+		return nil
+	}
+	return *page.hnbc.Value
+}
+
+// HostNameBindingProperties ...
 type HostNameBindingProperties struct {
-	Name                        *string                     `json:"name,omitempty"`
-	SiteName                    *string                     `json:"siteName,omitempty"`
-	DomainID                    *string                     `json:"domainId,omitempty"`
-	AzureResourceName           *string                     `json:"azureResourceName,omitempty"`
-	AzureResourceType           AzureResourceType           `json:"azureResourceType,omitempty"`
+	// Name - Hostname
+	Name *string `json:"name,omitempty"`
+	// SiteName - Web app name
+	SiteName *string `json:"siteName,omitempty"`
+	// DomainID - Fully qualified ARM domain resource URI
+	DomainID *string `json:"domainId,omitempty"`
+	// AzureResourceName - Azure resource name
+	AzureResourceName *string `json:"azureResourceName,omitempty"`
+	// AzureResourceType - Azure resource type. Possible values include: 'Website', 'TrafficManager'
+	AzureResourceType AzureResourceType `json:"azureResourceType,omitempty"`
+	// CustomHostNameDNSRecordType - Custom DNS record type. Possible values include: 'CName', 'A'
 	CustomHostNameDNSRecordType CustomHostNameDNSRecordType `json:"customHostNameDnsRecordType,omitempty"`
-	HostNameType                HostNameType                `json:"hostNameType,omitempty"`
+	// HostNameType - Host name type. Possible values include: 'Verified', 'Managed'
+	HostNameType HostNameType `json:"hostNameType,omitempty"`
 }
 
-// HostNameSslState is object that represents a SSL-enabled host name.
+// HostNameSslState object that represents a SSL-enabled host name.
 type HostNameSslState struct {
-	Name       *string  `json:"name,omitempty"`
-	SslState   SslState `json:"sslState,omitempty"`
-	VirtualIP  *string  `json:"virtualIP,omitempty"`
-	Thumbprint *string  `json:"thumbprint,omitempty"`
-	ToUpdate   *bool    `json:"toUpdate,omitempty"`
+	// Name - Host name
+	Name *string `json:"name,omitempty"`
+	// SslState - SSL type. Possible values include: 'Disabled', 'SniEnabled', 'IPBasedEnabled'
+	SslState SslState `json:"sslState,omitempty"`
+	// VirtualIP - Virtual IP address assigned to the host name if IP based SSL is enabled
+	VirtualIP *string `json:"virtualIP,omitempty"`
+	// Thumbprint - SSL cert thumbprint
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// ToUpdate - Set this flag to update existing host name
+	ToUpdate *bool `json:"toUpdate,omitempty"`
 }
 
-// HTTPLogsConfig is http logs configuration
+// HTTPLogsConfig http logs configuration
 type HTTPLogsConfig struct {
-	FileSystem       *FileSystemHTTPLogsConfig       `json:"fileSystem,omitempty"`
+	// FileSystem - Http logs to file system configuration
+	FileSystem *FileSystemHTTPLogsConfig `json:"fileSystem,omitempty"`
+	// AzureBlobStorage - Http logs to azure blob storage configuration
 	AzureBlobStorage *AzureBlobStorageHTTPLogsConfig `json:"azureBlobStorage,omitempty"`
 }
 
-// IPSecurityRestriction is represents an ip security restriction on a web app.
+// IPSecurityRestriction represents an ip security restriction on a web app.
 type IPSecurityRestriction struct {
-	IPAddress  *string `json:"ipAddress,omitempty"`
+	// IPAddress - IP address the security restriction is valid for
+	IPAddress *string `json:"ipAddress,omitempty"`
+	// SubnetMask - Subnet mask for the range of IP addresses the restriction is valid for
 	SubnetMask *string `json:"subnetMask,omitempty"`
 }
 
-// KeyValuePairStringString is
+// KeyValuePairStringString ...
 type KeyValuePairStringString struct {
 	Key   *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
 }
 
-// ListCertificateEmail is
+// ListCertificateEmail ...
 type ListCertificateEmail struct {
 	autorest.Response `json:"-"`
 	Value             *[]CertificateEmail `json:"value,omitempty"`
 }
 
-// ListCertificateOrderAction is
+// ListCertificateOrderAction ...
 type ListCertificateOrderAction struct {
 	autorest.Response `json:"-"`
 	Value             *[]CertificateOrderAction `json:"value,omitempty"`
 }
 
-// ListConnectionKeysInput is list Connection Keys Input payload
+// ListConnectionKeysInput list Connection Keys Input payload
 type ListConnectionKeysInput struct {
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*ListConnectionKeysInputProperties `json:"properties,omitempty"`
 }
 
-// ListConnectionKeysInputProperties is
+// UnmarshalJSON is the custom unmarshaler for ListConnectionKeysInput struct.
+func (lcki *ListConnectionKeysInput) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ListConnectionKeysInputProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lcki.ListConnectionKeysInputProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lcki.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lcki.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		lcki.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lcki.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lcki.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lcki.Tags = &tags
+	}
+
+	return nil
+}
+
+// ListConnectionKeysInputProperties ...
 type ListConnectionKeysInputProperties struct {
+	// ValidityTimeSpan - time span for how long the keys will be valid
 	ValidityTimeSpan *string `json:"validityTimeSpan,omitempty"`
 }
 
-// ListCsr is
+// ListCsr ...
 type ListCsr struct {
 	autorest.Response `json:"-"`
 	Value             *[]Csr `json:"value,omitempty"`
 }
 
-// ListHostingEnvironmentDiagnostics is
+// ListHostingEnvironmentDiagnostics ...
 type ListHostingEnvironmentDiagnostics struct {
 	autorest.Response `json:"-"`
 	Value             *[]HostingEnvironmentDiagnostics `json:"value,omitempty"`
 }
 
-// ListRecommendation is
+// ListRecommendation ...
 type ListRecommendation struct {
 	autorest.Response `json:"-"`
 	Value             *[]Recommendation `json:"value,omitempty"`
 }
 
-// ListVnetInfo is
+// ListVnetInfo ...
 type ListVnetInfo struct {
 	autorest.Response `json:"-"`
 	Value             *[]VnetInfo `json:"value,omitempty"`
 }
 
-// ListVnetRoute is
+// ListVnetRoute ...
 type ListVnetRoute struct {
 	autorest.Response `json:"-"`
 	Value             *[]VnetRoute `json:"value,omitempty"`
 }
 
-// LocalizableString is localizableString object containing the name and a localized value.
+// LocalizableString localizableString object containing the name and a localized value.
 type LocalizableString struct {
-	Value          *string `json:"value,omitempty"`
+	// Value - Non localized name
+	Value *string `json:"value,omitempty"`
+	// LocalizedValue - Localized name
 	LocalizedValue *string `json:"localizedValue,omitempty"`
 }
 
-// ManagedHostingEnvironment is description of a managed hosting environment
+// ManagedHostingEnvironment description of a managed hosting environment
 type ManagedHostingEnvironment struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string             `json:"id,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Kind                                 *string             `json:"kind,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                 *map[string]*string `json:"tags,omitempty"`
 	*ManagedHostingEnvironmentProperties `json:"properties,omitempty"`
 }
 
-// ManagedHostingEnvironmentCollection is collection of managed hosting environments
-type ManagedHostingEnvironmentCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]ManagedHostingEnvironment `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ManagedHostingEnvironment struct.
+func (mhe *ManagedHostingEnvironment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ManagedHostingEnvironmentProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mhe.ManagedHostingEnvironmentProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mhe.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mhe.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		mhe.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		mhe.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mhe.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		mhe.Tags = &tags
+	}
+
+	return nil
 }
 
-// ManagedHostingEnvironmentCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ManagedHostingEnvironmentCollection) ManagedHostingEnvironmentCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ManagedHostingEnvironmentCollection collection of managed hosting environments
+type ManagedHostingEnvironmentCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]ManagedHostingEnvironment `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ManagedHostingEnvironmentCollectionIterator provides access to a complete listing of ManagedHostingEnvironment
+// values.
+type ManagedHostingEnvironmentCollectionIterator struct {
+	i    int
+	page ManagedHostingEnvironmentCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ManagedHostingEnvironmentCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ManagedHostingEnvironmentCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ManagedHostingEnvironmentCollectionIterator) Response() ManagedHostingEnvironmentCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ManagedHostingEnvironmentCollectionIterator) Value() ManagedHostingEnvironment {
+	if !iter.page.NotDone() {
+		return ManagedHostingEnvironment{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mhec ManagedHostingEnvironmentCollection) IsEmpty() bool {
+	return mhec.Value == nil || len(*mhec.Value) == 0
+}
+
+// managedHostingEnvironmentCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mhec ManagedHostingEnvironmentCollection) managedHostingEnvironmentCollectionPreparer() (*http.Request, error) {
+	if mhec.NextLink == nil || len(to.String(mhec.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(mhec.NextLink)))
 }
 
-// ManagedHostingEnvironmentProperties is
+// ManagedHostingEnvironmentCollectionPage contains a page of ManagedHostingEnvironment values.
+type ManagedHostingEnvironmentCollectionPage struct {
+	fn   func(ManagedHostingEnvironmentCollection) (ManagedHostingEnvironmentCollection, error)
+	mhec ManagedHostingEnvironmentCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ManagedHostingEnvironmentCollectionPage) Next() error {
+	next, err := page.fn(page.mhec)
+	if err != nil {
+		return err
+	}
+	page.mhec = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ManagedHostingEnvironmentCollectionPage) NotDone() bool {
+	return !page.mhec.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ManagedHostingEnvironmentCollectionPage) Response() ManagedHostingEnvironmentCollection {
+	return page.mhec
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ManagedHostingEnvironmentCollectionPage) Values() []ManagedHostingEnvironment {
+	if page.mhec.IsEmpty() {
+		return nil
+	}
+	return *page.mhec.Value
+}
+
+// ManagedHostingEnvironmentProperties ...
 type ManagedHostingEnvironmentProperties struct {
-	Name                 *string                         `json:"name,omitempty"`
-	Location             *string                         `json:"location,omitempty"`
-	Status               ManagedHostingEnvironmentStatus `json:"status,omitempty"`
-	VirtualNetwork       *VirtualNetworkProfile          `json:"virtualNetwork,omitempty"`
-	IpsslAddressCount    *int32                          `json:"ipsslAddressCount,omitempty"`
-	DNSSuffix            *string                         `json:"dnsSuffix,omitempty"`
-	SubscriptionID       *string                         `json:"subscriptionId,omitempty"`
-	ResourceGroup        *string                         `json:"resourceGroup,omitempty"`
-	EnvironmentIsHealthy *bool                           `json:"environmentIsHealthy,omitempty"`
-	EnvironmentStatus    *string                         `json:"environmentStatus,omitempty"`
-	Suspended            *bool                           `json:"suspended,omitempty"`
-	APIManagementAccount *string                         `json:"apiManagementAccount,omitempty"`
+	// Name - Name of the managed hosting environment
+	Name *string `json:"name,omitempty"`
+	// Location - Location of the managed hosting environment e.g. "West US"
+	Location *string `json:"location,omitempty"`
+	// Status - Current status of the managed hosting environment. Possible values include: 'ManagedHostingEnvironmentStatusPreparing', 'ManagedHostingEnvironmentStatusReady', 'ManagedHostingEnvironmentStatusDeleting'
+	Status ManagedHostingEnvironmentStatus `json:"status,omitempty"`
+	// VirtualNetwork - Description of the managed hosting environment's virtual network
+	VirtualNetwork *VirtualNetworkProfile `json:"virtualNetwork,omitempty"`
+	// IpsslAddressCount - Number of ip ssl addresses reserved for the managed hosting environment
+	IpsslAddressCount *int32 `json:"ipsslAddressCount,omitempty"`
+	// DNSSuffix - DNS suffix of the managed hosting environment
+	DNSSuffix *string `json:"dnsSuffix,omitempty"`
+	// SubscriptionID - Subscription of the managed hosting environment (read only)
+	SubscriptionID *string `json:"subscriptionId,omitempty"`
+	// ResourceGroup - Resource group of the managed hosting environment (read only)
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// EnvironmentIsHealthy - True/false indicating whether the managed hosting environment is healthy
+	EnvironmentIsHealthy *bool `json:"environmentIsHealthy,omitempty"`
+	// EnvironmentStatus - Detailed message about with results of the last check of the managed hosting environment
+	EnvironmentStatus *string `json:"environmentStatus,omitempty"`
+	// Suspended - True/false indicating whether the managed hosting environment is suspended. The environment can be suspended e.g. when the management endpoint is no longer available
+	//             (most likely because NSG blocked the incoming traffic)
+	Suspended *bool `json:"suspended,omitempty"`
+	// APIManagementAccount - Resource id of the api management account associated with this managed hosting environment (read only)
+	APIManagementAccount *string `json:"apiManagementAccount,omitempty"`
 }
 
-// MetricAvailabilily is class repesenting metrics availability and retention
+// ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture an abstraction for monitoring and retrieving
+// the results of a long-running operation.
+type ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture) Result(client ManagedHostingEnvironmentsClient) (he HostingEnvironment, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return he, autorest.NewError("web.ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		he, err = client.CreateOrUpdateManagedHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	he, err = client.CreateOrUpdateManagedHostingEnvironmentResponder(resp)
+	return
+}
+
+// ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture an abstraction for monitoring and retrieving the
+// results of a long-running operation.
+type ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture) Result(client ManagedHostingEnvironmentsClient) (so SetObject, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return so, autorest.NewError("web.ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		so, err = client.DeleteManagedHostingEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	so, err = client.DeleteManagedHostingEnvironmentResponder(resp)
+	return
+}
+
+// MetricAvailabilily class repesenting metrics availability and retention
 type MetricAvailabilily struct {
+	// TimeGrain - Time grain
 	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Retention - Retention period for the current {Microsoft.Web.Hosting.Administration.MetricAvailabilily.TimeGrain}
 	Retention *string `json:"retention,omitempty"`
 }
 
-// MetricDefinition is class repesenting metadata for the metrics
+// MetricDefinition class repesenting metadata for the metrics
 type MetricDefinition struct {
-	autorest.Response           `json:"-"`
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Kind                        *string             `json:"kind,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                        *map[string]*string `json:"tags,omitempty"`
 	*MetricDefinitionProperties `json:"properties,omitempty"`
 }
 
-// MetricDefinitionCollection is collection of metric defintions
-type MetricDefinitionCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]MetricDefinition `json:"value,omitempty"`
-	NextLink          *string             `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for MetricDefinition struct.
+func (md *MetricDefinition) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties MetricDefinitionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		md.MetricDefinitionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		md.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		md.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		md.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		md.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		md.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		md.Tags = &tags
+	}
+
+	return nil
 }
 
-// MetricDefinitionCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client MetricDefinitionCollection) MetricDefinitionCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// MetricDefinitionCollection collection of metric defintions
+type MetricDefinitionCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]MetricDefinition `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// MetricDefinitionCollectionIterator provides access to a complete listing of MetricDefinition values.
+type MetricDefinitionCollectionIterator struct {
+	i    int
+	page MetricDefinitionCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *MetricDefinitionCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter MetricDefinitionCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter MetricDefinitionCollectionIterator) Response() MetricDefinitionCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter MetricDefinitionCollectionIterator) Value() MetricDefinition {
+	if !iter.page.NotDone() {
+		return MetricDefinition{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mdc MetricDefinitionCollection) IsEmpty() bool {
+	return mdc.Value == nil || len(*mdc.Value) == 0
+}
+
+// metricDefinitionCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mdc MetricDefinitionCollection) metricDefinitionCollectionPreparer() (*http.Request, error) {
+	if mdc.NextLink == nil || len(to.String(mdc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(mdc.NextLink)))
 }
 
-// MetricDefinitionProperties is
+// MetricDefinitionCollectionPage contains a page of MetricDefinition values.
+type MetricDefinitionCollectionPage struct {
+	fn  func(MetricDefinitionCollection) (MetricDefinitionCollection, error)
+	mdc MetricDefinitionCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *MetricDefinitionCollectionPage) Next() error {
+	next, err := page.fn(page.mdc)
+	if err != nil {
+		return err
+	}
+	page.mdc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page MetricDefinitionCollectionPage) NotDone() bool {
+	return !page.mdc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page MetricDefinitionCollectionPage) Response() MetricDefinitionCollection {
+	return page.mdc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page MetricDefinitionCollectionPage) Values() []MetricDefinition {
+	if page.mdc.IsEmpty() {
+		return nil
+	}
+	return *page.mdc.Value
+}
+
+// MetricDefinitionProperties ...
 type MetricDefinitionProperties struct {
-	Name                   *string               `json:"name,omitempty"`
-	Unit                   *string               `json:"unit,omitempty"`
-	PrimaryAggregationType *string               `json:"primaryAggregationType,omitempty"`
-	MetricAvailabilities   *[]MetricAvailabilily `json:"metricAvailabilities,omitempty"`
-	DisplayName            *string               `json:"displayName,omitempty"`
+	// Name - Name of the metric
+	Name *string `json:"name,omitempty"`
+	// Unit - Unit of the metric
+	Unit *string `json:"unit,omitempty"`
+	// PrimaryAggregationType - Primary aggregation type
+	PrimaryAggregationType *string `json:"primaryAggregationType,omitempty"`
+	// MetricAvailabilities - List of time grains supported for the metric together with retention period
+	MetricAvailabilities *[]MetricAvailabilily `json:"metricAvailabilities,omitempty"`
+	// DisplayName - Friendly name shown in the UI
+	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// NameIdentifier is identifies an object
+// NameIdentifier identifies an object
 type NameIdentifier struct {
+	// Name - Name of the object
 	Name *string `json:"name,omitempty"`
 }
 
-// NameIdentifierCollection is collection of domain name identifiers
+// NameIdentifierCollection collection of domain name identifiers
 type NameIdentifierCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]NameIdentifier `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]NameIdentifier `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// NameIdentifierCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client NameIdentifierCollection) NameIdentifierCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// NameIdentifierCollectionIterator provides access to a complete listing of NameIdentifier values.
+type NameIdentifierCollectionIterator struct {
+	i    int
+	page NameIdentifierCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *NameIdentifierCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter NameIdentifierCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter NameIdentifierCollectionIterator) Response() NameIdentifierCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter NameIdentifierCollectionIterator) Value() NameIdentifier {
+	if !iter.page.NotDone() {
+		return NameIdentifier{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (nic NameIdentifierCollection) IsEmpty() bool {
+	return nic.Value == nil || len(*nic.Value) == 0
+}
+
+// nameIdentifierCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (nic NameIdentifierCollection) nameIdentifierCollectionPreparer() (*http.Request, error) {
+	if nic.NextLink == nil || len(to.String(nic.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(nic.NextLink)))
 }
 
-// NameValuePair is name value pair
+// NameIdentifierCollectionPage contains a page of NameIdentifier values.
+type NameIdentifierCollectionPage struct {
+	fn  func(NameIdentifierCollection) (NameIdentifierCollection, error)
+	nic NameIdentifierCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *NameIdentifierCollectionPage) Next() error {
+	next, err := page.fn(page.nic)
+	if err != nil {
+		return err
+	}
+	page.nic = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page NameIdentifierCollectionPage) NotDone() bool {
+	return !page.nic.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page NameIdentifierCollectionPage) Response() NameIdentifierCollection {
+	return page.nic
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page NameIdentifierCollectionPage) Values() []NameIdentifier {
+	if page.nic.IsEmpty() {
+		return nil
+	}
+	return *page.nic.Value
+}
+
+// NameValuePair name value pair
 type NameValuePair struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - Pair name
+	Name *string `json:"name,omitempty"`
+	// Value - Pair value
 	Value *string `json:"value,omitempty"`
 }
 
-// NetworkAccessControlEntry is
+// NetworkAccessControlEntry ...
 type NetworkAccessControlEntry struct {
+	// Action - Possible values include: 'Permit', 'Deny'
 	Action       AccessControlEntryAction `json:"action,omitempty"`
 	Description  *string                  `json:"description,omitempty"`
 	Order        *int32                   `json:"order,omitempty"`
 	RemoteSubnet *string                  `json:"remoteSubnet,omitempty"`
 }
 
-// NetworkFeatures is this is an object used to store a full view of network features (presently VNET integration and
+// NetworkFeatures this is an object used to store a full view of network features (presently VNET integration and
 // Hybrid Connections)
 // for a web app.
 type NetworkFeatures struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Kind                       *string             `json:"kind,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	*NetworkFeaturesProperties `json:"properties,omitempty"`
 }
 
-// NetworkFeaturesProperties is
-type NetworkFeaturesProperties struct {
-	VirtualNetworkName       *string                         `json:"virtualNetworkName,omitempty"`
-	VirtualNetworkConnection *VnetInfo                       `json:"virtualNetworkConnection,omitempty"`
-	HybridConnections        *[]RelayServiceConnectionEntity `json:"hybridConnections,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for NetworkFeatures struct.
+func (nf *NetworkFeatures) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NetworkFeaturesProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		nf.NetworkFeaturesProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		nf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		nf.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		nf.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		nf.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		nf.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		nf.Tags = &tags
+	}
+
+	return nil
 }
 
-// ParameterCustomLoginSettingValues is custom logging setting values
+// NetworkFeaturesProperties ...
+type NetworkFeaturesProperties struct {
+	// VirtualNetworkName - The Vnet Name
+	VirtualNetworkName *string `json:"virtualNetworkName,omitempty"`
+	// VirtualNetworkConnection - The Vnet Summary view
+	VirtualNetworkConnection *VnetInfo `json:"virtualNetworkConnection,omitempty"`
+	// HybridConnections - The Hybrid Connections Summary view
+	HybridConnections *[]RelayServiceConnectionEntity `json:"hybridConnections,omitempty"`
+}
+
+// ParameterCustomLoginSettingValues custom logging setting values
 type ParameterCustomLoginSettingValues struct {
-	ID                                           *string             `json:"id,omitempty"`
-	Name                                         *string             `json:"name,omitempty"`
-	Kind                                         *string             `json:"kind,omitempty"`
-	Location                                     *string             `json:"location,omitempty"`
-	Type                                         *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                         *map[string]*string `json:"tags,omitempty"`
 	*ParameterCustomLoginSettingValuesProperties `json:"properties,omitempty"`
 }
 
-// ParameterCustomLoginSettingValuesProperties is
+// UnmarshalJSON is the custom unmarshaler for ParameterCustomLoginSettingValues struct.
+func (pclsv *ParameterCustomLoginSettingValues) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ParameterCustomLoginSettingValuesProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pclsv.ParameterCustomLoginSettingValuesProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pclsv.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pclsv.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		pclsv.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		pclsv.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pclsv.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		pclsv.Tags = &tags
+	}
+
+	return nil
+}
+
+// ParameterCustomLoginSettingValuesProperties ...
 type ParameterCustomLoginSettingValuesProperties struct {
+	// CustomParameters - Custom parameters.
 	CustomParameters *map[string]*CustomLoginSettingValue `json:"customParameters,omitempty"`
 }
 
-// PremierAddOnRequest is
+// PremierAddOnRequest ...
 type PremierAddOnRequest struct {
-	Location   *string                 `json:"location,omitempty"`
-	Tags       *map[string]*string     `json:"tags,omitempty"`
-	Plan       *ArmPlan                `json:"plan,omitempty"`
+	// Location - Geo region resource belongs to e.g. SouthCentralUS, SouthEastAsia
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags associated with resource
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Plan - Azure resource manager plan
+	Plan *ArmPlan `json:"plan,omitempty"`
+	// Properties - Resource specific properties
 	Properties *map[string]interface{} `json:"properties,omitempty"`
-	Sku        *SkuDescription         `json:"sku,omitempty"`
+	// Sku - Sku description of the resource
+	Sku *SkuDescription `json:"sku,omitempty"`
 }
 
-// RampUpRule is routing rules for ramp up testing. This rule allows to redirect static traffic % to a slot or to
+// RampUpRule routing rules for ramp up testing. This rule allows to redirect static traffic % to a slot or to
 // gradually change routing % based on performance
 type RampUpRule struct {
-	ActionHostName            *string  `json:"actionHostName,omitempty"`
-	ReroutePercentage         *float64 `json:"reroutePercentage,omitempty"`
-	ChangeStep                *float64 `json:"changeStep,omitempty"`
-	ChangeIntervalInMinutes   *int32   `json:"changeIntervalInMinutes,omitempty"`
-	MinReroutePercentage      *float64 `json:"minReroutePercentage,omitempty"`
-	MaxReroutePercentage      *float64 `json:"maxReroutePercentage,omitempty"`
-	ChangeDecisionCallbackURL *string  `json:"changeDecisionCallbackUrl,omitempty"`
-	Name                      *string  `json:"name,omitempty"`
+	// ActionHostName - Hostname of a slot to which the traffic will be redirected if decided to. E.g. mysite-stage.azurewebsites.net
+	ActionHostName *string `json:"actionHostName,omitempty"`
+	// ReroutePercentage - Percentage of the traffic which will be redirected to {Microsoft.Web.Hosting.Administration.RampUpRule.ActionHostName}
+	ReroutePercentage *float64 `json:"reroutePercentage,omitempty"`
+	// ChangeStep - [Optional] In auto ramp up scenario this is the step to to add/remove from {Microsoft.Web.Hosting.Administration.RampUpRule.ReroutePercentage} until it reaches
+	//             {Microsoft.Web.Hosting.Administration.RampUpRule.MinReroutePercentage} or {Microsoft.Web.Hosting.Administration.RampUpRule.MaxReroutePercentage}. Site metrics are checked every N minutes specificed in {Microsoft.Web.Hosting.Administration.RampUpRule.ChangeIntervalInMinutes}.
+	//             Custom decision algorithm can be provided in TiPCallback site extension which Url can be specified in {Microsoft.Web.Hosting.Administration.RampUpRule.ChangeDecisionCallbackUrl}
+	ChangeStep *float64 `json:"changeStep,omitempty"`
+	// ChangeIntervalInMinutes - [Optional] Specifies interval in mimuntes to reevaluate ReroutePercentage
+	ChangeIntervalInMinutes *int32 `json:"changeIntervalInMinutes,omitempty"`
+	// MinReroutePercentage - [Optional] Specifies lower boundary above which ReroutePercentage will stay.
+	MinReroutePercentage *float64 `json:"minReroutePercentage,omitempty"`
+	// MaxReroutePercentage - [Optional] Specifies upper boundary below which ReroutePercentage will stay.
+	MaxReroutePercentage *float64 `json:"maxReroutePercentage,omitempty"`
+	// ChangeDecisionCallbackURL - Custom decision algorithm can be provided in TiPCallback site extension which Url can be specified. See TiPCallback site extension for the scaffold and contracts.
+	//             https://www.siteextensions.net/packages/TiPCallback/
+	ChangeDecisionCallbackURL *string `json:"changeDecisionCallbackUrl,omitempty"`
+	// Name - Name of the routing rule. The recommended name would be to point to the slot which will receive the traffic in the experiment.
+	Name *string `json:"name,omitempty"`
 }
 
-// ReadCloser is
+// ReadCloser ...
 type ReadCloser struct {
 	autorest.Response `json:"-"`
 	Value             *io.ReadCloser `json:"value,omitempty"`
 }
 
-// Recommendation is represents a recommendation result generated by the recommendation engine
+// Recommendation represents a recommendation result generated by the recommendation engine
 type Recommendation struct {
-	CreationTime               *date.Time        `json:"creationTime,omitempty"`
-	RecommendationID           *string           `json:"recommendationId,omitempty"`
-	ResourceID                 *string           `json:"resourceId,omitempty"`
-	ResourceScope              *string           `json:"resourceScope,omitempty"`
-	RuleName                   *string           `json:"ruleName,omitempty"`
-	DisplayName                *string           `json:"displayName,omitempty"`
-	Message                    *string           `json:"message,omitempty"`
-	Level                      NotificationLevel `json:"level,omitempty"`
-	Channels                   Channels          `json:"channels,omitempty"`
-	Tags                       *[]string         `json:"tags,omitempty"`
-	ActionName                 *string           `json:"actionName,omitempty"`
-	Enabled                    *int32            `json:"enabled,omitempty"`
-	StartTime                  *date.Time        `json:"startTime,omitempty"`
-	EndTime                    *date.Time        `json:"endTime,omitempty"`
-	NextNotificationTime       *date.Time        `json:"nextNotificationTime,omitempty"`
-	NotificationExpirationTime *date.Time        `json:"notificationExpirationTime,omitempty"`
-	NotifiedTime               *date.Time        `json:"notifiedTime,omitempty"`
-	Score                      *float64          `json:"score,omitempty"`
+	// CreationTime - Timestamp when this instance was created.
+	CreationTime *date.Time `json:"creationTime,omitempty"`
+	// RecommendationID - A GUID value that each recommendation object is associated with.
+	RecommendationID *string `json:"recommendationId,omitempty"`
+	// ResourceID - Full ARM resource ID string that this recommendation object is associated with.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// ResourceScope - Name of a resource type this recommendation applies, e.g. Subscription, ServerFarm, Site.
+	ResourceScope *string `json:"resourceScope,omitempty"`
+	// RuleName - Unique name of the rule
+	RuleName *string `json:"ruleName,omitempty"`
+	// DisplayName - UI friendly name of the rule (may not be unique)
+	DisplayName *string `json:"displayName,omitempty"`
+	// Message - Localized text of recommendation, good for UI.
+	Message *string `json:"message,omitempty"`
+	// Level - Level indicating how critical this recommendation can impact. Possible values include: 'Critical', 'Warning', 'Information', 'NonUrgentSuggestion'
+	Level NotificationLevel `json:"level,omitempty"`
+	// Channels - List of channels that this recommendation can apply. Possible values include: 'Notification', 'API', 'Email', 'All'
+	Channels Channels `json:"channels,omitempty"`
+	// Tags - The list of category tags that this recommendation belongs to.
+	Tags *[]string `json:"tags,omitempty"`
+	// ActionName - Name of action recommended by this object.
+	ActionName *string `json:"actionName,omitempty"`
+	// Enabled - On/off flag indicating the rule is currently enabled or disabled.
+	Enabled *int32 `json:"enabled,omitempty"`
+	// StartTime - The beginning time of a range that the recommendation refers to.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The end time of a range that the recommendation refers to.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// NextNotificationTime - When to notify this recommendation next. Null means that this will never be notified anymore.
+	NextNotificationTime *date.Time `json:"nextNotificationTime,omitempty"`
+	// NotificationExpirationTime - Date and time when this notification expires.
+	NotificationExpirationTime *date.Time `json:"notificationExpirationTime,omitempty"`
+	// NotifiedTime - Last timestamp this instance was actually notified. Null means that this recommendation hasn't been notified yet.
+	NotifiedTime *date.Time `json:"notifiedTime,omitempty"`
+	// Score - A metric value measured by the rule.
+	Score *float64 `json:"score,omitempty"`
 }
 
-// RecommendationRule is represents a recommendation rule that the recommendation engine can perform
+// RecommendationRule represents a recommendation rule that the recommendation engine can perform
 type RecommendationRule struct {
 	autorest.Response `json:"-"`
-	Name              *string           `json:"name,omitempty"`
-	DisplayName       *string           `json:"displayName,omitempty"`
-	Message           *string           `json:"message,omitempty"`
-	RecommendationID  *string           `json:"recommendationId,omitempty"`
-	Description       *string           `json:"description,omitempty"`
-	ActionName        *string           `json:"actionName,omitempty"`
-	Enabled           *int32            `json:"enabled,omitempty"`
-	Level             NotificationLevel `json:"level,omitempty"`
-	Channels          Channels          `json:"channels,omitempty"`
-	Tags              *[]string         `json:"tags,omitempty"`
+	// Name - Unique name of the rule
+	Name *string `json:"name,omitempty"`
+	// DisplayName - UI friendly name of the rule
+	DisplayName *string `json:"displayName,omitempty"`
+	// Message - Localized name of the rule (Good for UI)
+	Message *string `json:"message,omitempty"`
+	// RecommendationID - Recommendation ID of an associated recommendation object tied to the rule, if exists.
+	//             If such an object doesn't exist, it is set to null.
+	RecommendationID *string `json:"recommendationId,omitempty"`
+	// Description - Localized detailed description of the rule
+	Description *string `json:"description,omitempty"`
+	// ActionName - Name of action that is recommended by this rule in string
+	ActionName *string `json:"actionName,omitempty"`
+	// Enabled - On/off flag indicating the rule is currently enabled or disabled.
+	Enabled *int32 `json:"enabled,omitempty"`
+	// Level - Level of impact indicating how critical this rule is. Possible values include: 'Critical', 'Warning', 'Information', 'NonUrgentSuggestion'
+	Level NotificationLevel `json:"level,omitempty"`
+	// Channels - List of available channels that this rule applies. Possible values include: 'Notification', 'API', 'Email', 'All'
+	Channels Channels `json:"channels,omitempty"`
+	// Tags - An array of category tags that the rule contains.
+	Tags *[]string `json:"tags,omitempty"`
 }
 
-// ReissueCertificateOrderRequest is class representing certificate reissue request
+// ReissueCertificateOrderRequest class representing certificate reissue request
 type ReissueCertificateOrderRequest struct {
-	ID                                        *string             `json:"id,omitempty"`
-	Name                                      *string             `json:"name,omitempty"`
-	Kind                                      *string             `json:"kind,omitempty"`
-	Location                                  *string             `json:"location,omitempty"`
-	Type                                      *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                      *map[string]*string `json:"tags,omitempty"`
 	*ReissueCertificateOrderRequestProperties `json:"properties,omitempty"`
 }
 
-// ReissueCertificateOrderRequestProperties is
+// UnmarshalJSON is the custom unmarshaler for ReissueCertificateOrderRequest struct.
+func (rcor *ReissueCertificateOrderRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ReissueCertificateOrderRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rcor.ReissueCertificateOrderRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rcor.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rcor.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		rcor.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rcor.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rcor.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rcor.Tags = &tags
+	}
+
+	return nil
+}
+
+// ReissueCertificateOrderRequestProperties ...
 type ReissueCertificateOrderRequestProperties struct {
-	KeySize                    *int32 `json:"keySize,omitempty"`
+	// KeySize - Certificate Key Size
+	KeySize *int32 `json:"keySize,omitempty"`
+	// DelayExistingRevokeInHours - Delay in hours to revoke existing certificate after the new certificate is issued
 	DelayExistingRevokeInHours *int32 `json:"delayExistingRevokeInHours,omitempty"`
 }
 
-// RelayServiceConnectionEntity is class that represents a Biztalk Hybrid Connection
+// RelayServiceConnectionEntity class that represents a Biztalk Hybrid Connection
 type RelayServiceConnectionEntity struct {
-	autorest.Response                       `json:"-"`
-	ID                                      *string             `json:"id,omitempty"`
-	Name                                    *string             `json:"name,omitempty"`
-	Kind                                    *string             `json:"kind,omitempty"`
-	Location                                *string             `json:"location,omitempty"`
-	Type                                    *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                    *map[string]*string `json:"tags,omitempty"`
 	*RelayServiceConnectionEntityProperties `json:"properties,omitempty"`
 }
 
-// RelayServiceConnectionEntityProperties is
+// UnmarshalJSON is the custom unmarshaler for RelayServiceConnectionEntity struct.
+func (rsce *RelayServiceConnectionEntity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RelayServiceConnectionEntityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rsce.RelayServiceConnectionEntityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rsce.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rsce.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		rsce.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rsce.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rsce.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rsce.Tags = &tags
+	}
+
+	return nil
+}
+
+// RelayServiceConnectionEntityProperties ...
 type RelayServiceConnectionEntityProperties struct {
 	EntityName               *string `json:"entityName,omitempty"`
 	EntityConnectionString   *string `json:"entityConnectionString,omitempty"`
@@ -2231,816 +7533,3707 @@ type RelayServiceConnectionEntityProperties struct {
 	BiztalkURI               *string `json:"biztalkUri,omitempty"`
 }
 
-// RenewCertificateOrderRequest is class representing certificate renew request
+// RenewCertificateOrderRequest class representing certificate renew request
 type RenewCertificateOrderRequest struct {
-	ID                                      *string             `json:"id,omitempty"`
-	Name                                    *string             `json:"name,omitempty"`
-	Kind                                    *string             `json:"kind,omitempty"`
-	Location                                *string             `json:"location,omitempty"`
-	Type                                    *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                                    *map[string]*string `json:"tags,omitempty"`
 	*RenewCertificateOrderRequestProperties `json:"properties,omitempty"`
 }
 
-// RenewCertificateOrderRequestProperties is
+// UnmarshalJSON is the custom unmarshaler for RenewCertificateOrderRequest struct.
+func (rcor *RenewCertificateOrderRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RenewCertificateOrderRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rcor.RenewCertificateOrderRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rcor.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rcor.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		rcor.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rcor.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rcor.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rcor.Tags = &tags
+	}
+
+	return nil
+}
+
+// RenewCertificateOrderRequestProperties ...
 type RenewCertificateOrderRequestProperties struct {
+	// KeySize - Certificate Key Size
 	KeySize *int32 `json:"keySize,omitempty"`
 }
 
-// RequestsBasedTrigger is requestsBasedTrigger
+// RequestsBasedTrigger requestsBasedTrigger
 type RequestsBasedTrigger struct {
-	Count        *int32  `json:"count,omitempty"`
+	// Count - Count
+	Count *int32 `json:"count,omitempty"`
+	// TimeInterval - TimeInterval
 	TimeInterval *string `json:"timeInterval,omitempty"`
 }
 
-// Resource is
+// Resource ...
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Kind     *string             `json:"kind,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResourceMetric is object representing a metric for any resource
+// ResourceMetric object representing a metric for any resource
 type ResourceMetric struct {
-	Name         *ResourceMetricName         `json:"name,omitempty"`
-	Unit         *string                     `json:"unit,omitempty"`
-	TimeGrain    *string                     `json:"timeGrain,omitempty"`
-	StartTime    *date.Time                  `json:"startTime,omitempty"`
-	EndTime      *date.Time                  `json:"endTime,omitempty"`
-	ResourceID   *string                     `json:"resourceId,omitempty"`
-	MetricValues *[]ResourceMetricValue      `json:"metricValues,omitempty"`
-	Properties   *[]KeyValuePairStringString `json:"properties,omitempty"`
+	// Name - Name of metric
+	Name *ResourceMetricName `json:"name,omitempty"`
+	// Unit - Metric unit
+	Unit *string `json:"unit,omitempty"`
+	// TimeGrain - Metric granularity. E.g PT1H, PT5M, P1D
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// StartTime - Metric start time
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Metric end time
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// ResourceID - Metric resource Id
+	ResourceID *string `json:"resourceId,omitempty"`
+	// MetricValues - Metric values
+	MetricValues *[]ResourceMetricValue `json:"metricValues,omitempty"`
+	// Properties - Properties
+	Properties *[]KeyValuePairStringString `json:"properties,omitempty"`
 }
 
-// ResourceMetricCollection is collection of metric responses
+// ResourceMetricCollection collection of metric responses
 type ResourceMetricCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]ResourceMetric `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]ResourceMetric `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResourceMetricCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResourceMetricCollection) ResourceMetricCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResourceMetricCollectionIterator provides access to a complete listing of ResourceMetric values.
+type ResourceMetricCollectionIterator struct {
+	i    int
+	page ResourceMetricCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResourceMetricCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResourceMetricCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResourceMetricCollectionIterator) Response() ResourceMetricCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResourceMetricCollectionIterator) Value() ResourceMetric {
+	if !iter.page.NotDone() {
+		return ResourceMetric{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rmc ResourceMetricCollection) IsEmpty() bool {
+	return rmc.Value == nil || len(*rmc.Value) == 0
+}
+
+// resourceMetricCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rmc ResourceMetricCollection) resourceMetricCollectionPreparer() (*http.Request, error) {
+	if rmc.NextLink == nil || len(to.String(rmc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rmc.NextLink)))
 }
 
-// ResourceMetricName is name of a metric for any resource
+// ResourceMetricCollectionPage contains a page of ResourceMetric values.
+type ResourceMetricCollectionPage struct {
+	fn  func(ResourceMetricCollection) (ResourceMetricCollection, error)
+	rmc ResourceMetricCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResourceMetricCollectionPage) Next() error {
+	next, err := page.fn(page.rmc)
+	if err != nil {
+		return err
+	}
+	page.rmc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResourceMetricCollectionPage) NotDone() bool {
+	return !page.rmc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResourceMetricCollectionPage) Response() ResourceMetricCollection {
+	return page.rmc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResourceMetricCollectionPage) Values() []ResourceMetric {
+	if page.rmc.IsEmpty() {
+		return nil
+	}
+	return *page.rmc.Value
+}
+
+// ResourceMetricName name of a metric for any resource
 type ResourceMetricName struct {
-	Value          *string `json:"value,omitempty"`
+	// Value - metric name value
+	Value *string `json:"value,omitempty"`
+	// LocalizedValue - Localized metric name value
 	LocalizedValue *string `json:"localizedValue,omitempty"`
 }
 
-// ResourceMetricValue is value of resource metric
+// ResourceMetricValue value of resource metric
 type ResourceMetricValue struct {
-	TimeStamp *string  `json:"timeStamp,omitempty"`
-	Average   *float64 `json:"average,omitempty"`
-	Minimum   *float64 `json:"minimum,omitempty"`
-	Maximum   *float64 `json:"maximum,omitempty"`
-	Total     *float64 `json:"total,omitempty"`
-	Count     *float64 `json:"count,omitempty"`
+	// TimeStamp - Value timestamp
+	TimeStamp *string `json:"timeStamp,omitempty"`
+	// Average - Value average
+	Average *float64 `json:"average,omitempty"`
+	// Minimum - Value minimum
+	Minimum *float64 `json:"minimum,omitempty"`
+	// Maximum - Value maximum
+	Maximum *float64 `json:"maximum,omitempty"`
+	// Total - Value total
+	Total *float64 `json:"total,omitempty"`
+	// Count - Value count
+	Count *float64 `json:"count,omitempty"`
 }
 
-// ResourceNameAvailability is describes if a resource name is available
+// ResourceNameAvailability describes if a resource name is available
 type ResourceNameAvailability struct {
 	autorest.Response `json:"-"`
-	NameAvailable     *bool   `json:"nameAvailable,omitempty"`
-	Reason            *string `json:"reason,omitempty"`
-	Message           *string `json:"message,omitempty"`
+	// NameAvailable - True indicates name is valid and available.  False indicates the name is invalid, unavailable, or both.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - Required if nameAvailable is false. 'Invalid' indicates the name provided does not match Azure WebApp service’s naming requirements. 'AlreadyExists' indicates that the name is already in use and is therefore unavailable.
+	Reason  *string `json:"reason,omitempty"`
+	Message *string `json:"message,omitempty"`
 }
 
-// ResourceNameAvailabilityRequest is resource name availability request content
+// ResourceNameAvailabilityRequest resource name availability request content
 type ResourceNameAvailabilityRequest struct {
-	Name   *string `json:"name,omitempty"`
-	Type   *string `json:"type,omitempty"`
-	IsFqdn *bool   `json:"isFqdn,omitempty"`
+	// Name - Resource name to verify
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type used for verification
+	Type *string `json:"type,omitempty"`
+	// IsFqdn - Is fully qualified domain name
+	IsFqdn *bool `json:"isFqdn,omitempty"`
 }
 
-// ResponseMessageEnvelopeAPIEntity is message envelope that contains the common Azure resource manager properties and
-// the resource provider specific content
+// ResponseMessageEnvelopeAPIEntity message envelope that contains the common Azure resource manager properties and the
+// resource provider specific content
 type ResponseMessageEnvelopeAPIEntity struct {
-	ID         *string             `json:"id,omitempty"`
-	Name       *string             `json:"name,omitempty"`
-	Type       *string             `json:"type,omitempty"`
-	Location   *string             `json:"location,omitempty"`
-	Tags       *map[string]*string `json:"tags,omitempty"`
-	Plan       *ArmPlan            `json:"plan,omitempty"`
-	Properties *APIEntity          `json:"properties,omitempty"`
-	Sku        *SkuDescription     `json:"sku,omitempty"`
+	// ID - Resource Id. Typically id is populated only for responses to GET requests. Caller is responsible for passing in this
+	//             value for GET requests only.
+	//             For example: /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupId}/providers/Microsoft.Web/sites/{sitename}
+	ID *string `json:"id,omitempty"`
+	// Name - Name of resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of resource e.g Microsoft.Web/sites
+	Type *string `json:"type,omitempty"`
+	// Location - Geo region resource belongs to e.g. SouthCentralUS, SouthEastAsia
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags associated with resource
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Plan - Azure resource manager plan
+	Plan *ArmPlan `json:"plan,omitempty"`
+	// Properties - Resource specific properties
+	Properties *APIEntity `json:"properties,omitempty"`
+	// Sku - Sku description of the resource
+	Sku *SkuDescription `json:"sku,omitempty"`
 }
 
-// RestoreRequest is description of a restore request
+// RestoreRequest description of a restore request
 type RestoreRequest struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Kind                      *string             `json:"kind,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                      *map[string]*string `json:"tags,omitempty"`
 	*RestoreRequestProperties `json:"properties,omitempty"`
 }
 
-// RestoreRequestProperties is
-type RestoreRequestProperties struct {
-	StorageAccountURL          *string                    `json:"storageAccountUrl,omitempty"`
-	BlobName                   *string                    `json:"blobName,omitempty"`
-	Overwrite                  *bool                      `json:"overwrite,omitempty"`
-	SiteName                   *string                    `json:"siteName,omitempty"`
-	Databases                  *[]DatabaseBackupSetting   `json:"databases,omitempty"`
-	IgnoreConflictingHostNames *bool                      `json:"ignoreConflictingHostNames,omitempty"`
-	OperationType              BackupRestoreOperationType `json:"operationType,omitempty"`
-	AdjustConnectionStrings    *bool                      `json:"adjustConnectionStrings,omitempty"`
-	HostingEnvironment         *string                    `json:"hostingEnvironment,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RestoreRequest struct.
+func (rr *RestoreRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RestoreRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rr.RestoreRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		rr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rr.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rr.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rr.Tags = &tags
+	}
+
+	return nil
 }
 
-// RestoreResponse is response for a restore site request
+// RestoreRequestProperties ...
+type RestoreRequestProperties struct {
+	// StorageAccountURL - SAS URL to the container
+	StorageAccountURL *string `json:"storageAccountUrl,omitempty"`
+	// BlobName - Name of a blob which contains the backup
+	BlobName *string `json:"blobName,omitempty"`
+	// Overwrite - True if the restore operation can overwrite target site. "True" needed if trying to restore over an existing site.
+	Overwrite *bool `json:"overwrite,omitempty"`
+	// SiteName - Name of a site (Web App)
+	SiteName *string `json:"siteName,omitempty"`
+	// Databases - Collection of databses which should be restored. This list has to match the list of databases included in the backup.
+	Databases *[]DatabaseBackupSetting `json:"databases,omitempty"`
+	// IgnoreConflictingHostNames - Changes a logic when restoring a site with custom domains. If "true", custom domains are removed automatically. If "false", custom domains are added to
+	//             the site object when it is being restored, but that might fail due to conflicts during the operation.
+	IgnoreConflictingHostNames *bool `json:"ignoreConflictingHostNames,omitempty"`
+	// OperationType - Operation type. Possible values include: 'Default', 'Clone', 'Relocation'
+	OperationType BackupRestoreOperationType `json:"operationType,omitempty"`
+	// AdjustConnectionStrings - Gets or sets a flag showing if SiteConfig.ConnectionStrings should be set in new site
+	AdjustConnectionStrings *bool `json:"adjustConnectionStrings,omitempty"`
+	// HostingEnvironment - App Service Environment name, if needed (only when restoring a site to an App Service Environment)
+	HostingEnvironment *string `json:"hostingEnvironment,omitempty"`
+}
+
+// RestoreResponse response for a restore site request
 type RestoreResponse struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Kind                       *string             `json:"kind,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	*RestoreResponseProperties `json:"properties,omitempty"`
 }
 
-// RestoreResponseProperties is
+// UnmarshalJSON is the custom unmarshaler for RestoreResponse struct.
+func (rr *RestoreResponse) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RestoreResponseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rr.RestoreResponseProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		rr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rr.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rr.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rr.Tags = &tags
+	}
+
+	return nil
+}
+
+// RestoreResponseProperties ...
 type RestoreResponseProperties struct {
+	// OperationID - When server starts the restore process, it will return an OperationId identifying that particular restore operation
 	OperationID *string `json:"operationId,omitempty"`
 }
 
-// RoutingRule is routing rules for TiP
+// RoutingRule routing rules for TiP
 type RoutingRule struct {
+	// Name - Name of the routing rule. The recommended name would be to point to the slot which will receive the traffic in the experiment.
 	Name *string `json:"name,omitempty"`
 }
 
-// ServerFarmCollection is collection of serverfarms
+// ServerFarmCollection collection of serverfarms
 type ServerFarmCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]ServerFarmWithRichSku `json:"value,omitempty"`
-	NextLink          *string                  `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]ServerFarmWithRichSku `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ServerFarmCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ServerFarmCollection) ServerFarmCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ServerFarmCollectionIterator provides access to a complete listing of ServerFarmWithRichSku values.
+type ServerFarmCollectionIterator struct {
+	i    int
+	page ServerFarmCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ServerFarmCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ServerFarmCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ServerFarmCollectionIterator) Response() ServerFarmCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ServerFarmCollectionIterator) Value() ServerFarmWithRichSku {
+	if !iter.page.NotDone() {
+		return ServerFarmWithRichSku{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (sfc ServerFarmCollection) IsEmpty() bool {
+	return sfc.Value == nil || len(*sfc.Value) == 0
+}
+
+// serverFarmCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (sfc ServerFarmCollection) serverFarmCollectionPreparer() (*http.Request, error) {
+	if sfc.NextLink == nil || len(to.String(sfc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(sfc.NextLink)))
 }
 
-// ServerFarmWithRichSku is app Service Plan Model
+// ServerFarmCollectionPage contains a page of ServerFarmWithRichSku values.
+type ServerFarmCollectionPage struct {
+	fn  func(ServerFarmCollection) (ServerFarmCollection, error)
+	sfc ServerFarmCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ServerFarmCollectionPage) Next() error {
+	next, err := page.fn(page.sfc)
+	if err != nil {
+		return err
+	}
+	page.sfc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ServerFarmCollectionPage) NotDone() bool {
+	return !page.sfc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ServerFarmCollectionPage) Response() ServerFarmCollection {
+	return page.sfc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ServerFarmCollectionPage) Values() []ServerFarmWithRichSku {
+	if page.sfc.IsEmpty() {
+		return nil
+	}
+	return *page.sfc.Value
+}
+
+// ServerFarmsCreateOrUpdateServerFarmFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type ServerFarmsCreateOrUpdateServerFarmFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServerFarmsCreateOrUpdateServerFarmFuture) Result(client ServerFarmsClient) (sfwrs ServerFarmWithRichSku, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return sfwrs, autorest.NewError("web.ServerFarmsCreateOrUpdateServerFarmFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		sfwrs, err = client.CreateOrUpdateServerFarmResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	sfwrs, err = client.CreateOrUpdateServerFarmResponder(resp)
+	return
+}
+
+// ServerFarmWithRichSku app Service Plan Model
 type ServerFarmWithRichSku struct {
-	autorest.Response                `json:"-"`
-	ID                               *string             `json:"id,omitempty"`
-	Name                             *string             `json:"name,omitempty"`
-	Kind                             *string             `json:"kind,omitempty"`
-	Location                         *string             `json:"location,omitempty"`
-	Type                             *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                             *map[string]*string `json:"tags,omitempty"`
 	*ServerFarmWithRichSkuProperties `json:"properties,omitempty"`
 	Sku                              *SkuDescription `json:"sku,omitempty"`
 }
 
-// ServerFarmWithRichSkuProperties is
-type ServerFarmWithRichSkuProperties struct {
-	Name                      *string                    `json:"name,omitempty"`
-	WorkerTierName            *string                    `json:"workerTierName,omitempty"`
-	Status                    StatusOptions              `json:"status,omitempty"`
-	Subscription              *string                    `json:"subscription,omitempty"`
-	AdminSiteName             *string                    `json:"adminSiteName,omitempty"`
-	HostingEnvironmentProfile *HostingEnvironmentProfile `json:"hostingEnvironmentProfile,omitempty"`
-	MaximumNumberOfWorkers    *int32                     `json:"maximumNumberOfWorkers,omitempty"`
-	GeoRegion                 *string                    `json:"geoRegion,omitempty"`
-	PerSiteScaling            *bool                      `json:"perSiteScaling,omitempty"`
-	NumberOfSites             *int32                     `json:"numberOfSites,omitempty"`
-	ResourceGroup             *string                    `json:"resourceGroup,omitempty"`
-	Reserved                  *bool                      `json:"reserved,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ServerFarmWithRichSku struct.
+func (sfwrs *ServerFarmWithRichSku) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ServerFarmWithRichSkuProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sfwrs.ServerFarmWithRichSkuProperties = &properties
+	}
+
+	v = m["sku"]
+	if v != nil {
+		var sku SkuDescription
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		sfwrs.Sku = &sku
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sfwrs.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sfwrs.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		sfwrs.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sfwrs.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sfwrs.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sfwrs.Tags = &tags
+	}
+
+	return nil
 }
 
-// SetObject is
+// ServerFarmWithRichSkuProperties ...
+type ServerFarmWithRichSkuProperties struct {
+	// Name - Name for the App Service Plan
+	Name *string `json:"name,omitempty"`
+	// WorkerTierName - Target worker tier assigned to the App Service Plan
+	WorkerTierName *string `json:"workerTierName,omitempty"`
+	// Status - App Service Plan Status. Possible values include: 'StatusOptionsReady', 'StatusOptionsPending'
+	Status StatusOptions `json:"status,omitempty"`
+	// Subscription - App Service Plan Subscription
+	Subscription *string `json:"subscription,omitempty"`
+	// AdminSiteName - App Service Plan administration site
+	AdminSiteName *string `json:"adminSiteName,omitempty"`
+	// HostingEnvironmentProfile - Specification for the hosting environment (App Service Environment) to use for the App Service Plan
+	HostingEnvironmentProfile *HostingEnvironmentProfile `json:"hostingEnvironmentProfile,omitempty"`
+	// MaximumNumberOfWorkers - Maximum number of instances that can be assigned to this App Service Plan
+	MaximumNumberOfWorkers *int32 `json:"maximumNumberOfWorkers,omitempty"`
+	// GeoRegion - Geographical location for the App Service Plan
+	GeoRegion *string `json:"geoRegion,omitempty"`
+	// PerSiteScaling - If True apps assigned to this App Service Plan can be scaled independently
+	//             If False apps assigned to this App Service Plan will scale to all instances of the plan
+	PerSiteScaling *bool `json:"perSiteScaling,omitempty"`
+	// NumberOfSites - Number of web apps assigned to this App Service Plan
+	NumberOfSites *int32 `json:"numberOfSites,omitempty"`
+	// ResourceGroup - Resource group of the serverfarm
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// Reserved - Enables creation of a Linux App Service Plan
+	Reserved *bool `json:"reserved,omitempty"`
+}
+
+// SetObject ...
 type SetObject struct {
 	autorest.Response `json:"-"`
 	Value             *map[string]interface{} `json:"value,omitempty"`
 }
 
-// Site is represents a web app
+// Site represents a web app
 type Site struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Kind              *string             `json:"kind,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*SiteProperties   `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags            *map[string]*string `json:"tags,omitempty"`
+	*SiteProperties `json:"properties,omitempty"`
 }
 
-// SiteAuthSettings is configuration settings for the Azure App Service Authentication / Authorization feature.
+// UnmarshalJSON is the custom unmarshaler for Site struct.
+func (s *Site) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SiteProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		s.SiteProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		s.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		s.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		s.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		s.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		s.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		s.Tags = &tags
+	}
+
+	return nil
+}
+
+// SiteAuthSettings configuration settings for the Azure App Service Authentication / Authorization feature.
 type SiteAuthSettings struct {
-	autorest.Response            `json:"-"`
-	Enabled                      *bool                         `json:"enabled,omitempty"`
-	HTTPAPIPrefixPath            *string                       `json:"httpApiPrefixPath,omitempty"`
-	UnauthenticatedClientAction  UnauthenticatedClientAction   `json:"unauthenticatedClientAction,omitempty"`
-	TokenStoreEnabled            *bool                         `json:"tokenStoreEnabled,omitempty"`
-	AllowedExternalRedirectUrls  *[]string                     `json:"allowedExternalRedirectUrls,omitempty"`
-	DefaultProvider              BuiltInAuthenticationProvider `json:"defaultProvider,omitempty"`
-	TokenRefreshExtensionHours   *float64                      `json:"tokenRefreshExtensionHours,omitempty"`
-	ClientID                     *string                       `json:"clientId,omitempty"`
-	ClientSecret                 *string                       `json:"clientSecret,omitempty"`
-	Issuer                       *string                       `json:"issuer,omitempty"`
-	AllowedAudiences             *[]string                     `json:"allowedAudiences,omitempty"`
-	AdditionalLoginParams        *[]string                     `json:"additionalLoginParams,omitempty"`
-	AadClientID                  *string                       `json:"aadClientId,omitempty"`
-	OpenIDIssuer                 *string                       `json:"openIdIssuer,omitempty"`
-	GoogleClientID               *string                       `json:"googleClientId,omitempty"`
-	GoogleClientSecret           *string                       `json:"googleClientSecret,omitempty"`
-	GoogleOAuthScopes            *[]string                     `json:"googleOAuthScopes,omitempty"`
-	FacebookAppID                *string                       `json:"facebookAppId,omitempty"`
-	FacebookAppSecret            *string                       `json:"facebookAppSecret,omitempty"`
-	FacebookOAuthScopes          *[]string                     `json:"facebookOAuthScopes,omitempty"`
-	TwitterConsumerKey           *string                       `json:"twitterConsumerKey,omitempty"`
-	TwitterConsumerSecret        *string                       `json:"twitterConsumerSecret,omitempty"`
-	MicrosoftAccountClientID     *string                       `json:"microsoftAccountClientId,omitempty"`
-	MicrosoftAccountClientSecret *string                       `json:"microsoftAccountClientSecret,omitempty"`
-	MicrosoftAccountOAuthScopes  *[]string                     `json:"microsoftAccountOAuthScopes,omitempty"`
+	autorest.Response `json:"-"`
+	// Enabled - Gets or sets a value indicating whether the Authentication / Authorization feature is enabled for the current app.
+	Enabled *bool `json:"enabled,omitempty"`
+	// HTTPAPIPrefixPath - Gets or sets the relative path prefix used by platform HTTP APIs.
+	//             Changing this value is not recommended except for compatibility reasons.
+	HTTPAPIPrefixPath *string `json:"httpApiPrefixPath,omitempty"`
+	// UnauthenticatedClientAction - Gets or sets the action to take when an unauthenticated client attempts to access the app. Possible values include: 'RedirectToLoginPage', 'AllowAnonymous'
+	UnauthenticatedClientAction UnauthenticatedClientAction `json:"unauthenticatedClientAction,omitempty"`
+	// TokenStoreEnabled - Gets or sets a value indicating whether to durably store platform-specific security tokens
+	//             obtained during login flows. This capability is disabled by default.
+	TokenStoreEnabled *bool `json:"tokenStoreEnabled,omitempty"`
+	// AllowedExternalRedirectUrls - Gets or sets a collection of external URLs that can be redirected to as part of logging in
+	//             or logging out of the web app. Note that the query string part of the URL is ignored.
+	//             This is an advanced setting typically only needed by Windows Store application backends.
+	//             Note that URLs within the current domain are always implicitly allowed.
+	AllowedExternalRedirectUrls *[]string `json:"allowedExternalRedirectUrls,omitempty"`
+	// DefaultProvider - Gets or sets the default authentication provider to use when multiple providers are configured.
+	//             This setting is only needed if multiple providers are configured and the unauthenticated client
+	//             action is set to "RedirectToLoginPage". Possible values include: 'AzureActiveDirectory', 'Facebook', 'Google', 'MicrosoftAccount', 'Twitter'
+	DefaultProvider BuiltInAuthenticationProvider `json:"defaultProvider,omitempty"`
+	// TokenRefreshExtensionHours - Gets or sets the number of hours after session token expiration that a session token can be used to
+	//             call the token refresh API. The default is 72 hours.
+	TokenRefreshExtensionHours *float64 `json:"tokenRefreshExtensionHours,omitempty"`
+	// ClientID - Gets or sets the Client ID of this relying party application, known as the client_id.
+	//             This setting is required for enabling OpenID Connection authentication with Azure Active Directory or
+	//             other 3rd party OpenID Connect providers.
+	//             More information on OpenID Connect: http://openid.net/specs/openid-connect-core-1_0.html
+	ClientID *string `json:"clientId,omitempty"`
+	// ClientSecret - Gets or sets the Client Secret of this relying party application (in Azure Active Directory, this is also referred to as the Key).
+	//             This setting is optional. If no client secret is configured, the OpenID Connect implicit auth flow is used to authenticate end users.
+	//             Otherwise, the OpenID Connect Authorization Code Flow is used to authenticate end users.
+	//             More information on OpenID Connect: http://openid.net/specs/openid-connect-core-1_0.html
+	ClientSecret *string `json:"clientSecret,omitempty"`
+	// Issuer - Gets or sets the OpenID Connect Issuer URI that represents the entity which issues access tokens for this application.
+	//             When using Azure Active Directory, this value is the URI of the directory tenant, e.g. https://sts.windows.net/{tenant-guid}/.
+	//             This URI is a case-sensitive identifier for the token issuer.
+	//             More information on OpenID Connect Discovery: http://openid.net/specs/openid-connect-discovery-1_0.html
+	Issuer *string `json:"issuer,omitempty"`
+	// AllowedAudiences - Gets or sets a list of allowed audience values to consider when validating JWTs issued by
+	//             Azure Active Directory. Note that the {Microsoft.Web.Hosting.Administration.SiteAuthSettings.ClientId} value is always considered an
+	//             allowed audience, regardless of this setting.
+	AllowedAudiences *[]string `json:"allowedAudiences,omitempty"`
+	// AdditionalLoginParams - Gets or sets a list of login parameters to send to the OpenID Connect authorization endpoint when
+	//             a user logs in. Each parameter must be in the form "key=value".
+	AdditionalLoginParams *[]string `json:"additionalLoginParams,omitempty"`
+	AadClientID           *string   `json:"aadClientId,omitempty"`
+	OpenIDIssuer          *string   `json:"openIdIssuer,omitempty"`
+	// GoogleClientID - Gets or sets the OpenID Connect Client ID for the Google web application.
+	//             This setting is required for enabling Google Sign-In.
+	//             Google Sign-In documentation: https://developers.google.com/identity/sign-in/web/
+	GoogleClientID *string `json:"googleClientId,omitempty"`
+	// GoogleClientSecret - Gets or sets the client secret associated with the Google web application.
+	//             This setting is required for enabling Google Sign-In.
+	//             Google Sign-In documentation: https://developers.google.com/identity/sign-in/web/
+	GoogleClientSecret *string `json:"googleClientSecret,omitempty"`
+	// GoogleOAuthScopes - Gets or sets the OAuth 2.0 scopes that will be requested as part of Google Sign-In authentication.
+	//             This setting is optional. If not specified, "openid", "profile", and "email" are used as default scopes.
+	//             Google Sign-In documentation: https://developers.google.com/identity/sign-in/web/
+	GoogleOAuthScopes *[]string `json:"googleOAuthScopes,omitempty"`
+	// FacebookAppID - Gets or sets the App ID of the Facebook app used for login.
+	//             This setting is required for enabling Facebook Login.
+	//             Facebook Login documentation: https://developers.facebook.com/docs/facebook-login
+	FacebookAppID *string `json:"facebookAppId,omitempty"`
+	// FacebookAppSecret - Gets or sets the App Secret of the Facebook app used for Facebook Login.
+	//             This setting is required for enabling Facebook Login.
+	//             Facebook Login documentation: https://developers.facebook.com/docs/facebook-login
+	FacebookAppSecret *string `json:"facebookAppSecret,omitempty"`
+	// FacebookOAuthScopes - Gets or sets the OAuth 2.0 scopes that will be requested as part of Facebook Login authentication.
+	//             This setting is optional.
+	//             Facebook Login documentation: https://developers.facebook.com/docs/facebook-login
+	FacebookOAuthScopes *[]string `json:"facebookOAuthScopes,omitempty"`
+	// TwitterConsumerKey - Gets or sets the OAuth 1.0a consumer key of the Twitter application used for sign-in.
+	//             This setting is required for enabling Twitter Sign-In.
+	//             Twitter Sign-In documentation: https://dev.twitter.com/web/sign-in
+	TwitterConsumerKey *string `json:"twitterConsumerKey,omitempty"`
+	// TwitterConsumerSecret - Gets or sets the OAuth 1.0a consumer secret of the Twitter application used for sign-in.
+	//             This setting is required for enabling Twitter Sign-In.
+	//             Twitter Sign-In documentation: https://dev.twitter.com/web/sign-in
+	TwitterConsumerSecret *string `json:"twitterConsumerSecret,omitempty"`
+	// MicrosoftAccountClientID - Gets or sets the OAuth 2.0 client ID that was created for the app used for authentication.
+	//             This setting is required for enabling Microsoft Account authentication.
+	//             Microsoft Account OAuth documentation: https://dev.onedrive.com/auth/msa_oauth.htm
+	MicrosoftAccountClientID *string `json:"microsoftAccountClientId,omitempty"`
+	// MicrosoftAccountClientSecret - Gets or sets the OAuth 2.0 client secret that was created for the app used for authentication.
+	//             This setting is required for enabling Microsoft Account authentication.
+	//             Microsoft Account OAuth documentation: https://dev.onedrive.com/auth/msa_oauth.htm
+	MicrosoftAccountClientSecret *string `json:"microsoftAccountClientSecret,omitempty"`
+	// MicrosoftAccountOAuthScopes - Gets or sets the OAuth 2.0 scopes that will be requested as part of Microsoft Account authentication.
+	//             This setting is optional. If not specified, "wl.basic" is used as the default scope.
+	//             Microsoft Account Scopes and permissions documentation: https://msdn.microsoft.com/en-us/library/dn631845.aspx
+	MicrosoftAccountOAuthScopes *[]string `json:"microsoftAccountOAuthScopes,omitempty"`
 }
 
-// SiteCloneability is represents whether or not a web app is cloneable
+// SiteCloneability represents whether or not a web app is cloneable
 type SiteCloneability struct {
-	autorest.Response       `json:"-"`
-	Result                  CloneAbilityResult           `json:"result,omitempty"`
-	BlockingFeatures        *[]SiteCloneabilityCriterion `json:"blockingFeatures,omitempty"`
-	UnsupportedFeatures     *[]SiteCloneabilityCriterion `json:"unsupportedFeatures,omitempty"`
+	autorest.Response `json:"-"`
+	// Result - Name of web app. Possible values include: 'Cloneable', 'PartiallyCloneable', 'NotCloneable'
+	Result CloneAbilityResult `json:"result,omitempty"`
+	// BlockingFeatures - List of features enabled on web app that prevent cloning
+	BlockingFeatures *[]SiteCloneabilityCriterion `json:"blockingFeatures,omitempty"`
+	// UnsupportedFeatures - List of features enabled on web app that are non-blocking but cannot be cloned. The web app can still be cloned
+	//             but the features in this list will not be set up on cloned web app.
+	UnsupportedFeatures *[]SiteCloneabilityCriterion `json:"unsupportedFeatures,omitempty"`
+	// BlockingCharacteristics - List of blocking application characteristics
 	BlockingCharacteristics *[]SiteCloneabilityCriterion `json:"blockingCharacteristics,omitempty"`
 }
 
-// SiteCloneabilityCriterion is represents a site cloneability criterion
+// SiteCloneabilityCriterion represents a site cloneability criterion
 type SiteCloneabilityCriterion struct {
-	Name        *string `json:"name,omitempty"`
+	// Name - Name of criterion
+	Name *string `json:"name,omitempty"`
+	// Description - Description of criterion
 	Description *string `json:"description,omitempty"`
 }
 
-// SiteCollection is collection of sites
+// SiteCollection collection of sites
 type SiteCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]Site `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]Site `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// SiteCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SiteCollection) SiteCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SiteCollectionIterator provides access to a complete listing of Site values.
+type SiteCollectionIterator struct {
+	i    int
+	page SiteCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SiteCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SiteCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SiteCollectionIterator) Response() SiteCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SiteCollectionIterator) Value() Site {
+	if !iter.page.NotDone() {
+		return Site{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (sc SiteCollection) IsEmpty() bool {
+	return sc.Value == nil || len(*sc.Value) == 0
+}
+
+// siteCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (sc SiteCollection) siteCollectionPreparer() (*http.Request, error) {
+	if sc.NextLink == nil || len(to.String(sc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(sc.NextLink)))
 }
 
-// SiteConfig is configuration of Azure web site
+// SiteCollectionPage contains a page of Site values.
+type SiteCollectionPage struct {
+	fn func(SiteCollection) (SiteCollection, error)
+	sc SiteCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SiteCollectionPage) Next() error {
+	next, err := page.fn(page.sc)
+	if err != nil {
+		return err
+	}
+	page.sc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SiteCollectionPage) NotDone() bool {
+	return !page.sc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SiteCollectionPage) Response() SiteCollection {
+	return page.sc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SiteCollectionPage) Values() []Site {
+	if page.sc.IsEmpty() {
+		return nil
+	}
+	return *page.sc.Value
+}
+
+// SiteConfig configuration of Azure web site
 type SiteConfig struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Kind                  *string             `json:"kind,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                  *map[string]*string `json:"tags,omitempty"`
 	*SiteConfigProperties `json:"properties,omitempty"`
 }
 
-// SiteConfigProperties is
-type SiteConfigProperties struct {
-	NumberOfWorkers              *int32                   `json:"numberOfWorkers,omitempty"`
-	DefaultDocuments             *[]string                `json:"defaultDocuments,omitempty"`
-	NetFrameworkVersion          *string                  `json:"netFrameworkVersion,omitempty"`
-	PhpVersion                   *string                  `json:"phpVersion,omitempty"`
-	PythonVersion                *string                  `json:"pythonVersion,omitempty"`
-	NodeVersion                  *string                  `json:"nodeVersion,omitempty"`
-	RequestTracingEnabled        *bool                    `json:"requestTracingEnabled,omitempty"`
-	RequestTracingExpirationTime *date.Time               `json:"requestTracingExpirationTime,omitempty"`
-	RemoteDebuggingEnabled       *bool                    `json:"remoteDebuggingEnabled,omitempty"`
-	RemoteDebuggingVersion       *string                  `json:"remoteDebuggingVersion,omitempty"`
-	HTTPLoggingEnabled           *bool                    `json:"httpLoggingEnabled,omitempty"`
-	LogsDirectorySizeLimit       *int32                   `json:"logsDirectorySizeLimit,omitempty"`
-	DetailedErrorLoggingEnabled  *bool                    `json:"detailedErrorLoggingEnabled,omitempty"`
-	PublishingUsername           *string                  `json:"publishingUsername,omitempty"`
-	PublishingPassword           *string                  `json:"publishingPassword,omitempty"`
-	AppSettings                  *[]NameValuePair         `json:"appSettings,omitempty"`
-	Metadata                     *[]NameValuePair         `json:"metadata,omitempty"`
-	ConnectionStrings            *[]ConnStringInfo        `json:"connectionStrings,omitempty"`
-	HandlerMappings              *[]HandlerMapping        `json:"handlerMappings,omitempty"`
-	DocumentRoot                 *string                  `json:"documentRoot,omitempty"`
-	ScmType                      *string                  `json:"scmType,omitempty"`
-	Use32BitWorkerProcess        *bool                    `json:"use32BitWorkerProcess,omitempty"`
-	WebSocketsEnabled            *bool                    `json:"webSocketsEnabled,omitempty"`
-	AlwaysOn                     *bool                    `json:"alwaysOn,omitempty"`
-	JavaVersion                  *string                  `json:"javaVersion,omitempty"`
-	JavaContainer                *string                  `json:"javaContainer,omitempty"`
-	JavaContainerVersion         *string                  `json:"javaContainerVersion,omitempty"`
-	AppCommandLine               *string                  `json:"appCommandLine,omitempty"`
-	ManagedPipelineMode          ManagedPipelineMode      `json:"managedPipelineMode,omitempty"`
-	VirtualApplications          *[]VirtualApplication    `json:"virtualApplications,omitempty"`
-	LoadBalancing                SiteLoadBalancing        `json:"loadBalancing,omitempty"`
-	Experiments                  *Experiments             `json:"experiments,omitempty"`
-	Limits                       *SiteLimits              `json:"limits,omitempty"`
-	AutoHealEnabled              *bool                    `json:"autoHealEnabled,omitempty"`
-	AutoHealRules                *AutoHealRules           `json:"autoHealRules,omitempty"`
-	TracingOptions               *string                  `json:"tracingOptions,omitempty"`
-	VnetName                     *string                  `json:"vnetName,omitempty"`
-	Cors                         *CorsSettings            `json:"cors,omitempty"`
-	APIDefinition                *APIDefinitionInfo       `json:"apiDefinition,omitempty"`
-	AutoSwapSlotName             *string                  `json:"autoSwapSlotName,omitempty"`
-	LocalMySQLEnabled            *bool                    `json:"localMySqlEnabled,omitempty"`
-	IPSecurityRestrictions       *[]IPSecurityRestriction `json:"ipSecurityRestrictions,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SiteConfig struct.
+func (sc *SiteConfig) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SiteConfigProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sc.SiteConfigProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sc.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		sc.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sc.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sc.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sc.Tags = &tags
+	}
+
+	return nil
 }
 
-// SiteInstance is instance of a web app
+// SiteConfigProperties ...
+type SiteConfigProperties struct {
+	// NumberOfWorkers - Number of workers
+	NumberOfWorkers *int32 `json:"numberOfWorkers,omitempty"`
+	// DefaultDocuments - Default documents
+	DefaultDocuments *[]string `json:"defaultDocuments,omitempty"`
+	// NetFrameworkVersion - Net Framework Version
+	NetFrameworkVersion *string `json:"netFrameworkVersion,omitempty"`
+	// PhpVersion - Version of PHP
+	PhpVersion *string `json:"phpVersion,omitempty"`
+	// PythonVersion - Version of Python
+	PythonVersion *string `json:"pythonVersion,omitempty"`
+	// NodeVersion - Version of Node
+	NodeVersion *string `json:"nodeVersion,omitempty"`
+	// RequestTracingEnabled - Enable request tracing
+	RequestTracingEnabled *bool `json:"requestTracingEnabled,omitempty"`
+	// RequestTracingExpirationTime - Request tracing expiration time
+	RequestTracingExpirationTime *date.Time `json:"requestTracingExpirationTime,omitempty"`
+	// RemoteDebuggingEnabled - Remote Debugging Enabled
+	RemoteDebuggingEnabled *bool `json:"remoteDebuggingEnabled,omitempty"`
+	// RemoteDebuggingVersion - Remote Debugging Version
+	RemoteDebuggingVersion *string `json:"remoteDebuggingVersion,omitempty"`
+	// HTTPLoggingEnabled - HTTP logging Enabled
+	HTTPLoggingEnabled *bool `json:"httpLoggingEnabled,omitempty"`
+	// LogsDirectorySizeLimit - HTTP Logs Directory size limit
+	LogsDirectorySizeLimit *int32 `json:"logsDirectorySizeLimit,omitempty"`
+	// DetailedErrorLoggingEnabled - Detailed error logging enabled
+	DetailedErrorLoggingEnabled *bool `json:"detailedErrorLoggingEnabled,omitempty"`
+	// PublishingUsername - Publishing user name
+	PublishingUsername *string `json:"publishingUsername,omitempty"`
+	// PublishingPassword - Publishing password
+	PublishingPassword *string `json:"publishingPassword,omitempty"`
+	// AppSettings - Application Settings
+	AppSettings *[]NameValuePair `json:"appSettings,omitempty"`
+	// Metadata - Site Metadata
+	Metadata *[]NameValuePair `json:"metadata,omitempty"`
+	// ConnectionStrings - Connection strings
+	ConnectionStrings *[]ConnStringInfo `json:"connectionStrings,omitempty"`
+	// HandlerMappings - Handler mappings
+	HandlerMappings *[]HandlerMapping `json:"handlerMappings,omitempty"`
+	// DocumentRoot - Document root
+	DocumentRoot *string `json:"documentRoot,omitempty"`
+	// ScmType - SCM type
+	ScmType *string `json:"scmType,omitempty"`
+	// Use32BitWorkerProcess - Use 32 bit worker process
+	Use32BitWorkerProcess *bool `json:"use32BitWorkerProcess,omitempty"`
+	// WebSocketsEnabled - Web socket enabled.
+	WebSocketsEnabled *bool `json:"webSocketsEnabled,omitempty"`
+	// AlwaysOn - Always On
+	AlwaysOn *bool `json:"alwaysOn,omitempty"`
+	// JavaVersion - Java version
+	JavaVersion *string `json:"javaVersion,omitempty"`
+	// JavaContainer - Java container
+	JavaContainer *string `json:"javaContainer,omitempty"`
+	// JavaContainerVersion - Java container version
+	JavaContainerVersion *string `json:"javaContainerVersion,omitempty"`
+	// AppCommandLine - App Command Line to launch
+	AppCommandLine *string `json:"appCommandLine,omitempty"`
+	// ManagedPipelineMode - Managed pipeline mode. Possible values include: 'Integrated', 'Classic'
+	ManagedPipelineMode ManagedPipelineMode `json:"managedPipelineMode,omitempty"`
+	// VirtualApplications - Virtual applications
+	VirtualApplications *[]VirtualApplication `json:"virtualApplications,omitempty"`
+	// LoadBalancing - Site load balancing. Possible values include: 'WeightedRoundRobin', 'LeastRequests', 'LeastResponseTime', 'WeightedTotalTraffic', 'RequestHash'
+	LoadBalancing SiteLoadBalancing `json:"loadBalancing,omitempty"`
+	// Experiments - This is work around for polymophic types
+	Experiments *Experiments `json:"experiments,omitempty"`
+	// Limits - Site limits
+	Limits *SiteLimits `json:"limits,omitempty"`
+	// AutoHealEnabled - Auto heal enabled
+	AutoHealEnabled *bool `json:"autoHealEnabled,omitempty"`
+	// AutoHealRules - Auto heal rules
+	AutoHealRules *AutoHealRules `json:"autoHealRules,omitempty"`
+	// TracingOptions - Tracing options
+	TracingOptions *string `json:"tracingOptions,omitempty"`
+	// VnetName - Vnet name
+	VnetName *string `json:"vnetName,omitempty"`
+	// Cors - Cross-Origin Resource Sharing (CORS) settings.
+	Cors *CorsSettings `json:"cors,omitempty"`
+	// APIDefinition - Information about the formal API definition for the web app.
+	APIDefinition *APIDefinitionInfo `json:"apiDefinition,omitempty"`
+	// AutoSwapSlotName - Auto swap slot name
+	AutoSwapSlotName *string `json:"autoSwapSlotName,omitempty"`
+	// LocalMySQLEnabled - Local mysql enabled
+	LocalMySQLEnabled *bool `json:"localMySqlEnabled,omitempty"`
+	// IPSecurityRestrictions - Ip Security restrictions
+	IPSecurityRestrictions *[]IPSecurityRestriction `json:"ipSecurityRestrictions,omitempty"`
+}
+
+// SiteInstance instance of a web app
 type SiteInstance struct {
-	ID                      *string             `json:"id,omitempty"`
-	Name                    *string             `json:"name,omitempty"`
-	Kind                    *string             `json:"kind,omitempty"`
-	Location                *string             `json:"location,omitempty"`
-	Type                    *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                    *map[string]*string `json:"tags,omitempty"`
 	*SiteInstanceProperties `json:"properties,omitempty"`
 }
 
-// SiteInstanceCollection is collection of site instances
-type SiteInstanceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]SiteInstance `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SiteInstance struct.
+func (si *SiteInstance) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SiteInstanceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		si.SiteInstanceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		si.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		si.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		si.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		si.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		si.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		si.Tags = &tags
+	}
+
+	return nil
 }
 
-// SiteInstanceCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SiteInstanceCollection) SiteInstanceCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SiteInstanceCollection collection of site instances
+type SiteInstanceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]SiteInstance `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// SiteInstanceCollectionIterator provides access to a complete listing of SiteInstance values.
+type SiteInstanceCollectionIterator struct {
+	i    int
+	page SiteInstanceCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SiteInstanceCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SiteInstanceCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SiteInstanceCollectionIterator) Response() SiteInstanceCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SiteInstanceCollectionIterator) Value() SiteInstance {
+	if !iter.page.NotDone() {
+		return SiteInstance{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (sic SiteInstanceCollection) IsEmpty() bool {
+	return sic.Value == nil || len(*sic.Value) == 0
+}
+
+// siteInstanceCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (sic SiteInstanceCollection) siteInstanceCollectionPreparer() (*http.Request, error) {
+	if sic.NextLink == nil || len(to.String(sic.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(sic.NextLink)))
 }
 
-// SiteInstanceProperties is
+// SiteInstanceCollectionPage contains a page of SiteInstance values.
+type SiteInstanceCollectionPage struct {
+	fn  func(SiteInstanceCollection) (SiteInstanceCollection, error)
+	sic SiteInstanceCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SiteInstanceCollectionPage) Next() error {
+	next, err := page.fn(page.sic)
+	if err != nil {
+		return err
+	}
+	page.sic = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SiteInstanceCollectionPage) NotDone() bool {
+	return !page.sic.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SiteInstanceCollectionPage) Response() SiteInstanceCollection {
+	return page.sic
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SiteInstanceCollectionPage) Values() []SiteInstance {
+	if page.sic.IsEmpty() {
+		return nil
+	}
+	return *page.sic.Value
+}
+
+// SiteInstanceProperties ...
 type SiteInstanceProperties struct {
+	// Name - Name of instance
 	Name *string `json:"name,omitempty"`
 }
 
-// SiteLimits is represents metric limits set on a web app.
+// SiteLimits represents metric limits set on a web app.
 type SiteLimits struct {
+	// MaxPercentageCPU - Maximum allowed CPU usage percentage
 	MaxPercentageCPU *float64 `json:"maxPercentageCpu,omitempty"`
-	MaxMemoryInMb    *int64   `json:"maxMemoryInMb,omitempty"`
-	MaxDiskSizeInMb  *int64   `json:"maxDiskSizeInMb,omitempty"`
+	// MaxMemoryInMb - Maximum allowed memory usage in MB
+	MaxMemoryInMb *int64 `json:"maxMemoryInMb,omitempty"`
+	// MaxDiskSizeInMb - Maximum allowed disk size usage in MB
+	MaxDiskSizeInMb *int64 `json:"maxDiskSizeInMb,omitempty"`
 }
 
-// SiteLogsConfig is configuration of Azure web site
+// SiteLogsConfig configuration of Azure web site
 type SiteLogsConfig struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Kind                      *string             `json:"kind,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                      *map[string]*string `json:"tags,omitempty"`
 	*SiteLogsConfigProperties `json:"properties,omitempty"`
 }
 
-// SiteLogsConfigProperties is
-type SiteLogsConfigProperties struct {
-	ApplicationLogs       *ApplicationLogsConfig `json:"applicationLogs,omitempty"`
-	HTTPLogs              *HTTPLogsConfig        `json:"httpLogs,omitempty"`
-	FailedRequestsTracing *EnabledConfig         `json:"failedRequestsTracing,omitempty"`
-	DetailedErrorMessages *EnabledConfig         `json:"detailedErrorMessages,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SiteLogsConfig struct.
+func (slc *SiteLogsConfig) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SiteLogsConfigProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		slc.SiteLogsConfigProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		slc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		slc.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		slc.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		slc.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		slc.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		slc.Tags = &tags
+	}
+
+	return nil
 }
 
-// SiteProperties is
+// SiteLogsConfigProperties ...
+type SiteLogsConfigProperties struct {
+	// ApplicationLogs - Application logs configuration
+	ApplicationLogs *ApplicationLogsConfig `json:"applicationLogs,omitempty"`
+	// HTTPLogs - Http logs configuration
+	HTTPLogs *HTTPLogsConfig `json:"httpLogs,omitempty"`
+	// FailedRequestsTracing - Failed requests tracing configuration
+	FailedRequestsTracing *EnabledConfig `json:"failedRequestsTracing,omitempty"`
+	// DetailedErrorMessages - Detailed error messages configuration
+	DetailedErrorMessages *EnabledConfig `json:"detailedErrorMessages,omitempty"`
+}
+
+// SiteProperties ...
 type SiteProperties struct {
-	Name                      *string                    `json:"name,omitempty"`
-	State                     *string                    `json:"state,omitempty"`
-	HostNames                 *[]string                  `json:"hostNames,omitempty"`
-	RepositorySiteName        *string                    `json:"repositorySiteName,omitempty"`
-	UsageState                UsageState                 `json:"usageState,omitempty"`
-	Enabled                   *bool                      `json:"enabled,omitempty"`
-	EnabledHostNames          *[]string                  `json:"enabledHostNames,omitempty"`
-	AvailabilityState         SiteAvailabilityState      `json:"availabilityState,omitempty"`
-	HostNameSslStates         *[]HostNameSslState        `json:"hostNameSslStates,omitempty"`
-	ServerFarmID              *string                    `json:"serverFarmId,omitempty"`
-	LastModifiedTimeUtc       *date.Time                 `json:"lastModifiedTimeUtc,omitempty"`
-	SiteConfig                *SiteConfig                `json:"siteConfig,omitempty"`
-	TrafficManagerHostNames   *[]string                  `json:"trafficManagerHostNames,omitempty"`
-	PremiumAppDeployed        *bool                      `json:"premiumAppDeployed,omitempty"`
-	ScmSiteAlsoStopped        *bool                      `json:"scmSiteAlsoStopped,omitempty"`
-	TargetSwapSlot            *string                    `json:"targetSwapSlot,omitempty"`
+	// Name - Name of web app
+	Name *string `json:"name,omitempty"`
+	// State - State of the web app
+	State *string `json:"state,omitempty"`
+	// HostNames - Hostnames associated with web app
+	HostNames *[]string `json:"hostNames,omitempty"`
+	// RepositorySiteName - Name of repository site
+	RepositorySiteName *string `json:"repositorySiteName,omitempty"`
+	// UsageState - State indicating whether web app has exceeded its quota usage. Possible values include: 'UsageStateNormal', 'UsageStateExceeded'
+	UsageState UsageState `json:"usageState,omitempty"`
+	// Enabled - True if the site is enabled; otherwise, false. Setting this  value to false disables the site (takes the site off line).
+	Enabled *bool `json:"enabled,omitempty"`
+	// EnabledHostNames - Hostnames for the web app that are enabled. Hostnames need to be assigned and enabled. If some hostnames are assigned but not enabled
+	//             the app is not served on those hostnames
+	EnabledHostNames *[]string `json:"enabledHostNames,omitempty"`
+	// AvailabilityState - Management information availability state for the web app. Possible values are Normal or Limited.
+	//             Normal means that the site is running correctly and that management information for the site is available.
+	//             Limited means that only partial management information for the site is available and that detailed site information is unavailable. Possible values include: 'Normal', 'Limited', 'DisasterRecoveryMode'
+	AvailabilityState SiteAvailabilityState `json:"availabilityState,omitempty"`
+	// HostNameSslStates - Hostname SSL states are  used to manage the SSL bindings for site's hostnames.
+	HostNameSslStates *[]HostNameSslState `json:"hostNameSslStates,omitempty"`
+	ServerFarmID      *string             `json:"serverFarmId,omitempty"`
+	// LastModifiedTimeUtc - Last time web app was modified in UTC
+	LastModifiedTimeUtc *date.Time `json:"lastModifiedTimeUtc,omitempty"`
+	// SiteConfig - Configuration of web app
+	SiteConfig *SiteConfig `json:"siteConfig,omitempty"`
+	// TrafficManagerHostNames - Read-only list of Azure Traffic manager hostnames associated with web app
+	TrafficManagerHostNames *[]string `json:"trafficManagerHostNames,omitempty"`
+	// PremiumAppDeployed - If set indicates whether web app is deployed as a premium app
+	PremiumAppDeployed *bool `json:"premiumAppDeployed,omitempty"`
+	// ScmSiteAlsoStopped - If set indicates whether to stop SCM (KUDU) site when the web app is stopped. Default is false.
+	ScmSiteAlsoStopped *bool `json:"scmSiteAlsoStopped,omitempty"`
+	// TargetSwapSlot - Read-only property that specifies which slot this app will swap into
+	TargetSwapSlot *string `json:"targetSwapSlot,omitempty"`
+	// HostingEnvironmentProfile - Specification for the hosting environment (App Service Environment) to use for the web app
 	HostingEnvironmentProfile *HostingEnvironmentProfile `json:"hostingEnvironmentProfile,omitempty"`
 	MicroService              *string                    `json:"microService,omitempty"`
-	GatewaySiteName           *string                    `json:"gatewaySiteName,omitempty"`
-	ClientAffinityEnabled     *bool                      `json:"clientAffinityEnabled,omitempty"`
-	ClientCertEnabled         *bool                      `json:"clientCertEnabled,omitempty"`
-	HostNamesDisabled         *bool                      `json:"hostNamesDisabled,omitempty"`
-	OutboundIPAddresses       *string                    `json:"outboundIpAddresses,omitempty"`
-	ContainerSize             *int32                     `json:"containerSize,omitempty"`
-	MaxNumberOfWorkers        *int32                     `json:"maxNumberOfWorkers,omitempty"`
-	CloningInfo               *CloningInfo               `json:"cloningInfo,omitempty"`
-	ResourceGroup             *string                    `json:"resourceGroup,omitempty"`
-	IsDefaultContainer        *bool                      `json:"isDefaultContainer,omitempty"`
-	DefaultHostName           *string                    `json:"defaultHostName,omitempty"`
+	// GatewaySiteName - Name of gateway app associated with web app
+	GatewaySiteName *string `json:"gatewaySiteName,omitempty"`
+	// ClientAffinityEnabled - Specifies if the client affinity is enabled when load balancing http request for multiple instances of the web app
+	ClientAffinityEnabled *bool `json:"clientAffinityEnabled,omitempty"`
+	// ClientCertEnabled - Specifies if the client certificate is enabled for the web app
+	ClientCertEnabled *bool `json:"clientCertEnabled,omitempty"`
+	// HostNamesDisabled - Specifies if the public hostnames are disabled the web app.
+	//             If set to true the app is only accessible via API Management process
+	HostNamesDisabled *bool `json:"hostNamesDisabled,omitempty"`
+	// OutboundIPAddresses - List of comma separated IP addresses that this web app uses for outbound connections. Those can be used when configuring firewall rules for databases accessed by this web app.
+	OutboundIPAddresses *string `json:"outboundIpAddresses,omitempty"`
+	// ContainerSize - Size of a function container
+	ContainerSize *int32 `json:"containerSize,omitempty"`
+	// MaxNumberOfWorkers - Maximum number of workers
+	//             This only applies to function container
+	MaxNumberOfWorkers *int32 `json:"maxNumberOfWorkers,omitempty"`
+	// CloningInfo - This is only valid for web app creation. If specified, web app is cloned from
+	//             a source web app
+	CloningInfo *CloningInfo `json:"cloningInfo,omitempty"`
+	// ResourceGroup - Resource group web app belongs to
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	// IsDefaultContainer - Site is a default container
+	IsDefaultContainer *bool `json:"isDefaultContainer,omitempty"`
+	// DefaultHostName - Default hostname of the web app
+	DefaultHostName *string `json:"defaultHostName,omitempty"`
 }
 
-// SitePropertiesModel is
+// SitePropertiesModel ...
 type SitePropertiesModel struct {
 	Metadata    *[]NameValuePair `json:"metadata,omitempty"`
 	Properties  *[]NameValuePair `json:"properties,omitempty"`
 	AppSettings *[]NameValuePair `json:"appSettings,omitempty"`
 }
 
-// SiteSourceControl is describes the source control configuration for web app
+// SitesCreateOrUpdateSiteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesCreateOrUpdateSiteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesCreateOrUpdateSiteFuture) Result(client SitesClient) (s Site, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("web.SitesCreateOrUpdateSiteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.CreateOrUpdateSiteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.CreateOrUpdateSiteResponder(resp)
+	return
+}
+
+// SitesCreateOrUpdateSiteSlotFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type SitesCreateOrUpdateSiteSlotFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesCreateOrUpdateSiteSlotFuture) Result(client SitesClient) (s Site, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("web.SitesCreateOrUpdateSiteSlotFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.CreateOrUpdateSiteSlotResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.CreateOrUpdateSiteSlotResponder(resp)
+	return
+}
+
+// SitesListSitePublishingCredentialsFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type SitesListSitePublishingCredentialsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesListSitePublishingCredentialsFuture) Result(client SitesClient) (u User, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return u, autorest.NewError("web.SitesListSitePublishingCredentialsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		u, err = client.ListSitePublishingCredentialsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	u, err = client.ListSitePublishingCredentialsResponder(resp)
+	return
+}
+
+// SitesListSitePublishingCredentialsSlotFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type SitesListSitePublishingCredentialsSlotFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesListSitePublishingCredentialsSlotFuture) Result(client SitesClient) (u User, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return u, autorest.NewError("web.SitesListSitePublishingCredentialsSlotFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		u, err = client.ListSitePublishingCredentialsSlotResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	u, err = client.ListSitePublishingCredentialsSlotResponder(resp)
+	return
+}
+
+// SiteSourceControl describes the source control configuration for web app
 type SiteSourceControl struct {
-	autorest.Response            `json:"-"`
-	ID                           *string             `json:"id,omitempty"`
-	Name                         *string             `json:"name,omitempty"`
-	Kind                         *string             `json:"kind,omitempty"`
-	Location                     *string             `json:"location,omitempty"`
-	Type                         *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                         *map[string]*string `json:"tags,omitempty"`
 	*SiteSourceControlProperties `json:"properties,omitempty"`
 }
 
-// SiteSourceControlProperties is
-type SiteSourceControlProperties struct {
-	RepoURL                   *string `json:"repoUrl,omitempty"`
-	Branch                    *string `json:"branch,omitempty"`
-	IsManualIntegration       *bool   `json:"isManualIntegration,omitempty"`
-	DeploymentRollbackEnabled *bool   `json:"deploymentRollbackEnabled,omitempty"`
-	IsMercurial               *bool   `json:"isMercurial,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SiteSourceControl struct.
+func (ssc *SiteSourceControl) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SiteSourceControlProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ssc.SiteSourceControlProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ssc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ssc.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ssc.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ssc.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ssc.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ssc.Tags = &tags
+	}
+
+	return nil
 }
 
-// SkuCapacity is description of the App Service Plan scale options
+// SiteSourceControlProperties ...
+type SiteSourceControlProperties struct {
+	// RepoURL - Repository or source control url
+	RepoURL *string `json:"repoUrl,omitempty"`
+	// Branch - Name of branch to use for deployment
+	Branch *string `json:"branch,omitempty"`
+	// IsManualIntegration - Whether to manual or continuous integration
+	IsManualIntegration *bool `json:"isManualIntegration,omitempty"`
+	// DeploymentRollbackEnabled - Whether to manual or continuous integration
+	DeploymentRollbackEnabled *bool `json:"deploymentRollbackEnabled,omitempty"`
+	// IsMercurial - Mercurial or Git repository type
+	IsMercurial *bool `json:"isMercurial,omitempty"`
+}
+
+// SitesRecoverSiteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesRecoverSiteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesRecoverSiteFuture) Result(client SitesClient) (s Site, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("web.SitesRecoverSiteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.RecoverSiteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.RecoverSiteResponder(resp)
+	return
+}
+
+// SitesRecoverSiteSlotFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesRecoverSiteSlotFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesRecoverSiteSlotFuture) Result(client SitesClient) (s Site, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("web.SitesRecoverSiteSlotFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.RecoverSiteSlotResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.RecoverSiteSlotResponder(resp)
+	return
+}
+
+// SitesRestoreSiteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesRestoreSiteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesRestoreSiteFuture) Result(client SitesClient) (rr RestoreResponse, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rr, autorest.NewError("web.SitesRestoreSiteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rr, err = client.RestoreSiteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rr, err = client.RestoreSiteResponder(resp)
+	return
+}
+
+// SitesRestoreSiteSlotFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesRestoreSiteSlotFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesRestoreSiteSlotFuture) Result(client SitesClient) (rr RestoreResponse, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rr, autorest.NewError("web.SitesRestoreSiteSlotFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rr, err = client.RestoreSiteSlotResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rr, err = client.RestoreSiteSlotResponder(resp)
+	return
+}
+
+// SitesSwapSlotsSlotFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SitesSwapSlotsSlotFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesSwapSlotsSlotFuture) Result(client SitesClient) (so SetObject, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return so, autorest.NewError("web.SitesSwapSlotsSlotFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		so, err = client.SwapSlotsSlotResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	so, err = client.SwapSlotsSlotResponder(resp)
+	return
+}
+
+// SitesSwapSlotWithProductionFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type SitesSwapSlotWithProductionFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SitesSwapSlotWithProductionFuture) Result(client SitesClient) (so SetObject, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return so, autorest.NewError("web.SitesSwapSlotWithProductionFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		so, err = client.SwapSlotWithProductionResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	so, err = client.SwapSlotWithProductionResponder(resp)
+	return
+}
+
+// SkuCapacity description of the App Service Plan scale options
 type SkuCapacity struct {
-	Minimum   *int32  `json:"minimum,omitempty"`
-	Maximum   *int32  `json:"maximum,omitempty"`
-	Default   *int32  `json:"default,omitempty"`
+	// Minimum - Minimum number of Workers for this App Service Plan SKU
+	Minimum *int32 `json:"minimum,omitempty"`
+	// Maximum - Maximum number of Workers for this App Service Plan SKU
+	Maximum *int32 `json:"maximum,omitempty"`
+	// Default - Default number of Workers for this App Service Plan SKU
+	Default *int32 `json:"default,omitempty"`
+	// ScaleType - Available scale configurations for an App Service Plan
 	ScaleType *string `json:"scaleType,omitempty"`
 }
 
-// SkuDescription is describes a sku for a scalable resource
+// SkuDescription describes a sku for a scalable resource
 type SkuDescription struct {
-	Name     *string `json:"name,omitempty"`
-	Tier     *string `json:"tier,omitempty"`
-	Size     *string `json:"size,omitempty"`
-	Family   *string `json:"family,omitempty"`
-	Capacity *int32  `json:"capacity,omitempty"`
+	// Name - Name of the resource sku
+	Name *string `json:"name,omitempty"`
+	// Tier - Service Tier of the resource sku
+	Tier *string `json:"tier,omitempty"`
+	// Size - Size specifier of the resource sku
+	Size *string `json:"size,omitempty"`
+	// Family - Family code of the resource sku
+	Family *string `json:"family,omitempty"`
+	// Capacity - Current number of instances assigned to the resource
+	Capacity *int32 `json:"capacity,omitempty"`
 }
 
-// SkuInfo is sku discovery information
+// SkuInfo sku discovery information
 type SkuInfo struct {
-	ResourceType *string         `json:"resourceType,omitempty"`
-	Sku          *SkuDescription `json:"sku,omitempty"`
-	Capacity     *SkuCapacity    `json:"capacity,omitempty"`
+	// ResourceType - Resource type that this sku applies to
+	ResourceType *string `json:"resourceType,omitempty"`
+	// Sku - Name and tier of the sku
+	Sku *SkuDescription `json:"sku,omitempty"`
+	// Capacity - Min, max, and default scale values of the sku
+	Capacity *SkuCapacity `json:"capacity,omitempty"`
 }
 
-// SkuInfoCollection is collection of SkuInfos
+// SkuInfoCollection collection of SkuInfos
 type SkuInfoCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]SkuInfo `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]SkuInfo `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// SkuInfoCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SkuInfoCollection) SkuInfoCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SkuInfoCollectionIterator provides access to a complete listing of SkuInfo values.
+type SkuInfoCollectionIterator struct {
+	i    int
+	page SkuInfoCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SkuInfoCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SkuInfoCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SkuInfoCollectionIterator) Response() SkuInfoCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SkuInfoCollectionIterator) Value() SkuInfo {
+	if !iter.page.NotDone() {
+		return SkuInfo{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (sic SkuInfoCollection) IsEmpty() bool {
+	return sic.Value == nil || len(*sic.Value) == 0
+}
+
+// skuInfoCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (sic SkuInfoCollection) skuInfoCollectionPreparer() (*http.Request, error) {
+	if sic.NextLink == nil || len(to.String(sic.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(sic.NextLink)))
 }
 
-// SlotConfigNames is class containing names for connection strings and application settings to be marked as sticky to
-// the slot
+// SkuInfoCollectionPage contains a page of SkuInfo values.
+type SkuInfoCollectionPage struct {
+	fn  func(SkuInfoCollection) (SkuInfoCollection, error)
+	sic SkuInfoCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SkuInfoCollectionPage) Next() error {
+	next, err := page.fn(page.sic)
+	if err != nil {
+		return err
+	}
+	page.sic = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SkuInfoCollectionPage) NotDone() bool {
+	return !page.sic.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SkuInfoCollectionPage) Response() SkuInfoCollection {
+	return page.sic
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SkuInfoCollectionPage) Values() []SkuInfo {
+	if page.sic.IsEmpty() {
+		return nil
+	}
+	return *page.sic.Value
+}
+
+// SlotConfigNames class containing names for connection strings and application settings to be marked as sticky to the
+// slot
 // and not moved during swap operation
 // This is valid for all deployment slots under the site
 type SlotConfigNames struct {
+	// ConnectionStringNames - List of connection string names
 	ConnectionStringNames *[]string `json:"connectionStringNames,omitempty"`
-	AppSettingNames       *[]string `json:"appSettingNames,omitempty"`
+	// AppSettingNames - List of application settings names
+	AppSettingNames *[]string `json:"appSettingNames,omitempty"`
 }
 
-// SlotConfigNamesResource is slot Config names azure resource
+// SlotConfigNamesResource slot Config names azure resource
 type SlotConfigNamesResource struct {
-	autorest.Response                  `json:"-"`
-	ID                                 *string             `json:"id,omitempty"`
-	Name                               *string             `json:"name,omitempty"`
-	Kind                               *string             `json:"kind,omitempty"`
-	Location                           *string             `json:"location,omitempty"`
-	Type                               *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                               *map[string]*string `json:"tags,omitempty"`
 	*SlotConfigNamesResourceProperties `json:"properties,omitempty"`
 }
 
-// SlotConfigNamesResourceProperties is
-type SlotConfigNamesResourceProperties struct {
-	ConnectionStringNames *[]string `json:"connectionStringNames,omitempty"`
-	AppSettingNames       *[]string `json:"appSettingNames,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SlotConfigNamesResource struct.
+func (scnr *SlotConfigNamesResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SlotConfigNamesResourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		scnr.SlotConfigNamesResourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		scnr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		scnr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		scnr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		scnr.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		scnr.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		scnr.Tags = &tags
+	}
+
+	return nil
 }
 
-// SlotDifference is an object describing the difference in setting values between two web app slots
+// SlotConfigNamesResourceProperties ...
+type SlotConfigNamesResourceProperties struct {
+	// ConnectionStringNames - List of connection string names
+	ConnectionStringNames *[]string `json:"connectionStringNames,omitempty"`
+	// AppSettingNames - List of application settings names
+	AppSettingNames *[]string `json:"appSettingNames,omitempty"`
+}
+
+// SlotDifference an object describing the difference in setting values between two web app slots
 type SlotDifference struct {
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Kind                      *string             `json:"kind,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                      *map[string]*string `json:"tags,omitempty"`
 	*SlotDifferenceProperties `json:"properties,omitempty"`
 }
 
-// SlotDifferenceCollection is collection of Slot Differences
-type SlotDifferenceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]SlotDifference `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SlotDifference struct.
+func (sd *SlotDifference) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SlotDifferenceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sd.SlotDifferenceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sd.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sd.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		sd.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sd.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sd.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sd.Tags = &tags
+	}
+
+	return nil
 }
 
-// SlotDifferenceCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SlotDifferenceCollection) SlotDifferenceCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SlotDifferenceCollection collection of Slot Differences
+type SlotDifferenceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]SlotDifference `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// SlotDifferenceCollectionIterator provides access to a complete listing of SlotDifference values.
+type SlotDifferenceCollectionIterator struct {
+	i    int
+	page SlotDifferenceCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SlotDifferenceCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SlotDifferenceCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SlotDifferenceCollectionIterator) Response() SlotDifferenceCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SlotDifferenceCollectionIterator) Value() SlotDifference {
+	if !iter.page.NotDone() {
+		return SlotDifference{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (sdc SlotDifferenceCollection) IsEmpty() bool {
+	return sdc.Value == nil || len(*sdc.Value) == 0
+}
+
+// slotDifferenceCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (sdc SlotDifferenceCollection) slotDifferenceCollectionPreparer() (*http.Request, error) {
+	if sdc.NextLink == nil || len(to.String(sdc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(sdc.NextLink)))
 }
 
-// SlotDifferenceProperties is
+// SlotDifferenceCollectionPage contains a page of SlotDifference values.
+type SlotDifferenceCollectionPage struct {
+	fn  func(SlotDifferenceCollection) (SlotDifferenceCollection, error)
+	sdc SlotDifferenceCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SlotDifferenceCollectionPage) Next() error {
+	next, err := page.fn(page.sdc)
+	if err != nil {
+		return err
+	}
+	page.sdc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SlotDifferenceCollectionPage) NotDone() bool {
+	return !page.sdc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SlotDifferenceCollectionPage) Response() SlotDifferenceCollection {
+	return page.sdc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SlotDifferenceCollectionPage) Values() []SlotDifference {
+	if page.sdc.IsEmpty() {
+		return nil
+	}
+	return *page.sdc.Value
+}
+
+// SlotDifferenceProperties ...
 type SlotDifferenceProperties struct {
-	Type               *string `json:"type,omitempty"`
-	SettingType        *string `json:"settingType,omitempty"`
-	DiffRule           *string `json:"diffRule,omitempty"`
-	SettingName        *string `json:"settingName,omitempty"`
+	// Type - Indicates the type of the difference: Information, Warning or Error.
+	Type *string `json:"type,omitempty"`
+	// SettingType - The type of the settings: General, AppSetting or ConnectionString
+	SettingType *string `json:"settingType,omitempty"`
+	// DiffRule - Rule that describes how to process the difference in settings during web app slot swap.
+	DiffRule *string `json:"diffRule,omitempty"`
+	// SettingName - Name of the setting
+	SettingName *string `json:"settingName,omitempty"`
+	// ValueInCurrentSlot - Value of the setting in the current web app slot
 	ValueInCurrentSlot *string `json:"valueInCurrentSlot,omitempty"`
-	ValueInTargetSlot  *string `json:"valueInTargetSlot,omitempty"`
-	Description        *string `json:"description,omitempty"`
+	// ValueInTargetSlot - Value of the setting in the target web app slot
+	ValueInTargetSlot *string `json:"valueInTargetSlot,omitempty"`
+	// Description - Description of the difference
+	Description *string `json:"description,omitempty"`
 }
 
-// SlowRequestsBasedTrigger is slowRequestsBasedTrigger
+// SlowRequestsBasedTrigger slowRequestsBasedTrigger
 type SlowRequestsBasedTrigger struct {
-	TimeTaken    *string `json:"timeTaken,omitempty"`
-	Count        *int32  `json:"count,omitempty"`
+	// TimeTaken - TimeTaken
+	TimeTaken *string `json:"timeTaken,omitempty"`
+	// Count - Count
+	Count *int32 `json:"count,omitempty"`
+	// TimeInterval - TimeInterval
 	TimeInterval *string `json:"timeInterval,omitempty"`
 }
 
-// SourceControl is describes the Source Control OAuth Token
+// SourceControl describes the Source Control OAuth Token
 type SourceControl struct {
-	autorest.Response        `json:"-"`
-	ID                       *string             `json:"id,omitempty"`
-	Name                     *string             `json:"name,omitempty"`
-	Kind                     *string             `json:"kind,omitempty"`
-	Location                 *string             `json:"location,omitempty"`
-	Type                     *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                     *map[string]*string `json:"tags,omitempty"`
 	*SourceControlProperties `json:"properties,omitempty"`
 }
 
-// SourceControlCollection is collection of soure controls
-type SourceControlCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]SourceControl `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SourceControl struct.
+func (sc *SourceControl) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SourceControlProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sc.SourceControlProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sc.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		sc.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sc.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sc.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sc.Tags = &tags
+	}
+
+	return nil
 }
 
-// SourceControlCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SourceControlCollection) SourceControlCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SourceControlCollection collection of soure controls
+type SourceControlCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]SourceControl `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// SourceControlCollectionIterator provides access to a complete listing of SourceControl values.
+type SourceControlCollectionIterator struct {
+	i    int
+	page SourceControlCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SourceControlCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SourceControlCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SourceControlCollectionIterator) Response() SourceControlCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SourceControlCollectionIterator) Value() SourceControl {
+	if !iter.page.NotDone() {
+		return SourceControl{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (scc SourceControlCollection) IsEmpty() bool {
+	return scc.Value == nil || len(*scc.Value) == 0
+}
+
+// sourceControlCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (scc SourceControlCollection) sourceControlCollectionPreparer() (*http.Request, error) {
+	if scc.NextLink == nil || len(to.String(scc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(scc.NextLink)))
 }
 
-// SourceControlProperties is
+// SourceControlCollectionPage contains a page of SourceControl values.
+type SourceControlCollectionPage struct {
+	fn  func(SourceControlCollection) (SourceControlCollection, error)
+	scc SourceControlCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SourceControlCollectionPage) Next() error {
+	next, err := page.fn(page.scc)
+	if err != nil {
+		return err
+	}
+	page.scc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SourceControlCollectionPage) NotDone() bool {
+	return !page.scc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SourceControlCollectionPage) Response() SourceControlCollection {
+	return page.scc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SourceControlCollectionPage) Values() []SourceControl {
+	if page.scc.IsEmpty() {
+		return nil
+	}
+	return *page.scc.Value
+}
+
+// SourceControlProperties ...
 type SourceControlProperties struct {
-	Name           *string    `json:"name,omitempty"`
-	Token          *string    `json:"token,omitempty"`
-	TokenSecret    *string    `json:"tokenSecret,omitempty"`
-	RefreshToken   *string    `json:"refreshToken,omitempty"`
+	// Name - Name or Source Control Type
+	Name *string `json:"name,omitempty"`
+	// Token - OAuth Access Token
+	Token *string `json:"token,omitempty"`
+	// TokenSecret - OAuth Access Token Secret
+	TokenSecret *string `json:"tokenSecret,omitempty"`
+	// RefreshToken - OAuth Refresh Token
+	RefreshToken *string `json:"refreshToken,omitempty"`
+	// ExpirationTime - OAuth Token Expiration
 	ExpirationTime *date.Time `json:"expirationTime,omitempty"`
 }
 
-// StampCapacity is class containing stamp capacity information
+// StampCapacity class containing stamp capacity information
 type StampCapacity struct {
-	Name                           *string            `json:"name,omitempty"`
-	AvailableCapacity              *int64             `json:"availableCapacity,omitempty"`
-	TotalCapacity                  *int64             `json:"totalCapacity,omitempty"`
-	Unit                           *string            `json:"unit,omitempty"`
-	ComputeMode                    ComputeModeOptions `json:"computeMode,omitempty"`
-	WorkerSize                     WorkerSizeOptions  `json:"workerSize,omitempty"`
-	WorkerSizeID                   *int32             `json:"workerSizeId,omitempty"`
-	ExcludeFromCapacityAllocation  *bool              `json:"excludeFromCapacityAllocation,omitempty"`
-	IsApplicableForAllComputeModes *bool              `json:"isApplicableForAllComputeModes,omitempty"`
-	SiteMode                       *string            `json:"siteMode,omitempty"`
+	// Name - Name of the stamp
+	Name *string `json:"name,omitempty"`
+	// AvailableCapacity - Available capacity (# of machines, bytes of storage etc...)
+	AvailableCapacity *int64 `json:"availableCapacity,omitempty"`
+	// TotalCapacity - Total capacity (# of machines, bytes of storage etc...)
+	TotalCapacity *int64 `json:"totalCapacity,omitempty"`
+	// Unit - Name of the unit
+	Unit *string `json:"unit,omitempty"`
+	// ComputeMode - Shared/Dedicated workers. Possible values include: 'Shared', 'Dedicated', 'Dynamic'
+	ComputeMode ComputeModeOptions `json:"computeMode,omitempty"`
+	// WorkerSize - Size of the machines. Possible values include: 'WorkerSizeOptionsDefault', 'WorkerSizeOptionsSmall', 'WorkerSizeOptionsMedium', 'WorkerSizeOptionsLarge'
+	WorkerSize WorkerSizeOptions `json:"workerSize,omitempty"`
+	// WorkerSizeID - Size Id of machines:
+	//             0 - Small
+	//             1 - Medium
+	//             2 - Large
+	WorkerSizeID *int32 `json:"workerSizeId,omitempty"`
+	// ExcludeFromCapacityAllocation - If true it includes basic sites
+	//             Basic sites are not used for capacity allocation.
+	ExcludeFromCapacityAllocation *bool `json:"excludeFromCapacityAllocation,omitempty"`
+	// IsApplicableForAllComputeModes - Is capacity applicable for all sites?
+	IsApplicableForAllComputeModes *bool `json:"isApplicableForAllComputeModes,omitempty"`
+	// SiteMode - Shared or Dedicated
+	SiteMode *string `json:"siteMode,omitempty"`
 }
 
-// StampCapacityCollection is collection of stamp capacities
+// StampCapacityCollection collection of stamp capacities
 type StampCapacityCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]StampCapacity `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]StampCapacity `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// StampCapacityCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client StampCapacityCollection) StampCapacityCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// StampCapacityCollectionIterator provides access to a complete listing of StampCapacity values.
+type StampCapacityCollectionIterator struct {
+	i    int
+	page StampCapacityCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *StampCapacityCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter StampCapacityCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter StampCapacityCollectionIterator) Response() StampCapacityCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter StampCapacityCollectionIterator) Value() StampCapacity {
+	if !iter.page.NotDone() {
+		return StampCapacity{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (scc StampCapacityCollection) IsEmpty() bool {
+	return scc.Value == nil || len(*scc.Value) == 0
+}
+
+// stampCapacityCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (scc StampCapacityCollection) stampCapacityCollectionPreparer() (*http.Request, error) {
+	if scc.NextLink == nil || len(to.String(scc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(scc.NextLink)))
 }
 
-// StatusCodesBasedTrigger is statusCodeBasedTrigger
+// StampCapacityCollectionPage contains a page of StampCapacity values.
+type StampCapacityCollectionPage struct {
+	fn  func(StampCapacityCollection) (StampCapacityCollection, error)
+	scc StampCapacityCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *StampCapacityCollectionPage) Next() error {
+	next, err := page.fn(page.scc)
+	if err != nil {
+		return err
+	}
+	page.scc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page StampCapacityCollectionPage) NotDone() bool {
+	return !page.scc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page StampCapacityCollectionPage) Response() StampCapacityCollection {
+	return page.scc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page StampCapacityCollectionPage) Values() []StampCapacity {
+	if page.scc.IsEmpty() {
+		return nil
+	}
+	return *page.scc.Value
+}
+
+// StatusCodesBasedTrigger statusCodeBasedTrigger
 type StatusCodesBasedTrigger struct {
-	Status       *int32  `json:"status,omitempty"`
-	SubStatus    *int32  `json:"subStatus,omitempty"`
-	Win32Status  *int32  `json:"win32Status,omitempty"`
-	Count        *int32  `json:"count,omitempty"`
+	// Status - HTTP status code
+	Status *int32 `json:"status,omitempty"`
+	// SubStatus - SubStatus
+	SubStatus *int32 `json:"subStatus,omitempty"`
+	// Win32Status - Win32 error code
+	Win32Status *int32 `json:"win32Status,omitempty"`
+	// Count - Count
+	Count *int32 `json:"count,omitempty"`
+	// TimeInterval - TimeInterval
 	TimeInterval *string `json:"timeInterval,omitempty"`
 }
 
-// StringDictionary is string dictionary resource
+// StringDictionary string dictionary resource
 type StringDictionary struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Kind              *string             `json:"kind,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Properties        *map[string]*string `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Settings
+	Properties *map[string]*string `json:"properties,omitempty"`
 }
 
-// TldLegalAgreement is represents a legal agreement for top level domain
+// TldLegalAgreement represents a legal agreement for top level domain
 type TldLegalAgreement struct {
+	// AgreementKey - Unique identifier for the agreement
 	AgreementKey *string `json:"agreementKey,omitempty"`
-	Title        *string `json:"title,omitempty"`
-	Content      *string `json:"content,omitempty"`
-	URL          *string `json:"url,omitempty"`
+	// Title - Agreement title
+	Title *string `json:"title,omitempty"`
+	// Content - Agreement details
+	Content *string `json:"content,omitempty"`
+	// URL - Url where a copy of the agreement details is hosted
+	URL *string `json:"url,omitempty"`
 }
 
-// TldLegalAgreementCollection is collection of Tld Legal Agreements
+// TldLegalAgreementCollection collection of Tld Legal Agreements
 type TldLegalAgreementCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]TldLegalAgreement `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]TldLegalAgreement `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// TldLegalAgreementCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client TldLegalAgreementCollection) TldLegalAgreementCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// TldLegalAgreementCollectionIterator provides access to a complete listing of TldLegalAgreement values.
+type TldLegalAgreementCollectionIterator struct {
+	i    int
+	page TldLegalAgreementCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *TldLegalAgreementCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter TldLegalAgreementCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter TldLegalAgreementCollectionIterator) Response() TldLegalAgreementCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter TldLegalAgreementCollectionIterator) Value() TldLegalAgreement {
+	if !iter.page.NotDone() {
+		return TldLegalAgreement{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (tlac TldLegalAgreementCollection) IsEmpty() bool {
+	return tlac.Value == nil || len(*tlac.Value) == 0
+}
+
+// tldLegalAgreementCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (tlac TldLegalAgreementCollection) tldLegalAgreementCollectionPreparer() (*http.Request, error) {
+	if tlac.NextLink == nil || len(to.String(tlac.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(tlac.NextLink)))
 }
 
-// TopLevelDomain is a top level domain object
+// TldLegalAgreementCollectionPage contains a page of TldLegalAgreement values.
+type TldLegalAgreementCollectionPage struct {
+	fn   func(TldLegalAgreementCollection) (TldLegalAgreementCollection, error)
+	tlac TldLegalAgreementCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *TldLegalAgreementCollectionPage) Next() error {
+	next, err := page.fn(page.tlac)
+	if err != nil {
+		return err
+	}
+	page.tlac = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page TldLegalAgreementCollectionPage) NotDone() bool {
+	return !page.tlac.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page TldLegalAgreementCollectionPage) Response() TldLegalAgreementCollection {
+	return page.tlac
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page TldLegalAgreementCollectionPage) Values() []TldLegalAgreement {
+	if page.tlac.IsEmpty() {
+		return nil
+	}
+	return *page.tlac.Value
+}
+
+// TopLevelDomain a top level domain object
 type TopLevelDomain struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Kind                      *string             `json:"kind,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                      *map[string]*string `json:"tags,omitempty"`
 	*TopLevelDomainProperties `json:"properties,omitempty"`
 }
 
-// TopLevelDomainAgreementOption is options for retrieving the list of top level domain legal agreements
+// UnmarshalJSON is the custom unmarshaler for TopLevelDomain struct.
+func (tld *TopLevelDomain) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties TopLevelDomainProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		tld.TopLevelDomainProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		tld.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		tld.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		tld.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		tld.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		tld.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		tld.Tags = &tags
+	}
+
+	return nil
+}
+
+// TopLevelDomainAgreementOption options for retrieving the list of top level domain legal agreements
 type TopLevelDomainAgreementOption struct {
+	// IncludePrivacy - If true then the list of agreements will inclue agreements for domain privacy as well.
 	IncludePrivacy *bool `json:"includePrivacy,omitempty"`
 }
 
-// TopLevelDomainCollection is collection of Top Level Domains
+// TopLevelDomainCollection collection of Top Level Domains
 type TopLevelDomainCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]TopLevelDomain `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+	// Value - Collection of resources
+	Value *[]TopLevelDomain `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// TopLevelDomainCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client TopLevelDomainCollection) TopLevelDomainCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// TopLevelDomainCollectionIterator provides access to a complete listing of TopLevelDomain values.
+type TopLevelDomainCollectionIterator struct {
+	i    int
+	page TopLevelDomainCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *TopLevelDomainCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter TopLevelDomainCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter TopLevelDomainCollectionIterator) Response() TopLevelDomainCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter TopLevelDomainCollectionIterator) Value() TopLevelDomain {
+	if !iter.page.NotDone() {
+		return TopLevelDomain{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (tldc TopLevelDomainCollection) IsEmpty() bool {
+	return tldc.Value == nil || len(*tldc.Value) == 0
+}
+
+// topLevelDomainCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (tldc TopLevelDomainCollection) topLevelDomainCollectionPreparer() (*http.Request, error) {
+	if tldc.NextLink == nil || len(to.String(tldc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(tldc.NextLink)))
 }
 
-// TopLevelDomainProperties is
+// TopLevelDomainCollectionPage contains a page of TopLevelDomain values.
+type TopLevelDomainCollectionPage struct {
+	fn   func(TopLevelDomainCollection) (TopLevelDomainCollection, error)
+	tldc TopLevelDomainCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *TopLevelDomainCollectionPage) Next() error {
+	next, err := page.fn(page.tldc)
+	if err != nil {
+		return err
+	}
+	page.tldc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page TopLevelDomainCollectionPage) NotDone() bool {
+	return !page.tldc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page TopLevelDomainCollectionPage) Response() TopLevelDomainCollection {
+	return page.tldc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page TopLevelDomainCollectionPage) Values() []TopLevelDomain {
+	if page.tldc.IsEmpty() {
+		return nil
+	}
+	return *page.tldc.Value
+}
+
+// TopLevelDomainProperties ...
 type TopLevelDomainProperties struct {
-	Name    *string `json:"name,omitempty"`
-	Privacy *bool   `json:"privacy,omitempty"`
+	// Name - Name of the top level domain
+	Name *string `json:"name,omitempty"`
+	// Privacy - If true then the top level domain supports domain privacy
+	Privacy *bool `json:"privacy,omitempty"`
 }
 
-// Usage is class that represents usage of the quota resource.
+// Usage class that represents usage of the quota resource.
 type Usage struct {
-	ID               *string             `json:"id,omitempty"`
-	Name             *string             `json:"name,omitempty"`
-	Kind             *string             `json:"kind,omitempty"`
-	Location         *string             `json:"location,omitempty"`
-	Type             *string             `json:"type,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags             *map[string]*string `json:"tags,omitempty"`
 	*UsageProperties `json:"properties,omitempty"`
 }
 
-// UsageCollection is collection of usages
-type UsageCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Usage `json:"value,omitempty"`
-	NextLink          *string  `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Usage struct.
+func (u *Usage) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UsageProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		u.UsageProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		u.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		u.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		u.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		u.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		u.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		u.Tags = &tags
+	}
+
+	return nil
 }
 
-// UsageCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client UsageCollection) UsageCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// UsageCollection collection of usages
+type UsageCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]Usage `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// UsageCollectionIterator provides access to a complete listing of Usage values.
+type UsageCollectionIterator struct {
+	i    int
+	page UsageCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *UsageCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter UsageCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter UsageCollectionIterator) Response() UsageCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter UsageCollectionIterator) Value() Usage {
+	if !iter.page.NotDone() {
+		return Usage{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (uc UsageCollection) IsEmpty() bool {
+	return uc.Value == nil || len(*uc.Value) == 0
+}
+
+// usageCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (uc UsageCollection) usageCollectionPreparer() (*http.Request, error) {
+	if uc.NextLink == nil || len(to.String(uc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(uc.NextLink)))
 }
 
-// UsageProperties is
+// UsageCollectionPage contains a page of Usage values.
+type UsageCollectionPage struct {
+	fn func(UsageCollection) (UsageCollection, error)
+	uc UsageCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *UsageCollectionPage) Next() error {
+	next, err := page.fn(page.uc)
+	if err != nil {
+		return err
+	}
+	page.uc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page UsageCollectionPage) NotDone() bool {
+	return !page.uc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page UsageCollectionPage) Response() UsageCollection {
+	return page.uc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page UsageCollectionPage) Values() []Usage {
+	if page.uc.IsEmpty() {
+		return nil
+	}
+	return *page.uc.Value
+}
+
+// UsageProperties ...
 type UsageProperties struct {
-	DisplayName   *string            `json:"displayName,omitempty"`
-	Name          *string            `json:"name,omitempty"`
-	ResourceName  *string            `json:"resourceName,omitempty"`
-	Unit          *string            `json:"unit,omitempty"`
-	CurrentValue  *int64             `json:"currentValue,omitempty"`
-	Limit         *int64             `json:"limit,omitempty"`
-	NextResetTime *date.Time         `json:"nextResetTime,omitempty"`
-	ComputeMode   ComputeModeOptions `json:"computeMode,omitempty"`
-	SiteMode      *string            `json:"siteMode,omitempty"`
+	// DisplayName - Friendly name shown in the UI
+	DisplayName *string `json:"displayName,omitempty"`
+	// Name - Name of the quota
+	Name *string `json:"name,omitempty"`
+	// ResourceName - Name of the quota resource
+	ResourceName *string `json:"resourceName,omitempty"`
+	// Unit - Units of measurement for the quota resource
+	Unit *string `json:"unit,omitempty"`
+	// CurrentValue - The current value of the resource counter
+	CurrentValue *int64 `json:"currentValue,omitempty"`
+	// Limit - The resource limit
+	Limit *int64 `json:"limit,omitempty"`
+	// NextResetTime - Next reset time for the resource counter
+	NextResetTime *date.Time `json:"nextResetTime,omitempty"`
+	// ComputeMode - ComputeMode used for this usage. Possible values include: 'Shared', 'Dedicated', 'Dynamic'
+	ComputeMode ComputeModeOptions `json:"computeMode,omitempty"`
+	// SiteMode - SiteMode used for this usage
+	SiteMode *string `json:"siteMode,omitempty"`
 }
 
-// User is represents user crendentials used for publishing activity
+// User represents user crendentials used for publishing activity
 type User struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Kind              *string             `json:"kind,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*UserProperties   `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
+	Tags            *map[string]*string `json:"tags,omitempty"`
+	*UserProperties `json:"properties,omitempty"`
 }
 
-// UserProperties is
+// UnmarshalJSON is the custom unmarshaler for User struct.
+func (u *User) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UserProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		u.UserProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		u.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		u.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		u.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		u.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		u.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		u.Tags = &tags
+	}
+
+	return nil
+}
+
+// UserProperties ...
 type UserProperties struct {
-	Name               *string `json:"name,omitempty"`
+	// Name - Username (internal)
+	Name *string `json:"name,omitempty"`
+	// PublishingUserName - Username used for publishing
 	PublishingUserName *string `json:"publishingUserName,omitempty"`
+	// PublishingPassword - Password used for publishing
 	PublishingPassword *string `json:"publishingPassword,omitempty"`
-	ScmURI             *string `json:"scmUri,omitempty"`
+	// ScmURI - Service Control Manager URI, including username and password
+	ScmURI *string `json:"scmUri,omitempty"`
 }
 
-// VirtualApplication is
+// VirtualApplication ...
 type VirtualApplication struct {
 	VirtualPath        *string             `json:"virtualPath,omitempty"`
 	PhysicalPath       *string             `json:"physicalPath,omitempty"`
@@ -3048,125 +11241,602 @@ type VirtualApplication struct {
 	VirtualDirectories *[]VirtualDirectory `json:"virtualDirectories,omitempty"`
 }
 
-// VirtualDirectory is
+// VirtualDirectory ...
 type VirtualDirectory struct {
 	VirtualPath  *string `json:"virtualPath,omitempty"`
 	PhysicalPath *string `json:"physicalPath,omitempty"`
 }
 
-// VirtualIPMapping is class that represents a VIP mapping
+// VirtualIPMapping class that represents a VIP mapping
 type VirtualIPMapping struct {
-	VirtualIP         *string `json:"virtualIP,omitempty"`
-	InternalHTTPPort  *int32  `json:"internalHttpPort,omitempty"`
-	InternalHTTPSPort *int32  `json:"internalHttpsPort,omitempty"`
-	InUse             *bool   `json:"inUse,omitempty"`
+	// VirtualIP - Virtual IP address
+	VirtualIP *string `json:"virtualIP,omitempty"`
+	// InternalHTTPPort - Internal HTTP port
+	InternalHTTPPort *int32 `json:"internalHttpPort,omitempty"`
+	// InternalHTTPSPort - Internal HTTPS port
+	InternalHTTPSPort *int32 `json:"internalHttpsPort,omitempty"`
+	// InUse - Is VIP mapping in use
+	InUse *bool `json:"inUse,omitempty"`
 }
 
-// VirtualNetworkProfile is specification for using a virtual network
+// VirtualNetworkProfile specification for using a virtual network
 type VirtualNetworkProfile struct {
-	ID     *string `json:"id,omitempty"`
-	Name   *string `json:"name,omitempty"`
-	Type   *string `json:"type,omitempty"`
+	// ID - Resource id of the virtual network
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the virtual network (read-only)
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type of the virtual network (read-only)
+	Type *string `json:"type,omitempty"`
+	// Subnet - Subnet within the virtual network
 	Subnet *string `json:"subnet,omitempty"`
 }
 
-// VnetGateway is the VnetGateway contract. This is used to give the vnet gateway access to the VPN package.
+// VnetGateway the VnetGateway contract. This is used to give the vnet gateway access to the VPN package.
 type VnetGateway struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Kind                   *string             `json:"kind,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                   *map[string]*string `json:"tags,omitempty"`
 	*VnetGatewayProperties `json:"properties,omitempty"`
 }
 
-// VnetGatewayProperties is
+// UnmarshalJSON is the custom unmarshaler for VnetGateway struct.
+func (vg *VnetGateway) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VnetGatewayProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vg.VnetGatewayProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vg.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vg.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		vg.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		vg.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vg.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		vg.Tags = &tags
+	}
+
+	return nil
+}
+
+// VnetGatewayProperties ...
 type VnetGatewayProperties struct {
-	VnetName      *string `json:"vnetName,omitempty"`
+	// VnetName - The VNET name.
+	VnetName *string `json:"vnetName,omitempty"`
+	// VpnPackageURI - The URI where the Vpn package can be downloaded
 	VpnPackageURI *string `json:"vpnPackageUri,omitempty"`
 }
 
-// VnetInfo is vNETInfo contract. This contract is public and is a stripped down version of VNETInfoInternal
+// VnetInfo vNETInfo contract. This contract is public and is a stripped down version of VNETInfoInternal
 type VnetInfo struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Kind                *string             `json:"kind,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Type                *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                *map[string]*string `json:"tags,omitempty"`
 	*VnetInfoProperties `json:"properties,omitempty"`
 }
 
-// VnetInfoProperties is
-type VnetInfoProperties struct {
-	VnetResourceID *string      `json:"vnetResourceId,omitempty"`
-	CertThumbprint *string      `json:"certThumbprint,omitempty"`
-	CertBlob       *string      `json:"certBlob,omitempty"`
-	Routes         *[]VnetRoute `json:"routes,omitempty"`
-	ResyncRequired *bool        `json:"resyncRequired,omitempty"`
-	DNSServers     *string      `json:"dnsServers,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for VnetInfo struct.
+func (vi *VnetInfo) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VnetInfoProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vi.VnetInfoProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vi.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vi.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		vi.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		vi.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vi.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		vi.Tags = &tags
+	}
+
+	return nil
 }
 
-// VnetRoute is vnetRoute contract used to pass routing information for a vnet.
+// VnetInfoProperties ...
+type VnetInfoProperties struct {
+	// VnetResourceID - The vnet resource id
+	VnetResourceID *string `json:"vnetResourceId,omitempty"`
+	// CertThumbprint - The client certificate thumbprint
+	CertThumbprint *string `json:"certThumbprint,omitempty"`
+	// CertBlob - A certificate file (.cer) blob containing the public key of the private key used to authenticate a
+	//             Point-To-Site VPN connection.
+	CertBlob *string `json:"certBlob,omitempty"`
+	// Routes - The routes that this virtual network connection uses.
+	Routes *[]VnetRoute `json:"routes,omitempty"`
+	// ResyncRequired - Flag to determine if a resync is required
+	ResyncRequired *bool `json:"resyncRequired,omitempty"`
+	// DNSServers - Dns servers to be used by this VNET. This should be a comma-separated list of IP addresses.
+	DNSServers *string `json:"dnsServers,omitempty"`
+}
+
+// VnetRoute vnetRoute contract used to pass routing information for a vnet.
 type VnetRoute struct {
-	autorest.Response    `json:"-"`
-	ID                   *string             `json:"id,omitempty"`
-	Name                 *string             `json:"name,omitempty"`
-	Kind                 *string             `json:"kind,omitempty"`
-	Location             *string             `json:"location,omitempty"`
-	Type                 *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                 *map[string]*string `json:"tags,omitempty"`
 	*VnetRouteProperties `json:"properties,omitempty"`
 }
 
-// VnetRouteProperties is
-type VnetRouteProperties struct {
-	Name         *string `json:"name,omitempty"`
-	StartAddress *string `json:"startAddress,omitempty"`
-	EndAddress   *string `json:"endAddress,omitempty"`
-	RouteType    *string `json:"routeType,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for VnetRoute struct.
+func (vr *VnetRoute) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VnetRouteProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vr.VnetRouteProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		vr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		vr.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vr.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		vr.Tags = &tags
+	}
+
+	return nil
 }
 
-// WorkerPool is worker pool of a hostingEnvironment (App Service Environment)
+// VnetRouteProperties ...
+type VnetRouteProperties struct {
+	// Name - The name of this route. This is only returned by the server and does not need to be set by the client.
+	Name *string `json:"name,omitempty"`
+	// StartAddress - The starting address for this route. This may also include a CIDR notation, in which case the end address must not be specified.
+	StartAddress *string `json:"startAddress,omitempty"`
+	// EndAddress - The ending address for this route. If the start address is specified in CIDR notation, this must be omitted.
+	EndAddress *string `json:"endAddress,omitempty"`
+	// RouteType - The type of route this is:
+	//             DEFAULT - By default, every web app has routes to the local address ranges specified by RFC1918
+	//             INHERITED - Routes inherited from the real Virtual Network routes
+	//             STATIC - Static route set on the web app only
+	//
+	//             These values will be used for syncing a Web App's routes with those from a Virtual Network. This operation will clear all DEFAULT and INHERITED routes and replace them
+	//             with new INHERITED routes.
+	RouteType *string `json:"routeType,omitempty"`
+}
+
+// WorkerPool worker pool of a hostingEnvironment (App Service Environment)
 type WorkerPool struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Kind                  *string             `json:"kind,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource Name
+	Name *string `json:"name,omitempty"`
+	// Kind - Kind of resource
+	Kind *string `json:"kind,omitempty"`
+	// Location - Resource Location
+	Location *string `json:"location,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags
 	Tags                  *map[string]*string `json:"tags,omitempty"`
 	*WorkerPoolProperties `json:"properties,omitempty"`
 	Sku                   *SkuDescription `json:"sku,omitempty"`
 }
 
-// WorkerPoolCollection is collection of worker pools
-type WorkerPoolCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]WorkerPool `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for WorkerPool struct.
+func (wp *WorkerPool) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkerPoolProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wp.WorkerPoolProperties = &properties
+	}
+
+	v = m["sku"]
+	if v != nil {
+		var sku SkuDescription
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		wp.Sku = &sku
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wp.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wp.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		wp.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		wp.Location = &location
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wp.Type = &typeVar
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		wp.Tags = &tags
+	}
+
+	return nil
 }
 
-// WorkerPoolCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkerPoolCollection) WorkerPoolCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkerPoolCollection collection of worker pools
+type WorkerPoolCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of resources
+	Value *[]WorkerPool `json:"value,omitempty"`
+	// NextLink - Link to next page of resources
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// WorkerPoolCollectionIterator provides access to a complete listing of WorkerPool values.
+type WorkerPoolCollectionIterator struct {
+	i    int
+	page WorkerPoolCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkerPoolCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkerPoolCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkerPoolCollectionIterator) Response() WorkerPoolCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkerPoolCollectionIterator) Value() WorkerPool {
+	if !iter.page.NotDone() {
+		return WorkerPool{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wpc WorkerPoolCollection) IsEmpty() bool {
+	return wpc.Value == nil || len(*wpc.Value) == 0
+}
+
+// workerPoolCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wpc WorkerPoolCollection) workerPoolCollectionPreparer() (*http.Request, error) {
+	if wpc.NextLink == nil || len(to.String(wpc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wpc.NextLink)))
 }
 
-// WorkerPoolProperties is
+// WorkerPoolCollectionPage contains a page of WorkerPool values.
+type WorkerPoolCollectionPage struct {
+	fn  func(WorkerPoolCollection) (WorkerPoolCollection, error)
+	wpc WorkerPoolCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkerPoolCollectionPage) Next() error {
+	next, err := page.fn(page.wpc)
+	if err != nil {
+		return err
+	}
+	page.wpc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkerPoolCollectionPage) NotDone() bool {
+	return !page.wpc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkerPoolCollectionPage) Response() WorkerPoolCollection {
+	return page.wpc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkerPoolCollectionPage) Values() []WorkerPool {
+	if page.wpc.IsEmpty() {
+		return nil
+	}
+	return *page.wpc.Value
+}
+
+// WorkerPoolProperties ...
 type WorkerPoolProperties struct {
-	WorkerSizeID  *int32             `json:"workerSizeId,omitempty"`
-	ComputeMode   ComputeModeOptions `json:"computeMode,omitempty"`
-	WorkerSize    *string            `json:"workerSize,omitempty"`
-	WorkerCount   *int32             `json:"workerCount,omitempty"`
-	InstanceNames *[]string          `json:"instanceNames,omitempty"`
+	// WorkerSizeID - Worker size id for referencing this worker pool
+	WorkerSizeID *int32 `json:"workerSizeId,omitempty"`
+	// ComputeMode - Shared or dedicated web app hosting. Possible values include: 'Shared', 'Dedicated', 'Dynamic'
+	ComputeMode ComputeModeOptions `json:"computeMode,omitempty"`
+	// WorkerSize - VM size of the worker pool instances
+	WorkerSize *string `json:"workerSize,omitempty"`
+	// WorkerCount - Number of instances in the worker pool
+	WorkerCount *int32 `json:"workerCount,omitempty"`
+	// InstanceNames - Names of all instances in the worker pool (read only)
+	InstanceNames *[]string `json:"instanceNames,omitempty"`
 }

@@ -144,7 +144,7 @@ func getCanonicalHeaders(req http.Request, ignoredHeaders map[string]bool) strin
 		buf.WriteByte(':')
 		switch {
 		case k == "host":
-			buf.WriteString(req.URL.Host)
+			buf.WriteString(getHostAddr(&req))
 			fallthrough
 		default:
 			for idx, v := range vals[k] {

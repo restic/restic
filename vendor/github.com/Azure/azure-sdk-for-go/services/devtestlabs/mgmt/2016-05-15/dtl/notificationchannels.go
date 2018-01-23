@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // NotificationChannelsClient is the the DevTest Labs Client.
 type NotificationChannelsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewNotificationChannelsClient creates an instance of the NotificationChannelsClient client.
@@ -43,14 +44,14 @@ func NewNotificationChannelsClientWithBaseURI(baseURI string, subscriptionID str
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // notificationChannel. notificationChannel is a notification.
-func (client NotificationChannelsClient) CreateOrUpdate(resourceGroupName string, labName string, name string, notificationChannel NotificationChannel) (result NotificationChannel, err error) {
+func (client NotificationChannelsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, labName string, name string, notificationChannel NotificationChannel) (result NotificationChannel, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: notificationChannel,
 			Constraints: []validation.Constraint{{Target: "notificationChannel.NotificationChannelProperties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "dtl.NotificationChannelsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, labName, name, notificationChannel)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, labName, name, notificationChannel)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -72,7 +73,7 @@ func (client NotificationChannelsClient) CreateOrUpdate(resourceGroupName string
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client NotificationChannelsClient) CreateOrUpdatePreparer(resourceGroupName string, labName string, name string, notificationChannel NotificationChannel) (*http.Request, error) {
+func (client NotificationChannelsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, labName string, name string, notificationChannel NotificationChannel) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -92,14 +93,13 @@ func (client NotificationChannelsClient) CreateOrUpdatePreparer(resourceGroupNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels/{name}", pathParameters),
 		autorest.WithJSON(notificationChannel),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -120,8 +120,8 @@ func (client NotificationChannelsClient) CreateOrUpdateResponder(resp *http.Resp
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // notificationChannel.
-func (client NotificationChannelsClient) Delete(resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, labName, name)
+func (client NotificationChannelsClient) Delete(ctx context.Context, resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -143,7 +143,7 @@ func (client NotificationChannelsClient) Delete(resourceGroupName string, labNam
 }
 
 // DeletePreparer prepares the Delete request.
-func (client NotificationChannelsClient) DeletePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client NotificationChannelsClient) DeletePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -161,14 +161,13 @@ func (client NotificationChannelsClient) DeletePreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -188,8 +187,8 @@ func (client NotificationChannelsClient) DeleteResponder(resp *http.Response) (r
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // notificationChannel. expand is specify the $expand query. Example: 'properties($select=webHookUrl)'
-func (client NotificationChannelsClient) Get(resourceGroupName string, labName string, name string, expand string) (result NotificationChannel, err error) {
-	req, err := client.GetPreparer(resourceGroupName, labName, name, expand)
+func (client NotificationChannelsClient) Get(ctx context.Context, resourceGroupName string, labName string, name string, expand string) (result NotificationChannel, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, labName, name, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "Get", nil, "Failure preparing request")
 		return
@@ -211,7 +210,7 @@ func (client NotificationChannelsClient) Get(resourceGroupName string, labName s
 }
 
 // GetPreparer prepares the Get request.
-func (client NotificationChannelsClient) GetPreparer(resourceGroupName string, labName string, name string, expand string) (*http.Request, error) {
+func (client NotificationChannelsClient) GetPreparer(ctx context.Context, resourceGroupName string, labName string, name string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -232,14 +231,13 @@ func (client NotificationChannelsClient) GetPreparer(resourceGroupName string, l
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -262,8 +260,9 @@ func (client NotificationChannelsClient) GetResponder(resp *http.Response) (resu
 // query. Example: 'properties($select=webHookUrl)' filter is the filter to apply to the operation. top is the maximum
 // number of resources to return from the operation. orderby is the ordering expression for the results, using OData
 // notation.
-func (client NotificationChannelsClient) List(resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationNotificationChannel, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, expand, filter, top, orderby)
+func (client NotificationChannelsClient) List(ctx context.Context, resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationNotificationChannelPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, expand, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", nil, "Failure preparing request")
 		return
@@ -271,12 +270,12 @@ func (client NotificationChannelsClient) List(resourceGroupName string, labName 
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcnc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcnc, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", resp, "Failure responding to request")
 	}
@@ -285,7 +284,7 @@ func (client NotificationChannelsClient) List(resourceGroupName string, labName 
 }
 
 // ListPreparer prepares the List request.
-func (client NotificationChannelsClient) ListPreparer(resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client NotificationChannelsClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -314,14 +313,13 @@ func (client NotificationChannelsClient) ListPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -338,81 +336,39 @@ func (client NotificationChannelsClient) ListResponder(resp *http.Response) (res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client NotificationChannelsClient) ListNextResults(lastResults ResponseWithContinuationNotificationChannel) (result ResponseWithContinuationNotificationChannel, err error) {
-	req, err := lastResults.ResponseWithContinuationNotificationChannelPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client NotificationChannelsClient) listNextResults(lastResults ResponseWithContinuationNotificationChannel) (result ResponseWithContinuationNotificationChannel, err error) {
+	req, err := lastResults.responseWithContinuationNotificationChannelPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client NotificationChannelsClient) ListComplete(resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan NotificationChannel, <-chan error) {
-	resultChan := make(chan NotificationChannel)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, expand, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client NotificationChannelsClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationNotificationChannelIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, expand, filter, top, orderby)
+	return
 }
 
 // Notify send notification to provided channel.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // notificationChannel. notifyParameters is properties for generating a Notification.
-func (client NotificationChannelsClient) Notify(resourceGroupName string, labName string, name string, notifyParameters NotifyParameters) (result autorest.Response, err error) {
-	req, err := client.NotifyPreparer(resourceGroupName, labName, name, notifyParameters)
+func (client NotificationChannelsClient) Notify(ctx context.Context, resourceGroupName string, labName string, name string, notifyParameters NotifyParameters) (result autorest.Response, err error) {
+	req, err := client.NotifyPreparer(ctx, resourceGroupName, labName, name, notifyParameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "Notify", nil, "Failure preparing request")
 		return
@@ -434,7 +390,7 @@ func (client NotificationChannelsClient) Notify(resourceGroupName string, labNam
 }
 
 // NotifyPreparer prepares the Notify request.
-func (client NotificationChannelsClient) NotifyPreparer(resourceGroupName string, labName string, name string, notifyParameters NotifyParameters) (*http.Request, error) {
+func (client NotificationChannelsClient) NotifyPreparer(ctx context.Context, resourceGroupName string, labName string, name string, notifyParameters NotifyParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -454,14 +410,13 @@ func (client NotificationChannelsClient) NotifyPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels/{name}/notify", pathParameters),
 		autorest.WithJSON(notifyParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // NotifySender sends the Notify request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) NotifySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -481,8 +436,8 @@ func (client NotificationChannelsClient) NotifyResponder(resp *http.Response) (r
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // notificationChannel. notificationChannel is a notification.
-func (client NotificationChannelsClient) Update(resourceGroupName string, labName string, name string, notificationChannel NotificationChannelFragment) (result NotificationChannel, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, labName, name, notificationChannel)
+func (client NotificationChannelsClient) Update(ctx context.Context, resourceGroupName string, labName string, name string, notificationChannel NotificationChannelFragment) (result NotificationChannel, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, labName, name, notificationChannel)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.NotificationChannelsClient", "Update", nil, "Failure preparing request")
 		return
@@ -504,7 +459,7 @@ func (client NotificationChannelsClient) Update(resourceGroupName string, labNam
 }
 
 // UpdatePreparer prepares the Update request.
-func (client NotificationChannelsClient) UpdatePreparer(resourceGroupName string, labName string, name string, notificationChannel NotificationChannelFragment) (*http.Request, error) {
+func (client NotificationChannelsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, labName string, name string, notificationChannel NotificationChannelFragment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -524,14 +479,13 @@ func (client NotificationChannelsClient) UpdatePreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/notificationchannels/{name}", pathParameters),
 		autorest.WithJSON(notificationChannel),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client NotificationChannelsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

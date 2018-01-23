@@ -53,6 +53,7 @@ func New(client *http.Client) (*Service, error) {
 	s.EncodedFullHashes = NewEncodedFullHashesService(s)
 	s.EncodedUpdates = NewEncodedUpdatesService(s)
 	s.FullHashes = NewFullHashesService(s)
+	s.ThreatHits = NewThreatHitsService(s)
 	s.ThreatListUpdates = NewThreatListUpdatesService(s)
 	s.ThreatLists = NewThreatListsService(s)
 	s.ThreatMatches = NewThreatMatchesService(s)
@@ -69,6 +70,8 @@ type Service struct {
 	EncodedUpdates *EncodedUpdatesService
 
 	FullHashes *FullHashesService
+
+	ThreatHits *ThreatHitsService
 
 	ThreatListUpdates *ThreatListUpdatesService
 
@@ -108,6 +111,15 @@ func NewFullHashesService(s *Service) *FullHashesService {
 }
 
 type FullHashesService struct {
+	s *Service
+}
+
+func NewThreatHitsService(s *Service) *ThreatHitsService {
+	rs := &ThreatHitsService{s: s}
+	return rs
+}
+
+type ThreatHitsService struct {
 	s *Service
 }
 
@@ -255,6 +267,24 @@ func (s *Constraints) MarshalJSON() ([]byte, error) {
 	type NoMethod Constraints
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Empty: A generic empty message that you can re-use to avoid defining
+// duplicated
+// empty messages in your APIs. A typical example is to use it as the
+// request
+// or the response type of an API method. For instance:
+//
+//     service Foo {
+//       rpc Bar(google.protobuf.Empty) returns
+// (google.protobuf.Empty);
+//     }
+//
+// The JSON representation for `Empty` is empty JSON object `{}`.
+type Empty struct {
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
 }
 
 // FetchThreatListUpdatesRequest: Describes a Safe Browsing API update
@@ -1002,6 +1032,85 @@ func (s *ThreatEntrySet) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type ThreatHit struct {
+	// ClientInfo: Client-reported identification.
+	ClientInfo *ClientInfo `json:"clientInfo,omitempty"`
+
+	// Entry: The threat entry responsible for the hit. Full hash should be
+	// reported for
+	// hash-based hits.
+	Entry *ThreatEntry `json:"entry,omitempty"`
+
+	// PlatformType: The platform type reported.
+	//
+	// Possible values:
+	//   "PLATFORM_TYPE_UNSPECIFIED" - Unknown platform.
+	//   "WINDOWS" - Threat posed to Windows.
+	//   "LINUX" - Threat posed to Linux.
+	//   "ANDROID" - Threat posed to Android.
+	//   "OSX" - Threat posed to OS X.
+	//   "IOS" - Threat posed to iOS.
+	//   "ANY_PLATFORM" - Threat posed to at least one of the defined
+	// platforms.
+	//   "ALL_PLATFORMS" - Threat posed to all defined platforms.
+	//   "CHROME" - Threat posed to Chrome.
+	PlatformType string `json:"platformType,omitempty"`
+
+	// Resources: The resources related to the threat hit.
+	Resources []*ThreatSource `json:"resources,omitempty"`
+
+	// ThreatType: The threat type reported.
+	//
+	// Possible values:
+	//   "THREAT_TYPE_UNSPECIFIED" - Unknown.
+	//   "MALWARE" - Malware threat type.
+	//   "SOCIAL_ENGINEERING" - Social engineering threat type.
+	//   "UNWANTED_SOFTWARE" - Unwanted software threat type.
+	//   "POTENTIALLY_HARMFUL_APPLICATION" - Potentially harmful application
+	// threat type.
+	//   "SOCIAL_ENGINEERING_INTERNAL" - Social engineering threat type for
+	// internal use.
+	//   "API_ABUSE" - API abuse threat type.
+	//   "MALICIOUS_BINARY" - Malicious binary threat type.
+	//   "CSD_WHITELIST" - Client side detection whitelist threat type.
+	//   "CSD_DOWNLOAD_WHITELIST" - Client side download detection whitelist
+	// threat type.
+	//   "CLIENT_INCIDENT" - Client incident threat type.
+	//   "CLIENT_INCIDENT_WHITELIST" - Whitelist used when detecting client
+	// incident threats.
+	// This enum was never launched and should be re-used for the next list.
+	//   "APK_MALWARE_OFFLINE" - List used for offline APK checks in PAM.
+	//   "SUBRESOURCE_FILTER" - Patterns to be used for activating the
+	// subresource filter. Interstitial
+	// will not be shown for patterns from this list.
+	ThreatType string `json:"threatType,omitempty"`
+
+	// UserInfo: Details about the user that encountered the threat.
+	UserInfo *UserInfo `json:"userInfo,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ClientInfo") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ClientInfo") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ThreatHit) MarshalJSON() ([]byte, error) {
+	type NoMethod ThreatHit
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ThreatInfo: The information regarding one or more threats that a
 // client submits when
 // checking for matches in threat lists.
@@ -1253,6 +1362,89 @@ type ThreatMatch struct {
 
 func (s *ThreatMatch) MarshalJSON() ([]byte, error) {
 	type NoMethod ThreatMatch
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ThreatSource: A single resource related to a threat hit.
+type ThreatSource struct {
+	// Referrer: Referrer of the resource. Only set if the referrer is
+	// available.
+	Referrer string `json:"referrer,omitempty"`
+
+	// RemoteIp: The remote IP of the resource in ASCII format. Either IPv4
+	// or IPv6.
+	RemoteIp string `json:"remoteIp,omitempty"`
+
+	// Type: The type of source reported.
+	//
+	// Possible values:
+	//   "THREAT_SOURCE_TYPE_UNSPECIFIED" - Unknown.
+	//   "MATCHING_URL" - The URL that matched the threat list (for which
+	// GetFullHash returned a
+	// valid hash).
+	//   "TAB_URL" - The final top-level URL of the tab that the client was
+	// browsing when the
+	// match occurred.
+	//   "TAB_REDIRECT" - A redirect URL that was fetched before hitting the
+	// final TAB_URL.
+	//   "TAB_RESOURCE" - A resource loaded within the final TAB_URL.
+	Type string `json:"type,omitempty"`
+
+	// Url: The URL of the resource.
+	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Referrer") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Referrer") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ThreatSource) MarshalJSON() ([]byte, error) {
+	type NoMethod ThreatSource
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UserInfo: Details about the user that encountered the threat.
+type UserInfo struct {
+	// RegionCode: The UN M.49 region code associated with the user's
+	// location.
+	RegionCode string `json:"regionCode,omitempty"`
+
+	// UserId: Unique user identifier defined by the client.
+	UserId string `json:"userId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "RegionCode") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "RegionCode") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UserInfo) MarshalJSON() ([]byte, error) {
+	type NoMethod UserInfo
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1691,6 +1883,125 @@ func (c *FullHashesFindCall) Do(opts ...googleapi.CallOption) (*FindFullHashesRe
 	//   },
 	//   "response": {
 	//     "$ref": "FindFullHashesResponse"
+	//   }
+	// }
+
+}
+
+// method id "safebrowsing.threatHits.create":
+
+type ThreatHitsCreateCall struct {
+	s          *Service
+	threathit  *ThreatHit
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Create: Reports a Safe Browsing threat list hit to Google. Only
+// projects with
+// TRUSTED_REPORTER visibility can use this method.
+func (r *ThreatHitsService) Create(threathit *ThreatHit) *ThreatHitsCreateCall {
+	c := &ThreatHitsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.threathit = threathit
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ThreatHitsCreateCall) Fields(s ...googleapi.Field) *ThreatHitsCreateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ThreatHitsCreateCall) Context(ctx context.Context) *ThreatHitsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ThreatHitsCreateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ThreatHitsCreateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.threathit)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/threatHits")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "safebrowsing.threatHits.create" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ThreatHitsCreateCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Reports a Safe Browsing threat list hit to Google. Only projects with\nTRUSTED_REPORTER visibility can use this method.",
+	//   "flatPath": "v4/threatHits",
+	//   "httpMethod": "POST",
+	//   "id": "safebrowsing.threatHits.create",
+	//   "parameterOrder": [],
+	//   "parameters": {},
+	//   "path": "v4/threatHits",
+	//   "request": {
+	//     "$ref": "ThreatHit"
+	//   },
+	//   "response": {
+	//     "$ref": "Empty"
 	//   }
 	// }
 

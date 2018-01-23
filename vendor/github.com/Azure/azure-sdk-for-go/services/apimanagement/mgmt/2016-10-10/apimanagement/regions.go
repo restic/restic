@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // RegionsClient is the apiManagement Client
 type RegionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewRegionsClient creates an instance of the RegionsClient client.
@@ -42,7 +43,7 @@ func NewRegionsClientWithBaseURI(baseURI string, subscriptionID string) RegionsC
 // ListByService lists all azure regions in which the service exists.
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
-func (client RegionsClient) ListByService(resourceGroupName string, serviceName string) (result RegionListResult, err error) {
+func (client RegionsClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string) (result RegionListResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -51,7 +52,7 @@ func (client RegionsClient) ListByService(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.RegionsClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName)
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.RegionsClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -73,7 +74,7 @@ func (client RegionsClient) ListByService(resourceGroupName string, serviceName 
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client RegionsClient) ListByServicePreparer(resourceGroupName string, serviceName string) (*http.Request, error) {
+func (client RegionsClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -90,14 +91,13 @@ func (client RegionsClient) ListByServicePreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/regions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client RegionsClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

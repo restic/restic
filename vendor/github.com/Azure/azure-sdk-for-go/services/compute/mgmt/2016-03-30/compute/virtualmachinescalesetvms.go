@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualMachineScaleSetVMsClient is the compute Client
 type VirtualMachineScaleSetVMsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineScaleSetVMsClient creates an instance of the VirtualMachineScaleSetVMsClient client.
@@ -40,48 +41,28 @@ func NewVirtualMachineScaleSetVMsClientWithBaseURI(baseURI string, subscriptionI
 
 // Deallocate deallocates a specific virtual machine in a VM scale set. Shuts down the virtual machine and releases the
 // compute resources it uses. You are not billed for the compute resources of this virtual machine once it is
-// deallocated. This method may poll for completion. Polling can be canceled by passing the cancel channel argument.
-// The channel will be used to cancel polling and any outstanding HTTP requests.
+// deallocated.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Deallocate(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeallocatePreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Deallocate", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetVMsClient) Deallocate(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsDeallocateFuture, err error) {
+	req, err := client.DeallocatePreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Deallocate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeallocateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Deallocate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeallocateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Deallocate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeallocateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Deallocate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeallocatePreparer prepares the Deallocate request.
-func (client VirtualMachineScaleSetVMsClient) DeallocatePreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) DeallocatePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -99,16 +80,22 @@ func (client VirtualMachineScaleSetVMsClient) DeallocatePreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/deallocate", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeallocateSender sends the Deallocate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) DeallocateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) DeallocateSender(req *http.Request) (future VirtualMachineScaleSetVMsDeallocateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DeallocateResponder handles the response to the Deallocate request. The method always
@@ -124,49 +111,28 @@ func (client VirtualMachineScaleSetVMsClient) DeallocateResponder(resp *http.Res
 	return
 }
 
-// Delete deletes a virtual machine from a VM scale set. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete deletes a virtual machine from a VM scale set.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Delete(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetVMsClient) Delete(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VirtualMachineScaleSetVMsClient) DeletePreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) DeletePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -184,16 +150,22 @@ func (client VirtualMachineScaleSetVMsClient) DeletePreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) DeleteSender(req *http.Request) (future VirtualMachineScaleSetVMsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -213,8 +185,8 @@ func (client VirtualMachineScaleSetVMsClient) DeleteResponder(resp *http.Respons
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Get(resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVM, err error) {
-	req, err := client.GetPreparer(resourceGroupName, VMScaleSetName, instanceID)
+func (client VirtualMachineScaleSetVMsClient) Get(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVM, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Get", nil, "Failure preparing request")
 		return
@@ -236,7 +208,7 @@ func (client VirtualMachineScaleSetVMsClient) Get(resourceGroupName string, VMSc
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualMachineScaleSetVMsClient) GetPreparer(resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) GetPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -254,14 +226,13 @@ func (client VirtualMachineScaleSetVMsClient) GetPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetVMsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -282,8 +253,8 @@ func (client VirtualMachineScaleSetVMsClient) GetResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) GetInstanceView(resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMInstanceView, err error) {
-	req, err := client.GetInstanceViewPreparer(resourceGroupName, VMScaleSetName, instanceID)
+func (client VirtualMachineScaleSetVMsClient) GetInstanceView(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMInstanceView, err error) {
+	req, err := client.GetInstanceViewPreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "GetInstanceView", nil, "Failure preparing request")
 		return
@@ -305,7 +276,7 @@ func (client VirtualMachineScaleSetVMsClient) GetInstanceView(resourceGroupName 
 }
 
 // GetInstanceViewPreparer prepares the GetInstanceView request.
-func (client VirtualMachineScaleSetVMsClient) GetInstanceViewPreparer(resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) GetInstanceViewPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -323,14 +294,13 @@ func (client VirtualMachineScaleSetVMsClient) GetInstanceViewPreparer(resourceGr
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/instanceView", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetInstanceViewSender sends the GetInstanceView request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetVMsClient) GetInstanceViewSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -352,8 +322,9 @@ func (client VirtualMachineScaleSetVMsClient) GetInstanceViewResponder(resp *htt
 // resourceGroupName is the name of the resource group. virtualMachineScaleSetName is the name of the VM scale set.
 // filter is the filter to apply to the operation. selectParameter is the list parameters. expand is the expand
 // expression to apply to the operation.
-func (client VirtualMachineScaleSetVMsClient) List(resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string) (result VirtualMachineScaleSetVMListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, virtualMachineScaleSetName, filter, selectParameter, expand)
+func (client VirtualMachineScaleSetVMsClient) List(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string) (result VirtualMachineScaleSetVMListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, virtualMachineScaleSetName, filter, selectParameter, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", nil, "Failure preparing request")
 		return
@@ -361,12 +332,12 @@ func (client VirtualMachineScaleSetVMsClient) List(resourceGroupName string, vir
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vmssvlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.vmssvlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", resp, "Failure responding to request")
 	}
@@ -375,7 +346,7 @@ func (client VirtualMachineScaleSetVMsClient) List(resourceGroupName string, vir
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualMachineScaleSetVMsClient) ListPreparer(resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) ListPreparer(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":          autorest.Encode("path", resourceGroupName),
 		"subscriptionId":             autorest.Encode("path", client.SubscriptionID),
@@ -401,14 +372,13 @@ func (client VirtualMachineScaleSetVMsClient) ListPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/virtualMachines", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetVMsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -425,119 +395,56 @@ func (client VirtualMachineScaleSetVMsClient) ListResponder(resp *http.Response)
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualMachineScaleSetVMsClient) ListNextResults(lastResults VirtualMachineScaleSetVMListResult) (result VirtualMachineScaleSetVMListResult, err error) {
-	req, err := lastResults.VirtualMachineScaleSetVMListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualMachineScaleSetVMsClient) listNextResults(lastResults VirtualMachineScaleSetVMListResult) (result VirtualMachineScaleSetVMListResult, err error) {
+	req, err := lastResults.virtualMachineScaleSetVMListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "listNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualMachineScaleSetVMsClient) ListComplete(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string) (result VirtualMachineScaleSetVMListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, virtualMachineScaleSetName, filter, selectParameter, expand)
+	return
+}
+
+// PowerOff power off (stop) a virtual machine in a VM scale set. Note that resources are still attached and you are
+// getting charged for the resources. Instead, use deallocate to release resources and avoid charges.
+//
+// resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
+// the instance ID of the virtual machine.
+func (client VirtualMachineScaleSetVMsClient) PowerOff(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsPowerOffFuture, err error) {
+	req, err := client.PowerOffPreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "PowerOff", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.PowerOffSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "PowerOff", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualMachineScaleSetVMsClient) ListComplete(resourceGroupName string, virtualMachineScaleSetName string, filter string, selectParameter string, expand string, cancel <-chan struct{}) (<-chan VirtualMachineScaleSetVM, <-chan error) {
-	resultChan := make(chan VirtualMachineScaleSetVM)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, virtualMachineScaleSetName, filter, selectParameter, expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// PowerOff power off (stop) a virtual machine in a VM scale set. Note that resources are still attached and you are
-// getting charged for the resources. Instead, use deallocate to release resources and avoid charges. This method may
-// poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to
-// cancel polling and any outstanding HTTP requests.
-//
-// resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
-// the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) PowerOff(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.PowerOffPreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "PowerOff", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.PowerOffSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "PowerOff", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.PowerOffResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "PowerOff", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // PowerOffPreparer prepares the PowerOff request.
-func (client VirtualMachineScaleSetVMsClient) PowerOffPreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) PowerOffPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -555,16 +462,22 @@ func (client VirtualMachineScaleSetVMsClient) PowerOffPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/poweroff", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PowerOffSender sends the PowerOff request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) PowerOffSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) PowerOffSender(req *http.Request) (future VirtualMachineScaleSetVMsPowerOffFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PowerOffResponder handles the response to the PowerOff request. The method always
@@ -580,49 +493,28 @@ func (client VirtualMachineScaleSetVMsClient) PowerOffResponder(resp *http.Respo
 	return
 }
 
-// Reimage reimages (upgrade the operating system) a specific virtual machine in a VM scale set. This method may poll
-// for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// Reimage reimages (upgrade the operating system) a specific virtual machine in a VM scale set.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Reimage(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ReimagePreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Reimage", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetVMsClient) Reimage(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsReimageFuture, err error) {
+	req, err := client.ReimagePreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Reimage", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ReimageSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Reimage", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ReimageSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Reimage", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ReimageResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Reimage", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ReimagePreparer prepares the Reimage request.
-func (client VirtualMachineScaleSetVMsClient) ReimagePreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) ReimagePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -640,16 +532,22 @@ func (client VirtualMachineScaleSetVMsClient) ReimagePreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/reimage", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ReimageSender sends the Reimage request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) ReimageSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) ReimageSender(req *http.Request) (future VirtualMachineScaleSetVMsReimageFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ReimageResponder handles the response to the Reimage request. The method always
@@ -665,49 +563,28 @@ func (client VirtualMachineScaleSetVMsClient) ReimageResponder(resp *http.Respon
 	return
 }
 
-// Restart restarts a virtual machine in a VM scale set. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Restart restarts a virtual machine in a VM scale set.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Restart(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RestartPreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Restart", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetVMsClient) Restart(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsRestartFuture, err error) {
+	req, err := client.RestartPreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Restart", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RestartSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Restart", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RestartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Restart", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RestartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Restart", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RestartPreparer prepares the Restart request.
-func (client VirtualMachineScaleSetVMsClient) RestartPreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) RestartPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -725,16 +602,22 @@ func (client VirtualMachineScaleSetVMsClient) RestartPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/restart", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestartSender sends the Restart request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) RestartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) RestartSender(req *http.Request) (future VirtualMachineScaleSetVMsRestartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RestartResponder handles the response to the Restart request. The method always
@@ -750,48 +633,28 @@ func (client VirtualMachineScaleSetVMsClient) RestartResponder(resp *http.Respon
 	return
 }
 
-// Start starts a virtual machine in a VM scale set. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Start starts a virtual machine in a VM scale set.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set. instanceID is
 // the instance ID of the virtual machine.
-func (client VirtualMachineScaleSetVMsClient) Start(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartPreparer(resourceGroupName, VMScaleSetName, instanceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Start", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetVMsClient) Start(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (result VirtualMachineScaleSetVMsStartFuture, err error) {
+	req, err := client.StartPreparer(ctx, resourceGroupName, VMScaleSetName, instanceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Start", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StartSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Start", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Start", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsClient", "Start", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StartPreparer prepares the Start request.
-func (client VirtualMachineScaleSetVMsClient) StartPreparer(resourceGroupName string, VMScaleSetName string, instanceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetVMsClient) StartPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -809,16 +672,22 @@ func (client VirtualMachineScaleSetVMsClient) StartPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetVMsClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetVMsClient) StartSender(req *http.Request) (future VirtualMachineScaleSetVMsStartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StartResponder handles the response to the Start request. The method always

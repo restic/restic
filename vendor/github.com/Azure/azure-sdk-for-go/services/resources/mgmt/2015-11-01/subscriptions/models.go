@@ -23,78 +23,260 @@ import (
 	"net/http"
 )
 
-// ListResult is subscription list operation response.
+// ListResult subscription list operation response.
 type ListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Subscription `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+	// Value - Gets or sets subscriptions.
+	Value *[]Subscription `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListResult) ListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListResultIterator provides access to a complete listing of Subscription values.
+type ListResultIterator struct {
+	i    int
+	page ListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListResultIterator) Response() ListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListResultIterator) Value() Subscription {
+	if !iter.page.NotDone() {
+		return Subscription{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lr ListResult) IsEmpty() bool {
+	return lr.Value == nil || len(*lr.Value) == 0
+}
+
+// listResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lr ListResult) listResultPreparer() (*http.Request, error) {
+	if lr.NextLink == nil || len(to.String(lr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lr.NextLink)))
 }
 
-// Location is location information.
+// ListResultPage contains a page of Subscription values.
+type ListResultPage struct {
+	fn func(ListResult) (ListResult, error)
+	lr ListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListResultPage) Next() error {
+	next, err := page.fn(page.lr)
+	if err != nil {
+		return err
+	}
+	page.lr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListResultPage) NotDone() bool {
+	return !page.lr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListResultPage) Response() ListResult {
+	return page.lr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListResultPage) Values() []Subscription {
+	if page.lr.IsEmpty() {
+		return nil
+	}
+	return *page.lr.Value
+}
+
+// Location location information.
 type Location struct {
-	ID             *string `json:"id,omitempty"`
+	// ID - Gets or sets the ID of the resource (/subscriptions/SubscriptionId).
+	ID *string `json:"id,omitempty"`
+	// SubscriptionID - Gets or sets the subscription Id.
 	SubscriptionID *string `json:"subscriptionId,omitempty"`
-	Name           *string `json:"name,omitempty"`
-	DisplayName    *string `json:"displayName,omitempty"`
-	Latitude       *string `json:"latitude,omitempty"`
-	Longitude      *string `json:"longitude,omitempty"`
+	// Name - Gets or sets the location name
+	Name *string `json:"name,omitempty"`
+	// DisplayName - Gets or sets the display name of the location
+	DisplayName *string `json:"displayName,omitempty"`
+	// Latitude - Gets or sets the latitude of the location
+	Latitude *string `json:"latitude,omitempty"`
+	// Longitude - Gets or sets the longitude of the location
+	Longitude *string `json:"longitude,omitempty"`
 }
 
-// LocationListResult is location list operation response.
+// LocationListResult location list operation response.
 type LocationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Location `json:"value,omitempty"`
+	// Value - Gets the locations.
+	Value *[]Location `json:"value,omitempty"`
 }
 
-// Policies is subscription policies.
+// Policies subscription policies.
 type Policies struct {
+	// LocationPlacementID - Gets or sets the subscription location placement Id.
 	LocationPlacementID *string `json:"locationPlacementId,omitempty"`
-	QuotaID             *string `json:"quotaId,omitempty"`
+	// QuotaID - Gets or sets the subscription quota Id.
+	QuotaID *string `json:"quotaId,omitempty"`
 }
 
-// Subscription is subscription information.
+// Subscription subscription information.
 type Subscription struct {
-	autorest.Response    `json:"-"`
-	ID                   *string   `json:"id,omitempty"`
-	SubscriptionID       *string   `json:"subscriptionId,omitempty"`
-	DisplayName          *string   `json:"displayName,omitempty"`
-	State                *string   `json:"state,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the ID of the resource (/subscriptions/SubscriptionId).
+	ID *string `json:"id,omitempty"`
+	// SubscriptionID - Gets or sets the subscription Id.
+	SubscriptionID *string `json:"subscriptionId,omitempty"`
+	// DisplayName - Gets or sets the subscription display name
+	DisplayName *string `json:"displayName,omitempty"`
+	// State - Gets or sets the subscription state
+	State *string `json:"state,omitempty"`
+	// SubscriptionPolicies - Gets or sets the subscription policies.
 	SubscriptionPolicies *Policies `json:"subscriptionPolicies,omitempty"`
 }
 
-// TenantIDDescription is tenant Id information
+// TenantIDDescription tenant Id information
 type TenantIDDescription struct {
-	ID       *string `json:"id,omitempty"`
+	// ID - Gets or sets Id
+	ID *string `json:"id,omitempty"`
+	// TenantID - Gets or sets tenantId
 	TenantID *string `json:"tenantId,omitempty"`
 }
 
-// TenantListResult is tenant Ids information.
+// TenantListResult tenant Ids information.
 type TenantListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]TenantIDDescription `json:"value,omitempty"`
-	NextLink          *string                `json:"nextLink,omitempty"`
+	// Value - Gets or sets tenant Ids.
+	Value *[]TenantIDDescription `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// TenantListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client TenantListResult) TenantListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// TenantListResultIterator provides access to a complete listing of TenantIDDescription values.
+type TenantListResultIterator struct {
+	i    int
+	page TenantListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *TenantListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter TenantListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter TenantListResultIterator) Response() TenantListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter TenantListResultIterator) Value() TenantIDDescription {
+	if !iter.page.NotDone() {
+		return TenantIDDescription{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (tlr TenantListResult) IsEmpty() bool {
+	return tlr.Value == nil || len(*tlr.Value) == 0
+}
+
+// tenantListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (tlr TenantListResult) tenantListResultPreparer() (*http.Request, error) {
+	if tlr.NextLink == nil || len(to.String(tlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(tlr.NextLink)))
+}
+
+// TenantListResultPage contains a page of TenantIDDescription values.
+type TenantListResultPage struct {
+	fn  func(TenantListResult) (TenantListResult, error)
+	tlr TenantListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *TenantListResultPage) Next() error {
+	next, err := page.fn(page.tlr)
+	if err != nil {
+		return err
+	}
+	page.tlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page TenantListResultPage) NotDone() bool {
+	return !page.tlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page TenantListResultPage) Response() TenantListResult {
+	return page.tlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page TenantListResultPage) Values() []TenantIDDescription {
+	if page.tlr.IsEmpty() {
+		return nil
+	}
+	return *page.tlr.Value
 }

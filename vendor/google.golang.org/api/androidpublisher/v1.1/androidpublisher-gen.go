@@ -127,6 +127,12 @@ type InappPurchase struct {
 	// since the epoch (Jan 1, 1970).
 	PurchaseTime int64 `json:"purchaseTime,omitempty,string"`
 
+	// PurchaseType: The type of purchase of the inapp product. This field
+	// is only set if this purchase was not made using the standard in-app
+	// billing flow. Possible values are:
+	// - Test (i.e. purchased from a license testing account)
+	PurchaseType int64 `json:"purchaseType,omitempty"`
+
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`

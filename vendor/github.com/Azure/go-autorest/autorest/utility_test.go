@@ -229,9 +229,49 @@ func ExampleString() {
 
 func TestStringWithValidString(t *testing.T) {
 	i := 123
-	if String(i) != "123" {
-		t.Fatal("autorest: String method failed to convert integer 123 to string")
+	if got, want := String(i), "123"; got != want {
+		t.Logf("got:  %q\nwant: %q", got, want)
+		t.Fail()
 	}
+}
+
+func TestStringWithStringSlice(t *testing.T) {
+	s := []string{"string1", "string2"}
+	if got, want := String(s, ","), "string1,string2"; got != want {
+		t.Logf("got:  %q\nwant: %q", got, want)
+		t.Fail()
+	}
+}
+
+func TestStringWithEnum(t *testing.T) {
+	type TestEnumType string
+	s := TestEnumType("string1")
+	if got, want := String(s), "string1"; got != want {
+		t.Logf("got:  %q\nwant: %q", got, want)
+		t.Fail()
+	}
+}
+
+func TestStringWithEnumSlice(t *testing.T) {
+	type TestEnumType string
+	s := []TestEnumType{"string1", "string2"}
+	if got, want := String(s, ","), "string1,string2"; got != want {
+		t.Logf("got:  %q\nwant: %q", got, want)
+		t.Fail()
+	}
+}
+
+func ExampleAsStringSlice() {
+	type TestEnumType string
+
+	a := []TestEnumType{"value1", "value2"}
+	b, _ := AsStringSlice(a)
+	for _, c := range b {
+		fmt.Println(c)
+	}
+	// Output:
+	// value1
+	// value2
 }
 
 func TestEncodeWithValidPath(t *testing.T) {

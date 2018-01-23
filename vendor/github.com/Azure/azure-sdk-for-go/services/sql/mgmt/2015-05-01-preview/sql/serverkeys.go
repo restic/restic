@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update, and
 // delete databases.
 type ServerKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServerKeysClient creates an instance of the ServerKeysClient client.
@@ -40,8 +41,7 @@ func NewServerKeysClientWithBaseURI(baseURI string, subscriptionID string) Serve
 	return ServerKeysClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a server key. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates or updates a server key.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. keyName is the name of the server
@@ -49,43 +49,24 @@ func NewServerKeysClientWithBaseURI(baseURI string, subscriptionID string) Serve
 // example, if the keyId is https://YourVaultName.vault.azure.net/keys/YourKeyName/01234567890123456789012345678901,
 // then the server key name should be formatted as: YourVaultName_YourKeyName_01234567890123456789012345678901
 // parameters is the requested server key resource state.
-func (client ServerKeysClient) CreateOrUpdate(resourceGroupName string, serverName string, keyName string, parameters ServerKey, cancel <-chan struct{}) (<-chan ServerKey, <-chan error) {
-	resultChan := make(chan ServerKey, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result ServerKey
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, keyName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client ServerKeysClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, keyName string, parameters ServerKey) (result ServerKeysCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, keyName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ServerKeysClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, keyName string, parameters ServerKey, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerKeysClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, keyName string, parameters ServerKey) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyName":           autorest.Encode("path", keyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -105,16 +86,22 @@ func (client ServerKeysClient) CreateOrUpdatePreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/keys/{keyName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerKeysClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerKeysClient) CreateOrUpdateSender(req *http.Request) (future ServerKeysCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -123,56 +110,36 @@ func (client ServerKeysClient) CreateOrUpdateResponder(resp *http.Response) (res
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusCreated),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// Delete deletes the server key with the given name. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the server key with the given name.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. keyName is the name of the server
 // key to be deleted.
-func (client ServerKeysClient) Delete(resourceGroupName string, serverName string, keyName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, serverName, keyName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ServerKeysClient) Delete(ctx context.Context, resourceGroupName string, serverName string, keyName string) (result ServerKeysDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, keyName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServerKeysClient) DeletePreparer(resourceGroupName string, serverName string, keyName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerKeysClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, keyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyName":           autorest.Encode("path", keyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -190,16 +157,22 @@ func (client ServerKeysClient) DeletePreparer(resourceGroupName string, serverNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/keys/{keyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerKeysClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerKeysClient) DeleteSender(req *http.Request) (future ServerKeysDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -219,8 +192,8 @@ func (client ServerKeysClient) DeleteResponder(resp *http.Response) (result auto
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. keyName is the name of the server
 // key to be retrieved.
-func (client ServerKeysClient) Get(resourceGroupName string, serverName string, keyName string) (result ServerKey, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, keyName)
+func (client ServerKeysClient) Get(ctx context.Context, resourceGroupName string, serverName string, keyName string) (result ServerKey, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, keyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "Get", nil, "Failure preparing request")
 		return
@@ -242,7 +215,7 @@ func (client ServerKeysClient) Get(resourceGroupName string, serverName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client ServerKeysClient) GetPreparer(resourceGroupName string, serverName string, keyName string) (*http.Request, error) {
+func (client ServerKeysClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, keyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyName":           autorest.Encode("path", keyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -260,14 +233,13 @@ func (client ServerKeysClient) GetPreparer(resourceGroupName string, serverName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/keys/{keyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerKeysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -288,8 +260,9 @@ func (client ServerKeysClient) GetResponder(resp *http.Response) (result ServerK
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ServerKeysClient) ListByServer(resourceGroupName string, serverName string) (result ServerKeyListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client ServerKeysClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result ServerKeyListResultPage, err error) {
+	result.fn = client.listByServerNextResults
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -297,12 +270,12 @@ func (client ServerKeysClient) ListByServer(resourceGroupName string, serverName
 
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sklr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServerResponder(resp)
+	result.sklr, err = client.ListByServerResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", resp, "Failure responding to request")
 	}
@@ -311,7 +284,7 @@ func (client ServerKeysClient) ListByServer(resourceGroupName string, serverName
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client ServerKeysClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServerKeysClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -328,14 +301,13 @@ func (client ServerKeysClient) ListByServerPreparer(resourceGroupName string, se
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/keys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerKeysClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -352,71 +324,29 @@ func (client ServerKeysClient) ListByServerResponder(resp *http.Response) (resul
 	return
 }
 
-// ListByServerNextResults retrieves the next set of results, if any.
-func (client ServerKeysClient) ListByServerNextResults(lastResults ServerKeyListResult) (result ServerKeyListResult, err error) {
-	req, err := lastResults.ServerKeyListResultPreparer()
+// listByServerNextResults retrieves the next set of results, if any.
+func (client ServerKeysClient) listByServerNextResults(lastResults ServerKeyListResult) (result ServerKeyListResult, err error) {
+	req, err := lastResults.serverKeyListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "sql.ServerKeysClient", "listByServerNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "sql.ServerKeysClient", "listByServerNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "ListByServer", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "sql.ServerKeysClient", "listByServerNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServerComplete gets all elements from the list without paging.
-func (client ServerKeysClient) ListByServerComplete(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan ServerKey, <-chan error) {
-	resultChan := make(chan ServerKey)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByServer(resourceGroupName, serverName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServerNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServerComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ServerKeysClient) ListByServerComplete(ctx context.Context, resourceGroupName string, serverName string) (result ServerKeyListResultIterator, err error) {
+	result.page, err = client.ListByServer(ctx, resourceGroupName, serverName)
+	return
 }

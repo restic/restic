@@ -18,7 +18,9 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,11 +30,11 @@ import (
 type KeyType string
 
 const (
-	// NotSpecified specifies the not specified state for key type.
+	// NotSpecified ...
 	NotSpecified KeyType = "NotSpecified"
-	// Primary specifies the primary state for key type.
+	// Primary ...
 	Primary KeyType = "Primary"
-	// Secondary specifies the secondary state for key type.
+	// Secondary ...
 	Secondary KeyType = "Secondary"
 )
 
@@ -40,23 +42,23 @@ const (
 type ParameterType string
 
 const (
-	// ParameterTypeArray specifies the parameter type array state for parameter type.
+	// ParameterTypeArray ...
 	ParameterTypeArray ParameterType = "Array"
-	// ParameterTypeBool specifies the parameter type bool state for parameter type.
+	// ParameterTypeBool ...
 	ParameterTypeBool ParameterType = "Bool"
-	// ParameterTypeFloat specifies the parameter type float state for parameter type.
+	// ParameterTypeFloat ...
 	ParameterTypeFloat ParameterType = "Float"
-	// ParameterTypeInt specifies the parameter type int state for parameter type.
+	// ParameterTypeInt ...
 	ParameterTypeInt ParameterType = "Int"
-	// ParameterTypeNotSpecified specifies the parameter type not specified state for parameter type.
+	// ParameterTypeNotSpecified ...
 	ParameterTypeNotSpecified ParameterType = "NotSpecified"
-	// ParameterTypeObject specifies the parameter type object state for parameter type.
+	// ParameterTypeObject ...
 	ParameterTypeObject ParameterType = "Object"
-	// ParameterTypeSecureObject specifies the parameter type secure object state for parameter type.
+	// ParameterTypeSecureObject ...
 	ParameterTypeSecureObject ParameterType = "SecureObject"
-	// ParameterTypeSecureString specifies the parameter type secure string state for parameter type.
+	// ParameterTypeSecureString ...
 	ParameterTypeSecureString ParameterType = "SecureString"
-	// ParameterTypeString specifies the parameter type string state for parameter type.
+	// ParameterTypeString ...
 	ParameterTypeString ParameterType = "String"
 )
 
@@ -64,19 +66,19 @@ const (
 type RecurrenceFrequency string
 
 const (
-	// Day specifies the day state for recurrence frequency.
+	// Day ...
 	Day RecurrenceFrequency = "Day"
-	// Hour specifies the hour state for recurrence frequency.
+	// Hour ...
 	Hour RecurrenceFrequency = "Hour"
-	// Minute specifies the minute state for recurrence frequency.
+	// Minute ...
 	Minute RecurrenceFrequency = "Minute"
-	// Month specifies the month state for recurrence frequency.
+	// Month ...
 	Month RecurrenceFrequency = "Month"
-	// Second specifies the second state for recurrence frequency.
+	// Second ...
 	Second RecurrenceFrequency = "Second"
-	// Week specifies the week state for recurrence frequency.
+	// Week ...
 	Week RecurrenceFrequency = "Week"
-	// Year specifies the year state for recurrence frequency.
+	// Year ...
 	Year RecurrenceFrequency = "Year"
 )
 
@@ -84,17 +86,17 @@ const (
 type SkuName string
 
 const (
-	// SkuNameBasic specifies the sku name basic state for sku name.
+	// SkuNameBasic ...
 	SkuNameBasic SkuName = "Basic"
-	// SkuNameFree specifies the sku name free state for sku name.
+	// SkuNameFree ...
 	SkuNameFree SkuName = "Free"
-	// SkuNameNotSpecified specifies the sku name not specified state for sku name.
+	// SkuNameNotSpecified ...
 	SkuNameNotSpecified SkuName = "NotSpecified"
-	// SkuNamePremium specifies the sku name premium state for sku name.
+	// SkuNamePremium ...
 	SkuNamePremium SkuName = "Premium"
-	// SkuNameShared specifies the sku name shared state for sku name.
+	// SkuNameShared ...
 	SkuNameShared SkuName = "Shared"
-	// SkuNameStandard specifies the sku name standard state for sku name.
+	// SkuNameStandard ...
 	SkuNameStandard SkuName = "Standard"
 )
 
@@ -102,14 +104,11 @@ const (
 type WorkflowProvisioningState string
 
 const (
-	// WorkflowProvisioningStateMoving specifies the workflow provisioning state moving state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateMoving ...
 	WorkflowProvisioningStateMoving WorkflowProvisioningState = "Moving"
-	// WorkflowProvisioningStateNotSpecified specifies the workflow provisioning state not specified state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateNotSpecified ...
 	WorkflowProvisioningStateNotSpecified WorkflowProvisioningState = "NotSpecified"
-	// WorkflowProvisioningStateSucceeded specifies the workflow provisioning state succeeded state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateSucceeded ...
 	WorkflowProvisioningStateSucceeded WorkflowProvisioningState = "Succeeded"
 )
 
@@ -117,15 +116,15 @@ const (
 type WorkflowState string
 
 const (
-	// WorkflowStateDeleted specifies the workflow state deleted state for workflow state.
+	// WorkflowStateDeleted ...
 	WorkflowStateDeleted WorkflowState = "Deleted"
-	// WorkflowStateDisabled specifies the workflow state disabled state for workflow state.
+	// WorkflowStateDisabled ...
 	WorkflowStateDisabled WorkflowState = "Disabled"
-	// WorkflowStateEnabled specifies the workflow state enabled state for workflow state.
+	// WorkflowStateEnabled ...
 	WorkflowStateEnabled WorkflowState = "Enabled"
-	// WorkflowStateNotSpecified specifies the workflow state not specified state for workflow state.
+	// WorkflowStateNotSpecified ...
 	WorkflowStateNotSpecified WorkflowState = "NotSpecified"
-	// WorkflowStateSuspended specifies the workflow state suspended state for workflow state.
+	// WorkflowStateSuspended ...
 	WorkflowStateSuspended WorkflowState = "Suspended"
 )
 
@@ -133,29 +132,29 @@ const (
 type WorkflowStatus string
 
 const (
-	// WorkflowStatusAborted specifies the workflow status aborted state for workflow status.
+	// WorkflowStatusAborted ...
 	WorkflowStatusAborted WorkflowStatus = "Aborted"
-	// WorkflowStatusCancelled specifies the workflow status cancelled state for workflow status.
+	// WorkflowStatusCancelled ...
 	WorkflowStatusCancelled WorkflowStatus = "Cancelled"
-	// WorkflowStatusFailed specifies the workflow status failed state for workflow status.
+	// WorkflowStatusFailed ...
 	WorkflowStatusFailed WorkflowStatus = "Failed"
-	// WorkflowStatusFaulted specifies the workflow status faulted state for workflow status.
+	// WorkflowStatusFaulted ...
 	WorkflowStatusFaulted WorkflowStatus = "Faulted"
-	// WorkflowStatusNotSpecified specifies the workflow status not specified state for workflow status.
+	// WorkflowStatusNotSpecified ...
 	WorkflowStatusNotSpecified WorkflowStatus = "NotSpecified"
-	// WorkflowStatusPaused specifies the workflow status paused state for workflow status.
+	// WorkflowStatusPaused ...
 	WorkflowStatusPaused WorkflowStatus = "Paused"
-	// WorkflowStatusRunning specifies the workflow status running state for workflow status.
+	// WorkflowStatusRunning ...
 	WorkflowStatusRunning WorkflowStatus = "Running"
-	// WorkflowStatusSkipped specifies the workflow status skipped state for workflow status.
+	// WorkflowStatusSkipped ...
 	WorkflowStatusSkipped WorkflowStatus = "Skipped"
-	// WorkflowStatusSucceeded specifies the workflow status succeeded state for workflow status.
+	// WorkflowStatusSucceeded ...
 	WorkflowStatusSucceeded WorkflowStatus = "Succeeded"
-	// WorkflowStatusSuspended specifies the workflow status suspended state for workflow status.
+	// WorkflowStatusSuspended ...
 	WorkflowStatusSuspended WorkflowStatus = "Suspended"
-	// WorkflowStatusTimedOut specifies the workflow status timed out state for workflow status.
+	// WorkflowStatusTimedOut ...
 	WorkflowStatusTimedOut WorkflowStatus = "TimedOut"
-	// WorkflowStatusWaiting specifies the workflow status waiting state for workflow status.
+	// WorkflowStatusWaiting ...
 	WorkflowStatusWaiting WorkflowStatus = "Waiting"
 )
 
@@ -163,407 +162,1477 @@ const (
 type WorkflowTriggerProvisioningState string
 
 const (
-	// WorkflowTriggerProvisioningStateCreating specifies the workflow trigger provisioning state creating state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateCreating ...
 	WorkflowTriggerProvisioningStateCreating WorkflowTriggerProvisioningState = "Creating"
-	// WorkflowTriggerProvisioningStateNotSpecified specifies the workflow trigger provisioning state not specified state
-	// for workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateNotSpecified ...
 	WorkflowTriggerProvisioningStateNotSpecified WorkflowTriggerProvisioningState = "NotSpecified"
-	// WorkflowTriggerProvisioningStateSucceeded specifies the workflow trigger provisioning state succeeded state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateSucceeded ...
 	WorkflowTriggerProvisioningStateSucceeded WorkflowTriggerProvisioningState = "Succeeded"
-	// WorkflowTriggerProvisioningStateUpdating specifies the workflow trigger provisioning state updating state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateUpdating ...
 	WorkflowTriggerProvisioningStateUpdating WorkflowTriggerProvisioningState = "Updating"
 )
 
-// ContentHash is
+// ContentHash ...
 type ContentHash struct {
+	// Algorithm - Gets or sets the algorithm.
 	Algorithm *string `json:"algorithm,omitempty"`
-	Value     *string `json:"value,omitempty"`
+	// Value - Gets or sets the value.
+	Value *string `json:"value,omitempty"`
 }
 
-// ContentLink is
+// ContentLink ...
 type ContentLink struct {
-	URI            *string                 `json:"uri,omitempty"`
-	ContentVersion *string                 `json:"contentVersion,omitempty"`
-	ContentSize    *int64                  `json:"contentSize,omitempty"`
-	ContentHash    *ContentHash            `json:"contentHash,omitempty"`
-	Metadata       *map[string]interface{} `json:"metadata,omitempty"`
+	// URI - Gets or sets the content link URI.
+	URI *string `json:"uri,omitempty"`
+	// ContentVersion - Gets or sets the content version.
+	ContentVersion *string `json:"contentVersion,omitempty"`
+	// ContentSize - Gets or sets the content size.
+	ContentSize *int64 `json:"contentSize,omitempty"`
+	// ContentHash - Gets or sets the content hash.
+	ContentHash *ContentHash `json:"contentHash,omitempty"`
+	// Metadata - Gets or sets the metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// RegenerateSecretKeyParameters is
+// RegenerateSecretKeyParameters ...
 type RegenerateSecretKeyParameters struct {
+	// KeyType - Gets or sets the key type. Possible values include: 'NotSpecified', 'Primary', 'Secondary'
 	KeyType KeyType `json:"keyType,omitempty"`
 }
 
-// Resource is
+// Resource ...
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Gets or sets the resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Gets or sets the resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResourceReference is
+// ResourceReference ...
 type ResourceReference struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// RunWorkflowParameters is
+// RunWorkflowParameters ...
 type RunWorkflowParameters struct {
-	Name    *string                 `json:"name,omitempty"`
+	// Name - Gets or sets the name of workflow run trigger.
+	Name *string `json:"name,omitempty"`
+	// Outputs - Gets or sets the outputs of workflow run trigger.
 	Outputs *map[string]interface{} `json:"outputs,omitempty"`
 }
 
-// Sku is
+// Sku ...
 type Sku struct {
-	Name SkuName            `json:"name,omitempty"`
+	// Name - Gets or sets the name. Possible values include: 'SkuNameNotSpecified', 'SkuNameFree', 'SkuNameShared', 'SkuNameBasic', 'SkuNameStandard', 'SkuNamePremium'
+	Name SkuName `json:"name,omitempty"`
+	// Plan - Gets or sets the reference to plan.
 	Plan *ResourceReference `json:"plan,omitempty"`
 }
 
-// SubResource is
+// SubResource ...
 type SubResource struct {
+	// ID - Gets or sets the resource id.
 	ID *string `json:"id,omitempty"`
 }
 
-// Workflow is
+// Workflow ...
 type Workflow struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Gets or sets the resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Gets or sets the resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// WorkflowProperties - Gets or sets the workflow properties.
 	*WorkflowProperties `json:"properties,omitempty"`
 }
 
-// WorkflowAccessKey is
-type WorkflowAccessKey struct {
-	autorest.Response            `json:"-"`
-	ID                           *string `json:"id,omitempty"`
-	*WorkflowAccessKeyProperties `json:"properties,omitempty"`
-	Name                         *string `json:"name,omitempty"`
-	Type                         *string `json:"type,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Workflow struct.
+func (w *Workflow) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		w.WorkflowProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		w.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		w.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		w.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		w.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		w.Tags = &tags
+	}
+
+	return nil
 }
 
-// WorkflowAccessKeyListResult is
+// WorkflowAccessKey ...
+type WorkflowAccessKey struct {
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowAccessKeyProperties - Gets or sets the workflow access key properties.
+	*WorkflowAccessKeyProperties `json:"properties,omitempty"`
+	// Name - Gets the workflow access key name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow access key type.
+	Type *string `json:"type,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for WorkflowAccessKey struct.
+func (wak *WorkflowAccessKey) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowAccessKeyProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wak.WorkflowAccessKeyProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wak.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wak.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wak.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowAccessKeyListResult ...
 type WorkflowAccessKeyListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowAccessKey `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Gets or sets a list of workflow access keys.
+	Value *[]WorkflowAccessKey `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowAccessKeyListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowAccessKeyListResult) WorkflowAccessKeyListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowAccessKeyListResultIterator provides access to a complete listing of WorkflowAccessKey values.
+type WorkflowAccessKeyListResultIterator struct {
+	i    int
+	page WorkflowAccessKeyListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowAccessKeyListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowAccessKeyListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowAccessKeyListResultIterator) Response() WorkflowAccessKeyListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowAccessKeyListResultIterator) Value() WorkflowAccessKey {
+	if !iter.page.NotDone() {
+		return WorkflowAccessKey{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (waklr WorkflowAccessKeyListResult) IsEmpty() bool {
+	return waklr.Value == nil || len(*waklr.Value) == 0
+}
+
+// workflowAccessKeyListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (waklr WorkflowAccessKeyListResult) workflowAccessKeyListResultPreparer() (*http.Request, error) {
+	if waklr.NextLink == nil || len(to.String(waklr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(waklr.NextLink)))
 }
 
-// WorkflowAccessKeyProperties is
+// WorkflowAccessKeyListResultPage contains a page of WorkflowAccessKey values.
+type WorkflowAccessKeyListResultPage struct {
+	fn    func(WorkflowAccessKeyListResult) (WorkflowAccessKeyListResult, error)
+	waklr WorkflowAccessKeyListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowAccessKeyListResultPage) Next() error {
+	next, err := page.fn(page.waklr)
+	if err != nil {
+		return err
+	}
+	page.waklr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowAccessKeyListResultPage) NotDone() bool {
+	return !page.waklr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowAccessKeyListResultPage) Response() WorkflowAccessKeyListResult {
+	return page.waklr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowAccessKeyListResultPage) Values() []WorkflowAccessKey {
+	if page.waklr.IsEmpty() {
+		return nil
+	}
+	return *page.waklr.Value
+}
+
+// WorkflowAccessKeyProperties ...
 type WorkflowAccessKeyProperties struct {
+	// NotBefore - Gets or sets the not-before time.
 	NotBefore *date.Time `json:"notBefore,omitempty"`
-	NotAfter  *date.Time `json:"notAfter,omitempty"`
+	// NotAfter - Gets or sets the not-after time.
+	NotAfter *date.Time `json:"notAfter,omitempty"`
 }
 
-// WorkflowFilter is
+// WorkflowFilter ...
 type WorkflowFilter struct {
+	// State - Gets or sets the state of workflows. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
 	State WorkflowState `json:"state,omitempty"`
 }
 
-// WorkflowListResult is
+// WorkflowListResult ...
 type WorkflowListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Workflow `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - Gets or sets the list of workflows.
+	Value *[]Workflow `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowListResult) WorkflowListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowListResultIterator provides access to a complete listing of Workflow values.
+type WorkflowListResultIterator struct {
+	i    int
+	page WorkflowListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowListResultIterator) Response() WorkflowListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowListResultIterator) Value() Workflow {
+	if !iter.page.NotDone() {
+		return Workflow{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wlr WorkflowListResult) IsEmpty() bool {
+	return wlr.Value == nil || len(*wlr.Value) == 0
+}
+
+// workflowListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wlr WorkflowListResult) workflowListResultPreparer() (*http.Request, error) {
+	if wlr.NextLink == nil || len(to.String(wlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wlr.NextLink)))
 }
 
-// WorkflowOutputParameter is
+// WorkflowListResultPage contains a page of Workflow values.
+type WorkflowListResultPage struct {
+	fn  func(WorkflowListResult) (WorkflowListResult, error)
+	wlr WorkflowListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowListResultPage) Next() error {
+	next, err := page.fn(page.wlr)
+	if err != nil {
+		return err
+	}
+	page.wlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowListResultPage) NotDone() bool {
+	return !page.wlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowListResultPage) Response() WorkflowListResult {
+	return page.wlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowListResultPage) Values() []Workflow {
+	if page.wlr.IsEmpty() {
+		return nil
+	}
+	return *page.wlr.Value
+}
+
+// WorkflowOutputParameter ...
 type WorkflowOutputParameter struct {
-	Type     ParameterType           `json:"type,omitempty"`
-	Value    *map[string]interface{} `json:"value,omitempty"`
+	// Type - Gets or sets the type. Possible values include: 'ParameterTypeNotSpecified', 'ParameterTypeString', 'ParameterTypeSecureString', 'ParameterTypeInt', 'ParameterTypeFloat', 'ParameterTypeBool', 'ParameterTypeArray', 'ParameterTypeObject', 'ParameterTypeSecureObject'
+	Type ParameterType `json:"type,omitempty"`
+	// Value - Gets or sets the value.
+	Value *map[string]interface{} `json:"value,omitempty"`
+	// Metadata - Gets or sets the metadata.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-	Error    *map[string]interface{} `json:"error,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
-// WorkflowParameter is
+// WorkflowParameter ...
 type WorkflowParameter struct {
-	Type     ParameterType           `json:"type,omitempty"`
-	Value    *map[string]interface{} `json:"value,omitempty"`
+	// Type - Gets or sets the type. Possible values include: 'ParameterTypeNotSpecified', 'ParameterTypeString', 'ParameterTypeSecureString', 'ParameterTypeInt', 'ParameterTypeFloat', 'ParameterTypeBool', 'ParameterTypeArray', 'ParameterTypeObject', 'ParameterTypeSecureObject'
+	Type ParameterType `json:"type,omitempty"`
+	// Value - Gets or sets the value.
+	Value *map[string]interface{} `json:"value,omitempty"`
+	// Metadata - Gets or sets the metadata.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// WorkflowProperties is
+// WorkflowProperties ...
 type WorkflowProperties struct {
-	ProvisioningState WorkflowProvisioningState      `json:"provisioningState,omitempty"`
-	CreatedTime       *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime       *date.Time                     `json:"changedTime,omitempty"`
-	State             WorkflowState                  `json:"state,omitempty"`
-	Version           *string                        `json:"version,omitempty"`
-	AccessEndpoint    *string                        `json:"accessEndpoint,omitempty"`
-	Sku               *Sku                           `json:"sku,omitempty"`
-	DefinitionLink    *ContentLink                   `json:"definitionLink,omitempty"`
-	Definition        *map[string]interface{}        `json:"definition,omitempty"`
-	ParametersLink    *ContentLink                   `json:"parametersLink,omitempty"`
-	Parameters        *map[string]*WorkflowParameter `json:"parameters,omitempty"`
+	// ProvisioningState - Gets the provisioning state. Possible values include: 'WorkflowProvisioningStateNotSpecified', 'WorkflowProvisioningStateMoving', 'WorkflowProvisioningStateSucceeded'
+	ProvisioningState WorkflowProvisioningState `json:"provisioningState,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - Gets or sets the state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Version - Gets the version.
+	Version *string `json:"version,omitempty"`
+	// AccessEndpoint - Gets the access endpoint.
+	AccessEndpoint *string `json:"accessEndpoint,omitempty"`
+	// Sku - Gets or sets the sku.
+	Sku *Sku `json:"sku,omitempty"`
+	// DefinitionLink - Gets or sets the link to definition.
+	DefinitionLink *ContentLink `json:"definitionLink,omitempty"`
+	// Definition - Gets or sets the definition.
+	Definition *map[string]interface{} `json:"definition,omitempty"`
+	// ParametersLink - Gets or sets the link to parameters.
+	ParametersLink *ContentLink `json:"parametersLink,omitempty"`
+	// Parameters - Gets or sets the parameters.
+	Parameters *map[string]*WorkflowParameter `json:"parameters,omitempty"`
 }
 
-// WorkflowRun is
+// WorkflowRun ...
 type WorkflowRun struct {
-	autorest.Response      `json:"-"`
-	ID                     *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowRunProperties - Gets or sets the workflow run properties.
 	*WorkflowRunProperties `json:"properties,omitempty"`
-	Name                   *string `json:"name,omitempty"`
-	Type                   *string `json:"type,omitempty"`
+	// Name - Gets the workflow run name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow run type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowRunAction is
+// UnmarshalJSON is the custom unmarshaler for WorkflowRun struct.
+func (wr *WorkflowRun) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowRunProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wr.WorkflowRunProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wr.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wr.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowRunAction ...
 type WorkflowRunAction struct {
-	autorest.Response            `json:"-"`
-	ID                           *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowRunActionProperties - Gets or sets the workflow run action properties.
 	*WorkflowRunActionProperties `json:"properties,omitempty"`
-	Name                         *string `json:"name,omitempty"`
-	Type                         *string `json:"type,omitempty"`
+	// Name - Gets the workflow run action name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow run action type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowRunActionFilter is
+// UnmarshalJSON is the custom unmarshaler for WorkflowRunAction struct.
+func (wra *WorkflowRunAction) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowRunActionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wra.WorkflowRunActionProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wra.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wra.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wra.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowRunActionFilter ...
 type WorkflowRunActionFilter struct {
+	// Status - Gets or sets the status of workflow run action. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowRunActionListResult is
+// WorkflowRunActionListResult ...
 type WorkflowRunActionListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowRunAction `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Gets or sets a list of workflow run actions.
+	Value *[]WorkflowRunAction `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowRunActionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowRunActionListResult) WorkflowRunActionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowRunActionListResultIterator provides access to a complete listing of WorkflowRunAction values.
+type WorkflowRunActionListResultIterator struct {
+	i    int
+	page WorkflowRunActionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowRunActionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowRunActionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowRunActionListResultIterator) Response() WorkflowRunActionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowRunActionListResultIterator) Value() WorkflowRunAction {
+	if !iter.page.NotDone() {
+		return WorkflowRunAction{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wralr WorkflowRunActionListResult) IsEmpty() bool {
+	return wralr.Value == nil || len(*wralr.Value) == 0
+}
+
+// workflowRunActionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wralr WorkflowRunActionListResult) workflowRunActionListResultPreparer() (*http.Request, error) {
+	if wralr.NextLink == nil || len(to.String(wralr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wralr.NextLink)))
 }
 
-// WorkflowRunActionProperties is
+// WorkflowRunActionListResultPage contains a page of WorkflowRunAction values.
+type WorkflowRunActionListResultPage struct {
+	fn    func(WorkflowRunActionListResult) (WorkflowRunActionListResult, error)
+	wralr WorkflowRunActionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowRunActionListResultPage) Next() error {
+	next, err := page.fn(page.wralr)
+	if err != nil {
+		return err
+	}
+	page.wralr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowRunActionListResultPage) NotDone() bool {
+	return !page.wralr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowRunActionListResultPage) Response() WorkflowRunActionListResult {
+	return page.wralr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowRunActionListResultPage) Values() []WorkflowRunAction {
+	if page.wralr.IsEmpty() {
+		return nil
+	}
+	return *page.wralr.Value
+}
+
+// WorkflowRunActionProperties ...
 type WorkflowRunActionProperties struct {
-	StartTime   *date.Time              `json:"startTime,omitempty"`
-	EndTime     *date.Time              `json:"endTime,omitempty"`
-	Status      WorkflowStatus          `json:"status,omitempty"`
-	Code        *string                 `json:"code,omitempty"`
-	Error       *map[string]interface{} `json:"error,omitempty"`
-	TrackingID  *string                 `json:"trackingId,omitempty"`
-	InputsLink  *ContentLink            `json:"inputsLink,omitempty"`
-	OutputsLink *ContentLink            `json:"outputsLink,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// TrackingID - Gets the trackingId.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// InputsLink - Gets the link to inputs.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// OutputsLink - Gets the link to outputs.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
 }
 
-// WorkflowRunFilter is
+// WorkflowRunFilter ...
 type WorkflowRunFilter struct {
+	// Status - Gets or sets the status of workflow run. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowRunListResult is
+// WorkflowRunListResult ...
 type WorkflowRunListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowRun `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - Gets or sets a list of workflow runs.
+	Value *[]WorkflowRun `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowRunListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowRunListResult) WorkflowRunListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowRunListResultIterator provides access to a complete listing of WorkflowRun values.
+type WorkflowRunListResultIterator struct {
+	i    int
+	page WorkflowRunListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowRunListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowRunListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowRunListResultIterator) Response() WorkflowRunListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowRunListResultIterator) Value() WorkflowRun {
+	if !iter.page.NotDone() {
+		return WorkflowRun{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wrlr WorkflowRunListResult) IsEmpty() bool {
+	return wrlr.Value == nil || len(*wrlr.Value) == 0
+}
+
+// workflowRunListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wrlr WorkflowRunListResult) workflowRunListResultPreparer() (*http.Request, error) {
+	if wrlr.NextLink == nil || len(to.String(wrlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wrlr.NextLink)))
 }
 
-// WorkflowRunProperties is
+// WorkflowRunListResultPage contains a page of WorkflowRun values.
+type WorkflowRunListResultPage struct {
+	fn   func(WorkflowRunListResult) (WorkflowRunListResult, error)
+	wrlr WorkflowRunListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowRunListResultPage) Next() error {
+	next, err := page.fn(page.wrlr)
+	if err != nil {
+		return err
+	}
+	page.wrlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowRunListResultPage) NotDone() bool {
+	return !page.wrlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowRunListResultPage) Response() WorkflowRunListResult {
+	return page.wrlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowRunListResultPage) Values() []WorkflowRun {
+	if page.wrlr.IsEmpty() {
+		return nil
+	}
+	return *page.wrlr.Value
+}
+
+// WorkflowRunProperties ...
 type WorkflowRunProperties struct {
-	StartTime     *date.Time                           `json:"startTime,omitempty"`
-	EndTime       *date.Time                           `json:"endTime,omitempty"`
-	Status        WorkflowStatus                       `json:"status,omitempty"`
-	Code          *string                              `json:"code,omitempty"`
-	Error         *map[string]interface{}              `json:"error,omitempty"`
-	CorrelationID *string                              `json:"correlationId,omitempty"`
-	Workflow      *ResourceReference                   `json:"workflow,omitempty"`
-	Trigger       *WorkflowRunTrigger                  `json:"trigger,omitempty"`
-	Outputs       *map[string]*WorkflowOutputParameter `json:"outputs,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// CorrelationID - Gets the correlation id.
+	CorrelationID *string `json:"correlationId,omitempty"`
+	// Workflow - Gets the reference to workflow version.
+	Workflow *ResourceReference `json:"workflow,omitempty"`
+	// Trigger - Gets the fired trigger.
+	Trigger *WorkflowRunTrigger `json:"trigger,omitempty"`
+	// Outputs - Gets the outputs.
+	Outputs *map[string]*WorkflowOutputParameter `json:"outputs,omitempty"`
 }
 
-// WorkflowRunTrigger is
+// WorkflowRunTrigger ...
 type WorkflowRunTrigger struct {
-	Name        *string                 `json:"name,omitempty"`
-	Inputs      *map[string]interface{} `json:"inputs,omitempty"`
-	InputsLink  *ContentLink            `json:"inputsLink,omitempty"`
-	Outputs     *map[string]interface{} `json:"outputs,omitempty"`
-	OutputsLink *ContentLink            `json:"outputsLink,omitempty"`
-	StartTime   *date.Time              `json:"startTime,omitempty"`
-	EndTime     *date.Time              `json:"endTime,omitempty"`
-	TrackingID  *string                 `json:"trackingId,omitempty"`
-	Code        *string                 `json:"code,omitempty"`
-	Status      WorkflowStatus          `json:"status,omitempty"`
-	Error       *map[string]interface{} `json:"error,omitempty"`
+	// Name - Gets the name.
+	Name *string `json:"name,omitempty"`
+	// Inputs - Gets the inputs.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+	// InputsLink - Gets the link to inputs.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// Outputs - Gets the outputs.
+	Outputs *map[string]interface{} `json:"outputs,omitempty"`
+	// OutputsLink - Gets the link to outputs.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TrackingID - Gets the trackingId.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
-// WorkflowSecretKeys is
+// WorkflowSecretKeys ...
 type WorkflowSecretKeys struct {
-	autorest.Response  `json:"-"`
-	PrimarySecretKey   *string `json:"primarySecretKey,omitempty"`
+	autorest.Response `json:"-"`
+	// PrimarySecretKey - Gets the primary secret key.
+	PrimarySecretKey *string `json:"primarySecretKey,omitempty"`
+	// SecondarySecretKey - Gets the secondary secret key.
 	SecondarySecretKey *string `json:"secondarySecretKey,omitempty"`
 }
 
-// WorkflowTrigger is
-type WorkflowTrigger struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	*WorkflowTriggerProperties `json:"properties,omitempty"`
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
+// WorkflowsRunFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type WorkflowsRunFuture struct {
+	azure.Future
+	req *http.Request
 }
 
-// WorkflowTriggerFilter is
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WorkflowsRunFuture) Result(client WorkflowsClient) (wr WorkflowRun, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return wr, autorest.NewError("logic.WorkflowsRunFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		wr, err = client.RunResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	wr, err = client.RunResponder(resp)
+	return
+}
+
+// WorkflowTrigger ...
+type WorkflowTrigger struct {
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowTriggerProperties - Gets or sets the workflow trigger properties.
+	*WorkflowTriggerProperties `json:"properties,omitempty"`
+	// Name - Gets the workflow trigger name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow trigger type.
+	Type *string `json:"type,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for WorkflowTrigger struct.
+func (wt *WorkflowTrigger) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowTriggerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wt.WorkflowTriggerProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wt.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wt.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wt.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowTriggerFilter ...
 type WorkflowTriggerFilter struct {
+	// State - Gets or sets the state of workflow trigger. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
 	State WorkflowState `json:"state,omitempty"`
 }
 
-// WorkflowTriggerHistory is
+// WorkflowTriggerHistory ...
 type WorkflowTriggerHistory struct {
-	autorest.Response                 `json:"-"`
-	ID                                *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowTriggerHistoryProperties - Gets the workflow trigger history properties.
 	*WorkflowTriggerHistoryProperties `json:"properties,omitempty"`
-	Name                              *string `json:"name,omitempty"`
-	Type                              *string `json:"type,omitempty"`
+	// Name - Gets the workflow trigger history name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow trigger history type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowTriggerHistoryFilter is
+// UnmarshalJSON is the custom unmarshaler for WorkflowTriggerHistory struct.
+func (wth *WorkflowTriggerHistory) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowTriggerHistoryProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wth.WorkflowTriggerHistoryProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wth.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wth.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wth.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowTriggerHistoryFilter ...
 type WorkflowTriggerHistoryFilter struct {
+	// Status - Gets or sets the status of workflow trigger history. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowTriggerHistoryListResult is
+// WorkflowTriggerHistoryListResult ...
 type WorkflowTriggerHistoryListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowTriggerHistory `json:"value,omitempty"`
-	NextLink          *string                   `json:"nextLink,omitempty"`
+	// Value - Gets or sets a list of workflow trigger histories.
+	Value *[]WorkflowTriggerHistory `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowTriggerHistoryListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowTriggerHistoryListResult) WorkflowTriggerHistoryListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowTriggerHistoryListResultIterator provides access to a complete listing of WorkflowTriggerHistory values.
+type WorkflowTriggerHistoryListResultIterator struct {
+	i    int
+	page WorkflowTriggerHistoryListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowTriggerHistoryListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowTriggerHistoryListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowTriggerHistoryListResultIterator) Response() WorkflowTriggerHistoryListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowTriggerHistoryListResultIterator) Value() WorkflowTriggerHistory {
+	if !iter.page.NotDone() {
+		return WorkflowTriggerHistory{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wthlr WorkflowTriggerHistoryListResult) IsEmpty() bool {
+	return wthlr.Value == nil || len(*wthlr.Value) == 0
+}
+
+// workflowTriggerHistoryListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wthlr WorkflowTriggerHistoryListResult) workflowTriggerHistoryListResultPreparer() (*http.Request, error) {
+	if wthlr.NextLink == nil || len(to.String(wthlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wthlr.NextLink)))
 }
 
-// WorkflowTriggerHistoryProperties is
+// WorkflowTriggerHistoryListResultPage contains a page of WorkflowTriggerHistory values.
+type WorkflowTriggerHistoryListResultPage struct {
+	fn    func(WorkflowTriggerHistoryListResult) (WorkflowTriggerHistoryListResult, error)
+	wthlr WorkflowTriggerHistoryListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowTriggerHistoryListResultPage) Next() error {
+	next, err := page.fn(page.wthlr)
+	if err != nil {
+		return err
+	}
+	page.wthlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowTriggerHistoryListResultPage) NotDone() bool {
+	return !page.wthlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowTriggerHistoryListResultPage) Response() WorkflowTriggerHistoryListResult {
+	return page.wthlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowTriggerHistoryListResultPage) Values() []WorkflowTriggerHistory {
+	if page.wthlr.IsEmpty() {
+		return nil
+	}
+	return *page.wthlr.Value
+}
+
+// WorkflowTriggerHistoryProperties ...
 type WorkflowTriggerHistoryProperties struct {
-	StartTime   *date.Time              `json:"startTime,omitempty"`
-	EndTime     *date.Time              `json:"endTime,omitempty"`
-	Status      WorkflowStatus          `json:"status,omitempty"`
-	Code        *string                 `json:"code,omitempty"`
-	Error       *map[string]interface{} `json:"error,omitempty"`
-	TrackingID  *string                 `json:"trackingId,omitempty"`
-	InputsLink  *ContentLink            `json:"inputsLink,omitempty"`
-	OutputsLink *ContentLink            `json:"outputsLink,omitempty"`
-	Fired       *bool                   `json:"fired,omitempty"`
-	Run         *ResourceReference      `json:"run,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// TrackingID - Gets the tracking id.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// InputsLink - Gets the link to input parameters.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// OutputsLink - Gets the link to output parameters.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
+	// Fired - Gets a value indicating whether trigger was fired.
+	Fired *bool `json:"fired,omitempty"`
+	// Run - Gets the reference to workflow run.
+	Run *ResourceReference `json:"run,omitempty"`
 }
 
-// WorkflowTriggerListResult is
+// WorkflowTriggerListResult ...
 type WorkflowTriggerListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowTrigger `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+	// Value - Gets or sets a list of workflow triggers.
+	Value *[]WorkflowTrigger `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowTriggerListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowTriggerListResult) WorkflowTriggerListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowTriggerListResultIterator provides access to a complete listing of WorkflowTrigger values.
+type WorkflowTriggerListResultIterator struct {
+	i    int
+	page WorkflowTriggerListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowTriggerListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowTriggerListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowTriggerListResultIterator) Response() WorkflowTriggerListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowTriggerListResultIterator) Value() WorkflowTrigger {
+	if !iter.page.NotDone() {
+		return WorkflowTrigger{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wtlr WorkflowTriggerListResult) IsEmpty() bool {
+	return wtlr.Value == nil || len(*wtlr.Value) == 0
+}
+
+// workflowTriggerListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wtlr WorkflowTriggerListResult) workflowTriggerListResultPreparer() (*http.Request, error) {
+	if wtlr.NextLink == nil || len(to.String(wtlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wtlr.NextLink)))
 }
 
-// WorkflowTriggerProperties is
+// WorkflowTriggerListResultPage contains a page of WorkflowTrigger values.
+type WorkflowTriggerListResultPage struct {
+	fn   func(WorkflowTriggerListResult) (WorkflowTriggerListResult, error)
+	wtlr WorkflowTriggerListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowTriggerListResultPage) Next() error {
+	next, err := page.fn(page.wtlr)
+	if err != nil {
+		return err
+	}
+	page.wtlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowTriggerListResultPage) NotDone() bool {
+	return !page.wtlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowTriggerListResultPage) Response() WorkflowTriggerListResult {
+	return page.wtlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowTriggerListResultPage) Values() []WorkflowTrigger {
+	if page.wtlr.IsEmpty() {
+		return nil
+	}
+	return *page.wtlr.Value
+}
+
+// WorkflowTriggerProperties ...
 type WorkflowTriggerProperties struct {
+	// ProvisioningState - Gets the provisioning state. Possible values include: 'WorkflowTriggerProvisioningStateNotSpecified', 'WorkflowTriggerProvisioningStateCreating', 'WorkflowTriggerProvisioningStateSucceeded', 'WorkflowTriggerProvisioningStateUpdating'
 	ProvisioningState WorkflowTriggerProvisioningState `json:"provisioningState,omitempty"`
-	CreatedTime       *date.Time                       `json:"createdTime,omitempty"`
-	ChangedTime       *date.Time                       `json:"changedTime,omitempty"`
-	State             WorkflowState                    `json:"state,omitempty"`
-	Status            WorkflowStatus                   `json:"status,omitempty"`
-	LastExecutionTime *date.Time                       `json:"lastExecutionTime,omitempty"`
-	NextExecutionTime *date.Time                       `json:"nextExecutionTime,omitempty"`
-	Recurrence        *WorkflowTriggerRecurrence       `json:"recurrence,omitempty"`
-	Workflow          *ResourceReference               `json:"workflow,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - Gets the state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// LastExecutionTime - Gets the last execution time.
+	LastExecutionTime *date.Time `json:"lastExecutionTime,omitempty"`
+	// NextExecutionTime - Gets the next execution time.
+	NextExecutionTime *date.Time `json:"nextExecutionTime,omitempty"`
+	// Recurrence - Gets the workflow trigger recurrence.
+	Recurrence *WorkflowTriggerRecurrence `json:"recurrence,omitempty"`
+	// Workflow - Gets the reference to workflow.
+	Workflow *ResourceReference `json:"workflow,omitempty"`
 }
 
-// WorkflowTriggerRecurrence is
+// WorkflowTriggerRecurrence ...
 type WorkflowTriggerRecurrence struct {
+	// Frequency - Gets or sets the frequency. Possible values include: 'Second', 'Minute', 'Hour', 'Day', 'Week', 'Month', 'Year'
 	Frequency RecurrenceFrequency `json:"frequency,omitempty"`
-	Interval  *int32              `json:"interval,omitempty"`
-	StartTime *date.Time          `json:"startTime,omitempty"`
-	TimeZone  *string             `json:"timeZone,omitempty"`
+	// Interval - Gets or sets the interval.
+	Interval *int32 `json:"interval,omitempty"`
+	// StartTime - Gets or sets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// TimeZone - Gets or sets the time zone.
+	TimeZone *string `json:"timeZone,omitempty"`
 }
 
-// WorkflowVersion is
+// WorkflowVersion ...
 type WorkflowVersion struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Tags                       *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Gets or sets the resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Gets or sets the resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Gets or sets the resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// WorkflowVersionProperties - Gets or sets the workflow version properties.
 	*WorkflowVersionProperties `json:"properties,omitempty"`
 }
 
-// WorkflowVersionProperties is
+// UnmarshalJSON is the custom unmarshaler for WorkflowVersion struct.
+func (wv *WorkflowVersion) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowVersionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wv.WorkflowVersionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wv.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wv.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wv.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		wv.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		wv.Tags = &tags
+	}
+
+	return nil
+}
+
+// WorkflowVersionProperties ...
 type WorkflowVersionProperties struct {
-	CreatedTime    *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime    *date.Time                     `json:"changedTime,omitempty"`
-	State          WorkflowState                  `json:"state,omitempty"`
-	Version        *string                        `json:"version,omitempty"`
-	AccessEndpoint *string                        `json:"accessEndpoint,omitempty"`
-	Sku            *Sku                           `json:"sku,omitempty"`
-	DefinitionLink *ContentLink                   `json:"definitionLink,omitempty"`
-	Definition     *map[string]interface{}        `json:"definition,omitempty"`
-	ParametersLink *ContentLink                   `json:"parametersLink,omitempty"`
-	Parameters     *map[string]*WorkflowParameter `json:"parameters,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - Gets or sets the state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Version - Gets the version.
+	Version *string `json:"version,omitempty"`
+	// AccessEndpoint - Gets the access endpoint.
+	AccessEndpoint *string `json:"accessEndpoint,omitempty"`
+	// Sku - Gets or sets the sku.
+	Sku *Sku `json:"sku,omitempty"`
+	// DefinitionLink - Gets or sets the link to definition.
+	DefinitionLink *ContentLink `json:"definitionLink,omitempty"`
+	// Definition - Gets or sets the definition.
+	Definition *map[string]interface{} `json:"definition,omitempty"`
+	// ParametersLink - Gets or sets the link to parameters.
+	ParametersLink *ContentLink `json:"parametersLink,omitempty"`
+	// Parameters - Gets or sets the parameters.
+	Parameters *map[string]*WorkflowParameter `json:"parameters,omitempty"`
 }

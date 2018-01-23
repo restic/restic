@@ -1647,17 +1647,19 @@ type FilterSet struct {
 
 	// CreativeId: The ID of the creative on which to filter; optional. This
 	// field may be set
-	// only for a filter set that accesses buyer-level troubleshooting data,
-	// i.e.
-	// one whose name matches the `bidders/*/accounts/*/filterSets/*`
+	// only for a filter set that accesses account-level troubleshooting
+	// data,
+	// i.e. one whose name matches the
+	// `bidders/*/accounts/*/filterSets/*`
 	// pattern.
 	CreativeId string `json:"creativeId,omitempty"`
 
 	// DealId: The ID of the deal on which to filter; optional. This field
 	// may be set
-	// only for a filter set that accesses buyer-level troubleshooting data,
-	// i.e.
-	// one whose name matches the `bidders/*/accounts/*/filterSets/*`
+	// only for a filter set that accesses account-level troubleshooting
+	// data,
+	// i.e. one whose name matches the
+	// `bidders/*/accounts/*/filterSets/*`
 	// pattern.
 	DealId int64 `json:"dealId,omitempty,string"`
 
@@ -1671,7 +1673,8 @@ type FilterSet struct {
 	//   "APP" - The ad impression appears in an app.
 	Environment string `json:"environment,omitempty"`
 
-	// Format: The format on which to filter; optional.
+	// Format: DEPRECATED: use repeated formats field instead.
+	// The format on which to filter; optional.
 	//
 	// Possible values:
 	//   "FORMAT_UNSPECIFIED" - A placeholder for an undefined format;
@@ -1681,6 +1684,20 @@ type FilterSet struct {
 	//   "VIDEO" - The ad impression is video format.
 	Format string `json:"format,omitempty"`
 
+	// Formats: The list of formats on which to filter; may be empty. The
+	// filters
+	// represented by multiple formats are ORed together (i.e. if
+	// non-empty,
+	// results must match any one of the formats).
+	//
+	// Possible values:
+	//   "FORMAT_UNSPECIFIED" - A placeholder for an undefined format;
+	// indicates that no format filter
+	// will be applied.
+	//   "DISPLAY" - The ad impression is display format (i.e. an image).
+	//   "VIDEO" - The ad impression is video format.
+	Formats []string `json:"formats,omitempty"`
+
 	// Name: A user-defined name of the filter set. Filter set names must be
 	// unique
 	// globally and match one of the patterns:
@@ -1689,7 +1706,7 @@ type FilterSet struct {
 	// troubleshooting
 	// data)
 	// - `bidders/*/accounts/*/filterSets/*` (for accessing
-	// buyer-level
+	// account-level
 	// troubleshooting data)
 	//
 	// This field is required in create operations.
@@ -5078,6 +5095,13 @@ func (r *AccountsCreativesService) Create(accountId string, creative *Creative) 
 	return c
 }
 
+// AccountId1 sets the optional parameter "accountId1": The account the
+// creative belongs to.
+func (c *AccountsCreativesCreateCall) AccountId1(accountId1 string) *AccountsCreativesCreateCall {
+	c.urlParams_.Set("accountId1", accountId1)
+	return c
+}
+
 // DuplicateIdMode sets the optional parameter "duplicateIdMode":
 // Indicates if multiple creatives can share an ID or not. Default
 // is
@@ -5189,6 +5213,11 @@ func (c *AccountsCreativesCreateCall) Do(opts ...googleapi.CallOption) (*Creativ
 	//       "description": "The account that this creative belongs to.\nCan be used to filter the response of the\ncreatives.list\nmethod.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "accountId1": {
+	//       "description": "The account the creative belongs to.",
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "duplicateIdMode": {
@@ -5421,7 +5450,7 @@ func (c *AccountsCreativesListCall) PageToken(pageToken string) *AccountsCreativ
 // attributes}
 // <li>disapprovalReason: {a reason
 // from
-// DisapprovalReason
+// DisapprovalReason}
 // </ul>
 // Example: 'accountId=12345 AND (dealsStatus:disapproved
 // AND
@@ -5551,7 +5580,7 @@ func (c *AccountsCreativesListCall) Do(opts ...googleapi.CallOption) (*ListCreat
 	//       "type": "string"
 	//     },
 	//     "query": {
-	//       "description": "An optional query string to filter creatives. If no filter is specified,\nall active creatives will be returned.\nSupported queries are:\n\u003cul\u003e\n\u003cli\u003eaccountId=\u003ci\u003eaccount_id_string\u003c/i\u003e\n\u003cli\u003ecreativeId=\u003ci\u003ecreative_id_string\u003c/i\u003e\n\u003cli\u003edealsStatus: {approved, conditionally_approved, disapproved,\n                   not_checked}\n\u003cli\u003eopenAuctionStatus: {approved, conditionally_approved, disapproved,\n                          not_checked}\n\u003cli\u003eattribute: {a numeric attribute from the list of attributes}\n\u003cli\u003edisapprovalReason: {a reason from\nDisapprovalReason\n\u003c/ul\u003e\nExample: 'accountId=12345 AND (dealsStatus:disapproved AND\ndisapprovalReason:unacceptable_content) OR attribute:47'",
+	//       "description": "An optional query string to filter creatives. If no filter is specified,\nall active creatives will be returned.\nSupported queries are:\n\u003cul\u003e\n\u003cli\u003eaccountId=\u003ci\u003eaccount_id_string\u003c/i\u003e\n\u003cli\u003ecreativeId=\u003ci\u003ecreative_id_string\u003c/i\u003e\n\u003cli\u003edealsStatus: {approved, conditionally_approved, disapproved,\n                   not_checked}\n\u003cli\u003eopenAuctionStatus: {approved, conditionally_approved, disapproved,\n                          not_checked}\n\u003cli\u003eattribute: {a numeric attribute from the list of attributes}\n\u003cli\u003edisapprovalReason: {a reason from\nDisapprovalReason}\n\u003c/ul\u003e\nExample: 'accountId=12345 AND (dealsStatus:disapproved AND\ndisapprovalReason:unacceptable_content) OR attribute:47'",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -5755,6 +5784,13 @@ func (r *AccountsCreativesService) Update(accountId string, creativeId string, c
 	return c
 }
 
+// AccountId1 sets the optional parameter "accountId1": The account the
+// creative belongs to.
+func (c *AccountsCreativesUpdateCall) AccountId1(accountId1 string) *AccountsCreativesUpdateCall {
+	c.urlParams_.Set("accountId1", accountId1)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -5855,6 +5891,11 @@ func (c *AccountsCreativesUpdateCall) Do(opts ...googleapi.CallOption) (*Creativ
 	//       "description": "The account that this creative belongs to.\nCan be used to filter the response of the\ncreatives.list\nmethod.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "accountId1": {
+	//       "description": "The account the creative belongs to.",
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "creativeId": {

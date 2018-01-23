@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ClustersClient is the client for the Clusters methods of the Servicefabric service.
 type ClustersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClustersClient creates an instance of the ClustersClient client.
@@ -39,14 +40,11 @@ func NewClustersClientWithBaseURI(baseURI string, subscriptionID string) Cluster
 	return ClustersClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create create cluster resource This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Create create cluster resource
 //
 // resourceGroupName is the name of the resource group to which the resource belongs or get created clusterName is the
 // name of the cluster resource parameters is put Request
-func (client ClustersClient) Create(resourceGroupName string, clusterName string, parameters Cluster, cancel <-chan struct{}) (<-chan Cluster, <-chan error) {
-	resultChan := make(chan Cluster, 1)
-	errChan := make(chan error, 1)
+func (client ClustersClient) Create(ctx context.Context, resourceGroupName string, clusterName string, parameters Cluster) (result ClustersCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ClusterProperties", Name: validation.Null, Rule: false,
@@ -96,46 +94,26 @@ func (client ClustersClient) Create(resourceGroupName string, clusterName string
 								}},
 						}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "servicefabric.ClustersClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "servicefabric.ClustersClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Cluster
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, clusterName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, clusterName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client ClustersClient) CreatePreparer(resourceGroupName string, clusterName string, parameters Cluster, cancel <-chan struct{}) (*http.Request, error) {
+func (client ClustersClient) CreatePreparer(ctx context.Context, resourceGroupName string, clusterName string, parameters Cluster) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -154,16 +132,22 @@ func (client ClustersClient) CreatePreparer(resourceGroupName string, clusterNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client ClustersClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ClustersClient) CreateSender(req *http.Request) (future ClustersCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -183,8 +167,8 @@ func (client ClustersClient) CreateResponder(resp *http.Response) (result Cluste
 //
 // resourceGroupName is the name of the resource group to which the resource belongs or get created clusterName is the
 // name of the cluster resource
-func (client ClustersClient) Delete(resourceGroupName string, clusterName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, clusterName)
+func (client ClustersClient) Delete(ctx context.Context, resourceGroupName string, clusterName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, clusterName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -206,7 +190,7 @@ func (client ClustersClient) Delete(resourceGroupName string, clusterName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ClustersClient) DeletePreparer(resourceGroupName string, clusterName string) (*http.Request, error) {
+func (client ClustersClient) DeletePreparer(ctx context.Context, resourceGroupName string, clusterName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -223,14 +207,13 @@ func (client ClustersClient) DeletePreparer(resourceGroupName string, clusterNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClustersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -250,8 +233,8 @@ func (client ClustersClient) DeleteResponder(resp *http.Response) (result autore
 //
 // resourceGroupName is the name of the resource group to which the resource belongs or get created clusterName is the
 // name of the cluster resource
-func (client ClustersClient) Get(resourceGroupName string, clusterName string) (result Cluster, err error) {
-	req, err := client.GetPreparer(resourceGroupName, clusterName)
+func (client ClustersClient) Get(ctx context.Context, resourceGroupName string, clusterName string) (result Cluster, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, clusterName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Get", nil, "Failure preparing request")
 		return
@@ -273,7 +256,7 @@ func (client ClustersClient) Get(resourceGroupName string, clusterName string) (
 }
 
 // GetPreparer prepares the Get request.
-func (client ClustersClient) GetPreparer(resourceGroupName string, clusterName string) (*http.Request, error) {
+func (client ClustersClient) GetPreparer(ctx context.Context, resourceGroupName string, clusterName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -290,14 +273,13 @@ func (client ClustersClient) GetPreparer(resourceGroupName string, clusterName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClustersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -315,8 +297,9 @@ func (client ClustersClient) GetResponder(resp *http.Response) (result Cluster, 
 }
 
 // List list cluster resource
-func (client ClustersClient) List() (result ClusterListResult, err error) {
-	req, err := client.ListPreparer()
+func (client ClustersClient) List(ctx context.Context) (result ClusterListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", nil, "Failure preparing request")
 		return
@@ -324,12 +307,12 @@ func (client ClustersClient) List() (result ClusterListResult, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.clr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.clr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", resp, "Failure responding to request")
 	}
@@ -338,7 +321,7 @@ func (client ClustersClient) List() (result ClusterListResult, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client ClustersClient) ListPreparer() (*http.Request, error) {
+func (client ClustersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -353,14 +336,13 @@ func (client ClustersClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/clusters", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClustersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -377,80 +359,39 @@ func (client ClustersClient) ListResponder(resp *http.Response) (result ClusterL
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ClustersClient) ListNextResults(lastResults ClusterListResult) (result ClusterListResult, err error) {
-	req, err := lastResults.ClusterListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ClustersClient) listNextResults(lastResults ClusterListResult) (result ClusterListResult, err error) {
+	req, err := lastResults.clusterListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ClustersClient) ListComplete(cancel <-chan struct{}) (<-chan Cluster, <-chan error) {
-	resultChan := make(chan Cluster)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClustersClient) ListComplete(ctx context.Context) (result ClusterListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListByResourceGroup list cluster resource by resource group
 //
 // resourceGroupName is the name of the resource group to which the resource belongs or get created
-func (client ClustersClient) ListByResourceGroup(resourceGroupName string) (result ClusterListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client ClustersClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ClusterListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -458,12 +399,12 @@ func (client ClustersClient) ListByResourceGroup(resourceGroupName string) (resu
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.clr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.clr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -472,7 +413,7 @@ func (client ClustersClient) ListByResourceGroup(resourceGroupName string) (resu
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ClustersClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ClustersClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -488,14 +429,13 @@ func (client ClustersClient) ListByResourceGroupPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClustersClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -512,118 +452,56 @@ func (client ClustersClient) ListByResourceGroupResponder(resp *http.Response) (
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client ClustersClient) ListByResourceGroupNextResults(lastResults ClusterListResult) (result ClusterListResult, err error) {
-	req, err := lastResults.ClusterListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client ClustersClient) listByResourceGroupNextResults(lastResults ClusterListResult) (result ClusterListResult, err error) {
+	req, err := lastResults.clusterListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClustersClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result ClusterListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
+}
+
+// Update update cluster configuration
+//
+// resourceGroupName is the name of the resource group to which the resource belongs or get created clusterName is the
+// name of the cluster resource parameters is the parameters which contains the property value and property name which
+// used to update the cluster configuration
+func (client ClustersClient) Update(ctx context.Context, resourceGroupName string, clusterName string, parameters ClusterUpdateParameters) (result ClustersUpdateFuture, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, clusterName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Update", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Update", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client ClustersClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan Cluster, <-chan error) {
-	resultChan := make(chan Cluster)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// Update update cluster configuration This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
-//
-// resourceGroupName is the name of the resource group to which the resource belongs or get created clusterName is the
-// name of the cluster resource parameters is the parameters which contains the property value and property name which
-// used to update the cluster configuration
-func (client ClustersClient) Update(resourceGroupName string, clusterName string, parameters ClusterUpdateParameters, cancel <-chan struct{}) (<-chan Cluster, <-chan error) {
-	resultChan := make(chan Cluster, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Cluster
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, clusterName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Update", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Update", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servicefabric.ClustersClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // UpdatePreparer prepares the Update request.
-func (client ClustersClient) UpdatePreparer(resourceGroupName string, clusterName string, parameters ClusterUpdateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client ClustersClient) UpdatePreparer(ctx context.Context, resourceGroupName string, clusterName string, parameters ClusterUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -642,16 +520,22 @@ func (client ClustersClient) UpdatePreparer(resourceGroupName string, clusterNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client ClustersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ClustersClient) UpdateSender(req *http.Request) (future ClustersUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

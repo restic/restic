@@ -18,7 +18,9 @@ package account
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/satori/go.uuid"
@@ -29,11 +31,11 @@ import (
 type AADObjectType string
 
 const (
-	// Group specifies the group state for aad object type.
+	// Group ...
 	Group AADObjectType = "Group"
-	// ServicePrincipal specifies the service principal state for aad object type.
+	// ServicePrincipal ...
 	ServicePrincipal AADObjectType = "ServicePrincipal"
-	// User specifies the user state for aad object type.
+	// User ...
 	User AADObjectType = "User"
 )
 
@@ -41,9 +43,9 @@ const (
 type DataLakeAnalyticsAccountState string
 
 const (
-	// Active specifies the active state for data lake analytics account state.
+	// Active ...
 	Active DataLakeAnalyticsAccountState = "Active"
-	// Suspended specifies the suspended state for data lake analytics account state.
+	// Suspended ...
 	Suspended DataLakeAnalyticsAccountState = "Suspended"
 )
 
@@ -51,27 +53,27 @@ const (
 type DataLakeAnalyticsAccountStatus string
 
 const (
-	// Canceled specifies the canceled state for data lake analytics account status.
+	// Canceled ...
 	Canceled DataLakeAnalyticsAccountStatus = "Canceled"
-	// Creating specifies the creating state for data lake analytics account status.
+	// Creating ...
 	Creating DataLakeAnalyticsAccountStatus = "Creating"
-	// Deleted specifies the deleted state for data lake analytics account status.
+	// Deleted ...
 	Deleted DataLakeAnalyticsAccountStatus = "Deleted"
-	// Deleting specifies the deleting state for data lake analytics account status.
+	// Deleting ...
 	Deleting DataLakeAnalyticsAccountStatus = "Deleting"
-	// Failed specifies the failed state for data lake analytics account status.
+	// Failed ...
 	Failed DataLakeAnalyticsAccountStatus = "Failed"
-	// Patching specifies the patching state for data lake analytics account status.
+	// Patching ...
 	Patching DataLakeAnalyticsAccountStatus = "Patching"
-	// Resuming specifies the resuming state for data lake analytics account status.
+	// Resuming ...
 	Resuming DataLakeAnalyticsAccountStatus = "Resuming"
-	// Running specifies the running state for data lake analytics account status.
+	// Running ...
 	Running DataLakeAnalyticsAccountStatus = "Running"
-	// Succeeded specifies the succeeded state for data lake analytics account status.
+	// Succeeded ...
 	Succeeded DataLakeAnalyticsAccountStatus = "Succeeded"
-	// Suspending specifies the suspending state for data lake analytics account status.
+	// Suspending ...
 	Suspending DataLakeAnalyticsAccountStatus = "Suspending"
-	// Undeleting specifies the undeleting state for data lake analytics account status.
+	// Undeleting ...
 	Undeleting DataLakeAnalyticsAccountStatus = "Undeleting"
 )
 
@@ -79,9 +81,9 @@ const (
 type FirewallAllowAzureIpsState string
 
 const (
-	// Disabled specifies the disabled state for firewall allow azure ips state.
+	// Disabled ...
 	Disabled FirewallAllowAzureIpsState = "Disabled"
-	// Enabled specifies the enabled state for firewall allow azure ips state.
+	// Enabled ...
 	Enabled FirewallAllowAzureIpsState = "Enabled"
 )
 
@@ -89,9 +91,9 @@ const (
 type FirewallState string
 
 const (
-	// FirewallStateDisabled specifies the firewall state disabled state for firewall state.
+	// FirewallStateDisabled ...
 	FirewallStateDisabled FirewallState = "Disabled"
-	// FirewallStateEnabled specifies the firewall state enabled state for firewall state.
+	// FirewallStateEnabled ...
 	FirewallStateEnabled FirewallState = "Enabled"
 )
 
@@ -99,11 +101,11 @@ const (
 type OperationOrigin string
 
 const (
-	// OperationOriginSystem specifies the operation origin system state for operation origin.
+	// OperationOriginSystem ...
 	OperationOriginSystem OperationOrigin = "system"
-	// OperationOriginUser specifies the operation origin user state for operation origin.
+	// OperationOriginUser ...
 	OperationOriginUser OperationOrigin = "user"
-	// OperationOriginUsersystem specifies the operation origin usersystem state for operation origin.
+	// OperationOriginUsersystem ...
 	OperationOriginUsersystem OperationOrigin = "user,system"
 )
 
@@ -111,15 +113,15 @@ const (
 type SubscriptionState string
 
 const (
-	// SubscriptionStateDeleted specifies the subscription state deleted state for subscription state.
+	// SubscriptionStateDeleted ...
 	SubscriptionStateDeleted SubscriptionState = "Deleted"
-	// SubscriptionStateRegistered specifies the subscription state registered state for subscription state.
+	// SubscriptionStateRegistered ...
 	SubscriptionStateRegistered SubscriptionState = "Registered"
-	// SubscriptionStateSuspended specifies the subscription state suspended state for subscription state.
+	// SubscriptionStateSuspended ...
 	SubscriptionStateSuspended SubscriptionState = "Suspended"
-	// SubscriptionStateUnregistered specifies the subscription state unregistered state for subscription state.
+	// SubscriptionStateUnregistered ...
 	SubscriptionStateUnregistered SubscriptionState = "Unregistered"
-	// SubscriptionStateWarned specifies the subscription state warned state for subscription state.
+	// SubscriptionStateWarned ...
 	SubscriptionStateWarned SubscriptionState = "Warned"
 )
 
@@ -127,440 +129,1800 @@ const (
 type TierType string
 
 const (
-	// Commitment100000AUHours specifies the commitment 100000au hours state for tier type.
+	// Commitment100000AUHours ...
 	Commitment100000AUHours TierType = "Commitment_100000AUHours"
-	// Commitment10000AUHours specifies the commitment 10000au hours state for tier type.
+	// Commitment10000AUHours ...
 	Commitment10000AUHours TierType = "Commitment_10000AUHours"
-	// Commitment1000AUHours specifies the commitment 1000au hours state for tier type.
+	// Commitment1000AUHours ...
 	Commitment1000AUHours TierType = "Commitment_1000AUHours"
-	// Commitment100AUHours specifies the commitment 100au hours state for tier type.
+	// Commitment100AUHours ...
 	Commitment100AUHours TierType = "Commitment_100AUHours"
-	// Commitment500000AUHours specifies the commitment 500000au hours state for tier type.
+	// Commitment500000AUHours ...
 	Commitment500000AUHours TierType = "Commitment_500000AUHours"
-	// Commitment50000AUHours specifies the commitment 50000au hours state for tier type.
+	// Commitment50000AUHours ...
 	Commitment50000AUHours TierType = "Commitment_50000AUHours"
-	// Commitment5000AUHours specifies the commitment 5000au hours state for tier type.
+	// Commitment5000AUHours ...
 	Commitment5000AUHours TierType = "Commitment_5000AUHours"
-	// Commitment500AUHours specifies the commitment 500au hours state for tier type.
+	// Commitment500AUHours ...
 	Commitment500AUHours TierType = "Commitment_500AUHours"
-	// Consumption specifies the consumption state for tier type.
+	// Consumption ...
 	Consumption TierType = "Consumption"
 )
 
-// AddDataLakeStoreParameters is additional Data Lake Store parameters.
+// AccountCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountCreateFuture) Result(client Client) (dlaa DataLakeAnalyticsAccount, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return dlaa, autorest.NewError("account.AccountCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		dlaa, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	dlaa, err = client.CreateResponder(resp)
+	return
+}
+
+// AccountDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountDeleteFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("account.AccountDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// AccountUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountUpdateFuture) Result(client Client) (dlaa DataLakeAnalyticsAccount, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return dlaa, autorest.NewError("account.AccountUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		dlaa, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	dlaa, err = client.UpdateResponder(resp)
+	return
+}
+
+// AddDataLakeStoreParameters additional Data Lake Store parameters.
 type AddDataLakeStoreParameters struct {
+	// DataLakeStoreAccountInfoProperties - the properties for the Data Lake Store account being added.
 	*DataLakeStoreAccountInfoProperties `json:"properties,omitempty"`
 }
 
-// AddStorageAccountParameters is storage account parameters for a storage account being added to a Data Lake Analytics
+// UnmarshalJSON is the custom unmarshaler for AddDataLakeStoreParameters struct.
+func (adlsp *AddDataLakeStoreParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DataLakeStoreAccountInfoProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		adlsp.DataLakeStoreAccountInfoProperties = &properties
+	}
+
+	return nil
+}
+
+// AddStorageAccountParameters storage account parameters for a storage account being added to a Data Lake Analytics
 // account.
 type AddStorageAccountParameters struct {
+	// StorageAccountProperties - the properties for the Azure Storage account being added.
 	*StorageAccountProperties `json:"properties,omitempty"`
 }
 
-// CapabilityInformation is subscription-level properties and limits for Data Lake Analytics
-type CapabilityInformation struct {
-	autorest.Response `json:"-"`
-	SubscriptionID    *uuid.UUID        `json:"subscriptionId,omitempty"`
-	State             SubscriptionState `json:"state,omitempty"`
-	MaxAccountCount   *int32            `json:"maxAccountCount,omitempty"`
-	AccountCount      *int32            `json:"accountCount,omitempty"`
-	MigrationState    *bool             `json:"migrationState,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for AddStorageAccountParameters struct.
+func (asap *AddStorageAccountParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties StorageAccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		asap.StorageAccountProperties = &properties
+	}
+
+	return nil
 }
 
-// CheckNameAvailabilityParameters is data Lake Analytics account name availability check parameters
+// CapabilityInformation subscription-level properties and limits for Data Lake Analytics
+type CapabilityInformation struct {
+	autorest.Response `json:"-"`
+	// SubscriptionID - the subscription credentials that uniquely identifies the subscription.
+	SubscriptionID *uuid.UUID `json:"subscriptionId,omitempty"`
+	// State - the subscription state. Possible values include: 'SubscriptionStateRegistered', 'SubscriptionStateSuspended', 'SubscriptionStateDeleted', 'SubscriptionStateUnregistered', 'SubscriptionStateWarned'
+	State SubscriptionState `json:"state,omitempty"`
+	// MaxAccountCount - the maximum supported number of accounts under this subscription.
+	MaxAccountCount *int32 `json:"maxAccountCount,omitempty"`
+	// AccountCount - the current number of accounts under this subscription.
+	AccountCount *int32 `json:"accountCount,omitempty"`
+	// MigrationState - the Boolean value of true or false to indicate the maintenance state.
+	MigrationState *bool `json:"migrationState,omitempty"`
+}
+
+// CheckNameAvailabilityParameters data Lake Analytics account name availability check parameters
 type CheckNameAvailabilityParameters struct {
+	// Name - the Data Lake Analytics name to check availability for.
 	Name *string `json:"name,omitempty"`
+	// Type - the Resource type. Note: This should not be set by the user, as the constant value is Microsoft.DataLakeAnalytics/accounts
 	Type *string `json:"type,omitempty"`
 }
 
-// ComputePolicy is the parameters used to create a new compute policy.
+// ComputePolicy the parameters used to create a new compute policy.
 type ComputePolicy struct {
-	autorest.Response        `json:"-"`
-	Name                     *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// Name - The name of the compute policy
+	Name *string `json:"name,omitempty"`
+	// ComputePolicyProperties - The compute policy properties
 	*ComputePolicyProperties `json:"properties,omitempty"`
 }
 
-// ComputePolicyAccountCreateParameters is the parameters used to create a new compute policy.
+// UnmarshalJSON is the custom unmarshaler for ComputePolicy struct.
+func (cp *ComputePolicy) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cp.Name = &name
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ComputePolicyProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cp.ComputePolicyProperties = &properties
+	}
+
+	return nil
+}
+
+// ComputePolicyAccountCreateParameters the parameters used to create a new compute policy.
 type ComputePolicyAccountCreateParameters struct {
-	Name                                     *string `json:"name,omitempty"`
+	// Name - The unique name of the policy to create
+	Name *string `json:"name,omitempty"`
+	// ComputePolicyPropertiesCreateParameters - The policy properties to use when creating a new compute policy
 	*ComputePolicyPropertiesCreateParameters `json:"properties,omitempty"`
 }
 
-// ComputePolicyCreateOrUpdateParameters is the parameters used to create a new compute policy.
+// UnmarshalJSON is the custom unmarshaler for ComputePolicyAccountCreateParameters struct.
+func (cpacp *ComputePolicyAccountCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cpacp.Name = &name
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ComputePolicyPropertiesCreateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cpacp.ComputePolicyPropertiesCreateParameters = &properties
+	}
+
+	return nil
+}
+
+// ComputePolicyCreateOrUpdateParameters the parameters used to create a new compute policy.
 type ComputePolicyCreateOrUpdateParameters struct {
+	// ComputePolicyPropertiesCreateParameters - The policy properties to use when creating a new compute policy
 	*ComputePolicyPropertiesCreateParameters `json:"properties,omitempty"`
 }
 
-// ComputePolicyListResult is the list of compute policies in the account.
+// UnmarshalJSON is the custom unmarshaler for ComputePolicyCreateOrUpdateParameters struct.
+func (cpcoup *ComputePolicyCreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ComputePolicyPropertiesCreateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cpcoup.ComputePolicyPropertiesCreateParameters = &properties
+	}
+
+	return nil
+}
+
+// ComputePolicyListResult the list of compute policies in the account.
 type ComputePolicyListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ComputePolicy `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - the results of the list operation
+	Value *[]ComputePolicy `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ComputePolicyListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ComputePolicyListResult) ComputePolicyListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ComputePolicyListResultIterator provides access to a complete listing of ComputePolicy values.
+type ComputePolicyListResultIterator struct {
+	i    int
+	page ComputePolicyListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ComputePolicyListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ComputePolicyListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ComputePolicyListResultIterator) Response() ComputePolicyListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ComputePolicyListResultIterator) Value() ComputePolicy {
+	if !iter.page.NotDone() {
+		return ComputePolicy{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cplr ComputePolicyListResult) IsEmpty() bool {
+	return cplr.Value == nil || len(*cplr.Value) == 0
+}
+
+// computePolicyListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cplr ComputePolicyListResult) computePolicyListResultPreparer() (*http.Request, error) {
+	if cplr.NextLink == nil || len(to.String(cplr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cplr.NextLink)))
 }
 
-// ComputePolicyProperties is the compute policy properties to use when creating a new compute policy
+// ComputePolicyListResultPage contains a page of ComputePolicy values.
+type ComputePolicyListResultPage struct {
+	fn   func(ComputePolicyListResult) (ComputePolicyListResult, error)
+	cplr ComputePolicyListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ComputePolicyListResultPage) Next() error {
+	next, err := page.fn(page.cplr)
+	if err != nil {
+		return err
+	}
+	page.cplr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ComputePolicyListResultPage) NotDone() bool {
+	return !page.cplr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ComputePolicyListResultPage) Response() ComputePolicyListResult {
+	return page.cplr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ComputePolicyListResultPage) Values() []ComputePolicy {
+	if page.cplr.IsEmpty() {
+		return nil
+	}
+	return *page.cplr.Value
+}
+
+// ComputePolicyProperties the compute policy properties to use when creating a new compute policy
 type ComputePolicyProperties struct {
-	ObjectID                     *uuid.UUID    `json:"objectId,omitempty"`
-	ObjectType                   AADObjectType `json:"objectType,omitempty"`
-	MaxDegreeOfParallelismPerJob *int32        `json:"maxDegreeOfParallelismPerJob,omitempty"`
-	MinPriorityPerJob            *int32        `json:"minPriorityPerJob,omitempty"`
+	// ObjectID - The AAD object identifier for the entity to create a policy for.
+	ObjectID *uuid.UUID `json:"objectId,omitempty"`
+	// ObjectType - The type of AAD object the object identifier refers to. Possible values include: 'User', 'Group', 'ServicePrincipal'
+	ObjectType AADObjectType `json:"objectType,omitempty"`
+	// MaxDegreeOfParallelismPerJob - The maximum degree of parallelism per job this user can use to submit jobs.
+	MaxDegreeOfParallelismPerJob *int32 `json:"maxDegreeOfParallelismPerJob,omitempty"`
+	// MinPriorityPerJob - The minimum priority per job this user can use to submit jobs.
+	MinPriorityPerJob *int32 `json:"minPriorityPerJob,omitempty"`
 }
 
-// ComputePolicyPropertiesCreateParameters is the compute policy properties to use when creating a new compute policy
+// ComputePolicyPropertiesCreateParameters the compute policy properties to use when creating a new compute policy
 type ComputePolicyPropertiesCreateParameters struct {
-	ObjectID                     *uuid.UUID    `json:"objectId,omitempty"`
-	ObjectType                   AADObjectType `json:"objectType,omitempty"`
-	MaxDegreeOfParallelismPerJob *int32        `json:"maxDegreeOfParallelismPerJob,omitempty"`
-	MinPriorityPerJob            *int32        `json:"minPriorityPerJob,omitempty"`
+	// ObjectID - The AAD object identifier for the entity to create a policy for.
+	ObjectID *uuid.UUID `json:"objectId,omitempty"`
+	// ObjectType - The type of AAD object the object identifier refers to. Possible values include: 'User', 'Group', 'ServicePrincipal'
+	ObjectType AADObjectType `json:"objectType,omitempty"`
+	// MaxDegreeOfParallelismPerJob - The maximum degree of parallelism per job this user can use to submit jobs. This property, the min priority per job property, or both must be passed.
+	MaxDegreeOfParallelismPerJob *int32 `json:"maxDegreeOfParallelismPerJob,omitempty"`
+	// MinPriorityPerJob - The minimum priority per job this user can use to submit jobs. This property, the max degree of parallelism per job property, or both must be passed.
+	MinPriorityPerJob *int32 `json:"minPriorityPerJob,omitempty"`
 }
 
-// DataLakeAnalyticsAccount is a Data Lake Analytics account object, containing all information associated with the
-// named Data Lake Analytics account.
+// DataLakeAnalyticsAccount a Data Lake Analytics account object, containing all information associated with the named
+// Data Lake Analytics account.
 type DataLakeAnalyticsAccount struct {
-	autorest.Response                   `json:"-"`
-	ID                                  *string             `json:"id,omitempty"`
-	Name                                *string             `json:"name,omitempty"`
-	Type                                *string             `json:"type,omitempty"`
-	Location                            *string             `json:"location,omitempty"`
-	Tags                                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// DataLakeAnalyticsAccountProperties - The properties defined by Data Lake Analytics all properties are specific to each resource provider.
 	*DataLakeAnalyticsAccountProperties `json:"properties,omitempty"`
 }
 
-// DataLakeAnalyticsAccountBasic is a Data Lake Analytics account object, containing all information associated with
-// the named Data Lake Analytics account.
+// UnmarshalJSON is the custom unmarshaler for DataLakeAnalyticsAccount struct.
+func (dlaa *DataLakeAnalyticsAccount) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DataLakeAnalyticsAccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dlaa.DataLakeAnalyticsAccountProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dlaa.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dlaa.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dlaa.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		dlaa.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		dlaa.Tags = &tags
+	}
+
+	return nil
+}
+
+// DataLakeAnalyticsAccountBasic a Data Lake Analytics account object, containing all information associated with the
+// named Data Lake Analytics account.
 type DataLakeAnalyticsAccountBasic struct {
-	ID                                       *string             `json:"id,omitempty"`
-	Name                                     *string             `json:"name,omitempty"`
-	Type                                     *string             `json:"type,omitempty"`
-	Location                                 *string             `json:"location,omitempty"`
-	Tags                                     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// DataLakeAnalyticsAccountPropertiesBasic - The properties defined by Data Lake Analytics all properties are specific to each resource provider.
 	*DataLakeAnalyticsAccountPropertiesBasic `json:"properties,omitempty"`
 }
 
-// DataLakeAnalyticsAccountListDataLakeStoreResult is data Lake Account list information.
+// UnmarshalJSON is the custom unmarshaler for DataLakeAnalyticsAccountBasic struct.
+func (dlaab *DataLakeAnalyticsAccountBasic) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DataLakeAnalyticsAccountPropertiesBasic
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dlaab.DataLakeAnalyticsAccountPropertiesBasic = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dlaab.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dlaab.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dlaab.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		dlaab.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		dlaab.Tags = &tags
+	}
+
+	return nil
+}
+
+// DataLakeAnalyticsAccountListDataLakeStoreResult data Lake Account list information.
 type DataLakeAnalyticsAccountListDataLakeStoreResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]DataLakeStoreAccountInfo `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+	// Value - the results of the list operation
+	Value *[]DataLakeStoreAccountInfo `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DataLakeAnalyticsAccountListDataLakeStoreResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeAnalyticsAccountListDataLakeStoreResult) DataLakeAnalyticsAccountListDataLakeStoreResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeAnalyticsAccountListDataLakeStoreResultIterator provides access to a complete listing of
+// DataLakeStoreAccountInfo values.
+type DataLakeAnalyticsAccountListDataLakeStoreResultIterator struct {
+	i    int
+	page DataLakeAnalyticsAccountListDataLakeStoreResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeAnalyticsAccountListDataLakeStoreResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeAnalyticsAccountListDataLakeStoreResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeAnalyticsAccountListDataLakeStoreResultIterator) Response() DataLakeAnalyticsAccountListDataLakeStoreResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeAnalyticsAccountListDataLakeStoreResultIterator) Value() DataLakeStoreAccountInfo {
+	if !iter.page.NotDone() {
+		return DataLakeStoreAccountInfo{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlaaldlsr DataLakeAnalyticsAccountListDataLakeStoreResult) IsEmpty() bool {
+	return dlaaldlsr.Value == nil || len(*dlaaldlsr.Value) == 0
+}
+
+// dataLakeAnalyticsAccountListDataLakeStoreResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlaaldlsr DataLakeAnalyticsAccountListDataLakeStoreResult) dataLakeAnalyticsAccountListDataLakeStoreResultPreparer() (*http.Request, error) {
+	if dlaaldlsr.NextLink == nil || len(to.String(dlaaldlsr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlaaldlsr.NextLink)))
 }
 
-// DataLakeAnalyticsAccountListResult is dataLakeAnalytics Account list information.
+// DataLakeAnalyticsAccountListDataLakeStoreResultPage contains a page of DataLakeStoreAccountInfo values.
+type DataLakeAnalyticsAccountListDataLakeStoreResultPage struct {
+	fn        func(DataLakeAnalyticsAccountListDataLakeStoreResult) (DataLakeAnalyticsAccountListDataLakeStoreResult, error)
+	dlaaldlsr DataLakeAnalyticsAccountListDataLakeStoreResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeAnalyticsAccountListDataLakeStoreResultPage) Next() error {
+	next, err := page.fn(page.dlaaldlsr)
+	if err != nil {
+		return err
+	}
+	page.dlaaldlsr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeAnalyticsAccountListDataLakeStoreResultPage) NotDone() bool {
+	return !page.dlaaldlsr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeAnalyticsAccountListDataLakeStoreResultPage) Response() DataLakeAnalyticsAccountListDataLakeStoreResult {
+	return page.dlaaldlsr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeAnalyticsAccountListDataLakeStoreResultPage) Values() []DataLakeStoreAccountInfo {
+	if page.dlaaldlsr.IsEmpty() {
+		return nil
+	}
+	return *page.dlaaldlsr.Value
+}
+
+// DataLakeAnalyticsAccountListResult dataLakeAnalytics Account list information.
 type DataLakeAnalyticsAccountListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]DataLakeAnalyticsAccountBasic `json:"value,omitempty"`
-	NextLink          *string                          `json:"nextLink,omitempty"`
+	// Value - the results of the list operation
+	Value *[]DataLakeAnalyticsAccountBasic `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DataLakeAnalyticsAccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeAnalyticsAccountListResult) DataLakeAnalyticsAccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeAnalyticsAccountListResultIterator provides access to a complete listing of DataLakeAnalyticsAccountBasic
+// values.
+type DataLakeAnalyticsAccountListResultIterator struct {
+	i    int
+	page DataLakeAnalyticsAccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeAnalyticsAccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeAnalyticsAccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeAnalyticsAccountListResultIterator) Response() DataLakeAnalyticsAccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeAnalyticsAccountListResultIterator) Value() DataLakeAnalyticsAccountBasic {
+	if !iter.page.NotDone() {
+		return DataLakeAnalyticsAccountBasic{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlaalr DataLakeAnalyticsAccountListResult) IsEmpty() bool {
+	return dlaalr.Value == nil || len(*dlaalr.Value) == 0
+}
+
+// dataLakeAnalyticsAccountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlaalr DataLakeAnalyticsAccountListResult) dataLakeAnalyticsAccountListResultPreparer() (*http.Request, error) {
+	if dlaalr.NextLink == nil || len(to.String(dlaalr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlaalr.NextLink)))
 }
 
-// DataLakeAnalyticsAccountListStorageAccountsResult is azure Storage Account list information.
+// DataLakeAnalyticsAccountListResultPage contains a page of DataLakeAnalyticsAccountBasic values.
+type DataLakeAnalyticsAccountListResultPage struct {
+	fn     func(DataLakeAnalyticsAccountListResult) (DataLakeAnalyticsAccountListResult, error)
+	dlaalr DataLakeAnalyticsAccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeAnalyticsAccountListResultPage) Next() error {
+	next, err := page.fn(page.dlaalr)
+	if err != nil {
+		return err
+	}
+	page.dlaalr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeAnalyticsAccountListResultPage) NotDone() bool {
+	return !page.dlaalr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeAnalyticsAccountListResultPage) Response() DataLakeAnalyticsAccountListResult {
+	return page.dlaalr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeAnalyticsAccountListResultPage) Values() []DataLakeAnalyticsAccountBasic {
+	if page.dlaalr.IsEmpty() {
+		return nil
+	}
+	return *page.dlaalr.Value
+}
+
+// DataLakeAnalyticsAccountListStorageAccountsResult azure Storage Account list information.
 type DataLakeAnalyticsAccountListStorageAccountsResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]StorageAccountInfo `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - the results of the list operation
+	Value *[]StorageAccountInfo `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DataLakeAnalyticsAccountListStorageAccountsResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeAnalyticsAccountListStorageAccountsResult) DataLakeAnalyticsAccountListStorageAccountsResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeAnalyticsAccountListStorageAccountsResultIterator provides access to a complete listing of
+// StorageAccountInfo values.
+type DataLakeAnalyticsAccountListStorageAccountsResultIterator struct {
+	i    int
+	page DataLakeAnalyticsAccountListStorageAccountsResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeAnalyticsAccountListStorageAccountsResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeAnalyticsAccountListStorageAccountsResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeAnalyticsAccountListStorageAccountsResultIterator) Response() DataLakeAnalyticsAccountListStorageAccountsResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeAnalyticsAccountListStorageAccountsResultIterator) Value() StorageAccountInfo {
+	if !iter.page.NotDone() {
+		return StorageAccountInfo{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlaalsar DataLakeAnalyticsAccountListStorageAccountsResult) IsEmpty() bool {
+	return dlaalsar.Value == nil || len(*dlaalsar.Value) == 0
+}
+
+// dataLakeAnalyticsAccountListStorageAccountsResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlaalsar DataLakeAnalyticsAccountListStorageAccountsResult) dataLakeAnalyticsAccountListStorageAccountsResultPreparer() (*http.Request, error) {
+	if dlaalsar.NextLink == nil || len(to.String(dlaalsar.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlaalsar.NextLink)))
 }
 
-// DataLakeAnalyticsAccountProperties is the account specific properties that are associated with an underlying Data
-// Lake Analytics account. Returned only when retrieving a specific account.
+// DataLakeAnalyticsAccountListStorageAccountsResultPage contains a page of StorageAccountInfo values.
+type DataLakeAnalyticsAccountListStorageAccountsResultPage struct {
+	fn       func(DataLakeAnalyticsAccountListStorageAccountsResult) (DataLakeAnalyticsAccountListStorageAccountsResult, error)
+	dlaalsar DataLakeAnalyticsAccountListStorageAccountsResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeAnalyticsAccountListStorageAccountsResultPage) Next() error {
+	next, err := page.fn(page.dlaalsar)
+	if err != nil {
+		return err
+	}
+	page.dlaalsar = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeAnalyticsAccountListStorageAccountsResultPage) NotDone() bool {
+	return !page.dlaalsar.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeAnalyticsAccountListStorageAccountsResultPage) Response() DataLakeAnalyticsAccountListStorageAccountsResult {
+	return page.dlaalsar
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeAnalyticsAccountListStorageAccountsResultPage) Values() []StorageAccountInfo {
+	if page.dlaalsar.IsEmpty() {
+		return nil
+	}
+	return *page.dlaalsar.Value
+}
+
+// DataLakeAnalyticsAccountProperties the account specific properties that are associated with an underlying Data Lake
+// Analytics account. Returned only when retrieving a specific account.
 type DataLakeAnalyticsAccountProperties struct {
-	ProvisioningState            DataLakeAnalyticsAccountStatus          `json:"provisioningState,omitempty"`
-	State                        DataLakeAnalyticsAccountState           `json:"state,omitempty"`
-	CreationTime                 *date.Time                              `json:"creationTime,omitempty"`
-	LastModifiedTime             *date.Time                              `json:"lastModifiedTime,omitempty"`
-	Endpoint                     *string                                 `json:"endpoint,omitempty"`
-	AccountID                    *uuid.UUID                              `json:"accountId,omitempty"`
-	DefaultDataLakeStoreAccount  *string                                 `json:"defaultDataLakeStoreAccount,omitempty"`
-	MaxDegreeOfParallelism       *int32                                  `json:"maxDegreeOfParallelism,omitempty"`
-	QueryStoreRetention          *int32                                  `json:"queryStoreRetention,omitempty"`
-	MaxJobCount                  *int32                                  `json:"maxJobCount,omitempty"`
-	SystemMaxDegreeOfParallelism *int32                                  `json:"systemMaxDegreeOfParallelism,omitempty"`
-	SystemMaxJobCount            *int32                                  `json:"systemMaxJobCount,omitempty"`
-	DataLakeStoreAccounts        *[]DataLakeStoreAccountInfo             `json:"dataLakeStoreAccounts,omitempty"`
-	StorageAccounts              *[]StorageAccountInfo                   `json:"storageAccounts,omitempty"`
-	NewTier                      TierType                                `json:"newTier,omitempty"`
-	CurrentTier                  TierType                                `json:"currentTier,omitempty"`
-	FirewallState                FirewallState                           `json:"firewallState,omitempty"`
-	FirewallAllowAzureIps        FirewallAllowAzureIpsState              `json:"firewallAllowAzureIps,omitempty"`
-	FirewallRules                *[]FirewallRule                         `json:"firewallRules,omitempty"`
-	MaxDegreeOfParallelismPerJob *int32                                  `json:"maxDegreeOfParallelismPerJob,omitempty"`
-	MinPriorityPerJob            *int32                                  `json:"minPriorityPerJob,omitempty"`
-	ComputePolicies              *[]ComputePolicyAccountCreateParameters `json:"computePolicies,omitempty"`
-}
-
-// DataLakeAnalyticsAccountPropertiesBasic is the basic account specific properties that are associated with an
-// underlying Data Lake Analytics account.
-type DataLakeAnalyticsAccountPropertiesBasic struct {
+	// ProvisioningState - the provisioning status of the Data Lake Analytics account. Possible values include: 'Failed', 'Creating', 'Running', 'Succeeded', 'Patching', 'Suspending', 'Resuming', 'Deleting', 'Deleted', 'Undeleting', 'Canceled'
 	ProvisioningState DataLakeAnalyticsAccountStatus `json:"provisioningState,omitempty"`
-	State             DataLakeAnalyticsAccountState  `json:"state,omitempty"`
-	CreationTime      *date.Time                     `json:"creationTime,omitempty"`
-	LastModifiedTime  *date.Time                     `json:"lastModifiedTime,omitempty"`
-	Endpoint          *string                        `json:"endpoint,omitempty"`
-	AccountID         *uuid.UUID                     `json:"accountId,omitempty"`
+	// State - the state of the Data Lake Analytics account. Possible values include: 'Active', 'Suspended'
+	State DataLakeAnalyticsAccountState `json:"state,omitempty"`
+	// CreationTime - the account creation time.
+	CreationTime *date.Time `json:"creationTime,omitempty"`
+	// LastModifiedTime - the account last modified time.
+	LastModifiedTime *date.Time `json:"lastModifiedTime,omitempty"`
+	// Endpoint - the full CName endpoint for this account.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// AccountID - The unique identifier associated with this Data Lake Analytics account.
+	AccountID *uuid.UUID `json:"accountId,omitempty"`
+	// DefaultDataLakeStoreAccount - the default data lake storage account associated with this Data Lake Analytics account.
+	DefaultDataLakeStoreAccount *string `json:"defaultDataLakeStoreAccount,omitempty"`
+	// MaxDegreeOfParallelism - the maximum supported degree of parallelism for this account.
+	MaxDegreeOfParallelism *int32 `json:"maxDegreeOfParallelism,omitempty"`
+	// QueryStoreRetention - the number of days that job metadata is retained.
+	QueryStoreRetention *int32 `json:"queryStoreRetention,omitempty"`
+	// MaxJobCount - the maximum supported jobs running under the account at the same time.
+	MaxJobCount *int32 `json:"maxJobCount,omitempty"`
+	// SystemMaxDegreeOfParallelism - the system defined maximum supported degree of parallelism for this account, which restricts the maximum value of parallelism the user can set for the account.
+	SystemMaxDegreeOfParallelism *int32 `json:"systemMaxDegreeOfParallelism,omitempty"`
+	// SystemMaxJobCount - the system defined maximum supported jobs running under the account at the same time, which restricts the maximum number of running jobs the user can set for the account.
+	SystemMaxJobCount *int32 `json:"systemMaxJobCount,omitempty"`
+	// DataLakeStoreAccounts - the list of Data Lake storage accounts associated with this account.
+	DataLakeStoreAccounts *[]DataLakeStoreAccountInfo `json:"dataLakeStoreAccounts,omitempty"`
+	// StorageAccounts - the list of Azure Blob storage accounts associated with this account.
+	StorageAccounts *[]StorageAccountInfo `json:"storageAccounts,omitempty"`
+	// NewTier - the commitment tier for the next month. Possible values include: 'Consumption', 'Commitment100AUHours', 'Commitment500AUHours', 'Commitment1000AUHours', 'Commitment5000AUHours', 'Commitment10000AUHours', 'Commitment50000AUHours', 'Commitment100000AUHours', 'Commitment500000AUHours'
+	NewTier TierType `json:"newTier,omitempty"`
+	// CurrentTier - the commitment tier in use for the current month. Possible values include: 'Consumption', 'Commitment100AUHours', 'Commitment500AUHours', 'Commitment1000AUHours', 'Commitment5000AUHours', 'Commitment10000AUHours', 'Commitment50000AUHours', 'Commitment100000AUHours', 'Commitment500000AUHours'
+	CurrentTier TierType `json:"currentTier,omitempty"`
+	// FirewallState - The current state of the IP address firewall for this Data Lake Analytics account. Possible values include: 'FirewallStateEnabled', 'FirewallStateDisabled'
+	FirewallState FirewallState `json:"firewallState,omitempty"`
+	// FirewallAllowAzureIps - The current state of allowing or disallowing IPs originating within Azure through the firewall. If the firewall is disabled, this is not enforced. Possible values include: 'Enabled', 'Disabled'
+	FirewallAllowAzureIps FirewallAllowAzureIpsState `json:"firewallAllowAzureIps,omitempty"`
+	// FirewallRules - The list of firewall rules associated with this Data Lake Analytics account.
+	FirewallRules *[]FirewallRule `json:"firewallRules,omitempty"`
+	// MaxDegreeOfParallelismPerJob - the maximum supported degree of parallelism per job for this account.
+	MaxDegreeOfParallelismPerJob *int32 `json:"maxDegreeOfParallelismPerJob,omitempty"`
+	// MinPriorityPerJob - the minimum supported priority per job for this account.
+	MinPriorityPerJob *int32 `json:"minPriorityPerJob,omitempty"`
+	// ComputePolicies - the list of compute policies to create in this account.
+	ComputePolicies *[]ComputePolicyAccountCreateParameters `json:"computePolicies,omitempty"`
 }
 
-// DataLakeAnalyticsAccountUpdateParameters is the parameters that can be used to update an existing Data Lake
-// Analytics account.
+// DataLakeAnalyticsAccountPropertiesBasic the basic account specific properties that are associated with an underlying
+// Data Lake Analytics account.
+type DataLakeAnalyticsAccountPropertiesBasic struct {
+	// ProvisioningState - the provisioning status of the Data Lake Analytics account. Possible values include: 'Failed', 'Creating', 'Running', 'Succeeded', 'Patching', 'Suspending', 'Resuming', 'Deleting', 'Deleted', 'Undeleting', 'Canceled'
+	ProvisioningState DataLakeAnalyticsAccountStatus `json:"provisioningState,omitempty"`
+	// State - the state of the Data Lake Analytics account. Possible values include: 'Active', 'Suspended'
+	State DataLakeAnalyticsAccountState `json:"state,omitempty"`
+	// CreationTime - the account creation time.
+	CreationTime *date.Time `json:"creationTime,omitempty"`
+	// LastModifiedTime - the account last modified time.
+	LastModifiedTime *date.Time `json:"lastModifiedTime,omitempty"`
+	// Endpoint - the full CName endpoint for this account.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// AccountID - The unique identifier associated with this Data Lake Analytics account.
+	AccountID *uuid.UUID `json:"accountId,omitempty"`
+}
+
+// DataLakeAnalyticsAccountUpdateParameters the parameters that can be used to update an existing Data Lake Analytics
+// account.
 type DataLakeAnalyticsAccountUpdateParameters struct {
-	Tags                                      *map[string]*string `json:"tags,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// UpdateDataLakeAnalyticsAccountProperties - The properties that can be updated in an existing Data Lake Analytics account.
 	*UpdateDataLakeAnalyticsAccountProperties `json:"properties,omitempty"`
 }
 
-// DataLakeAnalyticsFirewallRuleListResult is data Lake Analytics firewall rule list information.
-type DataLakeAnalyticsFirewallRuleListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]FirewallRule `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DataLakeAnalyticsAccountUpdateParameters struct.
+func (dlaaup *DataLakeAnalyticsAccountUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		dlaaup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties UpdateDataLakeAnalyticsAccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dlaaup.UpdateDataLakeAnalyticsAccountProperties = &properties
+	}
+
+	return nil
 }
 
-// DataLakeAnalyticsFirewallRuleListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeAnalyticsFirewallRuleListResult) DataLakeAnalyticsFirewallRuleListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeAnalyticsFirewallRuleListResult data Lake Analytics firewall rule list information.
+type DataLakeAnalyticsFirewallRuleListResult struct {
+	autorest.Response `json:"-"`
+	// Value - the results of the list operation
+	Value *[]FirewallRule `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// DataLakeAnalyticsFirewallRuleListResultIterator provides access to a complete listing of FirewallRule values.
+type DataLakeAnalyticsFirewallRuleListResultIterator struct {
+	i    int
+	page DataLakeAnalyticsFirewallRuleListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeAnalyticsFirewallRuleListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeAnalyticsFirewallRuleListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeAnalyticsFirewallRuleListResultIterator) Response() DataLakeAnalyticsFirewallRuleListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeAnalyticsFirewallRuleListResultIterator) Value() FirewallRule {
+	if !iter.page.NotDone() {
+		return FirewallRule{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlafrlr DataLakeAnalyticsFirewallRuleListResult) IsEmpty() bool {
+	return dlafrlr.Value == nil || len(*dlafrlr.Value) == 0
+}
+
+// dataLakeAnalyticsFirewallRuleListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlafrlr DataLakeAnalyticsFirewallRuleListResult) dataLakeAnalyticsFirewallRuleListResultPreparer() (*http.Request, error) {
+	if dlafrlr.NextLink == nil || len(to.String(dlafrlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlafrlr.NextLink)))
 }
 
-// DataLakeStoreAccountInfo is data Lake Store account information.
+// DataLakeAnalyticsFirewallRuleListResultPage contains a page of FirewallRule values.
+type DataLakeAnalyticsFirewallRuleListResultPage struct {
+	fn      func(DataLakeAnalyticsFirewallRuleListResult) (DataLakeAnalyticsFirewallRuleListResult, error)
+	dlafrlr DataLakeAnalyticsFirewallRuleListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeAnalyticsFirewallRuleListResultPage) Next() error {
+	next, err := page.fn(page.dlafrlr)
+	if err != nil {
+		return err
+	}
+	page.dlafrlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeAnalyticsFirewallRuleListResultPage) NotDone() bool {
+	return !page.dlafrlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeAnalyticsFirewallRuleListResultPage) Response() DataLakeAnalyticsFirewallRuleListResult {
+	return page.dlafrlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeAnalyticsFirewallRuleListResultPage) Values() []FirewallRule {
+	if page.dlafrlr.IsEmpty() {
+		return nil
+	}
+	return *page.dlafrlr.Value
+}
+
+// DataLakeStoreAccountInfo data Lake Store account information.
 type DataLakeStoreAccountInfo struct {
-	autorest.Response                   `json:"-"`
-	ID                                  *string `json:"id,omitempty"`
-	Name                                *string `json:"name,omitempty"`
-	Type                                *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// DataLakeStoreAccountInfoProperties - the properties associated with this Data Lake Store account.
 	*DataLakeStoreAccountInfoProperties `json:"properties,omitempty"`
 }
 
-// DataLakeStoreAccountInfoProperties is data Lake Store account properties information.
+// UnmarshalJSON is the custom unmarshaler for DataLakeStoreAccountInfo struct.
+func (dlsai *DataLakeStoreAccountInfo) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DataLakeStoreAccountInfoProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dlsai.DataLakeStoreAccountInfoProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dlsai.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dlsai.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dlsai.Type = &typeVar
+	}
+
+	return nil
+}
+
+// DataLakeStoreAccountInfoProperties data Lake Store account properties information.
 type DataLakeStoreAccountInfoProperties struct {
+	// Suffix - the optional suffix for the Data Lake Store account.
 	Suffix *string `json:"suffix,omitempty"`
 }
 
-// FirewallRule is data Lake Analytics firewall rule information
+// FirewallRule data Lake Analytics firewall rule information
 type FirewallRule struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// FirewallRuleProperties - the properties of the firewall rule.
 	*FirewallRuleProperties `json:"properties,omitempty"`
 }
 
-// FirewallRuleProperties is data Lake Analytics firewall rule properties information
-type FirewallRuleProperties struct {
-	StartIPAddress *string `json:"startIpAddress,omitempty"`
-	EndIPAddress   *string `json:"endIpAddress,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for FirewallRule struct.
+func (fr *FirewallRule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties FirewallRuleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		fr.FirewallRuleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		fr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		fr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		fr.Type = &typeVar
+	}
+
+	return nil
 }
 
-// ListSasTokensResult is the SAS response that contains the storage account, container and associated SAS token for
+// FirewallRuleProperties data Lake Analytics firewall rule properties information
+type FirewallRuleProperties struct {
+	// StartIPAddress - the start IP address for the firewall rule. This can be either ipv4 or ipv6. Start and End should be in the same protocol.
+	StartIPAddress *string `json:"startIpAddress,omitempty"`
+	// EndIPAddress - the end IP address for the firewall rule. This can be either ipv4 or ipv6. Start and End should be in the same protocol.
+	EndIPAddress *string `json:"endIpAddress,omitempty"`
+}
+
+// ListSasTokensResult the SAS response that contains the storage account, container and associated SAS token for
 // connection use.
 type ListSasTokensResult struct {
 	autorest.Response `json:"-"`
 	Value             *[]SasTokenInfo `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListSasTokensResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListSasTokensResult) ListSasTokensResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListSasTokensResultIterator provides access to a complete listing of SasTokenInfo values.
+type ListSasTokensResultIterator struct {
+	i    int
+	page ListSasTokensResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListSasTokensResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListSasTokensResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListSasTokensResultIterator) Response() ListSasTokensResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListSasTokensResultIterator) Value() SasTokenInfo {
+	if !iter.page.NotDone() {
+		return SasTokenInfo{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lstr ListSasTokensResult) IsEmpty() bool {
+	return lstr.Value == nil || len(*lstr.Value) == 0
+}
+
+// listSasTokensResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lstr ListSasTokensResult) listSasTokensResultPreparer() (*http.Request, error) {
+	if lstr.NextLink == nil || len(to.String(lstr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lstr.NextLink)))
 }
 
-// ListStorageContainersResult is the list of blob containers associated with the storage account attached to the Data
+// ListSasTokensResultPage contains a page of SasTokenInfo values.
+type ListSasTokensResultPage struct {
+	fn   func(ListSasTokensResult) (ListSasTokensResult, error)
+	lstr ListSasTokensResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListSasTokensResultPage) Next() error {
+	next, err := page.fn(page.lstr)
+	if err != nil {
+		return err
+	}
+	page.lstr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListSasTokensResultPage) NotDone() bool {
+	return !page.lstr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListSasTokensResultPage) Response() ListSasTokensResult {
+	return page.lstr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListSasTokensResultPage) Values() []SasTokenInfo {
+	if page.lstr.IsEmpty() {
+		return nil
+	}
+	return *page.lstr.Value
+}
+
+// ListStorageContainersResult the list of blob containers associated with the storage account attached to the Data
 // Lake Analytics account.
 type ListStorageContainersResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]StorageContainer `json:"value,omitempty"`
-	NextLink          *string             `json:"nextLink,omitempty"`
+	// Value - the results of the list operation
+	Value *[]StorageContainer `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListStorageContainersResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListStorageContainersResult) ListStorageContainersResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListStorageContainersResultIterator provides access to a complete listing of StorageContainer values.
+type ListStorageContainersResultIterator struct {
+	i    int
+	page ListStorageContainersResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListStorageContainersResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListStorageContainersResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListStorageContainersResultIterator) Response() ListStorageContainersResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListStorageContainersResultIterator) Value() StorageContainer {
+	if !iter.page.NotDone() {
+		return StorageContainer{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lscr ListStorageContainersResult) IsEmpty() bool {
+	return lscr.Value == nil || len(*lscr.Value) == 0
+}
+
+// listStorageContainersResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lscr ListStorageContainersResult) listStorageContainersResultPreparer() (*http.Request, error) {
+	if lscr.NextLink == nil || len(to.String(lscr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lscr.NextLink)))
 }
 
-// NameAvailabilityInformation is data Lake Analytics account name availability result information
+// ListStorageContainersResultPage contains a page of StorageContainer values.
+type ListStorageContainersResultPage struct {
+	fn   func(ListStorageContainersResult) (ListStorageContainersResult, error)
+	lscr ListStorageContainersResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListStorageContainersResultPage) Next() error {
+	next, err := page.fn(page.lscr)
+	if err != nil {
+		return err
+	}
+	page.lscr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListStorageContainersResultPage) NotDone() bool {
+	return !page.lscr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListStorageContainersResultPage) Response() ListStorageContainersResult {
+	return page.lscr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListStorageContainersResultPage) Values() []StorageContainer {
+	if page.lscr.IsEmpty() {
+		return nil
+	}
+	return *page.lscr.Value
+}
+
+// NameAvailabilityInformation data Lake Analytics account name availability result information
 type NameAvailabilityInformation struct {
 	autorest.Response `json:"-"`
-	NameAvailable     *bool   `json:"nameAvailable,omitempty"`
-	Reason            *string `json:"reason,omitempty"`
-	Message           *string `json:"message,omitempty"`
+	// NameAvailable - the Boolean value of true or false to indicate whether the Data Lake Analytics account name is available or not.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - the reason why the Data Lake Analytics account name is not available, if nameAvailable is false.
+	Reason *string `json:"reason,omitempty"`
+	// Message - the message describing why the Data Lake Analytics account name is not available, if nameAvailable is false.
+	Message *string `json:"message,omitempty"`
 }
 
-// Operation is an available operation for Data Lake Analytics
+// Operation an available operation for Data Lake Analytics
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - the name of the operation.
+	Name *string `json:"name,omitempty"`
+	// Display - the display information for the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
-	Origin  OperationOrigin   `json:"origin,omitempty"`
+	// Origin - the intended executor of the operation. Possible values include: 'OperationOriginUser', 'OperationOriginSystem', 'OperationOriginUsersystem'
+	Origin OperationOrigin `json:"origin,omitempty"`
 }
 
-// OperationDisplay is the display information for a particular operation
+// OperationDisplay the display information for a particular operation
 type OperationDisplay struct {
-	Provider    *string `json:"provider,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
+	// Provider - the Resource provider of the operation.
+	Provider *string `json:"provider,omitempty"`
+	// Resource - the Resource type of the operation.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - a friendly name of the operation.
+	Operation *string `json:"operation,omitempty"`
+	// Description - a friendly description of the operation.
 	Description *string `json:"description,omitempty"`
 }
 
-// OperationListResult is the list of available operations for Data Lake Analytics
+// OperationListResult the list of available operations for Data Lake Analytics
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - the results of the list operation.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OptionalSubResource is the Resource model definition for a nested resource with no required properties.
+// OptionalSubResource the Resource model definition for a nested resource with no required properties.
 type OptionalSubResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type
 	Type *string `json:"type,omitempty"`
 }
 
-// Resource is the Resource model definition.
+// Resource the Resource model definition.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// SasTokenInfo is SAS token information.
+// SasTokenInfo SAS token information.
 type SasTokenInfo struct {
+	// AccessToken - the access token for the associated Azure Storage Container.
 	AccessToken *string `json:"accessToken,omitempty"`
 }
 
-// StorageAccountInfo is azure Storage account information.
+// StorageAccountInfo azure Storage account information.
 type StorageAccountInfo struct {
-	autorest.Response         `json:"-"`
-	ID                        *string `json:"id,omitempty"`
-	Name                      *string `json:"name,omitempty"`
-	Type                      *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// StorageAccountProperties - the properties associated with this storage account.
 	*StorageAccountProperties `json:"properties,omitempty"`
 }
 
-// StorageAccountProperties is azure Storage account properties information.
-type StorageAccountProperties struct {
-	AccessKey *string `json:"accessKey,omitempty"`
-	Suffix    *string `json:"suffix,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for StorageAccountInfo struct.
+func (sai *StorageAccountInfo) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties StorageAccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sai.StorageAccountProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sai.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sai.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sai.Type = &typeVar
+	}
+
+	return nil
 }
 
-// StorageContainer is azure Storage blob container information.
+// StorageAccountProperties azure Storage account properties information.
+type StorageAccountProperties struct {
+	// AccessKey - the access key associated with this Azure Storage account that will be used to connect to it.
+	AccessKey *string `json:"accessKey,omitempty"`
+	// Suffix - the optional suffix for the storage account.
+	Suffix *string `json:"suffix,omitempty"`
+}
+
+// StorageContainer azure Storage blob container information.
 type StorageContainer struct {
-	autorest.Response           `json:"-"`
-	ID                          *string `json:"id,omitempty"`
-	Name                        *string `json:"name,omitempty"`
-	Type                        *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - the unique identifier of the blob container.
+	ID *string `json:"id,omitempty"`
+	// Name - the name of the blob container.
+	Name *string `json:"name,omitempty"`
+	// Type - the type of the blob container.
+	Type *string `json:"type,omitempty"`
+	// StorageContainerProperties - the properties of the blob container.
 	*StorageContainerProperties `json:"properties,omitempty"`
 }
 
-// StorageContainerProperties is azure Storage blob container properties information.
+// UnmarshalJSON is the custom unmarshaler for StorageContainer struct.
+func (sc *StorageContainer) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sc.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sc.Type = &typeVar
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties StorageContainerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sc.StorageContainerProperties = &properties
+	}
+
+	return nil
+}
+
+// StorageContainerProperties azure Storage blob container properties information.
 type StorageContainerProperties struct {
+	// LastModifiedTime - the last modified time of the blob container.
 	LastModifiedTime *date.Time `json:"lastModifiedTime,omitempty"`
 }
 
-// SubResource is the Sub Resource model definition.
+// SubResource the Sub Resource model definition.
 type SubResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type
 	Type *string `json:"type,omitempty"`
 }
 
-// UpdateDataLakeAnalyticsAccountProperties is the properties to update that are associated with an underlying Data
-// Lake Analytics account to.
+// UpdateDataLakeAnalyticsAccountProperties the properties to update that are associated with an underlying Data Lake
+// Analytics account to.
 type UpdateDataLakeAnalyticsAccountProperties struct {
-	MaxDegreeOfParallelism       *int32                     `json:"maxDegreeOfParallelism,omitempty"`
-	QueryStoreRetention          *int32                     `json:"queryStoreRetention,omitempty"`
-	MaxJobCount                  *int32                     `json:"maxJobCount,omitempty"`
-	NewTier                      TierType                   `json:"newTier,omitempty"`
-	FirewallState                FirewallState              `json:"firewallState,omitempty"`
-	FirewallAllowAzureIps        FirewallAllowAzureIpsState `json:"firewallAllowAzureIps,omitempty"`
-	FirewallRules                *[]FirewallRule            `json:"firewallRules,omitempty"`
-	MaxDegreeOfParallelismPerJob *int32                     `json:"maxDegreeOfParallelismPerJob,omitempty"`
-	MinPriorityPerJob            *int32                     `json:"minPriorityPerJob,omitempty"`
-	ComputePolicies              *[]ComputePolicy           `json:"computePolicies,omitempty"`
+	// MaxDegreeOfParallelism - the maximum supported degree of parallelism for this account.
+	MaxDegreeOfParallelism *int32 `json:"maxDegreeOfParallelism,omitempty"`
+	// QueryStoreRetention - the number of days that job metadata is retained.
+	QueryStoreRetention *int32 `json:"queryStoreRetention,omitempty"`
+	// MaxJobCount - the maximum supported jobs running under the account at the same time.
+	MaxJobCount *int32 `json:"maxJobCount,omitempty"`
+	// NewTier - the commitment tier to use for next month. Possible values include: 'Consumption', 'Commitment100AUHours', 'Commitment500AUHours', 'Commitment1000AUHours', 'Commitment5000AUHours', 'Commitment10000AUHours', 'Commitment50000AUHours', 'Commitment100000AUHours', 'Commitment500000AUHours'
+	NewTier TierType `json:"newTier,omitempty"`
+	// FirewallState - The current state of the IP address firewall for this Data Lake Analytics account. Possible values include: 'FirewallStateEnabled', 'FirewallStateDisabled'
+	FirewallState FirewallState `json:"firewallState,omitempty"`
+	// FirewallAllowAzureIps - The current state of allowing or disallowing IPs originating within Azure through the firewall. If the firewall is disabled, this is not enforced. Possible values include: 'Enabled', 'Disabled'
+	FirewallAllowAzureIps FirewallAllowAzureIpsState `json:"firewallAllowAzureIps,omitempty"`
+	// FirewallRules - The list of firewall rules associated with this Data Lake Analytics account.
+	FirewallRules *[]FirewallRule `json:"firewallRules,omitempty"`
+	// MaxDegreeOfParallelismPerJob - the maximum supported degree of parallelism per job for this account.
+	MaxDegreeOfParallelismPerJob *int32 `json:"maxDegreeOfParallelismPerJob,omitempty"`
+	// MinPriorityPerJob - the minimum supported priority per job for this account.
+	MinPriorityPerJob *int32 `json:"minPriorityPerJob,omitempty"`
+	// ComputePolicies - the list of existing compute policies to update in this account.
+	ComputePolicies *[]ComputePolicy `json:"computePolicies,omitempty"`
 }
 
-// UpdateFirewallRuleParameters is data Lake Analytics firewall rule update parameters
+// UpdateFirewallRuleParameters data Lake Analytics firewall rule update parameters
 type UpdateFirewallRuleParameters struct {
+	// UpdateFirewallRuleProperties - the properties of the firewall rule to update.
 	*UpdateFirewallRuleProperties `json:"properties,omitempty"`
 }
 
-// UpdateFirewallRuleProperties is data Lake Analytics firewall rule properties information
-type UpdateFirewallRuleProperties struct {
-	StartIPAddress *string `json:"startIpAddress,omitempty"`
-	EndIPAddress   *string `json:"endIpAddress,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for UpdateFirewallRuleParameters struct.
+func (ufrp *UpdateFirewallRuleParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UpdateFirewallRuleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ufrp.UpdateFirewallRuleProperties = &properties
+	}
+
+	return nil
 }
 
-// UpdateStorageAccountParameters is storage account parameters for a storage account being updated in a Data Lake
+// UpdateFirewallRuleProperties data Lake Analytics firewall rule properties information
+type UpdateFirewallRuleProperties struct {
+	// StartIPAddress - the start IP address for the firewall rule. This can be either ipv4 or ipv6. Start and End should be in the same protocol.
+	StartIPAddress *string `json:"startIpAddress,omitempty"`
+	// EndIPAddress - the end IP address for the firewall rule. This can be either ipv4 or ipv6. Start and End should be in the same protocol.
+	EndIPAddress *string `json:"endIpAddress,omitempty"`
+}
+
+// UpdateStorageAccountParameters storage account parameters for a storage account being updated in a Data Lake
 // Analytics account.
 type UpdateStorageAccountParameters struct {
+	// UpdateStorageAccountProperties - the properties for the Azure Storage account being updated.
 	*UpdateStorageAccountProperties `json:"properties,omitempty"`
 }
 
-// UpdateStorageAccountProperties is azure Storage account properties information to update.
+// UnmarshalJSON is the custom unmarshaler for UpdateStorageAccountParameters struct.
+func (usap *UpdateStorageAccountParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UpdateStorageAccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		usap.UpdateStorageAccountProperties = &properties
+	}
+
+	return nil
+}
+
+// UpdateStorageAccountProperties azure Storage account properties information to update.
 type UpdateStorageAccountProperties struct {
+	// AccessKey - the updated access key associated with this Azure Storage account that will be used to connect to it.
 	AccessKey *string `json:"accessKey,omitempty"`
-	Suffix    *string `json:"suffix,omitempty"`
+	// Suffix - the optional suffix for the storage account.
+	Suffix *string `json:"suffix,omitempty"`
 }

@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // CertificatesClient is the webSite Management Client
 type CertificatesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCertificatesClient creates an instance of the CertificatesClient client.
@@ -42,8 +43,8 @@ func NewCertificatesClientWithBaseURI(baseURI string, subscriptionID string) Cer
 //
 // resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details of
 // certificate if it exists already.
-func (client CertificatesClient) CreateOrUpdateCertificate(resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
-	req, err := client.CreateOrUpdateCertificatePreparer(resourceGroupName, name, certificateEnvelope)
+func (client CertificatesClient) CreateOrUpdateCertificate(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
+	req, err := client.CreateOrUpdateCertificatePreparer(ctx, resourceGroupName, name, certificateEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "CreateOrUpdateCertificate", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client CertificatesClient) CreateOrUpdateCertificate(resourceGroupName str
 }
 
 // CreateOrUpdateCertificatePreparer prepares the CreateOrUpdateCertificate request.
-func (client CertificatesClient) CreateOrUpdateCertificatePreparer(resourceGroupName string, name string, certificateEnvelope Certificate) (*http.Request, error) {
+func (client CertificatesClient) CreateOrUpdateCertificatePreparer(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -84,14 +85,13 @@ func (client CertificatesClient) CreateOrUpdateCertificatePreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
 		autorest.WithJSON(certificateEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateCertificateSender sends the CreateOrUpdateCertificate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) CreateOrUpdateCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -112,8 +112,8 @@ func (client CertificatesClient) CreateOrUpdateCertificateResponder(resp *http.R
 //
 // resourceGroupName is name of the resource group name is name of the certificate. csrEnvelope is details of
 // certificate signing request if it exists already.
-func (client CertificatesClient) CreateOrUpdateCsr(resourceGroupName string, name string, csrEnvelope Csr) (result Csr, err error) {
-	req, err := client.CreateOrUpdateCsrPreparer(resourceGroupName, name, csrEnvelope)
+func (client CertificatesClient) CreateOrUpdateCsr(ctx context.Context, resourceGroupName string, name string, csrEnvelope Csr) (result Csr, err error) {
+	req, err := client.CreateOrUpdateCsrPreparer(ctx, resourceGroupName, name, csrEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "CreateOrUpdateCsr", nil, "Failure preparing request")
 		return
@@ -135,7 +135,7 @@ func (client CertificatesClient) CreateOrUpdateCsr(resourceGroupName string, nam
 }
 
 // CreateOrUpdateCsrPreparer prepares the CreateOrUpdateCsr request.
-func (client CertificatesClient) CreateOrUpdateCsrPreparer(resourceGroupName string, name string, csrEnvelope Csr) (*http.Request, error) {
+func (client CertificatesClient) CreateOrUpdateCsrPreparer(ctx context.Context, resourceGroupName string, name string, csrEnvelope Csr) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -154,14 +154,13 @@ func (client CertificatesClient) CreateOrUpdateCsrPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),
 		autorest.WithJSON(csrEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateCsrSender sends the CreateOrUpdateCsr request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) CreateOrUpdateCsrSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,8 +180,8 @@ func (client CertificatesClient) CreateOrUpdateCsrResponder(resp *http.Response)
 // DeleteCertificate sends the delete certificate request.
 //
 // resourceGroupName is name of the resource group name is name of the certificate to be deleted.
-func (client CertificatesClient) DeleteCertificate(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.DeleteCertificatePreparer(resourceGroupName, name)
+func (client CertificatesClient) DeleteCertificate(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.DeleteCertificatePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "DeleteCertificate", nil, "Failure preparing request")
 		return
@@ -204,7 +203,7 @@ func (client CertificatesClient) DeleteCertificate(resourceGroupName string, nam
 }
 
 // DeleteCertificatePreparer prepares the DeleteCertificate request.
-func (client CertificatesClient) DeleteCertificatePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client CertificatesClient) DeleteCertificatePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -221,14 +220,13 @@ func (client CertificatesClient) DeleteCertificatePreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCertificateSender sends the DeleteCertificate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) DeleteCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -248,8 +246,8 @@ func (client CertificatesClient) DeleteCertificateResponder(resp *http.Response)
 // DeleteCsr sends the delete csr request.
 //
 // resourceGroupName is name of the resource group name is name of the certificate signing request.
-func (client CertificatesClient) DeleteCsr(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.DeleteCsrPreparer(resourceGroupName, name)
+func (client CertificatesClient) DeleteCsr(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.DeleteCsrPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "DeleteCsr", nil, "Failure preparing request")
 		return
@@ -271,7 +269,7 @@ func (client CertificatesClient) DeleteCsr(resourceGroupName string, name string
 }
 
 // DeleteCsrPreparer prepares the DeleteCsr request.
-func (client CertificatesClient) DeleteCsrPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client CertificatesClient) DeleteCsrPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -288,14 +286,13 @@ func (client CertificatesClient) DeleteCsrPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCsrSender sends the DeleteCsr request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) DeleteCsrSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -315,8 +312,8 @@ func (client CertificatesClient) DeleteCsrResponder(resp *http.Response) (result
 // GetCertificate sends the get certificate request.
 //
 // resourceGroupName is name of the resource group name is name of the certificate.
-func (client CertificatesClient) GetCertificate(resourceGroupName string, name string) (result Certificate, err error) {
-	req, err := client.GetCertificatePreparer(resourceGroupName, name)
+func (client CertificatesClient) GetCertificate(ctx context.Context, resourceGroupName string, name string) (result Certificate, err error) {
+	req, err := client.GetCertificatePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificate", nil, "Failure preparing request")
 		return
@@ -338,7 +335,7 @@ func (client CertificatesClient) GetCertificate(resourceGroupName string, name s
 }
 
 // GetCertificatePreparer prepares the GetCertificate request.
-func (client CertificatesClient) GetCertificatePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client CertificatesClient) GetCertificatePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -355,14 +352,13 @@ func (client CertificatesClient) GetCertificatePreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateSender sends the GetCertificate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GetCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -382,8 +378,9 @@ func (client CertificatesClient) GetCertificateResponder(resp *http.Response) (r
 // GetCertificates sends the get certificates request.
 //
 // resourceGroupName is name of the resource group
-func (client CertificatesClient) GetCertificates(resourceGroupName string) (result CertificateCollection, err error) {
-	req, err := client.GetCertificatesPreparer(resourceGroupName)
+func (client CertificatesClient) GetCertificates(ctx context.Context, resourceGroupName string) (result CertificateCollectionPage, err error) {
+	result.fn = client.getCertificatesNextResults
+	req, err := client.GetCertificatesPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", nil, "Failure preparing request")
 		return
@@ -391,12 +388,12 @@ func (client CertificatesClient) GetCertificates(resourceGroupName string) (resu
 
 	resp, err := client.GetCertificatesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetCertificatesResponder(resp)
+	result.cc, err = client.GetCertificatesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", resp, "Failure responding to request")
 	}
@@ -405,7 +402,7 @@ func (client CertificatesClient) GetCertificates(resourceGroupName string) (resu
 }
 
 // GetCertificatesPreparer prepares the GetCertificates request.
-func (client CertificatesClient) GetCertificatesPreparer(resourceGroupName string) (*http.Request, error) {
+func (client CertificatesClient) GetCertificatesPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -421,14 +418,13 @@ func (client CertificatesClient) GetCertificatesPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificatesSender sends the GetCertificates request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GetCertificatesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -445,80 +441,38 @@ func (client CertificatesClient) GetCertificatesResponder(resp *http.Response) (
 	return
 }
 
-// GetCertificatesNextResults retrieves the next set of results, if any.
-func (client CertificatesClient) GetCertificatesNextResults(lastResults CertificateCollection) (result CertificateCollection, err error) {
-	req, err := lastResults.CertificateCollectionPreparer()
+// getCertificatesNextResults retrieves the next set of results, if any.
+func (client CertificatesClient) getCertificatesNextResults(lastResults CertificateCollection) (result CertificateCollection, err error) {
+	req, err := lastResults.certificateCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.CertificatesClient", "getCertificatesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetCertificatesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.CertificatesClient", "getCertificatesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetCertificatesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCertificates", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "getCertificatesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetCertificatesComplete gets all elements from the list without paging.
-func (client CertificatesClient) GetCertificatesComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan Certificate, <-chan error) {
-	resultChan := make(chan Certificate)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetCertificates(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetCertificatesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetCertificatesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client CertificatesClient) GetCertificatesComplete(ctx context.Context, resourceGroupName string) (result CertificateCollectionIterator, err error) {
+	result.page, err = client.GetCertificates(ctx, resourceGroupName)
+	return
 }
 
 // GetCsr sends the get csr request.
 //
 // resourceGroupName is name of the resource group name is name of the certificate.
-func (client CertificatesClient) GetCsr(resourceGroupName string, name string) (result Csr, err error) {
-	req, err := client.GetCsrPreparer(resourceGroupName, name)
+func (client CertificatesClient) GetCsr(ctx context.Context, resourceGroupName string, name string) (result Csr, err error) {
+	req, err := client.GetCsrPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCsr", nil, "Failure preparing request")
 		return
@@ -540,7 +494,7 @@ func (client CertificatesClient) GetCsr(resourceGroupName string, name string) (
 }
 
 // GetCsrPreparer prepares the GetCsr request.
-func (client CertificatesClient) GetCsrPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client CertificatesClient) GetCsrPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -557,14 +511,13 @@ func (client CertificatesClient) GetCsrPreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCsrSender sends the GetCsr request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GetCsrSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -584,8 +537,8 @@ func (client CertificatesClient) GetCsrResponder(resp *http.Response) (result Cs
 // GetCsrs sends the get csrs request.
 //
 // resourceGroupName is name of the resource group
-func (client CertificatesClient) GetCsrs(resourceGroupName string) (result ListCsr, err error) {
-	req, err := client.GetCsrsPreparer(resourceGroupName)
+func (client CertificatesClient) GetCsrs(ctx context.Context, resourceGroupName string) (result ListCsr, err error) {
+	req, err := client.GetCsrsPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "GetCsrs", nil, "Failure preparing request")
 		return
@@ -607,7 +560,7 @@ func (client CertificatesClient) GetCsrs(resourceGroupName string) (result ListC
 }
 
 // GetCsrsPreparer prepares the GetCsrs request.
-func (client CertificatesClient) GetCsrsPreparer(resourceGroupName string) (*http.Request, error) {
+func (client CertificatesClient) GetCsrsPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -623,14 +576,13 @@ func (client CertificatesClient) GetCsrsPreparer(resourceGroupName string) (*htt
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCsrsSender sends the GetCsrs request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GetCsrsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -651,8 +603,8 @@ func (client CertificatesClient) GetCsrsResponder(resp *http.Response) (result L
 //
 // resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details of
 // certificate if it exists already.
-func (client CertificatesClient) UpdateCertificate(resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
-	req, err := client.UpdateCertificatePreparer(resourceGroupName, name, certificateEnvelope)
+func (client CertificatesClient) UpdateCertificate(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
+	req, err := client.UpdateCertificatePreparer(ctx, resourceGroupName, name, certificateEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "UpdateCertificate", nil, "Failure preparing request")
 		return
@@ -674,7 +626,7 @@ func (client CertificatesClient) UpdateCertificate(resourceGroupName string, nam
 }
 
 // UpdateCertificatePreparer prepares the UpdateCertificate request.
-func (client CertificatesClient) UpdateCertificatePreparer(resourceGroupName string, name string, certificateEnvelope Certificate) (*http.Request, error) {
+func (client CertificatesClient) UpdateCertificatePreparer(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -693,14 +645,13 @@ func (client CertificatesClient) UpdateCertificatePreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
 		autorest.WithJSON(certificateEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCertificateSender sends the UpdateCertificate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) UpdateCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -721,8 +672,8 @@ func (client CertificatesClient) UpdateCertificateResponder(resp *http.Response)
 //
 // resourceGroupName is name of the resource group name is name of the certificate. csrEnvelope is details of
 // certificate signing request if it exists already.
-func (client CertificatesClient) UpdateCsr(resourceGroupName string, name string, csrEnvelope Csr) (result Csr, err error) {
-	req, err := client.UpdateCsrPreparer(resourceGroupName, name, csrEnvelope)
+func (client CertificatesClient) UpdateCsr(ctx context.Context, resourceGroupName string, name string, csrEnvelope Csr) (result Csr, err error) {
+	req, err := client.UpdateCsrPreparer(ctx, resourceGroupName, name, csrEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.CertificatesClient", "UpdateCsr", nil, "Failure preparing request")
 		return
@@ -744,7 +695,7 @@ func (client CertificatesClient) UpdateCsr(resourceGroupName string, name string
 }
 
 // UpdateCsrPreparer prepares the UpdateCsr request.
-func (client CertificatesClient) UpdateCsrPreparer(resourceGroupName string, name string, csrEnvelope Csr) (*http.Request, error) {
+func (client CertificatesClient) UpdateCsrPreparer(ctx context.Context, resourceGroupName string, name string, csrEnvelope Csr) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -763,14 +714,13 @@ func (client CertificatesClient) UpdateCsrPreparer(resourceGroupName string, nam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),
 		autorest.WithJSON(csrEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCsrSender sends the UpdateCsr request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) UpdateCsrSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

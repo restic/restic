@@ -1314,6 +1314,8 @@ type PhotoGetCall struct {
 // create the requested Photo.
 // * google.rpc.Code.NOT_FOUND if the requested
 // Photo does not exist.
+// * google.rpc.Code.UNAVAILABLE if the requested
+// Photo is still being indexed.
 func (r *PhotoService) Get(photoId string) *PhotoGetCall {
 	c := &PhotoGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.photoId = photoId
@@ -1426,7 +1428,7 @@ func (c *PhotoGetCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Gets the metadata of the specified\nPhoto.\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested Photo.\n* google.rpc.Code.NOT_FOUND if the requested\nPhoto does not exist.",
+	//   "description": "Gets the metadata of the specified\nPhoto.\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested Photo.\n* google.rpc.Code.NOT_FOUND if the requested\nPhoto does not exist.\n* google.rpc.Code.UNAVAILABLE if the requested\nPhoto is still being indexed.",
 	//   "flatPath": "v1/photo/{photoId}",
 	//   "httpMethod": "GET",
 	//   "id": "streetviewpublish.photo.get",
@@ -1641,6 +1643,8 @@ type PhotoUpdateCall struct {
 // create the requested photo.
 // * google.rpc.Code.INVALID_ARGUMENT if the request is malformed.
 // * google.rpc.Code.NOT_FOUND if the requested photo does not exist.
+// * google.rpc.Code.UNAVAILABLE if the requested
+// Photo is still being indexed.
 func (r *PhotoService) Update(id string, photo *Photo) *PhotoUpdateCall {
 	c := &PhotoUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.id = id
@@ -1769,7 +1773,7 @@ func (c *PhotoUpdateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the metadata of a Photo, such\nas pose, place association, connections, etc. Changing the pixels of a\nphoto is not supported.\n\nOnly the fields specified in the\nupdateMask\nfield are used. If `updateMask` is not present, the update applies to all\nfields.\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e To update\nPose.altitude,\nPose.latLngPair has to be\nfilled as well. Otherwise, the request will fail.\u003c/aside\u003e\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested photo.\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the requested photo does not exist.",
+	//   "description": "Updates the metadata of a Photo, such\nas pose, place association, connections, etc. Changing the pixels of a\nphoto is not supported.\n\nOnly the fields specified in the\nupdateMask\nfield are used. If `updateMask` is not present, the update applies to all\nfields.\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e To update\nPose.altitude,\nPose.latLngPair has to be\nfilled as well. Otherwise, the request will fail.\u003c/aside\u003e\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested photo.\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the requested photo does not exist.\n* google.rpc.Code.UNAVAILABLE if the requested\nPhoto is still being indexed.",
 	//   "flatPath": "v1/photo/{id}",
 	//   "httpMethod": "PUT",
 	//   "id": "streetviewpublish.photo.update",
@@ -2289,6 +2293,10 @@ type PhotosListCall struct {
 
 // List: Lists all the Photos that belong to
 // the user.
+//
+// <aside class="note"><b>Note:</b> Recently created photos that are
+// still
+// being indexed are not returned in the response.</aside>
 func (r *PhotosService) List() *PhotosListCall {
 	c := &PhotosListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
@@ -2431,7 +2439,7 @@ func (c *PhotosListCall) Do(opts ...googleapi.CallOption) (*ListPhotosResponse, 
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists all the Photos that belong to\nthe user.",
+	//   "description": "Lists all the Photos that belong to\nthe user.\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e Recently created photos that are still\nbeing indexed are not returned in the response.\u003c/aside\u003e",
 	//   "flatPath": "v1/photos",
 	//   "httpMethod": "GET",
 	//   "id": "streetviewpublish.photos.list",

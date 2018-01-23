@@ -18,6 +18,7 @@ package automation
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,31 +27,31 @@ import (
 
 // StatisticsClient is the automation Client
 type StatisticsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewStatisticsClient creates an instance of the StatisticsClient client.
-func NewStatisticsClient(subscriptionID string) StatisticsClient {
-	return NewStatisticsClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewStatisticsClient(subscriptionID string, resourceGroupName string) StatisticsClient {
+	return NewStatisticsClientWithBaseURI(DefaultBaseURI, subscriptionID, resourceGroupName)
 }
 
 // NewStatisticsClientWithBaseURI creates an instance of the StatisticsClient client.
-func NewStatisticsClientWithBaseURI(baseURI string, subscriptionID string) StatisticsClient {
-	return StatisticsClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewStatisticsClientWithBaseURI(baseURI string, subscriptionID string, resourceGroupName string) StatisticsClient {
+	return StatisticsClient{NewWithBaseURI(baseURI, subscriptionID, resourceGroupName)}
 }
 
 // ListByAutomationAccount retrieve the statistics for the account.
 //
 // resourceGroupName is the resource group name. automationAccountName is the automation account name. filter is the
 // filter to apply on the operation.
-func (client StatisticsClient) ListByAutomationAccount(resourceGroupName string, automationAccountName string, filter string) (result StatisticsListResult, err error) {
+func (client StatisticsClient) ListByAutomationAccount(ctx context.Context, resourceGroupName string, automationAccountName string, filter string) (result StatisticsListResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.StatisticsClient", "ListByAutomationAccount")
 	}
 
-	req, err := client.ListByAutomationAccountPreparer(resourceGroupName, automationAccountName, filter)
+	req, err := client.ListByAutomationAccountPreparer(ctx, resourceGroupName, automationAccountName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.StatisticsClient", "ListByAutomationAccount", nil, "Failure preparing request")
 		return
@@ -72,7 +73,7 @@ func (client StatisticsClient) ListByAutomationAccount(resourceGroupName string,
 }
 
 // ListByAutomationAccountPreparer prepares the ListByAutomationAccount request.
-func (client StatisticsClient) ListByAutomationAccountPreparer(resourceGroupName string, automationAccountName string, filter string) (*http.Request, error) {
+func (client StatisticsClient) ListByAutomationAccountPreparer(ctx context.Context, resourceGroupName string, automationAccountName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
 		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
@@ -92,14 +93,13 @@ func (client StatisticsClient) ListByAutomationAccountPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/statistics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByAutomationAccountSender sends the ListByAutomationAccount request. The method will close the
 // http.Response Body if it receives an error.
 func (client StatisticsClient) ListByAutomationAccountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

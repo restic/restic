@@ -16,13 +16,14 @@ limitations under the License.
 package bigtable
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/bigtable/bttest"
+	"cloud.google.com/go/internal/testutil"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	btpb "google.golang.org/genproto/googleapis/bigtable/v2"
@@ -32,7 +33,7 @@ import (
 )
 
 func setupFakeServer(opt ...grpc.ServerOption) (tbl *Table, cleanup func(), err error) {
-	srv, err := bttest.NewServer("127.0.0.1:0", opt...)
+	srv, err := bttest.NewServer("localhost:0", opt...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -231,13 +232,13 @@ func TestRetryApplyBulk(t *testing.T) {
 	}
 	errors, err = tbl.ApplyBulk(ctx, []string{"row1", "row2"}, []*Mutation{m1, niMut})
 	if err != nil {
-		t.Errorf("unretryable errors: request failed %v")
+		t.Errorf("unretryable errors: request failed %v", err)
 	}
 	want := []error{
 		grpc.Errorf(codes.FailedPrecondition, ""),
 		grpc.Errorf(codes.Aborted, ""),
 	}
-	if !reflect.DeepEqual(want, errors) {
+	if !testutil.Equal(want, errors) {
 		t.Errorf("unretryable errors: got: %v, want: %v", errors, want)
 	}
 
@@ -273,7 +274,7 @@ func TestRetainRowsAfter(t *testing.T) {
 	prevRowKey := "m"
 	want := NewRange("m\x00", "z")
 	got := prevRowRange.retainRowsAfter(prevRowKey)
-	if !reflect.DeepEqual(want, got) {
+	if !testutil.Equal(want, got, cmp.AllowUnexported(RowRange{})) {
 		t.Errorf("range retry: got %v, want %v", got, want)
 	}
 
@@ -281,7 +282,7 @@ func TestRetainRowsAfter(t *testing.T) {
 	prevRowKey = "f"
 	wantRowRangeList := RowRangeList{NewRange("f\x00", "g"), NewRange("h", "l")}
 	got = prevRowRangeList.retainRowsAfter(prevRowKey)
-	if !reflect.DeepEqual(wantRowRangeList, got) {
+	if !testutil.Equal(wantRowRangeList, got, cmp.AllowUnexported(RowRange{})) {
 		t.Errorf("range list retry: got %v, want %v", got, wantRowRangeList)
 	}
 
@@ -289,7 +290,7 @@ func TestRetainRowsAfter(t *testing.T) {
 	prevRowKey = "b"
 	wantList := RowList{"c", "d", "e", "f"}
 	got = prevRowList.retainRowsAfter(prevRowKey)
-	if !reflect.DeepEqual(wantList, got) {
+	if !testutil.Equal(wantList, got) {
 		t.Errorf("list retry: got %v, want %v", got, wantList)
 	}
 }
@@ -351,7 +352,7 @@ func TestRetryReadRows(t *testing.T) {
 		return true
 	})
 	want := []string{"a", "b", "c", "d"}
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.Equal(got, want) {
 		t.Errorf("retry range integration: got %v, want %v", got, want)
 	}
 }

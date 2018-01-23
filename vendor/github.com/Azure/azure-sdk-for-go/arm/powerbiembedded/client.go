@@ -1,6 +1,8 @@
 // Package powerbiembedded implements the Azure ARM Powerbiembedded service API version 2016-01-29.
 //
 // Client to manage your Power BI Embedded workspace collections and retrieve workspaces.
+//
+// Deprecated: Please instead use github.com/Azure/azure-sdk-for-go/services/powerbiembedded/mgmt/2016-01-29/powerbiembedded
 package powerbiembedded
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.

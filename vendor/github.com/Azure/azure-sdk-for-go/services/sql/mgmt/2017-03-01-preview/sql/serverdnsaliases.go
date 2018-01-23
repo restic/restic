@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update,
 // and delete databases.
 type ServerDNSAliasesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServerDNSAliasesClient creates an instance of the ServerDNSAliasesClient client.
@@ -40,50 +41,29 @@ func NewServerDNSAliasesClientWithBaseURI(baseURI string, subscriptionID string)
 	return ServerDNSAliasesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Acquire acquires server DNS alias from another server. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Acquire acquires server DNS alias from another server.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server that the alias is pointing to.
 // DNSAliasName is the name of the server dns alias.
-func (client ServerDNSAliasesClient) Acquire(resourceGroupName string, serverName string, DNSAliasName string, parameters ServerDNSAliasAcquisition, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.AcquirePreparer(resourceGroupName, serverName, DNSAliasName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Acquire", nil, "Failure preparing request")
-			return
-		}
+func (client ServerDNSAliasesClient) Acquire(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string, parameters ServerDNSAliasAcquisition) (result ServerDNSAliasesAcquireFuture, err error) {
+	req, err := client.AcquirePreparer(ctx, resourceGroupName, serverName, DNSAliasName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Acquire", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.AcquireSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Acquire", resp, "Failure sending request")
-			return
-		}
+	result, err = client.AcquireSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Acquire", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.AcquireResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Acquire", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // AcquirePreparer prepares the Acquire request.
-func (client ServerDNSAliasesClient) AcquirePreparer(resourceGroupName string, serverName string, DNSAliasName string, parameters ServerDNSAliasAcquisition, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerDNSAliasesClient) AcquirePreparer(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string, parameters ServerDNSAliasAcquisition) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dnsAliasName":      autorest.Encode("path", DNSAliasName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -103,16 +83,22 @@ func (client ServerDNSAliasesClient) AcquirePreparer(resourceGroupName string, s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/dnsAliases/{dnsAliasName}/acquire", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // AcquireSender sends the Acquire request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerDNSAliasesClient) AcquireSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerDNSAliasesClient) AcquireSender(req *http.Request) (future ServerDNSAliasesAcquireFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // AcquireResponder handles the response to the Acquire request. The method always
@@ -127,49 +113,29 @@ func (client ServerDNSAliasesClient) AcquireResponder(resp *http.Response) (resu
 	return
 }
 
-// CreateOrUpdate creates a server dns alias. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates a server dns alias.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server that the alias is pointing to.
 // DNSAliasName is the name of the server DNS alias.
-func (client ServerDNSAliasesClient) CreateOrUpdate(resourceGroupName string, serverName string, DNSAliasName string, cancel <-chan struct{}) (<-chan ServerDNSAlias, <-chan error) {
-	resultChan := make(chan ServerDNSAlias, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result ServerDNSAlias
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, DNSAliasName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client ServerDNSAliasesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (result ServerDNSAliasesCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, DNSAliasName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ServerDNSAliasesClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, DNSAliasName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerDNSAliasesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dnsAliasName":      autorest.Encode("path", DNSAliasName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -187,16 +153,22 @@ func (client ServerDNSAliasesClient) CreateOrUpdatePreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/dnsAliases/{dnsAliasName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerDNSAliasesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerDNSAliasesClient) CreateOrUpdateSender(req *http.Request) (future ServerDNSAliasesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -205,57 +177,36 @@ func (client ServerDNSAliasesClient) CreateOrUpdateResponder(resp *http.Response
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusCreated),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// Delete deletes the server DNS alias with the given name. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete deletes the server DNS alias with the given name.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server that the alias is pointing to.
 // DNSAliasName is the name of the server DNS alias.
-func (client ServerDNSAliasesClient) Delete(resourceGroupName string, serverName string, DNSAliasName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, serverName, DNSAliasName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ServerDNSAliasesClient) Delete(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (result ServerDNSAliasesDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, DNSAliasName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServerDNSAliasesClient) DeletePreparer(resourceGroupName string, serverName string, DNSAliasName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerDNSAliasesClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dnsAliasName":      autorest.Encode("path", DNSAliasName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -273,16 +224,22 @@ func (client ServerDNSAliasesClient) DeletePreparer(resourceGroupName string, se
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/dnsAliases/{dnsAliasName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerDNSAliasesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerDNSAliasesClient) DeleteSender(req *http.Request) (future ServerDNSAliasesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -302,8 +259,8 @@ func (client ServerDNSAliasesClient) DeleteResponder(resp *http.Response) (resul
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server that the alias is pointing to.
 // DNSAliasName is the name of the server DNS alias.
-func (client ServerDNSAliasesClient) Get(resourceGroupName string, serverName string, DNSAliasName string) (result ServerDNSAlias, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, DNSAliasName)
+func (client ServerDNSAliasesClient) Get(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (result ServerDNSAlias, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, DNSAliasName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "Get", nil, "Failure preparing request")
 		return
@@ -325,7 +282,7 @@ func (client ServerDNSAliasesClient) Get(resourceGroupName string, serverName st
 }
 
 // GetPreparer prepares the Get request.
-func (client ServerDNSAliasesClient) GetPreparer(resourceGroupName string, serverName string, DNSAliasName string) (*http.Request, error) {
+func (client ServerDNSAliasesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, DNSAliasName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dnsAliasName":      autorest.Encode("path", DNSAliasName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -343,14 +300,13 @@ func (client ServerDNSAliasesClient) GetPreparer(resourceGroupName string, serve
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/dnsAliases/{dnsAliasName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerDNSAliasesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -371,8 +327,9 @@ func (client ServerDNSAliasesClient) GetResponder(resp *http.Response) (result S
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server that the alias is pointing to.
-func (client ServerDNSAliasesClient) ListByServer(resourceGroupName string, serverName string) (result ServerDNSAliasListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client ServerDNSAliasesClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result ServerDNSAliasListResultPage, err error) {
+	result.fn = client.listByServerNextResults
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -380,12 +337,12 @@ func (client ServerDNSAliasesClient) ListByServer(resourceGroupName string, serv
 
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdalr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServerResponder(resp)
+	result.sdalr, err = client.ListByServerResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", resp, "Failure responding to request")
 	}
@@ -394,7 +351,7 @@ func (client ServerDNSAliasesClient) ListByServer(resourceGroupName string, serv
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client ServerDNSAliasesClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServerDNSAliasesClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -411,14 +368,13 @@ func (client ServerDNSAliasesClient) ListByServerPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/dnsAliases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerDNSAliasesClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -435,71 +391,29 @@ func (client ServerDNSAliasesClient) ListByServerResponder(resp *http.Response) 
 	return
 }
 
-// ListByServerNextResults retrieves the next set of results, if any.
-func (client ServerDNSAliasesClient) ListByServerNextResults(lastResults ServerDNSAliasListResult) (result ServerDNSAliasListResult, err error) {
-	req, err := lastResults.ServerDNSAliasListResultPreparer()
+// listByServerNextResults retrieves the next set of results, if any.
+func (client ServerDNSAliasesClient) listByServerNextResults(lastResults ServerDNSAliasListResult) (result ServerDNSAliasListResult, err error) {
+	req, err := lastResults.serverDNSAliasListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "listByServerNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "listByServerNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "ListByServer", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "sql.ServerDNSAliasesClient", "listByServerNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServerComplete gets all elements from the list without paging.
-func (client ServerDNSAliasesClient) ListByServerComplete(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan ServerDNSAlias, <-chan error) {
-	resultChan := make(chan ServerDNSAlias)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByServer(resourceGroupName, serverName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServerNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServerComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ServerDNSAliasesClient) ListByServerComplete(ctx context.Context, resourceGroupName string, serverName string) (result ServerDNSAliasListResultIterator, err error) {
+	result.page, err = client.ListByServer(ctx, resourceGroupName, serverName)
+	return
 }

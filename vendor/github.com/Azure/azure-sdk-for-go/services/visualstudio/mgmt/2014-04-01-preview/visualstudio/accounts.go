@@ -18,6 +18,7 @@ package visualstudio
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -28,7 +29,7 @@ import (
 // x-ms-request-id header that can be used to obtain information about the request. You must make sure that requests
 // made to these resources are secure. For more information, see https://docs.microsoft.com/en-us/rest/api/index.
 type AccountsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAccountsClient creates an instance of the AccountsClient client.
@@ -45,8 +46,8 @@ func NewAccountsClientWithBaseURI(baseURI string, subscriptionID string) Account
 // can be either an account name or an account name and PUID.
 //
 // body is parameters describing the name to check availability for.
-func (client AccountsClient) CheckNameAvailability(body CheckNameAvailabilityParameter) (result CheckNameAvailabilityResult, err error) {
-	req, err := client.CheckNameAvailabilityPreparer(body)
+func (client AccountsClient) CheckNameAvailability(ctx context.Context, body CheckNameAvailabilityParameter) (result CheckNameAvailabilityResult, err error) {
+	req, err := client.CheckNameAvailabilityPreparer(ctx, body)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "visualstudio.AccountsClient", "CheckNameAvailability", nil, "Failure preparing request")
 		return
@@ -68,7 +69,7 @@ func (client AccountsClient) CheckNameAvailability(body CheckNameAvailabilityPar
 }
 
 // CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
-func (client AccountsClient) CheckNameAvailabilityPreparer(body CheckNameAvailabilityParameter) (*http.Request, error) {
+func (client AccountsClient) CheckNameAvailabilityPreparer(ctx context.Context, body CheckNameAvailabilityParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -85,14 +86,13 @@ func (client AccountsClient) CheckNameAvailabilityPreparer(body CheckNameAvailab
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.visualstudio/checkNameAvailability", pathParameters),
 		autorest.WithJSON(body),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client AccountsClient) CheckNameAvailabilityResponder(resp *http.Response)
 //
 // resourceGroupName is name of the resource group within the Azure subscription. body is the request data.
 // resourceName is name of the resource.
-func (client AccountsClient) CreateOrUpdate(resourceGroupName string, body AccountResourceRequest, resourceName string) (result AccountResource, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, body, resourceName)
+func (client AccountsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, body AccountResourceRequest, resourceName string) (result AccountResource, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, body, resourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "visualstudio.AccountsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client AccountsClient) CreateOrUpdate(resourceGroupName string, body Accou
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client AccountsClient) CreateOrUpdatePreparer(resourceGroupName string, body AccountResourceRequest, resourceName string) (*http.Request, error) {
+func (client AccountsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, body AccountResourceRequest, resourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -155,14 +155,13 @@ func (client AccountsClient) CreateOrUpdatePreparer(resourceGroupName string, bo
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/microsoft.visualstudio/account/{resourceName}", pathParameters),
 		autorest.WithJSON(body),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -182,8 +181,8 @@ func (client AccountsClient) CreateOrUpdateResponder(resp *http.Response) (resul
 // Delete deletes a Visual Studio Team Services account resource.
 //
 // resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the resource.
-func (client AccountsClient) Delete(resourceGroupName string, resourceName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, resourceName)
+func (client AccountsClient) Delete(ctx context.Context, resourceGroupName string, resourceName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "visualstudio.AccountsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -205,7 +204,7 @@ func (client AccountsClient) Delete(resourceGroupName string, resourceName strin
 }
 
 // DeletePreparer prepares the Delete request.
-func (client AccountsClient) DeletePreparer(resourceGroupName string, resourceName string) (*http.Request, error) {
+func (client AccountsClient) DeletePreparer(ctx context.Context, resourceGroupName string, resourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -222,14 +221,13 @@ func (client AccountsClient) DeletePreparer(resourceGroupName string, resourceNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/microsoft.visualstudio/account/{resourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -248,8 +246,8 @@ func (client AccountsClient) DeleteResponder(resp *http.Response) (result autore
 // Get gets the Visual Studio Team Services account resource details.
 //
 // resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the resource.
-func (client AccountsClient) Get(resourceGroupName string, resourceName string) (result AccountResource, err error) {
-	req, err := client.GetPreparer(resourceGroupName, resourceName)
+func (client AccountsClient) Get(ctx context.Context, resourceGroupName string, resourceName string) (result AccountResource, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "visualstudio.AccountsClient", "Get", nil, "Failure preparing request")
 		return
@@ -271,7 +269,7 @@ func (client AccountsClient) Get(resourceGroupName string, resourceName string) 
 }
 
 // GetPreparer prepares the Get request.
-func (client AccountsClient) GetPreparer(resourceGroupName string, resourceName string) (*http.Request, error) {
+func (client AccountsClient) GetPreparer(ctx context.Context, resourceGroupName string, resourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -288,14 +286,13 @@ func (client AccountsClient) GetPreparer(resourceGroupName string, resourceName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/microsoft.visualstudio/account/{resourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -316,8 +313,8 @@ func (client AccountsClient) GetResponder(resp *http.Response) (result AccountRe
 // specified Azure subscription.
 //
 // resourceGroupName is name of the resource group within the Azure subscription.
-func (client AccountsClient) ListByResourceGroup(resourceGroupName string) (result AccountResourceListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client AccountsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result AccountResourceListResult, err error) {
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "visualstudio.AccountsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -339,7 +336,7 @@ func (client AccountsClient) ListByResourceGroup(resourceGroupName string) (resu
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client AccountsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client AccountsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -355,14 +352,13 @@ func (client AccountsClient) ListByResourceGroupPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/microsoft.visualstudio/account", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

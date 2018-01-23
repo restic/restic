@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ServiceHealthsClient is the client for the ServiceHealths methods of the Servicefabric service.
 type ServiceHealthsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServiceHealthsClient creates an instance of the ServiceHealthsClient client.
@@ -41,8 +42,8 @@ func NewServiceHealthsClientWithBaseURI(baseURI string, timeout *int32) ServiceH
 // Get get service healths
 //
 // serviceName is the name of the service
-func (client ServiceHealthsClient) Get(serviceName string) (result ServiceHealth, err error) {
-	req, err := client.GetPreparer(serviceName)
+func (client ServiceHealthsClient) Get(ctx context.Context, serviceName string) (result ServiceHealth, err error) {
+	req, err := client.GetPreparer(ctx, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServiceHealthsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ServiceHealthsClient) Get(serviceName string) (result ServiceHealth
 }
 
 // GetPreparer prepares the Get request.
-func (client ServiceHealthsClient) GetPreparer(serviceName string) (*http.Request, error) {
+func (client ServiceHealthsClient) GetPreparer(ctx context.Context, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -82,14 +83,13 @@ func (client ServiceHealthsClient) GetPreparer(serviceName string) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/GetHealth", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceHealthsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -109,8 +109,8 @@ func (client ServiceHealthsClient) GetResponder(resp *http.Response) (result Ser
 // Send send service healths
 //
 // serviceName is the name of the service serviceHealthReport is the report of the service health
-func (client ServiceHealthsClient) Send(serviceName string, serviceHealthReport ServiceHealthReport) (result String, err error) {
-	req, err := client.SendPreparer(serviceName, serviceHealthReport)
+func (client ServiceHealthsClient) Send(ctx context.Context, serviceName string, serviceHealthReport ServiceHealthReport) (result String, err error) {
+	req, err := client.SendPreparer(ctx, serviceName, serviceHealthReport)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServiceHealthsClient", "Send", nil, "Failure preparing request")
 		return
@@ -132,7 +132,7 @@ func (client ServiceHealthsClient) Send(serviceName string, serviceHealthReport 
 }
 
 // SendPreparer prepares the Send request.
-func (client ServiceHealthsClient) SendPreparer(serviceName string, serviceHealthReport ServiceHealthReport) (*http.Request, error) {
+func (client ServiceHealthsClient) SendPreparer(ctx context.Context, serviceName string, serviceHealthReport ServiceHealthReport) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -152,14 +152,13 @@ func (client ServiceHealthsClient) SendPreparer(serviceName string, serviceHealt
 		autorest.WithPathParameters("/Services/{serviceName}/$/ReportHealth", pathParameters),
 		autorest.WithJSON(serviceHealthReport),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SendSender sends the Send request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceHealthsClient) SendSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

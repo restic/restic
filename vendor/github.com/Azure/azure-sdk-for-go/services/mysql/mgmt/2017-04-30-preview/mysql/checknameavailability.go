@@ -18,6 +18,7 @@ package mysql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // functionality for Azure MySQL resources including servers, databases, firewall rules, VNET rules, log files and
 // configurations.
 type CheckNameAvailabilityClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCheckNameAvailabilityClient creates an instance of the CheckNameAvailabilityClient client.
@@ -44,14 +45,14 @@ func NewCheckNameAvailabilityClientWithBaseURI(baseURI string, subscriptionID st
 // Execute check the availability of name for resource
 //
 // nameAvailabilityRequest is the required parameters for checking if resource name is available.
-func (client CheckNameAvailabilityClient) Execute(nameAvailabilityRequest NameAvailabilityRequest) (result NameAvailability, err error) {
+func (client CheckNameAvailabilityClient) Execute(ctx context.Context, nameAvailabilityRequest NameAvailabilityRequest) (result NameAvailability, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: nameAvailabilityRequest,
 			Constraints: []validation.Constraint{{Target: "nameAvailabilityRequest.Name", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "mysql.CheckNameAvailabilityClient", "Execute")
 	}
 
-	req, err := client.ExecutePreparer(nameAvailabilityRequest)
+	req, err := client.ExecutePreparer(ctx, nameAvailabilityRequest)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mysql.CheckNameAvailabilityClient", "Execute", nil, "Failure preparing request")
 		return
@@ -73,7 +74,7 @@ func (client CheckNameAvailabilityClient) Execute(nameAvailabilityRequest NameAv
 }
 
 // ExecutePreparer prepares the Execute request.
-func (client CheckNameAvailabilityClient) ExecutePreparer(nameAvailabilityRequest NameAvailabilityRequest) (*http.Request, error) {
+func (client CheckNameAvailabilityClient) ExecutePreparer(ctx context.Context, nameAvailabilityRequest NameAvailabilityRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -90,14 +91,13 @@ func (client CheckNameAvailabilityClient) ExecutePreparer(nameAvailabilityReques
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DBforMySQL/checkNameAvailability", pathParameters),
 		autorest.WithJSON(nameAvailabilityRequest),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ExecuteSender sends the Execute request. The method will close the
 // http.Response Body if it receives an error.
 func (client CheckNameAvailabilityClient) ExecuteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

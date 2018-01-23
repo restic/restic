@@ -67,15 +67,14 @@ type MockCtlMsg struct {
 // MockCloudSpanner is a mock implementation of SpannerServer interface.
 // TODO: make MockCloudSpanner a full-fleged Cloud Spanner implementation.
 type MockCloudSpanner struct {
+	sppb.SpannerServer
+
 	s      *grpc.Server
 	t      *testing.T
 	addr   string
 	msgs   chan MockCtlMsg
 	readTs time.Time
 	next   int
-
-	// embed nil interface so updating proto with new methods don't fail the build
-	sppb.SpannerServer
 }
 
 // Addr returns the listening address of mock server.

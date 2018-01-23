@@ -18,6 +18,7 @@ package trafficmanager
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // GeographicHierarchiesClient is the client for the GeographicHierarchies methods of the Trafficmanager service.
 type GeographicHierarchiesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewGeographicHierarchiesClient creates an instance of the GeographicHierarchiesClient client.
@@ -39,8 +40,8 @@ func NewGeographicHierarchiesClientWithBaseURI(baseURI string, subscriptionID st
 }
 
 // GetDefault gets the default Geographic Hierarchy used by the Geographic traffic routing method.
-func (client GeographicHierarchiesClient) GetDefault() (result GeographicHierarchy, err error) {
-	req, err := client.GetDefaultPreparer()
+func (client GeographicHierarchiesClient) GetDefault(ctx context.Context) (result GeographicHierarchy, err error) {
+	req, err := client.GetDefaultPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "trafficmanager.GeographicHierarchiesClient", "GetDefault", nil, "Failure preparing request")
 		return
@@ -62,7 +63,7 @@ func (client GeographicHierarchiesClient) GetDefault() (result GeographicHierarc
 }
 
 // GetDefaultPreparer prepares the GetDefault request.
-func (client GeographicHierarchiesClient) GetDefaultPreparer() (*http.Request, error) {
+func (client GeographicHierarchiesClient) GetDefaultPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2017-05-01"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -73,14 +74,13 @@ func (client GeographicHierarchiesClient) GetDefaultPreparer() (*http.Request, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Network/trafficManagerGeographicHierarchies/default"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDefaultSender sends the GetDefault request. The method will close the
 // http.Response Body if it receives an error.
 func (client GeographicHierarchiesClient) GetDefaultSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

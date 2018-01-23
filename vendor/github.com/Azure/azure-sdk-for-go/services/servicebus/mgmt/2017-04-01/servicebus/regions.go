@@ -18,6 +18,7 @@ package servicebus
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // RegionsClient is the azure Service Bus client
 type RegionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewRegionsClient creates an instance of the RegionsClient client.
@@ -42,7 +43,7 @@ func NewRegionsClientWithBaseURI(baseURI string, subscriptionID string) RegionsC
 // ListBySku gets the available Regions for a given sku
 //
 // sku is the sku type.
-func (client RegionsClient) ListBySku(sku string) (result PremiumMessagingRegionsListResult, err error) {
+func (client RegionsClient) ListBySku(ctx context.Context, sku string) (result PremiumMessagingRegionsListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: sku,
 			Constraints: []validation.Constraint{{Target: "sku", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -50,7 +51,8 @@ func (client RegionsClient) ListBySku(sku string) (result PremiumMessagingRegion
 		return result, validation.NewErrorWithValidationError(err, "servicebus.RegionsClient", "ListBySku")
 	}
 
-	req, err := client.ListBySkuPreparer(sku)
+	result.fn = client.listBySkuNextResults
+	req, err := client.ListBySkuPreparer(ctx, sku)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", nil, "Failure preparing request")
 		return
@@ -58,12 +60,12 @@ func (client RegionsClient) ListBySku(sku string) (result PremiumMessagingRegion
 
 	resp, err := client.ListBySkuSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pmrlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySkuResponder(resp)
+	result.pmrlr, err = client.ListBySkuResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", resp, "Failure responding to request")
 	}
@@ -72,7 +74,7 @@ func (client RegionsClient) ListBySku(sku string) (result PremiumMessagingRegion
 }
 
 // ListBySkuPreparer prepares the ListBySku request.
-func (client RegionsClient) ListBySkuPreparer(sku string) (*http.Request, error) {
+func (client RegionsClient) ListBySkuPreparer(ctx context.Context, sku string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"sku":            autorest.Encode("path", sku),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -88,14 +90,13 @@ func (client RegionsClient) ListBySkuPreparer(sku string) (*http.Request, error)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceBus/sku/{sku}/regions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySkuSender sends the ListBySku request. The method will close the
 // http.Response Body if it receives an error.
 func (client RegionsClient) ListBySkuSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -112,71 +113,29 @@ func (client RegionsClient) ListBySkuResponder(resp *http.Response) (result Prem
 	return
 }
 
-// ListBySkuNextResults retrieves the next set of results, if any.
-func (client RegionsClient) ListBySkuNextResults(lastResults PremiumMessagingRegionsListResult) (result PremiumMessagingRegionsListResult, err error) {
-	req, err := lastResults.PremiumMessagingRegionsListResultPreparer()
+// listBySkuNextResults retrieves the next set of results, if any.
+func (client RegionsClient) listBySkuNextResults(lastResults PremiumMessagingRegionsListResult) (result PremiumMessagingRegionsListResult, err error) {
+	req, err := lastResults.premiumMessagingRegionsListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.RegionsClient", "listBySkuNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySkuSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.RegionsClient", "listBySkuNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySkuResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicebus.RegionsClient", "ListBySku", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicebus.RegionsClient", "listBySkuNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySkuComplete gets all elements from the list without paging.
-func (client RegionsClient) ListBySkuComplete(sku string, cancel <-chan struct{}) (<-chan PremiumMessagingRegions, <-chan error) {
-	resultChan := make(chan PremiumMessagingRegions)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySku(sku)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySkuNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySkuComplete enumerates all values, automatically crossing page boundaries as required.
+func (client RegionsClient) ListBySkuComplete(ctx context.Context, sku string) (result PremiumMessagingRegionsListResultIterator, err error) {
+	result.page, err = client.ListBySku(ctx, sku)
+	return
 }

@@ -19,6 +19,7 @@ package keyvault
 
 import (
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/satori/go.uuid"
@@ -29,33 +30,33 @@ import (
 type CertificatePermissions string
 
 const (
-	// Create specifies the create state for certificate permissions.
+	// Create ...
 	Create CertificatePermissions = "create"
-	// Delete specifies the delete state for certificate permissions.
+	// Delete ...
 	Delete CertificatePermissions = "delete"
-	// Deleteissuers specifies the deleteissuers state for certificate permissions.
+	// Deleteissuers ...
 	Deleteissuers CertificatePermissions = "deleteissuers"
-	// Get specifies the get state for certificate permissions.
+	// Get ...
 	Get CertificatePermissions = "get"
-	// Getissuers specifies the getissuers state for certificate permissions.
+	// Getissuers ...
 	Getissuers CertificatePermissions = "getissuers"
-	// Import specifies the import state for certificate permissions.
+	// Import ...
 	Import CertificatePermissions = "import"
-	// List specifies the list state for certificate permissions.
+	// List ...
 	List CertificatePermissions = "list"
-	// Listissuers specifies the listissuers state for certificate permissions.
+	// Listissuers ...
 	Listissuers CertificatePermissions = "listissuers"
-	// Managecontacts specifies the managecontacts state for certificate permissions.
+	// Managecontacts ...
 	Managecontacts CertificatePermissions = "managecontacts"
-	// Manageissuers specifies the manageissuers state for certificate permissions.
+	// Manageissuers ...
 	Manageissuers CertificatePermissions = "manageissuers"
-	// Purge specifies the purge state for certificate permissions.
+	// Purge ...
 	Purge CertificatePermissions = "purge"
-	// Recover specifies the recover state for certificate permissions.
+	// Recover ...
 	Recover CertificatePermissions = "recover"
-	// Setissuers specifies the setissuers state for certificate permissions.
+	// Setissuers ...
 	Setissuers CertificatePermissions = "setissuers"
-	// Update specifies the update state for certificate permissions.
+	// Update ...
 	Update CertificatePermissions = "update"
 )
 
@@ -63,9 +64,9 @@ const (
 type CreateMode string
 
 const (
-	// CreateModeDefault specifies the create mode default state for create mode.
+	// CreateModeDefault ...
 	CreateModeDefault CreateMode = "default"
-	// CreateModeRecover specifies the create mode recover state for create mode.
+	// CreateModeRecover ...
 	CreateModeRecover CreateMode = "recover"
 )
 
@@ -73,37 +74,37 @@ const (
 type KeyPermissions string
 
 const (
-	// KeyPermissionsBackup specifies the key permissions backup state for key permissions.
+	// KeyPermissionsBackup ...
 	KeyPermissionsBackup KeyPermissions = "backup"
-	// KeyPermissionsCreate specifies the key permissions create state for key permissions.
+	// KeyPermissionsCreate ...
 	KeyPermissionsCreate KeyPermissions = "create"
-	// KeyPermissionsDecrypt specifies the key permissions decrypt state for key permissions.
+	// KeyPermissionsDecrypt ...
 	KeyPermissionsDecrypt KeyPermissions = "decrypt"
-	// KeyPermissionsDelete specifies the key permissions delete state for key permissions.
+	// KeyPermissionsDelete ...
 	KeyPermissionsDelete KeyPermissions = "delete"
-	// KeyPermissionsEncrypt specifies the key permissions encrypt state for key permissions.
+	// KeyPermissionsEncrypt ...
 	KeyPermissionsEncrypt KeyPermissions = "encrypt"
-	// KeyPermissionsGet specifies the key permissions get state for key permissions.
+	// KeyPermissionsGet ...
 	KeyPermissionsGet KeyPermissions = "get"
-	// KeyPermissionsImport specifies the key permissions import state for key permissions.
+	// KeyPermissionsImport ...
 	KeyPermissionsImport KeyPermissions = "import"
-	// KeyPermissionsList specifies the key permissions list state for key permissions.
+	// KeyPermissionsList ...
 	KeyPermissionsList KeyPermissions = "list"
-	// KeyPermissionsPurge specifies the key permissions purge state for key permissions.
+	// KeyPermissionsPurge ...
 	KeyPermissionsPurge KeyPermissions = "purge"
-	// KeyPermissionsRecover specifies the key permissions recover state for key permissions.
+	// KeyPermissionsRecover ...
 	KeyPermissionsRecover KeyPermissions = "recover"
-	// KeyPermissionsRestore specifies the key permissions restore state for key permissions.
+	// KeyPermissionsRestore ...
 	KeyPermissionsRestore KeyPermissions = "restore"
-	// KeyPermissionsSign specifies the key permissions sign state for key permissions.
+	// KeyPermissionsSign ...
 	KeyPermissionsSign KeyPermissions = "sign"
-	// KeyPermissionsUnwrapKey specifies the key permissions unwrap key state for key permissions.
+	// KeyPermissionsUnwrapKey ...
 	KeyPermissionsUnwrapKey KeyPermissions = "unwrapKey"
-	// KeyPermissionsUpdate specifies the key permissions update state for key permissions.
+	// KeyPermissionsUpdate ...
 	KeyPermissionsUpdate KeyPermissions = "update"
-	// KeyPermissionsVerify specifies the key permissions verify state for key permissions.
+	// KeyPermissionsVerify ...
 	KeyPermissionsVerify KeyPermissions = "verify"
-	// KeyPermissionsWrapKey specifies the key permissions wrap key state for key permissions.
+	// KeyPermissionsWrapKey ...
 	KeyPermissionsWrapKey KeyPermissions = "wrapKey"
 )
 
@@ -111,21 +112,21 @@ const (
 type SecretPermissions string
 
 const (
-	// SecretPermissionsBackup specifies the secret permissions backup state for secret permissions.
+	// SecretPermissionsBackup ...
 	SecretPermissionsBackup SecretPermissions = "backup"
-	// SecretPermissionsDelete specifies the secret permissions delete state for secret permissions.
+	// SecretPermissionsDelete ...
 	SecretPermissionsDelete SecretPermissions = "delete"
-	// SecretPermissionsGet specifies the secret permissions get state for secret permissions.
+	// SecretPermissionsGet ...
 	SecretPermissionsGet SecretPermissions = "get"
-	// SecretPermissionsList specifies the secret permissions list state for secret permissions.
+	// SecretPermissionsList ...
 	SecretPermissionsList SecretPermissions = "list"
-	// SecretPermissionsPurge specifies the secret permissions purge state for secret permissions.
+	// SecretPermissionsPurge ...
 	SecretPermissionsPurge SecretPermissions = "purge"
-	// SecretPermissionsRecover specifies the secret permissions recover state for secret permissions.
+	// SecretPermissionsRecover ...
 	SecretPermissionsRecover SecretPermissions = "recover"
-	// SecretPermissionsRestore specifies the secret permissions restore state for secret permissions.
+	// SecretPermissionsRestore ...
 	SecretPermissionsRestore SecretPermissions = "restore"
-	// SecretPermissionsSet specifies the secret permissions set state for secret permissions.
+	// SecretPermissionsSet ...
 	SecretPermissionsSet SecretPermissions = "set"
 )
 
@@ -133,9 +134,9 @@ const (
 type SkuName string
 
 const (
-	// Premium specifies the premium state for sku name.
+	// Premium ...
 	Premium SkuName = "premium"
-	// Standard specifies the standard state for sku name.
+	// Standard ...
 	Standard SkuName = "standard"
 )
 
@@ -143,162 +144,484 @@ const (
 type StoragePermissions string
 
 const (
-	// StoragePermissionsDelete specifies the storage permissions delete state for storage permissions.
+	// StoragePermissionsDelete ...
 	StoragePermissionsDelete StoragePermissions = "delete"
-	// StoragePermissionsDeletesas specifies the storage permissions deletesas state for storage permissions.
+	// StoragePermissionsDeletesas ...
 	StoragePermissionsDeletesas StoragePermissions = "deletesas"
-	// StoragePermissionsGet specifies the storage permissions get state for storage permissions.
+	// StoragePermissionsGet ...
 	StoragePermissionsGet StoragePermissions = "get"
-	// StoragePermissionsGetsas specifies the storage permissions getsas state for storage permissions.
+	// StoragePermissionsGetsas ...
 	StoragePermissionsGetsas StoragePermissions = "getsas"
-	// StoragePermissionsList specifies the storage permissions list state for storage permissions.
+	// StoragePermissionsList ...
 	StoragePermissionsList StoragePermissions = "list"
-	// StoragePermissionsListsas specifies the storage permissions listsas state for storage permissions.
+	// StoragePermissionsListsas ...
 	StoragePermissionsListsas StoragePermissions = "listsas"
-	// StoragePermissionsRegeneratekey specifies the storage permissions regeneratekey state for storage permissions.
+	// StoragePermissionsRegeneratekey ...
 	StoragePermissionsRegeneratekey StoragePermissions = "regeneratekey"
-	// StoragePermissionsSet specifies the storage permissions set state for storage permissions.
+	// StoragePermissionsSet ...
 	StoragePermissionsSet StoragePermissions = "set"
-	// StoragePermissionsSetsas specifies the storage permissions setsas state for storage permissions.
+	// StoragePermissionsSetsas ...
 	StoragePermissionsSetsas StoragePermissions = "setsas"
-	// StoragePermissionsUpdate specifies the storage permissions update state for storage permissions.
+	// StoragePermissionsUpdate ...
 	StoragePermissionsUpdate StoragePermissions = "update"
 )
 
-// AccessPolicyEntry is an identity that have access to the key vault. All identities in the array must use the same
+// AccessPolicyEntry an identity that have access to the key vault. All identities in the array must use the same
 // tenant ID as the key vault's tenant ID.
 type AccessPolicyEntry struct {
-	TenantID      *uuid.UUID   `json:"tenantId,omitempty"`
-	ObjectID      *string      `json:"objectId,omitempty"`
-	ApplicationID *uuid.UUID   `json:"applicationId,omitempty"`
-	Permissions   *Permissions `json:"permissions,omitempty"`
+	// TenantID - The Azure Active Directory tenant ID that should be used for authenticating requests to the key vault.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// ObjectID - The object ID of a user, service principal or security group in the Azure Active Directory tenant for the vault. The object ID must be unique for the list of access policies.
+	ObjectID *string `json:"objectId,omitempty"`
+	// ApplicationID -  Application ID of the client making request on behalf of a principal
+	ApplicationID *uuid.UUID `json:"applicationId,omitempty"`
+	// Permissions - Permissions the identity has for keys, secrets and certificates.
+	Permissions *Permissions `json:"permissions,omitempty"`
 }
 
-// DeletedVault is deleted vault information with extended details.
+// DeletedVault deleted vault information with extended details.
 type DeletedVault struct {
 	autorest.Response `json:"-"`
-	ID                *string                 `json:"id,omitempty"`
-	Name              *string                 `json:"name,omitempty"`
-	Type              *string                 `json:"type,omitempty"`
-	Properties        *DeletedVaultProperties `json:"properties,omitempty"`
+	// ID - The resource ID for the deleted key vault.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the key vault.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type of the key vault.
+	Type *string `json:"type,omitempty"`
+	// Properties - Properties of the vault
+	Properties *DeletedVaultProperties `json:"properties,omitempty"`
 }
 
-// DeletedVaultListResult is list of vaults
+// DeletedVaultListResult list of vaults
 type DeletedVaultListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]DeletedVault `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+	// Value - The list of deleted vaults.
+	Value *[]DeletedVault `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of deleted vaults.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DeletedVaultListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DeletedVaultListResult) DeletedVaultListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DeletedVaultListResultIterator provides access to a complete listing of DeletedVault values.
+type DeletedVaultListResultIterator struct {
+	i    int
+	page DeletedVaultListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DeletedVaultListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DeletedVaultListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DeletedVaultListResultIterator) Response() DeletedVaultListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DeletedVaultListResultIterator) Value() DeletedVault {
+	if !iter.page.NotDone() {
+		return DeletedVault{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dvlr DeletedVaultListResult) IsEmpty() bool {
+	return dvlr.Value == nil || len(*dvlr.Value) == 0
+}
+
+// deletedVaultListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dvlr DeletedVaultListResult) deletedVaultListResultPreparer() (*http.Request, error) {
+	if dvlr.NextLink == nil || len(to.String(dvlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dvlr.NextLink)))
 }
 
-// DeletedVaultProperties is properties of the deleted vault.
+// DeletedVaultListResultPage contains a page of DeletedVault values.
+type DeletedVaultListResultPage struct {
+	fn   func(DeletedVaultListResult) (DeletedVaultListResult, error)
+	dvlr DeletedVaultListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DeletedVaultListResultPage) Next() error {
+	next, err := page.fn(page.dvlr)
+	if err != nil {
+		return err
+	}
+	page.dvlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DeletedVaultListResultPage) NotDone() bool {
+	return !page.dvlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DeletedVaultListResultPage) Response() DeletedVaultListResult {
+	return page.dvlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DeletedVaultListResultPage) Values() []DeletedVault {
+	if page.dvlr.IsEmpty() {
+		return nil
+	}
+	return *page.dvlr.Value
+}
+
+// DeletedVaultProperties properties of the deleted vault.
 type DeletedVaultProperties struct {
-	VaultID            *string             `json:"vaultId,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	DeletionDate       *date.Time          `json:"deletionDate,omitempty"`
-	ScheduledPurgeDate *date.Time          `json:"scheduledPurgeDate,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	// VaultID - The resource id of the original vault.
+	VaultID *string `json:"vaultId,omitempty"`
+	// Location - The location of the original vault.
+	Location *string `json:"location,omitempty"`
+	// DeletionDate - The deleted date.
+	DeletionDate *date.Time `json:"deletionDate,omitempty"`
+	// ScheduledPurgeDate - The scheduled purged date.
+	ScheduledPurgeDate *date.Time `json:"scheduledPurgeDate,omitempty"`
+	// Tags - Tags of the original vault.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// Permissions is permissions the identity has for keys, secrets, certificates and storage.
+// Permissions permissions the identity has for keys, secrets, certificates and storage.
 type Permissions struct {
-	Keys         *[]KeyPermissions         `json:"keys,omitempty"`
-	Secrets      *[]SecretPermissions      `json:"secrets,omitempty"`
+	// Keys - Permissions to keys
+	Keys *[]KeyPermissions `json:"keys,omitempty"`
+	// Secrets - Permissions to secrets
+	Secrets *[]SecretPermissions `json:"secrets,omitempty"`
+	// Certificates - Permissions to certificates
 	Certificates *[]CertificatePermissions `json:"certificates,omitempty"`
-	Storage      *[]StoragePermissions     `json:"storage,omitempty"`
+	// Storage - Permissions to storage accounts
+	Storage *[]StoragePermissions `json:"storage,omitempty"`
 }
 
-// Resource is key Vault resource
+// Resource key Vault resource
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The Azure Resource Manager resource ID for the key vault.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the key vault.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type of the key vault.
+	Type *string `json:"type,omitempty"`
+	// Location - The supported Azure location where the key vault should be created.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags that will be assigned to the key vault.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResourceListResult is list of vault resources.
+// ResourceListResult list of vault resources.
 type ResourceListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Resource `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - Gets the list of vault resources.
+	Value *[]Resource `json:"value,omitempty"`
+	// NextLink - Gets the URL to get the next set of vault resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResourceListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResourceListResult) ResourceListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResourceListResultIterator provides access to a complete listing of Resource values.
+type ResourceListResultIterator struct {
+	i    int
+	page ResourceListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResourceListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResourceListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResourceListResultIterator) Response() ResourceListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResourceListResultIterator) Value() Resource {
+	if !iter.page.NotDone() {
+		return Resource{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rlr ResourceListResult) IsEmpty() bool {
+	return rlr.Value == nil || len(*rlr.Value) == 0
+}
+
+// resourceListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rlr ResourceListResult) resourceListResultPreparer() (*http.Request, error) {
+	if rlr.NextLink == nil || len(to.String(rlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rlr.NextLink)))
 }
 
-// Sku is SKU details
+// ResourceListResultPage contains a page of Resource values.
+type ResourceListResultPage struct {
+	fn  func(ResourceListResult) (ResourceListResult, error)
+	rlr ResourceListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResourceListResultPage) Next() error {
+	next, err := page.fn(page.rlr)
+	if err != nil {
+		return err
+	}
+	page.rlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResourceListResultPage) NotDone() bool {
+	return !page.rlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResourceListResultPage) Response() ResourceListResult {
+	return page.rlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResourceListResultPage) Values() []Resource {
+	if page.rlr.IsEmpty() {
+		return nil
+	}
+	return *page.rlr.Value
+}
+
+// Sku SKU details
 type Sku struct {
+	// Family - SKU family name
 	Family *string `json:"family,omitempty"`
-	Name   SkuName `json:"name,omitempty"`
+	// Name - SKU name to specify whether the key vault is a standard vault or a premium vault. Possible values include: 'Standard', 'Premium'
+	Name SkuName `json:"name,omitempty"`
 }
 
-// Vault is resource information with extended details.
+// Vault resource information with extended details.
 type Vault struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Properties        *VaultProperties    `json:"properties,omitempty"`
+	// ID - The Azure Resource Manager resource ID for the key vault.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the key vault.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type of the key vault.
+	Type *string `json:"type,omitempty"`
+	// Location - The supported Azure location where the key vault should be created.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags that will be assigned to the key vault.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Properties of the vault
+	Properties *VaultProperties `json:"properties,omitempty"`
 }
 
-// VaultCreateOrUpdateParameters is parameters for creating or updating a vault
+// VaultCreateOrUpdateParameters parameters for creating or updating a vault
 type VaultCreateOrUpdateParameters struct {
-	Location   *string             `json:"location,omitempty"`
-	Tags       *map[string]*string `json:"tags,omitempty"`
-	Properties *VaultProperties    `json:"properties,omitempty"`
+	// Location - The supported Azure location where the key vault should be created.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags that will be assigned to the key vault.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Properties of the vault
+	Properties *VaultProperties `json:"properties,omitempty"`
 }
 
-// VaultListResult is list of vaults
+// VaultListResult list of vaults
 type VaultListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Vault `json:"value,omitempty"`
-	NextLink          *string  `json:"nextLink,omitempty"`
+	// Value - Gets or sets the list of vaults.
+	Value *[]Vault `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of vaults.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// VaultListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client VaultListResult) VaultListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// VaultListResultIterator provides access to a complete listing of Vault values.
+type VaultListResultIterator struct {
+	i    int
+	page VaultListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *VaultListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter VaultListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter VaultListResultIterator) Response() VaultListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter VaultListResultIterator) Value() Vault {
+	if !iter.page.NotDone() {
+		return Vault{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (vlr VaultListResult) IsEmpty() bool {
+	return vlr.Value == nil || len(*vlr.Value) == 0
+}
+
+// vaultListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (vlr VaultListResult) vaultListResultPreparer() (*http.Request, error) {
+	if vlr.NextLink == nil || len(to.String(vlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(vlr.NextLink)))
 }
 
-// VaultProperties is properties of the vault
+// VaultListResultPage contains a page of Vault values.
+type VaultListResultPage struct {
+	fn  func(VaultListResult) (VaultListResult, error)
+	vlr VaultListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *VaultListResultPage) Next() error {
+	next, err := page.fn(page.vlr)
+	if err != nil {
+		return err
+	}
+	page.vlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page VaultListResultPage) NotDone() bool {
+	return !page.vlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page VaultListResultPage) Response() VaultListResult {
+	return page.vlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page VaultListResultPage) Values() []Vault {
+	if page.vlr.IsEmpty() {
+		return nil
+	}
+	return *page.vlr.Value
+}
+
+// VaultProperties properties of the vault
 type VaultProperties struct {
-	TenantID                     *uuid.UUID           `json:"tenantId,omitempty"`
-	Sku                          *Sku                 `json:"sku,omitempty"`
-	AccessPolicies               *[]AccessPolicyEntry `json:"accessPolicies,omitempty"`
-	VaultURI                     *string              `json:"vaultUri,omitempty"`
-	EnabledForDeployment         *bool                `json:"enabledForDeployment,omitempty"`
-	EnabledForDiskEncryption     *bool                `json:"enabledForDiskEncryption,omitempty"`
-	EnabledForTemplateDeployment *bool                `json:"enabledForTemplateDeployment,omitempty"`
-	EnableSoftDelete             *bool                `json:"enableSoftDelete,omitempty"`
-	CreateMode                   CreateMode           `json:"createMode,omitempty"`
+	// TenantID - The Azure Active Directory tenant ID that should be used for authenticating requests to the key vault.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// Sku - SKU details
+	Sku *Sku `json:"sku,omitempty"`
+	// AccessPolicies - An array of 0 to 16 identities that have access to the key vault. All identities in the array must use the same tenant ID as the key vault's tenant ID.
+	AccessPolicies *[]AccessPolicyEntry `json:"accessPolicies,omitempty"`
+	// VaultURI - The URI of the vault for performing operations on keys and secrets.
+	VaultURI *string `json:"vaultUri,omitempty"`
+	// EnabledForDeployment - Property to specify whether Azure Virtual Machines are permitted to retrieve certificates stored as secrets from the key vault.
+	EnabledForDeployment *bool `json:"enabledForDeployment,omitempty"`
+	// EnabledForDiskEncryption - Property to specify whether Azure Disk Encryption is permitted to retrieve secrets from the vault and unwrap keys.
+	EnabledForDiskEncryption *bool `json:"enabledForDiskEncryption,omitempty"`
+	// EnabledForTemplateDeployment - Property to specify whether Azure Resource Manager is permitted to retrieve secrets from the key vault.
+	EnabledForTemplateDeployment *bool `json:"enabledForTemplateDeployment,omitempty"`
+	// EnableSoftDelete - Property to specify whether the 'soft delete' functionality is enabled for this key vault. It does not accept false value.
+	EnableSoftDelete *bool `json:"enableSoftDelete,omitempty"`
+	// CreateMode - The vault's create mode to indicate whether the vault need to be recovered or not. Possible values include: 'CreateModeRecover', 'CreateModeDefault'
+	CreateMode CreateMode `json:"createMode,omitempty"`
+}
+
+// VaultsPurgeDeletedFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VaultsPurgeDeletedFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VaultsPurgeDeletedFuture) Result(client VaultsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("keyvault.VaultsPurgeDeletedFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.PurgeDeletedResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.PurgeDeletedResponder(resp)
+	return
 }

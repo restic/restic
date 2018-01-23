@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // PartitionLoadsClient is the client for the PartitionLoads methods of the Servicefabric service.
 type PartitionLoadsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPartitionLoadsClient creates an instance of the PartitionLoadsClient client.
@@ -41,8 +42,8 @@ func NewPartitionLoadsClientWithBaseURI(baseURI string, timeout *int32) Partitio
 // Reset reset partition loads
 //
 // partitionID is the id of the partition
-func (client PartitionLoadsClient) Reset(partitionID string) (result String, err error) {
-	req, err := client.ResetPreparer(partitionID)
+func (client PartitionLoadsClient) Reset(ctx context.Context, partitionID string) (result String, err error) {
+	req, err := client.ResetPreparer(ctx, partitionID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.PartitionLoadsClient", "Reset", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client PartitionLoadsClient) Reset(partitionID string) (result String, err
 }
 
 // ResetPreparer prepares the Reset request.
-func (client PartitionLoadsClient) ResetPreparer(partitionID string) (*http.Request, error) {
+func (client PartitionLoadsClient) ResetPreparer(ctx context.Context, partitionID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"partitionId": partitionID,
 	}
@@ -82,14 +83,13 @@ func (client PartitionLoadsClient) ResetPreparer(partitionID string) (*http.Requ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Partitions/{partitionId}/$/ResetLoad", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResetSender sends the Reset request. The method will close the
 // http.Response Body if it receives an error.
 func (client PartitionLoadsClient) ResetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

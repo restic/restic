@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // UserIdentitiesClient is the apiManagement Client
 type UserIdentitiesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewUserIdentitiesClient creates an instance of the UserIdentitiesClient client.
@@ -43,7 +44,7 @@ func NewUserIdentitiesClientWithBaseURI(baseURI string, subscriptionID string) U
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. UID is
 // user identifier. Must be unique in the current API Management service instance.
-func (client UserIdentitiesClient) ListByUsers(resourceGroupName string, serviceName string, UID string) (result UserIdentityCollection, err error) {
+func (client UserIdentitiesClient) ListByUsers(ctx context.Context, resourceGroupName string, serviceName string, UID string) (result UserIdentityCollection, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -56,7 +57,7 @@ func (client UserIdentitiesClient) ListByUsers(resourceGroupName string, service
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.UserIdentitiesClient", "ListByUsers")
 	}
 
-	req, err := client.ListByUsersPreparer(resourceGroupName, serviceName, UID)
+	req, err := client.ListByUsersPreparer(ctx, resourceGroupName, serviceName, UID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.UserIdentitiesClient", "ListByUsers", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client UserIdentitiesClient) ListByUsers(resourceGroupName string, service
 }
 
 // ListByUsersPreparer prepares the ListByUsers request.
-func (client UserIdentitiesClient) ListByUsersPreparer(resourceGroupName string, serviceName string, UID string) (*http.Request, error) {
+func (client UserIdentitiesClient) ListByUsersPreparer(ctx context.Context, resourceGroupName string, serviceName string, UID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -96,14 +97,13 @@ func (client UserIdentitiesClient) ListByUsersPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/users/{uid}/identities", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByUsersSender sends the ListByUsers request. The method will close the
 // http.Response Body if it receives an error.
 func (client UserIdentitiesClient) ListByUsersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

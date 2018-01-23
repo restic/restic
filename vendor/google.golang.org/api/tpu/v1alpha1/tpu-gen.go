@@ -350,18 +350,28 @@ type Node struct {
 	// Required.
 	CidrBlock string `json:"cidrBlock,omitempty"`
 
-	// CreateTime: The time when the node was created.
-	// Output only.
+	// CreateTime: Output only.
+	// The time when the node was created.
 	CreateTime string `json:"createTime,omitempty"`
 
 	// Description: The user-supplied description of the TPU. Maximum of 512
 	// characters.
 	Description string `json:"description,omitempty"`
 
-	// HealthDescription: If this field is populated, it contains a
-	// description of why the TPU Node
+	// Health: The health status of the TPU node.
+	//
+	// Possible values:
+	//   "HEALTH_UNSPECIFIED" - Health status is unknown: not initialized or
+	// failed to retrieve.
+	//   "HEALTHY" - The resource is healthy.
+	//   "UNHEALTHY" - The resource is unhealthy.
+	//   "TIMEOUT" - The resource is unresponsive.
+	Health string `json:"health,omitempty"`
+
+	// HealthDescription: Output only.
+	// If this field is populated, it contains a description of why the TPU
+	// Node
 	// is unhealthy.
-	// Output only.
 	HealthDescription string `json:"healthDescription,omitempty"`
 
 	// IpAddress: Output only.
@@ -369,7 +379,8 @@ type Node struct {
 	// The network address for the TPU Node as visible to GCE instances.
 	IpAddress string `json:"ipAddress,omitempty"`
 
-	// Name: The immutable name of the TPU
+	// Name: Output only.
+	// The immutable name of the TPU
 	Name string `json:"name,omitempty"`
 
 	// Network: The name of a network they wish to peer the TPU node to. It
@@ -391,18 +402,18 @@ type Node struct {
 	// The network port for the TPU Node as visible to GCE instances.
 	Port string `json:"port,omitempty"`
 
-	// ServiceAccount: The service account used to run the tensor flow
-	// services within the node.
+	// ServiceAccount: Output only.
+	// The service account used to run the tensor flow services within the
+	// node.
 	// To share resources, including Google Cloud Storage data, with
 	// the
 	// Tensorflow job running in the Node, this account must have
 	// permissions to
 	// that data.
-	// Output only.
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 
-	// State: The current state for the TPU Node.
-	// Output only.
+	// State: Output only.
+	// The current state for the TPU Node.
 	//
 	// Possible values:
 	//   "STATE_UNSPECIFIED" - TPU node state is not known/set.

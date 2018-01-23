@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ManagedHostingEnvironmentsClient is the webSite Management Client
 type ManagedHostingEnvironmentsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewManagedHostingEnvironmentsClient creates an instance of the ManagedHostingEnvironmentsClient client.
@@ -38,49 +39,28 @@ func NewManagedHostingEnvironmentsClientWithBaseURI(baseURI string, subscription
 	return ManagedHostingEnvironmentsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdateManagedHostingEnvironment sends the create or update managed hosting environment request. This method
-// may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to
-// cancel polling and any outstanding HTTP requests.
+// CreateOrUpdateManagedHostingEnvironment sends the create or update managed hosting environment request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment
 // managedHostingEnvironmentEnvelope is properties of managed hosting environment
-func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironment(resourceGroupName string, name string, managedHostingEnvironmentEnvelope HostingEnvironment, cancel <-chan struct{}) (<-chan HostingEnvironment, <-chan error) {
-	resultChan := make(chan HostingEnvironment, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result HostingEnvironment
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateManagedHostingEnvironmentPreparer(resourceGroupName, name, managedHostingEnvironmentEnvelope, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "CreateOrUpdateManagedHostingEnvironment", nil, "Failure preparing request")
-			return
-		}
+func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironment(ctx context.Context, resourceGroupName string, name string, managedHostingEnvironmentEnvelope HostingEnvironment) (result ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture, err error) {
+	req, err := client.CreateOrUpdateManagedHostingEnvironmentPreparer(ctx, resourceGroupName, name, managedHostingEnvironmentEnvelope)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "CreateOrUpdateManagedHostingEnvironment", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateManagedHostingEnvironmentSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "CreateOrUpdateManagedHostingEnvironment", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateManagedHostingEnvironmentSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "CreateOrUpdateManagedHostingEnvironment", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateManagedHostingEnvironmentResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "CreateOrUpdateManagedHostingEnvironment", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateManagedHostingEnvironmentPreparer prepares the CreateOrUpdateManagedHostingEnvironment request.
-func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironmentPreparer(resourceGroupName string, name string, managedHostingEnvironmentEnvelope HostingEnvironment, cancel <-chan struct{}) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironmentPreparer(ctx context.Context, resourceGroupName string, name string, managedHostingEnvironmentEnvelope HostingEnvironment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -99,16 +79,22 @@ func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvir
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}", pathParameters),
 		autorest.WithJSON(managedHostingEnvironmentEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateManagedHostingEnvironmentSender sends the CreateOrUpdateManagedHostingEnvironment request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvironmentSender(req *http.Request) (future ManagedHostingEnvironmentsCreateOrUpdateManagedHostingEnvironmentFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusBadRequest, http.StatusNotFound, http.StatusConflict))
+	return
 }
 
 // CreateOrUpdateManagedHostingEnvironmentResponder handles the response to the CreateOrUpdateManagedHostingEnvironment request. The method always
@@ -124,49 +110,28 @@ func (client ManagedHostingEnvironmentsClient) CreateOrUpdateManagedHostingEnvir
 	return
 }
 
-// DeleteManagedHostingEnvironment sends the delete managed hosting environment request. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// DeleteManagedHostingEnvironment sends the delete managed hosting environment request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment forceDelete is delete even
 // if the managed hosting environment contains resources
-func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironment(resourceGroupName string, name string, forceDelete *bool, cancel <-chan struct{}) (<-chan SetObject, <-chan error) {
-	resultChan := make(chan SetObject, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result SetObject
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeleteManagedHostingEnvironmentPreparer(resourceGroupName, name, forceDelete, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "DeleteManagedHostingEnvironment", nil, "Failure preparing request")
-			return
-		}
+func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironment(ctx context.Context, resourceGroupName string, name string, forceDelete *bool) (result ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture, err error) {
+	req, err := client.DeleteManagedHostingEnvironmentPreparer(ctx, resourceGroupName, name, forceDelete)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "DeleteManagedHostingEnvironment", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteManagedHostingEnvironmentSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "DeleteManagedHostingEnvironment", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteManagedHostingEnvironmentSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "DeleteManagedHostingEnvironment", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteManagedHostingEnvironmentResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "DeleteManagedHostingEnvironment", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeleteManagedHostingEnvironmentPreparer prepares the DeleteManagedHostingEnvironment request.
-func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentPreparer(resourceGroupName string, name string, forceDelete *bool, cancel <-chan struct{}) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentPreparer(ctx context.Context, resourceGroupName string, name string, forceDelete *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -186,16 +151,22 @@ func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentPr
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteManagedHostingEnvironmentSender sends the DeleteManagedHostingEnvironment request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentSender(req *http.Request) (future ManagedHostingEnvironmentsDeleteManagedHostingEnvironmentFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusBadRequest, http.StatusNotFound, http.StatusConflict))
+	return
 }
 
 // DeleteManagedHostingEnvironmentResponder handles the response to the DeleteManagedHostingEnvironment request. The method always
@@ -205,7 +176,7 @@ func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentRe
 		resp,
 		client.ByInspecting(),
 		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusBadRequest, http.StatusNotFound, http.StatusConflict),
-		autorest.ByUnmarshallingJSON(&result.Value),
+		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
@@ -214,8 +185,8 @@ func (client ManagedHostingEnvironmentsClient) DeleteManagedHostingEnvironmentRe
 // GetManagedHostingEnvironment sends the get managed hosting environment request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironment(resourceGroupName string, name string) (result ManagedHostingEnvironment, err error) {
-	req, err := client.GetManagedHostingEnvironmentPreparer(resourceGroupName, name)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironment(ctx context.Context, resourceGroupName string, name string) (result ManagedHostingEnvironment, err error) {
+	req, err := client.GetManagedHostingEnvironmentPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironment", nil, "Failure preparing request")
 		return
@@ -237,7 +208,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironment(reso
 }
 
 // GetManagedHostingEnvironmentPreparer prepares the GetManagedHostingEnvironment request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -254,14 +225,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentPrepa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentSender sends the GetManagedHostingEnvironment request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -282,8 +252,8 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentRespo
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment operationID is operation
 // identifier GUID
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOperation(resourceGroupName string, name string, operationID string) (result SetObject, err error) {
-	req, err := client.GetManagedHostingEnvironmentOperationPreparer(resourceGroupName, name, operationID)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOperation(ctx context.Context, resourceGroupName string, name string, operationID string) (result SetObject, err error) {
+	req, err := client.GetManagedHostingEnvironmentOperationPreparer(ctx, resourceGroupName, name, operationID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentOperation", nil, "Failure preparing request")
 		return
@@ -305,7 +275,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOpera
 }
 
 // GetManagedHostingEnvironmentOperationPreparer prepares the GetManagedHostingEnvironmentOperation request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOperationPreparer(resourceGroupName string, name string, operationID string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOperationPreparer(ctx context.Context, resourceGroupName string, name string, operationID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"operationId":       autorest.Encode("path", operationID),
@@ -323,14 +293,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOpera
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}/operations/{operationId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentOperationSender sends the GetManagedHostingEnvironmentOperation request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -350,8 +319,9 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentOpera
 // GetManagedHostingEnvironments sends the get managed hosting environments request.
 //
 // resourceGroupName is name of resource group
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironments(resourceGroupName string) (result HostingEnvironmentCollection, err error) {
-	req, err := client.GetManagedHostingEnvironmentsPreparer(resourceGroupName)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironments(ctx context.Context, resourceGroupName string) (result HostingEnvironmentCollectionPage, err error) {
+	result.fn = client.getManagedHostingEnvironmentsNextResults
+	req, err := client.GetManagedHostingEnvironmentsPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", nil, "Failure preparing request")
 		return
@@ -359,12 +329,12 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironments(res
 
 	resp, err := client.GetManagedHostingEnvironmentsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.hec.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetManagedHostingEnvironmentsResponder(resp)
+	result.hec, err = client.GetManagedHostingEnvironmentsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", resp, "Failure responding to request")
 	}
@@ -373,7 +343,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironments(res
 }
 
 // GetManagedHostingEnvironmentsPreparer prepares the GetManagedHostingEnvironments request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -389,14 +359,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsPrep
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentsSender sends the GetManagedHostingEnvironments request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -413,80 +382,39 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsResp
 	return
 }
 
-// GetManagedHostingEnvironmentsNextResults retrieves the next set of results, if any.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsNextResults(lastResults HostingEnvironmentCollection) (result HostingEnvironmentCollection, err error) {
-	req, err := lastResults.HostingEnvironmentCollectionPreparer()
+// getManagedHostingEnvironmentsNextResults retrieves the next set of results, if any.
+func (client ManagedHostingEnvironmentsClient) getManagedHostingEnvironmentsNextResults(lastResults HostingEnvironmentCollection) (result HostingEnvironmentCollection, err error) {
+	req, err := lastResults.hostingEnvironmentCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetManagedHostingEnvironmentsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetManagedHostingEnvironmentsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironments", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetManagedHostingEnvironmentsComplete gets all elements from the list without paging.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan HostingEnvironment, <-chan error) {
-	resultChan := make(chan HostingEnvironment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetManagedHostingEnvironments(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetManagedHostingEnvironmentsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetManagedHostingEnvironmentsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentsComplete(ctx context.Context, resourceGroupName string) (result HostingEnvironmentCollectionIterator, err error) {
+	result.page, err = client.GetManagedHostingEnvironments(ctx, resourceGroupName)
+	return
 }
 
 // GetManagedHostingEnvironmentServerFarms sends the get managed hosting environment server farms request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarms(resourceGroupName string, name string) (result ServerFarmCollection, err error) {
-	req, err := client.GetManagedHostingEnvironmentServerFarmsPreparer(resourceGroupName, name)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarms(ctx context.Context, resourceGroupName string, name string) (result ServerFarmCollectionPage, err error) {
+	result.fn = client.getManagedHostingEnvironmentServerFarmsNextResults
+	req, err := client.GetManagedHostingEnvironmentServerFarmsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", nil, "Failure preparing request")
 		return
@@ -494,12 +422,12 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServe
 
 	resp, err := client.GetManagedHostingEnvironmentServerFarmsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sfc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetManagedHostingEnvironmentServerFarmsResponder(resp)
+	result.sfc, err = client.GetManagedHostingEnvironmentServerFarmsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", resp, "Failure responding to request")
 	}
@@ -508,7 +436,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServe
 }
 
 // GetManagedHostingEnvironmentServerFarmsPreparer prepares the GetManagedHostingEnvironmentServerFarms request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -525,14 +453,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServe
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}/serverfarms", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentServerFarmsSender sends the GetManagedHostingEnvironmentServerFarms request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -549,81 +476,40 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServe
 	return
 }
 
-// GetManagedHostingEnvironmentServerFarmsNextResults retrieves the next set of results, if any.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsNextResults(lastResults ServerFarmCollection) (result ServerFarmCollection, err error) {
-	req, err := lastResults.ServerFarmCollectionPreparer()
+// getManagedHostingEnvironmentServerFarmsNextResults retrieves the next set of results, if any.
+func (client ManagedHostingEnvironmentsClient) getManagedHostingEnvironmentServerFarmsNextResults(lastResults ServerFarmCollection) (result ServerFarmCollection, err error) {
+	req, err := lastResults.serverFarmCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentServerFarmsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetManagedHostingEnvironmentServerFarmsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentServerFarmsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetManagedHostingEnvironmentServerFarmsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentServerFarms", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentServerFarmsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetManagedHostingEnvironmentServerFarmsComplete gets all elements from the list without paging.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan ServerFarmWithRichSku, <-chan error) {
-	resultChan := make(chan ServerFarmWithRichSku)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetManagedHostingEnvironmentServerFarms(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetManagedHostingEnvironmentServerFarmsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetManagedHostingEnvironmentServerFarmsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentServerFarmsComplete(ctx context.Context, resourceGroupName string, name string) (result ServerFarmCollectionIterator, err error) {
+	result.page, err = client.GetManagedHostingEnvironmentServerFarms(ctx, resourceGroupName, name)
+	return
 }
 
 // GetManagedHostingEnvironmentSites sends the get managed hosting environment sites request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment propertiesToInclude is comma
 // separated list of site properties to include
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites(resourceGroupName string, name string, propertiesToInclude string) (result SiteCollection, err error) {
-	req, err := client.GetManagedHostingEnvironmentSitesPreparer(resourceGroupName, name, propertiesToInclude)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (result SiteCollectionPage, err error) {
+	result.fn = client.getManagedHostingEnvironmentSitesNextResults
+	req, err := client.GetManagedHostingEnvironmentSitesPreparer(ctx, resourceGroupName, name, propertiesToInclude)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", nil, "Failure preparing request")
 		return
@@ -631,12 +517,12 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites
 
 	resp, err := client.GetManagedHostingEnvironmentSitesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetManagedHostingEnvironmentSitesResponder(resp)
+	result.sc, err = client.GetManagedHostingEnvironmentSitesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", resp, "Failure responding to request")
 	}
@@ -645,7 +531,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites
 }
 
 // GetManagedHostingEnvironmentSitesPreparer prepares the GetManagedHostingEnvironmentSites request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesPreparer(resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesPreparer(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -665,14 +551,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}/sites", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentSitesSender sends the GetManagedHostingEnvironmentSites request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -689,80 +574,38 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSites
 	return
 }
 
-// GetManagedHostingEnvironmentSitesNextResults retrieves the next set of results, if any.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
-	req, err := lastResults.SiteCollectionPreparer()
+// getManagedHostingEnvironmentSitesNextResults retrieves the next set of results, if any.
+func (client ManagedHostingEnvironmentsClient) getManagedHostingEnvironmentSitesNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
+	req, err := lastResults.siteCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentSitesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetManagedHostingEnvironmentSitesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentSitesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetManagedHostingEnvironmentSitesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentSites", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentSitesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetManagedHostingEnvironmentSitesComplete gets all elements from the list without paging.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesComplete(resourceGroupName string, name string, propertiesToInclude string, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetManagedHostingEnvironmentSites(resourceGroupName, name, propertiesToInclude)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetManagedHostingEnvironmentSitesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetManagedHostingEnvironmentSitesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentSitesComplete(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (result SiteCollectionIterator, err error) {
+	result.page, err = client.GetManagedHostingEnvironmentSites(ctx, resourceGroupName, name, propertiesToInclude)
+	return
 }
 
 // GetManagedHostingEnvironmentVips sends the get managed hosting environment vips request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVips(resourceGroupName string, name string) (result AddressResponse, err error) {
-	req, err := client.GetManagedHostingEnvironmentVipsPreparer(resourceGroupName, name)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVips(ctx context.Context, resourceGroupName string, name string) (result AddressResponse, err error) {
+	req, err := client.GetManagedHostingEnvironmentVipsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentVips", nil, "Failure preparing request")
 		return
@@ -784,7 +627,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVips(
 }
 
 // GetManagedHostingEnvironmentVipsPreparer prepares the GetManagedHostingEnvironmentVips request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVipsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVipsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -801,14 +644,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVipsP
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}/capacities/virtualip", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentVipsSender sends the GetManagedHostingEnvironmentVips request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVipsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -828,8 +670,9 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentVipsR
 // GetManagedHostingEnvironmentWebHostingPlans sends the get managed hosting environment web hosting plans request.
 //
 // resourceGroupName is name of resource group name is name of managed hosting environment
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlans(resourceGroupName string, name string) (result ServerFarmCollection, err error) {
-	req, err := client.GetManagedHostingEnvironmentWebHostingPlansPreparer(resourceGroupName, name)
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlans(ctx context.Context, resourceGroupName string, name string) (result ServerFarmCollectionPage, err error) {
+	result.fn = client.getManagedHostingEnvironmentWebHostingPlansNextResults
+	req, err := client.GetManagedHostingEnvironmentWebHostingPlansPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", nil, "Failure preparing request")
 		return
@@ -837,12 +680,12 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHo
 
 	resp, err := client.GetManagedHostingEnvironmentWebHostingPlansSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sfc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetManagedHostingEnvironmentWebHostingPlansResponder(resp)
+	result.sfc, err = client.GetManagedHostingEnvironmentWebHostingPlansResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", resp, "Failure responding to request")
 	}
@@ -851,7 +694,7 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHo
 }
 
 // GetManagedHostingEnvironmentWebHostingPlansPreparer prepares the GetManagedHostingEnvironmentWebHostingPlans request.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -868,14 +711,13 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHo
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/managedHostingEnvironments/{name}/webhostingplans", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetManagedHostingEnvironmentWebHostingPlansSender sends the GetManagedHostingEnvironmentWebHostingPlans request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -892,71 +734,29 @@ func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHo
 	return
 }
 
-// GetManagedHostingEnvironmentWebHostingPlansNextResults retrieves the next set of results, if any.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansNextResults(lastResults ServerFarmCollection) (result ServerFarmCollection, err error) {
-	req, err := lastResults.ServerFarmCollectionPreparer()
+// getManagedHostingEnvironmentWebHostingPlansNextResults retrieves the next set of results, if any.
+func (client ManagedHostingEnvironmentsClient) getManagedHostingEnvironmentWebHostingPlansNextResults(lastResults ServerFarmCollection) (result ServerFarmCollection, err error) {
+	req, err := lastResults.serverFarmCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentWebHostingPlansNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetManagedHostingEnvironmentWebHostingPlansSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentWebHostingPlansNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetManagedHostingEnvironmentWebHostingPlansResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "GetManagedHostingEnvironmentWebHostingPlans", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ManagedHostingEnvironmentsClient", "getManagedHostingEnvironmentWebHostingPlansNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetManagedHostingEnvironmentWebHostingPlansComplete gets all elements from the list without paging.
-func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan ServerFarmWithRichSku, <-chan error) {
-	resultChan := make(chan ServerFarmWithRichSku)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetManagedHostingEnvironmentWebHostingPlans(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetManagedHostingEnvironmentWebHostingPlansNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetManagedHostingEnvironmentWebHostingPlansComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ManagedHostingEnvironmentsClient) GetManagedHostingEnvironmentWebHostingPlansComplete(ctx context.Context, resourceGroupName string, name string) (result ServerFarmCollectionIterator, err error) {
+	result.page, err = client.GetManagedHostingEnvironmentWebHostingPlans(ctx, resourceGroupName, name)
+	return
 }

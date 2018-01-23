@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // BgpServiceCommunitiesClient is the network Client
 type BgpServiceCommunitiesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewBgpServiceCommunitiesClient creates an instance of the BgpServiceCommunitiesClient client.
@@ -39,8 +40,9 @@ func NewBgpServiceCommunitiesClientWithBaseURI(baseURI string, subscriptionID st
 }
 
 // List gets all the available bgp service communities.
-func (client BgpServiceCommunitiesClient) List() (result BgpServiceCommunityListResult, err error) {
-	req, err := client.ListPreparer()
+func (client BgpServiceCommunitiesClient) List(ctx context.Context) (result BgpServiceCommunityListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", nil, "Failure preparing request")
 		return
@@ -48,12 +50,12 @@ func (client BgpServiceCommunitiesClient) List() (result BgpServiceCommunityList
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.bsclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.bsclr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", resp, "Failure responding to request")
 	}
@@ -62,7 +64,7 @@ func (client BgpServiceCommunitiesClient) List() (result BgpServiceCommunityList
 }
 
 // ListPreparer prepares the List request.
-func (client BgpServiceCommunitiesClient) ListPreparer() (*http.Request, error) {
+func (client BgpServiceCommunitiesClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -77,14 +79,13 @@ func (client BgpServiceCommunitiesClient) ListPreparer() (*http.Request, error) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Network/bgpServiceCommunities", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client BgpServiceCommunitiesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -101,71 +102,29 @@ func (client BgpServiceCommunitiesClient) ListResponder(resp *http.Response) (re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client BgpServiceCommunitiesClient) ListNextResults(lastResults BgpServiceCommunityListResult) (result BgpServiceCommunityListResult, err error) {
-	req, err := lastResults.BgpServiceCommunityListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client BgpServiceCommunitiesClient) listNextResults(lastResults BgpServiceCommunityListResult) (result BgpServiceCommunityListResult, err error) {
+	req, err := lastResults.bgpServiceCommunityListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.BgpServiceCommunitiesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client BgpServiceCommunitiesClient) ListComplete(cancel <-chan struct{}) (<-chan BgpServiceCommunity, <-chan error) {
-	resultChan := make(chan BgpServiceCommunity)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BgpServiceCommunitiesClient) ListComplete(ctx context.Context) (result BgpServiceCommunityListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

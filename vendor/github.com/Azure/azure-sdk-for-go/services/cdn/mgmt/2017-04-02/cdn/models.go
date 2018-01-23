@@ -18,7 +18,9 @@ package cdn
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 )
@@ -27,11 +29,11 @@ import (
 type CustomDomainResourceState string
 
 const (
-	// Active specifies the active state for custom domain resource state.
+	// Active ...
 	Active CustomDomainResourceState = "Active"
-	// Creating specifies the creating state for custom domain resource state.
+	// Creating ...
 	Creating CustomDomainResourceState = "Creating"
-	// Deleting specifies the deleting state for custom domain resource state.
+	// Deleting ...
 	Deleting CustomDomainResourceState = "Deleting"
 )
 
@@ -39,15 +41,15 @@ const (
 type CustomHTTPSProvisioningState string
 
 const (
-	// Disabled specifies the disabled state for custom https provisioning state.
+	// Disabled ...
 	Disabled CustomHTTPSProvisioningState = "Disabled"
-	// Disabling specifies the disabling state for custom https provisioning state.
+	// Disabling ...
 	Disabling CustomHTTPSProvisioningState = "Disabling"
-	// Enabled specifies the enabled state for custom https provisioning state.
+	// Enabled ...
 	Enabled CustomHTTPSProvisioningState = "Enabled"
-	// Enabling specifies the enabling state for custom https provisioning state.
+	// Enabling ...
 	Enabling CustomHTTPSProvisioningState = "Enabling"
-	// Failed specifies the failed state for custom https provisioning state.
+	// Failed ...
 	Failed CustomHTTPSProvisioningState = "Failed"
 )
 
@@ -55,30 +57,25 @@ const (
 type CustomHTTPSProvisioningSubstate string
 
 const (
-	// CertificateDeleted specifies the certificate deleted state for custom https provisioning substate.
+	// CertificateDeleted ...
 	CertificateDeleted CustomHTTPSProvisioningSubstate = "CertificateDeleted"
-	// CertificateDeployed specifies the certificate deployed state for custom https provisioning substate.
+	// CertificateDeployed ...
 	CertificateDeployed CustomHTTPSProvisioningSubstate = "CertificateDeployed"
-	// DeletingCertificate specifies the deleting certificate state for custom https provisioning substate.
+	// DeletingCertificate ...
 	DeletingCertificate CustomHTTPSProvisioningSubstate = "DeletingCertificate"
-	// DeployingCertificate specifies the deploying certificate state for custom https provisioning substate.
+	// DeployingCertificate ...
 	DeployingCertificate CustomHTTPSProvisioningSubstate = "DeployingCertificate"
-	// DomainControlValidationRequestApproved specifies the domain control validation request approved state for custom
-	// https provisioning substate.
+	// DomainControlValidationRequestApproved ...
 	DomainControlValidationRequestApproved CustomHTTPSProvisioningSubstate = "DomainControlValidationRequestApproved"
-	// DomainControlValidationRequestRejected specifies the domain control validation request rejected state for custom
-	// https provisioning substate.
+	// DomainControlValidationRequestRejected ...
 	DomainControlValidationRequestRejected CustomHTTPSProvisioningSubstate = "DomainControlValidationRequestRejected"
-	// DomainControlValidationRequestTimedOut specifies the domain control validation request timed out state for custom
-	// https provisioning substate.
+	// DomainControlValidationRequestTimedOut ...
 	DomainControlValidationRequestTimedOut CustomHTTPSProvisioningSubstate = "DomainControlValidationRequestTimedOut"
-	// IssuingCertificate specifies the issuing certificate state for custom https provisioning substate.
+	// IssuingCertificate ...
 	IssuingCertificate CustomHTTPSProvisioningSubstate = "IssuingCertificate"
-	// PendingDomainControlValidationREquestApproval specifies the pending domain control validation r equest approval
-	// state for custom https provisioning substate.
+	// PendingDomainControlValidationREquestApproval ...
 	PendingDomainControlValidationREquestApproval CustomHTTPSProvisioningSubstate = "PendingDomainControlValidationREquestApproval"
-	// SubmittingDomainControlValidationRequest specifies the submitting domain control validation request state for custom
-	// https provisioning substate.
+	// SubmittingDomainControlValidationRequest ...
 	SubmittingDomainControlValidationRequest CustomHTTPSProvisioningSubstate = "SubmittingDomainControlValidationRequest"
 )
 
@@ -86,17 +83,17 @@ const (
 type EndpointResourceState string
 
 const (
-	// EndpointResourceStateCreating specifies the endpoint resource state creating state for endpoint resource state.
+	// EndpointResourceStateCreating ...
 	EndpointResourceStateCreating EndpointResourceState = "Creating"
-	// EndpointResourceStateDeleting specifies the endpoint resource state deleting state for endpoint resource state.
+	// EndpointResourceStateDeleting ...
 	EndpointResourceStateDeleting EndpointResourceState = "Deleting"
-	// EndpointResourceStateRunning specifies the endpoint resource state running state for endpoint resource state.
+	// EndpointResourceStateRunning ...
 	EndpointResourceStateRunning EndpointResourceState = "Running"
-	// EndpointResourceStateStarting specifies the endpoint resource state starting state for endpoint resource state.
+	// EndpointResourceStateStarting ...
 	EndpointResourceStateStarting EndpointResourceState = "Starting"
-	// EndpointResourceStateStopped specifies the endpoint resource state stopped state for endpoint resource state.
+	// EndpointResourceStateStopped ...
 	EndpointResourceStateStopped EndpointResourceState = "Stopped"
-	// EndpointResourceStateStopping specifies the endpoint resource state stopping state for endpoint resource state.
+	// EndpointResourceStateStopping ...
 	EndpointResourceStateStopping EndpointResourceState = "Stopping"
 )
 
@@ -104,9 +101,9 @@ const (
 type GeoFilterActions string
 
 const (
-	// Allow specifies the allow state for geo filter actions.
+	// Allow ...
 	Allow GeoFilterActions = "Allow"
-	// Block specifies the block state for geo filter actions.
+	// Block ...
 	Block GeoFilterActions = "Block"
 )
 
@@ -114,15 +111,15 @@ const (
 type OptimizationType string
 
 const (
-	// DynamicSiteAcceleration specifies the dynamic site acceleration state for optimization type.
+	// DynamicSiteAcceleration ...
 	DynamicSiteAcceleration OptimizationType = "DynamicSiteAcceleration"
-	// GeneralMediaStreaming specifies the general media streaming state for optimization type.
+	// GeneralMediaStreaming ...
 	GeneralMediaStreaming OptimizationType = "GeneralMediaStreaming"
-	// GeneralWebDelivery specifies the general web delivery state for optimization type.
+	// GeneralWebDelivery ...
 	GeneralWebDelivery OptimizationType = "GeneralWebDelivery"
-	// LargeFileDownload specifies the large file download state for optimization type.
+	// LargeFileDownload ...
 	LargeFileDownload OptimizationType = "LargeFileDownload"
-	// VideoOnDemandMediaStreaming specifies the video on demand media streaming state for optimization type.
+	// VideoOnDemandMediaStreaming ...
 	VideoOnDemandMediaStreaming OptimizationType = "VideoOnDemandMediaStreaming"
 )
 
@@ -130,11 +127,11 @@ const (
 type OriginResourceState string
 
 const (
-	// OriginResourceStateActive specifies the origin resource state active state for origin resource state.
+	// OriginResourceStateActive ...
 	OriginResourceStateActive OriginResourceState = "Active"
-	// OriginResourceStateCreating specifies the origin resource state creating state for origin resource state.
+	// OriginResourceStateCreating ...
 	OriginResourceStateCreating OriginResourceState = "Creating"
-	// OriginResourceStateDeleting specifies the origin resource state deleting state for origin resource state.
+	// OriginResourceStateDeleting ...
 	OriginResourceStateDeleting OriginResourceState = "Deleting"
 )
 
@@ -142,13 +139,13 @@ const (
 type ProfileResourceState string
 
 const (
-	// ProfileResourceStateActive specifies the profile resource state active state for profile resource state.
+	// ProfileResourceStateActive ...
 	ProfileResourceStateActive ProfileResourceState = "Active"
-	// ProfileResourceStateCreating specifies the profile resource state creating state for profile resource state.
+	// ProfileResourceStateCreating ...
 	ProfileResourceStateCreating ProfileResourceState = "Creating"
-	// ProfileResourceStateDeleting specifies the profile resource state deleting state for profile resource state.
+	// ProfileResourceStateDeleting ...
 	ProfileResourceStateDeleting ProfileResourceState = "Deleting"
-	// ProfileResourceStateDisabled specifies the profile resource state disabled state for profile resource state.
+	// ProfileResourceStateDisabled ...
 	ProfileResourceStateDisabled ProfileResourceState = "Disabled"
 )
 
@@ -156,13 +153,13 @@ const (
 type QueryStringCachingBehavior string
 
 const (
-	// BypassCaching specifies the bypass caching state for query string caching behavior.
+	// BypassCaching ...
 	BypassCaching QueryStringCachingBehavior = "BypassCaching"
-	// IgnoreQueryString specifies the ignore query string state for query string caching behavior.
+	// IgnoreQueryString ...
 	IgnoreQueryString QueryStringCachingBehavior = "IgnoreQueryString"
-	// NotSet specifies the not set state for query string caching behavior.
+	// NotSet ...
 	NotSet QueryStringCachingBehavior = "NotSet"
-	// UseQueryString specifies the use query string state for query string caching behavior.
+	// UseQueryString ...
 	UseQueryString QueryStringCachingBehavior = "UseQueryString"
 )
 
@@ -170,7 +167,7 @@ const (
 type ResourceType string
 
 const (
-	// MicrosoftCdnProfilesEndpoints specifies the microsoft cdn profiles endpoints state for resource type.
+	// MicrosoftCdnProfilesEndpoints ...
 	MicrosoftCdnProfilesEndpoints ResourceType = "Microsoft.Cdn/Profiles/Endpoints"
 )
 
@@ -178,445 +175,1996 @@ const (
 type SkuName string
 
 const (
-	// CustomVerizon specifies the custom verizon state for sku name.
+	// CustomVerizon ...
 	CustomVerizon SkuName = "Custom_Verizon"
-	// PremiumVerizon specifies the premium verizon state for sku name.
+	// PremiumVerizon ...
 	PremiumVerizon SkuName = "Premium_Verizon"
-	// StandardAkamai specifies the standard akamai state for sku name.
+	// StandardAkamai ...
 	StandardAkamai SkuName = "Standard_Akamai"
-	// StandardChinaCdn specifies the standard china cdn state for sku name.
+	// StandardChinaCdn ...
 	StandardChinaCdn SkuName = "Standard_ChinaCdn"
-	// StandardVerizon specifies the standard verizon state for sku name.
+	// StandardVerizon ...
 	StandardVerizon SkuName = "Standard_Verizon"
 )
 
-// CheckNameAvailabilityInput is input of CheckNameAvailability API.
+// CheckNameAvailabilityInput input of CheckNameAvailability API.
 type CheckNameAvailabilityInput struct {
+	// Name - The resource name to validate.
 	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource whose name is to be validated.
 	Type *string `json:"type,omitempty"`
 }
 
-// CheckNameAvailabilityOutput is output of check name availability API.
+// CheckNameAvailabilityOutput output of check name availability API.
 type CheckNameAvailabilityOutput struct {
 	autorest.Response `json:"-"`
-	NameAvailable     *bool   `json:"nameAvailable,omitempty"`
-	Reason            *string `json:"reason,omitempty"`
-	Message           *string `json:"message,omitempty"`
+	// NameAvailable - Indicates whether the name is available.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - The reason why the name is not available.
+	Reason *string `json:"reason,omitempty"`
+	// Message - The detailed error message describing why the name is not available.
+	Message *string `json:"message,omitempty"`
 }
 
-// CidrIPAddress is CIDR Ip address
+// CidrIPAddress CIDR Ip address
 type CidrIPAddress struct {
+	// BaseIPAddress - Ip adress itself.
 	BaseIPAddress *string `json:"baseIpAddress,omitempty"`
-	PrefixLength  *int32  `json:"prefixLength,omitempty"`
+	// PrefixLength - The length of the prefix of the ip address.
+	PrefixLength *int32 `json:"prefixLength,omitempty"`
 }
 
-// CustomDomain is friendly domain name mapping to the endpoint hostname that the customer provides for branding
-// purposes, e.g. www.consoto.com.
+// CustomDomain friendly domain name mapping to the endpoint hostname that the customer provides for branding purposes,
+// e.g. www.consoto.com.
 type CustomDomain struct {
-	autorest.Response       `json:"-"`
-	ID                      *string             `json:"id,omitempty"`
-	Name                    *string             `json:"name,omitempty"`
-	Type                    *string             `json:"type,omitempty"`
-	Location                *string             `json:"location,omitempty"`
-	Tags                    *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type                    *string `json:"type,omitempty"`
 	*CustomDomainProperties `json:"properties,omitempty"`
 }
 
-// CustomDomainListResult is result of the request to list custom domains. It contains a list of custom domain objects
-// and a URL link to get the next set of results.
-type CustomDomainListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]CustomDomain `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CustomDomain struct.
+func (cd *CustomDomain) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomDomainProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cd.CustomDomainProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cd.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cd.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cd.Type = &typeVar
+	}
+
+	return nil
 }
 
-// CustomDomainListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CustomDomainListResult) CustomDomainListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CustomDomainListResult result of the request to list custom domains. It contains a list of custom domain objects and
+// a URL link to get the next set of results.
+type CustomDomainListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of CDN CustomDomains within an endpoint.
+	Value *[]CustomDomain `json:"value,omitempty"`
+	// NextLink - URL to get the next set of custom domain objects if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// CustomDomainListResultIterator provides access to a complete listing of CustomDomain values.
+type CustomDomainListResultIterator struct {
+	i    int
+	page CustomDomainListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CustomDomainListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CustomDomainListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CustomDomainListResultIterator) Response() CustomDomainListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CustomDomainListResultIterator) Value() CustomDomain {
+	if !iter.page.NotDone() {
+		return CustomDomain{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cdlr CustomDomainListResult) IsEmpty() bool {
+	return cdlr.Value == nil || len(*cdlr.Value) == 0
+}
+
+// customDomainListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cdlr CustomDomainListResult) customDomainListResultPreparer() (*http.Request, error) {
+	if cdlr.NextLink == nil || len(to.String(cdlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cdlr.NextLink)))
 }
 
-// CustomDomainParameters is the customDomain JSON object required for custom domain creation or update.
+// CustomDomainListResultPage contains a page of CustomDomain values.
+type CustomDomainListResultPage struct {
+	fn   func(CustomDomainListResult) (CustomDomainListResult, error)
+	cdlr CustomDomainListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CustomDomainListResultPage) Next() error {
+	next, err := page.fn(page.cdlr)
+	if err != nil {
+		return err
+	}
+	page.cdlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CustomDomainListResultPage) NotDone() bool {
+	return !page.cdlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CustomDomainListResultPage) Response() CustomDomainListResult {
+	return page.cdlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CustomDomainListResultPage) Values() []CustomDomain {
+	if page.cdlr.IsEmpty() {
+		return nil
+	}
+	return *page.cdlr.Value
+}
+
+// CustomDomainParameters the customDomain JSON object required for custom domain creation or update.
 type CustomDomainParameters struct {
 	*CustomDomainPropertiesParameters `json:"properties,omitempty"`
 }
 
-// CustomDomainProperties is the JSON object that contains the properties of the custom domain to create.
-type CustomDomainProperties struct {
-	HostName                        *string                         `json:"hostName,omitempty"`
-	ResourceState                   CustomDomainResourceState       `json:"resourceState,omitempty"`
-	CustomHTTPSProvisioningState    CustomHTTPSProvisioningState    `json:"customHttpsProvisioningState,omitempty"`
-	CustomHTTPSProvisioningSubstate CustomHTTPSProvisioningSubstate `json:"customHttpsProvisioningSubstate,omitempty"`
-	ValidationData                  *string                         `json:"validationData,omitempty"`
-	ProvisioningState               *string                         `json:"provisioningState,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CustomDomainParameters struct.
+func (cdp *CustomDomainParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomDomainPropertiesParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cdp.CustomDomainPropertiesParameters = &properties
+	}
+
+	return nil
 }
 
-// CustomDomainPropertiesParameters is the JSON object that contains the properties of the custom domain to create.
+// CustomDomainProperties the JSON object that contains the properties of the custom domain to create.
+type CustomDomainProperties struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
+	HostName *string `json:"hostName,omitempty"`
+	// ResourceState - Resource status of the custom domain. Possible values include: 'Creating', 'Active', 'Deleting'
+	ResourceState CustomDomainResourceState `json:"resourceState,omitempty"`
+	// CustomHTTPSProvisioningState - Provisioning status of Custom Https of the custom domain. Possible values include: 'Enabling', 'Enabled', 'Disabling', 'Disabled', 'Failed'
+	CustomHTTPSProvisioningState CustomHTTPSProvisioningState `json:"customHttpsProvisioningState,omitempty"`
+	// CustomHTTPSProvisioningSubstate - Provisioning substate shows the progress of custom HTTPS enabling/disabling process step by step. Possible values include: 'SubmittingDomainControlValidationRequest', 'PendingDomainControlValidationREquestApproval', 'DomainControlValidationRequestApproved', 'DomainControlValidationRequestRejected', 'DomainControlValidationRequestTimedOut', 'IssuingCertificate', 'DeployingCertificate', 'CertificateDeployed', 'DeletingCertificate', 'CertificateDeleted'
+	CustomHTTPSProvisioningSubstate CustomHTTPSProvisioningSubstate `json:"customHttpsProvisioningSubstate,omitempty"`
+	// ValidationData - Special validation or data may be required when delivering CDN to some regions due to local compliance reasons. E.g. ICP license number of a custom domain is required to deliver content in China.
+	ValidationData *string `json:"validationData,omitempty"`
+	// ProvisioningState - Provisioning status of the custom domain.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+}
+
+// CustomDomainPropertiesParameters the JSON object that contains the properties of the custom domain to create.
 type CustomDomainPropertiesParameters struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
 	HostName *string `json:"hostName,omitempty"`
 }
 
-// DeepCreatedOrigin is the main origin of CDN content which is added when creating a CDN endpoint.
+// CustomDomainsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CustomDomainsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomDomainsCreateFuture) Result(client CustomDomainsClient) (cd CustomDomain, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return cd, autorest.NewError("cdn.CustomDomainsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		cd, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	cd, err = client.CreateResponder(resp)
+	return
+}
+
+// CustomDomainsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CustomDomainsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomDomainsDeleteFuture) Result(client CustomDomainsClient) (cd CustomDomain, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return cd, autorest.NewError("cdn.CustomDomainsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		cd, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	cd, err = client.DeleteResponder(resp)
+	return
+}
+
+// DeepCreatedOrigin the main origin of CDN content which is added when creating a CDN endpoint.
 type DeepCreatedOrigin struct {
+	// Name - Origin name
 	Name                         *string `json:"name,omitempty"`
 	*DeepCreatedOriginProperties `json:"properties,omitempty"`
 }
 
-// DeepCreatedOriginProperties is properties of the origin created on the CDN endpoint.
-type DeepCreatedOriginProperties struct {
-	HostName  *string `json:"hostName,omitempty"`
-	HTTPPort  *int32  `json:"httpPort,omitempty"`
-	HTTPSPort *int32  `json:"httpsPort,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DeepCreatedOrigin struct.
+func (dco *DeepCreatedOrigin) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dco.Name = &name
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties DeepCreatedOriginProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dco.DeepCreatedOriginProperties = &properties
+	}
+
+	return nil
 }
 
-// EdgeNode is edgenode is a global Point of Presence (POP) location used to deliver CDN content to end users.
+// DeepCreatedOriginProperties properties of the origin created on the CDN endpoint.
+type DeepCreatedOriginProperties struct {
+	// HostName - The address of the origin. It can be a domain name, IPv4 address, or IPv6 address.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the HTTPS port. Must be between 1 and 65535
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
+}
+
+// EdgeNode edgenode is a global Point of Presence (POP) location used to deliver CDN content to end users.
 type EdgeNode struct {
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type                *string `json:"type,omitempty"`
 	*EdgeNodeProperties `json:"properties,omitempty"`
 }
 
-// EdgeNodeProperties is the JSON object that contains the properties required to create an edgenode.
+// UnmarshalJSON is the custom unmarshaler for EdgeNode struct.
+func (en *EdgeNode) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EdgeNodeProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		en.EdgeNodeProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		en.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		en.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		en.Type = &typeVar
+	}
+
+	return nil
+}
+
+// EdgeNodeProperties the JSON object that contains the properties required to create an edgenode.
 type EdgeNodeProperties struct {
+	// IPAddressGroups - List of ip address groups.
 	IPAddressGroups *[]IPAddressGroup `json:"ipAddressGroups,omitempty"`
 }
 
-// EdgenodeResult is result of the request to list CDN edgenodes. It contains a list of ip address group and a URL link
-// to get the next set of results.
+// EdgenodeResult result of the request to list CDN edgenodes. It contains a list of ip address group and a URL link to
+// get the next set of results.
 type EdgenodeResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]EdgeNode `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - Edge node of CDN service.
+	Value *[]EdgeNode `json:"value,omitempty"`
+	// NextLink - URL to get the next set of edgenode list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// EdgenodeResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client EdgenodeResult) EdgenodeResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// EdgenodeResultIterator provides access to a complete listing of EdgeNode values.
+type EdgenodeResultIterator struct {
+	i    int
+	page EdgenodeResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *EdgenodeResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter EdgenodeResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter EdgenodeResultIterator) Response() EdgenodeResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter EdgenodeResultIterator) Value() EdgeNode {
+	if !iter.page.NotDone() {
+		return EdgeNode{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (er EdgenodeResult) IsEmpty() bool {
+	return er.Value == nil || len(*er.Value) == 0
+}
+
+// edgenodeResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (er EdgenodeResult) edgenodeResultPreparer() (*http.Request, error) {
+	if er.NextLink == nil || len(to.String(er.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(er.NextLink)))
 }
 
-// Endpoint is CDN endpoint is the entity within a CDN profile containing configuration information such as origin,
+// EdgenodeResultPage contains a page of EdgeNode values.
+type EdgenodeResultPage struct {
+	fn func(EdgenodeResult) (EdgenodeResult, error)
+	er EdgenodeResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *EdgenodeResultPage) Next() error {
+	next, err := page.fn(page.er)
+	if err != nil {
+		return err
+	}
+	page.er = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page EdgenodeResultPage) NotDone() bool {
+	return !page.er.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page EdgenodeResultPage) Response() EdgenodeResult {
+	return page.er
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page EdgenodeResultPage) Values() []EdgeNode {
+	if page.er.IsEmpty() {
+		return nil
+	}
+	return *page.er.Value
+}
+
+// Endpoint CDN endpoint is the entity within a CDN profile containing configuration information such as origin,
 // protocol, content caching and delivery behavior. The CDN endpoint uses the URL format <endpointname>.azureedge.net.
 type Endpoint struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags                *map[string]*string `json:"tags,omitempty"`
 	*EndpointProperties `json:"properties,omitempty"`
 }
 
-// EndpointListResult is result of the request to list endpoints. It contains a list of endpoint objects and a URL link
-// to get the the next set of results.
-type EndpointListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]Endpoint `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Endpoint struct.
+func (e *Endpoint) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EndpointProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		e.EndpointProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		e.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		e.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		e.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		e.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		e.Type = &typeVar
+	}
+
+	return nil
 }
 
-// EndpointListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client EndpointListResult) EndpointListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// EndpointListResult result of the request to list endpoints. It contains a list of endpoint objects and a URL link to
+// get the the next set of results.
+type EndpointListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of CDN endpoints within a profile
+	Value *[]Endpoint `json:"value,omitempty"`
+	// NextLink - URL to get the next set of endpoint objects if there is any.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// EndpointListResultIterator provides access to a complete listing of Endpoint values.
+type EndpointListResultIterator struct {
+	i    int
+	page EndpointListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *EndpointListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter EndpointListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter EndpointListResultIterator) Response() EndpointListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter EndpointListResultIterator) Value() Endpoint {
+	if !iter.page.NotDone() {
+		return Endpoint{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (elr EndpointListResult) IsEmpty() bool {
+	return elr.Value == nil || len(*elr.Value) == 0
+}
+
+// endpointListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (elr EndpointListResult) endpointListResultPreparer() (*http.Request, error) {
+	if elr.NextLink == nil || len(to.String(elr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(elr.NextLink)))
 }
 
-// EndpointProperties is the JSON object that contains the properties required to create an endpoint.
+// EndpointListResultPage contains a page of Endpoint values.
+type EndpointListResultPage struct {
+	fn  func(EndpointListResult) (EndpointListResult, error)
+	elr EndpointListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *EndpointListResultPage) Next() error {
+	next, err := page.fn(page.elr)
+	if err != nil {
+		return err
+	}
+	page.elr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page EndpointListResultPage) NotDone() bool {
+	return !page.elr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page EndpointListResultPage) Response() EndpointListResult {
+	return page.elr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page EndpointListResultPage) Values() []Endpoint {
+	if page.elr.IsEmpty() {
+		return nil
+	}
+	return *page.elr.Value
+}
+
+// EndpointProperties the JSON object that contains the properties required to create an endpoint.
 type EndpointProperties struct {
-	OriginHostHeader           *string                    `json:"originHostHeader,omitempty"`
-	OriginPath                 *string                    `json:"originPath,omitempty"`
-	ContentTypesToCompress     *[]string                  `json:"contentTypesToCompress,omitempty"`
-	IsCompressionEnabled       *bool                      `json:"isCompressionEnabled,omitempty"`
-	IsHTTPAllowed              *bool                      `json:"isHttpAllowed,omitempty"`
-	IsHTTPSAllowed             *bool                      `json:"isHttpsAllowed,omitempty"`
+	// OriginHostHeader - The host header value sent to the origin with each request. If you leave this blank, the request hostname determines this value. Azure CDN origins, such as Web Apps, Blob Storage, and Cloud Services require this host header value to match the origin hostname by default.
+	OriginHostHeader *string `json:"originHostHeader,omitempty"`
+	// OriginPath - A directory path on the origin that CDN can use to retreive content from, e.g. contoso.cloudapp.net/originpath.
+	OriginPath *string `json:"originPath,omitempty"`
+	// ContentTypesToCompress - List of content types on which compression applies. The value should be a valid MIME type.
+	ContentTypesToCompress *[]string `json:"contentTypesToCompress,omitempty"`
+	// IsCompressionEnabled - Indicates whether content compression is enabled on CDN. Default value is false. If compression is enabled, content will be served as compressed if user requests for a compressed version. Content won't be compressed on CDN when requested content is smaller than 1 byte or larger than 1 MB.
+	IsCompressionEnabled *bool `json:"isCompressionEnabled,omitempty"`
+	// IsHTTPAllowed - Indicates whether HTTP traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPAllowed *bool `json:"isHttpAllowed,omitempty"`
+	// IsHTTPSAllowed - Indicates whether HTTPS traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPSAllowed *bool `json:"isHttpsAllowed,omitempty"`
+	// QueryStringCachingBehavior - Defines how CDN caches requests that include query strings. You can ignore any query strings when caching, bypass caching to prevent requests that contain query strings from being cached, or cache every request with a unique URL. Possible values include: 'IgnoreQueryString', 'BypassCaching', 'UseQueryString', 'NotSet'
 	QueryStringCachingBehavior QueryStringCachingBehavior `json:"queryStringCachingBehavior,omitempty"`
-	OptimizationType           OptimizationType           `json:"optimizationType,omitempty"`
-	ProbePath                  *string                    `json:"probePath,omitempty"`
-	GeoFilters                 *[]GeoFilter               `json:"geoFilters,omitempty"`
-	HostName                   *string                    `json:"hostName,omitempty"`
-	Origins                    *[]DeepCreatedOrigin       `json:"origins,omitempty"`
-	ResourceState              EndpointResourceState      `json:"resourceState,omitempty"`
-	ProvisioningState          *string                    `json:"provisioningState,omitempty"`
+	// OptimizationType - Specifies what scenario the customer wants this CDN endpoint to optimize for, e.g. Download, Media services. With this information, CDN can apply scenario driven optimization. Possible values include: 'GeneralWebDelivery', 'GeneralMediaStreaming', 'VideoOnDemandMediaStreaming', 'LargeFileDownload', 'DynamicSiteAcceleration'
+	OptimizationType OptimizationType `json:"optimizationType,omitempty"`
+	// ProbePath - Path to a file hosted on the origin which helps accelerate delivery of the dynamic content and calculate the most optimal routes for the CDN. This is relative to the origin path.
+	ProbePath *string `json:"probePath,omitempty"`
+	// GeoFilters - List of rules defining the user's geo access within a CDN endpoint. Each geo filter defines an acess rule to a specified path or content, e.g. block APAC for path /pictures/
+	GeoFilters *[]GeoFilter `json:"geoFilters,omitempty"`
+	// HostName - The host name of the endpoint structured as {endpointName}.{DNSZone}, e.g. consoto.azureedge.net
+	HostName *string `json:"hostName,omitempty"`
+	// Origins - The source of the content being delivered via CDN.
+	Origins *[]DeepCreatedOrigin `json:"origins,omitempty"`
+	// ResourceState - Resource status of the endpoint. Possible values include: 'EndpointResourceStateCreating', 'EndpointResourceStateDeleting', 'EndpointResourceStateRunning', 'EndpointResourceStateStarting', 'EndpointResourceStateStopped', 'EndpointResourceStateStopping'
+	ResourceState EndpointResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the endpoint.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// EndpointPropertiesUpdateParameters is the JSON object containing endpoint update parameters.
+// EndpointPropertiesUpdateParameters the JSON object containing endpoint update parameters.
 type EndpointPropertiesUpdateParameters struct {
-	OriginHostHeader           *string                    `json:"originHostHeader,omitempty"`
-	OriginPath                 *string                    `json:"originPath,omitempty"`
-	ContentTypesToCompress     *[]string                  `json:"contentTypesToCompress,omitempty"`
-	IsCompressionEnabled       *bool                      `json:"isCompressionEnabled,omitempty"`
-	IsHTTPAllowed              *bool                      `json:"isHttpAllowed,omitempty"`
-	IsHTTPSAllowed             *bool                      `json:"isHttpsAllowed,omitempty"`
+	// OriginHostHeader - The host header value sent to the origin with each request. If you leave this blank, the request hostname determines this value. Azure CDN origins, such as Web Apps, Blob Storage, and Cloud Services require this host header value to match the origin hostname by default.
+	OriginHostHeader *string `json:"originHostHeader,omitempty"`
+	// OriginPath - A directory path on the origin that CDN can use to retreive content from, e.g. contoso.cloudapp.net/originpath.
+	OriginPath *string `json:"originPath,omitempty"`
+	// ContentTypesToCompress - List of content types on which compression applies. The value should be a valid MIME type.
+	ContentTypesToCompress *[]string `json:"contentTypesToCompress,omitempty"`
+	// IsCompressionEnabled - Indicates whether content compression is enabled on CDN. Default value is false. If compression is enabled, content will be served as compressed if user requests for a compressed version. Content won't be compressed on CDN when requested content is smaller than 1 byte or larger than 1 MB.
+	IsCompressionEnabled *bool `json:"isCompressionEnabled,omitempty"`
+	// IsHTTPAllowed - Indicates whether HTTP traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPAllowed *bool `json:"isHttpAllowed,omitempty"`
+	// IsHTTPSAllowed - Indicates whether HTTPS traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPSAllowed *bool `json:"isHttpsAllowed,omitempty"`
+	// QueryStringCachingBehavior - Defines how CDN caches requests that include query strings. You can ignore any query strings when caching, bypass caching to prevent requests that contain query strings from being cached, or cache every request with a unique URL. Possible values include: 'IgnoreQueryString', 'BypassCaching', 'UseQueryString', 'NotSet'
 	QueryStringCachingBehavior QueryStringCachingBehavior `json:"queryStringCachingBehavior,omitempty"`
-	OptimizationType           OptimizationType           `json:"optimizationType,omitempty"`
-	ProbePath                  *string                    `json:"probePath,omitempty"`
-	GeoFilters                 *[]GeoFilter               `json:"geoFilters,omitempty"`
+	// OptimizationType - Specifies what scenario the customer wants this CDN endpoint to optimize for, e.g. Download, Media services. With this information, CDN can apply scenario driven optimization. Possible values include: 'GeneralWebDelivery', 'GeneralMediaStreaming', 'VideoOnDemandMediaStreaming', 'LargeFileDownload', 'DynamicSiteAcceleration'
+	OptimizationType OptimizationType `json:"optimizationType,omitempty"`
+	// ProbePath - Path to a file hosted on the origin which helps accelerate delivery of the dynamic content and calculate the most optimal routes for the CDN. This is relative to the origin path.
+	ProbePath *string `json:"probePath,omitempty"`
+	// GeoFilters - List of rules defining the user's geo access within a CDN endpoint. Each geo filter defines an acess rule to a specified path or content, e.g. block APAC for path /pictures/
+	GeoFilters *[]GeoFilter `json:"geoFilters,omitempty"`
 }
 
-// EndpointUpdateParameters is properties required to create or update an endpoint.
+// EndpointsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsCreateFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.CreateResponder(resp)
+	return
+}
+
+// EndpointsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsDeleteFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// EndpointsLoadContentFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsLoadContentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsLoadContentFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsLoadContentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.LoadContentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.LoadContentResponder(resp)
+	return
+}
+
+// EndpointsPurgeContentFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsPurgeContentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsPurgeContentFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsPurgeContentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.PurgeContentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.PurgeContentResponder(resp)
+	return
+}
+
+// EndpointsStartFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsStartFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsStartFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsStartFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.StartResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.StartResponder(resp)
+	return
+}
+
+// EndpointsStopFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsStopFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsStopFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsStopFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.StopResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.StopResponder(resp)
+	return
+}
+
+// EndpointsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsUpdateFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.UpdateResponder(resp)
+	return
+}
+
+// EndpointUpdateParameters properties required to create or update an endpoint.
 type EndpointUpdateParameters struct {
+	// Tags - Endpoint tags.
 	Tags                                *map[string]*string `json:"tags,omitempty"`
 	*EndpointPropertiesUpdateParameters `json:"properties,omitempty"`
 }
 
-// ErrorResponse is error reponse indicates CDN service is not able to process the incoming request. The reason is
+// UnmarshalJSON is the custom unmarshaler for EndpointUpdateParameters struct.
+func (eup *EndpointUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		eup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties EndpointPropertiesUpdateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		eup.EndpointPropertiesUpdateParameters = &properties
+	}
+
+	return nil
+}
+
+// ErrorResponse error reponse indicates CDN service is not able to process the incoming request. The reason is
 // provided in the error message.
 type ErrorResponse struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - Error code.
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
 	Message *string `json:"message,omitempty"`
 }
 
-// GeoFilter is rules defining user's geo access within a CDN endpoint.
+// GeoFilter rules defining user's geo access within a CDN endpoint.
 type GeoFilter struct {
-	RelativePath *string          `json:"relativePath,omitempty"`
-	Action       GeoFilterActions `json:"action,omitempty"`
-	CountryCodes *[]string        `json:"countryCodes,omitempty"`
+	// RelativePath - Relative path applicable to geo filter. (e.g. '/mypictures', '/mypicture/kitty.jpg', and etc.)
+	RelativePath *string `json:"relativePath,omitempty"`
+	// Action - Action of the geo filter, i.e. allow or block access. Possible values include: 'Block', 'Allow'
+	Action GeoFilterActions `json:"action,omitempty"`
+	// CountryCodes - Two letter country codes defining user country access in a geo filter, e.g. AU, MX, US.
+	CountryCodes *[]string `json:"countryCodes,omitempty"`
 }
 
-// IPAddressGroup is CDN Ip address group
+// IPAddressGroup CDN Ip address group
 type IPAddressGroup struct {
-	DeliveryRegion *string          `json:"deliveryRegion,omitempty"`
-	Ipv4Addresses  *[]CidrIPAddress `json:"ipv4Addresses,omitempty"`
-	Ipv6Addresses  *[]CidrIPAddress `json:"ipv6Addresses,omitempty"`
+	// DeliveryRegion - The delivery region of the ip address group
+	DeliveryRegion *string `json:"deliveryRegion,omitempty"`
+	// Ipv4Addresses - The list of ip v4 addresses.
+	Ipv4Addresses *[]CidrIPAddress `json:"ipv4Addresses,omitempty"`
+	// Ipv6Addresses - The list of ip v6 addresses.
+	Ipv6Addresses *[]CidrIPAddress `json:"ipv6Addresses,omitempty"`
 }
 
-// LoadParameters is parameters required for content load.
+// LoadParameters parameters required for content load.
 type LoadParameters struct {
+	// ContentPaths - The path to the content to be loaded. Path should be a relative file URL of the origin.
 	ContentPaths *[]string `json:"contentPaths,omitempty"`
 }
 
-// Operation is CDN REST API operation
+// Operation CDN REST API operation
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - The object that represents the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is the object that represents the operation.
+// OperationDisplay the object that represents the operation.
 type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
+	// Provider - Service provider: Microsoft.Cdn
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: Profile, endpoint, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Read, write, delete, etc.
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationsListResult is result of the request to list CDN operations. It contains a list of operations and a URL
-// link to get the next set of results.
+// OperationsListResult result of the request to list CDN operations. It contains a list of operations and a URL link
+// to get the next set of results.
 type OperationsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - List of CDN operations supported by the CDN resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationsListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationsListResult) OperationsListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationsListResultIterator provides access to a complete listing of Operation values.
+type OperationsListResultIterator struct {
+	i    int
+	page OperationsListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationsListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationsListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationsListResultIterator) Response() OperationsListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationsListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationsListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationsListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationsListResult) operationsListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// Origin is CDN origin is the source of the content being delivered via CDN. When the edge nodes represented by an
+// OperationsListResultPage contains a page of Operation values.
+type OperationsListResultPage struct {
+	fn  func(OperationsListResult) (OperationsListResult, error)
+	olr OperationsListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationsListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationsListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationsListResultPage) Response() OperationsListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationsListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// Origin CDN origin is the source of the content being delivered via CDN. When the edge nodes represented by an
 // endpoint do not have the requested content cached, they attempt to fetch it from one or more of the configured
 // origins.
 type Origin struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags              *map[string]*string `json:"tags,omitempty"`
 	*OriginProperties `json:"properties,omitempty"`
 }
 
-// OriginListResult is result of the request to list origins. It contains a list of origin objects and a URL link to
-// get the next set of results.
-type OriginListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]Origin `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Origin struct.
+func (o *Origin) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties OriginProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		o.OriginProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		o.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		o.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		o.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		o.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		o.Type = &typeVar
+	}
+
+	return nil
 }
 
-// OriginListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OriginListResult) OriginListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OriginListResult result of the request to list origins. It contains a list of origin objects and a URL link to get
+// the next set of results.
+type OriginListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of CDN origins within an endpoint
+	Value *[]Origin `json:"value,omitempty"`
+	// NextLink - URL to get the next set of origin objects if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// OriginListResultIterator provides access to a complete listing of Origin values.
+type OriginListResultIterator struct {
+	i    int
+	page OriginListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OriginListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OriginListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OriginListResultIterator) Response() OriginListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OriginListResultIterator) Value() Origin {
+	if !iter.page.NotDone() {
+		return Origin{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OriginListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// originListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OriginListResult) originListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// OriginProperties is the JSON object that contains the properties of the origin.
+// OriginListResultPage contains a page of Origin values.
+type OriginListResultPage struct {
+	fn  func(OriginListResult) (OriginListResult, error)
+	olr OriginListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OriginListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OriginListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OriginListResultPage) Response() OriginListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OriginListResultPage) Values() []Origin {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// OriginProperties the JSON object that contains the properties of the origin.
 type OriginProperties struct {
-	HostName          *string             `json:"hostName,omitempty"`
-	HTTPPort          *int32              `json:"httpPort,omitempty"`
-	HTTPSPort         *int32              `json:"httpsPort,omitempty"`
-	ResourceState     OriginResourceState `json:"resourceState,omitempty"`
-	ProvisioningState *string             `json:"provisioningState,omitempty"`
+	// HostName - The address of the origin. Domain names, IPv4 addresses, and IPv6 addresses are supported.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535.
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the https port. Must be between 1 and 65535.
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
+	// ResourceState - Resource status of the origin. Possible values include: 'OriginResourceStateCreating', 'OriginResourceStateActive', 'OriginResourceStateDeleting'
+	ResourceState OriginResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the origin.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// OriginPropertiesParameters is the JSON object that contains the properties of the origin.
+// OriginPropertiesParameters the JSON object that contains the properties of the origin.
 type OriginPropertiesParameters struct {
-	HostName  *string `json:"hostName,omitempty"`
-	HTTPPort  *int32  `json:"httpPort,omitempty"`
-	HTTPSPort *int32  `json:"httpsPort,omitempty"`
+	// HostName - The address of the origin. Domain names, IPv4 addresses, and IPv6 addresses are supported.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535.
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the HTTPS port. Must be between 1 and 65535.
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
 }
 
-// OriginUpdateParameters is origin properties needed for origin creation or update.
+// OriginsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type OriginsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future OriginsUpdateFuture) Result(client OriginsClient) (o Origin, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return o, autorest.NewError("cdn.OriginsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		o, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	o, err = client.UpdateResponder(resp)
+	return
+}
+
+// OriginUpdateParameters origin properties needed for origin creation or update.
 type OriginUpdateParameters struct {
 	*OriginPropertiesParameters `json:"properties,omitempty"`
 }
 
-// Profile is CDN profile is a logical grouping of endpoints that share the same settings, such as CDN provider and
+// UnmarshalJSON is the custom unmarshaler for OriginUpdateParameters struct.
+func (oup *OriginUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties OriginPropertiesParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		oup.OriginPropertiesParameters = &properties
+	}
+
+	return nil
+}
+
+// Profile CDN profile is a logical grouping of endpoints that share the same settings, such as CDN provider and
 // pricing tier.
 type Profile struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
-	Sku                *Sku                `json:"sku,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Sku - The pricing tier (defines a CDN provider, feature list and rate) of the CDN profile.
+	Sku                *Sku `json:"sku,omitempty"`
 	*ProfileProperties `json:"properties,omitempty"`
 }
 
-// ProfileListResult is result of the request to list profiles. It contains a list of profile objects and a URL link to
+// UnmarshalJSON is the custom unmarshaler for Profile struct.
+func (p *Profile) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["sku"]
+	if v != nil {
+		var sku Sku
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		p.Sku = &sku
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ProfileProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.ProfileProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		p.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		p.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ProfileListResult result of the request to list profiles. It contains a list of profile objects and a URL link to
 // get the the next set of results.
 type ProfileListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Profile `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - List of CDN profiles within a resource group.
+	Value *[]Profile `json:"value,omitempty"`
+	// NextLink - URL to get the next set of profile objects if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ProfileListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ProfileListResult) ProfileListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ProfileListResultIterator provides access to a complete listing of Profile values.
+type ProfileListResultIterator struct {
+	i    int
+	page ProfileListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ProfileListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ProfileListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ProfileListResultIterator) Response() ProfileListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ProfileListResultIterator) Value() Profile {
+	if !iter.page.NotDone() {
+		return Profile{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (plr ProfileListResult) IsEmpty() bool {
+	return plr.Value == nil || len(*plr.Value) == 0
+}
+
+// profileListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (plr ProfileListResult) profileListResultPreparer() (*http.Request, error) {
+	if plr.NextLink == nil || len(to.String(plr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(plr.NextLink)))
 }
 
-// ProfileProperties is the JSON object that contains the properties required to create a profile.
+// ProfileListResultPage contains a page of Profile values.
+type ProfileListResultPage struct {
+	fn  func(ProfileListResult) (ProfileListResult, error)
+	plr ProfileListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ProfileListResultPage) Next() error {
+	next, err := page.fn(page.plr)
+	if err != nil {
+		return err
+	}
+	page.plr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ProfileListResultPage) NotDone() bool {
+	return !page.plr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ProfileListResultPage) Response() ProfileListResult {
+	return page.plr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ProfileListResultPage) Values() []Profile {
+	if page.plr.IsEmpty() {
+		return nil
+	}
+	return *page.plr.Value
+}
+
+// ProfileProperties the JSON object that contains the properties required to create a profile.
 type ProfileProperties struct {
-	ResourceState     ProfileResourceState `json:"resourceState,omitempty"`
-	ProvisioningState *string              `json:"provisioningState,omitempty"`
+	// ResourceState - Resource status of the profile. Possible values include: 'ProfileResourceStateCreating', 'ProfileResourceStateActive', 'ProfileResourceStateDeleting', 'ProfileResourceStateDisabled'
+	ResourceState ProfileResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the profile.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// ProfileUpdateParameters is properties required to update a profile.
+// ProfilesCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesCreateFuture) Result(client ProfilesClient) (p Profile, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return p, autorest.NewError("cdn.ProfilesCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		p, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	p, err = client.CreateResponder(resp)
+	return
+}
+
+// ProfilesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesDeleteFuture) Result(client ProfilesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.ProfilesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// ProfilesUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesUpdateFuture) Result(client ProfilesClient) (p Profile, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return p, autorest.NewError("cdn.ProfilesUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		p, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	p, err = client.UpdateResponder(resp)
+	return
+}
+
+// ProfileUpdateParameters properties required to update a profile.
 type ProfileUpdateParameters struct {
+	// Tags - Profile tags
 	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// PurgeParameters is parameters required for content purge.
+// ProxyResource the resource model definition for a ARM proxy resource. It will have everything other than required
+// location and tags
+type ProxyResource struct {
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+}
+
+// PurgeParameters parameters required for content purge.
 type PurgeParameters struct {
+	// ContentPaths - The path to the content to be purged. Can describe a file path or a wild card directory.
 	ContentPaths *[]string `json:"contentPaths,omitempty"`
 }
 
-// Resource is the Resource definition.
+// Resource the core properties of ARM resources
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
 }
 
-// ResourceUsage is output of check resource usage API.
+// ResourceUsage output of check resource usage API.
 type ResourceUsage struct {
+	// ResourceType - Resource type for which the usage is provided.
 	ResourceType *string `json:"resourceType,omitempty"`
-	Unit         *string `json:"unit,omitempty"`
-	CurrentValue *int32  `json:"currentValue,omitempty"`
-	Limit        *int32  `json:"limit,omitempty"`
+	// Unit - Unit of the usage. e.g. Count.
+	Unit *string `json:"unit,omitempty"`
+	// CurrentValue - Actual value of usage on the specified resource type.
+	CurrentValue *int32 `json:"currentValue,omitempty"`
+	// Limit - Quota of the specified resource type.
+	Limit *int32 `json:"limit,omitempty"`
 }
 
-// ResourceUsageListResult is output of check resource usage API.
+// ResourceUsageListResult output of check resource usage API.
 type ResourceUsageListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ResourceUsage `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - List of resource usages.
+	Value *[]ResourceUsage `json:"value,omitempty"`
+	// NextLink - URL to get the next set of custom domain objects if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResourceUsageListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResourceUsageListResult) ResourceUsageListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResourceUsageListResultIterator provides access to a complete listing of ResourceUsage values.
+type ResourceUsageListResultIterator struct {
+	i    int
+	page ResourceUsageListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResourceUsageListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResourceUsageListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResourceUsageListResultIterator) Response() ResourceUsageListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResourceUsageListResultIterator) Value() ResourceUsage {
+	if !iter.page.NotDone() {
+		return ResourceUsage{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rulr ResourceUsageListResult) IsEmpty() bool {
+	return rulr.Value == nil || len(*rulr.Value) == 0
+}
+
+// resourceUsageListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rulr ResourceUsageListResult) resourceUsageListResultPreparer() (*http.Request, error) {
+	if rulr.NextLink == nil || len(to.String(rulr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rulr.NextLink)))
 }
 
-// Sku is the pricing tier (defines a CDN provider, feature list and rate) of the CDN profile.
+// ResourceUsageListResultPage contains a page of ResourceUsage values.
+type ResourceUsageListResultPage struct {
+	fn   func(ResourceUsageListResult) (ResourceUsageListResult, error)
+	rulr ResourceUsageListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResourceUsageListResultPage) Next() error {
+	next, err := page.fn(page.rulr)
+	if err != nil {
+		return err
+	}
+	page.rulr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResourceUsageListResultPage) NotDone() bool {
+	return !page.rulr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResourceUsageListResultPage) Response() ResourceUsageListResult {
+	return page.rulr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResourceUsageListResultPage) Values() []ResourceUsage {
+	if page.rulr.IsEmpty() {
+		return nil
+	}
+	return *page.rulr.Value
+}
+
+// Sku the pricing tier (defines a CDN provider, feature list and rate) of the CDN profile.
 type Sku struct {
+	// Name - Name of the pricing tier. Possible values include: 'StandardVerizon', 'PremiumVerizon', 'CustomVerizon', 'StandardAkamai', 'StandardChinaCdn'
 	Name SkuName `json:"name,omitempty"`
 }
 
-// SsoURI is the URI required to login to the supplemental portal from the Azure portal.
+// SsoURI the URI required to login to the supplemental portal from the Azure portal.
 type SsoURI struct {
 	autorest.Response `json:"-"`
-	SsoURIValue       *string `json:"ssoUriValue,omitempty"`
+	// SsoURIValue - The URI used to login to the supplemental portal.
+	SsoURIValue *string `json:"ssoUriValue,omitempty"`
 }
 
-// SupportedOptimizationTypesListResult is the result of the GetSupportedOptimizationTypes API
+// SupportedOptimizationTypesListResult the result of the GetSupportedOptimizationTypes API
 type SupportedOptimizationTypesListResult struct {
-	autorest.Response          `json:"-"`
+	autorest.Response `json:"-"`
+	// SupportedOptimizationTypes - Supported optimization types for a profile.
 	SupportedOptimizationTypes *[]OptimizationType `json:"supportedOptimizationTypes,omitempty"`
 }
 
-// ValidateCustomDomainInput is input of the custom domain to be validated for DNS mapping.
+// TrackedResource the resource model definition for a ARM tracked top level resource.
+type TrackedResource struct {
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// ValidateCustomDomainInput input of the custom domain to be validated for DNS mapping.
 type ValidateCustomDomainInput struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
 	HostName *string `json:"hostName,omitempty"`
 }
 
-// ValidateCustomDomainOutput is output of custom domain validation.
+// ValidateCustomDomainOutput output of custom domain validation.
 type ValidateCustomDomainOutput struct {
-	autorest.Response     `json:"-"`
-	CustomDomainValidated *bool   `json:"customDomainValidated,omitempty"`
-	Reason                *string `json:"reason,omitempty"`
-	Message               *string `json:"message,omitempty"`
+	autorest.Response `json:"-"`
+	// CustomDomainValidated - Indicates whether the custom domain is valid or not.
+	CustomDomainValidated *bool `json:"customDomainValidated,omitempty"`
+	// Reason - The reason why the custom domain is not valid.
+	Reason *string `json:"reason,omitempty"`
+	// Message - Error message describing why the custom domain is not valid.
+	Message *string `json:"message,omitempty"`
 }
 
-// ValidateProbeInput is input of the validate probe API.
+// ValidateProbeInput input of the validate probe API.
 type ValidateProbeInput struct {
+	// ProbeURL - The probe URL to validate.
 	ProbeURL *string `json:"probeURL,omitempty"`
 }
 
-// ValidateProbeOutput is output of the validate probe API.
+// ValidateProbeOutput output of the validate probe API.
 type ValidateProbeOutput struct {
 	autorest.Response `json:"-"`
-	IsValid           *bool   `json:"isValid,omitempty"`
-	ErrorCode         *string `json:"errorCode,omitempty"`
-	Message           *string `json:"message,omitempty"`
+	// IsValid - Indicates whether the probe URL is accepted or not.
+	IsValid *bool `json:"isValid,omitempty"`
+	// ErrorCode - Specifies the error code when the probe url is not accepted.
+	ErrorCode *string `json:"errorCode,omitempty"`
+	// Message - The detailed error message describing why the probe URL is not accepted.
+	Message *string `json:"message,omitempty"`
 }

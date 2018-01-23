@@ -2509,7 +2509,6 @@ func checkWriteHeaderCode(code int) {
 }
 
 func (w *responseWriter) WriteHeader(code int) {
-	checkWriteHeaderCode(code)
 	rws := w.rws
 	if rws == nil {
 		panic("WriteHeader called after Handler finished")
@@ -2519,6 +2518,7 @@ func (w *responseWriter) WriteHeader(code int) {
 
 func (rws *responseWriterState) writeHeader(code int) {
 	if !rws.wroteHeader {
+		checkWriteHeaderCode(code)
 		rws.wroteHeader = true
 		rws.status = code
 		if len(rws.handlerHeader) > 0 {

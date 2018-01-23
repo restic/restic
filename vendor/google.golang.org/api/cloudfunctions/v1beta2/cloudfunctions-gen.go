@@ -344,13 +344,15 @@ type EventTrigger struct {
 	// `providers/*/eventTypes/*` e.g. Directly handle a Message published
 	// to
 	// Google Cloud Pub/Sub
-	// `providers/cloud.pubsub/eventTypes/topic.publish`
+	// `providers/cloud.pubsub/eventTypes/topic.publish`.
 	//
-	//      Handle an object changing in Google Cloud Storage
-	//      `providers/cloud.storage/eventTypes/object.change`
+	// Handle an object changing in Google Cloud
+	// Storage:
+	// `providers/cloud.storage/eventTypes/object.change`
 	//
-	//      Handle a write to the Firebase Realtime Database
-	//      `providers/google.firebase.database/eventTypes/ref.write`
+	// Handle a write to the Firebase Realtime
+	// Database:
+	// `providers/google.firebase.database/eventTypes/ref.write`
 	EventType string `json:"eventType,omitempty"`
 
 	// FailurePolicy: Specifies policy for failed executions.
@@ -2211,6 +2213,19 @@ type ProjectsLocationsFunctionsGenerateUploadUrlCall struct {
 // Once the function source code upload is complete, the used signed
 // URL should be provided in CreateFunction or UpdateFunction request
 // as a reference to the function source code.
+//
+// When uploading source code to the generated signed URL, please
+// follow
+// these restrictions:
+//
+// * Source file type should be a zip file.
+// * Source file size should not exceed 100MB limit.
+//
+// When making a HTTP PUT request, these two headers need to be
+// specified:
+//
+// * `content-type: application/zip`
+// * `x-google-content-length-range: 0,104857600`
 func (r *ProjectsLocationsFunctionsService) GenerateUploadUrl(parent string, generateuploadurlrequest *GenerateUploadUrlRequest) *ProjectsLocationsFunctionsGenerateUploadUrlCall {
 	c := &ProjectsLocationsFunctionsGenerateUploadUrlCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -2304,7 +2319,7 @@ func (c *ProjectsLocationsFunctionsGenerateUploadUrlCall) Do(opts ...googleapi.C
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns a signed URL for uploading a function source code.\nFor more information about the signed URL usage see:\nhttps://cloud.google.com/storage/docs/access-control/signed-urls\nOnce the function source code upload is complete, the used signed\nURL should be provided in CreateFunction or UpdateFunction request\nas a reference to the function source code.",
+	//   "description": "Returns a signed URL for uploading a function source code.\nFor more information about the signed URL usage see:\nhttps://cloud.google.com/storage/docs/access-control/signed-urls\nOnce the function source code upload is complete, the used signed\nURL should be provided in CreateFunction or UpdateFunction request\nas a reference to the function source code.\n\nWhen uploading source code to the generated signed URL, please follow\nthese restrictions:\n\n* Source file type should be a zip file.\n* Source file size should not exceed 100MB limit.\n\nWhen making a HTTP PUT request, these two headers need to be specified:\n\n* `content-type: application/zip`\n* `x-google-content-length-range: 0,104857600`",
 	//   "flatPath": "v1beta2/projects/{projectsId}/locations/{locationsId}/functions:generateUploadUrl",
 	//   "httpMethod": "POST",
 	//   "id": "cloudfunctions.projects.locations.functions.generateUploadUrl",
@@ -2313,7 +2328,7 @@ func (c *ProjectsLocationsFunctionsGenerateUploadUrlCall) Do(opts ...googleapi.C
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "The project and location in which the Google Cloud Storage signed URL\nshould be generated, specified in the format `projects/*/locations/*",
+	//       "description": "The project and location in which the Google Cloud Storage signed URL\nshould be generated, specified in the format `projects/*/locations/*`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,

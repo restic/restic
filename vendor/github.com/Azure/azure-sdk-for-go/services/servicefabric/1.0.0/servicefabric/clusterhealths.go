@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClusterHealthsClient is the client for the ClusterHealths methods of the Servicefabric service.
 type ClusterHealthsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterHealthsClient creates an instance of the ClusterHealthsClient client.
@@ -42,8 +43,8 @@ func NewClusterHealthsClientWithBaseURI(baseURI string, timeout *int32) ClusterH
 //
 // eventsHealthStateFilter is the filter of the events health state nodesHealthStateFilter is the filter of the nodes
 // health state applicationsHealthStateFilter is the filter of the applications health state
-func (client ClusterHealthsClient) Get(eventsHealthStateFilter string, nodesHealthStateFilter string, applicationsHealthStateFilter string) (result ClusterHealth, err error) {
-	req, err := client.GetPreparer(eventsHealthStateFilter, nodesHealthStateFilter, applicationsHealthStateFilter)
+func (client ClusterHealthsClient) Get(ctx context.Context, eventsHealthStateFilter string, nodesHealthStateFilter string, applicationsHealthStateFilter string) (result ClusterHealth, err error) {
+	req, err := client.GetPreparer(ctx, eventsHealthStateFilter, nodesHealthStateFilter, applicationsHealthStateFilter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterHealthsClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ClusterHealthsClient) Get(eventsHealthStateFilter string, nodesHeal
 }
 
 // GetPreparer prepares the Get request.
-func (client ClusterHealthsClient) GetPreparer(eventsHealthStateFilter string, nodesHealthStateFilter string, applicationsHealthStateFilter string) (*http.Request, error) {
+func (client ClusterHealthsClient) GetPreparer(ctx context.Context, eventsHealthStateFilter string, nodesHealthStateFilter string, applicationsHealthStateFilter string) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -88,14 +89,13 @@ func (client ClusterHealthsClient) GetPreparer(eventsHealthStateFilter string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/GetClusterHealth"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterHealthsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -115,8 +115,8 @@ func (client ClusterHealthsClient) GetResponder(resp *http.Response) (result Clu
 // Send report cluster healths
 //
 // clusterHealthReport is the report of the cluster health
-func (client ClusterHealthsClient) Send(clusterHealthReport ClusterHealthReport) (result String, err error) {
-	req, err := client.SendPreparer(clusterHealthReport)
+func (client ClusterHealthsClient) Send(ctx context.Context, clusterHealthReport ClusterHealthReport) (result String, err error) {
+	req, err := client.SendPreparer(ctx, clusterHealthReport)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterHealthsClient", "Send", nil, "Failure preparing request")
 		return
@@ -138,7 +138,7 @@ func (client ClusterHealthsClient) Send(clusterHealthReport ClusterHealthReport)
 }
 
 // SendPreparer prepares the Send request.
-func (client ClusterHealthsClient) SendPreparer(clusterHealthReport ClusterHealthReport) (*http.Request, error) {
+func (client ClusterHealthsClient) SendPreparer(ctx context.Context, clusterHealthReport ClusterHealthReport) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -154,14 +154,13 @@ func (client ClusterHealthsClient) SendPreparer(clusterHealthReport ClusterHealt
 		autorest.WithPath("/$/ReportClusterHealth"),
 		autorest.WithJSON(clusterHealthReport),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SendSender sends the Send request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterHealthsClient) SendSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

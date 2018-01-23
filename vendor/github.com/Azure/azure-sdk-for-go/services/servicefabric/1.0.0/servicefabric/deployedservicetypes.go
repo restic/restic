@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // DeployedServiceTypesClient is the client for the DeployedServiceTypes methods of the Servicefabric service.
 type DeployedServiceTypesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeployedServiceTypesClient creates an instance of the DeployedServiceTypesClient client.
@@ -41,8 +42,8 @@ func NewDeployedServiceTypesClientWithBaseURI(baseURI string, timeout *int32) De
 // Get get deployed service types
 //
 // nodeName is the name of the node applicationName is the name of the application
-func (client DeployedServiceTypesClient) Get(nodeName string, applicationName string) (result ListDeployedServiceType, err error) {
-	req, err := client.GetPreparer(nodeName, applicationName)
+func (client DeployedServiceTypesClient) Get(ctx context.Context, nodeName string, applicationName string) (result ListDeployedServiceType, err error) {
+	req, err := client.GetPreparer(ctx, nodeName, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedServiceTypesClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client DeployedServiceTypesClient) Get(nodeName string, applicationName st
 }
 
 // GetPreparer prepares the Get request.
-func (client DeployedServiceTypesClient) GetPreparer(nodeName string, applicationName string) (*http.Request, error) {
+func (client DeployedServiceTypesClient) GetPreparer(ctx context.Context, nodeName string, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 		"nodeName":        autorest.Encode("path", nodeName),
@@ -83,14 +84,13 @@ func (client DeployedServiceTypesClient) GetPreparer(nodeName string, applicatio
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}/$/GetServiceTypes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedServiceTypesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

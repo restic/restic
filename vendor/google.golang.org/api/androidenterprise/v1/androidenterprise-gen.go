@@ -1825,6 +1825,9 @@ type NewDeviceEvent struct {
 	// present.
 	DeviceId string `json:"deviceId,omitempty"`
 
+	// DpcPackageName: Policy app on the device.
+	DpcPackageName string `json:"dpcPackageName,omitempty"`
+
 	// ManagementType: Identifies the extent to which the device is
 	// controlled by an Android EMM in various deployment
 	// configurations.
@@ -2148,8 +2151,20 @@ type Product struct {
 	// app developer).
 	AuthorName string `json:"authorName,omitempty"`
 
+	// AvailableCountries: The countries which this app is available in.
+	AvailableCountries []string `json:"availableCountries,omitempty"`
+
 	// AvailableTracks: The tracks that are visible to the enterprise.
 	AvailableTracks []string `json:"availableTracks,omitempty"`
+
+	// Category: The app category (e.g. RACING, SOCIAL, etc.)
+	Category string `json:"category,omitempty"`
+
+	// ContentRating: The content rating for this app.
+	ContentRating string `json:"contentRating,omitempty"`
+
+	// Description: The localized promotional description, if available.
+	Description string `json:"description,omitempty"`
 
 	// DetailsUrl: A link to the (consumer) Google Play details page for the
 	// product.
@@ -2172,6 +2187,17 @@ type Product struct {
 	// string "androidenterprise#product".
 	Kind string `json:"kind,omitempty"`
 
+	// LastUpdatedTimestampMillis: The approximate time (within 7 days) the
+	// app was last published, expressed in milliseconds since epoch.
+	LastUpdatedTimestampMillis int64 `json:"lastUpdatedTimestampMillis,omitempty,string"`
+
+	// MinAndroidSdkVersion: The minimum Android SDK necessary to run the
+	// app.
+	MinAndroidSdkVersion int64 `json:"minAndroidSdkVersion,omitempty"`
+
+	// Permissions: A list of permissions required by the app.
+	Permissions []*ProductPermission `json:"permissions,omitempty"`
+
 	// ProductId: A string of the form app:<package name>. For example,
 	// app:com.google.android.gm represents the Gmail app.
 	ProductId string `json:"productId,omitempty"`
@@ -2182,8 +2208,14 @@ type Product struct {
 	// available to people who own it).
 	ProductPricing string `json:"productPricing,omitempty"`
 
+	// RecentChanges: A description of the recent changes made to the app.
+	RecentChanges string `json:"recentChanges,omitempty"`
+
 	// RequiresContainerApp: Deprecated.
 	RequiresContainerApp bool `json:"requiresContainerApp,omitempty"`
+
+	// ScreenshotUrls: A list of screenshot links representing the app.
+	ScreenshotUrls []string `json:"screenshotUrls,omitempty"`
 
 	// SigningCertificate: The certificate used to sign this product.
 	SigningCertificate *ProductSigningCertificate `json:"signingCertificate,omitempty"`

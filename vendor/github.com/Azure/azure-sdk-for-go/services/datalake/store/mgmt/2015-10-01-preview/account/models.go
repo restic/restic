@@ -19,6 +19,7 @@ package account
 
 import (
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/satori/go.uuid"
@@ -29,9 +30,9 @@ import (
 type DataLakeStoreAccountState string
 
 const (
-	// Active specifies the active state for data lake store account state.
+	// Active ...
 	Active DataLakeStoreAccountState = "active"
-	// Suspended specifies the suspended state for data lake store account state.
+	// Suspended ...
 	Suspended DataLakeStoreAccountState = "suspended"
 )
 
@@ -39,23 +40,23 @@ const (
 type DataLakeStoreAccountStatus string
 
 const (
-	// Creating specifies the creating state for data lake store account status.
+	// Creating ...
 	Creating DataLakeStoreAccountStatus = "Creating"
-	// Deleted specifies the deleted state for data lake store account status.
+	// Deleted ...
 	Deleted DataLakeStoreAccountStatus = "Deleted"
-	// Deleting specifies the deleting state for data lake store account status.
+	// Deleting ...
 	Deleting DataLakeStoreAccountStatus = "Deleting"
-	// Failed specifies the failed state for data lake store account status.
+	// Failed ...
 	Failed DataLakeStoreAccountStatus = "Failed"
-	// Patching specifies the patching state for data lake store account status.
+	// Patching ...
 	Patching DataLakeStoreAccountStatus = "Patching"
-	// Resuming specifies the resuming state for data lake store account status.
+	// Resuming ...
 	Resuming DataLakeStoreAccountStatus = "Resuming"
-	// Running specifies the running state for data lake store account status.
+	// Running ...
 	Running DataLakeStoreAccountStatus = "Running"
-	// Succeeded specifies the succeeded state for data lake store account status.
+	// Succeeded ...
 	Succeeded DataLakeStoreAccountStatus = "Succeeded"
-	// Suspending specifies the suspending state for data lake store account status.
+	// Suspending ...
 	Suspending DataLakeStoreAccountStatus = "Suspending"
 )
 
@@ -63,9 +64,9 @@ const (
 type EncryptionConfigType string
 
 const (
-	// ServiceManaged specifies the service managed state for encryption config type.
+	// ServiceManaged ...
 	ServiceManaged EncryptionConfigType = "ServiceManaged"
-	// UserManaged specifies the user managed state for encryption config type.
+	// UserManaged ...
 	UserManaged EncryptionConfigType = "UserManaged"
 )
 
@@ -73,7 +74,7 @@ const (
 type EncryptionIdentityType string
 
 const (
-	// SystemAssigned specifies the system assigned state for encryption identity type.
+	// SystemAssigned ...
 	SystemAssigned EncryptionIdentityType = "SystemAssigned"
 )
 
@@ -81,11 +82,9 @@ const (
 type EncryptionProvisioningState string
 
 const (
-	// EncryptionProvisioningStateCreating specifies the encryption provisioning state creating state for encryption
-	// provisioning state.
+	// EncryptionProvisioningStateCreating ...
 	EncryptionProvisioningStateCreating EncryptionProvisioningState = "Creating"
-	// EncryptionProvisioningStateSucceeded specifies the encryption provisioning state succeeded state for encryption
-	// provisioning state.
+	// EncryptionProvisioningStateSucceeded ...
 	EncryptionProvisioningStateSucceeded EncryptionProvisioningState = "Succeeded"
 )
 
@@ -93,9 +92,9 @@ const (
 type EncryptionState string
 
 const (
-	// Disabled specifies the disabled state for encryption state.
+	// Disabled ...
 	Disabled EncryptionState = "Disabled"
-	// Enabled specifies the enabled state for encryption state.
+	// Enabled ...
 	Enabled EncryptionState = "Enabled"
 )
 
@@ -103,143 +102,446 @@ const (
 type OperationStatus string
 
 const (
-	// OperationStatusFailed specifies the operation status failed state for operation status.
+	// OperationStatusFailed ...
 	OperationStatusFailed OperationStatus = "Failed"
-	// OperationStatusInProgress specifies the operation status in progress state for operation status.
+	// OperationStatusInProgress ...
 	OperationStatusInProgress OperationStatus = "InProgress"
-	// OperationStatusSucceeded specifies the operation status succeeded state for operation status.
+	// OperationStatusSucceeded ...
 	OperationStatusSucceeded OperationStatus = "Succeeded"
 )
 
-// AzureAsyncOperationResult is the response body contains the status of the specified asynchronous operation,
-// indicating whether it has succeeded, is in progress, or has failed. Note that this status is distinct from the HTTP
-// status code returned for the Get Operation Status operation itself. If the asynchronous operation succeeded, the
-// response body includes the HTTP status code for the successful request. If the asynchronous operation failed, the
-// response body includes the HTTP status code for the failed request and error information regarding the failure.
+// AccountCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountCreateFuture) Result(client Client) (dlsa DataLakeStoreAccount, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return dlsa, autorest.NewError("account.AccountCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		dlsa, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	dlsa, err = client.CreateResponder(resp)
+	return
+}
+
+// AccountDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountDeleteFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("account.AccountDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// AccountUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountUpdateFuture) Result(client Client) (dlsa DataLakeStoreAccount, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return dlsa, autorest.NewError("account.AccountUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		dlsa, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	dlsa, err = client.UpdateResponder(resp)
+	return
+}
+
+// AzureAsyncOperationResult the response body contains the status of the specified asynchronous operation, indicating
+// whether it has succeeded, is in progress, or has failed. Note that this status is distinct from the HTTP status code
+// returned for the Get Operation Status operation itself. If the asynchronous operation succeeded, the response body
+// includes the HTTP status code for the successful request. If the asynchronous operation failed, the response body
+// includes the HTTP status code for the failed request and error information regarding the failure.
 type AzureAsyncOperationResult struct {
+	// Status - the status of the AzureAsuncOperation. Possible values include: 'OperationStatusInProgress', 'OperationStatusSucceeded', 'OperationStatusFailed'
 	Status OperationStatus `json:"status,omitempty"`
 	Error  *Error          `json:"error,omitempty"`
 }
 
-// DataLakeStoreAccount is data Lake Store account information
+// DataLakeStoreAccount data Lake Store account information
 type DataLakeStoreAccount struct {
 	autorest.Response `json:"-"`
-	Location          *string                         `json:"location,omitempty"`
-	Name              *string                         `json:"name,omitempty"`
-	Type              *string                         `json:"type,omitempty"`
-	ID                *string                         `json:"id,omitempty"`
-	Identity          *EncryptionIdentity             `json:"identity,omitempty"`
-	Tags              *map[string]*string             `json:"tags,omitempty"`
-	Properties        *DataLakeStoreAccountProperties `json:"properties,omitempty"`
+	// Location - the account regional location.
+	Location *string `json:"location,omitempty"`
+	// Name - the account name.
+	Name *string `json:"name,omitempty"`
+	// Type - the namespace and type of the account.
+	Type *string `json:"type,omitempty"`
+	// ID - the account subscription ID.
+	ID *string `json:"id,omitempty"`
+	// Identity - The Key vault encryption identity, if any.
+	Identity *EncryptionIdentity `json:"identity,omitempty"`
+	// Tags - the value of custom properties.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - the Data Lake Store account properties.
+	Properties *DataLakeStoreAccountProperties `json:"properties,omitempty"`
 }
 
-// DataLakeStoreAccountListResult is data Lake Store account list information response.
+// DataLakeStoreAccountListResult data Lake Store account list information response.
 type DataLakeStoreAccountListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]DataLakeStoreAccount `json:"value,omitempty"`
-	NextLink          *string                 `json:"nextLink,omitempty"`
-	Count             *int64                  `json:"count,omitempty"`
+	// Value - the results of the list operation
+	Value *[]DataLakeStoreAccount `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
+	// Count - the total count of results that are available, but might not be returned in the current page.
+	Count *int64 `json:"count,omitempty"`
 }
 
-// DataLakeStoreAccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeStoreAccountListResult) DataLakeStoreAccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeStoreAccountListResultIterator provides access to a complete listing of DataLakeStoreAccount values.
+type DataLakeStoreAccountListResultIterator struct {
+	i    int
+	page DataLakeStoreAccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeStoreAccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeStoreAccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeStoreAccountListResultIterator) Response() DataLakeStoreAccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeStoreAccountListResultIterator) Value() DataLakeStoreAccount {
+	if !iter.page.NotDone() {
+		return DataLakeStoreAccount{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlsalr DataLakeStoreAccountListResult) IsEmpty() bool {
+	return dlsalr.Value == nil || len(*dlsalr.Value) == 0
+}
+
+// dataLakeStoreAccountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlsalr DataLakeStoreAccountListResult) dataLakeStoreAccountListResultPreparer() (*http.Request, error) {
+	if dlsalr.NextLink == nil || len(to.String(dlsalr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlsalr.NextLink)))
 }
 
-// DataLakeStoreAccountProperties is data Lake Store account properties information
+// DataLakeStoreAccountListResultPage contains a page of DataLakeStoreAccount values.
+type DataLakeStoreAccountListResultPage struct {
+	fn     func(DataLakeStoreAccountListResult) (DataLakeStoreAccountListResult, error)
+	dlsalr DataLakeStoreAccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeStoreAccountListResultPage) Next() error {
+	next, err := page.fn(page.dlsalr)
+	if err != nil {
+		return err
+	}
+	page.dlsalr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeStoreAccountListResultPage) NotDone() bool {
+	return !page.dlsalr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeStoreAccountListResultPage) Response() DataLakeStoreAccountListResult {
+	return page.dlsalr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeStoreAccountListResultPage) Values() []DataLakeStoreAccount {
+	if page.dlsalr.IsEmpty() {
+		return nil
+	}
+	return *page.dlsalr.Value
+}
+
+// DataLakeStoreAccountProperties data Lake Store account properties information
 type DataLakeStoreAccountProperties struct {
-	ProvisioningState           DataLakeStoreAccountStatus  `json:"provisioningState,omitempty"`
-	State                       DataLakeStoreAccountState   `json:"state,omitempty"`
-	CreationTime                *date.Time                  `json:"creationTime,omitempty"`
-	EncryptionState             EncryptionState             `json:"encryptionState,omitempty"`
+	// ProvisioningState - the status of the Data Lake Store account while being provisioned. Possible values include: 'Failed', 'Creating', 'Running', 'Succeeded', 'Patching', 'Suspending', 'Resuming', 'Deleting', 'Deleted'
+	ProvisioningState DataLakeStoreAccountStatus `json:"provisioningState,omitempty"`
+	// State - the status of the Data Lake Store account after provisioning has completed. Possible values include: 'Active', 'Suspended'
+	State DataLakeStoreAccountState `json:"state,omitempty"`
+	// CreationTime - the account creation time.
+	CreationTime *date.Time `json:"creationTime,omitempty"`
+	// EncryptionState - The current state of encryption for this Data Lake store account. Possible values include: 'Enabled', 'Disabled'
+	EncryptionState EncryptionState `json:"encryptionState,omitempty"`
+	// EncryptionProvisioningState - The current state of encryption provisioning for this Data Lake store account. Possible values include: 'EncryptionProvisioningStateCreating', 'EncryptionProvisioningStateSucceeded'
 	EncryptionProvisioningState EncryptionProvisioningState `json:"encryptionProvisioningState,omitempty"`
-	EncryptionConfig            *EncryptionConfig           `json:"encryptionConfig,omitempty"`
-	LastModifiedTime            *date.Time                  `json:"lastModifiedTime,omitempty"`
-	Endpoint                    *string                     `json:"endpoint,omitempty"`
-	DefaultGroup                *string                     `json:"defaultGroup,omitempty"`
+	// EncryptionConfig - The Key vault encryption configuration.
+	EncryptionConfig *EncryptionConfig `json:"encryptionConfig,omitempty"`
+	// LastModifiedTime - the account last modified time.
+	LastModifiedTime *date.Time `json:"lastModifiedTime,omitempty"`
+	// Endpoint - the gateway host.
+	Endpoint *string `json:"endpoint,omitempty"`
+	// DefaultGroup - the default owner group for all new folders and files created in the Data Lake Store account.
+	DefaultGroup *string `json:"defaultGroup,omitempty"`
 }
 
-// DataLakeStoreFirewallRuleListResult is data Lake Store firewall rule list information.
+// DataLakeStoreFirewallRuleListResult data Lake Store firewall rule list information.
 type DataLakeStoreFirewallRuleListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]FirewallRule `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
-	Count             *int64          `json:"count,omitempty"`
+	// Value - the results of the list operation
+	Value *[]FirewallRule `json:"value,omitempty"`
+	// NextLink - the link (url) to the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
+	// Count - the total count of results that are available, but might not be returned in the current page.
+	Count *int64 `json:"count,omitempty"`
 }
 
-// DataLakeStoreFirewallRuleListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DataLakeStoreFirewallRuleListResult) DataLakeStoreFirewallRuleListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DataLakeStoreFirewallRuleListResultIterator provides access to a complete listing of FirewallRule values.
+type DataLakeStoreFirewallRuleListResultIterator struct {
+	i    int
+	page DataLakeStoreFirewallRuleListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DataLakeStoreFirewallRuleListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DataLakeStoreFirewallRuleListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DataLakeStoreFirewallRuleListResultIterator) Response() DataLakeStoreFirewallRuleListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DataLakeStoreFirewallRuleListResultIterator) Value() FirewallRule {
+	if !iter.page.NotDone() {
+		return FirewallRule{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dlsfrlr DataLakeStoreFirewallRuleListResult) IsEmpty() bool {
+	return dlsfrlr.Value == nil || len(*dlsfrlr.Value) == 0
+}
+
+// dataLakeStoreFirewallRuleListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dlsfrlr DataLakeStoreFirewallRuleListResult) dataLakeStoreFirewallRuleListResultPreparer() (*http.Request, error) {
+	if dlsfrlr.NextLink == nil || len(to.String(dlsfrlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dlsfrlr.NextLink)))
 }
 
-// EncryptionConfig is
+// DataLakeStoreFirewallRuleListResultPage contains a page of FirewallRule values.
+type DataLakeStoreFirewallRuleListResultPage struct {
+	fn      func(DataLakeStoreFirewallRuleListResult) (DataLakeStoreFirewallRuleListResult, error)
+	dlsfrlr DataLakeStoreFirewallRuleListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DataLakeStoreFirewallRuleListResultPage) Next() error {
+	next, err := page.fn(page.dlsfrlr)
+	if err != nil {
+		return err
+	}
+	page.dlsfrlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DataLakeStoreFirewallRuleListResultPage) NotDone() bool {
+	return !page.dlsfrlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DataLakeStoreFirewallRuleListResultPage) Response() DataLakeStoreFirewallRuleListResult {
+	return page.dlsfrlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DataLakeStoreFirewallRuleListResultPage) Values() []FirewallRule {
+	if page.dlsfrlr.IsEmpty() {
+		return nil
+	}
+	return *page.dlsfrlr.Value
+}
+
+// EncryptionConfig ...
 type EncryptionConfig struct {
-	Type             EncryptionConfigType `json:"type,omitempty"`
-	KeyVaultMetaInfo *KeyVaultMetaInfo    `json:"keyVaultMetaInfo,omitempty"`
+	// Type - The type of encryption configuration being used. Currently the only supported types are 'UserManaged' and 'ServiceManaged'. Possible values include: 'UserManaged', 'ServiceManaged'
+	Type EncryptionConfigType `json:"type,omitempty"`
+	// KeyVaultMetaInfo - The Key vault information for connecting to user managed encryption keys.
+	KeyVaultMetaInfo *KeyVaultMetaInfo `json:"keyVaultMetaInfo,omitempty"`
 }
 
-// EncryptionIdentity is
+// EncryptionIdentity ...
 type EncryptionIdentity struct {
-	Type        EncryptionIdentityType `json:"type,omitempty"`
-	PrincipalID *uuid.UUID             `json:"principalId,omitempty"`
-	TenantID    *uuid.UUID             `json:"tenantId,omitempty"`
+	// Type - The type of encryption being used. Currently the only supported type is 'SystemAssigned'. Possible values include: 'SystemAssigned'
+	Type EncryptionIdentityType `json:"type,omitempty"`
+	// PrincipalID - The principal identifier associated with the encryption.
+	PrincipalID *uuid.UUID `json:"principalId,omitempty"`
+	// TenantID - The tenant identifier associated with the encryption.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
 }
 
-// Error is data Lake Store error information
+// Error data Lake Store error information
 type Error struct {
-	Code       *string         `json:"code,omitempty"`
-	Message    *string         `json:"message,omitempty"`
-	Target     *string         `json:"target,omitempty"`
-	Details    *[]ErrorDetails `json:"details,omitempty"`
-	InnerError *InnerError     `json:"innerError,omitempty"`
-}
-
-// ErrorDetails is data Lake Store error details information
-type ErrorDetails struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - the HTTP status code or error code associated with this error
+	Code *string `json:"code,omitempty"`
+	// Message - the error message to display.
 	Message *string `json:"message,omitempty"`
-	Target  *string `json:"target,omitempty"`
+	// Target - the target of the error.
+	Target *string `json:"target,omitempty"`
+	// Details - the list of error details
+	Details *[]ErrorDetails `json:"details,omitempty"`
+	// InnerError - the inner exceptions or errors, if any
+	InnerError *InnerError `json:"innerError,omitempty"`
 }
 
-// FirewallRule is data Lake Store firewall rule information
+// ErrorDetails data Lake Store error details information
+type ErrorDetails struct {
+	// Code - the HTTP status code or error code associated with this error
+	Code *string `json:"code,omitempty"`
+	// Message - the error message localized based on Accept-Language
+	Message *string `json:"message,omitempty"`
+	// Target - the target of the particular error (for example, the name of the property in error).
+	Target *string `json:"target,omitempty"`
+}
+
+// FirewallRule data Lake Store firewall rule information
 type FirewallRule struct {
 	autorest.Response `json:"-"`
-	Name              *string                 `json:"name,omitempty"`
-	Type              *string                 `json:"type,omitempty"`
-	ID                *string                 `json:"id,omitempty"`
-	Location          *string                 `json:"location,omitempty"`
-	Properties        *FirewallRuleProperties `json:"properties,omitempty"`
+	// Name - the firewall rule's name.
+	Name *string `json:"name,omitempty"`
+	// Type - the namespace and type of the firewall Rule.
+	Type *string `json:"type,omitempty"`
+	// ID - the firewall rule's subscription ID.
+	ID *string `json:"id,omitempty"`
+	// Location - the firewall rule's regional location.
+	Location *string `json:"location,omitempty"`
+	// Properties - the properties of the firewall rule.
+	Properties *FirewallRuleProperties `json:"properties,omitempty"`
 }
 
-// FirewallRuleProperties is data Lake Store firewall rule properties information
+// FirewallRuleProperties data Lake Store firewall rule properties information
 type FirewallRuleProperties struct {
+	// StartIPAddress - the start IP address for the firewall rule.
 	StartIPAddress *string `json:"startIpAddress,omitempty"`
-	EndIPAddress   *string `json:"endIpAddress,omitempty"`
+	// EndIPAddress - the end IP address for the firewall rule.
+	EndIPAddress *string `json:"endIpAddress,omitempty"`
 }
 
-// InnerError is data Lake Store inner error information
+// InnerError data Lake Store inner error information
 type InnerError struct {
-	Trace   *string `json:"trace,omitempty"`
+	// Trace - the stack trace for the error
+	Trace *string `json:"trace,omitempty"`
+	// Context - the context for the error message
 	Context *string `json:"context,omitempty"`
 }
 
-// KeyVaultMetaInfo is
+// KeyVaultMetaInfo ...
 type KeyVaultMetaInfo struct {
-	KeyVaultResourceID   *string `json:"keyVaultResourceId,omitempty"`
-	EncryptionKeyName    *string `json:"encryptionKeyName,omitempty"`
+	// KeyVaultResourceID - The resource identifier for the user managed Key Vault being used to encrypt.
+	KeyVaultResourceID *string `json:"keyVaultResourceId,omitempty"`
+	// EncryptionKeyName - The name of the user managed encryption key.
+	EncryptionKeyName *string `json:"encryptionKeyName,omitempty"`
+	// EncryptionKeyVersion - The version of the user managed encryption key.
 	EncryptionKeyVersion *string `json:"encryptionKeyVersion,omitempty"`
 }

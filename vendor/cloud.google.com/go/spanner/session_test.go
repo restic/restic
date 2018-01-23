@@ -17,9 +17,9 @@ limitations under the License.
 package spanner
 
 import (
+	"bytes"
 	"container/heap"
 	"math/rand"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -44,7 +44,6 @@ func setup(t *testing.T, spc SessionPoolConfig) (sp *sessionPool, sc *testutil.M
 	if spc.healthCheckSampleInterval == 0 {
 		spc.healthCheckSampleInterval = 10 * time.Millisecond
 	}
-	spc.healthCheckMaintainerEnabled = true
 	sp, err := newSessionPool("mockdb", spc, nil)
 	if err != nil {
 		t.Fatalf("cannot create session pool: %v", err)
@@ -75,7 +74,7 @@ func TestSessionCreation(t *testing.T) {
 	if len(gotDs) != len(shs) {
 		t.Errorf("session pool created %v sessions, want %v", len(gotDs), len(shs))
 	}
-	if wantDs := sc.DumpSessions(); !reflect.DeepEqual(gotDs, wantDs) {
+	if wantDs := sc.DumpSessions(); !testEqual(gotDs, wantDs) {
 		t.Errorf("session pool creates sessions %v, want %v", gotDs, wantDs)
 	}
 	// Verify that created sessions are recorded correctly in session pool.
@@ -134,7 +133,7 @@ func TestTakeFromIdleList(t *testing.T) {
 	if len(gotSessions) != 10 {
 		t.Errorf("got %v unique sessions, want 10", len(gotSessions))
 	}
-	if !reflect.DeepEqual(gotSessions, wantSessions) {
+	if !testEqual(gotSessions, wantSessions) {
 		t.Errorf("got sessions: %v, want %v", gotSessions, wantSessions)
 	}
 }
@@ -144,10 +143,10 @@ func TestTakeWriteSessionFromIdleList(t *testing.T) {
 	t.Parallel()
 	sp, sc, cancel := setup(t, SessionPoolConfig{MaxIdle: 20}) // make sure maintainer keeps the idle sessions
 	defer cancel()
-	act := testutil.NewAction("Begin", nil)
+
 	acts := make([]testutil.Action, 20)
 	for i := 0; i < len(acts); i++ {
-		acts[i] = act
+		acts[i] = testutil.Action{"BeginTransaction", nil}
 	}
 	sc.SetActions(acts...)
 	// Take ten sessions from session pool and recycle them.
@@ -178,7 +177,7 @@ func TestTakeWriteSessionFromIdleList(t *testing.T) {
 	if len(gotSessions) != 10 {
 		t.Errorf("got %v unique sessions, want 10", len(gotSessions))
 	}
-	if !reflect.DeepEqual(gotSessions, wantSessions) {
+	if !testEqual(gotSessions, wantSessions) {
 		t.Errorf("got sessions: %v, want %v", gotSessions, wantSessions)
 	}
 }
@@ -216,7 +215,7 @@ func TestTakeFromIdleListChecked(t *testing.T) {
 		}
 		// The two back-to-back session requests shouldn't trigger any session pings because sessionPool.Take
 		// reschedules the next healthcheck.
-		if got, want := sc.DumpPings(), ([]string{wantSid}); !reflect.DeepEqual(got, want) {
+		if got, want := sc.DumpPings(), ([]string{wantSid}); !testEqual(got, want) {
 			t.Errorf("%v - got ping session requests: %v, want %v", i, got, want)
 		}
 		sh.recycle()
@@ -273,7 +272,7 @@ func TestTakeFromIdleWriteListChecked(t *testing.T) {
 		}
 		// The two back-to-back session requests shouldn't trigger any session pings because sessionPool.Take
 		// reschedules the next healthcheck.
-		if got, want := sc.DumpPings(), ([]string{wantSid}); !reflect.DeepEqual(got, want) {
+		if got, want := sc.DumpPings(), ([]string{wantSid}); !testEqual(got, want) {
 			t.Errorf("%v - got ping session requests: %v, want %v", i, got, want)
 		}
 		sh.recycle()
@@ -312,7 +311,7 @@ func TestMaxOpenedSessions(t *testing.T) {
 	defer cancel()
 	// Session request will timeout due to the max open sessions constraint.
 	sh2, gotErr := sp.take(ctx)
-	if wantErr := errGetSessionTimeout(); !reflect.DeepEqual(gotErr, wantErr) {
+	if wantErr := errGetSessionTimeout(); !testEqual(gotErr, wantErr) {
 		t.Errorf("the second session retrival returns error %v, want %v", gotErr, wantErr)
 	}
 	go func() {
@@ -389,7 +388,7 @@ func TestMaxBurst(t *testing.T) {
 	defer cancel()
 	sh, gotErr := sp.take(ctx)
 	// Since MaxBurst == 1, the second session request should block.
-	if wantErr := errGetSessionTimeout(); !reflect.DeepEqual(gotErr, wantErr) {
+	if wantErr := errGetSessionTimeout(); !testEqual(gotErr, wantErr) {
 		t.Errorf("session retrival returns error %v, want %v", gotErr, wantErr)
 	}
 	// Let the first session request succeed.
@@ -410,10 +409,8 @@ func TestSessionRecycle(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	sp, _, cancel := setup(t, SessionPoolConfig{maxSessionAge: 100 * time.Millisecond, MinOpened: 1, MaxIdle: 2})
+	sp, _, cancel := setup(t, SessionPoolConfig{MinOpened: 1, MaxIdle: 2})
 	// Set MaxIdle to ensure shs[0] is not destroyed from scale down.
-	// Healthcheck is explicitly turned off in this test because it might aggressively expire sessions in idle list.
-	sp.hc.close()
 	defer cancel()
 
 	// Test session is correctly recycled and reused.
@@ -427,31 +424,6 @@ func TestSessionRecycle(t *testing.T) {
 	if sp.numOpened != 1 {
 		t.Errorf("Expect session pool size %d, got %d", 1, sp.numOpened)
 	}
-
-	// Test recycling expired session.
-	var ss []*session
-	shs := make([]*sessionHandle, 2)
-	for i := 0; i < len(shs); i++ {
-		var err error
-		shs[i], err = sp.take(context.Background())
-		if err != nil {
-			t.Errorf("cannot get the session %v: %v", i, err)
-		}
-		ss = append(ss, shs[i].session)
-	}
-	// recycle the first session immediately.
-	shs[0].recycle()
-	// Let the second session expire.
-	<-time.After(time.Second)
-	// recycle the second session.
-	shs[1].recycle()
-	// Now the first session should be still valid, but the second session should have been destroyed.
-	if !ss[0].isValid() {
-		t.Errorf("the first session (%v) is invalid, want it to be valid", ss[0])
-	}
-	if ss[1].isValid() {
-		t.Errorf("the second session (%v) is valid, want it to be invalid", ss[1])
-	}
 }
 
 // TestSessionDestroy tests destroying sessions.
@@ -459,6 +431,7 @@ func TestSessionDestroy(t *testing.T) {
 	t.Parallel()
 	sp, _, cancel := setup(t, SessionPoolConfig{MinOpened: 1})
 	defer cancel()
+	<-time.After(10 * time.Millisecond) // maintainer will create one session, we wait for it create session to avoid flakiness in test
 	sh, err := sp.take(context.Background())
 	if err != nil {
 		t.Errorf("cannot get session from session pool: %v", err)
@@ -467,11 +440,11 @@ func TestSessionDestroy(t *testing.T) {
 	sh.recycle()
 	if d := s.destroy(true); d || !s.isValid() {
 		// Session should be remaining because of min open sessions constraint.
-		t.Errorf("session %v was destroyed in expiration mode, want it to stay alive", s)
+		t.Errorf("session %v invalid, want it to stay alive. (destroy in expiration mode, success: %v)", s, d)
 	}
 	if d := s.destroy(false); !d || s.isValid() {
 		// Session should be destroyed.
-		t.Errorf("failed to destroy session %s", s)
+		t.Errorf("failed to destroy session %v. (destroy in default mode, success: %v)", s, d)
 	}
 }
 
@@ -501,7 +474,7 @@ func TestHcHeap(t *testing.T) {
 	for idx := 0; hh.Len() > 0; idx++ {
 		got := heap.Pop(&hh).(*session)
 		want[idx].hcIndex = -1
-		if !reflect.DeepEqual(got, want[idx]) {
+		if !testEqual(got, want[idx]) {
 			t.Errorf("%v: heap.Pop returns %v, want %v", idx, got, want[idx])
 		}
 	}
@@ -629,7 +602,7 @@ func TestSessionHealthCheck(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	sp, sc, cancel := setup(t, SessionPoolConfig{maxSessionAge: 2 * time.Second})
+	sp, sc, cancel := setup(t, SessionPoolConfig{})
 	defer cancel()
 	// Test pinging sessions.
 	sh, err := sp.take(context.Background())
@@ -641,14 +614,6 @@ func TestSessionHealthCheck(t *testing.T) {
 	if len(pings) == 0 || pings[0] != sh.getID() {
 		t.Errorf("healthchecker didn't send any ping to session %v", sh.getID())
 	}
-	// Test expiring sessions.
-	s := sh.session
-	sh.recycle()
-	// Sleep enough long for session in idle list to expire.
-	<-time.After(2 * time.Second)
-	if s.isValid() {
-		t.Errorf("session(%v) is still alive, want it to expire", s)
-	}
 	// Test broken session detection.
 	sh, err = sp.take(context.Background())
 	if err != nil {
@@ -657,6 +622,7 @@ func TestSessionHealthCheck(t *testing.T) {
 	sc.InjectError("GetSession", grpc.Errorf(codes.NotFound, "Session not found:"))
 	// Wait for healthcheck workers to find the broken session and tear it down.
 	<-time.After(1 * time.Second)
+	s := sh.session
 	if sh.session.isValid() {
 		t.Errorf("session(%v) is still alive, want it to be dropped by healthcheck workers", s)
 	}
@@ -670,43 +636,20 @@ func TestSessionHealthCheck(t *testing.T) {
 	if sh.session.isValid() {
 		t.Errorf("session(%v) is still alive, want it to be garbage collected", s)
 	}
-	// Test session id refresh.
-	// Recreate the session pool with min open sessions constraint.
-	sp, err = newSessionPool("mockdb", SessionPoolConfig{
-		maxSessionAge: time.Second,
-		MinOpened:     1,
-		getRPCClient: func() (sppb.SpannerClient, error) {
-			return sc, nil
-		},
-		HealthCheckInterval: 50 * time.Millisecond,
-	}, nil)
-	sh, err = sp.take(context.Background())
-	if err != nil {
-		t.Errorf("cannot get session from session pool: %v", err)
-	}
-	oid := sh.getID()
-	s = sh.session
-	sh.recycle()
-	<-time.After(2 * time.Second)
-	nid := s.getID()
-	if nid == "" || nid == oid {
-		t.Errorf("healthcheck workers failed to refresh session: oid=%v, nid=%v", oid, nid)
-	}
-	if gotDs, wantDs := sc.DumpSessions(), (map[string]bool{nid: true}); !reflect.DeepEqual(gotDs, wantDs) {
-		t.Errorf("sessions in mockclient: %v, want %v", gotDs, wantDs)
-	}
 }
 
 // TestStressSessionPool does stress test on session pool by the following concurrent operations:
 //	1) Test worker gets a session from the pool.
 //	2) Test worker turns a session back into the pool.
 //	3) Test worker destroys a session got from the pool.
-//	4) Healthcheck retires an old session from the pool's idlelist by refreshing its session id.
-//	5) Healthcheck destroys a broken session (because a worker has already destroyed it).
-//	6) Test worker closes the session pool.
+//	4) Healthcheck destroys a broken session (because a worker has already destroyed it).
+//	5) Test worker closes the session pool.
 //
-// During the test, it is expected that all sessions that are taken from session pool remains valid and
-// when all test workers and healthcheck workers exit, mockclient, session pool and healthchecker should be in consistent state.
+// During the test, the session pool maintainer maintains the number of sessions,
+// and it is expected that all sessions that are taken from session pool remains valid.
+// When all test workers and healthcheck workers exit, mockclient, session pool
+// and healthchecker should be in consistent state.
+
 func TestStressSessionPool(t *testing.T) {
 	t.Parallel()
 	// Use concurrent workers to test different session pool built from different configurations.
@@ -715,11 +658,10 @@ func TestStressSessionPool(t *testing.T) {
 	}
 	for ti, cfg := range []SessionPoolConfig{
 		SessionPoolConfig{},
-		SessionPoolConfig{maxSessionAge: 20 * time.Millisecond},
 		SessionPoolConfig{MinOpened: 10, MaxOpened: 100},
 		SessionPoolConfig{MaxBurst: 50},
-		SessionPoolConfig{maxSessionAge: 20 * time.Millisecond, MinOpened: 10, MaxOpened: 200, MaxBurst: 5},
-		SessionPoolConfig{maxSessionAge: 20 * time.Millisecond, MinOpened: 10, MaxOpened: 200, MaxBurst: 5, WriteSessions: 0.2},
+		SessionPoolConfig{MinOpened: 10, MaxOpened: 200, MaxBurst: 5},
+		SessionPoolConfig{MinOpened: 10, MaxOpened: 200, MaxBurst: 5, WriteSessions: 0.2},
 	} {
 		var wg sync.WaitGroup
 		// Create a more aggressive session healthchecker to increase test concurrency.
@@ -758,7 +700,7 @@ func TestStressSessionPool(t *testing.T) {
 						if pool.isValid() {
 							t.Errorf("%v.%v: pool.take returns error when pool is still valid: %v", ti, idx, gotErr)
 						}
-						if wantErr := errInvalidSessionPool(); !reflect.DeepEqual(gotErr, wantErr) {
+						if wantErr := errInvalidSessionPool(); !testEqual(gotErr, wantErr) {
 							t.Errorf("%v.%v: got error when pool is closed: %v, want %v", ti, idx, gotErr, wantErr)
 						}
 						continue
@@ -771,9 +713,9 @@ func TestStressSessionPool(t *testing.T) {
 					if takeWrite && sh.getTransactionID() == nil {
 						t.Errorf("%v.%v: pool.takeWriteSession returns session %v without transaction", ti, idx, sh.session)
 					}
-					if int64(cfg.maxSessionAge) > 0 && rand.Intn(100) < idx {
+					if rand.Intn(100) < idx {
 						// Random sleep before destroying/recycling the session, to give healthcheck worker a chance to step in.
-						<-time.After(time.Duration(rand.Int63n(int64(cfg.maxSessionAge))))
+						<-time.After(time.Duration(rand.Int63n(int64(cfg.HealthCheckInterval))))
 					}
 					if rand.Intn(100) < idx {
 						// destroy the session.
@@ -823,10 +765,10 @@ func TestStressSessionPool(t *testing.T) {
 		sp.mu.Unlock()
 
 		// Verify that idleSessions == hcSessions == mockSessions.
-		if !reflect.DeepEqual(idleSessions, hcSessions) {
+		if !testEqual(idleSessions, hcSessions) {
 			t.Errorf("%v: sessions in idle list (%v) != sessions in healthcheck queue (%v)", ti, idleSessions, hcSessions)
 		}
-		if !reflect.DeepEqual(hcSessions, mockSessions) {
+		if !testEqual(hcSessions, mockSessions) {
 			t.Errorf("%v: sessions in healthcheck queue (%v) != sessions in mockclient (%v)", ti, hcSessions, mockSessions)
 		}
 		sp.close()
@@ -898,4 +840,18 @@ func TestMaintainer(t *testing.T) {
 		t.Errorf("Scale down. Expect %d open, got %d", minOpened, sp.numOpened)
 	}
 	sp.mu.Unlock()
+}
+
+func (s1 *session) Equal(s2 *session) bool {
+	return s1.client == s2.client &&
+		s1.id == s2.id &&
+		s1.pool == s2.pool &&
+		s1.createTime == s2.createTime &&
+		s1.valid == s2.valid &&
+		s1.hcIndex == s2.hcIndex &&
+		s1.idleList == s2.idleList &&
+		s1.nextCheck.Equal(s2.nextCheck) &&
+		s1.checkingHealth == s2.checkingHealth &&
+		testEqual(s1.md, s2.md) &&
+		bytes.Equal(s1.tx, s2.tx)
 }

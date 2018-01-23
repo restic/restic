@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // BackupsClient is the client for the Backups methods of the Storsimple service.
 type BackupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewBackupsClient creates an instance of the BackupsClient client.
@@ -39,14 +40,11 @@ func NewBackupsClientWithBaseURI(baseURI string, subscriptionID string) BackupsC
 	return BackupsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Clone clones the backup element as a new volume. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Clone clones the backup element as a new volume.
 //
 // deviceName is the device name backupName is the backup name. backupElementName is the backup element name.
 // parameters is the clone request object. resourceGroupName is the resource group name managerName is the manager name
-func (client BackupsClient) Clone(deviceName string, backupName string, backupElementName string, parameters CloneRequest, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client BackupsClient) Clone(ctx context.Context, deviceName string, backupName string, backupElementName string, parameters CloneRequest, resourceGroupName string, managerName string) (result BackupsCloneFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.TargetDeviceID", Name: validation.Null, Rule: true, Chain: nil},
@@ -63,46 +61,26 @@ func (client BackupsClient) Clone(deviceName string, backupName string, backupEl
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Clone")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Clone")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ClonePreparer(deviceName, backupName, backupElementName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Clone", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.ClonePreparer(ctx, deviceName, backupName, backupElementName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Clone", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CloneSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Clone", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CloneSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Clone", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CloneResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Clone", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ClonePreparer prepares the Clone request.
-func (client BackupsClient) ClonePreparer(deviceName string, backupName string, backupElementName string, parameters CloneRequest, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupsClient) ClonePreparer(ctx context.Context, deviceName string, backupName string, backupElementName string, parameters CloneRequest, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupElementName": backupElementName,
 		"backupName":        backupName,
@@ -124,16 +102,22 @@ func (client BackupsClient) ClonePreparer(deviceName string, backupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backups/{backupName}/elements/{backupElementName}/clone", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CloneSender sends the Clone request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupsClient) CloneSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupsClient) CloneSender(req *http.Request) (future BackupsCloneFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CloneResponder handles the response to the Clone request. The method always
@@ -148,58 +132,35 @@ func (client BackupsClient) CloneResponder(resp *http.Response) (result autorest
 	return
 }
 
-// Delete deletes the backup. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the backup.
 //
 // deviceName is the device name backupName is the backup name. resourceGroupName is the resource group name
 // managerName is the manager name
-func (client BackupsClient) Delete(deviceName string, backupName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client BackupsClient) Delete(ctx context.Context, deviceName string, backupName string, resourceGroupName string, managerName string) (result BackupsDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(deviceName, backupName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, deviceName, backupName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client BackupsClient) DeletePreparer(deviceName string, backupName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupsClient) DeletePreparer(ctx context.Context, deviceName string, backupName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupName":        backupName,
 		"deviceName":        deviceName,
@@ -218,16 +179,22 @@ func (client BackupsClient) DeletePreparer(deviceName string, backupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backups/{backupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupsClient) DeleteSender(req *http.Request) (future BackupsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -246,7 +213,7 @@ func (client BackupsClient) DeleteResponder(resp *http.Response) (result autores
 //
 // deviceName is the device name resourceGroupName is the resource group name managerName is the manager name filter is
 // oData Filter options
-func (client BackupsClient) ListByDevice(deviceName string, resourceGroupName string, managerName string, filter string) (result BackupList, err error) {
+func (client BackupsClient) ListByDevice(ctx context.Context, deviceName string, resourceGroupName string, managerName string, filter string) (result BackupListPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -254,7 +221,8 @@ func (client BackupsClient) ListByDevice(deviceName string, resourceGroupName st
 		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "ListByDevice")
 	}
 
-	req, err := client.ListByDevicePreparer(deviceName, resourceGroupName, managerName, filter)
+	result.fn = client.listByDeviceNextResults
+	req, err := client.ListByDevicePreparer(ctx, deviceName, resourceGroupName, managerName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", nil, "Failure preparing request")
 		return
@@ -262,12 +230,12 @@ func (client BackupsClient) ListByDevice(deviceName string, resourceGroupName st
 
 	resp, err := client.ListByDeviceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.bl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByDeviceResponder(resp)
+	result.bl, err = client.ListByDeviceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", resp, "Failure responding to request")
 	}
@@ -276,7 +244,7 @@ func (client BackupsClient) ListByDevice(deviceName string, resourceGroupName st
 }
 
 // ListByDevicePreparer prepares the ListByDevice request.
-func (client BackupsClient) ListByDevicePreparer(deviceName string, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
+func (client BackupsClient) ListByDevicePreparer(ctx context.Context, deviceName string, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":        deviceName,
 		"managerName":       managerName,
@@ -297,14 +265,13 @@ func (client BackupsClient) ListByDevicePreparer(deviceName string, resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByDeviceSender sends the ListByDevice request. The method will close the
 // http.Response Body if it receives an error.
 func (client BackupsClient) ListByDeviceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -321,127 +288,62 @@ func (client BackupsClient) ListByDeviceResponder(resp *http.Response) (result B
 	return
 }
 
-// ListByDeviceNextResults retrieves the next set of results, if any.
-func (client BackupsClient) ListByDeviceNextResults(lastResults BackupList) (result BackupList, err error) {
-	req, err := lastResults.BackupListPreparer()
+// listByDeviceNextResults retrieves the next set of results, if any.
+func (client BackupsClient) listByDeviceNextResults(lastResults BackupList) (result BackupList, err error) {
+	req, err := lastResults.backupListPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.BackupsClient", "listByDeviceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByDeviceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.BackupsClient", "listByDeviceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByDeviceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "ListByDevice", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "listByDeviceNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListByDeviceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BackupsClient) ListByDeviceComplete(ctx context.Context, deviceName string, resourceGroupName string, managerName string, filter string) (result BackupListIterator, err error) {
+	result.page, err = client.ListByDevice(ctx, deviceName, resourceGroupName, managerName, filter)
+	return
+}
+
+// Restore restores the backup on the device.
+//
+// deviceName is the device name backupName is the backupSet name resourceGroupName is the resource group name
+// managerName is the manager name
+func (client BackupsClient) Restore(ctx context.Context, deviceName string, backupName string, resourceGroupName string, managerName string) (result BackupsRestoreFuture, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: managerName,
+			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Restore")
+	}
+
+	req, err := client.RestorePreparer(ctx, deviceName, backupName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Restore", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.RestoreSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Restore", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListByDeviceComplete gets all elements from the list without paging.
-func (client BackupsClient) ListByDeviceComplete(deviceName string, resourceGroupName string, managerName string, filter string, cancel <-chan struct{}) (<-chan Backup, <-chan error) {
-	resultChan := make(chan Backup)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByDevice(deviceName, resourceGroupName, managerName, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByDeviceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// Restore restores the backup on the device. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
-//
-// deviceName is the device name backupName is the backupSet name resourceGroupName is the resource group name
-// managerName is the manager name
-func (client BackupsClient) Restore(deviceName string, backupName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	if err := validation.Validate([]validation.Validation{
-		{TargetValue: managerName,
-			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
-				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupsClient", "Restore")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
-	}
-
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RestorePreparer(deviceName, backupName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Restore", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.RestoreSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Restore", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.RestoreResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupsClient", "Restore", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // RestorePreparer prepares the Restore request.
-func (client BackupsClient) RestorePreparer(deviceName string, backupName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupsClient) RestorePreparer(ctx context.Context, deviceName string, backupName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupName":        backupName,
 		"deviceName":        deviceName,
@@ -460,16 +362,22 @@ func (client BackupsClient) RestorePreparer(deviceName string, backupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backups/{backupName}/restore", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestoreSender sends the Restore request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupsClient) RestoreSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupsClient) RestoreSender(req *http.Request) (future BackupsRestoreFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RestoreResponder handles the response to the Restore request. The method always

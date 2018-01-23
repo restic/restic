@@ -19,6 +19,7 @@ package s3signer
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -66,7 +67,7 @@ func TestEncodeURL2Path(t *testing.T) {
 			t.Fatal("Error:", err)
 		}
 		urlPath := "/" + bucketName + "/" + o.encodedObjName
-		if urlPath != encodeURL2Path(u) {
+		if urlPath != encodeURL2Path(&http.Request{URL: u}) {
 			t.Fatal("Error")
 		}
 	}

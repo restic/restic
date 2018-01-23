@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ApplicationSecurityGroupsClient is the network Client
 type ApplicationSecurityGroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewApplicationSecurityGroupsClient creates an instance of the ApplicationSecurityGroupsClient client.
@@ -38,49 +39,28 @@ func NewApplicationSecurityGroupsClientWithBaseURI(baseURI string, subscriptionI
 	return ApplicationSecurityGroupsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates an application security group. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate creates or updates an application security group.
 //
 // resourceGroupName is the name of the resource group. applicationSecurityGroupName is the name of the application
 // security group. parameters is parameters supplied to the create or update ApplicationSecurityGroup operation.
-func (client ApplicationSecurityGroupsClient) CreateOrUpdate(resourceGroupName string, applicationSecurityGroupName string, parameters ApplicationSecurityGroup, cancel <-chan struct{}) (<-chan ApplicationSecurityGroup, <-chan error) {
-	resultChan := make(chan ApplicationSecurityGroup, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result ApplicationSecurityGroup
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, applicationSecurityGroupName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client ApplicationSecurityGroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string, parameters ApplicationSecurityGroup) (result ApplicationSecurityGroupsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, applicationSecurityGroupName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ApplicationSecurityGroupsClient) CreateOrUpdatePreparer(resourceGroupName string, applicationSecurityGroupName string, parameters ApplicationSecurityGroup, cancel <-chan struct{}) (*http.Request, error) {
+func (client ApplicationSecurityGroupsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string, parameters ApplicationSecurityGroup) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationSecurityGroupName": autorest.Encode("path", applicationSecurityGroupName),
 		"resourceGroupName":            autorest.Encode("path", resourceGroupName),
@@ -99,16 +79,22 @@ func (client ApplicationSecurityGroupsClient) CreateOrUpdatePreparer(resourceGro
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationSecurityGroups/{applicationSecurityGroupName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ApplicationSecurityGroupsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ApplicationSecurityGroupsClient) CreateOrUpdateSender(req *http.Request) (future ApplicationSecurityGroupsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -117,56 +103,35 @@ func (client ApplicationSecurityGroupsClient) CreateOrUpdateResponder(resp *http
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// Delete deletes the specified application security group. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete deletes the specified application security group.
 //
 // resourceGroupName is the name of the resource group. applicationSecurityGroupName is the name of the application
 // security group.
-func (client ApplicationSecurityGroupsClient) Delete(resourceGroupName string, applicationSecurityGroupName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, applicationSecurityGroupName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ApplicationSecurityGroupsClient) Delete(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string) (result ApplicationSecurityGroupsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, applicationSecurityGroupName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ApplicationSecurityGroupsClient) DeletePreparer(resourceGroupName string, applicationSecurityGroupName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ApplicationSecurityGroupsClient) DeletePreparer(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationSecurityGroupName": autorest.Encode("path", applicationSecurityGroupName),
 		"resourceGroupName":            autorest.Encode("path", resourceGroupName),
@@ -183,16 +148,22 @@ func (client ApplicationSecurityGroupsClient) DeletePreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationSecurityGroups/{applicationSecurityGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ApplicationSecurityGroupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ApplicationSecurityGroupsClient) DeleteSender(req *http.Request) (future ApplicationSecurityGroupsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -201,7 +172,7 @@ func (client ApplicationSecurityGroupsClient) DeleteResponder(resp *http.Respons
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusAccepted, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -211,8 +182,8 @@ func (client ApplicationSecurityGroupsClient) DeleteResponder(resp *http.Respons
 //
 // resourceGroupName is the name of the resource group. applicationSecurityGroupName is the name of the application
 // security group.
-func (client ApplicationSecurityGroupsClient) Get(resourceGroupName string, applicationSecurityGroupName string) (result ApplicationSecurityGroup, err error) {
-	req, err := client.GetPreparer(resourceGroupName, applicationSecurityGroupName)
+func (client ApplicationSecurityGroupsClient) Get(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string) (result ApplicationSecurityGroup, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, applicationSecurityGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -234,7 +205,7 @@ func (client ApplicationSecurityGroupsClient) Get(resourceGroupName string, appl
 }
 
 // GetPreparer prepares the Get request.
-func (client ApplicationSecurityGroupsClient) GetPreparer(resourceGroupName string, applicationSecurityGroupName string) (*http.Request, error) {
+func (client ApplicationSecurityGroupsClient) GetPreparer(ctx context.Context, resourceGroupName string, applicationSecurityGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationSecurityGroupName": autorest.Encode("path", applicationSecurityGroupName),
 		"resourceGroupName":            autorest.Encode("path", resourceGroupName),
@@ -251,14 +222,13 @@ func (client ApplicationSecurityGroupsClient) GetPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationSecurityGroups/{applicationSecurityGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationSecurityGroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -278,8 +248,9 @@ func (client ApplicationSecurityGroupsClient) GetResponder(resp *http.Response) 
 // List gets all the application security groups in a resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client ApplicationSecurityGroupsClient) List(resourceGroupName string) (result ApplicationSecurityGroupListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName)
+func (client ApplicationSecurityGroupsClient) List(ctx context.Context, resourceGroupName string) (result ApplicationSecurityGroupListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", nil, "Failure preparing request")
 		return
@@ -287,12 +258,12 @@ func (client ApplicationSecurityGroupsClient) List(resourceGroupName string) (re
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.asglr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.asglr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", resp, "Failure responding to request")
 	}
@@ -301,7 +272,7 @@ func (client ApplicationSecurityGroupsClient) List(resourceGroupName string) (re
 }
 
 // ListPreparer prepares the List request.
-func (client ApplicationSecurityGroupsClient) ListPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ApplicationSecurityGroupsClient) ListPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -317,14 +288,13 @@ func (client ApplicationSecurityGroupsClient) ListPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/applicationSecurityGroups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationSecurityGroupsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -341,78 +311,37 @@ func (client ApplicationSecurityGroupsClient) ListResponder(resp *http.Response)
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ApplicationSecurityGroupsClient) ListNextResults(lastResults ApplicationSecurityGroupListResult) (result ApplicationSecurityGroupListResult, err error) {
-	req, err := lastResults.ApplicationSecurityGroupListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ApplicationSecurityGroupsClient) listNextResults(lastResults ApplicationSecurityGroupListResult) (result ApplicationSecurityGroupListResult, err error) {
+	req, err := lastResults.applicationSecurityGroupListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ApplicationSecurityGroupsClient) ListComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan ApplicationSecurityGroup, <-chan error) {
-	resultChan := make(chan ApplicationSecurityGroup)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ApplicationSecurityGroupsClient) ListComplete(ctx context.Context, resourceGroupName string) (result ApplicationSecurityGroupListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName)
+	return
 }
 
 // ListAll gets all application security groups in a subscription.
-func (client ApplicationSecurityGroupsClient) ListAll() (result ApplicationSecurityGroupListResult, err error) {
-	req, err := client.ListAllPreparer()
+func (client ApplicationSecurityGroupsClient) ListAll(ctx context.Context) (result ApplicationSecurityGroupListResultPage, err error) {
+	result.fn = client.listAllNextResults
+	req, err := client.ListAllPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", nil, "Failure preparing request")
 		return
@@ -420,12 +349,12 @@ func (client ApplicationSecurityGroupsClient) ListAll() (result ApplicationSecur
 
 	resp, err := client.ListAllSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.asglr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListAllResponder(resp)
+	result.asglr, err = client.ListAllResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", resp, "Failure responding to request")
 	}
@@ -434,7 +363,7 @@ func (client ApplicationSecurityGroupsClient) ListAll() (result ApplicationSecur
 }
 
 // ListAllPreparer prepares the ListAll request.
-func (client ApplicationSecurityGroupsClient) ListAllPreparer() (*http.Request, error) {
+func (client ApplicationSecurityGroupsClient) ListAllPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -449,14 +378,13 @@ func (client ApplicationSecurityGroupsClient) ListAllPreparer() (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Network/applicationSecurityGroups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAllSender sends the ListAll request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationSecurityGroupsClient) ListAllSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -473,71 +401,29 @@ func (client ApplicationSecurityGroupsClient) ListAllResponder(resp *http.Respon
 	return
 }
 
-// ListAllNextResults retrieves the next set of results, if any.
-func (client ApplicationSecurityGroupsClient) ListAllNextResults(lastResults ApplicationSecurityGroupListResult) (result ApplicationSecurityGroupListResult, err error) {
-	req, err := lastResults.ApplicationSecurityGroupListResultPreparer()
+// listAllNextResults retrieves the next set of results, if any.
+func (client ApplicationSecurityGroupsClient) listAllNextResults(lastResults ApplicationSecurityGroupListResult) (result ApplicationSecurityGroupListResult, err error) {
+	req, err := lastResults.applicationSecurityGroupListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listAllNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListAllSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listAllNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListAllResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "ListAll", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.ApplicationSecurityGroupsClient", "listAllNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListAllComplete gets all elements from the list without paging.
-func (client ApplicationSecurityGroupsClient) ListAllComplete(cancel <-chan struct{}) (<-chan ApplicationSecurityGroup, <-chan error) {
-	resultChan := make(chan ApplicationSecurityGroup)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListAll()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListAllNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAllComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ApplicationSecurityGroupsClient) ListAllComplete(ctx context.Context) (result ApplicationSecurityGroupListResultIterator, err error) {
+	result.page, err = client.ListAll(ctx)
+	return
 }

@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ProviderClient is the webSite Management Client
 type ProviderClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewProviderClient creates an instance of the ProviderClient client.
@@ -39,8 +40,8 @@ func NewProviderClientWithBaseURI(baseURI string, subscriptionID string) Provide
 }
 
 // GetAvailableStacks get available application frameworks and their versions
-func (client ProviderClient) GetAvailableStacks() (result SetObject, err error) {
-	req, err := client.GetAvailableStacksPreparer()
+func (client ProviderClient) GetAvailableStacks(ctx context.Context) (result SetObject, err error) {
+	req, err := client.GetAvailableStacksPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ProviderClient", "GetAvailableStacks", nil, "Failure preparing request")
 		return
@@ -62,7 +63,7 @@ func (client ProviderClient) GetAvailableStacks() (result SetObject, err error) 
 }
 
 // GetAvailableStacksPreparer prepares the GetAvailableStacks request.
-func (client ProviderClient) GetAvailableStacksPreparer() (*http.Request, error) {
+func (client ProviderClient) GetAvailableStacksPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2016-03-01"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -73,14 +74,13 @@ func (client ProviderClient) GetAvailableStacksPreparer() (*http.Request, error)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Web/availableStacks"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetAvailableStacksSender sends the GetAvailableStacks request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProviderClient) GetAvailableStacksSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -98,8 +98,8 @@ func (client ProviderClient) GetAvailableStacksResponder(resp *http.Response) (r
 }
 
 // GetAvailableStacksOnPrem get available application frameworks and their versions
-func (client ProviderClient) GetAvailableStacksOnPrem() (result SetObject, err error) {
-	req, err := client.GetAvailableStacksOnPremPreparer()
+func (client ProviderClient) GetAvailableStacksOnPrem(ctx context.Context) (result SetObject, err error) {
+	req, err := client.GetAvailableStacksOnPremPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ProviderClient", "GetAvailableStacksOnPrem", nil, "Failure preparing request")
 		return
@@ -121,7 +121,7 @@ func (client ProviderClient) GetAvailableStacksOnPrem() (result SetObject, err e
 }
 
 // GetAvailableStacksOnPremPreparer prepares the GetAvailableStacksOnPrem request.
-func (client ProviderClient) GetAvailableStacksOnPremPreparer() (*http.Request, error) {
+func (client ProviderClient) GetAvailableStacksOnPremPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -136,14 +136,13 @@ func (client ProviderClient) GetAvailableStacksOnPremPreparer() (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/availableStacks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetAvailableStacksOnPremSender sends the GetAvailableStacksOnPrem request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProviderClient) GetAvailableStacksOnPremSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -162,8 +161,9 @@ func (client ProviderClient) GetAvailableStacksOnPremResponder(resp *http.Respon
 
 // ListOperations gets all available operations for the Microsoft.Web resource provider. Also exposes resource metric
 // definitions
-func (client ProviderClient) ListOperations() (result CsmOperationCollection, err error) {
-	req, err := client.ListOperationsPreparer()
+func (client ProviderClient) ListOperations(ctx context.Context) (result CsmOperationCollectionPage, err error) {
+	result.fn = client.listOperationsNextResults
+	req, err := client.ListOperationsPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", nil, "Failure preparing request")
 		return
@@ -171,12 +171,12 @@ func (client ProviderClient) ListOperations() (result CsmOperationCollection, er
 
 	resp, err := client.ListOperationsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.coc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListOperationsResponder(resp)
+	result.coc, err = client.ListOperationsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", resp, "Failure responding to request")
 	}
@@ -185,7 +185,7 @@ func (client ProviderClient) ListOperations() (result CsmOperationCollection, er
 }
 
 // ListOperationsPreparer prepares the ListOperations request.
-func (client ProviderClient) ListOperationsPreparer() (*http.Request, error) {
+func (client ProviderClient) ListOperationsPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2016-03-01"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -196,14 +196,13 @@ func (client ProviderClient) ListOperationsPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Web/operations"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListOperationsSender sends the ListOperations request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProviderClient) ListOperationsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -220,71 +219,29 @@ func (client ProviderClient) ListOperationsResponder(resp *http.Response) (resul
 	return
 }
 
-// ListOperationsNextResults retrieves the next set of results, if any.
-func (client ProviderClient) ListOperationsNextResults(lastResults CsmOperationCollection) (result CsmOperationCollection, err error) {
-	req, err := lastResults.CsmOperationCollectionPreparer()
+// listOperationsNextResults retrieves the next set of results, if any.
+func (client ProviderClient) listOperationsNextResults(lastResults CsmOperationCollection) (result CsmOperationCollection, err error) {
+	req, err := lastResults.csmOperationCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ProviderClient", "listOperationsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListOperationsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ProviderClient", "listOperationsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListOperationsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ProviderClient", "ListOperations", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ProviderClient", "listOperationsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListOperationsComplete gets all elements from the list without paging.
-func (client ProviderClient) ListOperationsComplete(cancel <-chan struct{}) (<-chan CsmOperationDescription, <-chan error) {
-	resultChan := make(chan CsmOperationDescription)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListOperations()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListOperationsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListOperationsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProviderClient) ListOperationsComplete(ctx context.Context) (result CsmOperationCollectionIterator, err error) {
+	result.page, err = client.ListOperations(ctx)
+	return
 }

@@ -18,7 +18,9 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,9 +30,9 @@ import (
 type CostThresholdStatus string
 
 const (
-	// Disabled specifies the disabled state for cost threshold status.
+	// Disabled ...
 	Disabled CostThresholdStatus = "Disabled"
-	// Enabled specifies the enabled state for cost threshold status.
+	// Enabled ...
 	Enabled CostThresholdStatus = "Enabled"
 )
 
@@ -38,11 +40,11 @@ const (
 type CostType string
 
 const (
-	// Projected specifies the projected state for cost type.
+	// Projected ...
 	Projected CostType = "Projected"
-	// Reported specifies the reported state for cost type.
+	// Reported ...
 	Reported CostType = "Reported"
-	// Unavailable specifies the unavailable state for cost type.
+	// Unavailable ...
 	Unavailable CostType = "Unavailable"
 )
 
@@ -50,11 +52,11 @@ const (
 type CustomImageOsType string
 
 const (
-	// Linux specifies the linux state for custom image os type.
+	// Linux ...
 	Linux CustomImageOsType = "Linux"
-	// None specifies the none state for custom image os type.
+	// None ...
 	None CustomImageOsType = "None"
-	// Windows specifies the windows state for custom image os type.
+	// Windows ...
 	Windows CustomImageOsType = "Windows"
 )
 
@@ -62,9 +64,9 @@ const (
 type EnableStatus string
 
 const (
-	// EnableStatusDisabled specifies the enable status disabled state for enable status.
+	// EnableStatusDisabled ...
 	EnableStatusDisabled EnableStatus = "Disabled"
-	// EnableStatusEnabled specifies the enable status enabled state for enable status.
+	// EnableStatusEnabled ...
 	EnableStatusEnabled EnableStatus = "Enabled"
 )
 
@@ -72,10 +74,9 @@ const (
 type FileUploadOptions string
 
 const (
-	// FileUploadOptionsNone specifies the file upload options none state for file upload options.
+	// FileUploadOptionsNone ...
 	FileUploadOptionsNone FileUploadOptions = "None"
-	// FileUploadOptionsUploadFilesAndGenerateSasTokens specifies the file upload options upload files and generate sas
-	// tokens state for file upload options.
+	// FileUploadOptionsUploadFilesAndGenerateSasTokens ...
 	FileUploadOptionsUploadFilesAndGenerateSasTokens FileUploadOptions = "UploadFilesAndGenerateSasTokens"
 )
 
@@ -83,11 +84,11 @@ const (
 type HostCachingOptions string
 
 const (
-	// HostCachingOptionsNone specifies the host caching options none state for host caching options.
+	// HostCachingOptionsNone ...
 	HostCachingOptionsNone HostCachingOptions = "None"
-	// HostCachingOptionsReadOnly specifies the host caching options read only state for host caching options.
+	// HostCachingOptionsReadOnly ...
 	HostCachingOptionsReadOnly HostCachingOptions = "ReadOnly"
-	// HostCachingOptionsReadWrite specifies the host caching options read write state for host caching options.
+	// HostCachingOptionsReadWrite ...
 	HostCachingOptionsReadWrite HostCachingOptions = "ReadWrite"
 )
 
@@ -95,89 +96,89 @@ const (
 type HTTPStatusCode string
 
 const (
-	// Accepted specifies the accepted state for http status code.
+	// Accepted ...
 	Accepted HTTPStatusCode = "Accepted"
-	// BadGateway specifies the bad gateway state for http status code.
+	// BadGateway ...
 	BadGateway HTTPStatusCode = "BadGateway"
-	// BadRequest specifies the bad request state for http status code.
+	// BadRequest ...
 	BadRequest HTTPStatusCode = "BadRequest"
-	// Conflict specifies the conflict state for http status code.
+	// Conflict ...
 	Conflict HTTPStatusCode = "Conflict"
-	// Continue specifies the continue state for http status code.
+	// Continue ...
 	Continue HTTPStatusCode = "Continue"
-	// Created specifies the created state for http status code.
+	// Created ...
 	Created HTTPStatusCode = "Created"
-	// ExpectationFailed specifies the expectation failed state for http status code.
+	// ExpectationFailed ...
 	ExpectationFailed HTTPStatusCode = "ExpectationFailed"
-	// Forbidden specifies the forbidden state for http status code.
+	// Forbidden ...
 	Forbidden HTTPStatusCode = "Forbidden"
-	// GatewayTimeout specifies the gateway timeout state for http status code.
+	// GatewayTimeout ...
 	GatewayTimeout HTTPStatusCode = "GatewayTimeout"
-	// Gone specifies the gone state for http status code.
+	// Gone ...
 	Gone HTTPStatusCode = "Gone"
-	// HTTPVersionNotSupported specifies the http version not supported state for http status code.
+	// HTTPVersionNotSupported ...
 	HTTPVersionNotSupported HTTPStatusCode = "HttpVersionNotSupported"
-	// InternalServerError specifies the internal server error state for http status code.
+	// InternalServerError ...
 	InternalServerError HTTPStatusCode = "InternalServerError"
-	// LengthRequired specifies the length required state for http status code.
+	// LengthRequired ...
 	LengthRequired HTTPStatusCode = "LengthRequired"
-	// MethodNotAllowed specifies the method not allowed state for http status code.
+	// MethodNotAllowed ...
 	MethodNotAllowed HTTPStatusCode = "MethodNotAllowed"
-	// MovedPermanently specifies the moved permanently state for http status code.
+	// MovedPermanently ...
 	MovedPermanently HTTPStatusCode = "MovedPermanently"
-	// MultipleChoices specifies the multiple choices state for http status code.
+	// MultipleChoices ...
 	MultipleChoices HTTPStatusCode = "MultipleChoices"
-	// NoContent specifies the no content state for http status code.
+	// NoContent ...
 	NoContent HTTPStatusCode = "NoContent"
-	// NonAuthoritativeInformation specifies the non authoritative information state for http status code.
+	// NonAuthoritativeInformation ...
 	NonAuthoritativeInformation HTTPStatusCode = "NonAuthoritativeInformation"
-	// NotAcceptable specifies the not acceptable state for http status code.
+	// NotAcceptable ...
 	NotAcceptable HTTPStatusCode = "NotAcceptable"
-	// NotFound specifies the not found state for http status code.
+	// NotFound ...
 	NotFound HTTPStatusCode = "NotFound"
-	// NotImplemented specifies the not implemented state for http status code.
+	// NotImplemented ...
 	NotImplemented HTTPStatusCode = "NotImplemented"
-	// NotModified specifies the not modified state for http status code.
+	// NotModified ...
 	NotModified HTTPStatusCode = "NotModified"
-	// OK specifies the ok state for http status code.
+	// OK ...
 	OK HTTPStatusCode = "OK"
-	// PartialContent specifies the partial content state for http status code.
+	// PartialContent ...
 	PartialContent HTTPStatusCode = "PartialContent"
-	// PaymentRequired specifies the payment required state for http status code.
+	// PaymentRequired ...
 	PaymentRequired HTTPStatusCode = "PaymentRequired"
-	// PreconditionFailed specifies the precondition failed state for http status code.
+	// PreconditionFailed ...
 	PreconditionFailed HTTPStatusCode = "PreconditionFailed"
-	// ProxyAuthenticationRequired specifies the proxy authentication required state for http status code.
+	// ProxyAuthenticationRequired ...
 	ProxyAuthenticationRequired HTTPStatusCode = "ProxyAuthenticationRequired"
-	// Redirect specifies the redirect state for http status code.
+	// Redirect ...
 	Redirect HTTPStatusCode = "Redirect"
-	// RequestedRangeNotSatisfiable specifies the requested range not satisfiable state for http status code.
+	// RequestedRangeNotSatisfiable ...
 	RequestedRangeNotSatisfiable HTTPStatusCode = "RequestedRangeNotSatisfiable"
-	// RequestEntityTooLarge specifies the request entity too large state for http status code.
+	// RequestEntityTooLarge ...
 	RequestEntityTooLarge HTTPStatusCode = "RequestEntityTooLarge"
-	// RequestTimeout specifies the request timeout state for http status code.
+	// RequestTimeout ...
 	RequestTimeout HTTPStatusCode = "RequestTimeout"
-	// RequestURITooLong specifies the request uri too long state for http status code.
+	// RequestURITooLong ...
 	RequestURITooLong HTTPStatusCode = "RequestUriTooLong"
-	// ResetContent specifies the reset content state for http status code.
+	// ResetContent ...
 	ResetContent HTTPStatusCode = "ResetContent"
-	// SeeOther specifies the see other state for http status code.
+	// SeeOther ...
 	SeeOther HTTPStatusCode = "SeeOther"
-	// ServiceUnavailable specifies the service unavailable state for http status code.
+	// ServiceUnavailable ...
 	ServiceUnavailable HTTPStatusCode = "ServiceUnavailable"
-	// SwitchingProtocols specifies the switching protocols state for http status code.
+	// SwitchingProtocols ...
 	SwitchingProtocols HTTPStatusCode = "SwitchingProtocols"
-	// TemporaryRedirect specifies the temporary redirect state for http status code.
+	// TemporaryRedirect ...
 	TemporaryRedirect HTTPStatusCode = "TemporaryRedirect"
-	// Unauthorized specifies the unauthorized state for http status code.
+	// Unauthorized ...
 	Unauthorized HTTPStatusCode = "Unauthorized"
-	// UnsupportedMediaType specifies the unsupported media type state for http status code.
+	// UnsupportedMediaType ...
 	UnsupportedMediaType HTTPStatusCode = "UnsupportedMediaType"
-	// Unused specifies the unused state for http status code.
+	// Unused ...
 	Unused HTTPStatusCode = "Unused"
-	// UpgradeRequired specifies the upgrade required state for http status code.
+	// UpgradeRequired ...
 	UpgradeRequired HTTPStatusCode = "UpgradeRequired"
-	// UseProxy specifies the use proxy state for http status code.
+	// UseProxy ...
 	UseProxy HTTPStatusCode = "UseProxy"
 )
 
@@ -185,11 +186,11 @@ const (
 type LinuxOsState string
 
 const (
-	// DeprovisionApplied specifies the deprovision applied state for linux os state.
+	// DeprovisionApplied ...
 	DeprovisionApplied LinuxOsState = "DeprovisionApplied"
-	// DeprovisionRequested specifies the deprovision requested state for linux os state.
+	// DeprovisionRequested ...
 	DeprovisionRequested LinuxOsState = "DeprovisionRequested"
-	// NonDeprovisioned specifies the non deprovisioned state for linux os state.
+	// NonDeprovisioned ...
 	NonDeprovisioned LinuxOsState = "NonDeprovisioned"
 )
 
@@ -197,9 +198,9 @@ const (
 type NotificationChannelEventType string
 
 const (
-	// AutoShutdown specifies the auto shutdown state for notification channel event type.
+	// AutoShutdown ...
 	AutoShutdown NotificationChannelEventType = "AutoShutdown"
-	// Cost specifies the cost state for notification channel event type.
+	// Cost ...
 	Cost NotificationChannelEventType = "Cost"
 )
 
@@ -207,9 +208,9 @@ const (
 type NotificationStatus string
 
 const (
-	// NotificationStatusDisabled specifies the notification status disabled state for notification status.
+	// NotificationStatusDisabled ...
 	NotificationStatusDisabled NotificationStatus = "Disabled"
-	// NotificationStatusEnabled specifies the notification status enabled state for notification status.
+	// NotificationStatusEnabled ...
 	NotificationStatusEnabled NotificationStatus = "Enabled"
 )
 
@@ -217,9 +218,9 @@ const (
 type PolicyEvaluatorType string
 
 const (
-	// AllowedValuesPolicy specifies the allowed values policy state for policy evaluator type.
+	// AllowedValuesPolicy ...
 	AllowedValuesPolicy PolicyEvaluatorType = "AllowedValuesPolicy"
-	// MaxValuePolicy specifies the max value policy state for policy evaluator type.
+	// MaxValuePolicy ...
 	MaxValuePolicy PolicyEvaluatorType = "MaxValuePolicy"
 )
 
@@ -227,23 +228,21 @@ const (
 type PolicyFactName string
 
 const (
-	// PolicyFactNameGalleryImage specifies the policy fact name gallery image state for policy fact name.
+	// PolicyFactNameGalleryImage ...
 	PolicyFactNameGalleryImage PolicyFactName = "GalleryImage"
-	// PolicyFactNameLabPremiumVMCount specifies the policy fact name lab premium vm count state for policy fact name.
+	// PolicyFactNameLabPremiumVMCount ...
 	PolicyFactNameLabPremiumVMCount PolicyFactName = "LabPremiumVmCount"
-	// PolicyFactNameLabTargetCost specifies the policy fact name lab target cost state for policy fact name.
+	// PolicyFactNameLabTargetCost ...
 	PolicyFactNameLabTargetCost PolicyFactName = "LabTargetCost"
-	// PolicyFactNameLabVMCount specifies the policy fact name lab vm count state for policy fact name.
+	// PolicyFactNameLabVMCount ...
 	PolicyFactNameLabVMCount PolicyFactName = "LabVmCount"
-	// PolicyFactNameLabVMSize specifies the policy fact name lab vm size state for policy fact name.
+	// PolicyFactNameLabVMSize ...
 	PolicyFactNameLabVMSize PolicyFactName = "LabVmSize"
-	// PolicyFactNameUserOwnedLabPremiumVMCount specifies the policy fact name user owned lab premium vm count state for
-	// policy fact name.
+	// PolicyFactNameUserOwnedLabPremiumVMCount ...
 	PolicyFactNameUserOwnedLabPremiumVMCount PolicyFactName = "UserOwnedLabPremiumVmCount"
-	// PolicyFactNameUserOwnedLabVMCount specifies the policy fact name user owned lab vm count state for policy fact name.
+	// PolicyFactNameUserOwnedLabVMCount ...
 	PolicyFactNameUserOwnedLabVMCount PolicyFactName = "UserOwnedLabVmCount"
-	// PolicyFactNameUserOwnedLabVMCountInSubnet specifies the policy fact name user owned lab vm count in subnet state for
-	// policy fact name.
+	// PolicyFactNameUserOwnedLabVMCountInSubnet ...
 	PolicyFactNameUserOwnedLabVMCountInSubnet PolicyFactName = "UserOwnedLabVmCountInSubnet"
 )
 
@@ -251,9 +250,9 @@ const (
 type PolicyStatus string
 
 const (
-	// PolicyStatusDisabled specifies the policy status disabled state for policy status.
+	// PolicyStatusDisabled ...
 	PolicyStatusDisabled PolicyStatus = "Disabled"
-	// PolicyStatusEnabled specifies the policy status enabled state for policy status.
+	// PolicyStatusEnabled ...
 	PolicyStatusEnabled PolicyStatus = "Enabled"
 )
 
@@ -261,9 +260,9 @@ const (
 type PremiumDataDisk string
 
 const (
-	// PremiumDataDiskDisabled specifies the premium data disk disabled state for premium data disk.
+	// PremiumDataDiskDisabled ...
 	PremiumDataDiskDisabled PremiumDataDisk = "Disabled"
-	// PremiumDataDiskEnabled specifies the premium data disk enabled state for premium data disk.
+	// PremiumDataDiskEnabled ...
 	PremiumDataDiskEnabled PremiumDataDisk = "Enabled"
 )
 
@@ -271,9 +270,9 @@ const (
 type ReportingCycleType string
 
 const (
-	// CalendarMonth specifies the calendar month state for reporting cycle type.
+	// CalendarMonth ...
 	CalendarMonth ReportingCycleType = "CalendarMonth"
-	// Custom specifies the custom state for reporting cycle type.
+	// Custom ...
 	Custom ReportingCycleType = "Custom"
 )
 
@@ -281,9 +280,9 @@ const (
 type SourceControlType string
 
 const (
-	// GitHub specifies the git hub state for source control type.
+	// GitHub ...
 	GitHub SourceControlType = "GitHub"
-	// VsoGit specifies the vso git state for source control type.
+	// VsoGit ...
 	VsoGit SourceControlType = "VsoGit"
 )
 
@@ -291,9 +290,9 @@ const (
 type StorageType string
 
 const (
-	// Premium specifies the premium state for storage type.
+	// Premium ...
 	Premium StorageType = "Premium"
-	// Standard specifies the standard state for storage type.
+	// Standard ...
 	Standard StorageType = "Standard"
 )
 
@@ -301,9 +300,9 @@ const (
 type TargetCostStatus string
 
 const (
-	// TargetCostStatusDisabled specifies the target cost status disabled state for target cost status.
+	// TargetCostStatusDisabled ...
 	TargetCostStatusDisabled TargetCostStatus = "Disabled"
-	// TargetCostStatusEnabled specifies the target cost status enabled state for target cost status.
+	// TargetCostStatusEnabled ...
 	TargetCostStatusEnabled TargetCostStatus = "Enabled"
 )
 
@@ -311,9 +310,9 @@ const (
 type TransportProtocol string
 
 const (
-	// TCP specifies the tcp state for transport protocol.
+	// TCP ...
 	TCP TransportProtocol = "Tcp"
-	// UDP specifies the udp state for transport protocol.
+	// UDP ...
 	UDP TransportProtocol = "Udp"
 )
 
@@ -321,11 +320,11 @@ const (
 type UsagePermissionType string
 
 const (
-	// Allow specifies the allow state for usage permission type.
+	// Allow ...
 	Allow UsagePermissionType = "Allow"
-	// Default specifies the default state for usage permission type.
+	// Default ...
 	Default UsagePermissionType = "Default"
-	// Deny specifies the deny state for usage permission type.
+	// Deny ...
 	Deny UsagePermissionType = "Deny"
 )
 
@@ -333,9 +332,9 @@ const (
 type VirtualMachineCreationSource string
 
 const (
-	// FromCustomImage specifies the from custom image state for virtual machine creation source.
+	// FromCustomImage ...
 	FromCustomImage VirtualMachineCreationSource = "FromCustomImage"
-	// FromGalleryImage specifies the from gallery image state for virtual machine creation source.
+	// FromGalleryImage ...
 	FromGalleryImage VirtualMachineCreationSource = "FromGalleryImage"
 )
 
@@ -343,1646 +342,6736 @@ const (
 type WindowsOsState string
 
 const (
-	// NonSysprepped specifies the non sysprepped state for windows os state.
+	// NonSysprepped ...
 	NonSysprepped WindowsOsState = "NonSysprepped"
-	// SysprepApplied specifies the sysprep applied state for windows os state.
+	// SysprepApplied ...
 	SysprepApplied WindowsOsState = "SysprepApplied"
-	// SysprepRequested specifies the sysprep requested state for windows os state.
+	// SysprepRequested ...
 	SysprepRequested WindowsOsState = "SysprepRequested"
 )
 
-// ApplicableSchedule is schedules applicable to a virtual machine. The schedules may have been defined on a VM or on
-// lab level.
+// ApplicableSchedule schedules applicable to a virtual machine. The schedules may have been defined on a VM or on lab
+// level.
 type ApplicableSchedule struct {
-	autorest.Response             `json:"-"`
-	ID                            *string             `json:"id,omitempty"`
-	Name                          *string             `json:"name,omitempty"`
-	Type                          *string             `json:"type,omitempty"`
-	Location                      *string             `json:"location,omitempty"`
-	Tags                          *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ApplicableScheduleProperties - The properties of the resource.
 	*ApplicableScheduleProperties `json:"properties,omitempty"`
 }
 
-// ApplicableScheduleFragment is schedules applicable to a virtual machine. The schedules may have been defined on a VM
-// or on lab level.
+// UnmarshalJSON is the custom unmarshaler for ApplicableSchedule struct.
+func (as *ApplicableSchedule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ApplicableScheduleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		as.ApplicableScheduleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		as.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		as.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		as.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		as.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		as.Tags = &tags
+	}
+
+	return nil
+}
+
+// ApplicableScheduleFragment schedules applicable to a virtual machine. The schedules may have been defined on a VM or
+// on lab level.
 type ApplicableScheduleFragment struct {
-	ID                                    *string             `json:"id,omitempty"`
-	Name                                  *string             `json:"name,omitempty"`
-	Type                                  *string             `json:"type,omitempty"`
-	Location                              *string             `json:"location,omitempty"`
-	Tags                                  *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ApplicableSchedulePropertiesFragment - The properties of the resource.
 	*ApplicableSchedulePropertiesFragment `json:"properties,omitempty"`
 }
 
-// ApplicableScheduleProperties is properties of a schedules applicable to a virtual machine.
+// UnmarshalJSON is the custom unmarshaler for ApplicableScheduleFragment struct.
+func (asf *ApplicableScheduleFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ApplicableSchedulePropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		asf.ApplicableSchedulePropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		asf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		asf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		asf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		asf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		asf.Tags = &tags
+	}
+
+	return nil
+}
+
+// ApplicableScheduleProperties properties of a schedules applicable to a virtual machine.
 type ApplicableScheduleProperties struct {
+	// LabVmsShutdown - The auto-shutdown schedule, if one has been set at the lab or lab resource level.
 	LabVmsShutdown *Schedule `json:"labVmsShutdown,omitempty"`
-	LabVmsStartup  *Schedule `json:"labVmsStartup,omitempty"`
+	// LabVmsStartup - The auto-startup schedule, if one has been set at the lab or lab resource level.
+	LabVmsStartup *Schedule `json:"labVmsStartup,omitempty"`
 }
 
-// ApplicableSchedulePropertiesFragment is properties of a schedules applicable to a virtual machine.
+// ApplicableSchedulePropertiesFragment properties of a schedules applicable to a virtual machine.
 type ApplicableSchedulePropertiesFragment struct {
+	// LabVmsShutdown - The auto-shutdown schedule, if one has been set at the lab or lab resource level.
 	LabVmsShutdown *ScheduleFragment `json:"labVmsShutdown,omitempty"`
-	LabVmsStartup  *ScheduleFragment `json:"labVmsStartup,omitempty"`
+	// LabVmsStartup - The auto-startup schedule, if one has been set at the lab or lab resource level.
+	LabVmsStartup *ScheduleFragment `json:"labVmsStartup,omitempty"`
 }
 
-// ApplyArtifactsRequest is request body for applying artifacts to a virtual machine.
+// ApplyArtifactsRequest request body for applying artifacts to a virtual machine.
 type ApplyArtifactsRequest struct {
+	// Artifacts - The list of artifacts to apply.
 	Artifacts *[]ArtifactInstallProperties `json:"artifacts,omitempty"`
 }
 
-// ArmTemplate is an Azure Resource Manager template.
+// ArmTemplate an Azure Resource Manager template.
 type ArmTemplate struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ArmTemplateProperties - The properties of the resource.
 	*ArmTemplateProperties `json:"properties,omitempty"`
 }
 
-// ArmTemplateInfo is information about a generated ARM template.
-type ArmTemplateInfo struct {
-	autorest.Response `json:"-"`
-	Template          *map[string]interface{} `json:"template,omitempty"`
-	Parameters        *map[string]interface{} `json:"parameters,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ArmTemplate struct.
+func (at *ArmTemplate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ArmTemplateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		at.ArmTemplateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		at.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		at.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		at.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		at.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		at.Tags = &tags
+	}
+
+	return nil
 }
 
-// ArmTemplateParameterProperties is properties of an Azure Resource Manager template parameter.
+// ArmTemplateInfo information about a generated ARM template.
+type ArmTemplateInfo struct {
+	autorest.Response `json:"-"`
+	// Template - The template's contents.
+	Template *map[string]interface{} `json:"template,omitempty"`
+	// Parameters - The parameters of the ARM template.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// ArmTemplateParameterProperties properties of an Azure Resource Manager template parameter.
 type ArmTemplateParameterProperties struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The name of the template parameter.
+	Name *string `json:"name,omitempty"`
+	// Value - The value of the template parameter.
 	Value *string `json:"value,omitempty"`
 }
 
-// ArmTemplateProperties is properties of an Azure Resource Manager template.
+// ArmTemplateProperties properties of an Azure Resource Manager template.
 type ArmTemplateProperties struct {
-	DisplayName              *string                    `json:"displayName,omitempty"`
-	Description              *string                    `json:"description,omitempty"`
-	Publisher                *string                    `json:"publisher,omitempty"`
-	Icon                     *string                    `json:"icon,omitempty"`
-	Contents                 *map[string]interface{}    `json:"contents,omitempty"`
-	CreatedDate              *date.Time                 `json:"createdDate,omitempty"`
+	// DisplayName - The display name of the ARM template.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - The description of the ARM template.
+	Description *string `json:"description,omitempty"`
+	// Publisher - The publisher of the ARM template.
+	Publisher *string `json:"publisher,omitempty"`
+	// Icon - The URI to the icon of the ARM template.
+	Icon *string `json:"icon,omitempty"`
+	// Contents - The contents of the ARM template.
+	Contents *map[string]interface{} `json:"contents,omitempty"`
+	// CreatedDate - The creation date of the armTemplate.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ParametersValueFilesInfo - File name and parameter values information from all azuredeploy.*.parameters.json for the ARM template.
 	ParametersValueFilesInfo *[]ParametersValueFileInfo `json:"parametersValueFilesInfo,omitempty"`
 }
 
-// Artifact is an artifact.
+// Artifact an artifact.
 type Artifact struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ArtifactProperties - The properties of the resource.
 	*ArtifactProperties `json:"properties,omitempty"`
 }
 
-// ArtifactDeploymentStatusProperties is properties of an artifact deployment.
+// UnmarshalJSON is the custom unmarshaler for Artifact struct.
+func (a *Artifact) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ArtifactProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.ArtifactProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		a.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		a.Tags = &tags
+	}
+
+	return nil
+}
+
+// ArtifactDeploymentStatusProperties properties of an artifact deployment.
 type ArtifactDeploymentStatusProperties struct {
+	// DeploymentStatus - The deployment status of the artifact.
 	DeploymentStatus *string `json:"deploymentStatus,omitempty"`
-	ArtifactsApplied *int32  `json:"artifactsApplied,omitempty"`
-	TotalArtifacts   *int32  `json:"totalArtifacts,omitempty"`
+	// ArtifactsApplied - The total count of the artifacts that were successfully applied.
+	ArtifactsApplied *int32 `json:"artifactsApplied,omitempty"`
+	// TotalArtifacts - The total count of the artifacts that were tentatively applied.
+	TotalArtifacts *int32 `json:"totalArtifacts,omitempty"`
 }
 
-// ArtifactDeploymentStatusPropertiesFragment is properties of an artifact deployment.
+// ArtifactDeploymentStatusPropertiesFragment properties of an artifact deployment.
 type ArtifactDeploymentStatusPropertiesFragment struct {
+	// DeploymentStatus - The deployment status of the artifact.
 	DeploymentStatus *string `json:"deploymentStatus,omitempty"`
-	ArtifactsApplied *int32  `json:"artifactsApplied,omitempty"`
-	TotalArtifacts   *int32  `json:"totalArtifacts,omitempty"`
+	// ArtifactsApplied - The total count of the artifacts that were successfully applied.
+	ArtifactsApplied *int32 `json:"artifactsApplied,omitempty"`
+	// TotalArtifacts - The total count of the artifacts that were tentatively applied.
+	TotalArtifacts *int32 `json:"totalArtifacts,omitempty"`
 }
 
-// ArtifactInstallProperties is properties of an artifact.
+// ArtifactInstallProperties properties of an artifact.
 type ArtifactInstallProperties struct {
-	ArtifactID               *string                        `json:"artifactId,omitempty"`
-	Parameters               *[]ArtifactParameterProperties `json:"parameters,omitempty"`
-	Status                   *string                        `json:"status,omitempty"`
-	DeploymentStatusMessage  *string                        `json:"deploymentStatusMessage,omitempty"`
-	VMExtensionStatusMessage *string                        `json:"vmExtensionStatusMessage,omitempty"`
-	InstallTime              *date.Time                     `json:"installTime,omitempty"`
+	// ArtifactID - The artifact's identifier.
+	ArtifactID *string `json:"artifactId,omitempty"`
+	// Parameters - The parameters of the artifact.
+	Parameters *[]ArtifactParameterProperties `json:"parameters,omitempty"`
+	// Status - The status of the artifact.
+	Status *string `json:"status,omitempty"`
+	// DeploymentStatusMessage - The status message from the deployment.
+	DeploymentStatusMessage *string `json:"deploymentStatusMessage,omitempty"`
+	// VMExtensionStatusMessage - The status message from the virtual machine extension.
+	VMExtensionStatusMessage *string `json:"vmExtensionStatusMessage,omitempty"`
+	// InstallTime - The time that the artifact starts to install on the virtual machine.
+	InstallTime *date.Time `json:"installTime,omitempty"`
 }
 
-// ArtifactInstallPropertiesFragment is properties of an artifact.
+// ArtifactInstallPropertiesFragment properties of an artifact.
 type ArtifactInstallPropertiesFragment struct {
-	ArtifactID               *string                                `json:"artifactId,omitempty"`
-	Parameters               *[]ArtifactParameterPropertiesFragment `json:"parameters,omitempty"`
-	Status                   *string                                `json:"status,omitempty"`
-	DeploymentStatusMessage  *string                                `json:"deploymentStatusMessage,omitempty"`
-	VMExtensionStatusMessage *string                                `json:"vmExtensionStatusMessage,omitempty"`
-	InstallTime              *date.Time                             `json:"installTime,omitempty"`
+	// ArtifactID - The artifact's identifier.
+	ArtifactID *string `json:"artifactId,omitempty"`
+	// Parameters - The parameters of the artifact.
+	Parameters *[]ArtifactParameterPropertiesFragment `json:"parameters,omitempty"`
+	// Status - The status of the artifact.
+	Status *string `json:"status,omitempty"`
+	// DeploymentStatusMessage - The status message from the deployment.
+	DeploymentStatusMessage *string `json:"deploymentStatusMessage,omitempty"`
+	// VMExtensionStatusMessage - The status message from the virtual machine extension.
+	VMExtensionStatusMessage *string `json:"vmExtensionStatusMessage,omitempty"`
+	// InstallTime - The time that the artifact starts to install on the virtual machine.
+	InstallTime *date.Time `json:"installTime,omitempty"`
 }
 
-// ArtifactParameterProperties is properties of an artifact parameter.
+// ArtifactParameterProperties properties of an artifact parameter.
 type ArtifactParameterProperties struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The name of the artifact parameter.
+	Name *string `json:"name,omitempty"`
+	// Value - The value of the artifact parameter.
 	Value *string `json:"value,omitempty"`
 }
 
-// ArtifactParameterPropertiesFragment is properties of an artifact parameter.
+// ArtifactParameterPropertiesFragment properties of an artifact parameter.
 type ArtifactParameterPropertiesFragment struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The name of the artifact parameter.
+	Name *string `json:"name,omitempty"`
+	// Value - The value of the artifact parameter.
 	Value *string `json:"value,omitempty"`
 }
 
-// ArtifactProperties is properties of an artifact.
+// ArtifactProperties properties of an artifact.
 type ArtifactProperties struct {
-	Title        *string                 `json:"title,omitempty"`
-	Description  *string                 `json:"description,omitempty"`
-	Publisher    *string                 `json:"publisher,omitempty"`
-	FilePath     *string                 `json:"filePath,omitempty"`
-	Icon         *string                 `json:"icon,omitempty"`
-	TargetOsType *string                 `json:"targetOsType,omitempty"`
-	Parameters   *map[string]interface{} `json:"parameters,omitempty"`
-	CreatedDate  *date.Time              `json:"createdDate,omitempty"`
+	// Title - The artifact's title.
+	Title *string `json:"title,omitempty"`
+	// Description - The artifact's description.
+	Description *string `json:"description,omitempty"`
+	// Publisher - The artifact's publisher.
+	Publisher *string `json:"publisher,omitempty"`
+	// FilePath - The file path to the artifact.
+	FilePath *string `json:"filePath,omitempty"`
+	// Icon - The URI to the artifact icon.
+	Icon *string `json:"icon,omitempty"`
+	// TargetOsType - The artifact's target OS.
+	TargetOsType *string `json:"targetOsType,omitempty"`
+	// Parameters - The artifact's parameters.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	// CreatedDate - The artifact's creation date.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
 }
 
-// ArtifactSource is properties of an artifact source.
+// ArtifactSource properties of an artifact source.
 type ArtifactSource struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Tags                      *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ArtifactSourceProperties - The properties of the resource.
 	*ArtifactSourceProperties `json:"properties,omitempty"`
 }
 
-// ArtifactSourceFragment is properties of an artifact source.
+// UnmarshalJSON is the custom unmarshaler for ArtifactSource struct.
+func (as *ArtifactSource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ArtifactSourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		as.ArtifactSourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		as.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		as.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		as.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		as.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		as.Tags = &tags
+	}
+
+	return nil
+}
+
+// ArtifactSourceFragment properties of an artifact source.
 type ArtifactSourceFragment struct {
-	ID                                *string             `json:"id,omitempty"`
-	Name                              *string             `json:"name,omitempty"`
-	Type                              *string             `json:"type,omitempty"`
-	Location                          *string             `json:"location,omitempty"`
-	Tags                              *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ArtifactSourcePropertiesFragment - The properties of the resource.
 	*ArtifactSourcePropertiesFragment `json:"properties,omitempty"`
 }
 
-// ArtifactSourceProperties is properties of an artifact source.
+// UnmarshalJSON is the custom unmarshaler for ArtifactSourceFragment struct.
+func (asf *ArtifactSourceFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ArtifactSourcePropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		asf.ArtifactSourcePropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		asf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		asf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		asf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		asf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		asf.Tags = &tags
+	}
+
+	return nil
+}
+
+// ArtifactSourceProperties properties of an artifact source.
 type ArtifactSourceProperties struct {
-	DisplayName           *string           `json:"displayName,omitempty"`
-	URI                   *string           `json:"uri,omitempty"`
-	SourceType            SourceControlType `json:"sourceType,omitempty"`
-	FolderPath            *string           `json:"folderPath,omitempty"`
-	ArmTemplateFolderPath *string           `json:"armTemplateFolderPath,omitempty"`
-	BranchRef             *string           `json:"branchRef,omitempty"`
-	SecurityToken         *string           `json:"securityToken,omitempty"`
-	Status                EnableStatus      `json:"status,omitempty"`
-	CreatedDate           *date.Time        `json:"createdDate,omitempty"`
-	ProvisioningState     *string           `json:"provisioningState,omitempty"`
-	UniqueIdentifier      *string           `json:"uniqueIdentifier,omitempty"`
+	// DisplayName - The artifact source's display name.
+	DisplayName *string `json:"displayName,omitempty"`
+	// URI - The artifact source's URI.
+	URI *string `json:"uri,omitempty"`
+	// SourceType - The artifact source's type. Possible values include: 'VsoGit', 'GitHub'
+	SourceType SourceControlType `json:"sourceType,omitempty"`
+	// FolderPath - The folder containing artifacts.
+	FolderPath *string `json:"folderPath,omitempty"`
+	// ArmTemplateFolderPath - The folder containing Azure Resource Manager templates.
+	ArmTemplateFolderPath *string `json:"armTemplateFolderPath,omitempty"`
+	// BranchRef - The artifact source's branch reference.
+	BranchRef *string `json:"branchRef,omitempty"`
+	// SecurityToken - The security token to authenticate to the artifact source.
+	SecurityToken *string `json:"securityToken,omitempty"`
+	// Status - Indicates if the artifact source is enabled (values: Enabled, Disabled). Possible values include: 'EnableStatusEnabled', 'EnableStatusDisabled'
+	Status EnableStatus `json:"status,omitempty"`
+	// CreatedDate - The artifact source's creation date.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// ArtifactSourcePropertiesFragment is properties of an artifact source.
+// ArtifactSourcePropertiesFragment properties of an artifact source.
 type ArtifactSourcePropertiesFragment struct {
-	DisplayName           *string           `json:"displayName,omitempty"`
-	URI                   *string           `json:"uri,omitempty"`
-	SourceType            SourceControlType `json:"sourceType,omitempty"`
-	FolderPath            *string           `json:"folderPath,omitempty"`
-	ArmTemplateFolderPath *string           `json:"armTemplateFolderPath,omitempty"`
-	BranchRef             *string           `json:"branchRef,omitempty"`
-	SecurityToken         *string           `json:"securityToken,omitempty"`
-	Status                EnableStatus      `json:"status,omitempty"`
-	ProvisioningState     *string           `json:"provisioningState,omitempty"`
-	UniqueIdentifier      *string           `json:"uniqueIdentifier,omitempty"`
+	// DisplayName - The artifact source's display name.
+	DisplayName *string `json:"displayName,omitempty"`
+	// URI - The artifact source's URI.
+	URI *string `json:"uri,omitempty"`
+	// SourceType - The artifact source's type. Possible values include: 'VsoGit', 'GitHub'
+	SourceType SourceControlType `json:"sourceType,omitempty"`
+	// FolderPath - The folder containing artifacts.
+	FolderPath *string `json:"folderPath,omitempty"`
+	// ArmTemplateFolderPath - The folder containing Azure Resource Manager templates.
+	ArmTemplateFolderPath *string `json:"armTemplateFolderPath,omitempty"`
+	// BranchRef - The artifact source's branch reference.
+	BranchRef *string `json:"branchRef,omitempty"`
+	// SecurityToken - The security token to authenticate to the artifact source.
+	SecurityToken *string `json:"securityToken,omitempty"`
+	// Status - Indicates if the artifact source is enabled (values: Enabled, Disabled). Possible values include: 'EnableStatusEnabled', 'EnableStatusDisabled'
+	Status EnableStatus `json:"status,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// AttachDiskProperties is properties of the disk to attach.
+// AttachDiskProperties properties of the disk to attach.
 type AttachDiskProperties struct {
+	// LeasedByLabVMID - The resource ID of the Lab virtual machine to which the disk is attached.
 	LeasedByLabVMID *string `json:"leasedByLabVmId,omitempty"`
 }
 
-// AttachNewDataDiskOptions is properties to attach new disk to the Virtual Machine.
+// AttachNewDataDiskOptions properties to attach new disk to the Virtual Machine.
 type AttachNewDataDiskOptions struct {
-	DiskSizeGiB *int32      `json:"diskSizeGiB,omitempty"`
-	DiskName    *string     `json:"diskName,omitempty"`
-	DiskType    StorageType `json:"diskType,omitempty"`
+	// DiskSizeGiB - Size of the disk to be attached in GibiBytes.
+	DiskSizeGiB *int32 `json:"diskSizeGiB,omitempty"`
+	// DiskName - The name of the disk to be attached.
+	DiskName *string `json:"diskName,omitempty"`
+	// DiskType - The storage type for the disk (i.e. Standard, Premium). Possible values include: 'Standard', 'Premium'
+	DiskType StorageType `json:"diskType,omitempty"`
 }
 
-// BulkCreationParameters is parameters for creating multiple virtual machines as a single action.
+// BulkCreationParameters parameters for creating multiple virtual machines as a single action.
 type BulkCreationParameters struct {
+	// InstanceCount - The number of virtual machine instances to create.
 	InstanceCount *int32 `json:"instanceCount,omitempty"`
 }
 
-// CloudError is error from a REST request.
+// CloudError error from a REST request.
 type CloudError struct {
 	Error *CloudErrorBody `json:"error,omitempty"`
 }
 
-// CloudErrorBody is body of an error from a REST request.
+// CloudErrorBody body of an error from a REST request.
 type CloudErrorBody struct {
-	Code    *string           `json:"code,omitempty"`
-	Message *string           `json:"message,omitempty"`
-	Target  *string           `json:"target,omitempty"`
+	Code    *string `json:"code,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Target  *string `json:"target,omitempty"`
+	// Details - Inner errors.
 	Details *[]CloudErrorBody `json:"details,omitempty"`
 }
 
-// ComputeDataDisk is a data disks attached to a virtual machine.
+// ComputeDataDisk a data disks attached to a virtual machine.
 type ComputeDataDisk struct {
-	Name          *string `json:"name,omitempty"`
-	DiskURI       *string `json:"diskUri,omitempty"`
+	// Name - Gets data disk name.
+	Name *string `json:"name,omitempty"`
+	// DiskURI - When backed by a blob, the URI of underlying blob.
+	DiskURI *string `json:"diskUri,omitempty"`
+	// ManagedDiskID - When backed by managed disk, this is the ID of the compute disk resource.
 	ManagedDiskID *string `json:"managedDiskId,omitempty"`
-	DiskSizeGiB   *int32  `json:"diskSizeGiB,omitempty"`
+	// DiskSizeGiB - Gets data disk size in GiB.
+	DiskSizeGiB *int32 `json:"diskSizeGiB,omitempty"`
 }
 
-// ComputeDataDiskFragment is a data disks attached to a virtual machine.
+// ComputeDataDiskFragment a data disks attached to a virtual machine.
 type ComputeDataDiskFragment struct {
-	Name          *string `json:"name,omitempty"`
-	DiskURI       *string `json:"diskUri,omitempty"`
+	// Name - Gets data disk name.
+	Name *string `json:"name,omitempty"`
+	// DiskURI - When backed by a blob, the URI of underlying blob.
+	DiskURI *string `json:"diskUri,omitempty"`
+	// ManagedDiskID - When backed by managed disk, this is the ID of the compute disk resource.
 	ManagedDiskID *string `json:"managedDiskId,omitempty"`
-	DiskSizeGiB   *int32  `json:"diskSizeGiB,omitempty"`
+	// DiskSizeGiB - Gets data disk size in GiB.
+	DiskSizeGiB *int32 `json:"diskSizeGiB,omitempty"`
 }
 
-// ComputeVMInstanceViewStatus is status information about a virtual machine.
+// ComputeVMInstanceViewStatus status information about a virtual machine.
 type ComputeVMInstanceViewStatus struct {
-	Code          *string `json:"code,omitempty"`
+	// Code - Gets the status Code.
+	Code *string `json:"code,omitempty"`
+	// DisplayStatus - Gets the short localizable label for the status.
 	DisplayStatus *string `json:"displayStatus,omitempty"`
-	Message       *string `json:"message,omitempty"`
+	// Message - Gets the message associated with the status.
+	Message *string `json:"message,omitempty"`
 }
 
-// ComputeVMInstanceViewStatusFragment is status information about a virtual machine.
+// ComputeVMInstanceViewStatusFragment status information about a virtual machine.
 type ComputeVMInstanceViewStatusFragment struct {
-	Code          *string `json:"code,omitempty"`
+	// Code - Gets the status Code.
+	Code *string `json:"code,omitempty"`
+	// DisplayStatus - Gets the short localizable label for the status.
 	DisplayStatus *string `json:"displayStatus,omitempty"`
-	Message       *string `json:"message,omitempty"`
+	// Message - Gets the message associated with the status.
+	Message *string `json:"message,omitempty"`
 }
 
-// ComputeVMProperties is properties of a virtual machine returned by the Microsoft.Compute API.
+// ComputeVMProperties properties of a virtual machine returned by the Microsoft.Compute API.
 type ComputeVMProperties struct {
-	Statuses           *[]ComputeVMInstanceViewStatus `json:"statuses,omitempty"`
-	OsType             *string                        `json:"osType,omitempty"`
-	VMSize             *string                        `json:"vmSize,omitempty"`
-	NetworkInterfaceID *string                        `json:"networkInterfaceId,omitempty"`
-	OsDiskID           *string                        `json:"osDiskId,omitempty"`
-	DataDiskIds        *[]string                      `json:"dataDiskIds,omitempty"`
-	DataDisks          *[]ComputeDataDisk             `json:"dataDisks,omitempty"`
+	// Statuses - Gets the statuses of the virtual machine.
+	Statuses *[]ComputeVMInstanceViewStatus `json:"statuses,omitempty"`
+	// OsType - Gets the OS type of the virtual machine.
+	OsType *string `json:"osType,omitempty"`
+	// VMSize - Gets the size of the virtual machine.
+	VMSize *string `json:"vmSize,omitempty"`
+	// NetworkInterfaceID - Gets the network interface ID of the virtual machine.
+	NetworkInterfaceID *string `json:"networkInterfaceId,omitempty"`
+	// OsDiskID - Gets OS disk blob uri for the virtual machine.
+	OsDiskID *string `json:"osDiskId,omitempty"`
+	// DataDiskIds - Gets data disks blob uri for the virtual machine.
+	DataDiskIds *[]string `json:"dataDiskIds,omitempty"`
+	// DataDisks - Gets all data disks attached to the virtual machine.
+	DataDisks *[]ComputeDataDisk `json:"dataDisks,omitempty"`
 }
 
-// ComputeVMPropertiesFragment is properties of a virtual machine returned by the Microsoft.Compute API.
+// ComputeVMPropertiesFragment properties of a virtual machine returned by the Microsoft.Compute API.
 type ComputeVMPropertiesFragment struct {
-	Statuses           *[]ComputeVMInstanceViewStatusFragment `json:"statuses,omitempty"`
-	OsType             *string                                `json:"osType,omitempty"`
-	VMSize             *string                                `json:"vmSize,omitempty"`
-	NetworkInterfaceID *string                                `json:"networkInterfaceId,omitempty"`
-	OsDiskID           *string                                `json:"osDiskId,omitempty"`
-	DataDiskIds        *[]string                              `json:"dataDiskIds,omitempty"`
-	DataDisks          *[]ComputeDataDiskFragment             `json:"dataDisks,omitempty"`
+	// Statuses - Gets the statuses of the virtual machine.
+	Statuses *[]ComputeVMInstanceViewStatusFragment `json:"statuses,omitempty"`
+	// OsType - Gets the OS type of the virtual machine.
+	OsType *string `json:"osType,omitempty"`
+	// VMSize - Gets the size of the virtual machine.
+	VMSize *string `json:"vmSize,omitempty"`
+	// NetworkInterfaceID - Gets the network interface ID of the virtual machine.
+	NetworkInterfaceID *string `json:"networkInterfaceId,omitempty"`
+	// OsDiskID - Gets OS disk blob uri for the virtual machine.
+	OsDiskID *string `json:"osDiskId,omitempty"`
+	// DataDiskIds - Gets data disks blob uri for the virtual machine.
+	DataDiskIds *[]string `json:"dataDiskIds,omitempty"`
+	// DataDisks - Gets all data disks attached to the virtual machine.
+	DataDisks *[]ComputeDataDiskFragment `json:"dataDisks,omitempty"`
 }
 
-// CostThresholdProperties is properties of a cost threshold item.
+// CostThresholdProperties properties of a cost threshold item.
 type CostThresholdProperties struct {
-	ThresholdID                  *string                            `json:"thresholdId,omitempty"`
-	PercentageThreshold          *PercentageCostThresholdProperties `json:"percentageThreshold,omitempty"`
-	DisplayOnChart               CostThresholdStatus                `json:"displayOnChart,omitempty"`
-	SendNotificationWhenExceeded CostThresholdStatus                `json:"sendNotificationWhenExceeded,omitempty"`
-	NotificationSent             *string                            `json:"NotificationSent,omitempty"`
+	// ThresholdID - The ID of the cost threshold item.
+	ThresholdID *string `json:"thresholdId,omitempty"`
+	// PercentageThreshold - The value of the percentage cost threshold.
+	PercentageThreshold *PercentageCostThresholdProperties `json:"percentageThreshold,omitempty"`
+	// DisplayOnChart - Indicates whether this threshold will be displayed on cost charts. Possible values include: 'Enabled', 'Disabled'
+	DisplayOnChart CostThresholdStatus `json:"displayOnChart,omitempty"`
+	// SendNotificationWhenExceeded - Indicates whether notifications will be sent when this threshold is exceeded. Possible values include: 'Enabled', 'Disabled'
+	SendNotificationWhenExceeded CostThresholdStatus `json:"sendNotificationWhenExceeded,omitempty"`
+	// NotificationSent - Indicates the datetime when notifications were last sent for this threshold.
+	NotificationSent *string `json:"NotificationSent,omitempty"`
 }
 
-// CustomImage is a custom image.
+// CustomImage a custom image.
 type CustomImage struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// CustomImageProperties - The properties of the resource.
 	*CustomImageProperties `json:"properties,omitempty"`
 }
 
-// CustomImageProperties is properties of a custom image.
+// UnmarshalJSON is the custom unmarshaler for CustomImage struct.
+func (ci *CustomImage) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomImageProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ci.CustomImageProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ci.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ci.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ci.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ci.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ci.Tags = &tags
+	}
+
+	return nil
+}
+
+// CustomImageProperties properties of a custom image.
 type CustomImageProperties struct {
-	VM                *CustomImagePropertiesFromVM `json:"vm,omitempty"`
-	Vhd               *CustomImagePropertiesCustom `json:"vhd,omitempty"`
-	Description       *string                      `json:"description,omitempty"`
-	Author            *string                      `json:"author,omitempty"`
-	CreationDate      *date.Time                   `json:"creationDate,omitempty"`
-	ManagedImageID    *string                      `json:"managedImageId,omitempty"`
-	ProvisioningState *string                      `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string                      `json:"uniqueIdentifier,omitempty"`
+	// VM - The virtual machine from which the image is to be created.
+	VM *CustomImagePropertiesFromVM `json:"vm,omitempty"`
+	// Vhd - The VHD from which the image is to be created.
+	Vhd *CustomImagePropertiesCustom `json:"vhd,omitempty"`
+	// Description - The description of the custom image.
+	Description *string `json:"description,omitempty"`
+	// Author - The author of the custom image.
+	Author *string `json:"author,omitempty"`
+	// CreationDate - The creation date of the custom image.
+	CreationDate *date.Time `json:"creationDate,omitempty"`
+	// ManagedImageID - The Managed Image Id backing the custom image.
+	ManagedImageID *string `json:"managedImageId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// CustomImagePropertiesCustom is properties for creating a custom image from a VHD.
+// CustomImagePropertiesCustom properties for creating a custom image from a VHD.
 type CustomImagePropertiesCustom struct {
-	ImageName *string           `json:"imageName,omitempty"`
-	SysPrep   *bool             `json:"sysPrep,omitempty"`
-	OsType    CustomImageOsType `json:"osType,omitempty"`
+	// ImageName - The image name.
+	ImageName *string `json:"imageName,omitempty"`
+	// SysPrep - Indicates whether sysprep has been run on the VHD.
+	SysPrep *bool `json:"sysPrep,omitempty"`
+	// OsType - The OS type of the custom image (i.e. Windows, Linux). Possible values include: 'Windows', 'Linux', 'None'
+	OsType CustomImageOsType `json:"osType,omitempty"`
 }
 
-// CustomImagePropertiesFromVM is properties for creating a custom image from a virtual machine.
+// CustomImagePropertiesFromVM properties for creating a custom image from a virtual machine.
 type CustomImagePropertiesFromVM struct {
-	SourceVMID    *string        `json:"sourceVmId,omitempty"`
+	// SourceVMID - The source vm identifier.
+	SourceVMID *string `json:"sourceVmId,omitempty"`
+	// WindowsOsInfo - The Windows OS information of the VM.
 	WindowsOsInfo *WindowsOsInfo `json:"windowsOsInfo,omitempty"`
-	LinuxOsInfo   *LinuxOsInfo   `json:"linuxOsInfo,omitempty"`
+	// LinuxOsInfo - The Linux OS information of the VM.
+	LinuxOsInfo *LinuxOsInfo `json:"linuxOsInfo,omitempty"`
 }
 
-// DataDiskProperties is request body for adding a new or existing data disk to a virtual machine.
+// CustomImagesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type CustomImagesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomImagesCreateOrUpdateFuture) Result(client CustomImagesClient) (ci CustomImage, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ci, autorest.NewError("dtl.CustomImagesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ci, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ci, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// CustomImagesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CustomImagesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomImagesDeleteFuture) Result(client CustomImagesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.CustomImagesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// DataDiskProperties request body for adding a new or existing data disk to a virtual machine.
 type DataDiskProperties struct {
+	// AttachNewDataDiskOptions - Specifies options to attach a new disk to the virtual machine.
 	AttachNewDataDiskOptions *AttachNewDataDiskOptions `json:"attachNewDataDiskOptions,omitempty"`
-	ExistingLabDiskID        *string                   `json:"existingLabDiskId,omitempty"`
-	HostCaching              HostCachingOptions        `json:"hostCaching,omitempty"`
+	// ExistingLabDiskID - Specifies the existing lab disk id to attach to virtual machine.
+	ExistingLabDiskID *string `json:"existingLabDiskId,omitempty"`
+	// HostCaching - Caching option for a data disk (i.e. None, ReadOnly, ReadWrite). Possible values include: 'HostCachingOptionsNone', 'HostCachingOptionsReadOnly', 'HostCachingOptionsReadWrite'
+	HostCaching HostCachingOptions `json:"hostCaching,omitempty"`
 }
 
-// DayDetails is properties of a daily schedule.
+// DayDetails properties of a daily schedule.
 type DayDetails struct {
+	// Time - The time of day the schedule will occur.
 	Time *string `json:"time,omitempty"`
 }
 
-// DayDetailsFragment is properties of a daily schedule.
+// DayDetailsFragment properties of a daily schedule.
 type DayDetailsFragment struct {
+	// Time - The time of day the schedule will occur.
 	Time *string `json:"time,omitempty"`
 }
 
-// DetachDataDiskProperties is request body for detaching data disk from a virtual machine.
+// DetachDataDiskProperties request body for detaching data disk from a virtual machine.
 type DetachDataDiskProperties struct {
+	// ExistingLabDiskID - Specifies the disk resource ID to detach from virtual machine.
 	ExistingLabDiskID *string `json:"existingLabDiskId,omitempty"`
 }
 
-// DetachDiskProperties is properties of the disk to detach.
+// DetachDiskProperties properties of the disk to detach.
 type DetachDiskProperties struct {
+	// LeasedByLabVMID - The resource ID of the Lab VM to which the disk is attached.
 	LeasedByLabVMID *string `json:"leasedByLabVmId,omitempty"`
 }
 
-// Disk is a Disk.
+// Disk a Disk.
 type Disk struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*DiskProperties   `json:"properties,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// DiskProperties - The properties of the resource.
+	*DiskProperties `json:"properties,omitempty"`
 }
 
-// DiskProperties is properties of a disk.
+// UnmarshalJSON is the custom unmarshaler for Disk struct.
+func (d *Disk) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DiskProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		d.DiskProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		d.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		d.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		d.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		d.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		d.Tags = &tags
+	}
+
+	return nil
+}
+
+// DiskProperties properties of a disk.
 type DiskProperties struct {
-	DiskType          StorageType `json:"diskType,omitempty"`
-	DiskSizeGiB       *int32      `json:"diskSizeGiB,omitempty"`
-	LeasedByLabVMID   *string     `json:"leasedByLabVmId,omitempty"`
-	DiskBlobName      *string     `json:"diskBlobName,omitempty"`
-	DiskURI           *string     `json:"diskUri,omitempty"`
-	CreatedDate       *date.Time  `json:"createdDate,omitempty"`
-	HostCaching       *string     `json:"hostCaching,omitempty"`
-	ManagedDiskID     *string     `json:"managedDiskId,omitempty"`
-	ProvisioningState *string     `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string     `json:"uniqueIdentifier,omitempty"`
+	// DiskType - The storage type for the disk (i.e. Standard, Premium). Possible values include: 'Standard', 'Premium'
+	DiskType StorageType `json:"diskType,omitempty"`
+	// DiskSizeGiB - The size of the disk in GibiBytes.
+	DiskSizeGiB *int32 `json:"diskSizeGiB,omitempty"`
+	// LeasedByLabVMID - The resource ID of the VM to which this disk is leased.
+	LeasedByLabVMID *string `json:"leasedByLabVmId,omitempty"`
+	// DiskBlobName - When backed by a blob, the name of the VHD blob without extension.
+	DiskBlobName *string `json:"diskBlobName,omitempty"`
+	// DiskURI - When backed by a blob, the URI of underlying blob.
+	DiskURI *string `json:"diskUri,omitempty"`
+	// CreatedDate - The creation date of the disk.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// HostCaching - The host caching policy of the disk (i.e. None, ReadOnly, ReadWrite).
+	HostCaching *string `json:"hostCaching,omitempty"`
+	// ManagedDiskID - When backed by managed disk, this is the ID of the compute disk resource.
+	ManagedDiskID *string `json:"managedDiskId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// Environment is an environment, which is essentially an ARM template deployment.
+// DisksAttachFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DisksAttachFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DisksAttachFuture) Result(client DisksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.DisksAttachFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.AttachResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.AttachResponder(resp)
+	return
+}
+
+// DisksCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DisksCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DisksCreateOrUpdateFuture) Result(client DisksClient) (d Disk, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return d, autorest.NewError("dtl.DisksCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		d, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	d, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// DisksDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DisksDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DisksDeleteFuture) Result(client DisksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.DisksDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// DisksDetachFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DisksDetachFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DisksDetachFuture) Result(client DisksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.DisksDetachFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DetachResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DetachResponder(resp)
+	return
+}
+
+// Environment an environment, which is essentially an ARM template deployment.
 type Environment struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// EnvironmentProperties - The properties of the resource.
 	*EnvironmentProperties `json:"properties,omitempty"`
 }
 
-// EnvironmentDeploymentProperties is properties of an environment deployment.
+// UnmarshalJSON is the custom unmarshaler for Environment struct.
+func (e *Environment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EnvironmentProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		e.EnvironmentProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		e.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		e.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		e.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		e.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		e.Tags = &tags
+	}
+
+	return nil
+}
+
+// EnvironmentDeploymentProperties properties of an environment deployment.
 type EnvironmentDeploymentProperties struct {
-	ArmTemplateID *string                           `json:"armTemplateId,omitempty"`
-	Parameters    *[]ArmTemplateParameterProperties `json:"parameters,omitempty"`
+	// ArmTemplateID - The Azure Resource Manager template's identifier.
+	ArmTemplateID *string `json:"armTemplateId,omitempty"`
+	// Parameters - The parameters of the Azure Resource Manager template.
+	Parameters *[]ArmTemplateParameterProperties `json:"parameters,omitempty"`
 }
 
-// EnvironmentProperties is properties of an environment.
+// EnvironmentProperties properties of an environment.
 type EnvironmentProperties struct {
-	DeploymentProperties   *EnvironmentDeploymentProperties `json:"deploymentProperties,omitempty"`
-	ArmTemplateDisplayName *string                          `json:"armTemplateDisplayName,omitempty"`
-	ResourceGroupID        *string                          `json:"resourceGroupId,omitempty"`
-	CreatedByUser          *string                          `json:"createdByUser,omitempty"`
-	ProvisioningState      *string                          `json:"provisioningState,omitempty"`
-	UniqueIdentifier       *string                          `json:"uniqueIdentifier,omitempty"`
+	// DeploymentProperties - The deployment properties of the environment.
+	DeploymentProperties *EnvironmentDeploymentProperties `json:"deploymentProperties,omitempty"`
+	// ArmTemplateDisplayName - The display name of the Azure Resource Manager template that produced the environment.
+	ArmTemplateDisplayName *string `json:"armTemplateDisplayName,omitempty"`
+	// ResourceGroupID - The identifier of the resource group containing the environment's resources.
+	ResourceGroupID *string `json:"resourceGroupId,omitempty"`
+	// CreatedByUser - The creator of the environment.
+	CreatedByUser *string `json:"createdByUser,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// EvaluatePoliciesProperties is properties for evaluating a policy set.
+// EnvironmentsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type EnvironmentsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EnvironmentsCreateOrUpdateFuture) Result(client EnvironmentsClient) (e Environment, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("dtl.EnvironmentsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// EnvironmentsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EnvironmentsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EnvironmentsDeleteFuture) Result(client EnvironmentsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.EnvironmentsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// EvaluatePoliciesProperties properties for evaluating a policy set.
 type EvaluatePoliciesProperties struct {
-	FactName    *string `json:"factName,omitempty"`
-	FactData    *string `json:"factData,omitempty"`
+	// FactName - The fact name.
+	FactName *string `json:"factName,omitempty"`
+	// FactData - The fact data.
+	FactData *string `json:"factData,omitempty"`
+	// ValueOffset - The value offset.
 	ValueOffset *string `json:"valueOffset,omitempty"`
 }
 
-// EvaluatePoliciesRequest is request body for evaluating a policy set.
+// EvaluatePoliciesRequest request body for evaluating a policy set.
 type EvaluatePoliciesRequest struct {
+	// Policies - Policies to evaluate.
 	Policies *[]EvaluatePoliciesProperties `json:"policies,omitempty"`
 }
 
-// EvaluatePoliciesResponse is response body for evaluating a policy set.
+// EvaluatePoliciesResponse response body for evaluating a policy set.
 type EvaluatePoliciesResponse struct {
 	autorest.Response `json:"-"`
-	Results           *[]PolicySetResult `json:"results,omitempty"`
+	// Results - Results of evaluating a policy set.
+	Results *[]PolicySetResult `json:"results,omitempty"`
 }
 
-// Event is an event to be notified for.
+// Event an event to be notified for.
 type Event struct {
+	// EventName - The event type for which this notification is enabled (i.e. AutoShutdown, Cost). Possible values include: 'AutoShutdown', 'Cost'
 	EventName NotificationChannelEventType `json:"eventName,omitempty"`
 }
 
-// EventFragment is an event to be notified for.
+// EventFragment an event to be notified for.
 type EventFragment struct {
+	// EventName - The event type for which this notification is enabled (i.e. AutoShutdown, Cost). Possible values include: 'AutoShutdown', 'Cost'
 	EventName NotificationChannelEventType `json:"eventName,omitempty"`
 }
 
-// ExportResourceUsageParameters is the parameters of the export operation.
+// ExportResourceUsageParameters the parameters of the export operation.
 type ExportResourceUsageParameters struct {
-	BlobStorageAbsoluteSasURI *string    `json:"blobStorageAbsoluteSasUri,omitempty"`
-	UsageStartDate            *date.Time `json:"usageStartDate,omitempty"`
+	// BlobStorageAbsoluteSasURI - The blob storage absolute sas uri with write permission to the container which the usage data needs to be uploaded to.
+	BlobStorageAbsoluteSasURI *string `json:"blobStorageAbsoluteSasUri,omitempty"`
+	// UsageStartDate - The start time of the usage. If not provided, usage will be reported since the beginning of data collection.
+	UsageStartDate *date.Time `json:"usageStartDate,omitempty"`
 }
 
-// ExternalSubnet is subnet information as returned by the Microsoft.Network API.
+// ExternalSubnet subnet information as returned by the Microsoft.Network API.
 type ExternalSubnet struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Gets or sets the identifier.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets or sets the name.
 	Name *string `json:"name,omitempty"`
 }
 
-// ExternalSubnetFragment is subnet information as returned by the Microsoft.Network API.
+// ExternalSubnetFragment subnet information as returned by the Microsoft.Network API.
 type ExternalSubnetFragment struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Gets or sets the identifier.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets or sets the name.
 	Name *string `json:"name,omitempty"`
 }
 
-// Formula is a formula for creating a VM, specifying an image base and other parameters
+// Formula a formula for creating a VM, specifying an image base and other parameters
 type Formula struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// FormulaProperties - The properties of the resource.
 	*FormulaProperties `json:"properties,omitempty"`
 }
 
-// FormulaProperties is properties of a formula.
-type FormulaProperties struct {
-	Description       *string                             `json:"description,omitempty"`
-	Author            *string                             `json:"author,omitempty"`
-	OsType            *string                             `json:"osType,omitempty"`
-	CreationDate      *date.Time                          `json:"creationDate,omitempty"`
-	FormulaContent    *LabVirtualMachineCreationParameter `json:"formulaContent,omitempty"`
-	VM                *FormulaPropertiesFromVM            `json:"vm,omitempty"`
-	ProvisioningState *string                             `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string                             `json:"uniqueIdentifier,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Formula struct.
+func (f *Formula) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties FormulaProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		f.FormulaProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		f.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		f.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		f.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		f.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		f.Tags = &tags
+	}
+
+	return nil
 }
 
-// FormulaPropertiesFromVM is information about a VM from which a formula is to be created.
+// FormulaProperties properties of a formula.
+type FormulaProperties struct {
+	// Description - The description of the formula.
+	Description *string `json:"description,omitempty"`
+	// Author - The author of the formula.
+	Author *string `json:"author,omitempty"`
+	// OsType - The OS type of the formula.
+	OsType *string `json:"osType,omitempty"`
+	// CreationDate - The creation date of the formula.
+	CreationDate *date.Time `json:"creationDate,omitempty"`
+	// FormulaContent - The content of the formula.
+	FormulaContent *LabVirtualMachineCreationParameter `json:"formulaContent,omitempty"`
+	// VM - Information about a VM from which a formula is to be created.
+	VM *FormulaPropertiesFromVM `json:"vm,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
+}
+
+// FormulaPropertiesFromVM information about a VM from which a formula is to be created.
 type FormulaPropertiesFromVM struct {
+	// LabVMID - The identifier of the VM from which a formula is to be created.
 	LabVMID *string `json:"labVmId,omitempty"`
 }
 
-// GalleryImage is a gallery image.
+// FormulasCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type FormulasCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future FormulasCreateOrUpdateFuture) Result(client FormulasClient) (f Formula, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return f, autorest.NewError("dtl.FormulasCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		f, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	f, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// GalleryImage a gallery image.
 type GalleryImage struct {
-	ID                      *string             `json:"id,omitempty"`
-	Name                    *string             `json:"name,omitempty"`
-	Type                    *string             `json:"type,omitempty"`
-	Location                *string             `json:"location,omitempty"`
-	Tags                    *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// GalleryImageProperties - The properties of the resource.
 	*GalleryImageProperties `json:"properties,omitempty"`
 }
 
-// GalleryImageProperties is properties of a gallery image.
+// UnmarshalJSON is the custom unmarshaler for GalleryImage struct.
+func (gi *GalleryImage) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties GalleryImageProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		gi.GalleryImageProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		gi.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		gi.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		gi.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		gi.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		gi.Tags = &tags
+	}
+
+	return nil
+}
+
+// GalleryImageProperties properties of a gallery image.
 type GalleryImageProperties struct {
-	Author         *string                `json:"author,omitempty"`
-	CreatedDate    *date.Time             `json:"createdDate,omitempty"`
-	Description    *string                `json:"description,omitempty"`
+	// Author - The author of the gallery image.
+	Author *string `json:"author,omitempty"`
+	// CreatedDate - The creation date of the gallery image.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// Description - The description of the gallery image.
+	Description *string `json:"description,omitempty"`
+	// ImageReference - The image reference of the gallery image.
 	ImageReference *GalleryImageReference `json:"imageReference,omitempty"`
-	Icon           *string                `json:"icon,omitempty"`
-	Enabled        *bool                  `json:"enabled,omitempty"`
+	// Icon - The icon of the gallery image.
+	Icon *string `json:"icon,omitempty"`
+	// Enabled - Indicates whether this gallery image is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// GalleryImageReference is the reference information for an Azure Marketplace image.
+// GalleryImageReference the reference information for an Azure Marketplace image.
 type GalleryImageReference struct {
-	Offer     *string `json:"offer,omitempty"`
+	// Offer - The offer of the gallery image.
+	Offer *string `json:"offer,omitempty"`
+	// Publisher - The publisher of the gallery image.
 	Publisher *string `json:"publisher,omitempty"`
-	Sku       *string `json:"sku,omitempty"`
-	OsType    *string `json:"osType,omitempty"`
-	Version   *string `json:"version,omitempty"`
+	// Sku - The SKU of the gallery image.
+	Sku *string `json:"sku,omitempty"`
+	// OsType - The OS type of the gallery image.
+	OsType *string `json:"osType,omitempty"`
+	// Version - The version of the gallery image.
+	Version *string `json:"version,omitempty"`
 }
 
-// GalleryImageReferenceFragment is the reference information for an Azure Marketplace image.
+// GalleryImageReferenceFragment the reference information for an Azure Marketplace image.
 type GalleryImageReferenceFragment struct {
-	Offer     *string `json:"offer,omitempty"`
+	// Offer - The offer of the gallery image.
+	Offer *string `json:"offer,omitempty"`
+	// Publisher - The publisher of the gallery image.
 	Publisher *string `json:"publisher,omitempty"`
-	Sku       *string `json:"sku,omitempty"`
-	OsType    *string `json:"osType,omitempty"`
-	Version   *string `json:"version,omitempty"`
+	// Sku - The SKU of the gallery image.
+	Sku *string `json:"sku,omitempty"`
+	// OsType - The OS type of the gallery image.
+	OsType *string `json:"osType,omitempty"`
+	// Version - The version of the gallery image.
+	Version *string `json:"version,omitempty"`
 }
 
-// GenerateArmTemplateRequest is parameters for generating an ARM template for deploying artifacts.
+// GenerateArmTemplateRequest parameters for generating an ARM template for deploying artifacts.
 type GenerateArmTemplateRequest struct {
-	VirtualMachineName *string           `json:"virtualMachineName,omitempty"`
-	Parameters         *[]ParameterInfo  `json:"parameters,omitempty"`
-	Location           *string           `json:"location,omitempty"`
-	FileUploadOptions  FileUploadOptions `json:"fileUploadOptions,omitempty"`
+	// VirtualMachineName - The resource name of the virtual machine.
+	VirtualMachineName *string `json:"virtualMachineName,omitempty"`
+	// Parameters - The parameters of the ARM template.
+	Parameters *[]ParameterInfo `json:"parameters,omitempty"`
+	// Location - The location of the virtual machine.
+	Location *string `json:"location,omitempty"`
+	// FileUploadOptions - Options for uploading the files for the artifact. UploadFilesAndGenerateSasTokens is the default value. Possible values include: 'FileUploadOptionsUploadFilesAndGenerateSasTokens', 'FileUploadOptionsNone'
+	FileUploadOptions FileUploadOptions `json:"fileUploadOptions,omitempty"`
 }
 
-// GenerateUploadURIParameter is properties for generating an upload URI.
+// GenerateUploadURIParameter properties for generating an upload URI.
 type GenerateUploadURIParameter struct {
+	// BlobName - The blob name of the upload URI.
 	BlobName *string `json:"blobName,omitempty"`
 }
 
-// GenerateUploadURIResponse is reponse body for generating an upload URI.
+// GenerateUploadURIResponse reponse body for generating an upload URI.
 type GenerateUploadURIResponse struct {
 	autorest.Response `json:"-"`
-	UploadURI         *string `json:"uploadUri,omitempty"`
+	// UploadURI - The upload URI for the VHD.
+	UploadURI *string `json:"uploadUri,omitempty"`
 }
 
-// HourDetails is properties of an hourly schedule.
+// GlobalSchedulesExecuteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GlobalSchedulesExecuteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GlobalSchedulesExecuteFuture) Result(client GlobalSchedulesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.GlobalSchedulesExecuteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ExecuteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ExecuteResponder(resp)
+	return
+}
+
+// GlobalSchedulesRetargetFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GlobalSchedulesRetargetFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GlobalSchedulesRetargetFuture) Result(client GlobalSchedulesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.GlobalSchedulesRetargetFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.RetargetResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.RetargetResponder(resp)
+	return
+}
+
+// HourDetails properties of an hourly schedule.
 type HourDetails struct {
+	// Minute - Minutes of the hour the schedule will run.
 	Minute *int32 `json:"minute,omitempty"`
 }
 
-// HourDetailsFragment is properties of an hourly schedule.
+// HourDetailsFragment properties of an hourly schedule.
 type HourDetailsFragment struct {
+	// Minute - Minutes of the hour the schedule will run.
 	Minute *int32 `json:"minute,omitempty"`
 }
 
-// IdentityProperties is identityProperties
+// IdentityProperties identityProperties
 type IdentityProperties struct {
-	Type            *string `json:"type,omitempty"`
-	PrincipalID     *string `json:"principalId,omitempty"`
-	TenantID        *string `json:"tenantId,omitempty"`
+	// Type - Managed identity.
+	Type *string `json:"type,omitempty"`
+	// PrincipalID - The principal id of resource identity.
+	PrincipalID *string `json:"principalId,omitempty"`
+	// TenantID - The tenant identifier of resource.
+	TenantID *string `json:"tenantId,omitempty"`
+	// ClientSecretURL - The client secret URL of the identity.
 	ClientSecretURL *string `json:"clientSecretUrl,omitempty"`
 }
 
-// InboundNatRule is a rule for NAT - exposing a VM's port (backendPort) on the public IP address using a load
-// balancer.
+// InboundNatRule a rule for NAT - exposing a VM's port (backendPort) on the public IP address using a load balancer.
 type InboundNatRule struct {
+	// TransportProtocol - The transport protocol for the endpoint. Possible values include: 'TCP', 'UDP'
 	TransportProtocol TransportProtocol `json:"transportProtocol,omitempty"`
-	FrontendPort      *int32            `json:"frontendPort,omitempty"`
-	BackendPort       *int32            `json:"backendPort,omitempty"`
+	// FrontendPort - The external endpoint port of the inbound connection. Possible values range between 1 and 65535, inclusive. If unspecified, a value will be allocated automatically.
+	FrontendPort *int32 `json:"frontendPort,omitempty"`
+	// BackendPort - The port to which the external traffic will be redirected.
+	BackendPort *int32 `json:"backendPort,omitempty"`
 }
 
-// InboundNatRuleFragment is a rule for NAT - exposing a VM's port (backendPort) on the public IP address using a load
+// InboundNatRuleFragment a rule for NAT - exposing a VM's port (backendPort) on the public IP address using a load
 // balancer.
 type InboundNatRuleFragment struct {
+	// TransportProtocol - The transport protocol for the endpoint. Possible values include: 'TCP', 'UDP'
 	TransportProtocol TransportProtocol `json:"transportProtocol,omitempty"`
-	FrontendPort      *int32            `json:"frontendPort,omitempty"`
-	BackendPort       *int32            `json:"backendPort,omitempty"`
+	// FrontendPort - The external endpoint port of the inbound connection. Possible values range between 1 and 65535, inclusive. If unspecified, a value will be allocated automatically.
+	FrontendPort *int32 `json:"frontendPort,omitempty"`
+	// BackendPort - The port to which the external traffic will be redirected.
+	BackendPort *int32 `json:"backendPort,omitempty"`
 }
 
-// Lab is a lab.
+// Lab a lab.
 type Lab struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*LabProperties    `json:"properties,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LabProperties - The properties of the resource.
+	*LabProperties `json:"properties,omitempty"`
 }
 
-// LabCost is a cost item.
+// UnmarshalJSON is the custom unmarshaler for Lab struct.
+func (l *Lab) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		l.LabProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		l.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		l.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		l.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		l.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		l.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabCost a cost item.
 type LabCost struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LabCostProperties - The properties of the resource.
 	*LabCostProperties `json:"properties,omitempty"`
 }
 
-// LabCostDetailsProperties is the properties of a lab cost item.
+// UnmarshalJSON is the custom unmarshaler for LabCost struct.
+func (lc *LabCost) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabCostProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lc.LabCostProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lc.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lc.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lc.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lc.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabCostDetailsProperties the properties of a lab cost item.
 type LabCostDetailsProperties struct {
-	Date     *date.Time `json:"date,omitempty"`
-	Cost     *float64   `json:"cost,omitempty"`
-	CostType CostType   `json:"costType,omitempty"`
+	// Date - The date of the cost item.
+	Date *date.Time `json:"date,omitempty"`
+	// Cost - The cost component of the cost item.
+	Cost *float64 `json:"cost,omitempty"`
+	// CostType - The type of the cost. Possible values include: 'Unavailable', 'Reported', 'Projected'
+	CostType CostType `json:"costType,omitempty"`
 }
 
-// LabCostProperties is properties of a cost item.
+// LabCostProperties properties of a cost item.
 type LabCostProperties struct {
-	TargetCost        *TargetCostProperties        `json:"targetCost,omitempty"`
-	LabCostSummary    *LabCostSummaryProperties    `json:"labCostSummary,omitempty"`
-	LabCostDetails    *[]LabCostDetailsProperties  `json:"labCostDetails,omitempty"`
-	ResourceCosts     *[]LabResourceCostProperties `json:"resourceCosts,omitempty"`
-	CurrencyCode      *string                      `json:"currencyCode,omitempty"`
-	StartDateTime     *date.Time                   `json:"startDateTime,omitempty"`
-	EndDateTime       *date.Time                   `json:"endDateTime,omitempty"`
-	CreatedDate       *date.Time                   `json:"createdDate,omitempty"`
-	ProvisioningState *string                      `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string                      `json:"uniqueIdentifier,omitempty"`
+	// TargetCost - The target cost properties
+	TargetCost *TargetCostProperties `json:"targetCost,omitempty"`
+	// LabCostSummary - The lab cost summary component of the cost data.
+	LabCostSummary *LabCostSummaryProperties `json:"labCostSummary,omitempty"`
+	// LabCostDetails - The lab cost details component of the cost data.
+	LabCostDetails *[]LabCostDetailsProperties `json:"labCostDetails,omitempty"`
+	// ResourceCosts - The resource cost component of the cost data.
+	ResourceCosts *[]LabResourceCostProperties `json:"resourceCosts,omitempty"`
+	// CurrencyCode - The currency code of the cost.
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+	// StartDateTime - The start time of the cost data.
+	StartDateTime *date.Time `json:"startDateTime,omitempty"`
+	// EndDateTime - The end time of the cost data.
+	EndDateTime *date.Time `json:"endDateTime,omitempty"`
+	// CreatedDate - The creation date of the cost.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LabCostSummaryProperties is the properties of the cost summary.
+// LabCostSummaryProperties the properties of the cost summary.
 type LabCostSummaryProperties struct {
+	// EstimatedLabCost - The cost component of the cost item.
 	EstimatedLabCost *float64 `json:"estimatedLabCost,omitempty"`
 }
 
-// LabFragment is a lab.
+// LabFragment a lab.
 type LabFragment struct {
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LabPropertiesFragment - The properties of the resource.
 	*LabPropertiesFragment `json:"properties,omitempty"`
 }
 
-// LabProperties is properties of a lab.
+// UnmarshalJSON is the custom unmarshaler for LabFragment struct.
+func (lf *LabFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabPropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lf.LabPropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lf.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabProperties properties of a lab.
 type LabProperties struct {
-	DefaultStorageAccount         *string         `json:"defaultStorageAccount,omitempty"`
-	DefaultPremiumStorageAccount  *string         `json:"defaultPremiumStorageAccount,omitempty"`
-	ArtifactsStorageAccount       *string         `json:"artifactsStorageAccount,omitempty"`
-	PremiumDataDiskStorageAccount *string         `json:"premiumDataDiskStorageAccount,omitempty"`
-	VaultName                     *string         `json:"vaultName,omitempty"`
-	LabStorageType                StorageType     `json:"labStorageType,omitempty"`
-	CreatedDate                   *date.Time      `json:"createdDate,omitempty"`
-	PremiumDataDisks              PremiumDataDisk `json:"premiumDataDisks,omitempty"`
-	ProvisioningState             *string         `json:"provisioningState,omitempty"`
-	UniqueIdentifier              *string         `json:"uniqueIdentifier,omitempty"`
+	// DefaultStorageAccount - The lab's default storage account.
+	DefaultStorageAccount *string `json:"defaultStorageAccount,omitempty"`
+	// DefaultPremiumStorageAccount - The lab's default premium storage account.
+	DefaultPremiumStorageAccount *string `json:"defaultPremiumStorageAccount,omitempty"`
+	// ArtifactsStorageAccount - The lab's artifact storage account.
+	ArtifactsStorageAccount *string `json:"artifactsStorageAccount,omitempty"`
+	// PremiumDataDiskStorageAccount - The lab's premium data disk storage account.
+	PremiumDataDiskStorageAccount *string `json:"premiumDataDiskStorageAccount,omitempty"`
+	// VaultName - The lab's Key vault.
+	VaultName *string `json:"vaultName,omitempty"`
+	// LabStorageType - Type of storage used by the lab. It can be either Premium or Standard. Default is Premium. Possible values include: 'Standard', 'Premium'
+	LabStorageType StorageType `json:"labStorageType,omitempty"`
+	// CreatedDate - The creation date of the lab.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// PremiumDataDisks - The setting to enable usage of premium data disks.
+	// When its value is 'Enabled', creation of standard or premium data disks is allowed.
+	// When its value is 'Disabled', only creation of standard data disks is allowed. Possible values include: 'PremiumDataDiskDisabled', 'PremiumDataDiskEnabled'
+	PremiumDataDisks PremiumDataDisk `json:"premiumDataDisks,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LabPropertiesFragment is properties of a lab.
+// LabPropertiesFragment properties of a lab.
 type LabPropertiesFragment struct {
-	LabStorageType    StorageType     `json:"labStorageType,omitempty"`
-	PremiumDataDisks  PremiumDataDisk `json:"premiumDataDisks,omitempty"`
-	ProvisioningState *string         `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string         `json:"uniqueIdentifier,omitempty"`
+	// LabStorageType - Type of storage used by the lab. It can be either Premium or Standard. Default is Premium. Possible values include: 'Standard', 'Premium'
+	LabStorageType StorageType `json:"labStorageType,omitempty"`
+	// PremiumDataDisks - The setting to enable usage of premium data disks.
+	// When its value is 'Enabled', creation of standard or premium data disks is allowed.
+	// When its value is 'Disabled', only creation of standard data disks is allowed. Possible values include: 'PremiumDataDiskDisabled', 'PremiumDataDiskEnabled'
+	PremiumDataDisks PremiumDataDisk `json:"premiumDataDisks,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LabResourceCostProperties is the properties of a resource cost item.
+// LabResourceCostProperties the properties of a resource cost item.
 type LabResourceCostProperties struct {
-	Resourcename        *string  `json:"resourcename,omitempty"`
-	ResourceUID         *string  `json:"resourceUId,omitempty"`
-	ResourceCost        *float64 `json:"resourceCost,omitempty"`
-	ResourceType        *string  `json:"resourceType,omitempty"`
-	ResourceOwner       *string  `json:"resourceOwner,omitempty"`
-	ResourcePricingTier *string  `json:"resourcePricingTier,omitempty"`
-	ResourceStatus      *string  `json:"resourceStatus,omitempty"`
-	ResourceID          *string  `json:"resourceId,omitempty"`
-	ExternalResourceID  *string  `json:"externalResourceId,omitempty"`
+	// Resourcename - The name of the resource.
+	Resourcename *string `json:"resourcename,omitempty"`
+	// ResourceUID - The unique identifier of the resource.
+	ResourceUID *string `json:"resourceUId,omitempty"`
+	// ResourceCost - The cost component of the resource cost item.
+	ResourceCost *float64 `json:"resourceCost,omitempty"`
+	// ResourceType - The logical resource type (ex. virtualmachine, storageaccount)
+	ResourceType *string `json:"resourceType,omitempty"`
+	// ResourceOwner - The owner of the resource (ex. janedoe@microsoft.com)
+	ResourceOwner *string `json:"resourceOwner,omitempty"`
+	// ResourcePricingTier - The category of the resource (ex. Premium_LRS, Standard_DS1)
+	ResourcePricingTier *string `json:"resourcePricingTier,omitempty"`
+	// ResourceStatus - The status of the resource (ex. Active)
+	ResourceStatus *string `json:"resourceStatus,omitempty"`
+	// ResourceID - The ID of the resource
+	ResourceID *string `json:"resourceId,omitempty"`
+	// ExternalResourceID - The ID of the external resource
+	ExternalResourceID *string `json:"externalResourceId,omitempty"`
 }
 
-// LabVhd is properties of a VHD in the lab.
+// LabsClaimAnyVMFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LabsClaimAnyVMFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LabsClaimAnyVMFuture) Result(client LabsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.LabsClaimAnyVMFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ClaimAnyVMResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ClaimAnyVMResponder(resp)
+	return
+}
+
+// LabsCreateEnvironmentFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LabsCreateEnvironmentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LabsCreateEnvironmentFuture) Result(client LabsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.LabsCreateEnvironmentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.CreateEnvironmentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.CreateEnvironmentResponder(resp)
+	return
+}
+
+// LabsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LabsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LabsCreateOrUpdateFuture) Result(client LabsClient) (l Lab, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return l, autorest.NewError("dtl.LabsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		l, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	l, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// LabsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LabsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LabsDeleteFuture) Result(client LabsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.LabsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// LabsExportResourceUsageFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LabsExportResourceUsageFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LabsExportResourceUsageFuture) Result(client LabsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.LabsExportResourceUsageFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ExportResourceUsageResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ExportResourceUsageResponder(resp)
+	return
+}
+
+// LabVhd properties of a VHD in the lab.
 type LabVhd struct {
+	// ID - The URI to the VHD.
 	ID *string `json:"id,omitempty"`
 }
 
-// LabVirtualMachine is a virtual machine.
+// LabVirtualMachine a virtual machine.
 type LabVirtualMachine struct {
-	autorest.Response            `json:"-"`
-	ID                           *string             `json:"id,omitempty"`
-	Name                         *string             `json:"name,omitempty"`
-	Type                         *string             `json:"type,omitempty"`
-	Location                     *string             `json:"location,omitempty"`
-	Tags                         *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LabVirtualMachineProperties - The properties of the resource.
 	*LabVirtualMachineProperties `json:"properties,omitempty"`
 }
 
-// LabVirtualMachineCreationParameter is properties for creating a virtual machine.
+// UnmarshalJSON is the custom unmarshaler for LabVirtualMachine struct.
+func (lvm *LabVirtualMachine) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabVirtualMachineProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lvm.LabVirtualMachineProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lvm.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lvm.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lvm.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lvm.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lvm.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabVirtualMachineCreationParameter properties for creating a virtual machine.
 type LabVirtualMachineCreationParameter struct {
+	// LabVirtualMachineCreationParameterProperties - The properties of the resource.
 	*LabVirtualMachineCreationParameterProperties `json:"properties,omitempty"`
-	Name                                          *string             `json:"name,omitempty"`
-	Location                                      *string             `json:"location,omitempty"`
-	Tags                                          *map[string]*string `json:"tags,omitempty"`
+	// Name - The name of the virtual machine or environment
+	Name *string `json:"name,omitempty"`
+	// Location - The location of the new virtual machine or environment
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// LabVirtualMachineCreationParameterProperties is properties for virtual machine creation.
+// UnmarshalJSON is the custom unmarshaler for LabVirtualMachineCreationParameter struct.
+func (lvmcp *LabVirtualMachineCreationParameter) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabVirtualMachineCreationParameterProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lvmcp.LabVirtualMachineCreationParameterProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lvmcp.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lvmcp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lvmcp.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabVirtualMachineCreationParameterProperties properties for virtual machine creation.
 type LabVirtualMachineCreationParameterProperties struct {
-	BulkCreationParameters       *BulkCreationParameters             `json:"bulkCreationParameters,omitempty"`
-	Notes                        *string                             `json:"notes,omitempty"`
-	OwnerObjectID                *string                             `json:"ownerObjectId,omitempty"`
-	OwnerUserPrincipalName       *string                             `json:"ownerUserPrincipalName,omitempty"`
-	CreatedByUserID              *string                             `json:"createdByUserId,omitempty"`
-	CreatedByUser                *string                             `json:"createdByUser,omitempty"`
-	CreatedDate                  *date.Time                          `json:"createdDate,omitempty"`
-	CustomImageID                *string                             `json:"customImageId,omitempty"`
-	OsType                       *string                             `json:"osType,omitempty"`
-	Size                         *string                             `json:"size,omitempty"`
-	UserName                     *string                             `json:"userName,omitempty"`
-	Password                     *string                             `json:"password,omitempty"`
-	SSHKey                       *string                             `json:"sshKey,omitempty"`
-	IsAuthenticationWithSSHKey   *bool                               `json:"isAuthenticationWithSshKey,omitempty"`
-	Fqdn                         *string                             `json:"fqdn,omitempty"`
-	LabSubnetName                *string                             `json:"labSubnetName,omitempty"`
-	LabVirtualNetworkID          *string                             `json:"labVirtualNetworkId,omitempty"`
-	DisallowPublicIPAddress      *bool                               `json:"disallowPublicIpAddress,omitempty"`
-	Artifacts                    *[]ArtifactInstallProperties        `json:"artifacts,omitempty"`
-	ArtifactDeploymentStatus     *ArtifactDeploymentStatusProperties `json:"artifactDeploymentStatus,omitempty"`
-	GalleryImageReference        *GalleryImageReference              `json:"galleryImageReference,omitempty"`
-	ComputeVM                    *ComputeVMProperties                `json:"computeVm,omitempty"`
-	NetworkInterface             *NetworkInterfaceProperties         `json:"networkInterface,omitempty"`
-	ApplicableSchedule           *ApplicableSchedule                 `json:"applicableSchedule,omitempty"`
-	ExpirationDate               *date.Time                          `json:"expirationDate,omitempty"`
-	AllowClaim                   *bool                               `json:"allowClaim,omitempty"`
-	StorageType                  *string                             `json:"storageType,omitempty"`
-	VirtualMachineCreationSource VirtualMachineCreationSource        `json:"virtualMachineCreationSource,omitempty"`
-	EnvironmentID                *string                             `json:"environmentId,omitempty"`
-	ProvisioningState            *string                             `json:"provisioningState,omitempty"`
-	UniqueIdentifier             *string                             `json:"uniqueIdentifier,omitempty"`
+	// BulkCreationParameters - The number of virtual machine instances to create.
+	BulkCreationParameters *BulkCreationParameters `json:"bulkCreationParameters,omitempty"`
+	// Notes - The notes of the virtual machine.
+	Notes *string `json:"notes,omitempty"`
+	// OwnerObjectID - The object identifier of the owner of the virtual machine.
+	OwnerObjectID *string `json:"ownerObjectId,omitempty"`
+	// OwnerUserPrincipalName - The user principal name of the virtual machine owner.
+	OwnerUserPrincipalName *string `json:"ownerUserPrincipalName,omitempty"`
+	// CreatedByUserID - The object identifier of the creator of the virtual machine.
+	CreatedByUserID *string `json:"createdByUserId,omitempty"`
+	// CreatedByUser - The email address of creator of the virtual machine.
+	CreatedByUser *string `json:"createdByUser,omitempty"`
+	// CreatedDate - The creation date of the virtual machine.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// CustomImageID - The custom image identifier of the virtual machine.
+	CustomImageID *string `json:"customImageId,omitempty"`
+	// OsType - The OS type of the virtual machine.
+	OsType *string `json:"osType,omitempty"`
+	// Size - The size of the virtual machine.
+	Size *string `json:"size,omitempty"`
+	// UserName - The user name of the virtual machine.
+	UserName *string `json:"userName,omitempty"`
+	// Password - The password of the virtual machine administrator.
+	Password *string `json:"password,omitempty"`
+	// SSHKey - The SSH key of the virtual machine administrator.
+	SSHKey *string `json:"sshKey,omitempty"`
+	// IsAuthenticationWithSSHKey - Indicates whether this virtual machine uses an SSH key for authentication.
+	IsAuthenticationWithSSHKey *bool `json:"isAuthenticationWithSshKey,omitempty"`
+	// Fqdn - The fully-qualified domain name of the virtual machine.
+	Fqdn *string `json:"fqdn,omitempty"`
+	// LabSubnetName - The lab subnet name of the virtual machine.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// LabVirtualNetworkID - The lab virtual network identifier of the virtual machine.
+	LabVirtualNetworkID *string `json:"labVirtualNetworkId,omitempty"`
+	// DisallowPublicIPAddress - Indicates whether the virtual machine is to be created without a public IP address.
+	DisallowPublicIPAddress *bool `json:"disallowPublicIpAddress,omitempty"`
+	// Artifacts - The artifacts to be installed on the virtual machine.
+	Artifacts *[]ArtifactInstallProperties `json:"artifacts,omitempty"`
+	// ArtifactDeploymentStatus - The artifact deployment status for the virtual machine.
+	ArtifactDeploymentStatus *ArtifactDeploymentStatusProperties `json:"artifactDeploymentStatus,omitempty"`
+	// GalleryImageReference - The Microsoft Azure Marketplace image reference of the virtual machine.
+	GalleryImageReference *GalleryImageReference `json:"galleryImageReference,omitempty"`
+	// ComputeVM - The compute virtual machine properties.
+	ComputeVM *ComputeVMProperties `json:"computeVm,omitempty"`
+	// NetworkInterface - The network interface properties.
+	NetworkInterface *NetworkInterfaceProperties `json:"networkInterface,omitempty"`
+	// ApplicableSchedule - The applicable schedule for the virtual machine.
+	ApplicableSchedule *ApplicableSchedule `json:"applicableSchedule,omitempty"`
+	// ExpirationDate - The expiration date for VM.
+	ExpirationDate *date.Time `json:"expirationDate,omitempty"`
+	// AllowClaim - Indicates whether another user can take ownership of the virtual machine
+	AllowClaim *bool `json:"allowClaim,omitempty"`
+	// StorageType - Storage type to use for virtual machine (i.e. Standard, Premium).
+	StorageType *string `json:"storageType,omitempty"`
+	// VirtualMachineCreationSource - Tells source of creation of lab virtual machine. Output property only. Possible values include: 'FromCustomImage', 'FromGalleryImage'
+	VirtualMachineCreationSource VirtualMachineCreationSource `json:"virtualMachineCreationSource,omitempty"`
+	// EnvironmentID - The resource ID of the environment that contains this virtual machine, if any.
+	EnvironmentID *string `json:"environmentId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LabVirtualMachineFragment is a virtual machine.
+// LabVirtualMachineFragment a virtual machine.
 type LabVirtualMachineFragment struct {
-	ID                                   *string             `json:"id,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
-	Tags                                 *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LabVirtualMachinePropertiesFragment - The properties of the resource.
 	*LabVirtualMachinePropertiesFragment `json:"properties,omitempty"`
 }
 
-// LabVirtualMachineProperties is properties of a virtual machine.
+// UnmarshalJSON is the custom unmarshaler for LabVirtualMachineFragment struct.
+func (lvmf *LabVirtualMachineFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LabVirtualMachinePropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lvmf.LabVirtualMachinePropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lvmf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lvmf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lvmf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lvmf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lvmf.Tags = &tags
+	}
+
+	return nil
+}
+
+// LabVirtualMachineProperties properties of a virtual machine.
 type LabVirtualMachineProperties struct {
-	Notes                        *string                             `json:"notes,omitempty"`
-	OwnerObjectID                *string                             `json:"ownerObjectId,omitempty"`
-	OwnerUserPrincipalName       *string                             `json:"ownerUserPrincipalName,omitempty"`
-	CreatedByUserID              *string                             `json:"createdByUserId,omitempty"`
-	CreatedByUser                *string                             `json:"createdByUser,omitempty"`
-	CreatedDate                  *date.Time                          `json:"createdDate,omitempty"`
-	ComputeID                    *string                             `json:"computeId,omitempty"`
-	CustomImageID                *string                             `json:"customImageId,omitempty"`
-	OsType                       *string                             `json:"osType,omitempty"`
-	Size                         *string                             `json:"size,omitempty"`
-	UserName                     *string                             `json:"userName,omitempty"`
-	Password                     *string                             `json:"password,omitempty"`
-	SSHKey                       *string                             `json:"sshKey,omitempty"`
-	IsAuthenticationWithSSHKey   *bool                               `json:"isAuthenticationWithSshKey,omitempty"`
-	Fqdn                         *string                             `json:"fqdn,omitempty"`
-	LabSubnetName                *string                             `json:"labSubnetName,omitempty"`
-	LabVirtualNetworkID          *string                             `json:"labVirtualNetworkId,omitempty"`
-	DisallowPublicIPAddress      *bool                               `json:"disallowPublicIpAddress,omitempty"`
-	Artifacts                    *[]ArtifactInstallProperties        `json:"artifacts,omitempty"`
-	ArtifactDeploymentStatus     *ArtifactDeploymentStatusProperties `json:"artifactDeploymentStatus,omitempty"`
-	GalleryImageReference        *GalleryImageReference              `json:"galleryImageReference,omitempty"`
-	ComputeVM                    *ComputeVMProperties                `json:"computeVm,omitempty"`
-	NetworkInterface             *NetworkInterfaceProperties         `json:"networkInterface,omitempty"`
-	ApplicableSchedule           *ApplicableSchedule                 `json:"applicableSchedule,omitempty"`
-	ExpirationDate               *date.Time                          `json:"expirationDate,omitempty"`
-	AllowClaim                   *bool                               `json:"allowClaim,omitempty"`
-	StorageType                  *string                             `json:"storageType,omitempty"`
-	VirtualMachineCreationSource VirtualMachineCreationSource        `json:"virtualMachineCreationSource,omitempty"`
-	EnvironmentID                *string                             `json:"environmentId,omitempty"`
-	ProvisioningState            *string                             `json:"provisioningState,omitempty"`
-	UniqueIdentifier             *string                             `json:"uniqueIdentifier,omitempty"`
+	// Notes - The notes of the virtual machine.
+	Notes *string `json:"notes,omitempty"`
+	// OwnerObjectID - The object identifier of the owner of the virtual machine.
+	OwnerObjectID *string `json:"ownerObjectId,omitempty"`
+	// OwnerUserPrincipalName - The user principal name of the virtual machine owner.
+	OwnerUserPrincipalName *string `json:"ownerUserPrincipalName,omitempty"`
+	// CreatedByUserID - The object identifier of the creator of the virtual machine.
+	CreatedByUserID *string `json:"createdByUserId,omitempty"`
+	// CreatedByUser - The email address of creator of the virtual machine.
+	CreatedByUser *string `json:"createdByUser,omitempty"`
+	// CreatedDate - The creation date of the virtual machine.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ComputeID - The resource identifier (Microsoft.Compute) of the virtual machine.
+	ComputeID *string `json:"computeId,omitempty"`
+	// CustomImageID - The custom image identifier of the virtual machine.
+	CustomImageID *string `json:"customImageId,omitempty"`
+	// OsType - The OS type of the virtual machine.
+	OsType *string `json:"osType,omitempty"`
+	// Size - The size of the virtual machine.
+	Size *string `json:"size,omitempty"`
+	// UserName - The user name of the virtual machine.
+	UserName *string `json:"userName,omitempty"`
+	// Password - The password of the virtual machine administrator.
+	Password *string `json:"password,omitempty"`
+	// SSHKey - The SSH key of the virtual machine administrator.
+	SSHKey *string `json:"sshKey,omitempty"`
+	// IsAuthenticationWithSSHKey - Indicates whether this virtual machine uses an SSH key for authentication.
+	IsAuthenticationWithSSHKey *bool `json:"isAuthenticationWithSshKey,omitempty"`
+	// Fqdn - The fully-qualified domain name of the virtual machine.
+	Fqdn *string `json:"fqdn,omitempty"`
+	// LabSubnetName - The lab subnet name of the virtual machine.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// LabVirtualNetworkID - The lab virtual network identifier of the virtual machine.
+	LabVirtualNetworkID *string `json:"labVirtualNetworkId,omitempty"`
+	// DisallowPublicIPAddress - Indicates whether the virtual machine is to be created without a public IP address.
+	DisallowPublicIPAddress *bool `json:"disallowPublicIpAddress,omitempty"`
+	// Artifacts - The artifacts to be installed on the virtual machine.
+	Artifacts *[]ArtifactInstallProperties `json:"artifacts,omitempty"`
+	// ArtifactDeploymentStatus - The artifact deployment status for the virtual machine.
+	ArtifactDeploymentStatus *ArtifactDeploymentStatusProperties `json:"artifactDeploymentStatus,omitempty"`
+	// GalleryImageReference - The Microsoft Azure Marketplace image reference of the virtual machine.
+	GalleryImageReference *GalleryImageReference `json:"galleryImageReference,omitempty"`
+	// ComputeVM - The compute virtual machine properties.
+	ComputeVM *ComputeVMProperties `json:"computeVm,omitempty"`
+	// NetworkInterface - The network interface properties.
+	NetworkInterface *NetworkInterfaceProperties `json:"networkInterface,omitempty"`
+	// ApplicableSchedule - The applicable schedule for the virtual machine.
+	ApplicableSchedule *ApplicableSchedule `json:"applicableSchedule,omitempty"`
+	// ExpirationDate - The expiration date for VM.
+	ExpirationDate *date.Time `json:"expirationDate,omitempty"`
+	// AllowClaim - Indicates whether another user can take ownership of the virtual machine
+	AllowClaim *bool `json:"allowClaim,omitempty"`
+	// StorageType - Storage type to use for virtual machine (i.e. Standard, Premium).
+	StorageType *string `json:"storageType,omitempty"`
+	// VirtualMachineCreationSource - Tells source of creation of lab virtual machine. Output property only. Possible values include: 'FromCustomImage', 'FromGalleryImage'
+	VirtualMachineCreationSource VirtualMachineCreationSource `json:"virtualMachineCreationSource,omitempty"`
+	// EnvironmentID - The resource ID of the environment that contains this virtual machine, if any.
+	EnvironmentID *string `json:"environmentId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LabVirtualMachinePropertiesFragment is properties of a virtual machine.
+// LabVirtualMachinePropertiesFragment properties of a virtual machine.
 type LabVirtualMachinePropertiesFragment struct {
-	Notes                        *string                                     `json:"notes,omitempty"`
-	OwnerObjectID                *string                                     `json:"ownerObjectId,omitempty"`
-	OwnerUserPrincipalName       *string                                     `json:"ownerUserPrincipalName,omitempty"`
-	CreatedByUserID              *string                                     `json:"createdByUserId,omitempty"`
-	CreatedByUser                *string                                     `json:"createdByUser,omitempty"`
-	CreatedDate                  *date.Time                                  `json:"createdDate,omitempty"`
-	CustomImageID                *string                                     `json:"customImageId,omitempty"`
-	OsType                       *string                                     `json:"osType,omitempty"`
-	Size                         *string                                     `json:"size,omitempty"`
-	UserName                     *string                                     `json:"userName,omitempty"`
-	Password                     *string                                     `json:"password,omitempty"`
-	SSHKey                       *string                                     `json:"sshKey,omitempty"`
-	IsAuthenticationWithSSHKey   *bool                                       `json:"isAuthenticationWithSshKey,omitempty"`
-	Fqdn                         *string                                     `json:"fqdn,omitempty"`
-	LabSubnetName                *string                                     `json:"labSubnetName,omitempty"`
-	LabVirtualNetworkID          *string                                     `json:"labVirtualNetworkId,omitempty"`
-	DisallowPublicIPAddress      *bool                                       `json:"disallowPublicIpAddress,omitempty"`
-	Artifacts                    *[]ArtifactInstallPropertiesFragment        `json:"artifacts,omitempty"`
-	ArtifactDeploymentStatus     *ArtifactDeploymentStatusPropertiesFragment `json:"artifactDeploymentStatus,omitempty"`
-	GalleryImageReference        *GalleryImageReferenceFragment              `json:"galleryImageReference,omitempty"`
-	ComputeVM                    *ComputeVMPropertiesFragment                `json:"computeVm,omitempty"`
-	NetworkInterface             *NetworkInterfacePropertiesFragment         `json:"networkInterface,omitempty"`
-	ApplicableSchedule           *ApplicableScheduleFragment                 `json:"applicableSchedule,omitempty"`
-	ExpirationDate               *date.Time                                  `json:"expirationDate,omitempty"`
-	AllowClaim                   *bool                                       `json:"allowClaim,omitempty"`
-	StorageType                  *string                                     `json:"storageType,omitempty"`
-	VirtualMachineCreationSource VirtualMachineCreationSource                `json:"virtualMachineCreationSource,omitempty"`
-	EnvironmentID                *string                                     `json:"environmentId,omitempty"`
-	ProvisioningState            *string                                     `json:"provisioningState,omitempty"`
-	UniqueIdentifier             *string                                     `json:"uniqueIdentifier,omitempty"`
+	// Notes - The notes of the virtual machine.
+	Notes *string `json:"notes,omitempty"`
+	// OwnerObjectID - The object identifier of the owner of the virtual machine.
+	OwnerObjectID *string `json:"ownerObjectId,omitempty"`
+	// OwnerUserPrincipalName - The user principal name of the virtual machine owner.
+	OwnerUserPrincipalName *string `json:"ownerUserPrincipalName,omitempty"`
+	// CreatedByUserID - The object identifier of the creator of the virtual machine.
+	CreatedByUserID *string `json:"createdByUserId,omitempty"`
+	// CreatedByUser - The email address of creator of the virtual machine.
+	CreatedByUser *string `json:"createdByUser,omitempty"`
+	// CreatedDate - The creation date of the virtual machine.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// CustomImageID - The custom image identifier of the virtual machine.
+	CustomImageID *string `json:"customImageId,omitempty"`
+	// OsType - The OS type of the virtual machine.
+	OsType *string `json:"osType,omitempty"`
+	// Size - The size of the virtual machine.
+	Size *string `json:"size,omitempty"`
+	// UserName - The user name of the virtual machine.
+	UserName *string `json:"userName,omitempty"`
+	// Password - The password of the virtual machine administrator.
+	Password *string `json:"password,omitempty"`
+	// SSHKey - The SSH key of the virtual machine administrator.
+	SSHKey *string `json:"sshKey,omitempty"`
+	// IsAuthenticationWithSSHKey - Indicates whether this virtual machine uses an SSH key for authentication.
+	IsAuthenticationWithSSHKey *bool `json:"isAuthenticationWithSshKey,omitempty"`
+	// Fqdn - The fully-qualified domain name of the virtual machine.
+	Fqdn *string `json:"fqdn,omitempty"`
+	// LabSubnetName - The lab subnet name of the virtual machine.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// LabVirtualNetworkID - The lab virtual network identifier of the virtual machine.
+	LabVirtualNetworkID *string `json:"labVirtualNetworkId,omitempty"`
+	// DisallowPublicIPAddress - Indicates whether the virtual machine is to be created without a public IP address.
+	DisallowPublicIPAddress *bool `json:"disallowPublicIpAddress,omitempty"`
+	// Artifacts - The artifacts to be installed on the virtual machine.
+	Artifacts *[]ArtifactInstallPropertiesFragment `json:"artifacts,omitempty"`
+	// ArtifactDeploymentStatus - The artifact deployment status for the virtual machine.
+	ArtifactDeploymentStatus *ArtifactDeploymentStatusPropertiesFragment `json:"artifactDeploymentStatus,omitempty"`
+	// GalleryImageReference - The Microsoft Azure Marketplace image reference of the virtual machine.
+	GalleryImageReference *GalleryImageReferenceFragment `json:"galleryImageReference,omitempty"`
+	// ComputeVM - The compute virtual machine properties.
+	ComputeVM *ComputeVMPropertiesFragment `json:"computeVm,omitempty"`
+	// NetworkInterface - The network interface properties.
+	NetworkInterface *NetworkInterfacePropertiesFragment `json:"networkInterface,omitempty"`
+	// ApplicableSchedule - The applicable schedule for the virtual machine.
+	ApplicableSchedule *ApplicableScheduleFragment `json:"applicableSchedule,omitempty"`
+	// ExpirationDate - The expiration date for VM.
+	ExpirationDate *date.Time `json:"expirationDate,omitempty"`
+	// AllowClaim - Indicates whether another user can take ownership of the virtual machine
+	AllowClaim *bool `json:"allowClaim,omitempty"`
+	// StorageType - Storage type to use for virtual machine (i.e. Standard, Premium).
+	StorageType *string `json:"storageType,omitempty"`
+	// VirtualMachineCreationSource - Tells source of creation of lab virtual machine. Output property only. Possible values include: 'FromCustomImage', 'FromGalleryImage'
+	VirtualMachineCreationSource VirtualMachineCreationSource `json:"virtualMachineCreationSource,omitempty"`
+	// EnvironmentID - The resource ID of the environment that contains this virtual machine, if any.
+	EnvironmentID *string `json:"environmentId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// LinuxOsInfo is information about a Linux OS.
+// LinuxOsInfo information about a Linux OS.
 type LinuxOsInfo struct {
+	// LinuxOsState - The state of the Linux OS (i.e. NonDeprovisioned, DeprovisionRequested, DeprovisionApplied). Possible values include: 'NonDeprovisioned', 'DeprovisionRequested', 'DeprovisionApplied'
 	LinuxOsState LinuxOsState `json:"linuxOsState,omitempty"`
 }
 
-// NetworkInterfaceProperties is properties of a network interface.
+// NetworkInterfaceProperties properties of a network interface.
 type NetworkInterfaceProperties struct {
-	VirtualNetworkID                   *string                             `json:"virtualNetworkId,omitempty"`
-	SubnetID                           *string                             `json:"subnetId,omitempty"`
-	PublicIPAddressID                  *string                             `json:"publicIpAddressId,omitempty"`
-	PublicIPAddress                    *string                             `json:"publicIpAddress,omitempty"`
-	PrivateIPAddress                   *string                             `json:"privateIpAddress,omitempty"`
-	DNSName                            *string                             `json:"dnsName,omitempty"`
-	RdpAuthority                       *string                             `json:"rdpAuthority,omitempty"`
-	SSHAuthority                       *string                             `json:"sshAuthority,omitempty"`
+	// VirtualNetworkID - The resource ID of the virtual network.
+	VirtualNetworkID *string `json:"virtualNetworkId,omitempty"`
+	// SubnetID - The resource ID of the sub net.
+	SubnetID *string `json:"subnetId,omitempty"`
+	// PublicIPAddressID - The resource ID of the public IP address.
+	PublicIPAddressID *string `json:"publicIpAddressId,omitempty"`
+	// PublicIPAddress - The public IP address.
+	PublicIPAddress *string `json:"publicIpAddress,omitempty"`
+	// PrivateIPAddress - The private IP address.
+	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
+	// DNSName - The DNS name.
+	DNSName *string `json:"dnsName,omitempty"`
+	// RdpAuthority - The RdpAuthority property is a server DNS host name or IP address followed by the service port number for RDP (Remote Desktop Protocol).
+	RdpAuthority *string `json:"rdpAuthority,omitempty"`
+	// SSHAuthority - The SshAuthority property is a server DNS host name or IP address followed by the service port number for SSH.
+	SSHAuthority *string `json:"sshAuthority,omitempty"`
+	// SharedPublicIPAddressConfiguration - The configuration for sharing a public IP address across multiple virtual machines.
 	SharedPublicIPAddressConfiguration *SharedPublicIPAddressConfiguration `json:"sharedPublicIpAddressConfiguration,omitempty"`
 }
 
-// NetworkInterfacePropertiesFragment is properties of a network interface.
+// NetworkInterfacePropertiesFragment properties of a network interface.
 type NetworkInterfacePropertiesFragment struct {
-	VirtualNetworkID                   *string                                     `json:"virtualNetworkId,omitempty"`
-	SubnetID                           *string                                     `json:"subnetId,omitempty"`
-	PublicIPAddressID                  *string                                     `json:"publicIpAddressId,omitempty"`
-	PublicIPAddress                    *string                                     `json:"publicIpAddress,omitempty"`
-	PrivateIPAddress                   *string                                     `json:"privateIpAddress,omitempty"`
-	DNSName                            *string                                     `json:"dnsName,omitempty"`
-	RdpAuthority                       *string                                     `json:"rdpAuthority,omitempty"`
-	SSHAuthority                       *string                                     `json:"sshAuthority,omitempty"`
+	// VirtualNetworkID - The resource ID of the virtual network.
+	VirtualNetworkID *string `json:"virtualNetworkId,omitempty"`
+	// SubnetID - The resource ID of the sub net.
+	SubnetID *string `json:"subnetId,omitempty"`
+	// PublicIPAddressID - The resource ID of the public IP address.
+	PublicIPAddressID *string `json:"publicIpAddressId,omitempty"`
+	// PublicIPAddress - The public IP address.
+	PublicIPAddress *string `json:"publicIpAddress,omitempty"`
+	// PrivateIPAddress - The private IP address.
+	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
+	// DNSName - The DNS name.
+	DNSName *string `json:"dnsName,omitempty"`
+	// RdpAuthority - The RdpAuthority property is a server DNS host name or IP address followed by the service port number for RDP (Remote Desktop Protocol).
+	RdpAuthority *string `json:"rdpAuthority,omitempty"`
+	// SSHAuthority - The SshAuthority property is a server DNS host name or IP address followed by the service port number for SSH.
+	SSHAuthority *string `json:"sshAuthority,omitempty"`
+	// SharedPublicIPAddressConfiguration - The configuration for sharing a public IP address across multiple virtual machines.
 	SharedPublicIPAddressConfiguration *SharedPublicIPAddressConfigurationFragment `json:"sharedPublicIpAddressConfiguration,omitempty"`
 }
 
-// NotificationChannel is a notification.
+// NotificationChannel a notification.
 type NotificationChannel struct {
-	autorest.Response              `json:"-"`
-	ID                             *string             `json:"id,omitempty"`
-	Name                           *string             `json:"name,omitempty"`
-	Type                           *string             `json:"type,omitempty"`
-	Location                       *string             `json:"location,omitempty"`
-	Tags                           *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// NotificationChannelProperties - The properties of the resource.
 	*NotificationChannelProperties `json:"properties,omitempty"`
 }
 
-// NotificationChannelFragment is a notification.
+// UnmarshalJSON is the custom unmarshaler for NotificationChannel struct.
+func (nc *NotificationChannel) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NotificationChannelProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		nc.NotificationChannelProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		nc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		nc.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		nc.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		nc.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		nc.Tags = &tags
+	}
+
+	return nil
+}
+
+// NotificationChannelFragment a notification.
 type NotificationChannelFragment struct {
-	ID                                     *string             `json:"id,omitempty"`
-	Name                                   *string             `json:"name,omitempty"`
-	Type                                   *string             `json:"type,omitempty"`
-	Location                               *string             `json:"location,omitempty"`
-	Tags                                   *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// NotificationChannelPropertiesFragment - The properties of the resource.
 	*NotificationChannelPropertiesFragment `json:"properties,omitempty"`
 }
 
-// NotificationChannelProperties is properties of a schedule.
+// UnmarshalJSON is the custom unmarshaler for NotificationChannelFragment struct.
+func (ncf *NotificationChannelFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NotificationChannelPropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ncf.NotificationChannelPropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ncf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ncf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ncf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ncf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ncf.Tags = &tags
+	}
+
+	return nil
+}
+
+// NotificationChannelProperties properties of a schedule.
 type NotificationChannelProperties struct {
-	WebHookURL        *string    `json:"webHookUrl,omitempty"`
-	Description       *string    `json:"description,omitempty"`
-	Events            *[]Event   `json:"events,omitempty"`
-	CreatedDate       *date.Time `json:"createdDate,omitempty"`
-	ProvisioningState *string    `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string    `json:"uniqueIdentifier,omitempty"`
+	// WebHookURL - The webhook URL to send notifications to.
+	WebHookURL *string `json:"webHookUrl,omitempty"`
+	// Description - Description of notification.
+	Description *string `json:"description,omitempty"`
+	// Events - The list of event for which this notification is enabled.
+	Events *[]Event `json:"events,omitempty"`
+	// CreatedDate - The creation date of the notification channel.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// NotificationChannelPropertiesFragment is properties of a schedule.
+// NotificationChannelPropertiesFragment properties of a schedule.
 type NotificationChannelPropertiesFragment struct {
-	WebHookURL        *string          `json:"webHookUrl,omitempty"`
-	Description       *string          `json:"description,omitempty"`
-	Events            *[]EventFragment `json:"events,omitempty"`
-	ProvisioningState *string          `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string          `json:"uniqueIdentifier,omitempty"`
+	// WebHookURL - The webhook URL to send notifications to.
+	WebHookURL *string `json:"webHookUrl,omitempty"`
+	// Description - Description of notification.
+	Description *string `json:"description,omitempty"`
+	// Events - The list of event for which this notification is enabled.
+	Events *[]EventFragment `json:"events,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// NotificationSettings is notification settings for a schedule.
+// NotificationSettings notification settings for a schedule.
 type NotificationSettings struct {
-	Status        NotificationStatus `json:"status,omitempty"`
-	TimeInMinutes *int32             `json:"timeInMinutes,omitempty"`
-	WebhookURL    *string            `json:"webhookUrl,omitempty"`
+	// Status - If notifications are enabled for this schedule (i.e. Enabled, Disabled). Possible values include: 'NotificationStatusDisabled', 'NotificationStatusEnabled'
+	Status NotificationStatus `json:"status,omitempty"`
+	// TimeInMinutes - Time in minutes before event at which notification will be sent.
+	TimeInMinutes *int32 `json:"timeInMinutes,omitempty"`
+	// WebhookURL - The webhook URL to which the notification will be sent.
+	WebhookURL *string `json:"webhookUrl,omitempty"`
 }
 
-// NotificationSettingsFragment is notification settings for a schedule.
+// NotificationSettingsFragment notification settings for a schedule.
 type NotificationSettingsFragment struct {
-	Status        NotificationStatus `json:"status,omitempty"`
-	TimeInMinutes *int32             `json:"timeInMinutes,omitempty"`
-	WebhookURL    *string            `json:"webhookUrl,omitempty"`
+	// Status - If notifications are enabled for this schedule (i.e. Enabled, Disabled). Possible values include: 'NotificationStatusDisabled', 'NotificationStatusEnabled'
+	Status NotificationStatus `json:"status,omitempty"`
+	// TimeInMinutes - Time in minutes before event at which notification will be sent.
+	TimeInMinutes *int32 `json:"timeInMinutes,omitempty"`
+	// WebhookURL - The webhook URL to which the notification will be sent.
+	WebhookURL *string `json:"webhookUrl,omitempty"`
 }
 
-// NotifyParameters is properties for generating a Notification.
+// NotifyParameters properties for generating a Notification.
 type NotifyParameters struct {
-	EventName   NotificationChannelEventType `json:"eventName,omitempty"`
-	JSONPayload *string                      `json:"jsonPayload,omitempty"`
+	// EventName - The type of event (i.e. AutoShutdown, Cost). Possible values include: 'AutoShutdown', 'Cost'
+	EventName NotificationChannelEventType `json:"eventName,omitempty"`
+	// JSONPayload - Properties for the notification in json format.
+	JSONPayload *string `json:"jsonPayload,omitempty"`
 }
 
-// OperationError is error details for the operation in case of a failure.
+// OperationError error details for the operation in case of a failure.
 type OperationError struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - The error code of the operation error.
+	Code *string `json:"code,omitempty"`
+	// Message - The error message of the operation error.
 	Message *string `json:"message,omitempty"`
 }
 
-// OperationResult is an Operation Result
+// OperationResult an Operation Result
 type OperationResult struct {
 	autorest.Response `json:"-"`
-	Status            *string         `json:"status,omitempty"`
-	StatusCode        HTTPStatusCode  `json:"statusCode,omitempty"`
-	Error             *OperationError `json:"error,omitempty"`
+	// Status - The operation status.
+	Status *string `json:"status,omitempty"`
+	// StatusCode - The status code for the operation. Possible values include: 'Continue', 'SwitchingProtocols', 'OK', 'Created', 'Accepted', 'NonAuthoritativeInformation', 'NoContent', 'ResetContent', 'PartialContent', 'MultipleChoices', 'MovedPermanently', 'Redirect', 'SeeOther', 'NotModified', 'UseProxy', 'Unused', 'TemporaryRedirect', 'BadRequest', 'Unauthorized', 'PaymentRequired', 'Forbidden', 'NotFound', 'MethodNotAllowed', 'NotAcceptable', 'ProxyAuthenticationRequired', 'RequestTimeout', 'Conflict', 'Gone', 'LengthRequired', 'PreconditionFailed', 'RequestEntityTooLarge', 'RequestURITooLong', 'UnsupportedMediaType', 'RequestedRangeNotSatisfiable', 'ExpectationFailed', 'UpgradeRequired', 'InternalServerError', 'NotImplemented', 'BadGateway', 'ServiceUnavailable', 'GatewayTimeout', 'HTTPVersionNotSupported'
+	StatusCode HTTPStatusCode `json:"statusCode,omitempty"`
+	// Error - Error details for the operation in case of a failure.
+	Error *OperationError `json:"error,omitempty"`
 }
 
-// ParameterInfo is information about an artifact's parameter.
+// ParameterInfo information about an artifact's parameter.
 type ParameterInfo struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The name of the artifact parameter.
+	Name *string `json:"name,omitempty"`
+	// Value - The value of the artifact parameter.
 	Value *string `json:"value,omitempty"`
 }
 
-// ParametersValueFileInfo is a file containing a set of parameter values for an ARM template.
+// ParametersValueFileInfo a file containing a set of parameter values for an ARM template.
 type ParametersValueFileInfo struct {
-	FileName            *string                 `json:"fileName,omitempty"`
+	// FileName - File name.
+	FileName *string `json:"fileName,omitempty"`
+	// ParametersValueInfo - Contents of the file.
 	ParametersValueInfo *map[string]interface{} `json:"parametersValueInfo,omitempty"`
 }
 
-// PercentageCostThresholdProperties is properties of a percentage cost threshold.
+// PercentageCostThresholdProperties properties of a percentage cost threshold.
 type PercentageCostThresholdProperties struct {
+	// ThresholdValue - The cost threshold value.
 	ThresholdValue *float64 `json:"thresholdValue,omitempty"`
 }
 
-// Policy is a Policy.
+// Policy a Policy.
 type Policy struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// PolicyProperties - The properties of the resource.
 	*PolicyProperties `json:"properties,omitempty"`
 }
 
-// PolicyFragment is a Policy.
+// UnmarshalJSON is the custom unmarshaler for Policy struct.
+func (p *Policy) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PolicyProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.PolicyProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		p.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		p.Tags = &tags
+	}
+
+	return nil
+}
+
+// PolicyFragment a Policy.
 type PolicyFragment struct {
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Tags                      *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// PolicyPropertiesFragment - The properties of the resource.
 	*PolicyPropertiesFragment `json:"properties,omitempty"`
 }
 
-// PolicyProperties is properties of a Policy.
+// UnmarshalJSON is the custom unmarshaler for PolicyFragment struct.
+func (pf *PolicyFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PolicyPropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pf.PolicyPropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		pf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		pf.Tags = &tags
+	}
+
+	return nil
+}
+
+// PolicyProperties properties of a Policy.
 type PolicyProperties struct {
-	Description       *string             `json:"description,omitempty"`
-	Status            PolicyStatus        `json:"status,omitempty"`
-	FactName          PolicyFactName      `json:"factName,omitempty"`
-	FactData          *string             `json:"factData,omitempty"`
-	Threshold         *string             `json:"threshold,omitempty"`
-	EvaluatorType     PolicyEvaluatorType `json:"evaluatorType,omitempty"`
-	CreatedDate       *date.Time          `json:"createdDate,omitempty"`
-	ProvisioningState *string             `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string             `json:"uniqueIdentifier,omitempty"`
+	// Description - The description of the policy.
+	Description *string `json:"description,omitempty"`
+	// Status - The status of the policy. Possible values include: 'PolicyStatusEnabled', 'PolicyStatusDisabled'
+	Status PolicyStatus `json:"status,omitempty"`
+	// FactName - The fact name of the policy (e.g. LabVmCount, LabVmSize, MaxVmsAllowedPerLab, etc. Possible values include: 'PolicyFactNameUserOwnedLabVMCount', 'PolicyFactNameUserOwnedLabPremiumVMCount', 'PolicyFactNameLabVMCount', 'PolicyFactNameLabPremiumVMCount', 'PolicyFactNameLabVMSize', 'PolicyFactNameGalleryImage', 'PolicyFactNameUserOwnedLabVMCountInSubnet', 'PolicyFactNameLabTargetCost'
+	FactName PolicyFactName `json:"factName,omitempty"`
+	// FactData - The fact data of the policy.
+	FactData *string `json:"factData,omitempty"`
+	// Threshold - The threshold of the policy (i.e. a number for MaxValuePolicy, and a JSON array of values for AllowedValuesPolicy).
+	Threshold *string `json:"threshold,omitempty"`
+	// EvaluatorType - The evaluator type of the policy (i.e. AllowedValuesPolicy, MaxValuePolicy). Possible values include: 'AllowedValuesPolicy', 'MaxValuePolicy'
+	EvaluatorType PolicyEvaluatorType `json:"evaluatorType,omitempty"`
+	// CreatedDate - The creation date of the policy.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// PolicyPropertiesFragment is properties of a Policy.
+// PolicyPropertiesFragment properties of a Policy.
 type PolicyPropertiesFragment struct {
-	Description       *string             `json:"description,omitempty"`
-	Status            PolicyStatus        `json:"status,omitempty"`
-	FactName          PolicyFactName      `json:"factName,omitempty"`
-	FactData          *string             `json:"factData,omitempty"`
-	Threshold         *string             `json:"threshold,omitempty"`
-	EvaluatorType     PolicyEvaluatorType `json:"evaluatorType,omitempty"`
-	ProvisioningState *string             `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string             `json:"uniqueIdentifier,omitempty"`
+	// Description - The description of the policy.
+	Description *string `json:"description,omitempty"`
+	// Status - The status of the policy. Possible values include: 'PolicyStatusEnabled', 'PolicyStatusDisabled'
+	Status PolicyStatus `json:"status,omitempty"`
+	// FactName - The fact name of the policy (e.g. LabVmCount, LabVmSize, MaxVmsAllowedPerLab, etc. Possible values include: 'PolicyFactNameUserOwnedLabVMCount', 'PolicyFactNameUserOwnedLabPremiumVMCount', 'PolicyFactNameLabVMCount', 'PolicyFactNameLabPremiumVMCount', 'PolicyFactNameLabVMSize', 'PolicyFactNameGalleryImage', 'PolicyFactNameUserOwnedLabVMCountInSubnet', 'PolicyFactNameLabTargetCost'
+	FactName PolicyFactName `json:"factName,omitempty"`
+	// FactData - The fact data of the policy.
+	FactData *string `json:"factData,omitempty"`
+	// Threshold - The threshold of the policy (i.e. a number for MaxValuePolicy, and a JSON array of values for AllowedValuesPolicy).
+	Threshold *string `json:"threshold,omitempty"`
+	// EvaluatorType - The evaluator type of the policy (i.e. AllowedValuesPolicy, MaxValuePolicy). Possible values include: 'AllowedValuesPolicy', 'MaxValuePolicy'
+	EvaluatorType PolicyEvaluatorType `json:"evaluatorType,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// PolicySetResult is result of a policy set evaluation.
+// PolicySetResult result of a policy set evaluation.
 type PolicySetResult struct {
-	HasError         *bool              `json:"hasError,omitempty"`
+	// HasError - A value indicating whether this policy set evaluation has discovered violations.
+	HasError *bool `json:"hasError,omitempty"`
+	// PolicyViolations - The list of policy violations.
 	PolicyViolations *[]PolicyViolation `json:"policyViolations,omitempty"`
 }
 
-// PolicyViolation is policy violation.
+// PolicyViolation policy violation.
 type PolicyViolation struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - The code of the policy violation.
+	Code *string `json:"code,omitempty"`
+	// Message - The message of the policy violation.
 	Message *string `json:"message,omitempty"`
 }
 
-// Port is properties of a network port.
+// Port properties of a network port.
 type Port struct {
+	// TransportProtocol - Protocol type of the port. Possible values include: 'TCP', 'UDP'
 	TransportProtocol TransportProtocol `json:"transportProtocol,omitempty"`
-	BackendPort       *int32            `json:"backendPort,omitempty"`
+	// BackendPort - Backend port of the target virtual machine.
+	BackendPort *int32 `json:"backendPort,omitempty"`
 }
 
-// PortFragment is properties of a network port.
+// PortFragment properties of a network port.
 type PortFragment struct {
+	// TransportProtocol - Protocol type of the port. Possible values include: 'TCP', 'UDP'
 	TransportProtocol TransportProtocol `json:"transportProtocol,omitempty"`
-	BackendPort       *int32            `json:"backendPort,omitempty"`
+	// BackendPort - Backend port of the target virtual machine.
+	BackendPort *int32 `json:"backendPort,omitempty"`
 }
 
-// Resource is an Azure resource.
+// Resource an Azure resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResponseWithContinuationArmTemplate is the response of a list operation.
+// ResponseWithContinuationArmTemplate the response of a list operation.
 type ResponseWithContinuationArmTemplate struct {
 	autorest.Response `json:"-"`
-	Value             *[]ArmTemplate `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ArmTemplate `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationArmTemplatePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationArmTemplate) ResponseWithContinuationArmTemplatePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationArmTemplateIterator provides access to a complete listing of ArmTemplate values.
+type ResponseWithContinuationArmTemplateIterator struct {
+	i    int
+	page ResponseWithContinuationArmTemplatePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationArmTemplateIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationArmTemplateIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationArmTemplateIterator) Response() ResponseWithContinuationArmTemplate {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationArmTemplateIterator) Value() ArmTemplate {
+	if !iter.page.NotDone() {
+		return ArmTemplate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcAt ResponseWithContinuationArmTemplate) IsEmpty() bool {
+	return rwcAt.Value == nil || len(*rwcAt.Value) == 0
+}
+
+// responseWithContinuationArmTemplatePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcAt ResponseWithContinuationArmTemplate) responseWithContinuationArmTemplatePreparer() (*http.Request, error) {
+	if rwcAt.NextLink == nil || len(to.String(rwcAt.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcAt.NextLink)))
 }
 
-// ResponseWithContinuationArtifact is the response of a list operation.
+// ResponseWithContinuationArmTemplatePage contains a page of ArmTemplate values.
+type ResponseWithContinuationArmTemplatePage struct {
+	fn    func(ResponseWithContinuationArmTemplate) (ResponseWithContinuationArmTemplate, error)
+	rwcat ResponseWithContinuationArmTemplate
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationArmTemplatePage) Next() error {
+	next, err := page.fn(page.rwcat)
+	if err != nil {
+		return err
+	}
+	page.rwcat = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationArmTemplatePage) NotDone() bool {
+	return !page.rwcat.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationArmTemplatePage) Response() ResponseWithContinuationArmTemplate {
+	return page.rwcat
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationArmTemplatePage) Values() []ArmTemplate {
+	if page.rwcat.IsEmpty() {
+		return nil
+	}
+	return *page.rwcat.Value
+}
+
+// ResponseWithContinuationArtifact the response of a list operation.
 type ResponseWithContinuationArtifact struct {
 	autorest.Response `json:"-"`
-	Value             *[]Artifact `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Artifact `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationArtifactPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationArtifact) ResponseWithContinuationArtifactPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationArtifactIterator provides access to a complete listing of Artifact values.
+type ResponseWithContinuationArtifactIterator struct {
+	i    int
+	page ResponseWithContinuationArtifactPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationArtifactIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationArtifactIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationArtifactIterator) Response() ResponseWithContinuationArtifact {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationArtifactIterator) Value() Artifact {
+	if !iter.page.NotDone() {
+		return Artifact{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcA ResponseWithContinuationArtifact) IsEmpty() bool {
+	return rwcA.Value == nil || len(*rwcA.Value) == 0
+}
+
+// responseWithContinuationArtifactPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcA ResponseWithContinuationArtifact) responseWithContinuationArtifactPreparer() (*http.Request, error) {
+	if rwcA.NextLink == nil || len(to.String(rwcA.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcA.NextLink)))
 }
 
-// ResponseWithContinuationArtifactSource is the response of a list operation.
+// ResponseWithContinuationArtifactPage contains a page of Artifact values.
+type ResponseWithContinuationArtifactPage struct {
+	fn   func(ResponseWithContinuationArtifact) (ResponseWithContinuationArtifact, error)
+	rwca ResponseWithContinuationArtifact
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationArtifactPage) Next() error {
+	next, err := page.fn(page.rwca)
+	if err != nil {
+		return err
+	}
+	page.rwca = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationArtifactPage) NotDone() bool {
+	return !page.rwca.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationArtifactPage) Response() ResponseWithContinuationArtifact {
+	return page.rwca
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationArtifactPage) Values() []Artifact {
+	if page.rwca.IsEmpty() {
+		return nil
+	}
+	return *page.rwca.Value
+}
+
+// ResponseWithContinuationArtifactSource the response of a list operation.
 type ResponseWithContinuationArtifactSource struct {
 	autorest.Response `json:"-"`
-	Value             *[]ArtifactSource `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ArtifactSource `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationArtifactSourcePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationArtifactSource) ResponseWithContinuationArtifactSourcePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationArtifactSourceIterator provides access to a complete listing of ArtifactSource values.
+type ResponseWithContinuationArtifactSourceIterator struct {
+	i    int
+	page ResponseWithContinuationArtifactSourcePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationArtifactSourceIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationArtifactSourceIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationArtifactSourceIterator) Response() ResponseWithContinuationArtifactSource {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationArtifactSourceIterator) Value() ArtifactSource {
+	if !iter.page.NotDone() {
+		return ArtifactSource{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcAs ResponseWithContinuationArtifactSource) IsEmpty() bool {
+	return rwcAs.Value == nil || len(*rwcAs.Value) == 0
+}
+
+// responseWithContinuationArtifactSourcePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcAs ResponseWithContinuationArtifactSource) responseWithContinuationArtifactSourcePreparer() (*http.Request, error) {
+	if rwcAs.NextLink == nil || len(to.String(rwcAs.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcAs.NextLink)))
 }
 
-// ResponseWithContinuationCustomImage is the response of a list operation.
+// ResponseWithContinuationArtifactSourcePage contains a page of ArtifactSource values.
+type ResponseWithContinuationArtifactSourcePage struct {
+	fn    func(ResponseWithContinuationArtifactSource) (ResponseWithContinuationArtifactSource, error)
+	rwcas ResponseWithContinuationArtifactSource
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationArtifactSourcePage) Next() error {
+	next, err := page.fn(page.rwcas)
+	if err != nil {
+		return err
+	}
+	page.rwcas = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationArtifactSourcePage) NotDone() bool {
+	return !page.rwcas.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationArtifactSourcePage) Response() ResponseWithContinuationArtifactSource {
+	return page.rwcas
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationArtifactSourcePage) Values() []ArtifactSource {
+	if page.rwcas.IsEmpty() {
+		return nil
+	}
+	return *page.rwcas.Value
+}
+
+// ResponseWithContinuationCustomImage the response of a list operation.
 type ResponseWithContinuationCustomImage struct {
 	autorest.Response `json:"-"`
-	Value             *[]CustomImage `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]CustomImage `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationCustomImagePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationCustomImage) ResponseWithContinuationCustomImagePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationCustomImageIterator provides access to a complete listing of CustomImage values.
+type ResponseWithContinuationCustomImageIterator struct {
+	i    int
+	page ResponseWithContinuationCustomImagePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationCustomImageIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationCustomImageIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationCustomImageIterator) Response() ResponseWithContinuationCustomImage {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationCustomImageIterator) Value() CustomImage {
+	if !iter.page.NotDone() {
+		return CustomImage{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcCi ResponseWithContinuationCustomImage) IsEmpty() bool {
+	return rwcCi.Value == nil || len(*rwcCi.Value) == 0
+}
+
+// responseWithContinuationCustomImagePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcCi ResponseWithContinuationCustomImage) responseWithContinuationCustomImagePreparer() (*http.Request, error) {
+	if rwcCi.NextLink == nil || len(to.String(rwcCi.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcCi.NextLink)))
 }
 
-// ResponseWithContinuationDisk is the response of a list operation.
+// ResponseWithContinuationCustomImagePage contains a page of CustomImage values.
+type ResponseWithContinuationCustomImagePage struct {
+	fn    func(ResponseWithContinuationCustomImage) (ResponseWithContinuationCustomImage, error)
+	rwcci ResponseWithContinuationCustomImage
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationCustomImagePage) Next() error {
+	next, err := page.fn(page.rwcci)
+	if err != nil {
+		return err
+	}
+	page.rwcci = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationCustomImagePage) NotDone() bool {
+	return !page.rwcci.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationCustomImagePage) Response() ResponseWithContinuationCustomImage {
+	return page.rwcci
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationCustomImagePage) Values() []CustomImage {
+	if page.rwcci.IsEmpty() {
+		return nil
+	}
+	return *page.rwcci.Value
+}
+
+// ResponseWithContinuationDisk the response of a list operation.
 type ResponseWithContinuationDisk struct {
 	autorest.Response `json:"-"`
-	Value             *[]Disk `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Disk `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationDiskPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationDisk) ResponseWithContinuationDiskPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationDiskIterator provides access to a complete listing of Disk values.
+type ResponseWithContinuationDiskIterator struct {
+	i    int
+	page ResponseWithContinuationDiskPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationDiskIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationDiskIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationDiskIterator) Response() ResponseWithContinuationDisk {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationDiskIterator) Value() Disk {
+	if !iter.page.NotDone() {
+		return Disk{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcD ResponseWithContinuationDisk) IsEmpty() bool {
+	return rwcD.Value == nil || len(*rwcD.Value) == 0
+}
+
+// responseWithContinuationDiskPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcD ResponseWithContinuationDisk) responseWithContinuationDiskPreparer() (*http.Request, error) {
+	if rwcD.NextLink == nil || len(to.String(rwcD.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcD.NextLink)))
 }
 
-// ResponseWithContinuationDtlEnvironment is the response of a list operation.
+// ResponseWithContinuationDiskPage contains a page of Disk values.
+type ResponseWithContinuationDiskPage struct {
+	fn   func(ResponseWithContinuationDisk) (ResponseWithContinuationDisk, error)
+	rwcd ResponseWithContinuationDisk
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationDiskPage) Next() error {
+	next, err := page.fn(page.rwcd)
+	if err != nil {
+		return err
+	}
+	page.rwcd = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationDiskPage) NotDone() bool {
+	return !page.rwcd.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationDiskPage) Response() ResponseWithContinuationDisk {
+	return page.rwcd
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationDiskPage) Values() []Disk {
+	if page.rwcd.IsEmpty() {
+		return nil
+	}
+	return *page.rwcd.Value
+}
+
+// ResponseWithContinuationDtlEnvironment the response of a list operation.
 type ResponseWithContinuationDtlEnvironment struct {
 	autorest.Response `json:"-"`
-	Value             *[]Environment `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Environment `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationDtlEnvironmentPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationDtlEnvironment) ResponseWithContinuationDtlEnvironmentPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationDtlEnvironmentIterator provides access to a complete listing of Environment values.
+type ResponseWithContinuationDtlEnvironmentIterator struct {
+	i    int
+	page ResponseWithContinuationDtlEnvironmentPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationDtlEnvironmentIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationDtlEnvironmentIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationDtlEnvironmentIterator) Response() ResponseWithContinuationDtlEnvironment {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationDtlEnvironmentIterator) Value() Environment {
+	if !iter.page.NotDone() {
+		return Environment{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcDe ResponseWithContinuationDtlEnvironment) IsEmpty() bool {
+	return rwcDe.Value == nil || len(*rwcDe.Value) == 0
+}
+
+// responseWithContinuationDtlEnvironmentPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcDe ResponseWithContinuationDtlEnvironment) responseWithContinuationDtlEnvironmentPreparer() (*http.Request, error) {
+	if rwcDe.NextLink == nil || len(to.String(rwcDe.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcDe.NextLink)))
 }
 
-// ResponseWithContinuationFormula is the response of a list operation.
+// ResponseWithContinuationDtlEnvironmentPage contains a page of Environment values.
+type ResponseWithContinuationDtlEnvironmentPage struct {
+	fn    func(ResponseWithContinuationDtlEnvironment) (ResponseWithContinuationDtlEnvironment, error)
+	rwcde ResponseWithContinuationDtlEnvironment
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationDtlEnvironmentPage) Next() error {
+	next, err := page.fn(page.rwcde)
+	if err != nil {
+		return err
+	}
+	page.rwcde = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationDtlEnvironmentPage) NotDone() bool {
+	return !page.rwcde.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationDtlEnvironmentPage) Response() ResponseWithContinuationDtlEnvironment {
+	return page.rwcde
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationDtlEnvironmentPage) Values() []Environment {
+	if page.rwcde.IsEmpty() {
+		return nil
+	}
+	return *page.rwcde.Value
+}
+
+// ResponseWithContinuationFormula the response of a list operation.
 type ResponseWithContinuationFormula struct {
 	autorest.Response `json:"-"`
-	Value             *[]Formula `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Formula `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationFormulaPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationFormula) ResponseWithContinuationFormulaPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationFormulaIterator provides access to a complete listing of Formula values.
+type ResponseWithContinuationFormulaIterator struct {
+	i    int
+	page ResponseWithContinuationFormulaPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationFormulaIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationFormulaIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationFormulaIterator) Response() ResponseWithContinuationFormula {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationFormulaIterator) Value() Formula {
+	if !iter.page.NotDone() {
+		return Formula{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcF ResponseWithContinuationFormula) IsEmpty() bool {
+	return rwcF.Value == nil || len(*rwcF.Value) == 0
+}
+
+// responseWithContinuationFormulaPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcF ResponseWithContinuationFormula) responseWithContinuationFormulaPreparer() (*http.Request, error) {
+	if rwcF.NextLink == nil || len(to.String(rwcF.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcF.NextLink)))
 }
 
-// ResponseWithContinuationGalleryImage is the response of a list operation.
+// ResponseWithContinuationFormulaPage contains a page of Formula values.
+type ResponseWithContinuationFormulaPage struct {
+	fn   func(ResponseWithContinuationFormula) (ResponseWithContinuationFormula, error)
+	rwcf ResponseWithContinuationFormula
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationFormulaPage) Next() error {
+	next, err := page.fn(page.rwcf)
+	if err != nil {
+		return err
+	}
+	page.rwcf = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationFormulaPage) NotDone() bool {
+	return !page.rwcf.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationFormulaPage) Response() ResponseWithContinuationFormula {
+	return page.rwcf
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationFormulaPage) Values() []Formula {
+	if page.rwcf.IsEmpty() {
+		return nil
+	}
+	return *page.rwcf.Value
+}
+
+// ResponseWithContinuationGalleryImage the response of a list operation.
 type ResponseWithContinuationGalleryImage struct {
 	autorest.Response `json:"-"`
-	Value             *[]GalleryImage `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]GalleryImage `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationGalleryImagePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationGalleryImage) ResponseWithContinuationGalleryImagePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationGalleryImageIterator provides access to a complete listing of GalleryImage values.
+type ResponseWithContinuationGalleryImageIterator struct {
+	i    int
+	page ResponseWithContinuationGalleryImagePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationGalleryImageIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationGalleryImageIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationGalleryImageIterator) Response() ResponseWithContinuationGalleryImage {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationGalleryImageIterator) Value() GalleryImage {
+	if !iter.page.NotDone() {
+		return GalleryImage{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcGi ResponseWithContinuationGalleryImage) IsEmpty() bool {
+	return rwcGi.Value == nil || len(*rwcGi.Value) == 0
+}
+
+// responseWithContinuationGalleryImagePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcGi ResponseWithContinuationGalleryImage) responseWithContinuationGalleryImagePreparer() (*http.Request, error) {
+	if rwcGi.NextLink == nil || len(to.String(rwcGi.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcGi.NextLink)))
 }
 
-// ResponseWithContinuationLab is the response of a list operation.
+// ResponseWithContinuationGalleryImagePage contains a page of GalleryImage values.
+type ResponseWithContinuationGalleryImagePage struct {
+	fn    func(ResponseWithContinuationGalleryImage) (ResponseWithContinuationGalleryImage, error)
+	rwcgi ResponseWithContinuationGalleryImage
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationGalleryImagePage) Next() error {
+	next, err := page.fn(page.rwcgi)
+	if err != nil {
+		return err
+	}
+	page.rwcgi = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationGalleryImagePage) NotDone() bool {
+	return !page.rwcgi.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationGalleryImagePage) Response() ResponseWithContinuationGalleryImage {
+	return page.rwcgi
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationGalleryImagePage) Values() []GalleryImage {
+	if page.rwcgi.IsEmpty() {
+		return nil
+	}
+	return *page.rwcgi.Value
+}
+
+// ResponseWithContinuationLab the response of a list operation.
 type ResponseWithContinuationLab struct {
 	autorest.Response `json:"-"`
-	Value             *[]Lab  `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Lab `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationLabPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationLab) ResponseWithContinuationLabPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationLabIterator provides access to a complete listing of Lab values.
+type ResponseWithContinuationLabIterator struct {
+	i    int
+	page ResponseWithContinuationLabPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationLabIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationLabIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationLabIterator) Response() ResponseWithContinuationLab {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationLabIterator) Value() Lab {
+	if !iter.page.NotDone() {
+		return Lab{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcL ResponseWithContinuationLab) IsEmpty() bool {
+	return rwcL.Value == nil || len(*rwcL.Value) == 0
+}
+
+// responseWithContinuationLabPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcL ResponseWithContinuationLab) responseWithContinuationLabPreparer() (*http.Request, error) {
+	if rwcL.NextLink == nil || len(to.String(rwcL.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcL.NextLink)))
 }
 
-// ResponseWithContinuationLabVhd is the response of a list operation.
+// ResponseWithContinuationLabPage contains a page of Lab values.
+type ResponseWithContinuationLabPage struct {
+	fn   func(ResponseWithContinuationLab) (ResponseWithContinuationLab, error)
+	rwcl ResponseWithContinuationLab
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationLabPage) Next() error {
+	next, err := page.fn(page.rwcl)
+	if err != nil {
+		return err
+	}
+	page.rwcl = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationLabPage) NotDone() bool {
+	return !page.rwcl.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationLabPage) Response() ResponseWithContinuationLab {
+	return page.rwcl
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationLabPage) Values() []Lab {
+	if page.rwcl.IsEmpty() {
+		return nil
+	}
+	return *page.rwcl.Value
+}
+
+// ResponseWithContinuationLabVhd the response of a list operation.
 type ResponseWithContinuationLabVhd struct {
 	autorest.Response `json:"-"`
-	Value             *[]LabVhd `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]LabVhd `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationLabVhdPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationLabVhd) ResponseWithContinuationLabVhdPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationLabVhdIterator provides access to a complete listing of LabVhd values.
+type ResponseWithContinuationLabVhdIterator struct {
+	i    int
+	page ResponseWithContinuationLabVhdPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationLabVhdIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationLabVhdIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationLabVhdIterator) Response() ResponseWithContinuationLabVhd {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationLabVhdIterator) Value() LabVhd {
+	if !iter.page.NotDone() {
+		return LabVhd{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcLv ResponseWithContinuationLabVhd) IsEmpty() bool {
+	return rwcLv.Value == nil || len(*rwcLv.Value) == 0
+}
+
+// responseWithContinuationLabVhdPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcLv ResponseWithContinuationLabVhd) responseWithContinuationLabVhdPreparer() (*http.Request, error) {
+	if rwcLv.NextLink == nil || len(to.String(rwcLv.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcLv.NextLink)))
 }
 
-// ResponseWithContinuationLabVirtualMachine is the response of a list operation.
+// ResponseWithContinuationLabVhdPage contains a page of LabVhd values.
+type ResponseWithContinuationLabVhdPage struct {
+	fn    func(ResponseWithContinuationLabVhd) (ResponseWithContinuationLabVhd, error)
+	rwclv ResponseWithContinuationLabVhd
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationLabVhdPage) Next() error {
+	next, err := page.fn(page.rwclv)
+	if err != nil {
+		return err
+	}
+	page.rwclv = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationLabVhdPage) NotDone() bool {
+	return !page.rwclv.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationLabVhdPage) Response() ResponseWithContinuationLabVhd {
+	return page.rwclv
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationLabVhdPage) Values() []LabVhd {
+	if page.rwclv.IsEmpty() {
+		return nil
+	}
+	return *page.rwclv.Value
+}
+
+// ResponseWithContinuationLabVirtualMachine the response of a list operation.
 type ResponseWithContinuationLabVirtualMachine struct {
 	autorest.Response `json:"-"`
-	Value             *[]LabVirtualMachine `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]LabVirtualMachine `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationLabVirtualMachinePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationLabVirtualMachine) ResponseWithContinuationLabVirtualMachinePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationLabVirtualMachineIterator provides access to a complete listing of LabVirtualMachine values.
+type ResponseWithContinuationLabVirtualMachineIterator struct {
+	i    int
+	page ResponseWithContinuationLabVirtualMachinePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationLabVirtualMachineIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationLabVirtualMachineIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationLabVirtualMachineIterator) Response() ResponseWithContinuationLabVirtualMachine {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationLabVirtualMachineIterator) Value() LabVirtualMachine {
+	if !iter.page.NotDone() {
+		return LabVirtualMachine{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcLvm ResponseWithContinuationLabVirtualMachine) IsEmpty() bool {
+	return rwcLvm.Value == nil || len(*rwcLvm.Value) == 0
+}
+
+// responseWithContinuationLabVirtualMachinePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcLvm ResponseWithContinuationLabVirtualMachine) responseWithContinuationLabVirtualMachinePreparer() (*http.Request, error) {
+	if rwcLvm.NextLink == nil || len(to.String(rwcLvm.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcLvm.NextLink)))
 }
 
-// ResponseWithContinuationNotificationChannel is the response of a list operation.
+// ResponseWithContinuationLabVirtualMachinePage contains a page of LabVirtualMachine values.
+type ResponseWithContinuationLabVirtualMachinePage struct {
+	fn     func(ResponseWithContinuationLabVirtualMachine) (ResponseWithContinuationLabVirtualMachine, error)
+	rwclvm ResponseWithContinuationLabVirtualMachine
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationLabVirtualMachinePage) Next() error {
+	next, err := page.fn(page.rwclvm)
+	if err != nil {
+		return err
+	}
+	page.rwclvm = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationLabVirtualMachinePage) NotDone() bool {
+	return !page.rwclvm.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationLabVirtualMachinePage) Response() ResponseWithContinuationLabVirtualMachine {
+	return page.rwclvm
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationLabVirtualMachinePage) Values() []LabVirtualMachine {
+	if page.rwclvm.IsEmpty() {
+		return nil
+	}
+	return *page.rwclvm.Value
+}
+
+// ResponseWithContinuationNotificationChannel the response of a list operation.
 type ResponseWithContinuationNotificationChannel struct {
 	autorest.Response `json:"-"`
-	Value             *[]NotificationChannel `json:"value,omitempty"`
-	NextLink          *string                `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]NotificationChannel `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationNotificationChannelPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationNotificationChannel) ResponseWithContinuationNotificationChannelPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationNotificationChannelIterator provides access to a complete listing of NotificationChannel
+// values.
+type ResponseWithContinuationNotificationChannelIterator struct {
+	i    int
+	page ResponseWithContinuationNotificationChannelPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationNotificationChannelIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationNotificationChannelIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationNotificationChannelIterator) Response() ResponseWithContinuationNotificationChannel {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationNotificationChannelIterator) Value() NotificationChannel {
+	if !iter.page.NotDone() {
+		return NotificationChannel{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcNc ResponseWithContinuationNotificationChannel) IsEmpty() bool {
+	return rwcNc.Value == nil || len(*rwcNc.Value) == 0
+}
+
+// responseWithContinuationNotificationChannelPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcNc ResponseWithContinuationNotificationChannel) responseWithContinuationNotificationChannelPreparer() (*http.Request, error) {
+	if rwcNc.NextLink == nil || len(to.String(rwcNc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcNc.NextLink)))
 }
 
-// ResponseWithContinuationPolicy is the response of a list operation.
+// ResponseWithContinuationNotificationChannelPage contains a page of NotificationChannel values.
+type ResponseWithContinuationNotificationChannelPage struct {
+	fn    func(ResponseWithContinuationNotificationChannel) (ResponseWithContinuationNotificationChannel, error)
+	rwcnc ResponseWithContinuationNotificationChannel
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationNotificationChannelPage) Next() error {
+	next, err := page.fn(page.rwcnc)
+	if err != nil {
+		return err
+	}
+	page.rwcnc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationNotificationChannelPage) NotDone() bool {
+	return !page.rwcnc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationNotificationChannelPage) Response() ResponseWithContinuationNotificationChannel {
+	return page.rwcnc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationNotificationChannelPage) Values() []NotificationChannel {
+	if page.rwcnc.IsEmpty() {
+		return nil
+	}
+	return *page.rwcnc.Value
+}
+
+// ResponseWithContinuationPolicy the response of a list operation.
 type ResponseWithContinuationPolicy struct {
 	autorest.Response `json:"-"`
-	Value             *[]Policy `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Policy `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationPolicyPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationPolicy) ResponseWithContinuationPolicyPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationPolicyIterator provides access to a complete listing of Policy values.
+type ResponseWithContinuationPolicyIterator struct {
+	i    int
+	page ResponseWithContinuationPolicyPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationPolicyIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationPolicyIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationPolicyIterator) Response() ResponseWithContinuationPolicy {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationPolicyIterator) Value() Policy {
+	if !iter.page.NotDone() {
+		return Policy{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcP ResponseWithContinuationPolicy) IsEmpty() bool {
+	return rwcP.Value == nil || len(*rwcP.Value) == 0
+}
+
+// responseWithContinuationPolicyPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcP ResponseWithContinuationPolicy) responseWithContinuationPolicyPreparer() (*http.Request, error) {
+	if rwcP.NextLink == nil || len(to.String(rwcP.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcP.NextLink)))
 }
 
-// ResponseWithContinuationSchedule is the response of a list operation.
+// ResponseWithContinuationPolicyPage contains a page of Policy values.
+type ResponseWithContinuationPolicyPage struct {
+	fn   func(ResponseWithContinuationPolicy) (ResponseWithContinuationPolicy, error)
+	rwcp ResponseWithContinuationPolicy
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationPolicyPage) Next() error {
+	next, err := page.fn(page.rwcp)
+	if err != nil {
+		return err
+	}
+	page.rwcp = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationPolicyPage) NotDone() bool {
+	return !page.rwcp.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationPolicyPage) Response() ResponseWithContinuationPolicy {
+	return page.rwcp
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationPolicyPage) Values() []Policy {
+	if page.rwcp.IsEmpty() {
+		return nil
+	}
+	return *page.rwcp.Value
+}
+
+// ResponseWithContinuationSchedule the response of a list operation.
 type ResponseWithContinuationSchedule struct {
 	autorest.Response `json:"-"`
-	Value             *[]Schedule `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Schedule `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationSchedulePreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationSchedule) ResponseWithContinuationSchedulePreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationScheduleIterator provides access to a complete listing of Schedule values.
+type ResponseWithContinuationScheduleIterator struct {
+	i    int
+	page ResponseWithContinuationSchedulePage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationScheduleIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationScheduleIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationScheduleIterator) Response() ResponseWithContinuationSchedule {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationScheduleIterator) Value() Schedule {
+	if !iter.page.NotDone() {
+		return Schedule{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcS ResponseWithContinuationSchedule) IsEmpty() bool {
+	return rwcS.Value == nil || len(*rwcS.Value) == 0
+}
+
+// responseWithContinuationSchedulePreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcS ResponseWithContinuationSchedule) responseWithContinuationSchedulePreparer() (*http.Request, error) {
+	if rwcS.NextLink == nil || len(to.String(rwcS.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcS.NextLink)))
 }
 
-// ResponseWithContinuationSecret is the response of a list operation.
+// ResponseWithContinuationSchedulePage contains a page of Schedule values.
+type ResponseWithContinuationSchedulePage struct {
+	fn   func(ResponseWithContinuationSchedule) (ResponseWithContinuationSchedule, error)
+	rwcs ResponseWithContinuationSchedule
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationSchedulePage) Next() error {
+	next, err := page.fn(page.rwcs)
+	if err != nil {
+		return err
+	}
+	page.rwcs = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationSchedulePage) NotDone() bool {
+	return !page.rwcs.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationSchedulePage) Response() ResponseWithContinuationSchedule {
+	return page.rwcs
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationSchedulePage) Values() []Schedule {
+	if page.rwcs.IsEmpty() {
+		return nil
+	}
+	return *page.rwcs.Value
+}
+
+// ResponseWithContinuationSecret the response of a list operation.
 type ResponseWithContinuationSecret struct {
 	autorest.Response `json:"-"`
-	Value             *[]Secret `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Secret `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationSecretPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationSecret) ResponseWithContinuationSecretPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationSecretIterator provides access to a complete listing of Secret values.
+type ResponseWithContinuationSecretIterator struct {
+	i    int
+	page ResponseWithContinuationSecretPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationSecretIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationSecretIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationSecretIterator) Response() ResponseWithContinuationSecret {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationSecretIterator) Value() Secret {
+	if !iter.page.NotDone() {
+		return Secret{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcS ResponseWithContinuationSecret) IsEmpty() bool {
+	return rwcS.Value == nil || len(*rwcS.Value) == 0
+}
+
+// responseWithContinuationSecretPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcS ResponseWithContinuationSecret) responseWithContinuationSecretPreparer() (*http.Request, error) {
+	if rwcS.NextLink == nil || len(to.String(rwcS.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcS.NextLink)))
 }
 
-// ResponseWithContinuationServiceRunner is the response of a list operation.
+// ResponseWithContinuationSecretPage contains a page of Secret values.
+type ResponseWithContinuationSecretPage struct {
+	fn   func(ResponseWithContinuationSecret) (ResponseWithContinuationSecret, error)
+	rwcs ResponseWithContinuationSecret
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationSecretPage) Next() error {
+	next, err := page.fn(page.rwcs)
+	if err != nil {
+		return err
+	}
+	page.rwcs = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationSecretPage) NotDone() bool {
+	return !page.rwcs.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationSecretPage) Response() ResponseWithContinuationSecret {
+	return page.rwcs
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationSecretPage) Values() []Secret {
+	if page.rwcs.IsEmpty() {
+		return nil
+	}
+	return *page.rwcs.Value
+}
+
+// ResponseWithContinuationServiceRunner the response of a list operation.
 type ResponseWithContinuationServiceRunner struct {
 	autorest.Response `json:"-"`
-	Value             *[]ServiceRunner `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ServiceRunner `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationServiceRunnerPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationServiceRunner) ResponseWithContinuationServiceRunnerPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationServiceRunnerIterator provides access to a complete listing of ServiceRunner values.
+type ResponseWithContinuationServiceRunnerIterator struct {
+	i    int
+	page ResponseWithContinuationServiceRunnerPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationServiceRunnerIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationServiceRunnerIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationServiceRunnerIterator) Response() ResponseWithContinuationServiceRunner {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationServiceRunnerIterator) Value() ServiceRunner {
+	if !iter.page.NotDone() {
+		return ServiceRunner{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcSr ResponseWithContinuationServiceRunner) IsEmpty() bool {
+	return rwcSr.Value == nil || len(*rwcSr.Value) == 0
+}
+
+// responseWithContinuationServiceRunnerPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcSr ResponseWithContinuationServiceRunner) responseWithContinuationServiceRunnerPreparer() (*http.Request, error) {
+	if rwcSr.NextLink == nil || len(to.String(rwcSr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcSr.NextLink)))
 }
 
-// ResponseWithContinuationUser is the response of a list operation.
+// ResponseWithContinuationServiceRunnerPage contains a page of ServiceRunner values.
+type ResponseWithContinuationServiceRunnerPage struct {
+	fn    func(ResponseWithContinuationServiceRunner) (ResponseWithContinuationServiceRunner, error)
+	rwcsr ResponseWithContinuationServiceRunner
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationServiceRunnerPage) Next() error {
+	next, err := page.fn(page.rwcsr)
+	if err != nil {
+		return err
+	}
+	page.rwcsr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationServiceRunnerPage) NotDone() bool {
+	return !page.rwcsr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationServiceRunnerPage) Response() ResponseWithContinuationServiceRunner {
+	return page.rwcsr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationServiceRunnerPage) Values() []ServiceRunner {
+	if page.rwcsr.IsEmpty() {
+		return nil
+	}
+	return *page.rwcsr.Value
+}
+
+// ResponseWithContinuationUser the response of a list operation.
 type ResponseWithContinuationUser struct {
 	autorest.Response `json:"-"`
-	Value             *[]User `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]User `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationUserPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationUser) ResponseWithContinuationUserPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationUserIterator provides access to a complete listing of User values.
+type ResponseWithContinuationUserIterator struct {
+	i    int
+	page ResponseWithContinuationUserPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationUserIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationUserIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationUserIterator) Response() ResponseWithContinuationUser {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationUserIterator) Value() User {
+	if !iter.page.NotDone() {
+		return User{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcU ResponseWithContinuationUser) IsEmpty() bool {
+	return rwcU.Value == nil || len(*rwcU.Value) == 0
+}
+
+// responseWithContinuationUserPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcU ResponseWithContinuationUser) responseWithContinuationUserPreparer() (*http.Request, error) {
+	if rwcU.NextLink == nil || len(to.String(rwcU.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcU.NextLink)))
 }
 
-// ResponseWithContinuationVirtualNetwork is the response of a list operation.
+// ResponseWithContinuationUserPage contains a page of User values.
+type ResponseWithContinuationUserPage struct {
+	fn   func(ResponseWithContinuationUser) (ResponseWithContinuationUser, error)
+	rwcu ResponseWithContinuationUser
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationUserPage) Next() error {
+	next, err := page.fn(page.rwcu)
+	if err != nil {
+		return err
+	}
+	page.rwcu = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationUserPage) NotDone() bool {
+	return !page.rwcu.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationUserPage) Response() ResponseWithContinuationUser {
+	return page.rwcu
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationUserPage) Values() []User {
+	if page.rwcu.IsEmpty() {
+		return nil
+	}
+	return *page.rwcu.Value
+}
+
+// ResponseWithContinuationVirtualNetwork the response of a list operation.
 type ResponseWithContinuationVirtualNetwork struct {
 	autorest.Response `json:"-"`
-	Value             *[]VirtualNetwork `json:"value,omitempty"`
-	NextLink          *string           `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]VirtualNetwork `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ResponseWithContinuationVirtualNetworkPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ResponseWithContinuationVirtualNetwork) ResponseWithContinuationVirtualNetworkPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ResponseWithContinuationVirtualNetworkIterator provides access to a complete listing of VirtualNetwork values.
+type ResponseWithContinuationVirtualNetworkIterator struct {
+	i    int
+	page ResponseWithContinuationVirtualNetworkPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ResponseWithContinuationVirtualNetworkIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ResponseWithContinuationVirtualNetworkIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ResponseWithContinuationVirtualNetworkIterator) Response() ResponseWithContinuationVirtualNetwork {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ResponseWithContinuationVirtualNetworkIterator) Value() VirtualNetwork {
+	if !iter.page.NotDone() {
+		return VirtualNetwork{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rwcVn ResponseWithContinuationVirtualNetwork) IsEmpty() bool {
+	return rwcVn.Value == nil || len(*rwcVn.Value) == 0
+}
+
+// responseWithContinuationVirtualNetworkPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rwcVn ResponseWithContinuationVirtualNetwork) responseWithContinuationVirtualNetworkPreparer() (*http.Request, error) {
+	if rwcVn.NextLink == nil || len(to.String(rwcVn.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rwcVn.NextLink)))
 }
 
-// RetargetScheduleProperties is properties for retargeting a virtual machine schedule.
+// ResponseWithContinuationVirtualNetworkPage contains a page of VirtualNetwork values.
+type ResponseWithContinuationVirtualNetworkPage struct {
+	fn    func(ResponseWithContinuationVirtualNetwork) (ResponseWithContinuationVirtualNetwork, error)
+	rwcvn ResponseWithContinuationVirtualNetwork
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ResponseWithContinuationVirtualNetworkPage) Next() error {
+	next, err := page.fn(page.rwcvn)
+	if err != nil {
+		return err
+	}
+	page.rwcvn = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ResponseWithContinuationVirtualNetworkPage) NotDone() bool {
+	return !page.rwcvn.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ResponseWithContinuationVirtualNetworkPage) Response() ResponseWithContinuationVirtualNetwork {
+	return page.rwcvn
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ResponseWithContinuationVirtualNetworkPage) Values() []VirtualNetwork {
+	if page.rwcvn.IsEmpty() {
+		return nil
+	}
+	return *page.rwcvn.Value
+}
+
+// RetargetScheduleProperties properties for retargeting a virtual machine schedule.
 type RetargetScheduleProperties struct {
+	// CurrentResourceID - The resource Id of the virtual machine on which the schedule operates
 	CurrentResourceID *string `json:"currentResourceId,omitempty"`
-	TargetResourceID  *string `json:"targetResourceId,omitempty"`
+	// TargetResourceID - The resource Id of the virtual machine that the schedule should be retargeted to
+	TargetResourceID *string `json:"targetResourceId,omitempty"`
 }
 
-// Schedule is a schedule.
+// Schedule a schedule.
 type Schedule struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ScheduleProperties - The properties of the resource.
 	*ScheduleProperties `json:"properties,omitempty"`
 }
 
-// ScheduleFragment is a schedule.
+// UnmarshalJSON is the custom unmarshaler for Schedule struct.
+func (s *Schedule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ScheduleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		s.ScheduleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		s.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		s.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		s.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		s.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		s.Tags = &tags
+	}
+
+	return nil
+}
+
+// ScheduleFragment a schedule.
 type ScheduleFragment struct {
-	ID                          *string             `json:"id,omitempty"`
-	Name                        *string             `json:"name,omitempty"`
-	Type                        *string             `json:"type,omitempty"`
-	Location                    *string             `json:"location,omitempty"`
-	Tags                        *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// SchedulePropertiesFragment - The properties of the resource.
 	*SchedulePropertiesFragment `json:"properties,omitempty"`
 }
 
-// ScheduleProperties is properties of a schedule.
+// UnmarshalJSON is the custom unmarshaler for ScheduleFragment struct.
+func (sf *ScheduleFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SchedulePropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sf.SchedulePropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sf.Tags = &tags
+	}
+
+	return nil
+}
+
+// ScheduleProperties properties of a schedule.
 type ScheduleProperties struct {
-	Status               EnableStatus          `json:"status,omitempty"`
-	TaskType             *string               `json:"taskType,omitempty"`
-	WeeklyRecurrence     *WeekDetails          `json:"weeklyRecurrence,omitempty"`
-	DailyRecurrence      *DayDetails           `json:"dailyRecurrence,omitempty"`
-	HourlyRecurrence     *HourDetails          `json:"hourlyRecurrence,omitempty"`
-	TimeZoneID           *string               `json:"timeZoneId,omitempty"`
+	// Status - The status of the schedule (i.e. Enabled, Disabled). Possible values include: 'EnableStatusEnabled', 'EnableStatusDisabled'
+	Status EnableStatus `json:"status,omitempty"`
+	// TaskType - The task type of the schedule (e.g. LabVmsShutdownTask, LabVmAutoStart).
+	TaskType *string `json:"taskType,omitempty"`
+	// WeeklyRecurrence - If the schedule will occur only some days of the week, specify the weekly recurrence.
+	WeeklyRecurrence *WeekDetails `json:"weeklyRecurrence,omitempty"`
+	// DailyRecurrence - If the schedule will occur once each day of the week, specify the daily recurrence.
+	DailyRecurrence *DayDetails `json:"dailyRecurrence,omitempty"`
+	// HourlyRecurrence - If the schedule will occur multiple times a day, specify the hourly recurrence.
+	HourlyRecurrence *HourDetails `json:"hourlyRecurrence,omitempty"`
+	// TimeZoneID - The time zone ID (e.g. Pacific Standard time).
+	TimeZoneID *string `json:"timeZoneId,omitempty"`
+	// NotificationSettings - Notification settings.
 	NotificationSettings *NotificationSettings `json:"notificationSettings,omitempty"`
-	CreatedDate          *date.Time            `json:"createdDate,omitempty"`
-	TargetResourceID     *string               `json:"targetResourceId,omitempty"`
-	ProvisioningState    *string               `json:"provisioningState,omitempty"`
-	UniqueIdentifier     *string               `json:"uniqueIdentifier,omitempty"`
+	// CreatedDate - The creation date of the schedule.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// TargetResourceID - The resource ID to which the schedule belongs
+	TargetResourceID *string `json:"targetResourceId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// SchedulePropertiesFragment is properties of a schedule.
+// SchedulePropertiesFragment properties of a schedule.
 type SchedulePropertiesFragment struct {
-	Status               EnableStatus                  `json:"status,omitempty"`
-	TaskType             *string                       `json:"taskType,omitempty"`
-	WeeklyRecurrence     *WeekDetailsFragment          `json:"weeklyRecurrence,omitempty"`
-	DailyRecurrence      *DayDetailsFragment           `json:"dailyRecurrence,omitempty"`
-	HourlyRecurrence     *HourDetailsFragment          `json:"hourlyRecurrence,omitempty"`
-	TimeZoneID           *string                       `json:"timeZoneId,omitempty"`
+	// Status - The status of the schedule (i.e. Enabled, Disabled). Possible values include: 'EnableStatusEnabled', 'EnableStatusDisabled'
+	Status EnableStatus `json:"status,omitempty"`
+	// TaskType - The task type of the schedule (e.g. LabVmsShutdownTask, LabVmAutoStart).
+	TaskType *string `json:"taskType,omitempty"`
+	// WeeklyRecurrence - If the schedule will occur only some days of the week, specify the weekly recurrence.
+	WeeklyRecurrence *WeekDetailsFragment `json:"weeklyRecurrence,omitempty"`
+	// DailyRecurrence - If the schedule will occur once each day of the week, specify the daily recurrence.
+	DailyRecurrence *DayDetailsFragment `json:"dailyRecurrence,omitempty"`
+	// HourlyRecurrence - If the schedule will occur multiple times a day, specify the hourly recurrence.
+	HourlyRecurrence *HourDetailsFragment `json:"hourlyRecurrence,omitempty"`
+	// TimeZoneID - The time zone ID (e.g. Pacific Standard time).
+	TimeZoneID *string `json:"timeZoneId,omitempty"`
+	// NotificationSettings - Notification settings.
 	NotificationSettings *NotificationSettingsFragment `json:"notificationSettings,omitempty"`
-	TargetResourceID     *string                       `json:"targetResourceId,omitempty"`
-	ProvisioningState    *string                       `json:"provisioningState,omitempty"`
-	UniqueIdentifier     *string                       `json:"uniqueIdentifier,omitempty"`
+	// TargetResourceID - The resource ID to which the schedule belongs
+	TargetResourceID *string `json:"targetResourceId,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// Secret is a secret.
+// SchedulesExecuteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SchedulesExecuteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SchedulesExecuteFuture) Result(client SchedulesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.SchedulesExecuteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ExecuteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ExecuteResponder(resp)
+	return
+}
+
+// Secret a secret.
 type Secret struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// SecretProperties - The properties of the resource.
 	*SecretProperties `json:"properties,omitempty"`
 }
 
-// SecretProperties is properties of a secret.
-type SecretProperties struct {
-	Value             *string `json:"value,omitempty"`
-	ProvisioningState *string `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string `json:"uniqueIdentifier,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Secret struct.
+func (s *Secret) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SecretProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		s.SecretProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		s.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		s.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		s.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		s.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		s.Tags = &tags
+	}
+
+	return nil
 }
 
-// ServiceRunner is a container for a managed identity to execute DevTest lab services.
+// SecretProperties properties of a secret.
+type SecretProperties struct {
+	// Value - The value of the secret for secret creation.
+	Value *string `json:"value,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
+}
+
+// ServiceRunner a container for a managed identity to execute DevTest lab services.
 type ServiceRunner struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Identity          *IdentityProperties `json:"identity,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Identity - The identity of the resource.
+	Identity *IdentityProperties `json:"identity,omitempty"`
 }
 
-// SharedPublicIPAddressConfiguration is properties of a virtual machine that determine how it is connected to a load
+// SharedPublicIPAddressConfiguration properties of a virtual machine that determine how it is connected to a load
 // balancer.
 type SharedPublicIPAddressConfiguration struct {
+	// InboundNatRules - The incoming NAT rules
 	InboundNatRules *[]InboundNatRule `json:"inboundNatRules,omitempty"`
 }
 
-// SharedPublicIPAddressConfigurationFragment is properties of a virtual machine that determine how it is connected to
-// a load balancer.
+// SharedPublicIPAddressConfigurationFragment properties of a virtual machine that determine how it is connected to a
+// load balancer.
 type SharedPublicIPAddressConfigurationFragment struct {
+	// InboundNatRules - The incoming NAT rules
 	InboundNatRules *[]InboundNatRuleFragment `json:"inboundNatRules,omitempty"`
 }
 
-// ShutdownNotificationContent is the contents of a shutdown notification. Webhooks can use this type to deserialize
-// the request body when they get notified of an imminent shutdown.
+// ShutdownNotificationContent the contents of a shutdown notification. Webhooks can use this type to deserialize the
+// request body when they get notified of an imminent shutdown.
 type ShutdownNotificationContent struct {
-	SkipURL           *string `json:"skipUrl,omitempty"`
-	DelayURL60        *string `json:"delayUrl60,omitempty"`
-	DelayURL120       *string `json:"delayUrl120,omitempty"`
-	VMName            *string `json:"vmName,omitempty"`
-	GUID              *string `json:"guid,omitempty"`
-	Owner             *string `json:"owner,omitempty"`
-	EventType         *string `json:"eventType,omitempty"`
-	Text              *string `json:"text,omitempty"`
-	SubscriptionID    *string `json:"subscriptionId,omitempty"`
+	// SkipURL - The URL to skip auto-shutdown.
+	SkipURL *string `json:"skipUrl,omitempty"`
+	// DelayURL60 - The URL to delay shutdown by 60 minutes.
+	DelayURL60 *string `json:"delayUrl60,omitempty"`
+	// DelayURL120 - The URL to delay shutdown by 2 hours.
+	DelayURL120 *string `json:"delayUrl120,omitempty"`
+	// VMName - The virtual machine to be shut down.
+	VMName *string `json:"vmName,omitempty"`
+	// GUID - The GUID for the virtual machine to be shut down.
+	GUID *string `json:"guid,omitempty"`
+	// Owner - The owner of the virtual machine.
+	Owner *string `json:"owner,omitempty"`
+	// EventType - The event for which a notification will be sent.
+	EventType *string `json:"eventType,omitempty"`
+	// Text - The text for the notification.
+	Text *string `json:"text,omitempty"`
+	// SubscriptionID - The subscription ID for the schedule.
+	SubscriptionID *string `json:"subscriptionId,omitempty"`
+	// ResourceGroupName - The resource group name for the schedule.
 	ResourceGroupName *string `json:"resourceGroupName,omitempty"`
-	LabName           *string `json:"labName,omitempty"`
+	// LabName - The lab for the schedule.
+	LabName *string `json:"labName,omitempty"`
 }
 
-// Subnet is subnet information.
+// Subnet subnet information.
 type Subnet struct {
-	ResourceID    *string             `json:"resourceId,omitempty"`
-	LabSubnetName *string             `json:"labSubnetName,omitempty"`
+	// ResourceID - The resource ID of the subnet.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// LabSubnetName - The name of the subnet as seen in the lab.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// AllowPublicIP - The permission policy of the subnet for allowing public IP addresses (i.e. Allow, Deny)). Possible values include: 'Default', 'Deny', 'Allow'
 	AllowPublicIP UsagePermissionType `json:"allowPublicIp,omitempty"`
 }
 
-// SubnetFragment is subnet information.
+// SubnetFragment subnet information.
 type SubnetFragment struct {
-	ResourceID    *string             `json:"resourceId,omitempty"`
-	LabSubnetName *string             `json:"labSubnetName,omitempty"`
+	// ResourceID - The resource ID of the subnet.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// LabSubnetName - The name of the subnet as seen in the lab.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// AllowPublicIP - The permission policy of the subnet for allowing public IP addresses (i.e. Allow, Deny)). Possible values include: 'Default', 'Deny', 'Allow'
 	AllowPublicIP UsagePermissionType `json:"allowPublicIp,omitempty"`
 }
 
-// SubnetOverride is property overrides on a subnet of a virtual network.
+// SubnetOverride property overrides on a subnet of a virtual network.
 type SubnetOverride struct {
-	ResourceID                         *string                                   `json:"resourceId,omitempty"`
-	LabSubnetName                      *string                                   `json:"labSubnetName,omitempty"`
-	UseInVMCreationPermission          UsagePermissionType                       `json:"useInVmCreationPermission,omitempty"`
-	UsePublicIPAddressPermission       UsagePermissionType                       `json:"usePublicIpAddressPermission,omitempty"`
+	// ResourceID - The resource ID of the subnet.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// LabSubnetName - The name given to the subnet within the lab.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// UseInVMCreationPermission - Indicates whether this subnet can be used during virtual machine creation (i.e. Allow, Deny). Possible values include: 'Default', 'Deny', 'Allow'
+	UseInVMCreationPermission UsagePermissionType `json:"useInVmCreationPermission,omitempty"`
+	// UsePublicIPAddressPermission - Indicates whether public IP addresses can be assigned to virtual machines on this subnet (i.e. Allow, Deny). Possible values include: 'Default', 'Deny', 'Allow'
+	UsePublicIPAddressPermission UsagePermissionType `json:"usePublicIpAddressPermission,omitempty"`
+	// SharedPublicIPAddressConfiguration - Properties that virtual machines on this subnet will share.
 	SharedPublicIPAddressConfiguration *SubnetSharedPublicIPAddressConfiguration `json:"sharedPublicIpAddressConfiguration,omitempty"`
-	VirtualNetworkPoolName             *string                                   `json:"virtualNetworkPoolName,omitempty"`
+	// VirtualNetworkPoolName - The virtual network pool associated with this subnet.
+	VirtualNetworkPoolName *string `json:"virtualNetworkPoolName,omitempty"`
 }
 
-// SubnetOverrideFragment is property overrides on a subnet of a virtual network.
+// SubnetOverrideFragment property overrides on a subnet of a virtual network.
 type SubnetOverrideFragment struct {
-	ResourceID                         *string                                           `json:"resourceId,omitempty"`
-	LabSubnetName                      *string                                           `json:"labSubnetName,omitempty"`
-	UseInVMCreationPermission          UsagePermissionType                               `json:"useInVmCreationPermission,omitempty"`
-	UsePublicIPAddressPermission       UsagePermissionType                               `json:"usePublicIpAddressPermission,omitempty"`
+	// ResourceID - The resource ID of the subnet.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// LabSubnetName - The name given to the subnet within the lab.
+	LabSubnetName *string `json:"labSubnetName,omitempty"`
+	// UseInVMCreationPermission - Indicates whether this subnet can be used during virtual machine creation (i.e. Allow, Deny). Possible values include: 'Default', 'Deny', 'Allow'
+	UseInVMCreationPermission UsagePermissionType `json:"useInVmCreationPermission,omitempty"`
+	// UsePublicIPAddressPermission - Indicates whether public IP addresses can be assigned to virtual machines on this subnet (i.e. Allow, Deny). Possible values include: 'Default', 'Deny', 'Allow'
+	UsePublicIPAddressPermission UsagePermissionType `json:"usePublicIpAddressPermission,omitempty"`
+	// SharedPublicIPAddressConfiguration - Properties that virtual machines on this subnet will share.
 	SharedPublicIPAddressConfiguration *SubnetSharedPublicIPAddressConfigurationFragment `json:"sharedPublicIpAddressConfiguration,omitempty"`
-	VirtualNetworkPoolName             *string                                           `json:"virtualNetworkPoolName,omitempty"`
+	// VirtualNetworkPoolName - The virtual network pool associated with this subnet.
+	VirtualNetworkPoolName *string `json:"virtualNetworkPoolName,omitempty"`
 }
 
-// SubnetSharedPublicIPAddressConfiguration is configuration for public IP address sharing.
+// SubnetSharedPublicIPAddressConfiguration configuration for public IP address sharing.
 type SubnetSharedPublicIPAddressConfiguration struct {
+	// AllowedPorts - Backend ports that virtual machines on this subnet are allowed to expose
 	AllowedPorts *[]Port `json:"allowedPorts,omitempty"`
 }
 
-// SubnetSharedPublicIPAddressConfigurationFragment is configuration for public IP address sharing.
+// SubnetSharedPublicIPAddressConfigurationFragment configuration for public IP address sharing.
 type SubnetSharedPublicIPAddressConfigurationFragment struct {
+	// AllowedPorts - Backend ports that virtual machines on this subnet are allowed to expose
 	AllowedPorts *[]PortFragment `json:"allowedPorts,omitempty"`
 }
 
-// TargetCostProperties is properties of a cost target.
+// TargetCostProperties properties of a cost target.
 type TargetCostProperties struct {
-	Status             TargetCostStatus           `json:"status,omitempty"`
-	Target             *int32                     `json:"target,omitempty"`
-	CostThresholds     *[]CostThresholdProperties `json:"costThresholds,omitempty"`
-	CycleStartDateTime *date.Time                 `json:"cycleStartDateTime,omitempty"`
-	CycleEndDateTime   *date.Time                 `json:"cycleEndDateTime,omitempty"`
-	CycleType          ReportingCycleType         `json:"cycleType,omitempty"`
+	// Status - Target cost status. Possible values include: 'TargetCostStatusEnabled', 'TargetCostStatusDisabled'
+	Status TargetCostStatus `json:"status,omitempty"`
+	// Target - Lab target cost
+	Target *int32 `json:"target,omitempty"`
+	// CostThresholds - Cost thresholds.
+	CostThresholds *[]CostThresholdProperties `json:"costThresholds,omitempty"`
+	// CycleStartDateTime - Reporting cycle start date.
+	CycleStartDateTime *date.Time `json:"cycleStartDateTime,omitempty"`
+	// CycleEndDateTime - Reporting cycle end date.
+	CycleEndDateTime *date.Time `json:"cycleEndDateTime,omitempty"`
+	// CycleType - Reporting cycle type. Possible values include: 'CalendarMonth', 'Custom'
+	CycleType ReportingCycleType `json:"cycleType,omitempty"`
 }
 
-// User is profile of a lab user.
+// User profile of a lab user.
 type User struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*UserProperties   `json:"properties,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// UserProperties - The properties of the resource.
+	*UserProperties `json:"properties,omitempty"`
 }
 
-// UserFragment is profile of a lab user.
+// UnmarshalJSON is the custom unmarshaler for User struct.
+func (u *User) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UserProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		u.UserProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		u.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		u.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		u.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		u.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		u.Tags = &tags
+	}
+
+	return nil
+}
+
+// UserFragment profile of a lab user.
 type UserFragment struct {
-	ID                      *string             `json:"id,omitempty"`
-	Name                    *string             `json:"name,omitempty"`
-	Type                    *string             `json:"type,omitempty"`
-	Location                *string             `json:"location,omitempty"`
-	Tags                    *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// UserPropertiesFragment - The properties of the resource.
 	*UserPropertiesFragment `json:"properties,omitempty"`
 }
 
-// UserIdentity is identity attributes of a lab user.
+// UnmarshalJSON is the custom unmarshaler for UserFragment struct.
+func (uf *UserFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UserPropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		uf.UserPropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		uf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		uf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		uf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		uf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		uf.Tags = &tags
+	}
+
+	return nil
+}
+
+// UserIdentity identity attributes of a lab user.
 type UserIdentity struct {
+	// PrincipalName - Set to the principal name / UPN of the client JWT making the request.
 	PrincipalName *string `json:"principalName,omitempty"`
-	PrincipalID   *string `json:"principalId,omitempty"`
-	TenantID      *string `json:"tenantId,omitempty"`
-	ObjectID      *string `json:"objectId,omitempty"`
-	AppID         *string `json:"appId,omitempty"`
+	// PrincipalID - Set to the principal Id of the client JWT making the request. Service principal will not have the principal Id.
+	PrincipalID *string `json:"principalId,omitempty"`
+	// TenantID - Set to the tenant ID of the client JWT making the request.
+	TenantID *string `json:"tenantId,omitempty"`
+	// ObjectID - Set to the object Id of the client JWT making the request. Not all users have object Id. For CSP (reseller) scenarios for example, object Id is not available.
+	ObjectID *string `json:"objectId,omitempty"`
+	// AppID - Set to the app Id of the client JWT making the request.
+	AppID *string `json:"appId,omitempty"`
 }
 
-// UserIdentityFragment is identity attributes of a lab user.
+// UserIdentityFragment identity attributes of a lab user.
 type UserIdentityFragment struct {
+	// PrincipalName - Set to the principal name / UPN of the client JWT making the request.
 	PrincipalName *string `json:"principalName,omitempty"`
-	PrincipalID   *string `json:"principalId,omitempty"`
-	TenantID      *string `json:"tenantId,omitempty"`
-	ObjectID      *string `json:"objectId,omitempty"`
-	AppID         *string `json:"appId,omitempty"`
+	// PrincipalID - Set to the principal Id of the client JWT making the request. Service principal will not have the principal Id.
+	PrincipalID *string `json:"principalId,omitempty"`
+	// TenantID - Set to the tenant ID of the client JWT making the request.
+	TenantID *string `json:"tenantId,omitempty"`
+	// ObjectID - Set to the object Id of the client JWT making the request. Not all users have object Id. For CSP (reseller) scenarios for example, object Id is not available.
+	ObjectID *string `json:"objectId,omitempty"`
+	// AppID - Set to the app Id of the client JWT making the request.
+	AppID *string `json:"appId,omitempty"`
 }
 
-// UserProperties is properties of a lab user profile.
+// UserProperties properties of a lab user profile.
 type UserProperties struct {
-	Identity          *UserIdentity    `json:"identity,omitempty"`
-	SecretStore       *UserSecretStore `json:"secretStore,omitempty"`
-	CreatedDate       *date.Time       `json:"createdDate,omitempty"`
-	ProvisioningState *string          `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string          `json:"uniqueIdentifier,omitempty"`
+	// Identity - The identity of the user.
+	Identity *UserIdentity `json:"identity,omitempty"`
+	// SecretStore - The secret store of the user.
+	SecretStore *UserSecretStore `json:"secretStore,omitempty"`
+	// CreatedDate - The creation date of the user profile.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// UserPropertiesFragment is properties of a lab user profile.
+// UserPropertiesFragment properties of a lab user profile.
 type UserPropertiesFragment struct {
-	Identity          *UserIdentityFragment    `json:"identity,omitempty"`
-	SecretStore       *UserSecretStoreFragment `json:"secretStore,omitempty"`
-	ProvisioningState *string                  `json:"provisioningState,omitempty"`
-	UniqueIdentifier  *string                  `json:"uniqueIdentifier,omitempty"`
+	// Identity - The identity of the user.
+	Identity *UserIdentityFragment `json:"identity,omitempty"`
+	// SecretStore - The secret store of the user.
+	SecretStore *UserSecretStoreFragment `json:"secretStore,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// UserSecretStore is properties of a user's secret store.
+// UsersDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type UsersDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future UsersDeleteFuture) Result(client UsersClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.UsersDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// UserSecretStore properties of a user's secret store.
 type UserSecretStore struct {
+	// KeyVaultURI - The URI of the user's Key vault.
 	KeyVaultURI *string `json:"keyVaultUri,omitempty"`
-	KeyVaultID  *string `json:"keyVaultId,omitempty"`
+	// KeyVaultID - The ID of the user's Key vault.
+	KeyVaultID *string `json:"keyVaultId,omitempty"`
 }
 
-// UserSecretStoreFragment is properties of a user's secret store.
+// UserSecretStoreFragment properties of a user's secret store.
 type UserSecretStoreFragment struct {
+	// KeyVaultURI - The URI of the user's Key vault.
 	KeyVaultURI *string `json:"keyVaultUri,omitempty"`
-	KeyVaultID  *string `json:"keyVaultId,omitempty"`
+	// KeyVaultID - The ID of the user's Key vault.
+	KeyVaultID *string `json:"keyVaultId,omitempty"`
 }
 
-// VirtualNetwork is a virtual network.
+// VirtualMachinesAddDataDiskFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualMachinesAddDataDiskFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesAddDataDiskFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesAddDataDiskFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.AddDataDiskResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.AddDataDiskResponder(resp)
+	return
+}
+
+// VirtualMachinesApplyArtifactsFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualMachinesApplyArtifactsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesApplyArtifactsFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesApplyArtifactsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ApplyArtifactsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ApplyArtifactsResponder(resp)
+	return
+}
+
+// VirtualMachineSchedulesExecuteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualMachineSchedulesExecuteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachineSchedulesExecuteFuture) Result(client VirtualMachineSchedulesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachineSchedulesExecuteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ExecuteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ExecuteResponder(resp)
+	return
+}
+
+// VirtualMachinesClaimFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VirtualMachinesClaimFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesClaimFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesClaimFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ClaimResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ClaimResponder(resp)
+	return
+}
+
+// VirtualMachinesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualMachinesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesCreateOrUpdateFuture) Result(client VirtualMachinesClient) (lvm LabVirtualMachine, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return lvm, autorest.NewError("dtl.VirtualMachinesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		lvm, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	lvm, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// VirtualMachinesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VirtualMachinesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesDeleteFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// VirtualMachinesDetachDataDiskFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualMachinesDetachDataDiskFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesDetachDataDiskFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesDetachDataDiskFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DetachDataDiskResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DetachDataDiskResponder(resp)
+	return
+}
+
+// VirtualMachinesStartFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VirtualMachinesStartFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesStartFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesStartFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.StartResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.StartResponder(resp)
+	return
+}
+
+// VirtualMachinesStopFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VirtualMachinesStopFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualMachinesStopFuture) Result(client VirtualMachinesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualMachinesStopFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.StopResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.StopResponder(resp)
+	return
+}
+
+// VirtualNetwork a virtual network.
 type VirtualNetwork struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
-	Tags                      *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// VirtualNetworkProperties - The properties of the resource.
 	*VirtualNetworkProperties `json:"properties,omitempty"`
 }
 
-// VirtualNetworkFragment is a virtual network.
+// UnmarshalJSON is the custom unmarshaler for VirtualNetwork struct.
+func (vn *VirtualNetwork) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VirtualNetworkProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vn.VirtualNetworkProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vn.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vn.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vn.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		vn.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		vn.Tags = &tags
+	}
+
+	return nil
+}
+
+// VirtualNetworkFragment a virtual network.
 type VirtualNetworkFragment struct {
-	ID                                *string             `json:"id,omitempty"`
-	Name                              *string             `json:"name,omitempty"`
-	Type                              *string             `json:"type,omitempty"`
-	Location                          *string             `json:"location,omitempty"`
-	Tags                              *map[string]*string `json:"tags,omitempty"`
+	// ID - The identifier of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// VirtualNetworkPropertiesFragment - The properties of the resource.
 	*VirtualNetworkPropertiesFragment `json:"properties,omitempty"`
 }
 
-// VirtualNetworkProperties is properties of a virtual network.
+// UnmarshalJSON is the custom unmarshaler for VirtualNetworkFragment struct.
+func (vnf *VirtualNetworkFragment) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VirtualNetworkPropertiesFragment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vnf.VirtualNetworkPropertiesFragment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vnf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vnf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vnf.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		vnf.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		vnf.Tags = &tags
+	}
+
+	return nil
+}
+
+// VirtualNetworkProperties properties of a virtual network.
 type VirtualNetworkProperties struct {
-	AllowedSubnets             *[]Subnet         `json:"allowedSubnets,omitempty"`
-	Description                *string           `json:"description,omitempty"`
-	ExternalProviderResourceID *string           `json:"externalProviderResourceId,omitempty"`
-	ExternalSubnets            *[]ExternalSubnet `json:"externalSubnets,omitempty"`
-	SubnetOverrides            *[]SubnetOverride `json:"subnetOverrides,omitempty"`
-	CreatedDate                *date.Time        `json:"createdDate,omitempty"`
-	ProvisioningState          *string           `json:"provisioningState,omitempty"`
-	UniqueIdentifier           *string           `json:"uniqueIdentifier,omitempty"`
+	// AllowedSubnets - The allowed subnets of the virtual network.
+	AllowedSubnets *[]Subnet `json:"allowedSubnets,omitempty"`
+	// Description - The description of the virtual network.
+	Description *string `json:"description,omitempty"`
+	// ExternalProviderResourceID - The Microsoft.Network resource identifier of the virtual network.
+	ExternalProviderResourceID *string `json:"externalProviderResourceId,omitempty"`
+	// ExternalSubnets - The external subnet properties.
+	ExternalSubnets *[]ExternalSubnet `json:"externalSubnets,omitempty"`
+	// SubnetOverrides - The subnet overrides of the virtual network.
+	SubnetOverrides *[]SubnetOverride `json:"subnetOverrides,omitempty"`
+	// CreatedDate - The creation date of the virtual network.
+	CreatedDate *date.Time `json:"createdDate,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// VirtualNetworkPropertiesFragment is properties of a virtual network.
+// VirtualNetworkPropertiesFragment properties of a virtual network.
 type VirtualNetworkPropertiesFragment struct {
-	AllowedSubnets             *[]SubnetFragment         `json:"allowedSubnets,omitempty"`
-	Description                *string                   `json:"description,omitempty"`
-	ExternalProviderResourceID *string                   `json:"externalProviderResourceId,omitempty"`
-	ExternalSubnets            *[]ExternalSubnetFragment `json:"externalSubnets,omitempty"`
-	SubnetOverrides            *[]SubnetOverrideFragment `json:"subnetOverrides,omitempty"`
-	ProvisioningState          *string                   `json:"provisioningState,omitempty"`
-	UniqueIdentifier           *string                   `json:"uniqueIdentifier,omitempty"`
+	// AllowedSubnets - The allowed subnets of the virtual network.
+	AllowedSubnets *[]SubnetFragment `json:"allowedSubnets,omitempty"`
+	// Description - The description of the virtual network.
+	Description *string `json:"description,omitempty"`
+	// ExternalProviderResourceID - The Microsoft.Network resource identifier of the virtual network.
+	ExternalProviderResourceID *string `json:"externalProviderResourceId,omitempty"`
+	// ExternalSubnets - The external subnet properties.
+	ExternalSubnets *[]ExternalSubnetFragment `json:"externalSubnets,omitempty"`
+	// SubnetOverrides - The subnet overrides of the virtual network.
+	SubnetOverrides *[]SubnetOverrideFragment `json:"subnetOverrides,omitempty"`
+	// ProvisioningState - The provisioning status of the resource.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// UniqueIdentifier - The unique immutable identifier of a resource (Guid).
+	UniqueIdentifier *string `json:"uniqueIdentifier,omitempty"`
 }
 
-// WeekDetails is properties of a weekly schedule.
+// VirtualNetworksCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VirtualNetworksCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualNetworksCreateOrUpdateFuture) Result(client VirtualNetworksClient) (vn VirtualNetwork, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return vn, autorest.NewError("dtl.VirtualNetworksCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		vn, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	vn, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// VirtualNetworksDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VirtualNetworksDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VirtualNetworksDeleteFuture) Result(client VirtualNetworksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("dtl.VirtualNetworksDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// WeekDetails properties of a weekly schedule.
 type WeekDetails struct {
+	// Weekdays - The days of the week for which the schedule is set (e.g. Sunday, Monday, Tuesday, etc.).
 	Weekdays *[]string `json:"weekdays,omitempty"`
-	Time     *string   `json:"time,omitempty"`
+	// Time - The time of the day the schedule will occur.
+	Time *string `json:"time,omitempty"`
 }
 
-// WeekDetailsFragment is properties of a weekly schedule.
+// WeekDetailsFragment properties of a weekly schedule.
 type WeekDetailsFragment struct {
+	// Weekdays - The days of the week for which the schedule is set (e.g. Sunday, Monday, Tuesday, etc.).
 	Weekdays *[]string `json:"weekdays,omitempty"`
-	Time     *string   `json:"time,omitempty"`
+	// Time - The time of the day the schedule will occur.
+	Time *string `json:"time,omitempty"`
 }
 
-// WindowsOsInfo is information about a Windows OS.
+// WindowsOsInfo information about a Windows OS.
 type WindowsOsInfo struct {
+	// WindowsOsState - The state of the Windows OS (i.e. NonSysprepped, SysprepRequested, SysprepApplied). Possible values include: 'NonSysprepped', 'SysprepRequested', 'SysprepApplied'
 	WindowsOsState WindowsOsState `json:"windowsOsState,omitempty"`
 }

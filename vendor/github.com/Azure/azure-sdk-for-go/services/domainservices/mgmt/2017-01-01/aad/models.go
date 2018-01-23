@@ -18,17 +18,20 @@ package aad
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
+	"net/http"
 )
 
 // ExternalAccess enumerates the values for external access.
 type ExternalAccess string
 
 const (
-	// Disabled specifies the disabled state for external access.
+	// Disabled ...
 	Disabled ExternalAccess = "Disabled"
-	// Enabled specifies the enabled state for external access.
+	// Enabled ...
 	Enabled ExternalAccess = "Enabled"
 )
 
@@ -36,86 +39,301 @@ const (
 type Ldaps string
 
 const (
-	// LdapsDisabled specifies the ldaps disabled state for ldaps.
+	// LdapsDisabled ...
 	LdapsDisabled Ldaps = "Disabled"
-	// LdapsEnabled specifies the ldaps enabled state for ldaps.
+	// LdapsEnabled ...
 	LdapsEnabled Ldaps = "Enabled"
 )
 
-// DomainService is domain service.
+// DomainService domain service.
 type DomainService struct {
-	autorest.Response        `json:"-"`
-	ID                       *string             `json:"id,omitempty"`
-	Name                     *string             `json:"name,omitempty"`
-	Type                     *string             `json:"type,omitempty"`
-	Location                 *string             `json:"location,omitempty"`
-	Tags                     *map[string]*string `json:"tags,omitempty"`
-	Etag                     *string             `json:"etag,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Etag - Resource etag
+	Etag *string `json:"etag,omitempty"`
+	// DomainServiceProperties - Domain service properties
 	*DomainServiceProperties `json:"properties,omitempty"`
 }
 
-// DomainServiceListResult is the response from the List Domain Services operation.
-type DomainServiceListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]DomainService `json:"value,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DomainService struct.
+func (ds *DomainService) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DomainServiceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ds.DomainServiceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ds.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ds.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ds.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ds.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ds.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		ds.Etag = &etag
+	}
+
+	return nil
 }
 
-// DomainServicePatchProperties is update Properties of the Domain Service.
+// DomainServiceListResult the response from the List Domain Services operation.
+type DomainServiceListResult struct {
+	autorest.Response `json:"-"`
+	// Value - the list of domain services.
+	Value *[]DomainService `json:"value,omitempty"`
+}
+
+// DomainServicePatchProperties update Properties of the Domain Service.
 type DomainServicePatchProperties struct {
+	// LdapsSettings - Secure LDAP Settings
 	LdapsSettings *LdapsSettings `json:"ldapsSettings,omitempty"`
 }
 
-// DomainServiceProperties is properties of the Domain Service.
+// DomainServiceProperties properties of the Domain Service.
 type DomainServiceProperties struct {
-	TenantID                  *string        `json:"tenantId,omitempty"`
-	DomainName                *string        `json:"domainName,omitempty"`
-	VnetSiteID                *string        `json:"vnetSiteId,omitempty"`
-	SubnetID                  *string        `json:"subnetId,omitempty"`
-	LdapsSettings             *LdapsSettings `json:"ldapsSettings,omitempty"`
-	DomainControllerIPAddress *[]string      `json:"domainControllerIpAddress,omitempty"`
-	ServiceStatus             *string        `json:"serviceStatus,omitempty"`
-	ProvisioningState         *string        `json:"provisioningState,omitempty"`
+	// TenantID - Azure Active Directory tenant id
+	TenantID *string `json:"tenantId,omitempty"`
+	// DomainName - The name of the Azure domain that the user would like to deploy Domain Services to.
+	DomainName *string `json:"domainName,omitempty"`
+	// VnetSiteID - Virtual network site id
+	VnetSiteID *string `json:"vnetSiteId,omitempty"`
+	// SubnetID - The name of the virtual network that Domain Services will be deployed on. The id of the subnet that Domain Services will be deployed on. /virtualNetwork/vnetName/subnets/subnetName.
+	SubnetID *string `json:"subnetId,omitempty"`
+	// LdapsSettings - Secure LDAP Settings
+	LdapsSettings *LdapsSettings `json:"ldapsSettings,omitempty"`
+	// DomainControllerIPAddress - List of Domain Controller IP Address
+	DomainControllerIPAddress *[]string `json:"domainControllerIpAddress,omitempty"`
+	// ServiceStatus - Status of Domain Service instance
+	ServiceStatus *string `json:"serviceStatus,omitempty"`
+	// ProvisioningState - the current deployment or provisioning state, which only appears in the response.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// LdapsSettings is secure LDAP Settings
+// DomainServicesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type DomainServicesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DomainServicesCreateOrUpdateFuture) Result(client DomainServicesClient) (ds DomainService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ds, autorest.NewError("aad.DomainServicesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ds, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ds, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// DomainServicesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DomainServicesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DomainServicesDeleteFuture) Result(client DomainServicesClient) (ds DomainService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ds, autorest.NewError("aad.DomainServicesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ds, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ds, err = client.DeleteResponder(resp)
+	return
+}
+
+// DomainServicesUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DomainServicesUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DomainServicesUpdateFuture) Result(client DomainServicesClient) (ds DomainService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ds, autorest.NewError("aad.DomainServicesUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ds, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ds, err = client.UpdateResponder(resp)
+	return
+}
+
+// LdapsSettings secure LDAP Settings
 type LdapsSettings struct {
-	Ldaps                   Ldaps          `json:"ldaps,omitempty"`
-	PfxCertificate          *string        `json:"pfxCertificate,omitempty"`
-	PfxCertificatePassword  *string        `json:"pfxCertificatePassword,omitempty"`
-	PublicCertificate       *string        `json:"publicCertificate,omitempty"`
-	CertificateThumbprint   *string        `json:"certificateThumbprint,omitempty"`
-	CertificateNotAfter     *date.Time     `json:"certificateNotAfter,omitempty"`
-	ExternalAccess          ExternalAccess `json:"externalAccess,omitempty"`
-	ExternalAccessIPAddress *string        `json:"externalAccessIpAddress,omitempty"`
+	// Ldaps - A flag to determine whether or not Secure LDAP is enabled or disabled. Possible values include: 'LdapsEnabled', 'LdapsDisabled'
+	Ldaps Ldaps `json:"ldaps,omitempty"`
+	// PfxCertificate - The certificate required to configure Secure LDAP. The parameter passed here should be a base64encoded representation of the certificate pfx file.
+	PfxCertificate *string `json:"pfxCertificate,omitempty"`
+	// PfxCertificatePassword - The password to decrypt the provided Secure LDAP certificate pfx file.
+	PfxCertificatePassword *string `json:"pfxCertificatePassword,omitempty"`
+	// PublicCertificate - Public certificate used to configure secure ldap.
+	PublicCertificate *string `json:"publicCertificate,omitempty"`
+	// CertificateThumbprint - Thumbprint of configure ldaps certificate.
+	CertificateThumbprint *string `json:"certificateThumbprint,omitempty"`
+	// CertificateNotAfter - NotAfter DateTime of configure ldaps certificate.
+	CertificateNotAfter *date.Time `json:"certificateNotAfter,omitempty"`
+	// ExternalAccess - A flag to determine whether or not Secure LDAP access over the internet is enabled or disabled. Possible values include: 'Enabled', 'Disabled'
+	ExternalAccess ExternalAccess `json:"externalAccess,omitempty"`
+	// ExternalAccessIPAddress - External access ip address.
+	ExternalAccessIPAddress *string `json:"externalAccessIpAddress,omitempty"`
 }
 
-// OperationDisplayInfo is the operation supported by Domain Services.
+// OperationDisplayInfo the operation supported by Domain Services.
 type OperationDisplayInfo struct {
+	// Description - The description of the operation.
 	Description *string `json:"description,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
-	Provider    *string `json:"provider,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
+	// Operation - The action that users can perform, based on their permission level.
+	Operation *string `json:"operation,omitempty"`
+	// Provider - Service provider: Domain Services.
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed.
+	Resource *string `json:"resource,omitempty"`
 }
 
-// OperationEntity is the operation supported by Domain Services.
+// OperationEntity the operation supported by Domain Services.
 type OperationEntity struct {
-	Name    *string               `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}.
+	Name *string `json:"name,omitempty"`
+	// Display - The operation supported by Domain Services.
 	Display *OperationDisplayInfo `json:"display,omitempty"`
-	Origin  *string               `json:"origin,omitempty"`
+	// Origin - The origin of the operation.
+	Origin *string `json:"origin,omitempty"`
 }
 
-// OperationEntityListResult is the list of domain service operation response.
+// OperationEntityListResult the list of domain service operation response.
 type OperationEntityListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]OperationEntity `json:"value,omitempty"`
+	// Value - The list of operations.
+	Value *[]OperationEntity `json:"value,omitempty"`
 }
 
-// Resource is the Resource model definition.
+// Resource the Resource model definition.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	Etag     *string             `json:"etag,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Etag - Resource etag
+	Etag *string `json:"etag,omitempty"`
 }

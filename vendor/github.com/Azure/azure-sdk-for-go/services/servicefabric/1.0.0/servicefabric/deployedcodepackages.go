@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // DeployedCodePackagesClient is the client for the DeployedCodePackages methods of the Servicefabric service.
 type DeployedCodePackagesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeployedCodePackagesClient creates an instance of the DeployedCodePackagesClient client.
@@ -41,8 +42,8 @@ func NewDeployedCodePackagesClientWithBaseURI(baseURI string, timeout *int32) De
 // Get get deployed code packages
 //
 // nodeName is the name of the node applicationName is the name of the application
-func (client DeployedCodePackagesClient) Get(nodeName string, applicationName string) (result ListDeployedCodePackage, err error) {
-	req, err := client.GetPreparer(nodeName, applicationName)
+func (client DeployedCodePackagesClient) Get(ctx context.Context, nodeName string, applicationName string) (result ListDeployedCodePackage, err error) {
+	req, err := client.GetPreparer(ctx, nodeName, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedCodePackagesClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client DeployedCodePackagesClient) Get(nodeName string, applicationName st
 }
 
 // GetPreparer prepares the Get request.
-func (client DeployedCodePackagesClient) GetPreparer(nodeName string, applicationName string) (*http.Request, error) {
+func (client DeployedCodePackagesClient) GetPreparer(ctx context.Context, nodeName string, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 		"nodeName":        autorest.Encode("path", nodeName),
@@ -83,14 +84,13 @@ func (client DeployedCodePackagesClient) GetPreparer(nodeName string, applicatio
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}/$/GetCodePackages", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedCodePackagesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

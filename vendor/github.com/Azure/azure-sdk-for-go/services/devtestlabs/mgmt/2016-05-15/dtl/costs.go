@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // CostsClient is the the DevTest Labs Client.
 type CostsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCostsClient creates an instance of the CostsClient client.
@@ -43,14 +44,14 @@ func NewCostsClientWithBaseURI(baseURI string, subscriptionID string) CostsClien
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the cost.
 // labCost is a cost item.
-func (client CostsClient) CreateOrUpdate(resourceGroupName string, labName string, name string, labCost LabCost) (result LabCost, err error) {
+func (client CostsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, labName string, name string, labCost LabCost) (result LabCost, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: labCost,
 			Constraints: []validation.Constraint{{Target: "labCost.LabCostProperties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "dtl.CostsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, labName, name, labCost)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, labName, name, labCost)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.CostsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -72,7 +73,7 @@ func (client CostsClient) CreateOrUpdate(resourceGroupName string, labName strin
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client CostsClient) CreateOrUpdatePreparer(resourceGroupName string, labName string, name string, labCost LabCost) (*http.Request, error) {
+func (client CostsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, labName string, name string, labCost LabCost) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -92,14 +93,13 @@ func (client CostsClient) CreateOrUpdatePreparer(resourceGroupName string, labNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/costs/{name}", pathParameters),
 		autorest.WithJSON(labCost),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CostsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -120,8 +120,8 @@ func (client CostsClient) CreateOrUpdateResponder(resp *http.Response) (result L
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the cost.
 // expand is specify the $expand query. Example: 'properties($expand=labCostDetails)'
-func (client CostsClient) Get(resourceGroupName string, labName string, name string, expand string) (result LabCost, err error) {
-	req, err := client.GetPreparer(resourceGroupName, labName, name, expand)
+func (client CostsClient) Get(ctx context.Context, resourceGroupName string, labName string, name string, expand string) (result LabCost, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, labName, name, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.CostsClient", "Get", nil, "Failure preparing request")
 		return
@@ -143,7 +143,7 @@ func (client CostsClient) Get(resourceGroupName string, labName string, name str
 }
 
 // GetPreparer prepares the Get request.
-func (client CostsClient) GetPreparer(resourceGroupName string, labName string, name string, expand string) (*http.Request, error) {
+func (client CostsClient) GetPreparer(ctx context.Context, resourceGroupName string, labName string, name string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -164,14 +164,13 @@ func (client CostsClient) GetPreparer(resourceGroupName string, labName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/costs/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client CostsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -126,6 +126,127 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestTraceServicePatchTraces(t *testing.T) {
+	var expectedResponse *emptypb.Empty = &emptypb.Empty{}
+
+	mockTrace.err = nil
+	mockTrace.reqs = nil
+
+	mockTrace.resps = append(mockTrace.resps[:0], expectedResponse)
+
+	var projectId string = "projectId-1969970175"
+	var traces *cloudtracepb.Traces = &cloudtracepb.Traces{}
+	var request = &cloudtracepb.PatchTracesRequest{
+		ProjectId: projectId,
+		Traces:    traces,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = c.PatchTraces(context.Background(), request)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := request, mockTrace.reqs[0]; !proto.Equal(want, got) {
+		t.Errorf("wrong request %q, want %q", got, want)
+	}
+
+}
+
+func TestTraceServicePatchTracesError(t *testing.T) {
+	errCode := codes.PermissionDenied
+	mockTrace.err = gstatus.Error(errCode, "test error")
+
+	var projectId string = "projectId-1969970175"
+	var traces *cloudtracepb.Traces = &cloudtracepb.Traces{}
+	var request = &cloudtracepb.PatchTracesRequest{
+		ProjectId: projectId,
+		Traces:    traces,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = c.PatchTraces(context.Background(), request)
+
+	if st, ok := gstatus.FromError(err); !ok {
+		t.Errorf("got error %v, expected grpc error", err)
+	} else if c := st.Code(); c != errCode {
+		t.Errorf("got error code %q, want %q", c, errCode)
+	}
+}
+func TestTraceServiceGetTrace(t *testing.T) {
+	var projectId2 string = "projectId2939242356"
+	var traceId2 string = "traceId2987826376"
+	var expectedResponse = &cloudtracepb.Trace{
+		ProjectId: projectId2,
+		TraceId:   traceId2,
+	}
+
+	mockTrace.err = nil
+	mockTrace.reqs = nil
+
+	mockTrace.resps = append(mockTrace.resps[:0], expectedResponse)
+
+	var projectId string = "projectId-1969970175"
+	var traceId string = "traceId1270300245"
+	var request = &cloudtracepb.GetTraceRequest{
+		ProjectId: projectId,
+		TraceId:   traceId,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := c.GetTrace(context.Background(), request)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := request, mockTrace.reqs[0]; !proto.Equal(want, got) {
+		t.Errorf("wrong request %q, want %q", got, want)
+	}
+
+	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
+		t.Errorf("wrong response %q, want %q)", got, want)
+	}
+}
+
+func TestTraceServiceGetTraceError(t *testing.T) {
+	errCode := codes.PermissionDenied
+	mockTrace.err = gstatus.Error(errCode, "test error")
+
+	var projectId string = "projectId-1969970175"
+	var traceId string = "traceId1270300245"
+	var request = &cloudtracepb.GetTraceRequest{
+		ProjectId: projectId,
+		TraceId:   traceId,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := c.GetTrace(context.Background(), request)
+
+	if st, ok := gstatus.FromError(err); !ok {
+		t.Errorf("got error %v, expected grpc error", err)
+	} else if c := st.Code(); c != errCode {
+		t.Errorf("got error code %q, want %q", c, errCode)
+	}
+	_ = resp
+}
 func TestTraceServiceListTraces(t *testing.T) {
 	var nextPageToken string = ""
 	var tracesElement *cloudtracepb.Trace = &cloudtracepb.Trace{}
@@ -197,125 +318,4 @@ func TestTraceServiceListTracesError(t *testing.T) {
 		t.Errorf("got error code %q, want %q", c, errCode)
 	}
 	_ = resp
-}
-func TestTraceServiceGetTrace(t *testing.T) {
-	var projectId2 string = "projectId2939242356"
-	var traceId2 string = "traceId2987826376"
-	var expectedResponse = &cloudtracepb.Trace{
-		ProjectId: projectId2,
-		TraceId:   traceId2,
-	}
-
-	mockTrace.err = nil
-	mockTrace.reqs = nil
-
-	mockTrace.resps = append(mockTrace.resps[:0], expectedResponse)
-
-	var projectId string = "projectId-1969970175"
-	var traceId string = "traceId1270300245"
-	var request = &cloudtracepb.GetTraceRequest{
-		ProjectId: projectId,
-		TraceId:   traceId,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resp, err := c.GetTrace(context.Background(), request)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := request, mockTrace.reqs[0]; !proto.Equal(want, got) {
-		t.Errorf("wrong request %q, want %q", got, want)
-	}
-
-	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
-		t.Errorf("wrong response %q, want %q)", got, want)
-	}
-}
-
-func TestTraceServiceGetTraceError(t *testing.T) {
-	errCode := codes.PermissionDenied
-	mockTrace.err = gstatus.Error(errCode, "test error")
-
-	var projectId string = "projectId-1969970175"
-	var traceId string = "traceId1270300245"
-	var request = &cloudtracepb.GetTraceRequest{
-		ProjectId: projectId,
-		TraceId:   traceId,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resp, err := c.GetTrace(context.Background(), request)
-
-	if st, ok := gstatus.FromError(err); !ok {
-		t.Errorf("got error %v, expected grpc error", err)
-	} else if c := st.Code(); c != errCode {
-		t.Errorf("got error code %q, want %q", c, errCode)
-	}
-	_ = resp
-}
-func TestTraceServicePatchTraces(t *testing.T) {
-	var expectedResponse *emptypb.Empty = &emptypb.Empty{}
-
-	mockTrace.err = nil
-	mockTrace.reqs = nil
-
-	mockTrace.resps = append(mockTrace.resps[:0], expectedResponse)
-
-	var projectId string = "projectId-1969970175"
-	var traces *cloudtracepb.Traces = &cloudtracepb.Traces{}
-	var request = &cloudtracepb.PatchTracesRequest{
-		ProjectId: projectId,
-		Traces:    traces,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = c.PatchTraces(context.Background(), request)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := request, mockTrace.reqs[0]; !proto.Equal(want, got) {
-		t.Errorf("wrong request %q, want %q", got, want)
-	}
-
-}
-
-func TestTraceServicePatchTracesError(t *testing.T) {
-	errCode := codes.PermissionDenied
-	mockTrace.err = gstatus.Error(errCode, "test error")
-
-	var projectId string = "projectId-1969970175"
-	var traces *cloudtracepb.Traces = &cloudtracepb.Traces{}
-	var request = &cloudtracepb.PatchTracesRequest{
-		ProjectId: projectId,
-		Traces:    traces,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = c.PatchTraces(context.Background(), request)
-
-	if st, ok := gstatus.FromError(err); !ok {
-		t.Errorf("got error %v, expected grpc error", err)
-	} else if c := st.Code(); c != errCode {
-		t.Errorf("got error code %q, want %q", c, errCode)
-	}
 }

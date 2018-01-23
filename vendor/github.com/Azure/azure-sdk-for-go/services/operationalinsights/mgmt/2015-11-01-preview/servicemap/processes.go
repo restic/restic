@@ -18,6 +18,7 @@ package servicemap
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -27,7 +28,7 @@ import (
 
 // ProcessesClient is the service Map API Reference
 type ProcessesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewProcessesClient creates an instance of the ProcessesClient client.
@@ -46,7 +47,7 @@ func NewProcessesClientWithBaseURI(baseURI string, subscriptionID string) Proces
 // containing the resources of interest. machineName is machine resource name. processName is process resource name.
 // timestamp is UTC date and time specifying a time instance relative to which to evaluate a resource. When not
 // specified, the service uses DateTime.UtcNow.
-func (client ProcessesClient) Get(resourceGroupName string, workspaceName string, machineName string, processName string, timestamp *date.Time) (result Process, err error) {
+func (client ProcessesClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, timestamp *date.Time) (result Process, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -65,7 +66,7 @@ func (client ProcessesClient) Get(resourceGroupName string, workspaceName string
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ProcessesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, workspaceName, machineName, processName, timestamp)
+	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, machineName, processName, timestamp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "Get", nil, "Failure preparing request")
 		return
@@ -87,7 +88,7 @@ func (client ProcessesClient) Get(resourceGroupName string, workspaceName string
 }
 
 // GetPreparer prepares the Get request.
-func (client ProcessesClient) GetPreparer(resourceGroupName string, workspaceName string, machineName string, processName string, timestamp *date.Time) (*http.Request, error) {
+func (client ProcessesClient) GetPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, timestamp *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineName":       autorest.Encode("path", machineName),
 		"processName":       autorest.Encode("path", processName),
@@ -109,14 +110,13 @@ func (client ProcessesClient) GetPreparer(resourceGroupName string, workspaceNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machines/{machineName}/processes/{processName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProcessesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -140,7 +140,7 @@ func (client ProcessesClient) GetResponder(resp *http.Response) (result Process,
 // startTime is UTC date and time specifying the start time of an interval. When not specified the service uses
 // DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an interval. When not specified the
 // service uses DateTime.UtcNow
-func (client ProcessesClient) GetLiveness(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result Liveness, err error) {
+func (client ProcessesClient) GetLiveness(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result Liveness, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -159,7 +159,7 @@ func (client ProcessesClient) GetLiveness(resourceGroupName string, workspaceNam
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ProcessesClient", "GetLiveness")
 	}
 
-	req, err := client.GetLivenessPreparer(resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
+	req, err := client.GetLivenessPreparer(ctx, resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "GetLiveness", nil, "Failure preparing request")
 		return
@@ -181,7 +181,7 @@ func (client ProcessesClient) GetLiveness(resourceGroupName string, workspaceNam
 }
 
 // GetLivenessPreparer prepares the GetLiveness request.
-func (client ProcessesClient) GetLivenessPreparer(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
+func (client ProcessesClient) GetLivenessPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineName":       autorest.Encode("path", machineName),
 		"processName":       autorest.Encode("path", processName),
@@ -206,14 +206,13 @@ func (client ProcessesClient) GetLivenessPreparer(resourceGroupName string, work
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machines/{machineName}/processes/{processName}/liveness", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetLivenessSender sends the GetLiveness request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProcessesClient) GetLivenessSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -237,7 +236,7 @@ func (client ProcessesClient) GetLivenessResponder(resp *http.Response) (result 
 // startTime is UTC date and time specifying the start time of an interval. When not specified the service uses
 // DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an interval. When not specified the
 // service uses DateTime.UtcNow
-func (client ProcessesClient) ListAcceptingPorts(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result PortCollection, err error) {
+func (client ProcessesClient) ListAcceptingPorts(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result PortCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -256,7 +255,8 @@ func (client ProcessesClient) ListAcceptingPorts(resourceGroupName string, works
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ProcessesClient", "ListAcceptingPorts")
 	}
 
-	req, err := client.ListAcceptingPortsPreparer(resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
+	result.fn = client.listAcceptingPortsNextResults
+	req, err := client.ListAcceptingPortsPreparer(ctx, resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", nil, "Failure preparing request")
 		return
@@ -264,12 +264,12 @@ func (client ProcessesClient) ListAcceptingPorts(resourceGroupName string, works
 
 	resp, err := client.ListAcceptingPortsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListAcceptingPortsResponder(resp)
+	result.pc, err = client.ListAcceptingPortsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", resp, "Failure responding to request")
 	}
@@ -278,7 +278,7 @@ func (client ProcessesClient) ListAcceptingPorts(resourceGroupName string, works
 }
 
 // ListAcceptingPortsPreparer prepares the ListAcceptingPorts request.
-func (client ProcessesClient) ListAcceptingPortsPreparer(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
+func (client ProcessesClient) ListAcceptingPortsPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineName":       autorest.Encode("path", machineName),
 		"processName":       autorest.Encode("path", processName),
@@ -303,14 +303,13 @@ func (client ProcessesClient) ListAcceptingPortsPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machines/{machineName}/processes/{processName}/acceptingPorts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAcceptingPortsSender sends the ListAcceptingPorts request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProcessesClient) ListAcceptingPortsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -327,73 +326,31 @@ func (client ProcessesClient) ListAcceptingPortsResponder(resp *http.Response) (
 	return
 }
 
-// ListAcceptingPortsNextResults retrieves the next set of results, if any.
-func (client ProcessesClient) ListAcceptingPortsNextResults(lastResults PortCollection) (result PortCollection, err error) {
-	req, err := lastResults.PortCollectionPreparer()
+// listAcceptingPortsNextResults retrieves the next set of results, if any.
+func (client ProcessesClient) listAcceptingPortsNextResults(lastResults PortCollection) (result PortCollection, err error) {
+	req, err := lastResults.portCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listAcceptingPortsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListAcceptingPortsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listAcceptingPortsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListAcceptingPortsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListAcceptingPorts", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listAcceptingPortsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListAcceptingPortsComplete gets all elements from the list without paging.
-func (client ProcessesClient) ListAcceptingPortsComplete(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time, cancel <-chan struct{}) (<-chan Port, <-chan error) {
-	resultChan := make(chan Port)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListAcceptingPorts(resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListAcceptingPortsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAcceptingPortsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProcessesClient) ListAcceptingPortsComplete(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result PortCollectionIterator, err error) {
+	result.page, err = client.ListAcceptingPorts(ctx, resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
+	return
 }
 
 // ListConnections returns a collection of connections terminating or originating at the specified process
@@ -403,7 +360,7 @@ func (client ProcessesClient) ListAcceptingPortsComplete(resourceGroupName strin
 // startTime is UTC date and time specifying the start time of an interval. When not specified the service uses
 // DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an interval. When not specified the
 // service uses DateTime.UtcNow
-func (client ProcessesClient) ListConnections(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result ConnectionCollection, err error) {
+func (client ProcessesClient) ListConnections(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result ConnectionCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -422,7 +379,8 @@ func (client ProcessesClient) ListConnections(resourceGroupName string, workspac
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ProcessesClient", "ListConnections")
 	}
 
-	req, err := client.ListConnectionsPreparer(resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
+	result.fn = client.listConnectionsNextResults
+	req, err := client.ListConnectionsPreparer(ctx, resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", nil, "Failure preparing request")
 		return
@@ -430,12 +388,12 @@ func (client ProcessesClient) ListConnections(resourceGroupName string, workspac
 
 	resp, err := client.ListConnectionsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListConnectionsResponder(resp)
+	result.cc, err = client.ListConnectionsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", resp, "Failure responding to request")
 	}
@@ -444,7 +402,7 @@ func (client ProcessesClient) ListConnections(resourceGroupName string, workspac
 }
 
 // ListConnectionsPreparer prepares the ListConnections request.
-func (client ProcessesClient) ListConnectionsPreparer(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
+func (client ProcessesClient) ListConnectionsPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineName":       autorest.Encode("path", machineName),
 		"processName":       autorest.Encode("path", processName),
@@ -469,14 +427,13 @@ func (client ProcessesClient) ListConnectionsPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machines/{machineName}/processes/{processName}/connections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListConnectionsSender sends the ListConnections request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProcessesClient) ListConnectionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -493,71 +450,29 @@ func (client ProcessesClient) ListConnectionsResponder(resp *http.Response) (res
 	return
 }
 
-// ListConnectionsNextResults retrieves the next set of results, if any.
-func (client ProcessesClient) ListConnectionsNextResults(lastResults ConnectionCollection) (result ConnectionCollection, err error) {
-	req, err := lastResults.ConnectionCollectionPreparer()
+// listConnectionsNextResults retrieves the next set of results, if any.
+func (client ProcessesClient) listConnectionsNextResults(lastResults ConnectionCollection) (result ConnectionCollection, err error) {
+	req, err := lastResults.connectionCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listConnectionsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListConnectionsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listConnectionsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListConnectionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "ListConnections", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicemap.ProcessesClient", "listConnectionsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListConnectionsComplete gets all elements from the list without paging.
-func (client ProcessesClient) ListConnectionsComplete(resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time, cancel <-chan struct{}) (<-chan Connection, <-chan error) {
-	resultChan := make(chan Connection)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListConnections(resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListConnectionsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListConnectionsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProcessesClient) ListConnectionsComplete(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, processName string, startTime *date.Time, endTime *date.Time) (result ConnectionCollectionIterator, err error) {
+	result.page, err = client.ListConnections(ctx, resourceGroupName, workspaceName, machineName, processName, startTime, endTime)
+	return
 }

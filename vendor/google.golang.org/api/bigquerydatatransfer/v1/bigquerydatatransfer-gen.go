@@ -317,8 +317,8 @@ type DataSource struct {
 	// for the data source.
 	ManualRunsDisabled bool `json:"manualRunsDisabled,omitempty"`
 
-	// MinimumScheduleInterval: The minimum interval between two consecutive
-	// scheduled runs.
+	// MinimumScheduleInterval: The minimum interval for scheduler to
+	// schedule runs.
 	MinimumScheduleInterval string `json:"minimumScheduleInterval,omitempty"`
 
 	// Name: Data source resource name.
@@ -1134,12 +1134,12 @@ func (s *TransferMessage) MarshalJSON() ([]byte, error) {
 }
 
 // TransferRun: Represents a data transfer run.
-// Next id: 24
+// Next id: 27
 type TransferRun struct {
 	// DataSourceId: Output only. Data source id.
 	DataSourceId string `json:"dataSourceId,omitempty"`
 
-	// DestinationDatasetId: The BigQuery target dataset id.
+	// DestinationDatasetId: Output only. The BigQuery target dataset id.
 	DestinationDatasetId string `json:"destinationDatasetId,omitempty"`
 
 	// EndTime: Output only. Time when transfer run ended.
@@ -1157,7 +1157,7 @@ type TransferRun struct {
 	// The name is ignored when creating a transfer run.
 	Name string `json:"name,omitempty"`
 
-	// Params: Data transfer specific parameters.
+	// Params: Output only. Data transfer specific parameters.
 	Params googleapi.RawMessage `json:"params,omitempty"`
 
 	// RunTime: For batch transfer runs, specifies the date and time

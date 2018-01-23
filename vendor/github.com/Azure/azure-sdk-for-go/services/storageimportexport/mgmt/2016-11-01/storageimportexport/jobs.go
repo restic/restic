@@ -18,6 +18,7 @@ package storageimportexport
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // JobsClient is the the Storage Import/Export Resource Provider API.
 type JobsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewJobsClient creates an instance of the JobsClient client.
@@ -44,7 +45,7 @@ func NewJobsClientWithBaseURI(baseURI string, subscriptionID string, acceptLangu
 // jobName is the name of the import/export job. resourceGroupName is the resource group name uniquely identifies the
 // resource group within the user subscription. body is the parameters used for creating the job clientTenantID is the
 // tenant ID of the client making the request.
-func (client JobsClient) Create(jobName string, resourceGroupName string, body PutJobParameters, clientTenantID string) (result JobResponse, err error) {
+func (client JobsClient) Create(ctx context.Context, jobName string, resourceGroupName string, body PutJobParameters, clientTenantID string) (result JobResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: body,
 			Constraints: []validation.Constraint{{Target: "body.Properties", Name: validation.Null, Rule: false,
@@ -85,7 +86,7 @@ func (client JobsClient) Create(jobName string, resourceGroupName string, body P
 		return result, validation.NewErrorWithValidationError(err, "storageimportexport.JobsClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(jobName, resourceGroupName, body, clientTenantID)
+	req, err := client.CreatePreparer(ctx, jobName, resourceGroupName, body, clientTenantID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "Create", nil, "Failure preparing request")
 		return
@@ -107,7 +108,7 @@ func (client JobsClient) Create(jobName string, resourceGroupName string, body P
 }
 
 // CreatePreparer prepares the Create request.
-func (client JobsClient) CreatePreparer(jobName string, resourceGroupName string, body PutJobParameters, clientTenantID string) (*http.Request, error) {
+func (client JobsClient) CreatePreparer(ctx context.Context, jobName string, resourceGroupName string, body PutJobParameters, clientTenantID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -134,14 +135,13 @@ func (client JobsClient) CreatePreparer(jobName string, resourceGroupName string
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("x-ms-client-tenant-id", autorest.String(clientTenantID)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -162,8 +162,8 @@ func (client JobsClient) CreateResponder(resp *http.Response) (result JobRespons
 //
 // jobName is the name of the import/export job. resourceGroupName is the resource group name uniquely identifies the
 // resource group within the user subscription.
-func (client JobsClient) Delete(jobName string, resourceGroupName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(jobName, resourceGroupName)
+func (client JobsClient) Delete(ctx context.Context, jobName string, resourceGroupName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, jobName, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -185,7 +185,7 @@ func (client JobsClient) Delete(jobName string, resourceGroupName string) (resul
 }
 
 // DeletePreparer prepares the Delete request.
-func (client JobsClient) DeletePreparer(jobName string, resourceGroupName string) (*http.Request, error) {
+func (client JobsClient) DeletePreparer(ctx context.Context, jobName string, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -206,14 +206,13 @@ func (client JobsClient) DeletePreparer(jobName string, resourceGroupName string
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("Accept-Language", autorest.String(client.AcceptLanguage)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -233,8 +232,8 @@ func (client JobsClient) DeleteResponder(resp *http.Response) (result autorest.R
 //
 // jobName is the name of the import/export job. resourceGroupName is the resource group name uniquely identifies the
 // resource group within the user subscription.
-func (client JobsClient) Get(jobName string, resourceGroupName string) (result JobResponse, err error) {
-	req, err := client.GetPreparer(jobName, resourceGroupName)
+func (client JobsClient) Get(ctx context.Context, jobName string, resourceGroupName string) (result JobResponse, err error) {
+	req, err := client.GetPreparer(ctx, jobName, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "Get", nil, "Failure preparing request")
 		return
@@ -256,7 +255,7 @@ func (client JobsClient) Get(jobName string, resourceGroupName string) (result J
 }
 
 // GetPreparer prepares the Get request.
-func (client JobsClient) GetPreparer(jobName string, resourceGroupName string) (*http.Request, error) {
+func (client JobsClient) GetPreparer(ctx context.Context, jobName string, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -277,14 +276,13 @@ func (client JobsClient) GetPreparer(jobName string, resourceGroupName string) (
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("Accept-Language", autorest.String(client.AcceptLanguage)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -306,8 +304,9 @@ func (client JobsClient) GetResponder(resp *http.Response) (result JobResponse, 
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscription.
 // top is an integer value that specifies how many jobs at most should be returned. The value cannot exceed 100. filter
 // is can be used to restrict the results to certain conditions.
-func (client JobsClient) ListByResourceGroup(resourceGroupName string, top *int32, filter string) (result ListJobsResponse, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, top, filter)
+func (client JobsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32, filter string) (result ListJobsResponsePage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, top, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -315,12 +314,12 @@ func (client JobsClient) ListByResourceGroup(resourceGroupName string, top *int3
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ljr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.ljr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -329,7 +328,7 @@ func (client JobsClient) ListByResourceGroup(resourceGroupName string, top *int3
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client JobsClient) ListByResourceGroupPreparer(resourceGroupName string, top *int32, filter string) (*http.Request, error) {
+func (client JobsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, top *int32, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -355,14 +354,13 @@ func (client JobsClient) ListByResourceGroupPreparer(resourceGroupName string, t
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("Accept-Language", autorest.String(client.AcceptLanguage)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -379,81 +377,40 @@ func (client JobsClient) ListByResourceGroupResponder(resp *http.Response) (resu
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client JobsClient) ListByResourceGroupNextResults(lastResults ListJobsResponse) (result ListJobsResponse, err error) {
-	req, err := lastResults.ListJobsResponsePreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client JobsClient) listByResourceGroupNextResults(lastResults ListJobsResponse) (result ListJobsResponse, err error) {
+	req, err := lastResults.listJobsResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client JobsClient) ListByResourceGroupComplete(resourceGroupName string, top *int32, filter string, cancel <-chan struct{}) (<-chan JobResponse, <-chan error) {
-	resultChan := make(chan JobResponse)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, top, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client JobsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32, filter string) (result ListJobsResponseIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, top, filter)
+	return
 }
 
 // ListBySubscription returns all active and completed jobs in a subscription.
 //
 // top is an integer value that specifies how many jobs at most should be returned. The value cannot exceed 100. filter
 // is can be used to restrict the results to certain conditions.
-func (client JobsClient) ListBySubscription(top *int32, filter string) (result ListJobsResponse, err error) {
-	req, err := client.ListBySubscriptionPreparer(top, filter)
+func (client JobsClient) ListBySubscription(ctx context.Context, top *int32, filter string) (result ListJobsResponsePage, err error) {
+	result.fn = client.listBySubscriptionNextResults
+	req, err := client.ListBySubscriptionPreparer(ctx, top, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", nil, "Failure preparing request")
 		return
@@ -461,12 +418,12 @@ func (client JobsClient) ListBySubscription(top *int32, filter string) (result L
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ljr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.ljr, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -475,7 +432,7 @@ func (client JobsClient) ListBySubscription(top *int32, filter string) (result L
 }
 
 // ListBySubscriptionPreparer prepares the ListBySubscription request.
-func (client JobsClient) ListBySubscriptionPreparer(top *int32, filter string) (*http.Request, error) {
+func (client JobsClient) ListBySubscriptionPreparer(ctx context.Context, top *int32, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -500,14 +457,13 @@ func (client JobsClient) ListBySubscriptionPreparer(top *int32, filter string) (
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("Accept-Language", autorest.String(client.AcceptLanguage)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionSender sends the ListBySubscription request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) ListBySubscriptionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -524,73 +480,31 @@ func (client JobsClient) ListBySubscriptionResponder(resp *http.Response) (resul
 	return
 }
 
-// ListBySubscriptionNextResults retrieves the next set of results, if any.
-func (client JobsClient) ListBySubscriptionNextResults(lastResults ListJobsResponse) (result ListJobsResponse, err error) {
-	req, err := lastResults.ListJobsResponsePreparer()
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client JobsClient) listBySubscriptionNextResults(lastResults ListJobsResponse) (result ListJobsResponse, err error) {
+	req, err := lastResults.listJobsResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "ListBySubscription", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionComplete gets all elements from the list without paging.
-func (client JobsClient) ListBySubscriptionComplete(top *int32, filter string, cancel <-chan struct{}) (<-chan JobResponse, <-chan error) {
-	resultChan := make(chan JobResponse)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscription(top, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client JobsClient) ListBySubscriptionComplete(ctx context.Context, top *int32, filter string) (result ListJobsResponseIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx, top, filter)
+	return
 }
 
 // Update updates specific properties of a job. You can call this operation to notify the Import/Export service that
@@ -599,8 +513,8 @@ func (client JobsClient) ListBySubscriptionComplete(top *int32, filter string, c
 //
 // jobName is the name of the import/export job. resourceGroupName is the resource group name uniquely identifies the
 // resource group within the user subscription. body is the parameters to update in the job
-func (client JobsClient) Update(jobName string, resourceGroupName string, body UpdateJobParameters) (result JobResponse, err error) {
-	req, err := client.UpdatePreparer(jobName, resourceGroupName, body)
+func (client JobsClient) Update(ctx context.Context, jobName string, resourceGroupName string, body UpdateJobParameters) (result JobResponse, err error) {
+	req, err := client.UpdatePreparer(ctx, jobName, resourceGroupName, body)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storageimportexport.JobsClient", "Update", nil, "Failure preparing request")
 		return
@@ -622,7 +536,7 @@ func (client JobsClient) Update(jobName string, resourceGroupName string, body U
 }
 
 // UpdatePreparer prepares the Update request.
-func (client JobsClient) UpdatePreparer(jobName string, resourceGroupName string, body UpdateJobParameters) (*http.Request, error) {
+func (client JobsClient) UpdatePreparer(ctx context.Context, jobName string, resourceGroupName string, body UpdateJobParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -645,14 +559,13 @@ func (client JobsClient) UpdatePreparer(jobName string, resourceGroupName string
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("Accept-Language", autorest.String(client.AcceptLanguage)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package batch
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // PoolClient is the client for the Pool methods of the Batch service.
 type PoolClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPoolClient creates an instance of the PoolClient client.
@@ -39,9 +40,7 @@ func NewPoolClientWithBaseURI(baseURI string, subscriptionID string) PoolClient 
 	return PoolClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create creates a new pool inside the specified account. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Create creates a new pool inside the specified account.
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. poolName is the pool name. This must be unique within the account. parameters is additional
@@ -49,9 +48,7 @@ func NewPoolClientWithBaseURI(baseURI string, subscriptionID string) PoolClient 
 // be used to apply the operation only if the pool already exists. If omitted, this operation will always be applied.
 // ifNoneMatch is set to '*' to allow a new pool to be created, but to prevent updating an existing pool. Other values
 // will be ignored.
-func (client PoolClient) Create(resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (<-chan Pool, <-chan error) {
-	resultChan := make(chan Pool, 1)
-	errChan := make(chan error, 1)
+func (client PoolClient) Create(ctx context.Context, resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string, ifNoneMatch string) (result PoolCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -87,46 +84,26 @@ func (client PoolClient) Create(resourceGroupName string, accountName string, po
 							Chain: []validation.Constraint{{Target: "parameters.PoolProperties.NetworkConfiguration.EndpointConfiguration.InboundNatPools", Name: validation.Null, Rule: true, Chain: nil}}},
 						}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "batch.PoolClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Pool
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, accountName, poolName, parameters, ifMatch, ifNoneMatch, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, accountName, poolName, parameters, ifMatch, ifNoneMatch)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client PoolClient) CreatePreparer(resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PoolClient) CreatePreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string, ifNoneMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -154,16 +131,22 @@ func (client PoolClient) CreatePreparer(resourceGroupName string, accountName st
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-None-Match", autorest.String(ifNoneMatch)))
 	}
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client PoolClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PoolClient) CreateSender(req *http.Request) (future PoolCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -179,14 +162,11 @@ func (client PoolClient) CreateResponder(resp *http.Response) (result Pool, err 
 	return
 }
 
-// Delete deletes the specified pool. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the specified pool.
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. poolName is the pool name. This must be unique within the account.
-func (client PoolClient) Delete(resourceGroupName string, accountName string, poolName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client PoolClient) Delete(ctx context.Context, resourceGroupName string, accountName string, poolName string) (result PoolDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -196,46 +176,26 @@ func (client PoolClient) Delete(resourceGroupName string, accountName string, po
 			Constraints: []validation.Constraint{{Target: "poolName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "poolName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "poolName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9_-]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "batch.PoolClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, accountName, poolName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, accountName, poolName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.PoolClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client PoolClient) DeletePreparer(resourceGroupName string, accountName string, poolName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PoolClient) DeletePreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -253,16 +213,22 @@ func (client PoolClient) DeletePreparer(resourceGroupName string, accountName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/pools/{poolName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client PoolClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PoolClient) DeleteSender(req *http.Request) (future PoolDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -271,7 +237,7 @@ func (client PoolClient) DeleteResponder(resp *http.Response) (result autorest.R
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -281,7 +247,7 @@ func (client PoolClient) DeleteResponder(resp *http.Response) (result autorest.R
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. poolName is the pool name. This must be unique within the account.
-func (client PoolClient) DisableAutoScale(resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
+func (client PoolClient) DisableAutoScale(ctx context.Context, resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -294,7 +260,7 @@ func (client PoolClient) DisableAutoScale(resourceGroupName string, accountName 
 		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "DisableAutoScale")
 	}
 
-	req, err := client.DisableAutoScalePreparer(resourceGroupName, accountName, poolName)
+	req, err := client.DisableAutoScalePreparer(ctx, resourceGroupName, accountName, poolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "DisableAutoScale", nil, "Failure preparing request")
 		return
@@ -316,7 +282,7 @@ func (client PoolClient) DisableAutoScale(resourceGroupName string, accountName 
 }
 
 // DisableAutoScalePreparer prepares the DisableAutoScale request.
-func (client PoolClient) DisableAutoScalePreparer(resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
+func (client PoolClient) DisableAutoScalePreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -334,14 +300,13 @@ func (client PoolClient) DisableAutoScalePreparer(resourceGroupName string, acco
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/pools/{poolName}/disableAutoScale", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DisableAutoScaleSender sends the DisableAutoScale request. The method will close the
 // http.Response Body if it receives an error.
 func (client PoolClient) DisableAutoScaleSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -362,7 +327,7 @@ func (client PoolClient) DisableAutoScaleResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. poolName is the pool name. This must be unique within the account.
-func (client PoolClient) Get(resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
+func (client PoolClient) Get(ctx context.Context, resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -375,7 +340,7 @@ func (client PoolClient) Get(resourceGroupName string, accountName string, poolN
 		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, accountName, poolName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, accountName, poolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Get", nil, "Failure preparing request")
 		return
@@ -397,7 +362,7 @@ func (client PoolClient) Get(resourceGroupName string, accountName string, poolN
 }
 
 // GetPreparer prepares the Get request.
-func (client PoolClient) GetPreparer(resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
+func (client PoolClient) GetPreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -415,14 +380,13 @@ func (client PoolClient) GetPreparer(resourceGroupName string, accountName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/pools/{poolName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PoolClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -457,7 +421,7 @@ func (client PoolClient) GetResponder(resp *http.Response) (result Pool, err err
 // properties/interNodeCommunication
 // properties/scaleSettings/autoScale
 // properties/scaleSettings/fixedScale
-func (client PoolClient) ListByBatchAccount(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListPoolsResult, err error) {
+func (client PoolClient) ListByBatchAccount(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListPoolsResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -466,7 +430,8 @@ func (client PoolClient) ListByBatchAccount(resourceGroupName string, accountNam
 		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "ListByBatchAccount")
 	}
 
-	req, err := client.ListByBatchAccountPreparer(resourceGroupName, accountName, maxresults, selectParameter, filter)
+	result.fn = client.listByBatchAccountNextResults
+	req, err := client.ListByBatchAccountPreparer(ctx, resourceGroupName, accountName, maxresults, selectParameter, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", nil, "Failure preparing request")
 		return
@@ -474,12 +439,12 @@ func (client PoolClient) ListByBatchAccount(resourceGroupName string, accountNam
 
 	resp, err := client.ListByBatchAccountSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lpr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByBatchAccountResponder(resp)
+	result.lpr, err = client.ListByBatchAccountResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", resp, "Failure responding to request")
 	}
@@ -488,7 +453,7 @@ func (client PoolClient) ListByBatchAccount(resourceGroupName string, accountNam
 }
 
 // ListByBatchAccountPreparer prepares the ListByBatchAccount request.
-func (client PoolClient) ListByBatchAccountPreparer(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (*http.Request, error) {
+func (client PoolClient) ListByBatchAccountPreparer(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -514,14 +479,13 @@ func (client PoolClient) ListByBatchAccountPreparer(resourceGroupName string, ac
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/pools", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByBatchAccountSender sends the ListByBatchAccount request. The method will close the
 // http.Response Body if it receives an error.
 func (client PoolClient) ListByBatchAccountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -538,73 +502,31 @@ func (client PoolClient) ListByBatchAccountResponder(resp *http.Response) (resul
 	return
 }
 
-// ListByBatchAccountNextResults retrieves the next set of results, if any.
-func (client PoolClient) ListByBatchAccountNextResults(lastResults ListPoolsResult) (result ListPoolsResult, err error) {
-	req, err := lastResults.ListPoolsResultPreparer()
+// listByBatchAccountNextResults retrieves the next set of results, if any.
+func (client PoolClient) listByBatchAccountNextResults(lastResults ListPoolsResult) (result ListPoolsResult, err error) {
+	req, err := lastResults.listPoolsResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "batch.PoolClient", "listByBatchAccountNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByBatchAccountSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "batch.PoolClient", "listByBatchAccountNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByBatchAccountResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "batch.PoolClient", "ListByBatchAccount", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "batch.PoolClient", "listByBatchAccountNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByBatchAccountComplete gets all elements from the list without paging.
-func (client PoolClient) ListByBatchAccountComplete(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string, cancel <-chan struct{}) (<-chan Pool, <-chan error) {
-	resultChan := make(chan Pool)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByBatchAccount(resourceGroupName, accountName, maxresults, selectParameter, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByBatchAccountNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByBatchAccountComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PoolClient) ListByBatchAccountComplete(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListPoolsResultIterator, err error) {
+	result.page, err = client.ListByBatchAccount(ctx, resourceGroupName, accountName, maxresults, selectParameter, filter)
+	return
 }
 
 // StopResize this does not restore the pool to its previous state before the resize operation: it only stops any
@@ -615,7 +537,7 @@ func (client PoolClient) ListByBatchAccountComplete(resourceGroupName string, ac
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. poolName is the pool name. This must be unique within the account.
-func (client PoolClient) StopResize(resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
+func (client PoolClient) StopResize(ctx context.Context, resourceGroupName string, accountName string, poolName string) (result Pool, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -628,7 +550,7 @@ func (client PoolClient) StopResize(resourceGroupName string, accountName string
 		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "StopResize")
 	}
 
-	req, err := client.StopResizePreparer(resourceGroupName, accountName, poolName)
+	req, err := client.StopResizePreparer(ctx, resourceGroupName, accountName, poolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "StopResize", nil, "Failure preparing request")
 		return
@@ -650,7 +572,7 @@ func (client PoolClient) StopResize(resourceGroupName string, accountName string
 }
 
 // StopResizePreparer prepares the StopResize request.
-func (client PoolClient) StopResizePreparer(resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
+func (client PoolClient) StopResizePreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -668,14 +590,13 @@ func (client PoolClient) StopResizePreparer(resourceGroupName string, accountNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/pools/{poolName}/stopResize", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopResizeSender sends the StopResize request. The method will close the
 // http.Response Body if it receives an error.
 func (client PoolClient) StopResizeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -699,7 +620,7 @@ func (client PoolClient) StopResizeResponder(resp *http.Response) (result Pool, 
 // should be updated. Properties that are supplied will be updated, any property not supplied will be unchanged.
 // ifMatch is the entity state (ETag) version of the pool to update. This value can be omitted or set to "*" to apply
 // the operation unconditionally.
-func (client PoolClient) Update(resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string) (result Pool, err error) {
+func (client PoolClient) Update(ctx context.Context, resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string) (result Pool, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -712,7 +633,7 @@ func (client PoolClient) Update(resourceGroupName string, accountName string, po
 		return result, validation.NewErrorWithValidationError(err, "batch.PoolClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, accountName, poolName, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, accountName, poolName, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.PoolClient", "Update", nil, "Failure preparing request")
 		return
@@ -734,7 +655,7 @@ func (client PoolClient) Update(resourceGroupName string, accountName string, po
 }
 
 // UpdatePreparer prepares the Update request.
-func (client PoolClient) UpdatePreparer(resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string) (*http.Request, error) {
+func (client PoolClient) UpdatePreparer(ctx context.Context, resourceGroupName string, accountName string, poolName string, parameters Pool, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"poolName":          autorest.Encode("path", poolName),
@@ -758,14 +679,13 @@ func (client PoolClient) UpdatePreparer(resourceGroupName string, accountName st
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client PoolClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

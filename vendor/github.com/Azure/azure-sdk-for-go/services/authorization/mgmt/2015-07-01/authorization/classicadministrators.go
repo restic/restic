@@ -18,6 +18,7 @@ package authorization
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -28,7 +29,7 @@ import (
 // definitions and role assignments. A role definition describes the set of actions that can be performed on resources.
 // A role assignment grants access to Azure Active Directory users.
 type ClassicAdministratorsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClassicAdministratorsClient creates an instance of the ClassicAdministratorsClient client.
@@ -42,8 +43,9 @@ func NewClassicAdministratorsClientWithBaseURI(baseURI string, subscriptionID st
 }
 
 // List gets service administrator, account administrator, and co-administrators for the subscription.
-func (client ClassicAdministratorsClient) List() (result ClassicAdministratorListResult, err error) {
-	req, err := client.ListPreparer()
+func (client ClassicAdministratorsClient) List(ctx context.Context) (result ClassicAdministratorListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", nil, "Failure preparing request")
 		return
@@ -51,12 +53,12 @@ func (client ClassicAdministratorsClient) List() (result ClassicAdministratorLis
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.calr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.calr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", resp, "Failure responding to request")
 	}
@@ -65,7 +67,7 @@ func (client ClassicAdministratorsClient) List() (result ClassicAdministratorLis
 }
 
 // ListPreparer prepares the List request.
-func (client ClassicAdministratorsClient) ListPreparer() (*http.Request, error) {
+func (client ClassicAdministratorsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -80,14 +82,13 @@ func (client ClassicAdministratorsClient) ListPreparer() (*http.Request, error) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/classicAdministrators", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClassicAdministratorsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -104,71 +105,29 @@ func (client ClassicAdministratorsClient) ListResponder(resp *http.Response) (re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ClassicAdministratorsClient) ListNextResults(lastResults ClassicAdministratorListResult) (result ClassicAdministratorListResult, err error) {
-	req, err := lastResults.ClassicAdministratorListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ClassicAdministratorsClient) listNextResults(lastResults ClassicAdministratorListResult) (result ClassicAdministratorListResult, err error) {
+	req, err := lastResults.classicAdministratorListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "authorization.ClassicAdministratorsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ClassicAdministratorsClient) ListComplete(cancel <-chan struct{}) (<-chan ClassicAdministrator, <-chan error) {
-	resultChan := make(chan ClassicAdministrator)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClassicAdministratorsClient) ListComplete(ctx context.Context) (result ClassicAdministratorListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

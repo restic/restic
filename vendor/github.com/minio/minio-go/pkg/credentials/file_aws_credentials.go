@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-ini/ini"
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // A FileAWSCredentials retrieves credentials from the current user's home

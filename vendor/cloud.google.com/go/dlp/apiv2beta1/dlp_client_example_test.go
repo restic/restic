@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,47 +32,6 @@ func ExampleNewClient() {
 	_ = c
 }
 
-func ExampleClient_DeidentifyContent() {
-	ctx := context.Background()
-	c, err := dlp.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &dlppb.DeidentifyContentRequest{
-	// TODO: Fill request struct fields.
-	}
-	resp, err := c.DeidentifyContent(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
-	}
-	// TODO: Use resp.
-	_ = resp
-}
-
-func ExampleClient_AnalyzeDataSourceRisk() {
-	ctx := context.Background()
-	c, err := dlp.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &dlppb.AnalyzeDataSourceRiskRequest{
-	// TODO: Fill request struct fields.
-	}
-	op, err := c.AnalyzeDataSourceRisk(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	resp, err := op.Wait(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-	// TODO: Use resp.
-	_ = resp
-}
-
 func ExampleClient_InspectContent() {
 	ctx := context.Background()
 	c, err := dlp.NewClient(ctx)
@@ -81,7 +40,7 @@ func ExampleClient_InspectContent() {
 	}
 
 	req := &dlppb.InspectContentRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	resp, err := c.InspectContent(ctx, req)
 	if err != nil {
@@ -99,9 +58,50 @@ func ExampleClient_RedactContent() {
 	}
 
 	req := &dlppb.RedactContentRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	resp, err := c.RedactContent(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
+func ExampleClient_DeidentifyContent() {
+	ctx := context.Background()
+	c, err := dlp.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &dlppb.DeidentifyContentRequest{
+		// TODO: Fill request struct fields.
+	}
+	resp, err := c.DeidentifyContent(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
+func ExampleClient_AnalyzeDataSourceRisk() {
+	ctx := context.Background()
+	c, err := dlp.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &dlppb.AnalyzeDataSourceRiskRequest{
+		// TODO: Fill request struct fields.
+	}
+	op, err := c.AnalyzeDataSourceRisk(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	resp, err := op.Wait(ctx)
 	if err != nil {
 		// TODO: Handle error.
 	}
@@ -117,7 +117,7 @@ func ExampleClient_CreateInspectOperation() {
 	}
 
 	req := &dlppb.CreateInspectOperationRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	op, err := c.CreateInspectOperation(ctx, req)
 	if err != nil {
@@ -140,7 +140,7 @@ func ExampleClient_ListInspectFindings() {
 	}
 
 	req := &dlppb.ListInspectFindingsRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	resp, err := c.ListInspectFindings(ctx, req)
 	if err != nil {
@@ -158,7 +158,7 @@ func ExampleClient_ListInfoTypes() {
 	}
 
 	req := &dlppb.ListInfoTypesRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	resp, err := c.ListInfoTypes(ctx, req)
 	if err != nil {
@@ -176,7 +176,7 @@ func ExampleClient_ListRootCategories() {
 	}
 
 	req := &dlppb.ListRootCategoriesRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	resp, err := c.ListRootCategories(ctx, req)
 	if err != nil {

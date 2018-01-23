@@ -18,6 +18,7 @@ package cdn
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // EdgeNodesClient is the use these APIs to manage Azure CDN resources through the Azure Resource Manager. You must
 // make sure that requests made to these resources are secure.
 type EdgeNodesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewEdgeNodesClient creates an instance of the EdgeNodesClient client.
@@ -40,8 +41,9 @@ func NewEdgeNodesClientWithBaseURI(baseURI string, subscriptionID string) EdgeNo
 }
 
 // List lists all the edge nodes of a CDN service.
-func (client EdgeNodesClient) List() (result EdgenodeResult, err error) {
-	req, err := client.ListPreparer()
+func (client EdgeNodesClient) List(ctx context.Context) (result EdgenodeResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", nil, "Failure preparing request")
 		return
@@ -49,12 +51,12 @@ func (client EdgeNodesClient) List() (result EdgenodeResult, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.er.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.er, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", resp, "Failure responding to request")
 	}
@@ -63,7 +65,7 @@ func (client EdgeNodesClient) List() (result EdgenodeResult, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client EdgeNodesClient) ListPreparer() (*http.Request, error) {
+func (client EdgeNodesClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2016-10-02"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -74,14 +76,13 @@ func (client EdgeNodesClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Cdn/edgenodes"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client EdgeNodesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -98,71 +99,29 @@ func (client EdgeNodesClient) ListResponder(resp *http.Response) (result Edgenod
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client EdgeNodesClient) ListNextResults(lastResults EdgenodeResult) (result EdgenodeResult, err error) {
-	req, err := lastResults.EdgenodeResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client EdgeNodesClient) listNextResults(lastResults EdgenodeResult) (result EdgenodeResult, err error) {
+	req, err := lastResults.edgenodeResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "cdn.EdgeNodesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client EdgeNodesClient) ListComplete(cancel <-chan struct{}) (<-chan EdgeNode, <-chan error) {
-	resultChan := make(chan EdgeNode)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client EdgeNodesClient) ListComplete(ctx context.Context) (result EdgenodeResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

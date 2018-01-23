@@ -18,6 +18,7 @@ package operationalinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // StorageInsightsClient is the operational Insights Client
 type StorageInsightsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewStorageInsightsClient creates an instance of the StorageInsightsClient client.
@@ -44,7 +45,7 @@ func NewStorageInsightsClientWithBaseURI(baseURI string, subscriptionID string) 
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics Workspace name that will contain the storageInsightsConfigs resource storageInsightName is name of the
 // storageInsightsConfigs resource parameters is the parameters required to create or update a storage insight.
-func (client StorageInsightsClient) CreateOrUpdate(resourceGroupName string, workspaceName string, storageInsightName string, parameters StorageInsight) (result StorageInsight, err error) {
+func (client StorageInsightsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string, parameters StorageInsight) (result StorageInsight, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -60,7 +61,7 @@ func (client StorageInsightsClient) CreateOrUpdate(resourceGroupName string, wor
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, workspaceName, storageInsightName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, workspaceName, storageInsightName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -82,7 +83,7 @@ func (client StorageInsightsClient) CreateOrUpdate(resourceGroupName string, wor
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client StorageInsightsClient) CreateOrUpdatePreparer(resourceGroupName string, workspaceName string, storageInsightName string, parameters StorageInsight) (*http.Request, error) {
+func (client StorageInsightsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string, parameters StorageInsight) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
 		"storageInsightName": autorest.Encode("path", storageInsightName),
@@ -102,14 +103,13 @@ func (client StorageInsightsClient) CreateOrUpdatePreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/storageInsightConfigs/{storageInsightName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageInsightsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -119,7 +119,7 @@ func (client StorageInsightsClient) CreateOrUpdateResponder(resp *http.Response)
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -131,7 +131,7 @@ func (client StorageInsightsClient) CreateOrUpdateResponder(resp *http.Response)
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics Workspace name that contains the storageInsightsConfigs resource storageInsightName is name of the
 // storageInsightsConfigs resource
-func (client StorageInsightsClient) Delete(resourceGroupName string, workspaceName string, storageInsightName string) (result autorest.Response, err error) {
+func (client StorageInsightsClient) Delete(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -140,7 +140,7 @@ func (client StorageInsightsClient) Delete(resourceGroupName string, workspaceNa
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, workspaceName, storageInsightName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, workspaceName, storageInsightName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -162,7 +162,7 @@ func (client StorageInsightsClient) Delete(resourceGroupName string, workspaceNa
 }
 
 // DeletePreparer prepares the Delete request.
-func (client StorageInsightsClient) DeletePreparer(resourceGroupName string, workspaceName string, storageInsightName string) (*http.Request, error) {
+func (client StorageInsightsClient) DeletePreparer(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
 		"storageInsightName": autorest.Encode("path", storageInsightName),
@@ -180,14 +180,13 @@ func (client StorageInsightsClient) DeletePreparer(resourceGroupName string, wor
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/storageInsightConfigs/{storageInsightName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageInsightsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -208,7 +207,7 @@ func (client StorageInsightsClient) DeleteResponder(resp *http.Response) (result
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics Workspace name that contains the storageInsightsConfigs resource storageInsightName is name of the
 // storageInsightsConfigs resource
-func (client StorageInsightsClient) Get(resourceGroupName string, workspaceName string, storageInsightName string) (result StorageInsight, err error) {
+func (client StorageInsightsClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string) (result StorageInsight, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -217,7 +216,7 @@ func (client StorageInsightsClient) Get(resourceGroupName string, workspaceName 
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, workspaceName, storageInsightName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, storageInsightName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "Get", nil, "Failure preparing request")
 		return
@@ -239,7 +238,7 @@ func (client StorageInsightsClient) Get(resourceGroupName string, workspaceName 
 }
 
 // GetPreparer prepares the Get request.
-func (client StorageInsightsClient) GetPreparer(resourceGroupName string, workspaceName string, storageInsightName string) (*http.Request, error) {
+func (client StorageInsightsClient) GetPreparer(ctx context.Context, resourceGroupName string, workspaceName string, storageInsightName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
 		"storageInsightName": autorest.Encode("path", storageInsightName),
@@ -257,14 +256,13 @@ func (client StorageInsightsClient) GetPreparer(resourceGroupName string, worksp
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/storageInsightConfigs/{storageInsightName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageInsightsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -285,7 +283,7 @@ func (client StorageInsightsClient) GetResponder(resp *http.Response) (result St
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics Workspace name that will contain the storageInsightsConfigs resource
-func (client StorageInsightsClient) ListByWorkspace(resourceGroupName string, workspaceName string) (result StorageInsightListResult, err error) {
+func (client StorageInsightsClient) ListByWorkspace(ctx context.Context, resourceGroupName string, workspaceName string) (result StorageInsightListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -294,7 +292,8 @@ func (client StorageInsightsClient) ListByWorkspace(resourceGroupName string, wo
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace")
 	}
 
-	req, err := client.ListByWorkspacePreparer(resourceGroupName, workspaceName)
+	result.fn = client.listByWorkspaceNextResults
+	req, err := client.ListByWorkspacePreparer(ctx, resourceGroupName, workspaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", nil, "Failure preparing request")
 		return
@@ -302,12 +301,12 @@ func (client StorageInsightsClient) ListByWorkspace(resourceGroupName string, wo
 
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.silr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByWorkspaceResponder(resp)
+	result.silr, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", resp, "Failure responding to request")
 	}
@@ -316,7 +315,7 @@ func (client StorageInsightsClient) ListByWorkspace(resourceGroupName string, wo
 }
 
 // ListByWorkspacePreparer prepares the ListByWorkspace request.
-func (client StorageInsightsClient) ListByWorkspacePreparer(resourceGroupName string, workspaceName string) (*http.Request, error) {
+func (client StorageInsightsClient) ListByWorkspacePreparer(ctx context.Context, resourceGroupName string, workspaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -333,14 +332,13 @@ func (client StorageInsightsClient) ListByWorkspacePreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/storageInsightConfigs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByWorkspaceSender sends the ListByWorkspace request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageInsightsClient) ListByWorkspaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -357,71 +355,29 @@ func (client StorageInsightsClient) ListByWorkspaceResponder(resp *http.Response
 	return
 }
 
-// ListByWorkspaceNextResults retrieves the next set of results, if any.
-func (client StorageInsightsClient) ListByWorkspaceNextResults(lastResults StorageInsightListResult) (result StorageInsightListResult, err error) {
-	req, err := lastResults.StorageInsightListResultPreparer()
+// listByWorkspaceNextResults retrieves the next set of results, if any.
+func (client StorageInsightsClient) listByWorkspaceNextResults(lastResults StorageInsightListResult) (result StorageInsightListResult, err error) {
+	req, err := lastResults.storageInsightListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "listByWorkspaceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "listByWorkspaceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "operationalinsights.StorageInsightsClient", "listByWorkspaceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByWorkspaceComplete gets all elements from the list without paging.
-func (client StorageInsightsClient) ListByWorkspaceComplete(resourceGroupName string, workspaceName string, cancel <-chan struct{}) (<-chan StorageInsight, <-chan error) {
-	resultChan := make(chan StorageInsight)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByWorkspace(resourceGroupName, workspaceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.OdataNextLink != nil {
-			list, err = client.ListByWorkspaceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByWorkspaceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client StorageInsightsClient) ListByWorkspaceComplete(ctx context.Context, resourceGroupName string, workspaceName string) (result StorageInsightListResultIterator, err error) {
+	result.page, err = client.ListByWorkspace(ctx, resourceGroupName, workspaceName)
+	return
 }

@@ -18,6 +18,7 @@ package scheduler
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // JobCollectionsClient is the client for the JobCollections methods of the Scheduler service.
 type JobCollectionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewJobCollectionsClient creates an instance of the JobCollectionsClient client.
@@ -42,8 +43,8 @@ func NewJobCollectionsClientWithBaseURI(baseURI string, subscriptionID string) J
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the job
 // collection definition.
-func (client JobCollectionsClient) CreateOrUpdate(resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, jobCollectionName, jobCollection)
+func (client JobCollectionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, jobCollectionName, jobCollection)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client JobCollectionsClient) CreateOrUpdate(resourceGroupName string, jobC
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client JobCollectionsClient) CreateOrUpdatePreparer(resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (*http.Request, error) {
+func (client JobCollectionsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -84,14 +85,13 @@ func (client JobCollectionsClient) CreateOrUpdatePreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),
 		autorest.WithJSON(jobCollection),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobCollectionsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -108,47 +108,27 @@ func (client JobCollectionsClient) CreateOrUpdateResponder(resp *http.Response) 
 	return
 }
 
-// Delete deletes a job collection. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a job collection.
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name.
-func (client JobCollectionsClient) Delete(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, jobCollectionName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client JobCollectionsClient) Delete(ctx context.Context, resourceGroupName string, jobCollectionName string) (result JobCollectionsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, jobCollectionName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client JobCollectionsClient) DeletePreparer(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client JobCollectionsClient) DeletePreparer(ctx context.Context, resourceGroupName string, jobCollectionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -165,16 +145,22 @@ func (client JobCollectionsClient) DeletePreparer(resourceGroupName string, jobC
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client JobCollectionsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client JobCollectionsClient) DeleteSender(req *http.Request) (future JobCollectionsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -189,48 +175,27 @@ func (client JobCollectionsClient) DeleteResponder(resp *http.Response) (result 
 	return
 }
 
-// Disable disables all of the jobs in the job collection. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Disable disables all of the jobs in the job collection.
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name.
-func (client JobCollectionsClient) Disable(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DisablePreparer(resourceGroupName, jobCollectionName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Disable", nil, "Failure preparing request")
-			return
-		}
+func (client JobCollectionsClient) Disable(ctx context.Context, resourceGroupName string, jobCollectionName string) (result JobCollectionsDisableFuture, err error) {
+	req, err := client.DisablePreparer(ctx, resourceGroupName, jobCollectionName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Disable", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DisableSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Disable", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DisableSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Disable", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DisableResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Disable", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DisablePreparer prepares the Disable request.
-func (client JobCollectionsClient) DisablePreparer(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client JobCollectionsClient) DisablePreparer(ctx context.Context, resourceGroupName string, jobCollectionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -247,16 +212,22 @@ func (client JobCollectionsClient) DisablePreparer(resourceGroupName string, job
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}/disable", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DisableSender sends the Disable request. The method will close the
 // http.Response Body if it receives an error.
-func (client JobCollectionsClient) DisableSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client JobCollectionsClient) DisableSender(req *http.Request) (future JobCollectionsDisableFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DisableResponder handles the response to the Disable request. The method always
@@ -271,48 +242,27 @@ func (client JobCollectionsClient) DisableResponder(resp *http.Response) (result
 	return
 }
 
-// Enable enables all of the jobs in the job collection. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Enable enables all of the jobs in the job collection.
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name.
-func (client JobCollectionsClient) Enable(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.EnablePreparer(resourceGroupName, jobCollectionName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Enable", nil, "Failure preparing request")
-			return
-		}
+func (client JobCollectionsClient) Enable(ctx context.Context, resourceGroupName string, jobCollectionName string) (result JobCollectionsEnableFuture, err error) {
+	req, err := client.EnablePreparer(ctx, resourceGroupName, jobCollectionName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Enable", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.EnableSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Enable", resp, "Failure sending request")
-			return
-		}
+	result, err = client.EnableSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Enable", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.EnableResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Enable", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // EnablePreparer prepares the Enable request.
-func (client JobCollectionsClient) EnablePreparer(resourceGroupName string, jobCollectionName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client JobCollectionsClient) EnablePreparer(ctx context.Context, resourceGroupName string, jobCollectionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -329,16 +279,22 @@ func (client JobCollectionsClient) EnablePreparer(resourceGroupName string, jobC
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}/enable", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // EnableSender sends the Enable request. The method will close the
 // http.Response Body if it receives an error.
-func (client JobCollectionsClient) EnableSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client JobCollectionsClient) EnableSender(req *http.Request) (future JobCollectionsEnableFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // EnableResponder handles the response to the Enable request. The method always
@@ -356,8 +312,8 @@ func (client JobCollectionsClient) EnableResponder(resp *http.Response) (result 
 // Get gets a job collection.
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name.
-func (client JobCollectionsClient) Get(resourceGroupName string, jobCollectionName string) (result JobCollectionDefinition, err error) {
-	req, err := client.GetPreparer(resourceGroupName, jobCollectionName)
+func (client JobCollectionsClient) Get(ctx context.Context, resourceGroupName string, jobCollectionName string) (result JobCollectionDefinition, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, jobCollectionName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -379,7 +335,7 @@ func (client JobCollectionsClient) Get(resourceGroupName string, jobCollectionNa
 }
 
 // GetPreparer prepares the Get request.
-func (client JobCollectionsClient) GetPreparer(resourceGroupName string, jobCollectionName string) (*http.Request, error) {
+func (client JobCollectionsClient) GetPreparer(ctx context.Context, resourceGroupName string, jobCollectionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -396,14 +352,13 @@ func (client JobCollectionsClient) GetPreparer(resourceGroupName string, jobColl
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobCollectionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -423,8 +378,9 @@ func (client JobCollectionsClient) GetResponder(resp *http.Response) (result Job
 // ListByResourceGroup gets all job collections under specified resource group.
 //
 // resourceGroupName is the resource group name.
-func (client JobCollectionsClient) ListByResourceGroup(resourceGroupName string) (result JobCollectionListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client JobCollectionsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result JobCollectionListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -432,12 +388,12 @@ func (client JobCollectionsClient) ListByResourceGroup(resourceGroupName string)
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.jclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.jclr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -446,7 +402,7 @@ func (client JobCollectionsClient) ListByResourceGroup(resourceGroupName string)
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client JobCollectionsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client JobCollectionsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -462,14 +418,13 @@ func (client JobCollectionsClient) ListByResourceGroupPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobCollectionsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -486,78 +441,37 @@ func (client JobCollectionsClient) ListByResourceGroupResponder(resp *http.Respo
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client JobCollectionsClient) ListByResourceGroupNextResults(lastResults JobCollectionListResult) (result JobCollectionListResult, err error) {
-	req, err := lastResults.JobCollectionListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client JobCollectionsClient) listByResourceGroupNextResults(lastResults JobCollectionListResult) (result JobCollectionListResult, err error) {
+	req, err := lastResults.jobCollectionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client JobCollectionsClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan JobCollectionDefinition, <-chan error) {
-	resultChan := make(chan JobCollectionDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client JobCollectionsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result JobCollectionListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
 }
 
 // ListBySubscription gets all job collections under specified subscription.
-func (client JobCollectionsClient) ListBySubscription() (result JobCollectionListResult, err error) {
-	req, err := client.ListBySubscriptionPreparer()
+func (client JobCollectionsClient) ListBySubscription(ctx context.Context) (result JobCollectionListResultPage, err error) {
+	result.fn = client.listBySubscriptionNextResults
+	req, err := client.ListBySubscriptionPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", nil, "Failure preparing request")
 		return
@@ -565,12 +479,12 @@ func (client JobCollectionsClient) ListBySubscription() (result JobCollectionLis
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.jclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.jclr, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -579,7 +493,7 @@ func (client JobCollectionsClient) ListBySubscription() (result JobCollectionLis
 }
 
 // ListBySubscriptionPreparer prepares the ListBySubscription request.
-func (client JobCollectionsClient) ListBySubscriptionPreparer() (*http.Request, error) {
+func (client JobCollectionsClient) ListBySubscriptionPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -594,14 +508,13 @@ func (client JobCollectionsClient) ListBySubscriptionPreparer() (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Scheduler/jobCollections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionSender sends the ListBySubscription request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobCollectionsClient) ListBySubscriptionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -618,81 +531,39 @@ func (client JobCollectionsClient) ListBySubscriptionResponder(resp *http.Respon
 	return
 }
 
-// ListBySubscriptionNextResults retrieves the next set of results, if any.
-func (client JobCollectionsClient) ListBySubscriptionNextResults(lastResults JobCollectionListResult) (result JobCollectionListResult, err error) {
-	req, err := lastResults.JobCollectionListResultPreparer()
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client JobCollectionsClient) listBySubscriptionNextResults(lastResults JobCollectionListResult) (result JobCollectionListResult, err error) {
+	req, err := lastResults.jobCollectionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "ListBySubscription", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionComplete gets all elements from the list without paging.
-func (client JobCollectionsClient) ListBySubscriptionComplete(cancel <-chan struct{}) (<-chan JobCollectionDefinition, <-chan error) {
-	resultChan := make(chan JobCollectionDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscription()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client JobCollectionsClient) ListBySubscriptionComplete(ctx context.Context) (result JobCollectionListResultIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx)
+	return
 }
 
 // Patch patches an existing job collection.
 //
 // resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the job
 // collection definition.
-func (client JobCollectionsClient) Patch(resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
-	req, err := client.PatchPreparer(resourceGroupName, jobCollectionName, jobCollection)
+func (client JobCollectionsClient) Patch(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
+	req, err := client.PatchPreparer(ctx, resourceGroupName, jobCollectionName, jobCollection)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "scheduler.JobCollectionsClient", "Patch", nil, "Failure preparing request")
 		return
@@ -714,7 +585,7 @@ func (client JobCollectionsClient) Patch(resourceGroupName string, jobCollection
 }
 
 // PatchPreparer prepares the Patch request.
-func (client JobCollectionsClient) PatchPreparer(resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (*http.Request, error) {
+func (client JobCollectionsClient) PatchPreparer(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobCollectionName": autorest.Encode("path", jobCollectionName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -733,14 +604,13 @@ func (client JobCollectionsClient) PatchPreparer(resourceGroupName string, jobCo
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),
 		autorest.WithJSON(jobCollection),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchSender sends the Patch request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobCollectionsClient) PatchSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

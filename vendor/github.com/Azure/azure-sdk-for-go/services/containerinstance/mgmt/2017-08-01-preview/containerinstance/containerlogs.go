@@ -18,6 +18,7 @@ package containerinstance
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ContainerLogsClient is the client for the ContainerLogs methods of the Containerinstance service.
 type ContainerLogsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewContainerLogsClient creates an instance of the ContainerLogsClient client.
@@ -44,8 +45,8 @@ func NewContainerLogsClientWithBaseURI(baseURI string, subscriptionID string) Co
 // of the container instance. containerGroupName is the name of the container group the container instance belongs to.
 // tail is the number of lines to show from the tail of the container instance log. If not provided, all available logs
 // are shown up to 4mb.
-func (client ContainerLogsClient) List(resourceGroupName string, containerName string, containerGroupName string, tail *int32) (result Logs, err error) {
-	req, err := client.ListPreparer(resourceGroupName, containerName, containerGroupName, tail)
+func (client ContainerLogsClient) List(ctx context.Context, resourceGroupName string, containerName string, containerGroupName string, tail *int32) (result Logs, err error) {
+	req, err := client.ListPreparer(ctx, resourceGroupName, containerName, containerGroupName, tail)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerinstance.ContainerLogsClient", "List", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client ContainerLogsClient) List(resourceGroupName string, containerName s
 }
 
 // ListPreparer prepares the List request.
-func (client ContainerLogsClient) ListPreparer(resourceGroupName string, containerName string, containerGroupName string, tail *int32) (*http.Request, error) {
+func (client ContainerLogsClient) ListPreparer(ctx context.Context, resourceGroupName string, containerName string, containerGroupName string, tail *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"containerGroupName": autorest.Encode("path", containerGroupName),
 		"containerName":      autorest.Encode("path", containerName),
@@ -88,14 +89,13 @@ func (client ContainerLogsClient) ListPreparer(resourceGroupName string, contain
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerInstance/containerGroups/{containerGroupName}/containers/{containerName}/logs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ContainerLogsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

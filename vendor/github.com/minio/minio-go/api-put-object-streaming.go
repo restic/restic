@@ -339,7 +339,7 @@ func (c Client) putObjectNoChecksum(ctx context.Context, bucketName, objectName 
 
 	// Size -1 is only supported on Google Cloud Storage, we error
 	// out in all other situations.
-	if size < 0 && !s3utils.IsGoogleEndpoint(c.endpointURL) {
+	if size < 0 && !s3utils.IsGoogleEndpoint(*c.endpointURL) {
 		return 0, ErrEntityTooSmall(size, bucketName, objectName)
 	}
 	if size > 0 {

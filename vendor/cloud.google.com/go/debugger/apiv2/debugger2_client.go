@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,8 +81,8 @@ type Debugger2Client struct {
 	// The call options for this service.
 	CallOptions *Debugger2CallOptions
 
-	// The metadata to be sent with each request.
-	Metadata metadata.MD
+	// The x-goog-* metadata to be sent with each request.
+	xGoogMetadata metadata.MD
 }
 
 // NewDebugger2Client creates a new debugger2 client.
@@ -131,12 +131,12 @@ func (c *Debugger2Client) Close() error {
 func (c *Debugger2Client) SetGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", version.Go()}, keyval...)
 	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
-	c.Metadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
+	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
 }
 
 // SetBreakpoint sets the breakpoint to the debuggee.
 func (c *Debugger2Client) SetBreakpoint(ctx context.Context, req *clouddebuggerpb.SetBreakpointRequest, opts ...gax.CallOption) (*clouddebuggerpb.SetBreakpointResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.SetBreakpoint[0:len(c.CallOptions.SetBreakpoint):len(c.CallOptions.SetBreakpoint)], opts...)
 	var resp *clouddebuggerpb.SetBreakpointResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -152,7 +152,7 @@ func (c *Debugger2Client) SetBreakpoint(ctx context.Context, req *clouddebuggerp
 
 // GetBreakpoint gets breakpoint information.
 func (c *Debugger2Client) GetBreakpoint(ctx context.Context, req *clouddebuggerpb.GetBreakpointRequest, opts ...gax.CallOption) (*clouddebuggerpb.GetBreakpointResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.GetBreakpoint[0:len(c.CallOptions.GetBreakpoint):len(c.CallOptions.GetBreakpoint)], opts...)
 	var resp *clouddebuggerpb.GetBreakpointResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -168,7 +168,7 @@ func (c *Debugger2Client) GetBreakpoint(ctx context.Context, req *clouddebuggerp
 
 // DeleteBreakpoint deletes the breakpoint from the debuggee.
 func (c *Debugger2Client) DeleteBreakpoint(ctx context.Context, req *clouddebuggerpb.DeleteBreakpointRequest, opts ...gax.CallOption) error {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.DeleteBreakpoint[0:len(c.CallOptions.DeleteBreakpoint):len(c.CallOptions.DeleteBreakpoint)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
@@ -180,7 +180,7 @@ func (c *Debugger2Client) DeleteBreakpoint(ctx context.Context, req *clouddebugg
 
 // ListBreakpoints lists all breakpoints for the debuggee.
 func (c *Debugger2Client) ListBreakpoints(ctx context.Context, req *clouddebuggerpb.ListBreakpointsRequest, opts ...gax.CallOption) (*clouddebuggerpb.ListBreakpointsResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListBreakpoints[0:len(c.CallOptions.ListBreakpoints):len(c.CallOptions.ListBreakpoints)], opts...)
 	var resp *clouddebuggerpb.ListBreakpointsResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -196,7 +196,7 @@ func (c *Debugger2Client) ListBreakpoints(ctx context.Context, req *clouddebugge
 
 // ListDebuggees lists all the debuggees that the user has access to.
 func (c *Debugger2Client) ListDebuggees(ctx context.Context, req *clouddebuggerpb.ListDebuggeesRequest, opts ...gax.CallOption) (*clouddebuggerpb.ListDebuggeesResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListDebuggees[0:len(c.CallOptions.ListDebuggees):len(c.CallOptions.ListDebuggees)], opts...)
 	var resp *clouddebuggerpb.ListDebuggeesResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {

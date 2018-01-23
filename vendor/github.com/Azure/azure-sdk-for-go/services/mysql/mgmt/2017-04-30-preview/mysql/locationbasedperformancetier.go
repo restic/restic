@@ -18,6 +18,7 @@ package mysql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // delete functionality for Azure MySQL resources including servers, databases, firewall rules, VNET rules, log files
 // and configurations.
 type LocationBasedPerformanceTierClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLocationBasedPerformanceTierClient creates an instance of the LocationBasedPerformanceTierClient client.
@@ -44,8 +45,8 @@ func NewLocationBasedPerformanceTierClientWithBaseURI(baseURI string, subscripti
 // List list all the performance tiers at specified location in a given subscription.
 //
 // locationName is the name of the location.
-func (client LocationBasedPerformanceTierClient) List(locationName string) (result PerformanceTierListResult, err error) {
-	req, err := client.ListPreparer(locationName)
+func (client LocationBasedPerformanceTierClient) List(ctx context.Context, locationName string) (result PerformanceTierListResult, err error) {
+	req, err := client.ListPreparer(ctx, locationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mysql.LocationBasedPerformanceTierClient", "List", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client LocationBasedPerformanceTierClient) List(locationName string) (resu
 }
 
 // ListPreparer prepares the List request.
-func (client LocationBasedPerformanceTierClient) ListPreparer(locationName string) (*http.Request, error) {
+func (client LocationBasedPerformanceTierClient) ListPreparer(ctx context.Context, locationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"locationName":   autorest.Encode("path", locationName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -83,14 +84,13 @@ func (client LocationBasedPerformanceTierClient) ListPreparer(locationName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DBforMySQL/locations/{locationName}/performanceTiers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LocationBasedPerformanceTierClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

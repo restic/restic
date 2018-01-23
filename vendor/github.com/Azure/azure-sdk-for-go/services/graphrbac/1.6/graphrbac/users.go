@@ -18,15 +18,17 @@ package graphrbac
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/Azure/go-autorest/autorest/validation"
 	"net/http"
 )
 
 // UsersClient is the the Graph RBAC Management Client
 type UsersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewUsersClient creates an instance of the UsersClient client.
@@ -42,7 +44,7 @@ func NewUsersClientWithBaseURI(baseURI string, tenantID string) UsersClient {
 // Create create a new user.
 //
 // parameters is parameters to create a user.
-func (client UsersClient) Create(parameters UserCreateParameters) (result User, err error) {
+func (client UsersClient) Create(ctx context.Context, parameters UserCreateParameters) (result User, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.AccountEnabled", Name: validation.Null, Rule: true, Chain: nil},
@@ -54,7 +56,7 @@ func (client UsersClient) Create(parameters UserCreateParameters) (result User, 
 		return result, validation.NewErrorWithValidationError(err, "graphrbac.UsersClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(parameters)
+	req, err := client.CreatePreparer(ctx, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "Create", nil, "Failure preparing request")
 		return
@@ -76,7 +78,7 @@ func (client UsersClient) Create(parameters UserCreateParameters) (result User, 
 }
 
 // CreatePreparer prepares the Create request.
-func (client UsersClient) CreatePreparer(parameters UserCreateParameters) (*http.Request, error) {
+func (client UsersClient) CreatePreparer(ctx context.Context, parameters UserCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -93,13 +95,14 @@ func (client UsersClient) CreatePreparer(parameters UserCreateParameters) (*http
 		autorest.WithPathParameters("/{tenantID}/users", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -118,8 +121,8 @@ func (client UsersClient) CreateResponder(resp *http.Response) (result User, err
 // Delete delete a user.
 //
 // upnOrObjectID is the object ID or principal name of the user to delete.
-func (client UsersClient) Delete(upnOrObjectID string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(upnOrObjectID)
+func (client UsersClient) Delete(ctx context.Context, upnOrObjectID string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, upnOrObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -141,7 +144,7 @@ func (client UsersClient) Delete(upnOrObjectID string) (result autorest.Response
 }
 
 // DeletePreparer prepares the Delete request.
-func (client UsersClient) DeletePreparer(upnOrObjectID string) (*http.Request, error) {
+func (client UsersClient) DeletePreparer(ctx context.Context, upnOrObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID":      autorest.Encode("path", client.TenantID),
 		"upnOrObjectId": autorest.Encode("path", upnOrObjectID),
@@ -157,13 +160,14 @@ func (client UsersClient) DeletePreparer(upnOrObjectID string) (*http.Request, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users/{upnOrObjectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -181,8 +185,8 @@ func (client UsersClient) DeleteResponder(resp *http.Response) (result autorest.
 // Get gets user information from the directory.
 //
 // upnOrObjectID is the object ID or principal name of the user for which to get information.
-func (client UsersClient) Get(upnOrObjectID string) (result User, err error) {
-	req, err := client.GetPreparer(upnOrObjectID)
+func (client UsersClient) Get(ctx context.Context, upnOrObjectID string) (result User, err error) {
+	req, err := client.GetPreparer(ctx, upnOrObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "Get", nil, "Failure preparing request")
 		return
@@ -204,7 +208,7 @@ func (client UsersClient) Get(upnOrObjectID string) (result User, err error) {
 }
 
 // GetPreparer prepares the Get request.
-func (client UsersClient) GetPreparer(upnOrObjectID string) (*http.Request, error) {
+func (client UsersClient) GetPreparer(ctx context.Context, upnOrObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID":      autorest.Encode("path", client.TenantID),
 		"upnOrObjectId": autorest.Encode("path", upnOrObjectID),
@@ -220,13 +224,14 @@ func (client UsersClient) GetPreparer(upnOrObjectID string) (*http.Request, erro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users/{upnOrObjectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetResponder handles the response to the Get request. The method always
@@ -245,14 +250,14 @@ func (client UsersClient) GetResponder(resp *http.Response) (result User, err er
 // GetMemberGroups gets a collection that contains the object IDs of the groups of which the user is a member.
 //
 // objectID is the object ID of the user for which to get group membership. parameters is user filtering parameters.
-func (client UsersClient) GetMemberGroups(objectID string, parameters UserGetMemberGroupsParameters) (result UserGetMemberGroupsResult, err error) {
+func (client UsersClient) GetMemberGroups(ctx context.Context, objectID string, parameters UserGetMemberGroupsParameters) (result UserGetMemberGroupsResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.SecurityEnabledOnly", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "graphrbac.UsersClient", "GetMemberGroups")
 	}
 
-	req, err := client.GetMemberGroupsPreparer(objectID, parameters)
+	req, err := client.GetMemberGroupsPreparer(ctx, objectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "GetMemberGroups", nil, "Failure preparing request")
 		return
@@ -274,7 +279,7 @@ func (client UsersClient) GetMemberGroups(objectID string, parameters UserGetMem
 }
 
 // GetMemberGroupsPreparer prepares the GetMemberGroups request.
-func (client UsersClient) GetMemberGroupsPreparer(objectID string, parameters UserGetMemberGroupsParameters) (*http.Request, error) {
+func (client UsersClient) GetMemberGroupsPreparer(ctx context.Context, objectID string, parameters UserGetMemberGroupsParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -292,13 +297,14 @@ func (client UsersClient) GetMemberGroupsPreparer(objectID string, parameters Us
 		autorest.WithPathParameters("/{tenantID}/users/{objectId}/getMemberGroups", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetMemberGroupsSender sends the GetMemberGroups request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) GetMemberGroupsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetMemberGroupsResponder handles the response to the GetMemberGroups request. The method always
@@ -317,8 +323,14 @@ func (client UsersClient) GetMemberGroupsResponder(resp *http.Response) (result 
 // List gets list of users for the current tenant.
 //
 // filter is the filter to apply to the operation.
-func (client UsersClient) List(filter string) (result UserListResult, err error) {
-	req, err := client.ListPreparer(filter)
+func (client UsersClient) List(ctx context.Context, filter string) (result UserListResultPage, err error) {
+	result.fn = func(lastResult UserListResult) (UserListResult, error) {
+		if lastResult.OdataNextLink == nil || len(to.String(lastResult.OdataNextLink)) < 1 {
+			return UserListResult{}, nil
+		}
+		return client.ListNext(ctx, *lastResult.OdataNextLink)
+	}
+	req, err := client.ListPreparer(ctx, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "List", nil, "Failure preparing request")
 		return
@@ -326,12 +338,12 @@ func (client UsersClient) List(filter string) (result UserListResult, err error)
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ulr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ulr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "List", resp, "Failure responding to request")
 	}
@@ -340,7 +352,7 @@ func (client UsersClient) List(filter string) (result UserListResult, err error)
 }
 
 // ListPreparer prepares the List request.
-func (client UsersClient) ListPreparer(filter string) (*http.Request, error) {
+func (client UsersClient) ListPreparer(ctx context.Context, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -358,13 +370,14 @@ func (client UsersClient) ListPreparer(filter string) (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListResponder handles the response to the List request. The method always
@@ -380,56 +393,17 @@ func (client UsersClient) ListResponder(resp *http.Response) (result UserListRes
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client UsersClient) ListComplete(filter string, cancel <-chan struct{}) (<-chan User, <-chan error) {
-	resultChan := make(chan User)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.OdataNextLink != nil {
-			list, err = client.ListNext(*list.OdataNextLink)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client UsersClient) ListComplete(ctx context.Context, filter string) (result UserListResultIterator, err error) {
+	result.page, err = client.List(ctx, filter)
+	return
 }
 
 // ListNext gets a list of users for the current tenant.
 //
 // nextLink is next link for the list operation.
-func (client UsersClient) ListNext(nextLink string) (result UserListResult, err error) {
-	req, err := client.ListNextPreparer(nextLink)
+func (client UsersClient) ListNext(ctx context.Context, nextLink string) (result UserListResult, err error) {
+	req, err := client.ListNextPreparer(ctx, nextLink)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "ListNext", nil, "Failure preparing request")
 		return
@@ -451,7 +425,7 @@ func (client UsersClient) ListNext(nextLink string) (result UserListResult, err 
 }
 
 // ListNextPreparer prepares the ListNext request.
-func (client UsersClient) ListNextPreparer(nextLink string) (*http.Request, error) {
+func (client UsersClient) ListNextPreparer(ctx context.Context, nextLink string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nextLink": nextLink,
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -467,13 +441,14 @@ func (client UsersClient) ListNextPreparer(nextLink string) (*http.Request, erro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/{nextLink}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListNextSender sends the ListNext request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) ListNextSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListNextResponder handles the response to the ListNext request. The method always
@@ -493,8 +468,8 @@ func (client UsersClient) ListNextResponder(resp *http.Response) (result UserLis
 //
 // upnOrObjectID is the object ID or principal name of the user to update. parameters is parameters to update an
 // existing user.
-func (client UsersClient) Update(upnOrObjectID string, parameters UserUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.UpdatePreparer(upnOrObjectID, parameters)
+func (client UsersClient) Update(ctx context.Context, upnOrObjectID string, parameters UserUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.UpdatePreparer(ctx, upnOrObjectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.UsersClient", "Update", nil, "Failure preparing request")
 		return
@@ -516,7 +491,7 @@ func (client UsersClient) Update(upnOrObjectID string, parameters UserUpdatePara
 }
 
 // UpdatePreparer prepares the Update request.
-func (client UsersClient) UpdatePreparer(upnOrObjectID string, parameters UserUpdateParameters) (*http.Request, error) {
+func (client UsersClient) UpdatePreparer(ctx context.Context, upnOrObjectID string, parameters UserUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID":      autorest.Encode("path", client.TenantID),
 		"upnOrObjectId": autorest.Encode("path", upnOrObjectID),
@@ -534,13 +509,14 @@ func (client UsersClient) UpdatePreparer(upnOrObjectID string, parameters UserUp
 		autorest.WithPathParameters("/{tenantID}/users/{upnOrObjectId}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateResponder handles the response to the Update request. The method always

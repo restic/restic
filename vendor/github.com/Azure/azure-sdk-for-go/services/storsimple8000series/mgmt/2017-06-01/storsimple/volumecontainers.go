@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // VolumeContainersClient is the client for the VolumeContainers methods of the Storsimple service.
 type VolumeContainersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVolumeContainersClient creates an instance of the VolumeContainersClient client.
@@ -39,15 +40,11 @@ func NewVolumeContainersClientWithBaseURI(baseURI string, subscriptionID string)
 	return VolumeContainersClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates the volume container. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate creates or updates the volume container.
 //
 // deviceName is the device name volumeContainerName is the name of the volume container. parameters is the volume
 // container to be added or updated. resourceGroupName is the resource group name managerName is the manager name
-func (client VolumeContainersClient) CreateOrUpdate(deviceName string, volumeContainerName string, parameters VolumeContainer, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan VolumeContainer, <-chan error) {
-	resultChan := make(chan VolumeContainer, 1)
-	errChan := make(chan error, 1)
+func (client VolumeContainersClient) CreateOrUpdate(ctx context.Context, deviceName string, volumeContainerName string, parameters VolumeContainer, resourceGroupName string, managerName string) (result VolumeContainersCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.VolumeContainerProperties", Name: validation.Null, Rule: true,
@@ -58,46 +55,26 @@ func (client VolumeContainersClient) CreateOrUpdate(deviceName string, volumeCon
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result VolumeContainer
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(deviceName, volumeContainerName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, deviceName, volumeContainerName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client VolumeContainersClient) CreateOrUpdatePreparer(deviceName string, volumeContainerName string, parameters VolumeContainer, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VolumeContainersClient) CreateOrUpdatePreparer(ctx context.Context, deviceName string, volumeContainerName string, parameters VolumeContainer, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":          deviceName,
 		"managerName":         managerName,
@@ -118,16 +95,22 @@ func (client VolumeContainersClient) CreateOrUpdatePreparer(deviceName string, v
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers/{volumeContainerName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VolumeContainersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VolumeContainersClient) CreateOrUpdateSender(req *http.Request) (future VolumeContainersCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -143,58 +126,35 @@ func (client VolumeContainersClient) CreateOrUpdateResponder(resp *http.Response
 	return
 }
 
-// Delete deletes the volume container. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the volume container.
 //
 // deviceName is the device name volumeContainerName is the name of the volume container. resourceGroupName is the
 // resource group name managerName is the manager name
-func (client VolumeContainersClient) Delete(deviceName string, volumeContainerName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client VolumeContainersClient) Delete(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (result VolumeContainersDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(deviceName, volumeContainerName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, deviceName, volumeContainerName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VolumeContainersClient) DeletePreparer(deviceName string, volumeContainerName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VolumeContainersClient) DeletePreparer(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":          deviceName,
 		"managerName":         managerName,
@@ -213,16 +173,22 @@ func (client VolumeContainersClient) DeletePreparer(deviceName string, volumeCon
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers/{volumeContainerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client VolumeContainersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VolumeContainersClient) DeleteSender(req *http.Request) (future VolumeContainersDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -241,7 +207,7 @@ func (client VolumeContainersClient) DeleteResponder(resp *http.Response) (resul
 //
 // deviceName is the device name volumeContainerName is the name of the volume container. resourceGroupName is the
 // resource group name managerName is the manager name
-func (client VolumeContainersClient) Get(deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (result VolumeContainer, err error) {
+func (client VolumeContainersClient) Get(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (result VolumeContainer, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -249,7 +215,7 @@ func (client VolumeContainersClient) Get(deviceName string, volumeContainerName 
 		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "Get")
 	}
 
-	req, err := client.GetPreparer(deviceName, volumeContainerName, resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, deviceName, volumeContainerName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "Get", nil, "Failure preparing request")
 		return
@@ -271,7 +237,7 @@ func (client VolumeContainersClient) Get(deviceName string, volumeContainerName 
 }
 
 // GetPreparer prepares the Get request.
-func (client VolumeContainersClient) GetPreparer(deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client VolumeContainersClient) GetPreparer(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":          deviceName,
 		"managerName":         managerName,
@@ -290,14 +256,13 @@ func (client VolumeContainersClient) GetPreparer(deviceName string, volumeContai
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers/{volumeContainerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VolumeContainersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -317,7 +282,7 @@ func (client VolumeContainersClient) GetResponder(resp *http.Response) (result V
 // ListByDevice gets all the volume containers in a device.
 //
 // deviceName is the device name resourceGroupName is the resource group name managerName is the manager name
-func (client VolumeContainersClient) ListByDevice(deviceName string, resourceGroupName string, managerName string) (result VolumeContainerList, err error) {
+func (client VolumeContainersClient) ListByDevice(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (result VolumeContainerList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -325,7 +290,7 @@ func (client VolumeContainersClient) ListByDevice(deviceName string, resourceGro
 		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "ListByDevice")
 	}
 
-	req, err := client.ListByDevicePreparer(deviceName, resourceGroupName, managerName)
+	req, err := client.ListByDevicePreparer(ctx, deviceName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "ListByDevice", nil, "Failure preparing request")
 		return
@@ -347,7 +312,7 @@ func (client VolumeContainersClient) ListByDevice(deviceName string, resourceGro
 }
 
 // ListByDevicePreparer prepares the ListByDevice request.
-func (client VolumeContainersClient) ListByDevicePreparer(deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client VolumeContainersClient) ListByDevicePreparer(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":        deviceName,
 		"managerName":       managerName,
@@ -365,14 +330,13 @@ func (client VolumeContainersClient) ListByDevicePreparer(deviceName string, res
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByDeviceSender sends the ListByDevice request. The method will close the
 // http.Response Body if it receives an error.
 func (client VolumeContainersClient) ListByDeviceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -393,7 +357,7 @@ func (client VolumeContainersClient) ListByDeviceResponder(resp *http.Response) 
 //
 // deviceName is the device name volumeContainerName is the volume container name. resourceGroupName is the resource
 // group name managerName is the manager name
-func (client VolumeContainersClient) ListMetricDefinition(deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (result MetricDefinitionList, err error) {
+func (client VolumeContainersClient) ListMetricDefinition(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (result MetricDefinitionList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -401,7 +365,7 @@ func (client VolumeContainersClient) ListMetricDefinition(deviceName string, vol
 		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "ListMetricDefinition")
 	}
 
-	req, err := client.ListMetricDefinitionPreparer(deviceName, volumeContainerName, resourceGroupName, managerName)
+	req, err := client.ListMetricDefinitionPreparer(ctx, deviceName, volumeContainerName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "ListMetricDefinition", nil, "Failure preparing request")
 		return
@@ -423,7 +387,7 @@ func (client VolumeContainersClient) ListMetricDefinition(deviceName string, vol
 }
 
 // ListMetricDefinitionPreparer prepares the ListMetricDefinition request.
-func (client VolumeContainersClient) ListMetricDefinitionPreparer(deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client VolumeContainersClient) ListMetricDefinitionPreparer(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":          deviceName,
 		"managerName":         managerName,
@@ -442,14 +406,13 @@ func (client VolumeContainersClient) ListMetricDefinitionPreparer(deviceName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers/{volumeContainerName}/metricsDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricDefinitionSender sends the ListMetricDefinition request. The method will close the
 // http.Response Body if it receives an error.
 func (client VolumeContainersClient) ListMetricDefinitionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -470,7 +433,7 @@ func (client VolumeContainersClient) ListMetricDefinitionResponder(resp *http.Re
 //
 // deviceName is the device name volumeContainerName is the volume container name. resourceGroupName is the resource
 // group name managerName is the manager name filter is oData Filter options
-func (client VolumeContainersClient) ListMetrics(deviceName string, volumeContainerName string, resourceGroupName string, managerName string, filter string) (result MetricList, err error) {
+func (client VolumeContainersClient) ListMetrics(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string, filter string) (result MetricList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -478,7 +441,7 @@ func (client VolumeContainersClient) ListMetrics(deviceName string, volumeContai
 		return result, validation.NewErrorWithValidationError(err, "storsimple.VolumeContainersClient", "ListMetrics")
 	}
 
-	req, err := client.ListMetricsPreparer(deviceName, volumeContainerName, resourceGroupName, managerName, filter)
+	req, err := client.ListMetricsPreparer(ctx, deviceName, volumeContainerName, resourceGroupName, managerName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersClient", "ListMetrics", nil, "Failure preparing request")
 		return
@@ -500,7 +463,7 @@ func (client VolumeContainersClient) ListMetrics(deviceName string, volumeContai
 }
 
 // ListMetricsPreparer prepares the ListMetrics request.
-func (client VolumeContainersClient) ListMetricsPreparer(deviceName string, volumeContainerName string, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
+func (client VolumeContainersClient) ListMetricsPreparer(ctx context.Context, deviceName string, volumeContainerName string, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":          deviceName,
 		"managerName":         managerName,
@@ -520,14 +483,13 @@ func (client VolumeContainersClient) ListMetricsPreparer(deviceName string, volu
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/volumeContainers/{volumeContainerName}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricsSender sends the ListMetrics request. The method will close the
 // http.Response Body if it receives an error.
 func (client VolumeContainersClient) ListMetricsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package job
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -27,7 +28,7 @@ import (
 
 // PipelineClient is the creates an Azure Data Lake Analytics job client.
 type PipelineClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPipelineClient creates an instance of the PipelineClient client.
@@ -41,8 +42,8 @@ func NewPipelineClient() PipelineClient {
 // startDateTime is the start date for when to get the pipeline and aggregate its data. The startDateTime and
 // endDateTime can be no more than 30 days apart. endDateTime is the end date for when to get the pipeline and
 // aggregate its data. The startDateTime and endDateTime can be no more than 30 days apart.
-func (client PipelineClient) Get(accountName string, pipelineIdentity uuid.UUID, startDateTime *date.Time, endDateTime *date.Time) (result PipelineInformation, err error) {
-	req, err := client.GetPreparer(accountName, pipelineIdentity, startDateTime, endDateTime)
+func (client PipelineClient) Get(ctx context.Context, accountName string, pipelineIdentity uuid.UUID, startDateTime *date.Time, endDateTime *date.Time) (result PipelineInformation, err error) {
+	req, err := client.GetPreparer(ctx, accountName, pipelineIdentity, startDateTime, endDateTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "job.PipelineClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client PipelineClient) Get(accountName string, pipelineIdentity uuid.UUID,
 }
 
 // GetPreparer prepares the Get request.
-func (client PipelineClient) GetPreparer(accountName string, pipelineIdentity uuid.UUID, startDateTime *date.Time, endDateTime *date.Time) (*http.Request, error) {
+func (client PipelineClient) GetPreparer(ctx context.Context, accountName string, pipelineIdentity uuid.UUID, startDateTime *date.Time, endDateTime *date.Time) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"accountName":      accountName,
 		"adlaJobDnsSuffix": client.AdlaJobDNSSuffix,
@@ -90,14 +91,13 @@ func (client PipelineClient) GetPreparer(accountName string, pipelineIdentity uu
 		autorest.WithCustomBaseURL("https://{accountName}.{adlaJobDnsSuffix}", urlParameters),
 		autorest.WithPathParameters("/pipelines/{pipelineIdentity}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PipelineClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -120,8 +120,9 @@ func (client PipelineClient) GetResponder(resp *http.Response) (result PipelineI
 // for when to get the list of pipelines. The startDateTime and endDateTime can be no more than 30 days apart.
 // endDateTime is the end date for when to get the list of pipelines. The startDateTime and endDateTime can be no more
 // than 30 days apart.
-func (client PipelineClient) List(accountName string, startDateTime *date.Time, endDateTime *date.Time) (result PipelineInformationListResult, err error) {
-	req, err := client.ListPreparer(accountName, startDateTime, endDateTime)
+func (client PipelineClient) List(ctx context.Context, accountName string, startDateTime *date.Time, endDateTime *date.Time) (result PipelineInformationListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, accountName, startDateTime, endDateTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "job.PipelineClient", "List", nil, "Failure preparing request")
 		return
@@ -129,12 +130,12 @@ func (client PipelineClient) List(accountName string, startDateTime *date.Time, 
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pilr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "job.PipelineClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.pilr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "job.PipelineClient", "List", resp, "Failure responding to request")
 	}
@@ -143,7 +144,7 @@ func (client PipelineClient) List(accountName string, startDateTime *date.Time, 
 }
 
 // ListPreparer prepares the List request.
-func (client PipelineClient) ListPreparer(accountName string, startDateTime *date.Time, endDateTime *date.Time) (*http.Request, error) {
+func (client PipelineClient) ListPreparer(ctx context.Context, accountName string, startDateTime *date.Time, endDateTime *date.Time) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"accountName":      accountName,
 		"adlaJobDnsSuffix": client.AdlaJobDNSSuffix,
@@ -165,14 +166,13 @@ func (client PipelineClient) ListPreparer(accountName string, startDateTime *dat
 		autorest.WithCustomBaseURL("https://{accountName}.{adlaJobDnsSuffix}", urlParameters),
 		autorest.WithPath("/pipelines"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PipelineClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -189,71 +189,29 @@ func (client PipelineClient) ListResponder(resp *http.Response) (result Pipeline
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client PipelineClient) ListNextResults(lastResults PipelineInformationListResult) (result PipelineInformationListResult, err error) {
-	req, err := lastResults.PipelineInformationListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client PipelineClient) listNextResults(lastResults PipelineInformationListResult) (result PipelineInformationListResult, err error) {
+	req, err := lastResults.pipelineInformationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "job.PipelineClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "job.PipelineClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "job.PipelineClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "job.PipelineClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "job.PipelineClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "job.PipelineClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client PipelineClient) ListComplete(accountName string, startDateTime *date.Time, endDateTime *date.Time, cancel <-chan struct{}) (<-chan PipelineInformation, <-chan error) {
-	resultChan := make(chan PipelineInformation)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(accountName, startDateTime, endDateTime)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PipelineClient) ListComplete(ctx context.Context, accountName string, startDateTime *date.Time, endDateTime *date.Time) (result PipelineInformationListResultIterator, err error) {
+	result.page, err = client.List(ctx, accountName, startDateTime, endDateTime)
+	return
 }

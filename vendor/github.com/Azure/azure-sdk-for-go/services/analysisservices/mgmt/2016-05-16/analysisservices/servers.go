@@ -18,6 +18,7 @@ package analysisservices
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // ServersClient is the the Azure Analysis Services Web API provides a RESTful set of web services that enables users
 // to create, retrieve, update, and delete Analysis Services servers
 type ServersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServersClient creates an instance of the ServersClient client.
@@ -40,17 +41,91 @@ func NewServersClientWithBaseURI(baseURI string, subscriptionID string) ServersC
 	return ServersClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create provisions the specified Analysis Services server based on the configuration specified in the request. This
-// method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be
-// used to cancel polling and any outstanding HTTP requests.
+// CheckNameAvailability check the name availability in the target location.
+//
+// location is the region name which the operation will lookup into. serverParameters is contains the information used
+// to provision the Analysis Services server.
+func (client ServersClient) CheckNameAvailability(ctx context.Context, location string, serverParameters CheckServerNameAvailabilityParameters) (result CheckServerNameAvailabilityResult, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: serverParameters,
+			Constraints: []validation.Constraint{{Target: "serverParameters.Name", Name: validation.Null, Rule: false,
+				Chain: []validation.Constraint{{Target: "serverParameters.Name", Name: validation.MaxLength, Rule: 63, Chain: nil},
+					{Target: "serverParameters.Name", Name: validation.MinLength, Rule: 3, Chain: nil},
+					{Target: "serverParameters.Name", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil},
+				}}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "CheckNameAvailability")
+	}
+
+	req, err := client.CheckNameAvailabilityPreparer(ctx, location, serverParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "CheckNameAvailability", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.CheckNameAvailabilitySender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "CheckNameAvailability", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.CheckNameAvailabilityResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "CheckNameAvailability", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
+func (client ServersClient) CheckNameAvailabilityPreparer(ctx context.Context, location string, serverParameters CheckServerNameAvailabilityParameters) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"location":       autorest.Encode("path", location),
+		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2016-05-16"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsJSON(),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AnalysisServices/locations/{location}/checkNameAvailability", pathParameters),
+		autorest.WithJSON(serverParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
+// http.Response Body if it receives an error.
+func (client ServersClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// CheckNameAvailabilityResponder handles the response to the CheckNameAvailability request. The method always
+// closes the http.Response Body.
+func (client ServersClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckServerNameAvailabilityResult, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// Create provisions the specified Analysis Services server based on the configuration specified in the request.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be a minimum of 3 characters, and a maximum of 63. serverParameters is contains the information used
 // to provision the Analysis Services server.
-func (client ServersClient) Create(resourceGroupName string, serverName string, serverParameters Server, cancel <-chan struct{}) (<-chan Server, <-chan error) {
-	resultChan := make(chan Server, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Create(ctx context.Context, resourceGroupName string, serverName string, serverParameters Server) (result ServersCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -60,46 +135,26 @@ func (client ServersClient) Create(resourceGroupName string, serverName string, 
 			Constraints: []validation.Constraint{{Target: "serverName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "serverName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "serverName", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Server
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, serverName, serverParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, serverName, serverParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client ServersClient) CreatePreparer(resourceGroupName string, serverName string, serverParameters Server, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) CreatePreparer(ctx context.Context, resourceGroupName string, serverName string, serverParameters Server) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -118,16 +173,22 @@ func (client ServersClient) CreatePreparer(resourceGroupName string, serverName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}", pathParameters),
 		autorest.WithJSON(serverParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) CreateSender(req *http.Request) (future ServersCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -143,16 +204,12 @@ func (client ServersClient) CreateResponder(resp *http.Response) (result Server,
 	return
 }
 
-// Delete deletes the specified Analysis Services server. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete deletes the specified Analysis Services server.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be at least 3 characters in length, and no more than 63.
-func (client ServersClient) Delete(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Delete(ctx context.Context, resourceGroupName string, serverName string) (result ServersDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -162,46 +219,26 @@ func (client ServersClient) Delete(resourceGroupName string, serverName string, 
 			Constraints: []validation.Constraint{{Target: "serverName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "serverName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "serverName", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, serverName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServersClient) DeletePreparer(resourceGroupName string, serverName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -218,16 +255,22 @@ func (client ServersClient) DeletePreparer(resourceGroupName string, serverName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) DeleteSender(req *http.Request) (future ServersDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -236,7 +279,7 @@ func (client ServersClient) DeleteResponder(resp *http.Response) (result autores
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -247,7 +290,7 @@ func (client ServersClient) DeleteResponder(resp *http.Response) (result autores
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be a minimum of 3 characters, and a maximum of 63.
-func (client ServersClient) GetDetails(resourceGroupName string, serverName string) (result Server, err error) {
+func (client ServersClient) GetDetails(ctx context.Context, resourceGroupName string, serverName string) (result Server, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -260,7 +303,7 @@ func (client ServersClient) GetDetails(resourceGroupName string, serverName stri
 		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "GetDetails")
 	}
 
-	req, err := client.GetDetailsPreparer(resourceGroupName, serverName)
+	req, err := client.GetDetailsPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "GetDetails", nil, "Failure preparing request")
 		return
@@ -282,7 +325,7 @@ func (client ServersClient) GetDetails(resourceGroupName string, serverName stri
 }
 
 // GetDetailsPreparer prepares the GetDetails request.
-func (client ServersClient) GetDetailsPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServersClient) GetDetailsPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -299,14 +342,13 @@ func (client ServersClient) GetDetailsPreparer(resourceGroupName string, serverN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDetailsSender sends the GetDetails request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) GetDetailsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -324,8 +366,8 @@ func (client ServersClient) GetDetailsResponder(resp *http.Response) (result Ser
 }
 
 // List lists all the Analysis Services servers for the given subscription.
-func (client ServersClient) List() (result Servers, err error) {
-	req, err := client.ListPreparer()
+func (client ServersClient) List(ctx context.Context) (result Servers, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "List", nil, "Failure preparing request")
 		return
@@ -347,7 +389,7 @@ func (client ServersClient) List() (result Servers, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client ServersClient) ListPreparer() (*http.Request, error) {
+func (client ServersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -362,14 +404,13 @@ func (client ServersClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AnalysisServices/servers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -390,7 +431,7 @@ func (client ServersClient) ListResponder(resp *http.Response) (result Servers, 
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90.
-func (client ServersClient) ListByResourceGroup(resourceGroupName string) (result Servers, err error) {
+func (client ServersClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result Servers, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -399,7 +440,7 @@ func (client ServersClient) ListByResourceGroup(resourceGroupName string) (resul
 		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "ListByResourceGroup")
 	}
 
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -421,7 +462,7 @@ func (client ServersClient) ListByResourceGroup(resourceGroupName string) (resul
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ServersClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ServersClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -437,14 +478,13 @@ func (client ServersClient) ListByResourceGroupPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -461,12 +501,143 @@ func (client ServersClient) ListByResourceGroupResponder(resp *http.Response) (r
 	return
 }
 
+// ListOperationResults list the result of the specified operation.
+//
+// location is the region name which the operation will lookup into. operationID is the target operation Id.
+func (client ServersClient) ListOperationResults(ctx context.Context, location string, operationID string) (result autorest.Response, err error) {
+	req, err := client.ListOperationResultsPreparer(ctx, location, operationID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationResults", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListOperationResultsSender(req)
+	if err != nil {
+		result.Response = resp
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationResults", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListOperationResultsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationResults", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListOperationResultsPreparer prepares the ListOperationResults request.
+func (client ServersClient) ListOperationResultsPreparer(ctx context.Context, location string, operationID string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"location":       autorest.Encode("path", location),
+		"operationId":    autorest.Encode("path", operationID),
+		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2016-05-16"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AnalysisServices/locations/{location}/operationresults/{operationId}", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListOperationResultsSender sends the ListOperationResults request. The method will close the
+// http.Response Body if it receives an error.
+func (client ServersClient) ListOperationResultsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// ListOperationResultsResponder handles the response to the ListOperationResults request. The method always
+// closes the http.Response Body.
+func (client ServersClient) ListOperationResultsResponder(resp *http.Response) (result autorest.Response, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
+		autorest.ByClosing())
+	result.Response = resp
+	return
+}
+
+// ListOperationStatuses list the status of operation.
+//
+// location is the region name which the operation will lookup into. operationID is the target operation Id.
+func (client ServersClient) ListOperationStatuses(ctx context.Context, location string, operationID string) (result OperationStatus, err error) {
+	req, err := client.ListOperationStatusesPreparer(ctx, location, operationID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationStatuses", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListOperationStatusesSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationStatuses", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListOperationStatusesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListOperationStatuses", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListOperationStatusesPreparer prepares the ListOperationStatuses request.
+func (client ServersClient) ListOperationStatusesPreparer(ctx context.Context, location string, operationID string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"location":       autorest.Encode("path", location),
+		"operationId":    autorest.Encode("path", operationID),
+		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2016-05-16"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AnalysisServices/locations/{location}/operationstatuses/{operationId}", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListOperationStatusesSender sends the ListOperationStatuses request. The method will close the
+// http.Response Body if it receives an error.
+func (client ServersClient) ListOperationStatusesSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// ListOperationStatusesResponder handles the response to the ListOperationStatuses request. The method always
+// closes the http.Response Body.
+func (client ServersClient) ListOperationStatusesResponder(resp *http.Response) (result OperationStatus, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // ListSkusForExisting lists eligible SKUs for an Analysis Services resource.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be at least 3 characters in length, and no more than 63.
-func (client ServersClient) ListSkusForExisting(resourceGroupName string, serverName string) (result SkuEnumerationForExistingResourceResult, err error) {
+func (client ServersClient) ListSkusForExisting(ctx context.Context, resourceGroupName string, serverName string) (result SkuEnumerationForExistingResourceResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -479,7 +650,7 @@ func (client ServersClient) ListSkusForExisting(resourceGroupName string, server
 		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "ListSkusForExisting")
 	}
 
-	req, err := client.ListSkusForExistingPreparer(resourceGroupName, serverName)
+	req, err := client.ListSkusForExistingPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListSkusForExisting", nil, "Failure preparing request")
 		return
@@ -501,7 +672,7 @@ func (client ServersClient) ListSkusForExisting(resourceGroupName string, server
 }
 
 // ListSkusForExistingPreparer prepares the ListSkusForExisting request.
-func (client ServersClient) ListSkusForExistingPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServersClient) ListSkusForExistingPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -518,14 +689,13 @@ func (client ServersClient) ListSkusForExistingPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}/skus", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSkusForExistingSender sends the ListSkusForExisting request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListSkusForExistingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -543,8 +713,8 @@ func (client ServersClient) ListSkusForExistingResponder(resp *http.Response) (r
 }
 
 // ListSkusForNew lists eligible SKUs for Analysis Services resource provider.
-func (client ServersClient) ListSkusForNew() (result SkuEnumerationForNewResourceResult, err error) {
-	req, err := client.ListSkusForNewPreparer()
+func (client ServersClient) ListSkusForNew(ctx context.Context) (result SkuEnumerationForNewResourceResult, err error) {
+	req, err := client.ListSkusForNewPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "ListSkusForNew", nil, "Failure preparing request")
 		return
@@ -566,7 +736,7 @@ func (client ServersClient) ListSkusForNew() (result SkuEnumerationForNewResourc
 }
 
 // ListSkusForNewPreparer prepares the ListSkusForNew request.
-func (client ServersClient) ListSkusForNewPreparer() (*http.Request, error) {
+func (client ServersClient) ListSkusForNewPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -581,14 +751,13 @@ func (client ServersClient) ListSkusForNewPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AnalysisServices/skus", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSkusForNewSender sends the ListSkusForNew request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListSkusForNewSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -605,16 +774,12 @@ func (client ServersClient) ListSkusForNewResponder(resp *http.Response) (result
 	return
 }
 
-// Resume resumes operation of the specified Analysis Services server instance. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Resume resumes operation of the specified Analysis Services server instance.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be at least 3 characters in length, and no more than 63.
-func (client ServersClient) Resume(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Resume(ctx context.Context, resourceGroupName string, serverName string) (result ServersResumeFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -624,46 +789,26 @@ func (client ServersClient) Resume(resourceGroupName string, serverName string, 
 			Constraints: []validation.Constraint{{Target: "serverName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "serverName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "serverName", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Resume")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Resume")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ResumePreparer(resourceGroupName, serverName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Resume", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.ResumePreparer(ctx, resourceGroupName, serverName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Resume", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ResumeSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Resume", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ResumeSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Resume", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ResumeResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Resume", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ResumePreparer prepares the Resume request.
-func (client ServersClient) ResumePreparer(resourceGroupName string, serverName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) ResumePreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -680,16 +825,22 @@ func (client ServersClient) ResumePreparer(resourceGroupName string, serverName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}/resume", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResumeSender sends the Resume request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) ResumeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) ResumeSender(req *http.Request) (future ServersResumeFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ResumeResponder handles the response to the Resume request. The method always
@@ -704,16 +855,12 @@ func (client ServersClient) ResumeResponder(resp *http.Response) (result autores
 	return
 }
 
-// Suspend supends operation of the specified Analysis Services server instance. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Suspend supends operation of the specified Analysis Services server instance.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be at least 3 characters in length, and no more than 63.
-func (client ServersClient) Suspend(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Suspend(ctx context.Context, resourceGroupName string, serverName string) (result ServersSuspendFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -723,46 +870,26 @@ func (client ServersClient) Suspend(resourceGroupName string, serverName string,
 			Constraints: []validation.Constraint{{Target: "serverName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "serverName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "serverName", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Suspend")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Suspend")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.SuspendPreparer(resourceGroupName, serverName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Suspend", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.SuspendPreparer(ctx, resourceGroupName, serverName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Suspend", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.SuspendSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Suspend", resp, "Failure sending request")
-			return
-		}
+	result, err = client.SuspendSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Suspend", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.SuspendResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Suspend", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // SuspendPreparer prepares the Suspend request.
-func (client ServersClient) SuspendPreparer(resourceGroupName string, serverName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) SuspendPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -779,16 +906,22 @@ func (client ServersClient) SuspendPreparer(resourceGroupName string, serverName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}/suspend", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SuspendSender sends the Suspend request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) SuspendSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) SuspendSender(req *http.Request) (future ServersSuspendFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // SuspendResponder handles the response to the Suspend request. The method always
@@ -803,17 +936,13 @@ func (client ServersClient) SuspendResponder(resp *http.Response) (result autore
 	return
 }
 
-// Update updates the current state of the specified Analysis Services server. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Update updates the current state of the specified Analysis Services server.
 //
 // resourceGroupName is the name of the Azure Resource group of which a given Analysis Services server is part. This
 // name must be at least 1 character in length, and no more than 90. serverName is the name of the Analysis Services
 // server. It must be at least 3 characters in length, and no more than 63. serverUpdateParameters is request object
 // that contains the updated information for the server.
-func (client ServersClient) Update(resourceGroupName string, serverName string, serverUpdateParameters ServerUpdateParameters, cancel <-chan struct{}) (<-chan Server, <-chan error) {
-	resultChan := make(chan Server, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Update(ctx context.Context, resourceGroupName string, serverName string, serverUpdateParameters ServerUpdateParameters) (result ServersUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -823,46 +952,26 @@ func (client ServersClient) Update(resourceGroupName string, serverName string, 
 			Constraints: []validation.Constraint{{Target: "serverName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "serverName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "serverName", Name: validation.Pattern, Rule: `^[a-z][a-z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Update")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "analysisservices.ServersClient", "Update")
 	}
 
-	go func() {
-		var err error
-		var result Server
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, serverName, serverUpdateParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Update", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serverName, serverUpdateParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "analysisservices.ServersClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ServersClient) UpdatePreparer(resourceGroupName string, serverName string, serverUpdateParameters ServerUpdateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, serverUpdateParameters ServerUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -881,16 +990,22 @@ func (client ServersClient) UpdatePreparer(resourceGroupName string, serverName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AnalysisServices/servers/{serverName}", pathParameters),
 		autorest.WithJSON(serverUpdateParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) UpdateSender(req *http.Request) (future ServersUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

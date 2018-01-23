@@ -18,6 +18,7 @@ package eventhub
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DisasterRecoveryConfigsClient is the azure Event Hubs client
 type DisasterRecoveryConfigsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDisasterRecoveryConfigsClient creates an instance of the DisasterRecoveryConfigsClient client.
@@ -44,7 +45,7 @@ func NewDisasterRecoveryConfigsClientWithBaseURI(baseURI string, subscriptionID 
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
 // alias is the Disaster Recovery configuration name
-func (client DisasterRecoveryConfigsClient) BreakPairing(resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
+func (client DisasterRecoveryConfigsClient) BreakPairing(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -58,7 +59,7 @@ func (client DisasterRecoveryConfigsClient) BreakPairing(resourceGroupName strin
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "BreakPairing")
 	}
 
-	req, err := client.BreakPairingPreparer(resourceGroupName, namespaceName, alias)
+	req, err := client.BreakPairingPreparer(ctx, resourceGroupName, namespaceName, alias)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "BreakPairing", nil, "Failure preparing request")
 		return
@@ -80,7 +81,7 @@ func (client DisasterRecoveryConfigsClient) BreakPairing(resourceGroupName strin
 }
 
 // BreakPairingPreparer prepares the BreakPairing request.
-func (client DisasterRecoveryConfigsClient) BreakPairingPreparer(resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) BreakPairingPreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"alias":             autorest.Encode("path", alias),
 		"namespaceName":     autorest.Encode("path", namespaceName),
@@ -98,14 +99,13 @@ func (client DisasterRecoveryConfigsClient) BreakPairingPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}/breakPairing", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // BreakPairingSender sends the BreakPairing request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) BreakPairingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -121,12 +121,93 @@ func (client DisasterRecoveryConfigsClient) BreakPairingResponder(resp *http.Res
 	return
 }
 
+// CheckNameAvailability check the give Namespace name availability.
+//
+// resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
+// parameters is parameters to check availability of the given Alias name
+func (client DisasterRecoveryConfigsClient) CheckNameAvailability(ctx context.Context, resourceGroupName string, namespaceName string, parameters CheckNameAvailabilityParameter) (result CheckNameAvailabilityResult, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: namespaceName,
+			Constraints: []validation.Constraint{{Target: "namespaceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "namespaceName", Name: validation.MinLength, Rule: 6, Chain: nil}}},
+		{TargetValue: parameters,
+			Constraints: []validation.Constraint{{Target: "parameters.Name", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "CheckNameAvailability")
+	}
+
+	req, err := client.CheckNameAvailabilityPreparer(ctx, resourceGroupName, namespaceName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "CheckNameAvailability", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.CheckNameAvailabilitySender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "CheckNameAvailability", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.CheckNameAvailabilityResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "CheckNameAvailability", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
+func (client DisasterRecoveryConfigsClient) CheckNameAvailabilityPreparer(ctx context.Context, resourceGroupName string, namespaceName string, parameters CheckNameAvailabilityParameter) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"namespaceName":     autorest.Encode("path", namespaceName),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsJSON(),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/CheckNameAvailability", pathParameters),
+		autorest.WithJSON(parameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
+// http.Response Body if it receives an error.
+func (client DisasterRecoveryConfigsClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// CheckNameAvailabilityResponder handles the response to the CheckNameAvailability request. The method always
+// closes the http.Response Body.
+func (client DisasterRecoveryConfigsClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckNameAvailabilityResult, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // CreateOrUpdate creates or updates a new Alias(Disaster Recovery configuration)
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
 // alias is the Disaster Recovery configuration name parameters is parameters required to create an Alias(Disaster
 // Recovery configuration)
-func (client DisasterRecoveryConfigsClient) CreateOrUpdate(resourceGroupName string, namespaceName string, alias string, parameters ArmDisasterRecovery) (result ArmDisasterRecovery, err error) {
+func (client DisasterRecoveryConfigsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, namespaceName string, alias string, parameters ArmDisasterRecovery) (result ArmDisasterRecovery, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -140,7 +221,7 @@ func (client DisasterRecoveryConfigsClient) CreateOrUpdate(resourceGroupName str
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, namespaceName, alias, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, namespaceName, alias, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -162,7 +243,7 @@ func (client DisasterRecoveryConfigsClient) CreateOrUpdate(resourceGroupName str
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DisasterRecoveryConfigsClient) CreateOrUpdatePreparer(resourceGroupName string, namespaceName string, alias string, parameters ArmDisasterRecovery) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string, parameters ArmDisasterRecovery) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"alias":             autorest.Encode("path", alias),
 		"namespaceName":     autorest.Encode("path", namespaceName),
@@ -182,14 +263,13 @@ func (client DisasterRecoveryConfigsClient) CreateOrUpdatePreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -210,7 +290,7 @@ func (client DisasterRecoveryConfigsClient) CreateOrUpdateResponder(resp *http.R
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
 // alias is the Disaster Recovery configuration name
-func (client DisasterRecoveryConfigsClient) Delete(resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
+func (client DisasterRecoveryConfigsClient) Delete(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -224,7 +304,7 @@ func (client DisasterRecoveryConfigsClient) Delete(resourceGroupName string, nam
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, namespaceName, alias)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, namespaceName, alias)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -246,7 +326,7 @@ func (client DisasterRecoveryConfigsClient) Delete(resourceGroupName string, nam
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DisasterRecoveryConfigsClient) DeletePreparer(resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) DeletePreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"alias":             autorest.Encode("path", alias),
 		"namespaceName":     autorest.Encode("path", namespaceName),
@@ -264,14 +344,13 @@ func (client DisasterRecoveryConfigsClient) DeletePreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -291,7 +370,7 @@ func (client DisasterRecoveryConfigsClient) DeleteResponder(resp *http.Response)
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
 // alias is the Disaster Recovery configuration name
-func (client DisasterRecoveryConfigsClient) FailOver(resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
+func (client DisasterRecoveryConfigsClient) FailOver(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -305,7 +384,7 @@ func (client DisasterRecoveryConfigsClient) FailOver(resourceGroupName string, n
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "FailOver")
 	}
 
-	req, err := client.FailOverPreparer(resourceGroupName, namespaceName, alias)
+	req, err := client.FailOverPreparer(ctx, resourceGroupName, namespaceName, alias)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "FailOver", nil, "Failure preparing request")
 		return
@@ -327,7 +406,7 @@ func (client DisasterRecoveryConfigsClient) FailOver(resourceGroupName string, n
 }
 
 // FailOverPreparer prepares the FailOver request.
-func (client DisasterRecoveryConfigsClient) FailOverPreparer(resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) FailOverPreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"alias":             autorest.Encode("path", alias),
 		"namespaceName":     autorest.Encode("path", namespaceName),
@@ -345,14 +424,13 @@ func (client DisasterRecoveryConfigsClient) FailOverPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}/failover", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // FailOverSender sends the FailOver request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) FailOverSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -372,7 +450,7 @@ func (client DisasterRecoveryConfigsClient) FailOverResponder(resp *http.Respons
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
 // alias is the Disaster Recovery configuration name
-func (client DisasterRecoveryConfigsClient) Get(resourceGroupName string, namespaceName string, alias string) (result ArmDisasterRecovery, err error) {
+func (client DisasterRecoveryConfigsClient) Get(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result ArmDisasterRecovery, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -386,7 +464,7 @@ func (client DisasterRecoveryConfigsClient) Get(resourceGroupName string, namesp
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, namespaceName, alias)
+	req, err := client.GetPreparer(ctx, resourceGroupName, namespaceName, alias)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "Get", nil, "Failure preparing request")
 		return
@@ -408,7 +486,7 @@ func (client DisasterRecoveryConfigsClient) Get(resourceGroupName string, namesp
 }
 
 // GetPreparer prepares the Get request.
-func (client DisasterRecoveryConfigsClient) GetPreparer(resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) GetPreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"alias":             autorest.Encode("path", alias),
 		"namespaceName":     autorest.Encode("path", namespaceName),
@@ -426,14 +504,13 @@ func (client DisasterRecoveryConfigsClient) GetPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -450,10 +527,94 @@ func (client DisasterRecoveryConfigsClient) GetResponder(resp *http.Response) (r
 	return
 }
 
+// GetAuthorizationRule gets an AuthorizationRule for a Namespace by rule name.
+//
+// resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
+// alias is the Disaster Recovery configuration name authorizationRuleName is the authorization rule name.
+func (client DisasterRecoveryConfigsClient) GetAuthorizationRule(ctx context.Context, resourceGroupName string, namespaceName string, alias string, authorizationRuleName string) (result AuthorizationRule, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: namespaceName,
+			Constraints: []validation.Constraint{{Target: "namespaceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "namespaceName", Name: validation.MinLength, Rule: 6, Chain: nil}}},
+		{TargetValue: alias,
+			Constraints: []validation.Constraint{{Target: "alias", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "alias", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: authorizationRuleName,
+			Constraints: []validation.Constraint{{Target: "authorizationRuleName", Name: validation.MinLength, Rule: 1, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "GetAuthorizationRule")
+	}
+
+	req, err := client.GetAuthorizationRulePreparer(ctx, resourceGroupName, namespaceName, alias, authorizationRuleName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "GetAuthorizationRule", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.GetAuthorizationRuleSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "GetAuthorizationRule", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.GetAuthorizationRuleResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "GetAuthorizationRule", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// GetAuthorizationRulePreparer prepares the GetAuthorizationRule request.
+func (client DisasterRecoveryConfigsClient) GetAuthorizationRulePreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string, authorizationRuleName string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"alias":                 autorest.Encode("path", alias),
+		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
+		"namespaceName":         autorest.Encode("path", namespaceName),
+		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}/AuthorizationRules/{authorizationRuleName}", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// GetAuthorizationRuleSender sends the GetAuthorizationRule request. The method will close the
+// http.Response Body if it receives an error.
+func (client DisasterRecoveryConfigsClient) GetAuthorizationRuleSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// GetAuthorizationRuleResponder handles the response to the GetAuthorizationRule request. The method always
+// closes the http.Response Body.
+func (client DisasterRecoveryConfigsClient) GetAuthorizationRuleResponder(resp *http.Response) (result AuthorizationRule, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // List gets all Alias(Disaster Recovery configurations)
 //
 // resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
-func (client DisasterRecoveryConfigsClient) List(resourceGroupName string, namespaceName string) (result ArmDisasterRecoveryListResult, err error) {
+func (client DisasterRecoveryConfigsClient) List(ctx context.Context, resourceGroupName string, namespaceName string) (result ArmDisasterRecoveryListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -464,7 +625,8 @@ func (client DisasterRecoveryConfigsClient) List(resourceGroupName string, names
 		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, namespaceName)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, namespaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", nil, "Failure preparing request")
 		return
@@ -472,12 +634,12 @@ func (client DisasterRecoveryConfigsClient) List(resourceGroupName string, names
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.adrlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.adrlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", resp, "Failure responding to request")
 	}
@@ -486,7 +648,7 @@ func (client DisasterRecoveryConfigsClient) List(resourceGroupName string, names
 }
 
 // ListPreparer prepares the List request.
-func (client DisasterRecoveryConfigsClient) ListPreparer(resourceGroupName string, namespaceName string) (*http.Request, error) {
+func (client DisasterRecoveryConfigsClient) ListPreparer(ctx context.Context, resourceGroupName string, namespaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -503,14 +665,13 @@ func (client DisasterRecoveryConfigsClient) ListPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisasterRecoveryConfigsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -527,71 +688,222 @@ func (client DisasterRecoveryConfigsClient) ListResponder(resp *http.Response) (
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DisasterRecoveryConfigsClient) ListNextResults(lastResults ArmDisasterRecoveryListResult) (result ArmDisasterRecoveryListResult, err error) {
-	req, err := lastResults.ArmDisasterRecoveryListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DisasterRecoveryConfigsClient) listNextResults(lastResults ArmDisasterRecoveryListResult) (result ArmDisasterRecoveryListResult, err error) {
+	req, err := lastResults.armDisasterRecoveryListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DisasterRecoveryConfigsClient) ListComplete(ctx context.Context, resourceGroupName string, namespaceName string) (result ArmDisasterRecoveryListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, namespaceName)
+	return
+}
+
+// ListAuthorizationRules gets a list of authorization rules for a Namespace.
+//
+// resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
+// alias is the Disaster Recovery configuration name
+func (client DisasterRecoveryConfigsClient) ListAuthorizationRules(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result AuthorizationRuleListResultPage, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: namespaceName,
+			Constraints: []validation.Constraint{{Target: "namespaceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "namespaceName", Name: validation.MinLength, Rule: 6, Chain: nil}}},
+		{TargetValue: alias,
+			Constraints: []validation.Constraint{{Target: "alias", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "alias", Name: validation.MinLength, Rule: 1, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "ListAuthorizationRules")
+	}
+
+	result.fn = client.listAuthorizationRulesNextResults
+	req, err := client.ListAuthorizationRulesPreparer(ctx, resourceGroupName, namespaceName, alias)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListAuthorizationRules", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListAuthorizationRulesSender(req)
+	if err != nil {
+		result.arlr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListAuthorizationRules", resp, "Failure sending request")
+		return
+	}
+
+	result.arlr, err = client.ListAuthorizationRulesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListAuthorizationRules", resp, "Failure responding to request")
 	}
 
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DisasterRecoveryConfigsClient) ListComplete(resourceGroupName string, namespaceName string, cancel <-chan struct{}) (<-chan ArmDisasterRecovery, <-chan error) {
-	resultChan := make(chan ArmDisasterRecovery)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, namespaceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAuthorizationRulesPreparer prepares the ListAuthorizationRules request.
+func (client DisasterRecoveryConfigsClient) ListAuthorizationRulesPreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"alias":             autorest.Encode("path", alias),
+		"namespaceName":     autorest.Encode("path", namespaceName),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}/AuthorizationRules", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListAuthorizationRulesSender sends the ListAuthorizationRules request. The method will close the
+// http.Response Body if it receives an error.
+func (client DisasterRecoveryConfigsClient) ListAuthorizationRulesSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// ListAuthorizationRulesResponder handles the response to the ListAuthorizationRules request. The method always
+// closes the http.Response Body.
+func (client DisasterRecoveryConfigsClient) ListAuthorizationRulesResponder(resp *http.Response) (result AuthorizationRuleListResult, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// listAuthorizationRulesNextResults retrieves the next set of results, if any.
+func (client DisasterRecoveryConfigsClient) listAuthorizationRulesNextResults(lastResults AuthorizationRuleListResult) (result AuthorizationRuleListResult, err error) {
+	req, err := lastResults.authorizationRuleListResultPreparer()
+	if err != nil {
+		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listAuthorizationRulesNextResults", nil, "Failure preparing next results request")
+	}
+	if req == nil {
+		return
+	}
+	resp, err := client.ListAuthorizationRulesSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		return result, autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listAuthorizationRulesNextResults", resp, "Failure sending next results request")
+	}
+	result, err = client.ListAuthorizationRulesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "listAuthorizationRulesNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListAuthorizationRulesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DisasterRecoveryConfigsClient) ListAuthorizationRulesComplete(ctx context.Context, resourceGroupName string, namespaceName string, alias string) (result AuthorizationRuleListResultIterator, err error) {
+	result.page, err = client.ListAuthorizationRules(ctx, resourceGroupName, namespaceName, alias)
+	return
+}
+
+// ListKeys gets the primary and secondary connection strings for the Namespace.
+//
+// resourceGroupName is name of the resource group within the azure subscription. namespaceName is the Namespace name
+// alias is the Disaster Recovery configuration name authorizationRuleName is the authorization rule name.
+func (client DisasterRecoveryConfigsClient) ListKeys(ctx context.Context, resourceGroupName string, namespaceName string, alias string, authorizationRuleName string) (result AccessKeys, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: namespaceName,
+			Constraints: []validation.Constraint{{Target: "namespaceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "namespaceName", Name: validation.MinLength, Rule: 6, Chain: nil}}},
+		{TargetValue: alias,
+			Constraints: []validation.Constraint{{Target: "alias", Name: validation.MaxLength, Rule: 50, Chain: nil},
+				{Target: "alias", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: authorizationRuleName,
+			Constraints: []validation.Constraint{{Target: "authorizationRuleName", Name: validation.MinLength, Rule: 1, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "eventhub.DisasterRecoveryConfigsClient", "ListKeys")
+	}
+
+	req, err := client.ListKeysPreparer(ctx, resourceGroupName, namespaceName, alias, authorizationRuleName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListKeys", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListKeysSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListKeys", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListKeysResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.DisasterRecoveryConfigsClient", "ListKeys", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListKeysPreparer prepares the ListKeys request.
+func (client DisasterRecoveryConfigsClient) ListKeysPreparer(ctx context.Context, resourceGroupName string, namespaceName string, alias string, authorizationRuleName string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"alias":                 autorest.Encode("path", alias),
+		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
+		"namespaceName":         autorest.Encode("path", namespaceName),
+		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EventHub/namespaces/{namespaceName}/disasterRecoveryConfigs/{alias}/AuthorizationRules/{authorizationRuleName}/listKeys", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListKeysSender sends the ListKeys request. The method will close the
+// http.Response Body if it receives an error.
+func (client DisasterRecoveryConfigsClient) ListKeysSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// ListKeysResponder handles the response to the ListKeys request. The method always
+// closes the http.Response Body.
+func (client DisasterRecoveryConfigsClient) ListKeysResponder(resp *http.Response) (result AccessKeys, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
 }

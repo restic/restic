@@ -22,6 +22,7 @@ package cdn
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -33,21 +34,21 @@ const (
 	DefaultBaseURI = "https://management.azure.com"
 )
 
-// ManagementClient is the base client for Cdn.
-type ManagementClient struct {
+// BaseClient is the base client for Cdn.
+type BaseClient struct {
 	autorest.Client
 	BaseURI        string
 	SubscriptionID string
 }
 
-// New creates an instance of the ManagementClient client.
-func New(subscriptionID string) ManagementClient {
+// New creates an instance of the BaseClient client.
+func New(subscriptionID string) BaseClient {
 	return NewWithBaseURI(DefaultBaseURI, subscriptionID)
 }
 
-// NewWithBaseURI creates an instance of the ManagementClient client.
-func NewWithBaseURI(baseURI string, subscriptionID string) ManagementClient {
-	return ManagementClient{
+// NewWithBaseURI creates an instance of the BaseClient client.
+func NewWithBaseURI(baseURI string, subscriptionID string) BaseClient {
+	return BaseClient{
 		Client:         autorest.NewClientWithUserAgent(UserAgent()),
 		BaseURI:        baseURI,
 		SubscriptionID: subscriptionID,
@@ -58,37 +59,37 @@ func NewWithBaseURI(baseURI string, subscriptionID string) ManagementClient {
 // unique, such as a CDN endpoint.
 //
 // checkNameAvailabilityInput is input to check.
-func (client ManagementClient) CheckNameAvailability(checkNameAvailabilityInput CheckNameAvailabilityInput) (result CheckNameAvailabilityOutput, err error) {
+func (client BaseClient) CheckNameAvailability(ctx context.Context, checkNameAvailabilityInput CheckNameAvailabilityInput) (result CheckNameAvailabilityOutput, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: checkNameAvailabilityInput,
 			Constraints: []validation.Constraint{{Target: "checkNameAvailabilityInput.Name", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "checkNameAvailabilityInput.Type", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cdn.ManagementClient", "CheckNameAvailability")
+		return result, validation.NewErrorWithValidationError(err, "cdn.BaseClient", "CheckNameAvailability")
 	}
 
-	req, err := client.CheckNameAvailabilityPreparer(checkNameAvailabilityInput)
+	req, err := client.CheckNameAvailabilityPreparer(ctx, checkNameAvailabilityInput)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.CheckNameAvailabilitySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.CheckNameAvailabilityResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
-func (client ManagementClient) CheckNameAvailabilityPreparer(checkNameAvailabilityInput CheckNameAvailabilityInput) (*http.Request, error) {
+func (client BaseClient) CheckNameAvailabilityPreparer(ctx context.Context, checkNameAvailabilityInput CheckNameAvailabilityInput) (*http.Request, error) {
 	const APIVersion = "2017-04-02"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -101,20 +102,19 @@ func (client ManagementClient) CheckNameAvailabilityPreparer(checkNameAvailabili
 		autorest.WithPath("/providers/Microsoft.Cdn/checkNameAvailability"),
 		autorest.WithJSON(checkNameAvailabilityInput),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CheckNameAvailabilityResponder handles the response to the CheckNameAvailability request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckNameAvailabilityOutput, err error) {
+func (client BaseClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckNameAvailabilityOutput, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -130,36 +130,36 @@ func (client ManagementClient) CheckNameAvailabilityResponder(resp *http.Respons
 // relative to the origin path specified in the endpoint configuration.
 //
 // validateProbeInput is input to check.
-func (client ManagementClient) ValidateProbe(validateProbeInput ValidateProbeInput) (result ValidateProbeOutput, err error) {
+func (client BaseClient) ValidateProbe(ctx context.Context, validateProbeInput ValidateProbeInput) (result ValidateProbeOutput, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: validateProbeInput,
 			Constraints: []validation.Constraint{{Target: "validateProbeInput.ProbeURL", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cdn.ManagementClient", "ValidateProbe")
+		return result, validation.NewErrorWithValidationError(err, "cdn.BaseClient", "ValidateProbe")
 	}
 
-	req, err := client.ValidateProbePreparer(validateProbeInput)
+	req, err := client.ValidateProbePreparer(ctx, validateProbeInput)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ValidateProbe", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ValidateProbe", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ValidateProbeSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ValidateProbe", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ValidateProbe", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.ValidateProbeResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ValidateProbe", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ValidateProbe", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // ValidateProbePreparer prepares the ValidateProbe request.
-func (client ManagementClient) ValidateProbePreparer(validateProbeInput ValidateProbeInput) (*http.Request, error) {
+func (client BaseClient) ValidateProbePreparer(ctx context.Context, validateProbeInput ValidateProbeInput) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -176,20 +176,19 @@ func (client ManagementClient) ValidateProbePreparer(validateProbeInput Validate
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Cdn/validateProbe", pathParameters),
 		autorest.WithJSON(validateProbeInput),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ValidateProbeSender sends the ValidateProbe request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) ValidateProbeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) ValidateProbeSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
 // ValidateProbeResponder handles the response to the ValidateProbe request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) ValidateProbeResponder(resp *http.Response) (result ValidateProbeOutput, err error) {
+func (client BaseClient) ValidateProbeResponder(resp *http.Response) (result ValidateProbeOutput, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),

@@ -38,6 +38,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -257,8 +258,13 @@ func main() {
 			generated++
 		}
 	}
-
 	outputLog.Print(generated, " packages generated.")
+
+	if err := exec.Command("gofmt", "-w", outputLocation).Run(); err == nil {
+		outputLog.Print("Success formatting profile.")
+	} else {
+		errLog.Print("Trouble formatting profile: ", err)
+	}
 
 }
 

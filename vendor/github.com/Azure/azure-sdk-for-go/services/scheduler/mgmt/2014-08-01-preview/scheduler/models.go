@@ -28,19 +28,19 @@ import (
 type DayOfWeek string
 
 const (
-	// Friday specifies the friday state for day of week.
+	// Friday ...
 	Friday DayOfWeek = "Friday"
-	// Monday specifies the monday state for day of week.
+	// Monday ...
 	Monday DayOfWeek = "Monday"
-	// Saturday specifies the saturday state for day of week.
+	// Saturday ...
 	Saturday DayOfWeek = "Saturday"
-	// Sunday specifies the sunday state for day of week.
+	// Sunday ...
 	Sunday DayOfWeek = "Sunday"
-	// Thursday specifies the thursday state for day of week.
+	// Thursday ...
 	Thursday DayOfWeek = "Thursday"
-	// Tuesday specifies the tuesday state for day of week.
+	// Tuesday ...
 	Tuesday DayOfWeek = "Tuesday"
-	// Wednesday specifies the wednesday state for day of week.
+	// Wednesday ...
 	Wednesday DayOfWeek = "Wednesday"
 )
 
@@ -48,13 +48,13 @@ const (
 type HTTPAuthenticationType string
 
 const (
-	// ActiveDirectoryOAuth specifies the active directory o auth state for http authentication type.
+	// ActiveDirectoryOAuth ...
 	ActiveDirectoryOAuth HTTPAuthenticationType = "ActiveDirectoryOAuth"
-	// Basic specifies the basic state for http authentication type.
+	// Basic ...
 	Basic HTTPAuthenticationType = "Basic"
-	// ClientCertificate specifies the client certificate state for http authentication type.
+	// ClientCertificate ...
 	ClientCertificate HTTPAuthenticationType = "ClientCertificate"
-	// NotSpecified specifies the not specified state for http authentication type.
+	// NotSpecified ...
 	NotSpecified HTTPAuthenticationType = "NotSpecified"
 )
 
@@ -62,15 +62,15 @@ const (
 type JobActionType string
 
 const (
-	// HTTP specifies the http state for job action type.
+	// HTTP ...
 	HTTP JobActionType = "Http"
-	// HTTPS specifies the https state for job action type.
+	// HTTPS ...
 	HTTPS JobActionType = "Https"
-	// ServiceBusQueue specifies the service bus queue state for job action type.
+	// ServiceBusQueue ...
 	ServiceBusQueue JobActionType = "ServiceBusQueue"
-	// ServiceBusTopic specifies the service bus topic state for job action type.
+	// ServiceBusTopic ...
 	ServiceBusTopic JobActionType = "ServiceBusTopic"
-	// StorageQueue specifies the storage queue state for job action type.
+	// StorageQueue ...
 	StorageQueue JobActionType = "StorageQueue"
 )
 
@@ -78,13 +78,13 @@ const (
 type JobCollectionState string
 
 const (
-	// Deleted specifies the deleted state for job collection state.
+	// Deleted ...
 	Deleted JobCollectionState = "Deleted"
-	// Disabled specifies the disabled state for job collection state.
+	// Disabled ...
 	Disabled JobCollectionState = "Disabled"
-	// Enabled specifies the enabled state for job collection state.
+	// Enabled ...
 	Enabled JobCollectionState = "Enabled"
-	// Suspended specifies the suspended state for job collection state.
+	// Suspended ...
 	Suspended JobCollectionState = "Suspended"
 )
 
@@ -92,11 +92,11 @@ const (
 type JobExecutionStatus string
 
 const (
-	// Completed specifies the completed state for job execution status.
+	// Completed ...
 	Completed JobExecutionStatus = "Completed"
-	// Failed specifies the failed state for job execution status.
+	// Failed ...
 	Failed JobExecutionStatus = "Failed"
-	// Postponed specifies the postponed state for job execution status.
+	// Postponed ...
 	Postponed JobExecutionStatus = "Postponed"
 )
 
@@ -104,9 +104,9 @@ const (
 type JobHistoryActionName string
 
 const (
-	// ErrorAction specifies the error action state for job history action name.
+	// ErrorAction ...
 	ErrorAction JobHistoryActionName = "ErrorAction"
-	// MainAction specifies the main action state for job history action name.
+	// MainAction ...
 	MainAction JobHistoryActionName = "MainAction"
 )
 
@@ -114,19 +114,19 @@ const (
 type JobScheduleDay string
 
 const (
-	// JobScheduleDayFriday specifies the job schedule day friday state for job schedule day.
+	// JobScheduleDayFriday ...
 	JobScheduleDayFriday JobScheduleDay = "Friday"
-	// JobScheduleDayMonday specifies the job schedule day monday state for job schedule day.
+	// JobScheduleDayMonday ...
 	JobScheduleDayMonday JobScheduleDay = "Monday"
-	// JobScheduleDaySaturday specifies the job schedule day saturday state for job schedule day.
+	// JobScheduleDaySaturday ...
 	JobScheduleDaySaturday JobScheduleDay = "Saturday"
-	// JobScheduleDaySunday specifies the job schedule day sunday state for job schedule day.
+	// JobScheduleDaySunday ...
 	JobScheduleDaySunday JobScheduleDay = "Sunday"
-	// JobScheduleDayThursday specifies the job schedule day thursday state for job schedule day.
+	// JobScheduleDayThursday ...
 	JobScheduleDayThursday JobScheduleDay = "Thursday"
-	// JobScheduleDayTuesday specifies the job schedule day tuesday state for job schedule day.
+	// JobScheduleDayTuesday ...
 	JobScheduleDayTuesday JobScheduleDay = "Tuesday"
-	// JobScheduleDayWednesday specifies the job schedule day wednesday state for job schedule day.
+	// JobScheduleDayWednesday ...
 	JobScheduleDayWednesday JobScheduleDay = "Wednesday"
 )
 
@@ -134,13 +134,13 @@ const (
 type JobState string
 
 const (
-	// JobStateCompleted specifies the job state completed state for job state.
+	// JobStateCompleted ...
 	JobStateCompleted JobState = "Completed"
-	// JobStateDisabled specifies the job state disabled state for job state.
+	// JobStateDisabled ...
 	JobStateDisabled JobState = "Disabled"
-	// JobStateEnabled specifies the job state enabled state for job state.
+	// JobStateEnabled ...
 	JobStateEnabled JobState = "Enabled"
-	// JobStateFaulted specifies the job state faulted state for job state.
+	// JobStateFaulted ...
 	JobStateFaulted JobState = "Faulted"
 )
 
@@ -148,15 +148,15 @@ const (
 type RecurrenceFrequency string
 
 const (
-	// Day specifies the day state for recurrence frequency.
+	// Day ...
 	Day RecurrenceFrequency = "Day"
-	// Hour specifies the hour state for recurrence frequency.
+	// Hour ...
 	Hour RecurrenceFrequency = "Hour"
-	// Minute specifies the minute state for recurrence frequency.
+	// Minute ...
 	Minute RecurrenceFrequency = "Minute"
-	// Month specifies the month state for recurrence frequency.
+	// Month ...
 	Month RecurrenceFrequency = "Month"
-	// Week specifies the week state for recurrence frequency.
+	// Week ...
 	Week RecurrenceFrequency = "Week"
 )
 
@@ -164,9 +164,9 @@ const (
 type RetryType string
 
 const (
-	// Fixed specifies the fixed state for retry type.
+	// Fixed ...
 	Fixed RetryType = "Fixed"
-	// None specifies the none state for retry type.
+	// None ...
 	None RetryType = "None"
 )
 
@@ -174,11 +174,9 @@ const (
 type ServiceBusAuthenticationType string
 
 const (
-	// ServiceBusAuthenticationTypeNotSpecified specifies the service bus authentication type not specified state for
-	// service bus authentication type.
+	// ServiceBusAuthenticationTypeNotSpecified ...
 	ServiceBusAuthenticationTypeNotSpecified ServiceBusAuthenticationType = "NotSpecified"
-	// ServiceBusAuthenticationTypeSharedAccessKey specifies the service bus authentication type shared access key state
-	// for service bus authentication type.
+	// ServiceBusAuthenticationTypeSharedAccessKey ...
 	ServiceBusAuthenticationTypeSharedAccessKey ServiceBusAuthenticationType = "SharedAccessKey"
 )
 
@@ -186,13 +184,11 @@ const (
 type ServiceBusTransportType string
 
 const (
-	// ServiceBusTransportTypeAMQP specifies the service bus transport type amqp state for service bus transport type.
+	// ServiceBusTransportTypeAMQP ...
 	ServiceBusTransportTypeAMQP ServiceBusTransportType = "AMQP"
-	// ServiceBusTransportTypeNetMessaging specifies the service bus transport type net messaging state for service bus
-	// transport type.
+	// ServiceBusTransportTypeNetMessaging ...
 	ServiceBusTransportTypeNetMessaging ServiceBusTransportType = "NetMessaging"
-	// ServiceBusTransportTypeNotSpecified specifies the service bus transport type not specified state for service bus
-	// transport type.
+	// ServiceBusTransportTypeNotSpecified ...
 	ServiceBusTransportTypeNotSpecified ServiceBusTransportType = "NotSpecified"
 )
 
@@ -200,316 +196,695 @@ const (
 type SkuDefinition string
 
 const (
-	// Free specifies the free state for sku definition.
+	// Free ...
 	Free SkuDefinition = "Free"
-	// Premium specifies the premium state for sku definition.
+	// Premium ...
 	Premium SkuDefinition = "Premium"
-	// Standard specifies the standard state for sku definition.
+	// Standard ...
 	Standard SkuDefinition = "Standard"
 )
 
-// BasicAuthentication is
+// BasicAuthentication ...
 type BasicAuthentication struct {
-	Type     HTTPAuthenticationType `json:"type,omitempty"`
-	Username *string                `json:"username,omitempty"`
-	Password *string                `json:"password,omitempty"`
+	// Type - Gets or sets the http authentication type. Possible values include: 'NotSpecified', 'ClientCertificate', 'ActiveDirectoryOAuth', 'Basic'
+	Type HTTPAuthenticationType `json:"type,omitempty"`
+	// Username - Gets or sets the username.
+	Username *string `json:"username,omitempty"`
+	// Password - Gets or sets the password.
+	Password *string `json:"password,omitempty"`
 }
 
-// ClientCertAuthentication is
+// ClientCertAuthentication ...
 type ClientCertAuthentication struct {
-	Type                      HTTPAuthenticationType `json:"type,omitempty"`
-	Password                  *string                `json:"password,omitempty"`
-	Pfx                       *string                `json:"pfx,omitempty"`
-	CertificateThumbprint     *string                `json:"certificateThumbprint,omitempty"`
-	CertificateExpirationDate *date.Time             `json:"certificateExpirationDate,omitempty"`
-	CertificateSubjectName    *string                `json:"certificateSubjectName,omitempty"`
+	// Type - Gets or sets the http authentication type. Possible values include: 'NotSpecified', 'ClientCertificate', 'ActiveDirectoryOAuth', 'Basic'
+	Type HTTPAuthenticationType `json:"type,omitempty"`
+	// Password - Gets or sets the password.
+	Password *string `json:"password,omitempty"`
+	// Pfx - Gets or sets the pfx.
+	Pfx *string `json:"pfx,omitempty"`
+	// CertificateThumbprint - Gets or sets the certificate thumbprint.
+	CertificateThumbprint *string `json:"certificateThumbprint,omitempty"`
+	// CertificateExpirationDate - Gets or sets the certificate expiration date.
+	CertificateExpirationDate *date.Time `json:"certificateExpirationDate,omitempty"`
+	// CertificateSubjectName - Gets or sets the certificate subject name.
+	CertificateSubjectName *string `json:"certificateSubjectName,omitempty"`
 }
 
-// HTTPAuthentication is
+// HTTPAuthentication ...
 type HTTPAuthentication struct {
+	// Type - Gets or sets the http authentication type. Possible values include: 'NotSpecified', 'ClientCertificate', 'ActiveDirectoryOAuth', 'Basic'
 	Type HTTPAuthenticationType `json:"type,omitempty"`
 }
 
-// HTTPRequest is
+// HTTPRequest ...
 type HTTPRequest struct {
+	// Authentication - Gets or sets the http authentication.
 	Authentication *HTTPAuthentication `json:"authentication,omitempty"`
-	URI            *string             `json:"uri,omitempty"`
-	Method         *string             `json:"method,omitempty"`
-	Body           *string             `json:"body,omitempty"`
-	Headers        *map[string]*string `json:"headers,omitempty"`
+	// URI - Gets or sets the Uri.
+	URI *string `json:"uri,omitempty"`
+	// Method - Gets or sets the method of the request.
+	Method *string `json:"method,omitempty"`
+	// Body - Gets or sets the request body.
+	Body *string `json:"body,omitempty"`
+	// Headers - Gets or sets the headers.
+	Headers *map[string]*string `json:"headers,omitempty"`
 }
 
-// JobAction is
+// JobAction ...
 type JobAction struct {
-	Type                   JobActionType           `json:"type,omitempty"`
-	Request                *HTTPRequest            `json:"request,omitempty"`
-	QueueMessage           *StorageQueueMessage    `json:"queueMessage,omitempty"`
+	// Type - Gets or sets the job action type. Possible values include: 'HTTP', 'HTTPS', 'StorageQueue', 'ServiceBusQueue', 'ServiceBusTopic'
+	Type JobActionType `json:"type,omitempty"`
+	// Request - Gets or sets the http requests.
+	Request *HTTPRequest `json:"request,omitempty"`
+	// QueueMessage - Gets or sets the storage queue message.
+	QueueMessage *StorageQueueMessage `json:"queueMessage,omitempty"`
+	// ServiceBusQueueMessage - Gets or sets the service bus queue message.
 	ServiceBusQueueMessage *ServiceBusQueueMessage `json:"serviceBusQueueMessage,omitempty"`
+	// ServiceBusTopicMessage - Gets or sets the service bus topic message.
 	ServiceBusTopicMessage *ServiceBusTopicMessage `json:"serviceBusTopicMessage,omitempty"`
-	RetryPolicy            *RetryPolicy            `json:"retryPolicy,omitempty"`
-	ErrorAction            *JobErrorAction         `json:"errorAction,omitempty"`
+	// RetryPolicy - Gets or sets the retry policy.
+	RetryPolicy *RetryPolicy `json:"retryPolicy,omitempty"`
+	// ErrorAction - Gets or sets the error action.
+	ErrorAction *JobErrorAction `json:"errorAction,omitempty"`
 }
 
-// JobCollectionDefinition is
+// JobCollectionDefinition ...
 type JobCollectionDefinition struct {
 	autorest.Response `json:"-"`
-	ID                *string                  `json:"id,omitempty"`
-	Type              *string                  `json:"type,omitempty"`
-	Name              *string                  `json:"name,omitempty"`
-	Location          *string                  `json:"location,omitempty"`
-	Tags              *map[string]*string      `json:"tags,omitempty"`
-	Properties        *JobCollectionProperties `json:"properties,omitempty"`
+	// ID - Gets the job collection resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Gets the job collection resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Gets or sets the job collection resource name.
+	Name *string `json:"name,omitempty"`
+	// Location - Gets or sets the storage account location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Gets or sets the tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Gets or sets the job collection properties.
+	Properties *JobCollectionProperties `json:"properties,omitempty"`
 }
 
-// JobCollectionListResult is
+// JobCollectionListResult ...
 type JobCollectionListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]JobCollectionDefinition `json:"value,omitempty"`
-	NextLink          *string                    `json:"nextLink,omitempty"`
+	// Value - Gets the job collections.
+	Value *[]JobCollectionDefinition `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of job collections.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// JobCollectionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client JobCollectionListResult) JobCollectionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// JobCollectionListResultIterator provides access to a complete listing of JobCollectionDefinition values.
+type JobCollectionListResultIterator struct {
+	i    int
+	page JobCollectionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *JobCollectionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter JobCollectionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter JobCollectionListResultIterator) Response() JobCollectionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter JobCollectionListResultIterator) Value() JobCollectionDefinition {
+	if !iter.page.NotDone() {
+		return JobCollectionDefinition{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (jclr JobCollectionListResult) IsEmpty() bool {
+	return jclr.Value == nil || len(*jclr.Value) == 0
+}
+
+// jobCollectionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (jclr JobCollectionListResult) jobCollectionListResultPreparer() (*http.Request, error) {
+	if jclr.NextLink == nil || len(to.String(jclr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(jclr.NextLink)))
 }
 
-// JobCollectionProperties is
+// JobCollectionListResultPage contains a page of JobCollectionDefinition values.
+type JobCollectionListResultPage struct {
+	fn   func(JobCollectionListResult) (JobCollectionListResult, error)
+	jclr JobCollectionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *JobCollectionListResultPage) Next() error {
+	next, err := page.fn(page.jclr)
+	if err != nil {
+		return err
+	}
+	page.jclr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page JobCollectionListResultPage) NotDone() bool {
+	return !page.jclr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page JobCollectionListResultPage) Response() JobCollectionListResult {
+	return page.jclr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page JobCollectionListResultPage) Values() []JobCollectionDefinition {
+	if page.jclr.IsEmpty() {
+		return nil
+	}
+	return *page.jclr.Value
+}
+
+// JobCollectionProperties ...
 type JobCollectionProperties struct {
-	Sku   *Sku                `json:"sku,omitempty"`
-	State JobCollectionState  `json:"state,omitempty"`
+	// Sku - Gets or sets the SKU.
+	Sku *Sku `json:"sku,omitempty"`
+	// State - Gets or sets the state. Possible values include: 'Enabled', 'Disabled', 'Suspended', 'Deleted'
+	State JobCollectionState `json:"state,omitempty"`
+	// Quota - Gets or sets the job collection quota.
 	Quota *JobCollectionQuota `json:"quota,omitempty"`
 }
 
-// JobCollectionQuota is
+// JobCollectionQuota ...
 type JobCollectionQuota struct {
-	MaxJobCount      *int32            `json:"maxJobCount,omitempty"`
-	MaxJobOccurrence *int32            `json:"maxJobOccurrence,omitempty"`
-	MaxRecurrence    *JobMaxRecurrence `json:"maxRecurrence,omitempty"`
+	// MaxJobCount - Gets or set the maximum job count.
+	MaxJobCount *int32 `json:"maxJobCount,omitempty"`
+	// MaxJobOccurrence - Gets or sets the maximum job occurrence.
+	MaxJobOccurrence *int32 `json:"maxJobOccurrence,omitempty"`
+	// MaxRecurrence - Gets or set the maximum recurrence.
+	MaxRecurrence *JobMaxRecurrence `json:"maxRecurrence,omitempty"`
 }
 
-// JobDefinition is
+// JobDefinition ...
 type JobDefinition struct {
 	autorest.Response `json:"-"`
-	ID                *string        `json:"id,omitempty"`
-	Type              *string        `json:"type,omitempty"`
-	Name              *string        `json:"name,omitempty"`
-	Properties        *JobProperties `json:"properties,omitempty"`
+	// ID - Gets the job resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Gets the job resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Gets the job resource name.
+	Name *string `json:"name,omitempty"`
+	// Properties - Gets or sets the job properties.
+	Properties *JobProperties `json:"properties,omitempty"`
 }
 
-// JobErrorAction is
+// JobErrorAction ...
 type JobErrorAction struct {
-	Type                   JobActionType           `json:"type,omitempty"`
-	Request                *HTTPRequest            `json:"request,omitempty"`
-	QueueMessage           *StorageQueueMessage    `json:"queueMessage,omitempty"`
+	// Type - Gets or sets the job error action type. Possible values include: 'HTTP', 'HTTPS', 'StorageQueue', 'ServiceBusQueue', 'ServiceBusTopic'
+	Type JobActionType `json:"type,omitempty"`
+	// Request - Gets or sets the http requests.
+	Request *HTTPRequest `json:"request,omitempty"`
+	// QueueMessage - Gets or sets the storage queue message.
+	QueueMessage *StorageQueueMessage `json:"queueMessage,omitempty"`
+	// ServiceBusQueueMessage - Gets or sets the service bus queue message.
 	ServiceBusQueueMessage *ServiceBusQueueMessage `json:"serviceBusQueueMessage,omitempty"`
+	// ServiceBusTopicMessage - Gets or sets the service bus topic message.
 	ServiceBusTopicMessage *ServiceBusTopicMessage `json:"serviceBusTopicMessage,omitempty"`
-	RetryPolicy            *RetryPolicy            `json:"retryPolicy,omitempty"`
+	// RetryPolicy - Gets or sets the retry policy.
+	RetryPolicy *RetryPolicy `json:"retryPolicy,omitempty"`
 }
 
-// JobHistoryDefinition is
+// JobHistoryDefinition ...
 type JobHistoryDefinition struct {
-	ID         *string                         `json:"id,omitempty"`
-	Type       *string                         `json:"type,omitempty"`
-	Name       *string                         `json:"name,omitempty"`
+	// ID - Gets the job history identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Gets the job history resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Gets the job history name.
+	Name *string `json:"name,omitempty"`
+	// Properties - Gets or sets the job history properties.
 	Properties *JobHistoryDefinitionProperties `json:"properties,omitempty"`
 }
 
-// JobHistoryDefinitionProperties is
+// JobHistoryDefinitionProperties ...
 type JobHistoryDefinitionProperties struct {
-	StartTime             *date.Time           `json:"startTime,omitempty"`
-	EndTime               *date.Time           `json:"endTime,omitempty"`
-	ExpectedExecutionTime *date.Time           `json:"expectedExecutionTime,omitempty"`
-	ActionName            JobHistoryActionName `json:"actionName,omitempty"`
-	Status                JobExecutionStatus   `json:"status,omitempty"`
-	Message               *string              `json:"message,omitempty"`
-	RetryCount            *int32               `json:"retryCount,omitempty"`
-	RepeatCount           *int32               `json:"repeatCount,omitempty"`
+	// StartTime - Gets the start time for this job.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time for this job.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// ExpectedExecutionTime - Gets the expected execution time for this job.
+	ExpectedExecutionTime *date.Time `json:"expectedExecutionTime,omitempty"`
+	// ActionName - Gets the job history action name. Possible values include: 'MainAction', 'ErrorAction'
+	ActionName JobHistoryActionName `json:"actionName,omitempty"`
+	// Status - Gets the job history status. Possible values include: 'Completed', 'Failed', 'Postponed'
+	Status JobExecutionStatus `json:"status,omitempty"`
+	// Message - Gets the message for the job history.
+	Message *string `json:"message,omitempty"`
+	// RetryCount - Gets the retry count for job.
+	RetryCount *int32 `json:"retryCount,omitempty"`
+	// RepeatCount - Gets the repeat count for the job.
+	RepeatCount *int32 `json:"repeatCount,omitempty"`
 }
 
-// JobHistoryFilter is
+// JobHistoryFilter ...
 type JobHistoryFilter struct {
+	// Status - Gets or sets the job execution status. Possible values include: 'Completed', 'Failed', 'Postponed'
 	Status JobExecutionStatus `json:"status,omitempty"`
 }
 
-// JobHistoryListResult is
+// JobHistoryListResult ...
 type JobHistoryListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]JobHistoryDefinition `json:"value,omitempty"`
-	NextLink          *string                 `json:"nextLink,omitempty"`
+	// Value - Gets or sets the job histories under job.
+	Value *[]JobHistoryDefinition `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of job histories.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// JobHistoryListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client JobHistoryListResult) JobHistoryListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// JobHistoryListResultIterator provides access to a complete listing of JobHistoryDefinition values.
+type JobHistoryListResultIterator struct {
+	i    int
+	page JobHistoryListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *JobHistoryListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter JobHistoryListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter JobHistoryListResultIterator) Response() JobHistoryListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter JobHistoryListResultIterator) Value() JobHistoryDefinition {
+	if !iter.page.NotDone() {
+		return JobHistoryDefinition{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (jhlr JobHistoryListResult) IsEmpty() bool {
+	return jhlr.Value == nil || len(*jhlr.Value) == 0
+}
+
+// jobHistoryListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (jhlr JobHistoryListResult) jobHistoryListResultPreparer() (*http.Request, error) {
+	if jhlr.NextLink == nil || len(to.String(jhlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(jhlr.NextLink)))
 }
 
-// JobListResult is
+// JobHistoryListResultPage contains a page of JobHistoryDefinition values.
+type JobHistoryListResultPage struct {
+	fn   func(JobHistoryListResult) (JobHistoryListResult, error)
+	jhlr JobHistoryListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *JobHistoryListResultPage) Next() error {
+	next, err := page.fn(page.jhlr)
+	if err != nil {
+		return err
+	}
+	page.jhlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page JobHistoryListResultPage) NotDone() bool {
+	return !page.jhlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page JobHistoryListResultPage) Response() JobHistoryListResult {
+	return page.jhlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page JobHistoryListResultPage) Values() []JobHistoryDefinition {
+	if page.jhlr.IsEmpty() {
+		return nil
+	}
+	return *page.jhlr.Value
+}
+
+// JobListResult ...
 type JobListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]JobDefinition `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+	// Value - Gets or sets all jobs under job collection.
+	Value *[]JobDefinition `json:"value,omitempty"`
+	// NextLink - Gets or sets the URL to get the next set of jobs.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// JobListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client JobListResult) JobListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// JobListResultIterator provides access to a complete listing of JobDefinition values.
+type JobListResultIterator struct {
+	i    int
+	page JobListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *JobListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter JobListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter JobListResultIterator) Response() JobListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter JobListResultIterator) Value() JobDefinition {
+	if !iter.page.NotDone() {
+		return JobDefinition{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (jlr JobListResult) IsEmpty() bool {
+	return jlr.Value == nil || len(*jlr.Value) == 0
+}
+
+// jobListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (jlr JobListResult) jobListResultPreparer() (*http.Request, error) {
+	if jlr.NextLink == nil || len(to.String(jlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(jlr.NextLink)))
 }
 
-// JobMaxRecurrence is
+// JobListResultPage contains a page of JobDefinition values.
+type JobListResultPage struct {
+	fn  func(JobListResult) (JobListResult, error)
+	jlr JobListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *JobListResultPage) Next() error {
+	next, err := page.fn(page.jlr)
+	if err != nil {
+		return err
+	}
+	page.jlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page JobListResultPage) NotDone() bool {
+	return !page.jlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page JobListResultPage) Response() JobListResult {
+	return page.jlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page JobListResultPage) Values() []JobDefinition {
+	if page.jlr.IsEmpty() {
+		return nil
+	}
+	return *page.jlr.Value
+}
+
+// JobMaxRecurrence ...
 type JobMaxRecurrence struct {
+	// Frequency - Gets or sets the frequency of recurrence (second, minute, hour, day, week, month). Possible values include: 'Minute', 'Hour', 'Day', 'Week', 'Month'
 	Frequency RecurrenceFrequency `json:"frequency,omitempty"`
-	Interval  *int32              `json:"interval,omitempty"`
+	// Interval - Gets or sets the interval between retries.
+	Interval *int32 `json:"interval,omitempty"`
 }
 
-// JobProperties is
+// JobProperties ...
 type JobProperties struct {
-	StartTime  *date.Time     `json:"startTime,omitempty"`
-	Action     *JobAction     `json:"action,omitempty"`
+	// StartTime - Gets or sets the job start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// Action - Gets or sets the job action.
+	Action *JobAction `json:"action,omitempty"`
+	// Recurrence - Gets or sets the job recurrence.
 	Recurrence *JobRecurrence `json:"recurrence,omitempty"`
-	State      JobState       `json:"state,omitempty"`
-	Status     *JobStatus     `json:"status,omitempty"`
+	// State - Gets or set the job state. Possible values include: 'JobStateEnabled', 'JobStateDisabled', 'JobStateFaulted', 'JobStateCompleted'
+	State JobState `json:"state,omitempty"`
+	// Status - Gets the job status.
+	Status *JobStatus `json:"status,omitempty"`
 }
 
-// JobRecurrence is
+// JobRecurrence ...
 type JobRecurrence struct {
-	Frequency RecurrenceFrequency    `json:"frequency,omitempty"`
-	Interval  *int32                 `json:"interval,omitempty"`
-	Count     *int32                 `json:"count,omitempty"`
-	EndTime   *date.Time             `json:"endTime,omitempty"`
-	Schedule  *JobRecurrenceSchedule `json:"schedule,omitempty"`
+	// Frequency - Gets or sets the frequency of recurrence (second, minute, hour, day, week, month). Possible values include: 'Minute', 'Hour', 'Day', 'Week', 'Month'
+	Frequency RecurrenceFrequency `json:"frequency,omitempty"`
+	// Interval - Gets or sets the interval between retries.
+	Interval *int32 `json:"interval,omitempty"`
+	// Count - Gets or sets the maximum number of times that the job should run.
+	Count *int32 `json:"count,omitempty"`
+	// EndTime - Gets or sets the time at which the job will complete.
+	EndTime  *date.Time             `json:"endTime,omitempty"`
+	Schedule *JobRecurrenceSchedule `json:"schedule,omitempty"`
 }
 
-// JobRecurrenceSchedule is
+// JobRecurrenceSchedule ...
 type JobRecurrenceSchedule struct {
-	WeekDays           *[]DayOfWeek                              `json:"weekDays,omitempty"`
-	Hours              *[]int32                                  `json:"hours,omitempty"`
-	Minutes            *[]int32                                  `json:"minutes,omitempty"`
-	MonthDays          *[]int32                                  `json:"monthDays,omitempty"`
+	// WeekDays - Gets or sets the days of the week that the job should execute on.
+	WeekDays *[]DayOfWeek `json:"weekDays,omitempty"`
+	// Hours - Gets or sets the hours of the day that the job should execute at.
+	Hours *[]int32 `json:"hours,omitempty"`
+	// Minutes - Gets or sets the minutes of the hour that the job should execute at.
+	Minutes *[]int32 `json:"minutes,omitempty"`
+	// MonthDays - Gets or sets the days of the month that the job should execute on. Must be between 1 and 31.
+	MonthDays *[]int32 `json:"monthDays,omitempty"`
+	// MonthlyOccurrences - Gets or sets the occurrences of days within a month.
 	MonthlyOccurrences *[]JobRecurrenceScheduleMonthlyOccurrence `json:"monthlyOccurrences,omitempty"`
 }
 
-// JobRecurrenceScheduleMonthlyOccurrence is
+// JobRecurrenceScheduleMonthlyOccurrence ...
 type JobRecurrenceScheduleMonthlyOccurrence struct {
-	Day        JobScheduleDay `json:"day,omitempty"`
-	Occurrence *int32         `json:"Occurrence,omitempty"`
+	// Day - Gets or sets the day. Must be one of monday, tuesday, wednesday, thursday, friday, saturday, sunday. Possible values include: 'JobScheduleDayMonday', 'JobScheduleDayTuesday', 'JobScheduleDayWednesday', 'JobScheduleDayThursday', 'JobScheduleDayFriday', 'JobScheduleDaySaturday', 'JobScheduleDaySunday'
+	Day JobScheduleDay `json:"day,omitempty"`
+	// Occurrence - Gets or sets the occurrence. Must be between -5 and 5.
+	Occurrence *int32 `json:"Occurrence,omitempty"`
 }
 
-// JobStateFilter is
+// JobStateFilter ...
 type JobStateFilter struct {
+	// State - Gets or sets the job state. Possible values include: 'JobStateEnabled', 'JobStateDisabled', 'JobStateFaulted', 'JobStateCompleted'
 	State JobState `json:"state,omitempty"`
 }
 
-// JobStatus is
+// JobStatus ...
 type JobStatus struct {
-	ExecutionCount    *int32     `json:"executionCount,omitempty"`
-	FailureCount      *int32     `json:"failureCount,omitempty"`
-	FaultedCount      *int32     `json:"faultedCount,omitempty"`
+	// ExecutionCount - Gets the number of times this job has executed.
+	ExecutionCount *int32 `json:"executionCount,omitempty"`
+	// FailureCount - Gets the number of times this job has failed.
+	FailureCount *int32 `json:"failureCount,omitempty"`
+	// FaultedCount - Gets the number of faulted occurrences (occurrences that were retried and failed as many times as the retry policy states).
+	FaultedCount *int32 `json:"faultedCount,omitempty"`
+	// LastExecutionTime - Gets the time the last occurrence executed in ISO-8601 format.  Could be empty if job has not run yet.
 	LastExecutionTime *date.Time `json:"lastExecutionTime,omitempty"`
+	// NextExecutionTime - Gets the time of the next occurrence in ISO-8601 format. Could be empty if the job is completed.
 	NextExecutionTime *date.Time `json:"nextExecutionTime,omitempty"`
 }
 
-// OAuthAuthentication is
+// OAuthAuthentication ...
 type OAuthAuthentication struct {
-	Type     HTTPAuthenticationType `json:"type,omitempty"`
-	Secret   *string                `json:"secret,omitempty"`
-	Tenant   *string                `json:"tenant,omitempty"`
-	Audience *string                `json:"audience,omitempty"`
-	ClientID *string                `json:"clientId,omitempty"`
+	// Type - Gets or sets the http authentication type. Possible values include: 'NotSpecified', 'ClientCertificate', 'ActiveDirectoryOAuth', 'Basic'
+	Type HTTPAuthenticationType `json:"type,omitempty"`
+	// Secret - Gets or sets the secret.
+	Secret *string `json:"secret,omitempty"`
+	// Tenant - Gets or sets the tenant.
+	Tenant *string `json:"tenant,omitempty"`
+	// Audience - Gets or sets the audience.
+	Audience *string `json:"audience,omitempty"`
+	// ClientID - Gets or sets the client identifier.
+	ClientID *string `json:"clientId,omitempty"`
 }
 
-// RetryPolicy is
+// RetryPolicy ...
 type RetryPolicy struct {
-	RetryType     RetryType `json:"retryType,omitempty"`
-	RetryInterval *string   `json:"retryInterval,omitempty"`
-	RetryCount    *int32    `json:"retryCount,omitempty"`
+	// RetryType - Gets or sets the retry strategy to be used. Possible values include: 'None', 'Fixed'
+	RetryType RetryType `json:"retryType,omitempty"`
+	// RetryInterval - Gets or sets the retry interval between retries.
+	RetryInterval *string `json:"retryInterval,omitempty"`
+	// RetryCount - Gets or sets the number of times a retry should be attempted.
+	RetryCount *int32 `json:"retryCount,omitempty"`
 }
 
-// ServiceBusAuthentication is
+// ServiceBusAuthentication ...
 type ServiceBusAuthentication struct {
-	SasKey     *string                      `json:"sasKey,omitempty"`
-	SasKeyName *string                      `json:"sasKeyName,omitempty"`
-	Type       ServiceBusAuthenticationType `json:"type,omitempty"`
+	// SasKey - Gets or sets the SAS key.
+	SasKey *string `json:"sasKey,omitempty"`
+	// SasKeyName - Gets or sets the SAS key name.
+	SasKeyName *string `json:"sasKeyName,omitempty"`
+	// Type - Gets or sets the authentication type. Possible values include: 'ServiceBusAuthenticationTypeNotSpecified', 'ServiceBusAuthenticationTypeSharedAccessKey'
+	Type ServiceBusAuthenticationType `json:"type,omitempty"`
 }
 
-// ServiceBusBrokeredMessageProperties is
+// ServiceBusBrokeredMessageProperties ...
 type ServiceBusBrokeredMessageProperties struct {
-	ContentType             *string    `json:"contentType,omitempty"`
-	CorrelationID           *string    `json:"correlationId,omitempty"`
-	ForcePersistence        *bool      `json:"forcePersistence,omitempty"`
-	Label                   *string    `json:"label,omitempty"`
-	MessageID               *string    `json:"messageId,omitempty"`
-	PartitionKey            *string    `json:"partitionKey,omitempty"`
-	ReplyTo                 *string    `json:"replyTo,omitempty"`
-	ReplyToSessionID        *string    `json:"replyToSessionId,omitempty"`
+	// ContentType - Gets or sets the content type.
+	ContentType *string `json:"contentType,omitempty"`
+	// CorrelationID - Gets or sets the correlation id.
+	CorrelationID *string `json:"correlationId,omitempty"`
+	// ForcePersistence - Gets or sets the force persistence.
+	ForcePersistence *bool `json:"forcePersistence,omitempty"`
+	// Label - Gets or sets the label.
+	Label *string `json:"label,omitempty"`
+	// MessageID - Gets or sets the message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// PartitionKey - Gets or sets the partition key.
+	PartitionKey *string `json:"partitionKey,omitempty"`
+	// ReplyTo - Gets or sets the reply to.
+	ReplyTo *string `json:"replyTo,omitempty"`
+	// ReplyToSessionID - Gets or sets the reply to session id.
+	ReplyToSessionID *string `json:"replyToSessionId,omitempty"`
+	// ScheduledEnqueueTimeUtc - Gets or sets the scheduled enqueue time UTC.
 	ScheduledEnqueueTimeUtc *date.Time `json:"scheduledEnqueueTimeUtc,omitempty"`
-	SessionID               *string    `json:"sessionId,omitempty"`
-	TimeToLive              *date.Time `json:"timeToLive,omitempty"`
-	To                      *string    `json:"to,omitempty"`
-	ViaPartitionKey         *string    `json:"viaPartitionKey,omitempty"`
+	// SessionID - Gets or sets the session id.
+	SessionID *string `json:"sessionId,omitempty"`
+	// TimeToLive - Gets or sets the time to live.
+	TimeToLive *date.Time `json:"timeToLive,omitempty"`
+	// To - Gets or sets the to.
+	To *string `json:"to,omitempty"`
+	// ViaPartitionKey - Gets or sets the via partition key.
+	ViaPartitionKey *string `json:"viaPartitionKey,omitempty"`
 }
 
-// ServiceBusMessage is
+// ServiceBusMessage ...
 type ServiceBusMessage struct {
-	Authentication            *ServiceBusAuthentication            `json:"authentication,omitempty"`
+	// Authentication - Gets or sets the authentication.
+	Authentication *ServiceBusAuthentication `json:"authentication,omitempty"`
+	// BrokeredMessageProperties - Gets or sets the brokered message properties.
 	BrokeredMessageProperties *ServiceBusBrokeredMessageProperties `json:"brokeredMessageProperties,omitempty"`
-	CustomMessageProperties   *map[string]*string                  `json:"customMessageProperties,omitempty"`
-	Message                   *string                              `json:"message,omitempty"`
-	Namespace                 *string                              `json:"namespace,omitempty"`
-	TransportType             ServiceBusTransportType              `json:"transportType,omitempty"`
+	// CustomMessageProperties - Gets or sets the custom message properties.
+	CustomMessageProperties *map[string]*string `json:"customMessageProperties,omitempty"`
+	// Message - Gets or sets the message.
+	Message *string `json:"message,omitempty"`
+	// Namespace - Gets or sets the namespace.
+	Namespace *string `json:"namespace,omitempty"`
+	// TransportType - Gets or sets the transport type. Possible values include: 'ServiceBusTransportTypeNotSpecified', 'ServiceBusTransportTypeNetMessaging', 'ServiceBusTransportTypeAMQP'
+	TransportType ServiceBusTransportType `json:"transportType,omitempty"`
 }
 
-// ServiceBusQueueMessage is
+// ServiceBusQueueMessage ...
 type ServiceBusQueueMessage struct {
-	Authentication            *ServiceBusAuthentication            `json:"authentication,omitempty"`
+	// Authentication - Gets or sets the authentication.
+	Authentication *ServiceBusAuthentication `json:"authentication,omitempty"`
+	// BrokeredMessageProperties - Gets or sets the brokered message properties.
 	BrokeredMessageProperties *ServiceBusBrokeredMessageProperties `json:"brokeredMessageProperties,omitempty"`
-	CustomMessageProperties   *map[string]*string                  `json:"customMessageProperties,omitempty"`
-	Message                   *string                              `json:"message,omitempty"`
-	Namespace                 *string                              `json:"namespace,omitempty"`
-	TransportType             ServiceBusTransportType              `json:"transportType,omitempty"`
-	QueueName                 *string                              `json:"queueName,omitempty"`
+	// CustomMessageProperties - Gets or sets the custom message properties.
+	CustomMessageProperties *map[string]*string `json:"customMessageProperties,omitempty"`
+	// Message - Gets or sets the message.
+	Message *string `json:"message,omitempty"`
+	// Namespace - Gets or sets the namespace.
+	Namespace *string `json:"namespace,omitempty"`
+	// TransportType - Gets or sets the transport type. Possible values include: 'ServiceBusTransportTypeNotSpecified', 'ServiceBusTransportTypeNetMessaging', 'ServiceBusTransportTypeAMQP'
+	TransportType ServiceBusTransportType `json:"transportType,omitempty"`
+	// QueueName - Gets or sets the queue name.
+	QueueName *string `json:"queueName,omitempty"`
 }
 
-// ServiceBusTopicMessage is
+// ServiceBusTopicMessage ...
 type ServiceBusTopicMessage struct {
-	Authentication            *ServiceBusAuthentication            `json:"authentication,omitempty"`
+	// Authentication - Gets or sets the authentication.
+	Authentication *ServiceBusAuthentication `json:"authentication,omitempty"`
+	// BrokeredMessageProperties - Gets or sets the brokered message properties.
 	BrokeredMessageProperties *ServiceBusBrokeredMessageProperties `json:"brokeredMessageProperties,omitempty"`
-	CustomMessageProperties   *map[string]*string                  `json:"customMessageProperties,omitempty"`
-	Message                   *string                              `json:"message,omitempty"`
-	Namespace                 *string                              `json:"namespace,omitempty"`
-	TransportType             ServiceBusTransportType              `json:"transportType,omitempty"`
-	TopicPath                 *string                              `json:"topicPath,omitempty"`
+	// CustomMessageProperties - Gets or sets the custom message properties.
+	CustomMessageProperties *map[string]*string `json:"customMessageProperties,omitempty"`
+	// Message - Gets or sets the message.
+	Message *string `json:"message,omitempty"`
+	// Namespace - Gets or sets the namespace.
+	Namespace *string `json:"namespace,omitempty"`
+	// TransportType - Gets or sets the transport type. Possible values include: 'ServiceBusTransportTypeNotSpecified', 'ServiceBusTransportTypeNetMessaging', 'ServiceBusTransportTypeAMQP'
+	TransportType ServiceBusTransportType `json:"transportType,omitempty"`
+	// TopicPath - Gets or sets the topic path.
+	TopicPath *string `json:"topicPath,omitempty"`
 }
 
-// Sku is
+// Sku ...
 type Sku struct {
+	// Name - Gets or set the SKU. Possible values include: 'Standard', 'Free', 'Premium'
 	Name SkuDefinition `json:"name,omitempty"`
 }
 
-// StorageQueueMessage is
+// StorageQueueMessage ...
 type StorageQueueMessage struct {
+	// StorageAccount - Gets or sets the storage account name.
 	StorageAccount *string `json:"storageAccount,omitempty"`
-	QueueName      *string `json:"queueName,omitempty"`
-	SasToken       *string `json:"sasToken,omitempty"`
-	Message        *string `json:"message,omitempty"`
+	// QueueName - Gets or sets the queue name.
+	QueueName *string `json:"queueName,omitempty"`
+	// SasToken - Gets or sets the SAS key.
+	SasToken *string `json:"sasToken,omitempty"`
+	// Message - Gets or sets the message.
+	Message *string `json:"message,omitempty"`
 }

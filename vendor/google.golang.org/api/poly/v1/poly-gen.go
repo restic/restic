@@ -1,6 +1,6 @@
 // Package poly provides access to the Poly API.
 //
-// See https://devsite.googleplex.com/poly/
+// See https://developers.google.com/poly/
 //
 // Usage example:
 //

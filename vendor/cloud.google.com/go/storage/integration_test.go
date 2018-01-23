@@ -310,11 +310,7 @@ func TestIntegration_ConditionalDelete(t *testing.T) {
 }
 
 func TestIntegration_Objects(t *testing.T) {
-	// TODO(djd): there are a lot of closely-related tests here which share
-	// a common setup. Once we can depend on Go 1.7 features, we should refactor
-	// this test to use the sub-test feature. This will increase the readability
-	// of this test, and should also reduce the time it takes to execute.
-	// https://golang.org/pkg/testing/#hdr-Subtests_and_Sub_benchmarks
+	// TODO(jba): Use subtests (Go 1.7).
 	ctx := context.Background()
 	client, bucket := testConfig(ctx, t)
 	defer client.Close()
@@ -386,33 +382,6 @@ func TestIntegration_Objects(t *testing.T) {
 		if err := rc.Close(); err != nil {
 			t.Errorf("%v Close: %v", obj, err)
 		}
-
-		// Test SignedURL
-		opts := &SignedURLOptions{
-			GoogleAccessID: "xxx@clientid",
-			PrivateKey:     dummyKey("rsa"),
-			Method:         "GET",
-			MD5:            "ICy5YqxZB1uWSwcVLSNLcA==",
-			Expires:        time.Date(2020, time.October, 2, 10, 0, 0, 0, time.UTC),
-			ContentType:    "application/json",
-			Headers:        []string{"x-header1", "x-header2"},
-		}
-		u, err := SignedURL(bucket, obj, opts)
-		if err != nil {
-			t.Fatalf("SignedURL(%q, %q) errored with %v", bucket, obj, err)
-		}
-		res, err := client.hc.Get(u)
-		if err != nil {
-			t.Fatalf("Can't get URL %q: %v", u, err)
-		}
-		slurp, err = ioutil.ReadAll(res.Body)
-		if err != nil {
-			t.Fatalf("Can't ReadAll signed object %v, errored with %v", obj, err)
-		}
-		if got, want := slurp, contents[obj]; !bytes.Equal(got, want) {
-			t.Errorf("Contents (%v) = %q; want %q", obj, got, want)
-		}
-		res.Body.Close()
 	}
 
 	obj := objects[0]
@@ -763,6 +732,115 @@ func testObjectIterator(t *testing.T, bkt *BucketHandle, objects []string) {
 	// TODO(jba): test query.Delimiter != ""
 }
 
+func TestIntegration_SignedURL(t *testing.T) {
+	// To test SignedURL, we need a real user email and private key. Extract them
+	// from the JSON key file.
+	jwtConf, err := testutil.JWTConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jwtConf == nil {
+		t.Skip("JSON key file is not present")
+	}
+
+	ctx := context.Background()
+	client, bucket := testConfig(ctx, t)
+	defer client.Close()
+
+	bkt := client.Bucket(bucket)
+	obj := "signedURL"
+	contents := []byte("This is a test of SignedURL.\n")
+	md5 := "Jyxvgwm9n2MsrGTMPbMeYA==" // base64-encoded MD5 of contents
+	if err := writeObject(ctx, bkt.Object(obj), "text/plain", contents); err != nil {
+		t.Fatalf("writing: %v", err)
+	}
+	for _, test := range []struct {
+		desc    string
+		opts    SignedURLOptions
+		headers map[string][]string
+		fail    bool
+	}{
+		{
+			desc: "basic",
+		},
+		{
+			desc:    "MD5 sent and matches",
+			opts:    SignedURLOptions{MD5: md5},
+			headers: map[string][]string{"Content-MD5": {md5}},
+		},
+		{
+			desc: "MD5 not sent",
+			opts: SignedURLOptions{MD5: md5},
+			fail: true,
+		},
+		{
+			desc:    "Content-Type sent and matches",
+			opts:    SignedURLOptions{ContentType: "text/plain"},
+			headers: map[string][]string{"Content-Type": {"text/plain"}},
+		},
+		{
+			desc:    "Content-Type sent but does not match",
+			opts:    SignedURLOptions{ContentType: "text/plain"},
+			headers: map[string][]string{"Content-Type": {"application/json"}},
+			fail:    true,
+		},
+		{
+			desc: "Canonical headers sent and match",
+			opts: SignedURLOptions{Headers: []string{
+				" X-Goog-Foo: Bar baz ",
+				"X-Goog-Novalue", // ignored: no value
+				"X-Google-Foo",   // ignored: wrong prefix
+			}},
+			headers: map[string][]string{"X-Goog-foo": {"Bar baz  "}},
+		},
+		{
+			desc:    "Canonical headers sent but don't match",
+			opts:    SignedURLOptions{Headers: []string{" X-Goog-Foo: Bar baz"}},
+			headers: map[string][]string{"X-Goog-Foo": {"bar baz"}},
+			fail:    true,
+		},
+	} {
+		opts := test.opts
+		opts.GoogleAccessID = jwtConf.Email
+		opts.PrivateKey = jwtConf.PrivateKey
+		opts.Method = "GET"
+		opts.Expires = time.Now().Add(time.Hour)
+		u, err := SignedURL(bucket, obj, &opts)
+		if err != nil {
+			t.Errorf("%s: SignedURL: %v", test.desc, err)
+			continue
+		}
+		got, err := getURL(u, test.headers)
+		if err != nil && !test.fail {
+			t.Errorf("%s: getURL %q: %v", test.desc, u, err)
+		} else if err == nil && !bytes.Equal(got, contents) {
+			t.Errorf("%s: got %q, want %q", test.desc, got, contents)
+		}
+	}
+}
+
+// Make a GET request to a URL using an unauthenticated client, and return its contents.
+func getURL(url string, headers map[string][]string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = headers
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("code=%d, body=%s", res.StatusCode, string(bytes))
+	}
+	return bytes, nil
+}
+
 func TestIntegration_ACL(t *testing.T) {
 	ctx := context.Background()
 	client, bucket := testConfig(ctx, t)
@@ -1012,7 +1090,7 @@ func TestIntegration_Encryption(t *testing.T) {
 		}
 		gotContents := string(got)
 		if gotContents != wantContents {
-			t.Errorf("%s: got %q, want %q", gotContents, wantContents)
+			t.Errorf("%s: got %q, want %q", msg, gotContents, wantContents)
 		}
 	}
 
@@ -1441,12 +1519,11 @@ func TestIntegration_RequesterPays(t *testing.T) {
 		// user: not an Owner on the containing project
 		// userProject: not the containing one, but user has Editor role on it
 		// result: success, by the standard requester-pays rule
-		// TODO(jba): enable when the service is fixed.
-		// if err := f(ob.UserProject(otherProjID)); err != nil {
-		// 	t.Errorf("%s: got %v, want nil\n"+
-		// 		"confirm that %s is an Editor on %s",
-		// 		msg, err, otherUser, otherProjID)
-		// }
+		if err := f(ob.UserProject(otherProjID)); err != nil {
+			t.Errorf("%s: got %v, want nil\n"+
+				"confirm that %s is an Editor on %s and that that project has billing enabled",
+				msg, err, otherUser, otherProjID)
+		}
 		// user: not an Owner on the containing project
 		// userProject: the containing one, on which the user does NOT have Editor permission.
 		// result: failure
@@ -1469,7 +1546,7 @@ func TestIntegration_RequesterPays(t *testing.T) {
 	})
 	if attrs != nil {
 		if got, want := attrs.RequesterPays, true; got != want {
-			t.Fatalf("attr.RequesterPays = %b, want %b", got, want)
+			t.Fatalf("attr.RequesterPays = %t, want %t", got, want)
 		}
 	}
 	// Object operations.
@@ -1686,6 +1763,179 @@ func TestIntegration_Public(t *testing.T) {
 	err = writeObject(ctx, nonPublicObj, "text/plain", []byte("b"))
 	if got, want := errCode(err), 401; got != want {
 		t.Errorf("got code %d; want %d\nerror: %v", got, want, err)
+	}
+}
+
+func TestIntegration_ReadCRC(t *testing.T) {
+	// Test that the checksum is handled correctly when reading files.
+	// For gzipped files, see https://github.com/GoogleCloudPlatform/google-cloud-dotnet/issues/1641.
+	if testing.Short() {
+		t.Skip("Integration tests skipped in short mode")
+	}
+	const (
+		// This is an uncompressed file.
+		// See https://cloud.google.com/storage/docs/public-datasets/landsat
+		uncompressedBucket = "gcp-public-data-landsat"
+		uncompressedObject = "LC08/PRE/044/034/LC80440342016259LGN00/LC80440342016259LGN00_MTL.txt"
+
+		gzippedBucket   = "storage-library-test-bucket"
+		gzippedObject   = "gzipped-text.txt"
+		gzippedContents = "hello world" // uncompressed contents of the file
+	)
+	ctx := context.Background()
+	client, err := NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	for _, test := range []struct {
+		desc           string
+		obj            *ObjectHandle
+		offset, length int64
+		readCompressed bool // don't decompress a gzipped file
+
+		wantErr     bool
+		wantCheck   bool // Should Reader try to check the CRC?
+		wantChecked bool // Did Reader actually check the CRC?
+	}{
+		{
+			desc:           "uncompressed, entire file",
+			obj:            client.Bucket(uncompressedBucket).Object(uncompressedObject),
+			offset:         0,
+			length:         -1,
+			readCompressed: false,
+			wantCheck:      true,
+			wantChecked:    true,
+		},
+		{
+			desc:           "uncompressed, entire file, don't decompress",
+			obj:            client.Bucket(uncompressedBucket).Object(uncompressedObject),
+			offset:         0,
+			length:         -1,
+			readCompressed: true,
+			wantCheck:      true,
+			wantChecked:    true,
+		},
+		{
+			desc:           "uncompressed, suffix",
+			obj:            client.Bucket(uncompressedBucket).Object(uncompressedObject),
+			offset:         1,
+			length:         -1,
+			readCompressed: false,
+			wantCheck:      false,
+			wantChecked:    false,
+		},
+		{
+			desc:           "uncompressed, prefix",
+			obj:            client.Bucket(uncompressedBucket).Object(uncompressedObject),
+			offset:         0,
+			length:         18,
+			readCompressed: false,
+			wantCheck:      false,
+			wantChecked:    false,
+		},
+		{
+			// When a gzipped file is unzipped by GCS, we can't verify the checksum
+			// because it was computed against the zipped contents. There is no
+			// header that indicates that a gzipped file is being served unzipped.
+			// But our CRC check only happens if there is a Content-Length header,
+			// and that header is absent for this read.
+			desc:           "compressed, entire file, server unzips",
+			obj:            client.Bucket(gzippedBucket).Object(gzippedObject),
+			offset:         0,
+			length:         -1,
+			readCompressed: false,
+			wantCheck:      true,
+			wantChecked:    false,
+		},
+		{
+			// When we read a gzipped file uncompressed, it's like reading a regular file:
+			// the served content and the CRC match.
+			desc:           "compressed, entire file, read compressed",
+			obj:            client.Bucket(gzippedBucket).Object(gzippedObject),
+			offset:         0,
+			length:         -1,
+			readCompressed: true,
+			wantCheck:      true,
+			wantChecked:    true,
+		},
+		{
+			desc:           "compressed, partial, server unzips",
+			obj:            client.Bucket(gzippedBucket).Object(gzippedObject),
+			offset:         1,
+			length:         8,
+			readCompressed: false,
+			wantErr:        true, // GCS can't serve part of a gzipped object
+			wantCheck:      false,
+			wantChecked:    false,
+		},
+		{
+			desc:           "compressed, partial, read compressed",
+			obj:            client.Bucket(gzippedBucket).Object(gzippedObject),
+			offset:         1,
+			length:         8,
+			readCompressed: true,
+			wantCheck:      false,
+			wantChecked:    false,
+		},
+	} {
+		obj := test.obj.ReadCompressed(test.readCompressed)
+		r, err := obj.NewRangeReader(ctx, test.offset, test.length)
+		if err != nil {
+			if test.wantErr {
+				continue
+			}
+			t.Fatalf("%s: %v", test.desc, err)
+		}
+		if got, want := r.checkCRC, test.wantCheck; got != want {
+			t.Errorf("%s, checkCRC: got %t, want %t", test.desc, got, want)
+		}
+		_, err = ioutil.ReadAll(r)
+		_ = r.Close()
+		if err != nil {
+			t.Fatalf("%s: %v", test.desc, err)
+		}
+		if got, want := r.checkedCRC, test.wantChecked; got != want {
+			t.Errorf("%s, checkedCRC: got %t, want %t", test.desc, got, want)
+		}
+	}
+}
+
+func TestIntegration_CancelWrite(t *testing.T) {
+	// Verify that canceling the writer's context immediately stops uploading an object.
+	if testing.Short() {
+		t.Skip("Integration tests skipped in short mode")
+	}
+	ctx := context.Background()
+	client, bucket := testConfig(ctx, t)
+	defer client.Close()
+	bkt := client.Bucket(bucket)
+
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	obj := bkt.Object("cancel-write")
+	w := obj.NewWriter(cctx)
+	w.ChunkSize = googleapi.MinUploadChunkSize
+	buf := make([]byte, w.ChunkSize)
+	// Write the first chunk. This is read in its entirety before sending the request
+	// (see google.golang.org/api/gensupport.PrepareUpload), so we expect it to return
+	// without error.
+	_, err := w.Write(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Now cancel the context.
+	cancel()
+	// The next Write should return context.Canceled.
+	_, err = w.Write(buf)
+	if err != context.Canceled {
+		t.Fatalf("got %v, wanted context.Canceled", err)
+	}
+	// The Close should too.
+	err = w.Close()
+	if err != context.Canceled {
+		t.Fatalf("got %v, wanted context.Canceled", err)
 	}
 }
 

@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update,
 // and delete databases.
 type DataMaskingPoliciesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDataMaskingPoliciesClient creates an instance of the DataMaskingPoliciesClient client.
@@ -46,8 +47,8 @@ func NewDataMaskingPoliciesClientWithBaseURI(baseURI string, subscriptionID stri
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database. dataMaskingPolicyName is the name of the database for which the data masking rule applies. parameters is
 // parameters for creating or updating a data masking policy.
-func (client DataMaskingPoliciesClient) CreateOrUpdate(resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string, parameters DataMaskingPolicy) (result DataMaskingPolicy, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, databaseName, dataMaskingPolicyName, parameters)
+func (client DataMaskingPoliciesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string, parameters DataMaskingPolicy) (result DataMaskingPolicy, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, databaseName, dataMaskingPolicyName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DataMaskingPoliciesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -69,7 +70,7 @@ func (client DataMaskingPoliciesClient) CreateOrUpdate(resourceGroupName string,
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DataMaskingPoliciesClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string, parameters DataMaskingPolicy) (*http.Request, error) {
+func (client DataMaskingPoliciesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string, parameters DataMaskingPolicy) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":          autorest.Encode("path", databaseName),
 		"dataMaskingPolicyName": autorest.Encode("path", dataMaskingPolicyName),
@@ -90,14 +91,13 @@ func (client DataMaskingPoliciesClient) CreateOrUpdatePreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/dataMaskingPolicies/{dataMaskingPolicyName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataMaskingPoliciesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -119,8 +119,8 @@ func (client DataMaskingPoliciesClient) CreateOrUpdateResponder(resp *http.Respo
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database. dataMaskingPolicyName is the name of the database for which the data masking rule applies.
-func (client DataMaskingPoliciesClient) Get(resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string) (result DataMaskingPolicy, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, databaseName, dataMaskingPolicyName)
+func (client DataMaskingPoliciesClient) Get(ctx context.Context, resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string) (result DataMaskingPolicy, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, databaseName, dataMaskingPolicyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DataMaskingPoliciesClient", "Get", nil, "Failure preparing request")
 		return
@@ -142,7 +142,7 @@ func (client DataMaskingPoliciesClient) Get(resourceGroupName string, serverName
 }
 
 // GetPreparer prepares the Get request.
-func (client DataMaskingPoliciesClient) GetPreparer(resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string) (*http.Request, error) {
+func (client DataMaskingPoliciesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, dataMaskingPolicyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":          autorest.Encode("path", databaseName),
 		"dataMaskingPolicyName": autorest.Encode("path", dataMaskingPolicyName),
@@ -161,14 +161,13 @@ func (client DataMaskingPoliciesClient) GetPreparer(resourceGroupName string, se
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/dataMaskingPolicies/{dataMaskingPolicyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataMaskingPoliciesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

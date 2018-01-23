@@ -18,6 +18,7 @@ package automation
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,27 +27,27 @@ import (
 
 // ScheduleClient is the automation Client
 type ScheduleClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewScheduleClient creates an instance of the ScheduleClient client.
-func NewScheduleClient(subscriptionID string) ScheduleClient {
-	return NewScheduleClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewScheduleClient(subscriptionID string, resourceGroupName string) ScheduleClient {
+	return NewScheduleClientWithBaseURI(DefaultBaseURI, subscriptionID, resourceGroupName)
 }
 
 // NewScheduleClientWithBaseURI creates an instance of the ScheduleClient client.
-func NewScheduleClientWithBaseURI(baseURI string, subscriptionID string) ScheduleClient {
-	return ScheduleClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewScheduleClientWithBaseURI(baseURI string, subscriptionID string, resourceGroupName string) ScheduleClient {
+	return ScheduleClient{NewWithBaseURI(baseURI, subscriptionID, resourceGroupName)}
 }
 
 // CreateOrUpdate create a schedule.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. scheduleName is
-// the schedule name. parameters is the parameters supplied to the create or update schedule operation.
-func (client ScheduleClient) CreateOrUpdate(resourceGroupName string, automationAccountName string, scheduleName string, parameters ScheduleCreateOrUpdateParameters) (result Schedule, err error) {
+// automationAccountName is the automation account name. scheduleName is the schedule name. parameters is the
+// parameters supplied to the create or update schedule operation.
+func (client ScheduleClient) CreateOrUpdate(ctx context.Context, automationAccountName string, scheduleName string, parameters ScheduleCreateOrUpdateParameters) (result Schedule, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}},
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}},
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Name", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.ScheduleCreateOrUpdateProperties", Name: validation.Null, Rule: true,
@@ -54,7 +55,7 @@ func (client ScheduleClient) CreateOrUpdate(resourceGroupName string, automation
 		return result, validation.NewErrorWithValidationError(err, "automation.ScheduleClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, automationAccountName, scheduleName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, automationAccountName, scheduleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -76,10 +77,10 @@ func (client ScheduleClient) CreateOrUpdate(resourceGroupName string, automation
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ScheduleClient) CreateOrUpdatePreparer(resourceGroupName string, automationAccountName string, scheduleName string, parameters ScheduleCreateOrUpdateParameters) (*http.Request, error) {
+func (client ScheduleClient) CreateOrUpdatePreparer(ctx context.Context, automationAccountName string, scheduleName string, parameters ScheduleCreateOrUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"scheduleName":          autorest.Encode("path", scheduleName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
@@ -96,14 +97,13 @@ func (client ScheduleClient) CreateOrUpdatePreparer(resourceGroupName string, au
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/schedules/{scheduleName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -122,16 +122,15 @@ func (client ScheduleClient) CreateOrUpdateResponder(resp *http.Response) (resul
 
 // Delete delete the schedule identified by schedule name.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. scheduleName is
-// the schedule name.
-func (client ScheduleClient) Delete(resourceGroupName string, automationAccountName string, scheduleName string) (result autorest.Response, err error) {
+// automationAccountName is the automation account name. scheduleName is the schedule name.
+func (client ScheduleClient) Delete(ctx context.Context, automationAccountName string, scheduleName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.ScheduleClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, automationAccountName, scheduleName)
+	req, err := client.DeletePreparer(ctx, automationAccountName, scheduleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "Delete", nil, "Failure preparing request")
 		return
@@ -153,10 +152,10 @@ func (client ScheduleClient) Delete(resourceGroupName string, automationAccountN
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ScheduleClient) DeletePreparer(resourceGroupName string, automationAccountName string, scheduleName string) (*http.Request, error) {
+func (client ScheduleClient) DeletePreparer(ctx context.Context, automationAccountName string, scheduleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"scheduleName":          autorest.Encode("path", scheduleName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
@@ -171,14 +170,13 @@ func (client ScheduleClient) DeletePreparer(resourceGroupName string, automation
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/schedules/{scheduleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -196,16 +194,15 @@ func (client ScheduleClient) DeleteResponder(resp *http.Response) (result autore
 
 // Get retrieve the schedule identified by schedule name.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. scheduleName is
-// the schedule name.
-func (client ScheduleClient) Get(resourceGroupName string, automationAccountName string, scheduleName string) (result Schedule, err error) {
+// automationAccountName is the automation account name. scheduleName is the schedule name.
+func (client ScheduleClient) Get(ctx context.Context, automationAccountName string, scheduleName string) (result Schedule, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.ScheduleClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, automationAccountName, scheduleName)
+	req, err := client.GetPreparer(ctx, automationAccountName, scheduleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "Get", nil, "Failure preparing request")
 		return
@@ -227,10 +224,10 @@ func (client ScheduleClient) Get(resourceGroupName string, automationAccountName
 }
 
 // GetPreparer prepares the Get request.
-func (client ScheduleClient) GetPreparer(resourceGroupName string, automationAccountName string, scheduleName string) (*http.Request, error) {
+func (client ScheduleClient) GetPreparer(ctx context.Context, automationAccountName string, scheduleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"scheduleName":          autorest.Encode("path", scheduleName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
@@ -245,14 +242,13 @@ func (client ScheduleClient) GetPreparer(resourceGroupName string, automationAcc
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/schedules/{scheduleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -271,15 +267,16 @@ func (client ScheduleClient) GetResponder(resp *http.Response) (result Schedule,
 
 // ListByAutomationAccount retrieve a list of schedules.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name.
-func (client ScheduleClient) ListByAutomationAccount(resourceGroupName string, automationAccountName string) (result ScheduleListResult, err error) {
+// automationAccountName is the automation account name.
+func (client ScheduleClient) ListByAutomationAccount(ctx context.Context, automationAccountName string) (result ScheduleListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.ScheduleClient", "ListByAutomationAccount")
 	}
 
-	req, err := client.ListByAutomationAccountPreparer(resourceGroupName, automationAccountName)
+	result.fn = client.listByAutomationAccountNextResults
+	req, err := client.ListByAutomationAccountPreparer(ctx, automationAccountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", nil, "Failure preparing request")
 		return
@@ -287,12 +284,12 @@ func (client ScheduleClient) ListByAutomationAccount(resourceGroupName string, a
 
 	resp, err := client.ListByAutomationAccountSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.slr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByAutomationAccountResponder(resp)
+	result.slr, err = client.ListByAutomationAccountResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", resp, "Failure responding to request")
 	}
@@ -301,10 +298,10 @@ func (client ScheduleClient) ListByAutomationAccount(resourceGroupName string, a
 }
 
 // ListByAutomationAccountPreparer prepares the ListByAutomationAccount request.
-func (client ScheduleClient) ListByAutomationAccountPreparer(resourceGroupName string, automationAccountName string) (*http.Request, error) {
+func (client ScheduleClient) ListByAutomationAccountPreparer(ctx context.Context, automationAccountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
 
@@ -318,14 +315,13 @@ func (client ScheduleClient) ListByAutomationAccountPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/schedules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByAutomationAccountSender sends the ListByAutomationAccount request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) ListByAutomationAccountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -342,87 +338,45 @@ func (client ScheduleClient) ListByAutomationAccountResponder(resp *http.Respons
 	return
 }
 
-// ListByAutomationAccountNextResults retrieves the next set of results, if any.
-func (client ScheduleClient) ListByAutomationAccountNextResults(lastResults ScheduleListResult) (result ScheduleListResult, err error) {
-	req, err := lastResults.ScheduleListResultPreparer()
+// listByAutomationAccountNextResults retrieves the next set of results, if any.
+func (client ScheduleClient) listByAutomationAccountNextResults(lastResults ScheduleListResult) (result ScheduleListResult, err error) {
+	req, err := lastResults.scheduleListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "automation.ScheduleClient", "listByAutomationAccountNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByAutomationAccountSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "automation.ScheduleClient", "listByAutomationAccountNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByAutomationAccountResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "ListByAutomationAccount", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "listByAutomationAccountNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByAutomationAccountComplete gets all elements from the list without paging.
-func (client ScheduleClient) ListByAutomationAccountComplete(resourceGroupName string, automationAccountName string, cancel <-chan struct{}) (<-chan Schedule, <-chan error) {
-	resultChan := make(chan Schedule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByAutomationAccount(resourceGroupName, automationAccountName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByAutomationAccountNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByAutomationAccountComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ScheduleClient) ListByAutomationAccountComplete(ctx context.Context, automationAccountName string) (result ScheduleListResultIterator, err error) {
+	result.page, err = client.ListByAutomationAccount(ctx, automationAccountName)
+	return
 }
 
 // Update update the schedule identified by schedule name.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. scheduleName is
-// the schedule name. parameters is the parameters supplied to the update schedule operation.
-func (client ScheduleClient) Update(resourceGroupName string, automationAccountName string, scheduleName string, parameters ScheduleUpdateParameters) (result Schedule, err error) {
+// automationAccountName is the automation account name. scheduleName is the schedule name. parameters is the
+// parameters supplied to the update schedule operation.
+func (client ScheduleClient) Update(ctx context.Context, automationAccountName string, scheduleName string, parameters ScheduleUpdateParameters) (result Schedule, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.ScheduleClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, automationAccountName, scheduleName, parameters)
+	req, err := client.UpdatePreparer(ctx, automationAccountName, scheduleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.ScheduleClient", "Update", nil, "Failure preparing request")
 		return
@@ -444,10 +398,10 @@ func (client ScheduleClient) Update(resourceGroupName string, automationAccountN
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ScheduleClient) UpdatePreparer(resourceGroupName string, automationAccountName string, scheduleName string, parameters ScheduleUpdateParameters) (*http.Request, error) {
+func (client ScheduleClient) UpdatePreparer(ctx context.Context, automationAccountName string, scheduleName string, parameters ScheduleUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"scheduleName":          autorest.Encode("path", scheduleName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
@@ -464,14 +418,13 @@ func (client ScheduleClient) UpdatePreparer(resourceGroupName string, automation
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/schedules/{scheduleName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

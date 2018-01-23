@@ -204,6 +204,20 @@ type Bucket struct {
 	// configuration.
 	Cors []*BucketCors `json:"cors,omitempty"`
 
+	// DefaultEventBasedHold: Defines the default value for Event-Based hold
+	// on newly created objects in this bucket. Event-Based hold is a way to
+	// retain objects indefinitely until an event occurs, signified by the
+	// hold's release. After being released, such objects will be subject to
+	// bucket-level retention (if any). One sample use case of this flag is
+	// for banks to hold loan documents for at least 3 years after loan is
+	// paid in full. Here bucket-level retention is 3 years and the event is
+	// loan being paid in full. In this example these objects will be held
+	// intact for any number of years until the event has occurred (hold is
+	// released) and then 3 more years after that. Objects under Event-Based
+	// hold cannot be deleted, overwritten or archived until the hold is
+	// removed.
+	DefaultEventBasedHold bool `json:"defaultEventBasedHold,omitempty"`
+
 	// DefaultObjectAcl: Default access controls to apply to new objects
 	// when no ACL is provided.
 	DefaultObjectAcl []*ObjectAccessControl `json:"defaultObjectAcl,omitempty"`
@@ -215,8 +229,8 @@ type Bucket struct {
 	// Etag: HTTP 1.1 Entity tag for the bucket.
 	Etag string `json:"etag,omitempty"`
 
-	// Id: The ID of the bucket. For buckets, the id and name properities
-	// are the same.
+	// Id: The ID of the bucket. For buckets, the id and name properties are
+	// the same.
 	Id string `json:"id,omitempty"`
 
 	// Kind: The kind of item this is. For buckets, this is always
@@ -253,6 +267,18 @@ type Bucket struct {
 	// ProjectNumber: The project number of the project the bucket belongs
 	// to.
 	ProjectNumber uint64 `json:"projectNumber,omitempty,string"`
+
+	// RetentionPolicy: Defines the retention policy for a bucket. The
+	// Retention policy enforces a minimum retention time for all objects
+	// contained in the bucket, based on their creation time. Any attempt to
+	// overwrite or delete objects younger than the retention period will
+	// result in a PERMISSION_DENIED error. An unlocked retention policy can
+	// be modified or removed from the bucket via the UpdateBucketMetadata
+	// RPC. A locked retention policy cannot be removed or shortened in
+	// duration for the lifetime of the bucket. Attempting to remove or
+	// decrease period of a locked retention policy will result in a
+	// PERMISSION_DENIED error.
+	RetentionPolicy *BucketRetentionPolicy `json:"retentionPolicy,omitempty"`
 
 	// SelfLink: The URI of this bucket.
 	SelfLink string `json:"selfLink,omitempty"`
@@ -309,7 +335,8 @@ func (s *Bucket) MarshalJSON() ([]byte, error) {
 
 // BucketBilling: The bucket's billing configuration.
 type BucketBilling struct {
-	// RequesterPays: When set to true, bucket is requester pays.
+	// RequesterPays: When set to true, Requester Pays is enabled for this
+	// bucket.
 	RequesterPays bool `json:"requesterPays,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "RequesterPays") to
@@ -381,6 +408,9 @@ func (s *BucketCors) MarshalJSON() ([]byte, error) {
 // BucketEncryption: Encryption configuration used by default for newly
 // inserted objects, when no encryption config is specified.
 type BucketEncryption struct {
+	// DefaultKmsKeyName: A Cloud KMS key that will be used to encrypt
+	// objects inserted into this bucket, if no encryption method is
+	// specified. Limited availability; usable only by enabled projects.
 	DefaultKmsKeyName string `json:"defaultKmsKeyName,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "DefaultKmsKeyName")
@@ -613,6 +643,54 @@ type BucketOwner struct {
 
 func (s *BucketOwner) MarshalJSON() ([]byte, error) {
 	type NoMethod BucketOwner
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BucketRetentionPolicy: Defines the retention policy for a bucket. The
+// Retention policy enforces a minimum retention time for all objects
+// contained in the bucket, based on their creation time. Any attempt to
+// overwrite or delete objects younger than the retention period will
+// result in a PERMISSION_DENIED error. An unlocked retention policy can
+// be modified or removed from the bucket via the UpdateBucketMetadata
+// RPC. A locked retention policy cannot be removed or shortened in
+// duration for the lifetime of the bucket. Attempting to remove or
+// decrease period of a locked retention policy will result in a
+// PERMISSION_DENIED error.
+type BucketRetentionPolicy struct {
+	// EffectiveTime: The time from which policy was enforced and effective.
+	// RFC 3339 format.
+	EffectiveTime string `json:"effectiveTime,omitempty"`
+
+	// IsLocked: Once locked, an object retention policy cannot be modified.
+	IsLocked bool `json:"isLocked,omitempty"`
+
+	// RetentionPeriod: Specifies the duration that objects need to be
+	// retained. Retention duration must be greater than zero and less than
+	// 100 years. Note that enforcement of retention periods less than a day
+	// is not guaranteed. Such periods should only be used for testing
+	// purposes.
+	RetentionPeriod int64 `json:"retentionPeriod,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "EffectiveTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "EffectiveTime") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BucketRetentionPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod BucketRetentionPolicy
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1185,6 +1263,18 @@ type Object struct {
 	// Etag: HTTP 1.1 Entity tag for the object.
 	Etag string `json:"etag,omitempty"`
 
+	// EventBasedHold: Defines the Event-Based hold for an object.
+	// Event-Based hold is a way to retain objects indefinitely until an
+	// event occurs, signified by the hold's release. After being released,
+	// such objects will be subject to bucket-level retention (if any). One
+	// sample use case of this flag is for banks to hold loan documents for
+	// at least 3 years after loan is paid in full. Here bucket-level
+	// retention is 3 years and the event is loan being paid in full. In
+	// this example these objects will be held intact for any number of
+	// years until the event has occurred (hold is released) and then 3 more
+	// years after that.
+	EventBasedHold bool `json:"eventBasedHold,omitempty"`
+
 	// Generation: The content generation of this object. Used for object
 	// versioning.
 	Generation int64 `json:"generation,omitempty,string"`
@@ -1198,7 +1288,8 @@ type Object struct {
 	Kind string `json:"kind,omitempty"`
 
 	// KmsKeyName: Cloud KMS Key used to encrypt this object, if the object
-	// is encrypted by such a key.
+	// is encrypted by such a key. Limited availability; usable only by
+	// enabled projects.
 	KmsKeyName string `json:"kmsKeyName,omitempty"`
 
 	// Md5Hash: MD5 hash of the data; encoded using base64. For more
@@ -1226,6 +1317,15 @@ type Object struct {
 	// the object.
 	Owner *ObjectOwner `json:"owner,omitempty"`
 
+	// RetentionExpirationTime: Specifies the earliest time that the
+	// object's retention period expires. This value is server-determined
+	// and is in RFC 3339 format. Note 1: This field is not provided for
+	// objects with an active Event-Based hold, since retention expiration
+	// is unknown until the hold is removed. Note 2: This value can be
+	// provided even when TemporaryHold is set (so that the user can reason
+	// about policy without having to first unset the TemporaryHold).
+	RetentionExpirationTime string `json:"retentionExpirationTime,omitempty"`
+
 	// SelfLink: The link to this object.
 	SelfLink string `json:"selfLink,omitempty"`
 
@@ -1234,6 +1334,13 @@ type Object struct {
 
 	// StorageClass: Storage class of the object.
 	StorageClass string `json:"storageClass,omitempty"`
+
+	// TemporaryHold: Defines the temporary hold for an object. This flag is
+	// used to enforce a temporary hold on an object. While it is set to
+	// true, the object is protected against deletion and overwrites. A
+	// common use case of this flag is regulatory investigations where
+	// objects need to be retained while the investigation is ongoing.
+	TemporaryHold bool `json:"temporaryHold,omitempty"`
 
 	// TimeCreated: The creation time of the object in RFC 3339 format.
 	TimeCreated string `json:"timeCreated,omitempty"`
@@ -3685,6 +3792,152 @@ func (c *BucketsListCall) Pages(ctx context.Context, f func(*Buckets) error) err
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+// method id "storage.buckets.lockRetentionPolicy":
+
+type BucketsLockRetentionPolicyCall struct {
+	s          *Service
+	bucket     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// LockRetentionPolicy: Locks retention policy on a bucket.
+func (r *BucketsService) LockRetentionPolicy(bucket string, ifMetagenerationMatch int64) *BucketsLockRetentionPolicyCall {
+	c := &BucketsLockRetentionPolicyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.bucket = bucket
+	c.urlParams_.Set("ifMetagenerationMatch", fmt.Sprint(ifMetagenerationMatch))
+	return c
+}
+
+// UserProject sets the optional parameter "userProject": The project to
+// be billed for this request. Required for Requester Pays buckets.
+func (c *BucketsLockRetentionPolicyCall) UserProject(userProject string) *BucketsLockRetentionPolicyCall {
+	c.urlParams_.Set("userProject", userProject)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *BucketsLockRetentionPolicyCall) Fields(s ...googleapi.Field) *BucketsLockRetentionPolicyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BucketsLockRetentionPolicyCall) Context(ctx context.Context) *BucketsLockRetentionPolicyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *BucketsLockRetentionPolicyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *BucketsLockRetentionPolicyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "b/{bucket}/lockRetentionPolicy")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"bucket": c.bucket,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "storage.buckets.lockRetentionPolicy" call.
+// Exactly one of *Bucket or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Bucket.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *BucketsLockRetentionPolicyCall) Do(opts ...googleapi.CallOption) (*Bucket, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Bucket{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Locks retention policy on a bucket.",
+	//   "httpMethod": "POST",
+	//   "id": "storage.buckets.lockRetentionPolicy",
+	//   "parameterOrder": [
+	//     "bucket",
+	//     "ifMetagenerationMatch"
+	//   ],
+	//   "parameters": {
+	//     "bucket": {
+	//       "description": "Name of a bucket.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "ifMetagenerationMatch": {
+	//       "description": "Makes the operation conditional on whether bucket's current metageneration matches the given value.",
+	//       "format": "int64",
+	//       "location": "query",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "userProject": {
+	//       "description": "The project to be billed for this request. Required for Requester Pays buckets.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "b/{bucket}/lockRetentionPolicy",
+	//   "response": {
+	//     "$ref": "Bucket"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/devstorage.full_control",
+	//     "https://www.googleapis.com/auth/devstorage.read_write"
+	//   ]
+	// }
+
 }
 
 // method id "storage.buckets.patch":
@@ -8534,7 +8787,8 @@ func (c *ObjectsInsertCall) IfMetagenerationNotMatch(ifMetagenerationNotMatch in
 // the Cloud KMS key, of the form
 // projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key,
 //  that will be used to encrypt the object. Overrides the object
-// metadata's kms_key_name value, if any.
+// metadata's kms_key_name value, if any. Limited availability; usable
+// only by enabled projects.
 func (c *ObjectsInsertCall) KmsKeyName(kmsKeyName string) *ObjectsInsertCall {
 	c.urlParams_.Set("kmsKeyName", kmsKeyName)
 	return c
@@ -8801,7 +9055,7 @@ func (c *ObjectsInsertCall) Do(opts ...googleapi.CallOption) (*Object, error) {
 	//       "type": "string"
 	//     },
 	//     "kmsKeyName": {
-	//       "description": "Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any.",
+	//       "description": "Resource name of the Cloud KMS key, of the form projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key, that will be used to encrypt the object. Overrides the object metadata's kms_key_name value, if any. Limited availability; usable only by enabled projects.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

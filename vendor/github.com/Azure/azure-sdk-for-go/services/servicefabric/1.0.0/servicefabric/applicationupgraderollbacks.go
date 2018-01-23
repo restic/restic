@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // ApplicationUpgradeRollbacksClient is the client for the ApplicationUpgradeRollbacks methods of the Servicefabric
 // service.
 type ApplicationUpgradeRollbacksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewApplicationUpgradeRollbacksClient creates an instance of the ApplicationUpgradeRollbacksClient client.
@@ -42,8 +43,8 @@ func NewApplicationUpgradeRollbacksClientWithBaseURI(baseURI string, timeout *in
 // Start start application upgrade rollbacks
 //
 // applicationName is the name of the application
-func (client ApplicationUpgradeRollbacksClient) Start(applicationName string) (result String, err error) {
-	req, err := client.StartPreparer(applicationName)
+func (client ApplicationUpgradeRollbacksClient) Start(ctx context.Context, applicationName string) (result String, err error) {
+	req, err := client.StartPreparer(ctx, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationUpgradeRollbacksClient", "Start", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ApplicationUpgradeRollbacksClient) Start(applicationName string) (r
 }
 
 // StartPreparer prepares the Start request.
-func (client ApplicationUpgradeRollbacksClient) StartPreparer(applicationName string) (*http.Request, error) {
+func (client ApplicationUpgradeRollbacksClient) StartPreparer(ctx context.Context, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -83,14 +84,13 @@ func (client ApplicationUpgradeRollbacksClient) StartPreparer(applicationName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/RollbackUpgrade", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationUpgradeRollbacksClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

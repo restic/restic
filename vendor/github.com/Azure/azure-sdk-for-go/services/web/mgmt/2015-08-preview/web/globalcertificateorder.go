@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // GlobalCertificateOrderClient is the webSite Management Client
 type GlobalCertificateOrderClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewGlobalCertificateOrderClient creates an instance of the GlobalCertificateOrderClient client.
@@ -39,8 +40,9 @@ func NewGlobalCertificateOrderClientWithBaseURI(baseURI string, subscriptionID s
 }
 
 // GetAllCertificateOrders sends the get all certificate orders request.
-func (client GlobalCertificateOrderClient) GetAllCertificateOrders() (result CertificateOrderCollection, err error) {
-	req, err := client.GetAllCertificateOrdersPreparer()
+func (client GlobalCertificateOrderClient) GetAllCertificateOrders(ctx context.Context) (result CertificateOrderCollectionPage, err error) {
+	result.fn = client.getAllCertificateOrdersNextResults
+	req, err := client.GetAllCertificateOrdersPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", nil, "Failure preparing request")
 		return
@@ -48,12 +50,12 @@ func (client GlobalCertificateOrderClient) GetAllCertificateOrders() (result Cer
 
 	resp, err := client.GetAllCertificateOrdersSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.coc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetAllCertificateOrdersResponder(resp)
+	result.coc, err = client.GetAllCertificateOrdersResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", resp, "Failure responding to request")
 	}
@@ -62,7 +64,7 @@ func (client GlobalCertificateOrderClient) GetAllCertificateOrders() (result Cer
 }
 
 // GetAllCertificateOrdersPreparer prepares the GetAllCertificateOrders request.
-func (client GlobalCertificateOrderClient) GetAllCertificateOrdersPreparer() (*http.Request, error) {
+func (client GlobalCertificateOrderClient) GetAllCertificateOrdersPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -77,14 +79,13 @@ func (client GlobalCertificateOrderClient) GetAllCertificateOrdersPreparer() (*h
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.CertificateRegistration/certificateOrders", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetAllCertificateOrdersSender sends the GetAllCertificateOrders request. The method will close the
 // http.Response Body if it receives an error.
 func (client GlobalCertificateOrderClient) GetAllCertificateOrdersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -101,80 +102,38 @@ func (client GlobalCertificateOrderClient) GetAllCertificateOrdersResponder(resp
 	return
 }
 
-// GetAllCertificateOrdersNextResults retrieves the next set of results, if any.
-func (client GlobalCertificateOrderClient) GetAllCertificateOrdersNextResults(lastResults CertificateOrderCollection) (result CertificateOrderCollection, err error) {
-	req, err := lastResults.CertificateOrderCollectionPreparer()
+// getAllCertificateOrdersNextResults retrieves the next set of results, if any.
+func (client GlobalCertificateOrderClient) getAllCertificateOrdersNextResults(lastResults CertificateOrderCollection) (result CertificateOrderCollection, err error) {
+	req, err := lastResults.certificateOrderCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "getAllCertificateOrdersNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetAllCertificateOrdersSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "getAllCertificateOrdersNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetAllCertificateOrdersResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "GetAllCertificateOrders", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "getAllCertificateOrdersNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetAllCertificateOrdersComplete gets all elements from the list without paging.
-func (client GlobalCertificateOrderClient) GetAllCertificateOrdersComplete(cancel <-chan struct{}) (<-chan CertificateOrder, <-chan error) {
-	resultChan := make(chan CertificateOrder)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetAllCertificateOrders()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetAllCertificateOrdersNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetAllCertificateOrdersComplete enumerates all values, automatically crossing page boundaries as required.
+func (client GlobalCertificateOrderClient) GetAllCertificateOrdersComplete(ctx context.Context) (result CertificateOrderCollectionIterator, err error) {
+	result.page, err = client.GetAllCertificateOrders(ctx)
+	return
 }
 
 // ValidateCertificatePurchaseInformation sends the validate certificate purchase information request.
 //
 // certificateOrder is certificate order
-func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformation(certificateOrder CertificateOrder) (result SetObject, err error) {
-	req, err := client.ValidateCertificatePurchaseInformationPreparer(certificateOrder)
+func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformation(ctx context.Context, certificateOrder CertificateOrder) (result SetObject, err error) {
+	req, err := client.ValidateCertificatePurchaseInformationPreparer(ctx, certificateOrder)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.GlobalCertificateOrderClient", "ValidateCertificatePurchaseInformation", nil, "Failure preparing request")
 		return
@@ -196,7 +155,7 @@ func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformatio
 }
 
 // ValidateCertificatePurchaseInformationPreparer prepares the ValidateCertificatePurchaseInformation request.
-func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformationPreparer(certificateOrder CertificateOrder) (*http.Request, error) {
+func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformationPreparer(ctx context.Context, certificateOrder CertificateOrder) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -213,14 +172,13 @@ func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformatio
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.CertificateRegistration/validateCertificateRegistrationInformation", pathParameters),
 		autorest.WithJSON(certificateOrder),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ValidateCertificatePurchaseInformationSender sends the ValidateCertificatePurchaseInformation request. The method will close the
 // http.Response Body if it receives an error.
 func (client GlobalCertificateOrderClient) ValidateCertificatePurchaseInformationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package management
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/satori/go.uuid"
@@ -28,7 +29,7 @@ import (
 // subscriptions/resources into an organizational hierarchy and centrally
 // manage access control, policies, alerting and reporting for those resources.
 type GroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewGroupsClient creates an instance of the GroupsClient client.
@@ -46,8 +47,8 @@ func NewGroupsClientWithBaseURI(baseURI string, groupID uuid.UUID) GroupsClient 
 // expand is the $expand=children query string parameter allows clients to request inclusion of children in the
 // response payload. recurse is the $recurse=true query string parameter allows clients to request inclusion of entire
 // hierarchy in the response payload.
-func (client GroupsClient) Get(expand string, recurse *bool) (result GroupWithHierarchy, err error) {
-	req, err := client.GetPreparer(expand, recurse)
+func (client GroupsClient) Get(ctx context.Context, expand string, recurse *bool) (result GroupWithHierarchy, err error) {
+	req, err := client.GetPreparer(ctx, expand, recurse)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "management.GroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -69,7 +70,7 @@ func (client GroupsClient) Get(expand string, recurse *bool) (result GroupWithHi
 }
 
 // GetPreparer prepares the Get request.
-func (client GroupsClient) GetPreparer(expand string, recurse *bool) (*http.Request, error) {
+func (client GroupsClient) GetPreparer(ctx context.Context, expand string, recurse *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId": autorest.Encode("path", client.GroupID),
 	}
@@ -90,14 +91,13 @@ func (client GroupsClient) GetPreparer(expand string, recurse *bool) (*http.Requ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/providers/Microsoft.Management/managementGroups/{groupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -119,8 +119,9 @@ func (client GroupsClient) GetResponder(resp *http.Response) (result GroupWithHi
 // skiptoken is page continuation token is only used if a previous operation returned a partial result.
 // If a previous response contains a nextLink element, the value of the nextLink element will include a token parameter
 // that specifies a starting point to use for subsequent calls.
-func (client GroupsClient) List(skiptoken string) (result GroupListResult, err error) {
-	req, err := client.ListPreparer(skiptoken)
+func (client GroupsClient) List(ctx context.Context, skiptoken string) (result GroupListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, skiptoken)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "management.GroupsClient", "List", nil, "Failure preparing request")
 		return
@@ -128,12 +129,12 @@ func (client GroupsClient) List(skiptoken string) (result GroupListResult, err e
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.glr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "management.GroupsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.glr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "management.GroupsClient", "List", resp, "Failure responding to request")
 	}
@@ -142,7 +143,7 @@ func (client GroupsClient) List(skiptoken string) (result GroupListResult, err e
 }
 
 // ListPreparer prepares the List request.
-func (client GroupsClient) ListPreparer(skiptoken string) (*http.Request, error) {
+func (client GroupsClient) ListPreparer(ctx context.Context, skiptoken string) (*http.Request, error) {
 	const APIVersion = "2017-08-31-preview"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -156,14 +157,13 @@ func (client GroupsClient) ListPreparer(skiptoken string) (*http.Request, error)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Management/managementGroups"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -180,71 +180,29 @@ func (client GroupsClient) ListResponder(resp *http.Response) (result GroupListR
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client GroupsClient) ListNextResults(lastResults GroupListResult) (result GroupListResult, err error) {
-	req, err := lastResults.GroupListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client GroupsClient) listNextResults(lastResults GroupListResult) (result GroupListResult, err error) {
+	req, err := lastResults.groupListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "management.GroupsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "management.GroupsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "management.GroupsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "management.GroupsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "management.GroupsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "management.GroupsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client GroupsClient) ListComplete(skiptoken string, cancel <-chan struct{}) (<-chan GroupInfo, <-chan error) {
-	resultChan := make(chan GroupInfo)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(skiptoken)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client GroupsClient) ListComplete(ctx context.Context, skiptoken string) (result GroupListResultIterator, err error) {
+	result.page, err = client.List(ctx, skiptoken)
+	return
 }

@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update,
 // and delete databases.
 type ServiceObjectivesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServiceObjectivesClient creates an instance of the ServiceObjectivesClient client.
@@ -45,8 +46,8 @@ func NewServiceObjectivesClientWithBaseURI(baseURI string, subscriptionID string
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. serviceObjectiveName is the name of
 // the service objective to retrieve.
-func (client ServiceObjectivesClient) Get(resourceGroupName string, serverName string, serviceObjectiveName string) (result ServiceObjective, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, serviceObjectiveName)
+func (client ServiceObjectivesClient) Get(ctx context.Context, resourceGroupName string, serverName string, serviceObjectiveName string) (result ServiceObjective, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, serviceObjectiveName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServiceObjectivesClient", "Get", nil, "Failure preparing request")
 		return
@@ -68,7 +69,7 @@ func (client ServiceObjectivesClient) Get(resourceGroupName string, serverName s
 }
 
 // GetPreparer prepares the Get request.
-func (client ServiceObjectivesClient) GetPreparer(resourceGroupName string, serverName string, serviceObjectiveName string) (*http.Request, error) {
+func (client ServiceObjectivesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, serviceObjectiveName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
 		"serverName":           autorest.Encode("path", serverName),
@@ -86,14 +87,13 @@ func (client ServiceObjectivesClient) GetPreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/serviceObjectives/{serviceObjectiveName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceObjectivesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,8 +114,8 @@ func (client ServiceObjectivesClient) GetResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ServiceObjectivesClient) ListByServer(resourceGroupName string, serverName string) (result ServiceObjectiveListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client ServiceObjectivesClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result ServiceObjectiveListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServiceObjectivesClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -137,7 +137,7 @@ func (client ServiceObjectivesClient) ListByServer(resourceGroupName string, ser
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client ServiceObjectivesClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServiceObjectivesClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -154,14 +154,13 @@ func (client ServiceObjectivesClient) ListByServerPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/serviceObjectives", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceObjectivesClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

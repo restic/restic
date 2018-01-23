@@ -18,6 +18,7 @@ package datafactory
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -28,7 +29,7 @@ import (
 // ActivityRunsClient is the the Azure Data Factory V2 management API provides a RESTful set of web services that
 // interact with Azure Data Factory V2 services.
 type ActivityRunsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewActivityRunsClient creates an instance of the ActivityRunsClient client.
@@ -47,7 +48,7 @@ func NewActivityRunsClientWithBaseURI(baseURI string, subscriptionID string) Act
 // startTime is the start time of activity runs in ISO8601 format. endTime is the end time of activity runs in ISO8601
 // format. status is the status of the pipeline run. activityName is the name of the activity. linkedServiceName is the
 // linked service name.
-func (client ActivityRunsClient) ListByPipelineRun(resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string) (result ActivityRunsListResponse, err error) {
+func (client ActivityRunsClient) ListByPipelineRun(ctx context.Context, resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string) (result ActivityRunsListResponsePage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -64,7 +65,8 @@ func (client ActivityRunsClient) ListByPipelineRun(resourceGroupName string, fac
 		return result, validation.NewErrorWithValidationError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun")
 	}
 
-	req, err := client.ListByPipelineRunPreparer(resourceGroupName, factoryName, runID, startTime, endTime, status, activityName, linkedServiceName)
+	result.fn = client.listByPipelineRunNextResults
+	req, err := client.ListByPipelineRunPreparer(ctx, resourceGroupName, factoryName, runID, startTime, endTime, status, activityName, linkedServiceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", nil, "Failure preparing request")
 		return
@@ -72,12 +74,12 @@ func (client ActivityRunsClient) ListByPipelineRun(resourceGroupName string, fac
 
 	resp, err := client.ListByPipelineRunSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.arlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByPipelineRunResponder(resp)
+	result.arlr, err = client.ListByPipelineRunResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", resp, "Failure responding to request")
 	}
@@ -86,7 +88,7 @@ func (client ActivityRunsClient) ListByPipelineRun(resourceGroupName string, fac
 }
 
 // ListByPipelineRunPreparer prepares the ListByPipelineRun request.
-func (client ActivityRunsClient) ListByPipelineRunPreparer(resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string) (*http.Request, error) {
+func (client ActivityRunsClient) ListByPipelineRunPreparer(ctx context.Context, resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -115,14 +117,13 @@ func (client ActivityRunsClient) ListByPipelineRunPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/pipelineruns/{runId}/activityruns", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByPipelineRunSender sends the ListByPipelineRun request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityRunsClient) ListByPipelineRunSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -139,71 +140,29 @@ func (client ActivityRunsClient) ListByPipelineRunResponder(resp *http.Response)
 	return
 }
 
-// ListByPipelineRunNextResults retrieves the next set of results, if any.
-func (client ActivityRunsClient) ListByPipelineRunNextResults(lastResults ActivityRunsListResponse) (result ActivityRunsListResponse, err error) {
-	req, err := lastResults.ActivityRunsListResponsePreparer()
+// listByPipelineRunNextResults retrieves the next set of results, if any.
+func (client ActivityRunsClient) listByPipelineRunNextResults(lastResults ActivityRunsListResponse) (result ActivityRunsListResponse, err error) {
+	req, err := lastResults.activityRunsListResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "listByPipelineRunNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByPipelineRunSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "listByPipelineRunNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByPipelineRunResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "ListByPipelineRun", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "datafactory.ActivityRunsClient", "listByPipelineRunNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByPipelineRunComplete gets all elements from the list without paging.
-func (client ActivityRunsClient) ListByPipelineRunComplete(resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string, cancel <-chan struct{}) (<-chan ActivityRun, <-chan error) {
-	resultChan := make(chan ActivityRun)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByPipelineRun(resourceGroupName, factoryName, runID, startTime, endTime, status, activityName, linkedServiceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByPipelineRunNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByPipelineRunComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ActivityRunsClient) ListByPipelineRunComplete(ctx context.Context, resourceGroupName string, factoryName string, runID string, startTime date.Time, endTime date.Time, status string, activityName string, linkedServiceName string) (result ActivityRunsListResponseIterator, err error) {
+	result.page, err = client.ListByPipelineRun(ctx, resourceGroupName, factoryName, runID, startTime, endTime, status, activityName, linkedServiceName)
+	return
 }

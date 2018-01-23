@@ -317,27 +317,22 @@ func (s *CloudFunction) MarshalJSON() ([]byte, error) {
 type EventTrigger struct {
 	// EventType: Required. The type of event to observe. For
 	// example:
-	// `google.storage.object.finalized`
+	// `providers/cloud.storage/eventTypes/object.change`
 	// and
-	// `google.firebase.analytics.event.log`.
+	// `providers/cloud.pubsub/eventTypes/topic.publish`.
 	//
-	// Event type consists of three parts:
-	//  1. namespace: The domain name of the organization in reverse-domain
-	//     notation (e.g. `acme.net` appears as `net.acme`) and any
-	// orginization
-	//     specific subdivisions. If the organization's top-level domain is
-	// `com`,
-	//     the top-level domain is ommited (e.g. `google.com` appears as
-	//     `google`). For example, `google.storage` and
-	//     `google.firebase.analytics`.
-	//  2. resource type: The type of resource on which event ocurs. For
-	//     example, the Google Cloud Storage API includes the type
+	// Event types match pattern `providers/*/eventTypes/*.*`.
+	// The pattern contains:
+	//
+	// 1. namespace: For example, `cloud.storage` and
+	//    `google.firebase.analytics`.
+	// 2. resource type: The type of resource on which event occurs. For
+	//    example, the Google Cloud Storage API includes the type
 	// `object`.
-	//  3. action: The action that generates the event. For example, actions
+	// 3. action: The action that generates the event. For example, action
 	// for
-	//     a Google Cloud Storage Object include 'finalize' and
-	// 'delete'.
-	// These parts are lower case and joined by '.'.
+	//    a Google Cloud Storage Object is 'change'.
+	// These parts are lower case.
 	EventType string `json:"eventType,omitempty"`
 
 	// FailurePolicy: Specifies policy for failed executions.
@@ -2203,11 +2198,24 @@ type ProjectsLocationsFunctionsGenerateUploadUrlCall struct {
 // source code.
 // For more information about the signed URL usage
 // see:
-// https://cloud.google.com/storage/docs/access-control/signed-urls
+// https://cloud.google.com/storage/docs/access-control/signed-urls.
 //
 // Once the function source code upload is complete, the used signed
 // URL should be provided in CreateFunction or UpdateFunction request
 // as a reference to the function source code.
+//
+// When uploading source code to the generated signed URL, please
+// follow
+// these restrictions:
+//
+// * Source file type should be a zip file.
+// * Source file size should not exceed 100MB limit.
+//
+// When making a HTTP PUT request, these two headers need to be
+// specified:
+//
+// * `content-type: application/zip`
+// * `x-google-content-length-range: 0,104857600`
 func (r *ProjectsLocationsFunctionsService) GenerateUploadUrl(parent string, generateuploadurlrequest *GenerateUploadUrlRequest) *ProjectsLocationsFunctionsGenerateUploadUrlCall {
 	c := &ProjectsLocationsFunctionsGenerateUploadUrlCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -2301,7 +2309,7 @@ func (c *ProjectsLocationsFunctionsGenerateUploadUrlCall) Do(opts ...googleapi.C
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns a signed URL for uploading a function source code.\nFor more information about the signed URL usage see:\nhttps://cloud.google.com/storage/docs/access-control/signed-urls\nOnce the function source code upload is complete, the used signed\nURL should be provided in CreateFunction or UpdateFunction request\nas a reference to the function source code.",
+	//   "description": "Returns a signed URL for uploading a function source code.\nFor more information about the signed URL usage see:\nhttps://cloud.google.com/storage/docs/access-control/signed-urls.\nOnce the function source code upload is complete, the used signed\nURL should be provided in CreateFunction or UpdateFunction request\nas a reference to the function source code.\n\nWhen uploading source code to the generated signed URL, please follow\nthese restrictions:\n\n* Source file type should be a zip file.\n* Source file size should not exceed 100MB limit.\n\nWhen making a HTTP PUT request, these two headers need to be specified:\n\n* `content-type: application/zip`\n* `x-google-content-length-range: 0,104857600`",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/functions:generateUploadUrl",
 	//   "httpMethod": "POST",
 	//   "id": "cloudfunctions.projects.locations.functions.generateUploadUrl",
@@ -2310,7 +2318,7 @@ func (c *ProjectsLocationsFunctionsGenerateUploadUrlCall) Do(opts ...googleapi.C
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "The project and location in which the Google Cloud Storage signed URL\nshould be generated, specified in the format `projects/*/locations/*",
+	//       "description": "The project and location in which the Google Cloud Storage signed URL\nshould be generated, specified in the format `projects/*/locations/*`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,

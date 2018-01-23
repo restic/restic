@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // LoggersClient is the apiManagement Client
 type LoggersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLoggersClient creates an instance of the LoggersClient client.
@@ -43,7 +44,7 @@ func NewLoggersClientWithBaseURI(baseURI string, subscriptionID string) LoggersC
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. loggerid
 // is logger identifier. Must be unique in the API Management service instance. parameters is create parameters.
-func (client LoggersClient) CreateOrUpdate(resourceGroupName string, serviceName string, loggerid string, parameters LoggerCreateParameters) (result autorest.Response, err error) {
+func (client LoggersClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, parameters LoggerCreateParameters) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -58,7 +59,7 @@ func (client LoggersClient) CreateOrUpdate(resourceGroupName string, serviceName
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.LoggersClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serviceName, loggerid, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serviceName, loggerid, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -80,7 +81,7 @@ func (client LoggersClient) CreateOrUpdate(resourceGroupName string, serviceName
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client LoggersClient) CreateOrUpdatePreparer(resourceGroupName string, serviceName string, loggerid string, parameters LoggerCreateParameters) (*http.Request, error) {
+func (client LoggersClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, parameters LoggerCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loggerid":          autorest.Encode("path", loggerid),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -100,14 +101,13 @@ func (client LoggersClient) CreateOrUpdatePreparer(resourceGroupName string, ser
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/loggers/{loggerid}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoggersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -128,7 +128,7 @@ func (client LoggersClient) CreateOrUpdateResponder(resp *http.Response) (result
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. loggerid
 // is logger identifier. Must be unique in the API Management service instance. ifMatch is the entity state (Etag)
 // version of the logger to delete. A value of "*" can be used for If-Match to unconditionally apply the operation.
-func (client LoggersClient) Delete(resourceGroupName string, serviceName string, loggerid string, ifMatch string) (result autorest.Response, err error) {
+func (client LoggersClient) Delete(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -140,7 +140,7 @@ func (client LoggersClient) Delete(resourceGroupName string, serviceName string,
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.LoggersClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, serviceName, loggerid, ifMatch)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName, loggerid, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -162,7 +162,7 @@ func (client LoggersClient) Delete(resourceGroupName string, serviceName string,
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LoggersClient) DeletePreparer(resourceGroupName string, serviceName string, loggerid string, ifMatch string) (*http.Request, error) {
+func (client LoggersClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loggerid":          autorest.Encode("path", loggerid),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -181,14 +181,13 @@ func (client LoggersClient) DeletePreparer(resourceGroupName string, serviceName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/loggers/{loggerid}", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoggersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -208,7 +207,7 @@ func (client LoggersClient) DeleteResponder(resp *http.Response) (result autores
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. loggerid
 // is logger identifier. Must be unique in the API Management service instance.
-func (client LoggersClient) Get(resourceGroupName string, serviceName string, loggerid string) (result LoggerResponse, err error) {
+func (client LoggersClient) Get(ctx context.Context, resourceGroupName string, serviceName string, loggerid string) (result LoggerResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -220,7 +219,7 @@ func (client LoggersClient) Get(resourceGroupName string, serviceName string, lo
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.LoggersClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, loggerid)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, loggerid)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "Get", nil, "Failure preparing request")
 		return
@@ -242,7 +241,7 @@ func (client LoggersClient) Get(resourceGroupName string, serviceName string, lo
 }
 
 // GetPreparer prepares the Get request.
-func (client LoggersClient) GetPreparer(resourceGroupName string, serviceName string, loggerid string) (*http.Request, error) {
+func (client LoggersClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, loggerid string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loggerid":          autorest.Encode("path", loggerid),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -260,14 +259,13 @@ func (client LoggersClient) GetPreparer(resourceGroupName string, serviceName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/loggers/{loggerid}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoggersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -292,7 +290,7 @@ func (client LoggersClient) GetResponder(resp *http.Response) (result LoggerResp
 // | id    | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith |
 // | type  | eq                     |                                             | top is number of records to return.
 // skip is number of records to skip.
-func (client LoggersClient) ListByService(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result LoggerCollection, err error) {
+func (client LoggersClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result LoggerCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -307,7 +305,8 @@ func (client LoggersClient) ListByService(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.LoggersClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName, filter, top, skip)
+	result.fn = client.listByServiceNextResults
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -315,12 +314,12 @@ func (client LoggersClient) ListByService(resourceGroupName string, serviceName 
 
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServiceResponder(resp)
+	result.lc, err = client.ListByServiceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", resp, "Failure responding to request")
 	}
@@ -329,7 +328,7 @@ func (client LoggersClient) ListByService(resourceGroupName string, serviceName 
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client LoggersClient) ListByServicePreparer(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client LoggersClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -355,14 +354,13 @@ func (client LoggersClient) ListByServicePreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/loggers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoggersClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -379,73 +377,31 @@ func (client LoggersClient) ListByServiceResponder(resp *http.Response) (result 
 	return
 }
 
-// ListByServiceNextResults retrieves the next set of results, if any.
-func (client LoggersClient) ListByServiceNextResults(lastResults LoggerCollection) (result LoggerCollection, err error) {
-	req, err := lastResults.LoggerCollectionPreparer()
+// listByServiceNextResults retrieves the next set of results, if any.
+func (client LoggersClient) listByServiceNextResults(lastResults LoggerCollection) (result LoggerCollection, err error) {
+	req, err := lastResults.loggerCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "listByServiceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "listByServiceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServiceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "ListByService", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "listByServiceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServiceComplete gets all elements from the list without paging.
-func (client LoggersClient) ListByServiceComplete(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan LoggerResponse, <-chan error) {
-	resultChan := make(chan LoggerResponse)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByService(resourceGroupName, serviceName, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServiceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServiceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LoggersClient) ListByServiceComplete(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result LoggerCollectionIterator, err error) {
+	result.page, err = client.ListByService(ctx, resourceGroupName, serviceName, filter, top, skip)
+	return
 }
 
 // Update updates an existing logger.
@@ -454,7 +410,7 @@ func (client LoggersClient) ListByServiceComplete(resourceGroupName string, serv
 // is logger identifier. Must be unique in the API Management service instance. parameters is update parameters.
 // ifMatch is the entity state (Etag) version of the logger to update. A value of "*" can be used for If-Match to
 // unconditionally apply the operation.
-func (client LoggersClient) Update(resourceGroupName string, serviceName string, loggerid string, parameters LoggerUpdateParameters, ifMatch string) (result autorest.Response, err error) {
+func (client LoggersClient) Update(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, parameters LoggerUpdateParameters, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -466,7 +422,7 @@ func (client LoggersClient) Update(resourceGroupName string, serviceName string,
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.LoggersClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, serviceName, loggerid, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serviceName, loggerid, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.LoggersClient", "Update", nil, "Failure preparing request")
 		return
@@ -488,7 +444,7 @@ func (client LoggersClient) Update(resourceGroupName string, serviceName string,
 }
 
 // UpdatePreparer prepares the Update request.
-func (client LoggersClient) UpdatePreparer(resourceGroupName string, serviceName string, loggerid string, parameters LoggerUpdateParameters, ifMatch string) (*http.Request, error) {
+func (client LoggersClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, loggerid string, parameters LoggerUpdateParameters, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loggerid":          autorest.Encode("path", loggerid),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -509,14 +465,13 @@ func (client LoggersClient) UpdatePreparer(resourceGroupName string, serviceName
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoggersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

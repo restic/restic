@@ -10,20 +10,20 @@
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "2d3a6656c17a60b0815b7e06ab0be04eacb6e613"
-  version = "v0.16.0"
+  revision = "767c40d6a2e058483c25fa193e963a22da17236d"
+  version = "v0.18.0"
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "7692b0cef22674113fcf71cc17ac3ccc1a7fef48"
-  version = "v11.2.2-beta"
+  revision = "eae258195456be76b2ec9ad2ee2ab63cdda365d9"
+  version = "v12.2.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "c67b24a8e30d876542a85022ebbdecf0e5a935e8"
-  version = "v9.4.1"
+  revision = "c2a68353555b68de3ee8455a4fd3e890a0ac6d99"
+  version = "v9.8.1"
 
 [[projects]]
   name = "github.com/cenkalti/backoff"
@@ -65,7 +65,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+  revision = "c65a0412e71e8b9b3bfd22925720d23c0f054237"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -74,10 +74,10 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/juju/ratelimit"
   packages = ["."]
   revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
+  version = "1.0.1"
 
 [[projects]]
   branch = "master"
@@ -92,22 +92,27 @@
   version = "v0.2.1"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/minio/go-homedir"
+  name = "github.com/marstr/guid"
   packages = ["."]
-  revision = "21304a94172ae3a09dee2cd86a12fb6f842138c7"
+  revision = "8bdf7d1a087ccc975cf37dd6507da50698fd19ca"
 
 [[projects]]
   name = "github.com/minio/minio-go"
   packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
-  revision = "57a8ae886b49af6eb0d2c27c2d007ed2f71e1da5"
-  version = "4.0.3"
+  revision = "14f1d472d115bac5ca4804094aa87484a72ced61"
+  version = "4.0.6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
   branch = "master"
   name = "github.com/ncw/swift"
   packages = ["."]
-  revision = "c95c6e5c2d1a3d37fc44c8c6dc9e231c7500667d"
+  revision = "ae9f0ea1605b9aa6434ed5c731ca35d83ba67c55"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -124,8 +129,8 @@
 [[projects]]
   name = "github.com/pkg/sftp"
   packages = ["."]
-  revision = "98203f5a8333288eb3163b7c667d4260fe1333e9"
-  version = "1.0.0"
+  revision = "f6a9258a0f570c3a76681b897b6ded57cb0dfa88"
+  version = "1.2.0"
 
 [[projects]]
   name = "github.com/pkg/xattr"
@@ -146,16 +151,16 @@
   version = "v1.5"
 
 [[projects]]
-  name = "github.com/satori/uuid"
+  name = "github.com/satori/go.uuid"
   packages = ["."]
-  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
-  version = "v1.1.0"
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
-  version = "v1.0.3"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
 
 [[projects]]
   name = "github.com/spf13/cobra"
@@ -172,32 +177,38 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
-  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
+  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
+  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
+  packages = ["context","context/ctxhttp","idna","lex/httplex"]
+  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "f95fa95eaa936d9d87489b15d1d18b97c1ba9c28"
+  revision = "b28fcf2b08a19742b43084fb40ab78ac6c3d8067"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+  revision = "af50095a40f9041b3b38960738837185c26e9419"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
-  revision = "3a1d936b7575b82197a1fea0632218dd07b1e65c"
+  revision = "65b0d8655182691ad23b4fac11e6f7b897d9b634"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -209,7 +220,7 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "287cf08546ab5e7e37d55a84f7ed3fd1db036de5"
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
 
 [solve-meta]
   analyzer-name = "dep"

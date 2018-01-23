@@ -18,6 +18,7 @@ package locks
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -27,44 +28,185 @@ import (
 type LockLevel string
 
 const (
-	// CanNotDelete specifies the can not delete state for lock level.
+	// CanNotDelete ...
 	CanNotDelete LockLevel = "CanNotDelete"
-	// NotSpecified specifies the not specified state for lock level.
+	// NotSpecified ...
 	NotSpecified LockLevel = "NotSpecified"
-	// ReadOnly specifies the read only state for lock level.
+	// ReadOnly ...
 	ReadOnly LockLevel = "ReadOnly"
 )
 
-// ManagementLockListResult is list of management locks.
+// ManagementLockListResult list of management locks.
 type ManagementLockListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ManagementLockObject `json:"value,omitempty"`
-	NextLink          *string                 `json:"nextLink,omitempty"`
+	// Value - The list of locks.
+	Value *[]ManagementLockObject `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ManagementLockListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ManagementLockListResult) ManagementLockListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ManagementLockListResultIterator provides access to a complete listing of ManagementLockObject values.
+type ManagementLockListResultIterator struct {
+	i    int
+	page ManagementLockListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ManagementLockListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ManagementLockListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ManagementLockListResultIterator) Response() ManagementLockListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ManagementLockListResultIterator) Value() ManagementLockObject {
+	if !iter.page.NotDone() {
+		return ManagementLockObject{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mllr ManagementLockListResult) IsEmpty() bool {
+	return mllr.Value == nil || len(*mllr.Value) == 0
+}
+
+// managementLockListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mllr ManagementLockListResult) managementLockListResultPreparer() (*http.Request, error) {
+	if mllr.NextLink == nil || len(to.String(mllr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(mllr.NextLink)))
 }
 
-// ManagementLockObject is management lock information.
+// ManagementLockListResultPage contains a page of ManagementLockObject values.
+type ManagementLockListResultPage struct {
+	fn   func(ManagementLockListResult) (ManagementLockListResult, error)
+	mllr ManagementLockListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ManagementLockListResultPage) Next() error {
+	next, err := page.fn(page.mllr)
+	if err != nil {
+		return err
+	}
+	page.mllr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ManagementLockListResultPage) NotDone() bool {
+	return !page.mllr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ManagementLockListResultPage) Response() ManagementLockListResult {
+	return page.mllr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ManagementLockListResultPage) Values() []ManagementLockObject {
+	if page.mllr.IsEmpty() {
+		return nil
+	}
+	return *page.mllr.Value
+}
+
+// ManagementLockObject management lock information.
 type ManagementLockObject struct {
-	autorest.Response         `json:"-"`
+	autorest.Response `json:"-"`
+	// ManagementLockProperties - The properties of the lock.
 	*ManagementLockProperties `json:"properties,omitempty"`
-	ID                        *string `json:"id,omitempty"`
-	Type                      *string `json:"type,omitempty"`
-	Name                      *string `json:"name,omitempty"`
+	// ID - The Id of the lock.
+	ID *string `json:"id,omitempty"`
+	// Type - The type of the lock.
+	Type *string `json:"type,omitempty"`
+	// Name - The name of the lock.
+	Name *string `json:"name,omitempty"`
 }
 
-// ManagementLockProperties is the management lock properties.
+// UnmarshalJSON is the custom unmarshaler for ManagementLockObject struct.
+func (mlo *ManagementLockObject) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ManagementLockProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mlo.ManagementLockProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mlo.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mlo.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mlo.Name = &name
+	}
+
+	return nil
+}
+
+// ManagementLockProperties the management lock properties.
 type ManagementLockProperties struct {
+	// Level - The lock level of the management lock. Possible values include: 'NotSpecified', 'CanNotDelete', 'ReadOnly'
 	Level LockLevel `json:"level,omitempty"`
-	Notes *string   `json:"notes,omitempty"`
+	// Notes - The notes of the management lock.
+	Notes *string `json:"notes,omitempty"`
 }

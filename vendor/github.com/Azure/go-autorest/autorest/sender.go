@@ -215,19 +215,25 @@ func DoRetryForStatusCodes(attempts int, backoff time.Duration, codes ...int) Se
 			rr := NewRetriableRequest(r)
 			// Increment to add the first call (attempts denotes number of retries)
 			attempts++
-			for attempt := 0; attempt < attempts; attempt++ {
+			for attempt := 0; attempt < attempts; {
 				err = rr.Prepare()
 				if err != nil {
 					return resp, err
 				}
 				resp, err = s.Do(rr.Request())
-				// we want to retry if err is not nil (e.g. transient network failure)
-				if err == nil && !ResponseHasStatusCode(resp, codes...) {
+				// we want to retry if err is not nil (e.g. transient network failure).  note that for failed authentication
+				// resp and err will both have a value, so in this case we don't want to retry as it will never succeed.
+				if err == nil && !ResponseHasStatusCode(resp, codes...) || IsTokenRefreshError(err) {
 					return resp, err
 				}
 				delayed := DelayWithRetryAfter(resp, r.Cancel)
 				if !delayed {
 					DelayForBackoff(backoff, attempt, r.Cancel)
+				}
+				// don't count a 429 against the number of attempts
+				// so that we continue to retry until it succeeds
+				if resp == nil || resp.StatusCode != http.StatusTooManyRequests {
+					attempt++
 				}
 			}
 			return resp, err

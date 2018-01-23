@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClassicMobileServicesClient is the webSite Management Client
 type ClassicMobileServicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClassicMobileServicesClient creates an instance of the ClassicMobileServicesClient client.
@@ -41,8 +42,8 @@ func NewClassicMobileServicesClientWithBaseURI(baseURI string, subscriptionID st
 // DeleteClassicMobileService sends the delete classic mobile service request.
 //
 // resourceGroupName is name of resource group name is name of mobile service
-func (client ClassicMobileServicesClient) DeleteClassicMobileService(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.DeleteClassicMobileServicePreparer(resourceGroupName, name)
+func (client ClassicMobileServicesClient) DeleteClassicMobileService(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.DeleteClassicMobileServicePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "DeleteClassicMobileService", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ClassicMobileServicesClient) DeleteClassicMobileService(resourceGro
 }
 
 // DeleteClassicMobileServicePreparer prepares the DeleteClassicMobileService request.
-func (client ClassicMobileServicesClient) DeleteClassicMobileServicePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ClassicMobileServicesClient) DeleteClassicMobileServicePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -81,14 +82,13 @@ func (client ClassicMobileServicesClient) DeleteClassicMobileServicePreparer(res
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/classicMobileServices/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteClassicMobileServiceSender sends the DeleteClassicMobileService request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClassicMobileServicesClient) DeleteClassicMobileServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -108,8 +108,8 @@ func (client ClassicMobileServicesClient) DeleteClassicMobileServiceResponder(re
 // GetClassicMobileService sends the get classic mobile service request.
 //
 // resourceGroupName is name of resource group name is name of mobile service
-func (client ClassicMobileServicesClient) GetClassicMobileService(resourceGroupName string, name string) (result ClassicMobileService, err error) {
-	req, err := client.GetClassicMobileServicePreparer(resourceGroupName, name)
+func (client ClassicMobileServicesClient) GetClassicMobileService(ctx context.Context, resourceGroupName string, name string) (result ClassicMobileService, err error) {
+	req, err := client.GetClassicMobileServicePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileService", nil, "Failure preparing request")
 		return
@@ -131,7 +131,7 @@ func (client ClassicMobileServicesClient) GetClassicMobileService(resourceGroupN
 }
 
 // GetClassicMobileServicePreparer prepares the GetClassicMobileService request.
-func (client ClassicMobileServicesClient) GetClassicMobileServicePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client ClassicMobileServicesClient) GetClassicMobileServicePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -148,14 +148,13 @@ func (client ClassicMobileServicesClient) GetClassicMobileServicePreparer(resour
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/classicMobileServices/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetClassicMobileServiceSender sends the GetClassicMobileService request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClassicMobileServicesClient) GetClassicMobileServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -175,8 +174,9 @@ func (client ClassicMobileServicesClient) GetClassicMobileServiceResponder(resp 
 // GetClassicMobileServices sends the get classic mobile services request.
 //
 // resourceGroupName is name of resource group
-func (client ClassicMobileServicesClient) GetClassicMobileServices(resourceGroupName string) (result ClassicMobileServiceCollection, err error) {
-	req, err := client.GetClassicMobileServicesPreparer(resourceGroupName)
+func (client ClassicMobileServicesClient) GetClassicMobileServices(ctx context.Context, resourceGroupName string) (result ClassicMobileServiceCollectionPage, err error) {
+	result.fn = client.getClassicMobileServicesNextResults
+	req, err := client.GetClassicMobileServicesPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", nil, "Failure preparing request")
 		return
@@ -184,12 +184,12 @@ func (client ClassicMobileServicesClient) GetClassicMobileServices(resourceGroup
 
 	resp, err := client.GetClassicMobileServicesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cmsc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetClassicMobileServicesResponder(resp)
+	result.cmsc, err = client.GetClassicMobileServicesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", resp, "Failure responding to request")
 	}
@@ -198,7 +198,7 @@ func (client ClassicMobileServicesClient) GetClassicMobileServices(resourceGroup
 }
 
 // GetClassicMobileServicesPreparer prepares the GetClassicMobileServices request.
-func (client ClassicMobileServicesClient) GetClassicMobileServicesPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ClassicMobileServicesClient) GetClassicMobileServicesPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -214,14 +214,13 @@ func (client ClassicMobileServicesClient) GetClassicMobileServicesPreparer(resou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/classicMobileServices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetClassicMobileServicesSender sends the GetClassicMobileServices request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClassicMobileServicesClient) GetClassicMobileServicesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -238,71 +237,29 @@ func (client ClassicMobileServicesClient) GetClassicMobileServicesResponder(resp
 	return
 }
 
-// GetClassicMobileServicesNextResults retrieves the next set of results, if any.
-func (client ClassicMobileServicesClient) GetClassicMobileServicesNextResults(lastResults ClassicMobileServiceCollection) (result ClassicMobileServiceCollection, err error) {
-	req, err := lastResults.ClassicMobileServiceCollectionPreparer()
+// getClassicMobileServicesNextResults retrieves the next set of results, if any.
+func (client ClassicMobileServicesClient) getClassicMobileServicesNextResults(lastResults ClassicMobileServiceCollection) (result ClassicMobileServiceCollection, err error) {
+	req, err := lastResults.classicMobileServiceCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "getClassicMobileServicesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetClassicMobileServicesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "getClassicMobileServicesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetClassicMobileServicesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "GetClassicMobileServices", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ClassicMobileServicesClient", "getClassicMobileServicesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetClassicMobileServicesComplete gets all elements from the list without paging.
-func (client ClassicMobileServicesClient) GetClassicMobileServicesComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan ClassicMobileService, <-chan error) {
-	resultChan := make(chan ClassicMobileService)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetClassicMobileServices(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetClassicMobileServicesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetClassicMobileServicesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClassicMobileServicesClient) GetClassicMobileServicesComplete(ctx context.Context, resourceGroupName string) (result ClassicMobileServiceCollectionIterator, err error) {
+	result.page, err = client.GetClassicMobileServices(ctx, resourceGroupName)
+	return
 }

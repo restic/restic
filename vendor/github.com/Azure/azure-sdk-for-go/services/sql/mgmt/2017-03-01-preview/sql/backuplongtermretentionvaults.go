@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // services that interact with Azure SQL Database services to manage your databases. The API enables you to create,
 // retrieve, update, and delete databases.
 type BackupLongTermRetentionVaultsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewBackupLongTermRetentionVaultsClient creates an instance of the BackupLongTermRetentionVaultsClient client.
@@ -42,61 +43,37 @@ func NewBackupLongTermRetentionVaultsClientWithBaseURI(baseURI string, subscript
 	return BackupLongTermRetentionVaultsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate updates a server backup long term retention vault This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate updates a server backup long term retention vault
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. backupLongTermRetentionVaultName is
 // the name of the backup long term retention vault parameters is the required parameters to update a backup long term
 // retention vault
-func (client BackupLongTermRetentionVaultsClient) CreateOrUpdate(resourceGroupName string, serverName string, backupLongTermRetentionVaultName string, parameters BackupLongTermRetentionVault, cancel <-chan struct{}) (<-chan BackupLongTermRetentionVault, <-chan error) {
-	resultChan := make(chan BackupLongTermRetentionVault, 1)
-	errChan := make(chan error, 1)
+func (client BackupLongTermRetentionVaultsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, backupLongTermRetentionVaultName string, parameters BackupLongTermRetentionVault) (result BackupLongTermRetentionVaultsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.BackupLongTermRetentionVaultProperties", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.BackupLongTermRetentionVaultProperties.RecoveryServicesVaultResourceID", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result BackupLongTermRetentionVault
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, backupLongTermRetentionVaultName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, backupLongTermRetentionVaultName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client BackupLongTermRetentionVaultsClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, backupLongTermRetentionVaultName string, parameters BackupLongTermRetentionVault, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupLongTermRetentionVaultsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, backupLongTermRetentionVaultName string, parameters BackupLongTermRetentionVault) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupLongTermRetentionVaultName": autorest.Encode("path", backupLongTermRetentionVaultName),
 		"resourceGroupName":                autorest.Encode("path", resourceGroupName),
@@ -116,16 +93,22 @@ func (client BackupLongTermRetentionVaultsClient) CreateOrUpdatePreparer(resourc
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/backupLongTermRetentionVaults/{backupLongTermRetentionVaultName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupLongTermRetentionVaultsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupLongTermRetentionVaultsClient) CreateOrUpdateSender(req *http.Request) (future BackupLongTermRetentionVaultsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -146,8 +129,8 @@ func (client BackupLongTermRetentionVaultsClient) CreateOrUpdateResponder(resp *
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. backupLongTermRetentionVaultName is
 // the name of the Azure SQL Server backup LongTermRetention vault
-func (client BackupLongTermRetentionVaultsClient) Get(resourceGroupName string, serverName string, backupLongTermRetentionVaultName string) (result BackupLongTermRetentionVault, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, backupLongTermRetentionVaultName)
+func (client BackupLongTermRetentionVaultsClient) Get(ctx context.Context, resourceGroupName string, serverName string, backupLongTermRetentionVaultName string) (result BackupLongTermRetentionVault, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, backupLongTermRetentionVaultName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "Get", nil, "Failure preparing request")
 		return
@@ -169,7 +152,7 @@ func (client BackupLongTermRetentionVaultsClient) Get(resourceGroupName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client BackupLongTermRetentionVaultsClient) GetPreparer(resourceGroupName string, serverName string, backupLongTermRetentionVaultName string) (*http.Request, error) {
+func (client BackupLongTermRetentionVaultsClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, backupLongTermRetentionVaultName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupLongTermRetentionVaultName": autorest.Encode("path", backupLongTermRetentionVaultName),
 		"resourceGroupName":                autorest.Encode("path", resourceGroupName),
@@ -187,20 +170,86 @@ func (client BackupLongTermRetentionVaultsClient) GetPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/backupLongTermRetentionVaults/{backupLongTermRetentionVaultName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client BackupLongTermRetentionVaultsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
 // GetResponder handles the response to the Get request. The method always
 // closes the http.Response Body.
 func (client BackupLongTermRetentionVaultsClient) GetResponder(resp *http.Response) (result BackupLongTermRetentionVault, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// ListByServer gets server backup long term retention vaults in a server
+//
+// resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
+// Azure Resource Manager API or the portal. serverName is the name of the server.
+func (client BackupLongTermRetentionVaultsClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result BackupLongTermRetentionVaultListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "ListByServer", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListByServerSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "ListByServer", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListByServerResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.BackupLongTermRetentionVaultsClient", "ListByServer", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListByServerPreparer prepares the ListByServer request.
+func (client BackupLongTermRetentionVaultsClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"serverName":        autorest.Encode("path", serverName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2014-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/backupLongTermRetentionVaults", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListByServerSender sends the ListByServer request. The method will close the
+// http.Response Body if it receives an error.
+func (client BackupLongTermRetentionVaultsClient) ListByServerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// ListByServerResponder handles the response to the ListByServer request. The method always
+// closes the http.Response Body.
+func (client BackupLongTermRetentionVaultsClient) ListByServerResponder(resp *http.Response) (result BackupLongTermRetentionVaultListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),

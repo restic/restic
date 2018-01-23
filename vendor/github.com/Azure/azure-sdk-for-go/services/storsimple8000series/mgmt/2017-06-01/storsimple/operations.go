@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // OperationsClient is the client for the Operations methods of the Storsimple service.
 type OperationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewOperationsClient creates an instance of the OperationsClient client.
@@ -39,8 +40,9 @@ func NewOperationsClientWithBaseURI(baseURI string, subscriptionID string) Opera
 }
 
 // List lists all of the available REST API operations of the Microsoft.Storsimple provider
-func (client OperationsClient) List() (result AvailableProviderOperationList, err error) {
-	req, err := client.ListPreparer()
+func (client OperationsClient) List(ctx context.Context) (result AvailableProviderOperationListPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", nil, "Failure preparing request")
 		return
@@ -48,12 +50,12 @@ func (client OperationsClient) List() (result AvailableProviderOperationList, er
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.apol.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.apol, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", resp, "Failure responding to request")
 	}
@@ -62,7 +64,7 @@ func (client OperationsClient) List() (result AvailableProviderOperationList, er
 }
 
 // ListPreparer prepares the List request.
-func (client OperationsClient) ListPreparer() (*http.Request, error) {
+func (client OperationsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2017-06-01"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -73,14 +75,13 @@ func (client OperationsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.StorSimple/operations"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client OperationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -97,71 +98,29 @@ func (client OperationsClient) ListResponder(resp *http.Response) (result Availa
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client OperationsClient) ListNextResults(lastResults AvailableProviderOperationList) (result AvailableProviderOperationList, err error) {
-	req, err := lastResults.AvailableProviderOperationListPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client OperationsClient) listNextResults(lastResults AvailableProviderOperationList) (result AvailableProviderOperationList, err error) {
+	req, err := lastResults.availableProviderOperationListPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.OperationsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.OperationsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storsimple.OperationsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storsimple.OperationsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client OperationsClient) ListComplete(cancel <-chan struct{}) (<-chan AvailableProviderOperation, <-chan error) {
-	resultChan := make(chan AvailableProviderOperation)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client OperationsClient) ListComplete(ctx context.Context) (result AvailableProviderOperationListIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

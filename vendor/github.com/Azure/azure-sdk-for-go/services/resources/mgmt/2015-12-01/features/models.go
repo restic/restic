@@ -23,35 +23,123 @@ import (
 	"net/http"
 )
 
-// OperationsListResult is list of previewed features.
+// OperationsListResult list of previewed features.
 type OperationsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Result `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - The array of features.
+	Value *[]Result `json:"value,omitempty"`
+	// NextLink - The URL to use for getting the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationsListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationsListResult) OperationsListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationsListResultIterator provides access to a complete listing of Result values.
+type OperationsListResultIterator struct {
+	i    int
+	page OperationsListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationsListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationsListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationsListResultIterator) Response() OperationsListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationsListResultIterator) Value() Result {
+	if !iter.page.NotDone() {
+		return Result{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationsListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationsListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationsListResult) operationsListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// Properties is information about feature.
+// OperationsListResultPage contains a page of Result values.
+type OperationsListResultPage struct {
+	fn  func(OperationsListResult) (OperationsListResult, error)
+	olr OperationsListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationsListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationsListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationsListResultPage) Response() OperationsListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationsListResultPage) Values() []Result {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// Properties information about feature.
 type Properties struct {
+	// State - The registration state of the feature for the subscription.
 	State *string `json:"state,omitempty"`
 }
 
-// Result is previewed feature information.
+// Result previewed feature information.
 type Result struct {
 	autorest.Response `json:"-"`
-	Name              *string     `json:"name,omitempty"`
-	Properties        *Properties `json:"properties,omitempty"`
-	ID                *string     `json:"id,omitempty"`
-	Type              *string     `json:"type,omitempty"`
+	// Name - The name of the feature.
+	Name *string `json:"name,omitempty"`
+	// Properties - Properties of the previewed feature.
+	Properties *Properties `json:"properties,omitempty"`
+	// ID - The resource ID of the feature.
+	ID *string `json:"id,omitempty"`
+	// Type - The resource type of the feature.
+	Type *string `json:"type,omitempty"`
 }

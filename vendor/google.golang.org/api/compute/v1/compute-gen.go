@@ -695,7 +695,8 @@ type AcceleratorConfig struct {
 	AcceleratorCount int64 `json:"acceleratorCount,omitempty"`
 
 	// AcceleratorType: Full or partial URL of the accelerator type resource
-	// to expose to this instance.
+	// to attach to this instance. If you are creating an instance template,
+	// specify only the accelerator name.
 	AcceleratorType string `json:"acceleratorType,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AcceleratorCount") to
@@ -722,7 +723,8 @@ func (s *AcceleratorConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AcceleratorType: An Accelerator Type resource.
+// AcceleratorType: An Accelerator Type resource. (== resource_for
+// beta.acceleratorTypes ==) (== resource_for v1.acceleratorTypes ==)
 type AcceleratorType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -1283,7 +1285,9 @@ func (s *AccessConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Address: A reserved address resource.
+// Address: A reserved address resource. (== resource_for beta.addresses
+// ==) (== resource_for v1.addresses ==) (== resource_for
+// beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
 type Address struct {
 	// Address: The static IP address represented by this resource.
 	Address string `json:"address,omitempty"`
@@ -1350,11 +1354,10 @@ type Address struct {
 	//   "RESERVED"
 	Status string `json:"status,omitempty"`
 
-	// Subnetwork: For external addresses, this field should not be
-	// used.
-	//
-	// The URL of the subnetwork in which to reserve the address. If an IP
-	// address is specified, it must be within the subnetwork's IP range.
+	// Subnetwork: The URL of the subnetwork in which to reserve the
+	// address. If an IP address is specified, it must be within the
+	// subnetwork's IP range. This field can only be used with INTERNAL type
+	// with GCE_ENDPOINT/DNS_RESOLVER purposes.
 	Subnetwork string `json:"subnetwork,omitempty"`
 
 	// Users: [Output Only] The URLs of the resources that are using this
@@ -2035,6 +2038,11 @@ type AttachedDiskInitializeParams struct {
 	// is the name of the disk type, not URL.
 	DiskType string `json:"diskType,omitempty"`
 
+	// Labels: Labels to apply to this disk. These can be later modified by
+	// the disks.setLabels method. This field is only applicable for
+	// persistent disks.
+	Labels map[string]string `json:"labels,omitempty"`
+
 	// SourceImage: The source image to create this disk. When creating a
 	// new instance, one of initializeParams.sourceImage or disks.source is
 	// required except for local SSD.
@@ -2101,7 +2109,10 @@ func (s *AttachedDiskInitializeParams) MarshalJSON() ([]byte, error) {
 // Autoscaler: Represents an Autoscaler resource. Autoscalers allow you
 // to automatically scale virtual machine instances in managed instance
 // groups according to an autoscaling policy that you define. For more
-// information, read Autoscaling Groups of Instances.
+// information, read Autoscaling Groups of Instances. (== resource_for
+// beta.autoscalers ==) (== resource_for v1.autoscalers ==) (==
+// resource_for beta.regionAutoscalers ==) (== resource_for
+// v1.regionAutoscalers ==)
 type Autoscaler struct {
 	// AutoscalingPolicy: The configuration parameters for the autoscaling
 	// algorithm. You can define one or more of the policies for an
@@ -3263,7 +3274,9 @@ func (s *BackendBucketListWarningData) MarshalJSON() ([]byte, error) {
 }
 
 // BackendService: A BackendService resource. This resource defines a
-// group of backend virtual machines and their serving capacity.
+// group of backend virtual machines and their serving capacity. (==
+// resource_for v1.backendService ==) (== resource_for
+// beta.backendService ==)
 type BackendService struct {
 	// AffinityCookieTtlSec: Lifetime of cookies in seconds if
 	// session_affinity is GENERATED_COOKIE. If set to 0, the cookie is
@@ -4068,7 +4081,8 @@ func (s *CacheKeyPolicy) MarshalJSON() ([]byte, error) {
 // Committed use discounts are subject to Google Cloud Platform's
 // Service Specific Terms. By purchasing a committed use discount, you
 // agree to these terms. Committed use discounts will not renew, so you
-// must purchase a new commitment to continue receiving discounts.
+// must purchase a new commitment to continue receiving discounts. (==
+// resource_for beta.commitments ==) (== resource_for v1.commitments ==)
 type Commitment struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -4770,7 +4784,8 @@ func (s *DeprecationStatus) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Disk: A Disk resource.
+// Disk: A Disk resource. (== resource_for beta.disks ==) (==
+// resource_for v1.disks ==)
 type Disk struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -5321,7 +5336,8 @@ func (s *DiskMoveRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// DiskType: A DiskType resource.
+// DiskType: A DiskType resource. (== resource_for beta.diskTypes ==)
+// (== resource_for v1.diskTypes ==)
 type DiskType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -6381,7 +6397,12 @@ func (s *FirewallListWarningData) MarshalJSON() ([]byte, error) {
 
 // ForwardingRule: A ForwardingRule resource. A ForwardingRule resource
 // specifies which pool of target virtual machines to forward a packet
-// to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+// to if it matches the given [IPAddress, IPProtocol, ports] tuple. (==
+// resource_for beta.forwardingRules ==) (== resource_for
+// v1.forwardingRules ==) (== resource_for beta.globalForwardingRules
+// ==) (== resource_for v1.globalForwardingRules ==) (== resource_for
+// beta.regionForwardingRules ==) (== resource_for
+// v1.regionForwardingRules ==)
 type ForwardingRule struct {
 	// IPAddress: The IP address that this forwarding rule is serving on
 	// behalf of.
@@ -7069,13 +7090,12 @@ func (s *GlobalSetLabelsRequest) MarshalJSON() ([]byte, error) {
 
 // GuestOsFeature: Guest OS features.
 type GuestOsFeature struct {
-	// Type: The type of supported feature. Currently only
-	// VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the
-	// server might also populate this property with the value WINDOWS to
-	// indicate that this is a Windows image.
+	// Type: The ID of a supported feature. Read  Enabling guest operating
+	// system features to see a list of available options.
 	//
 	// Possible values:
 	//   "FEATURE_TYPE_UNSPECIFIED"
+	//   "MULTI_IP_SUBNET"
 	//   "VIRTIO_SCSI_MULTIQUEUE"
 	//   "WINDOWS"
 	Type string `json:"type,omitempty"`
@@ -8058,7 +8078,8 @@ func (s *HttpsHealthCheckListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Image: An Image resource.
+// Image: An Image resource. (== resource_for beta.images ==) (==
+// resource_for v1.images ==)
 type Image struct {
 	// ArchiveSizeBytes: Size of the image tar.gz archive stored in Google
 	// Cloud Storage (in bytes).
@@ -8086,17 +8107,9 @@ type Image struct {
 	// RFC1035.
 	Family string `json:"family,omitempty"`
 
-	// GuestOsFeatures: A list of features to enable on the guest OS.
-	// Applicable for bootable images only. Currently, only one feature can
-	// be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to
-	// have its own queue. For Windows images, you can only enable
-	// VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or
-	// higher. Linux images with kernel versions 3.17 and higher will
-	// support VIRTIO_SCSI_MULTIQUEUE.
-	//
-	// For newer Windows images, the server might also populate this
-	// property with the value WINDOWS to indicate that this is a Windows
-	// image.
+	// GuestOsFeatures: A list of features to enable on the guest operating
+	// system. Applicable only for bootable images. Read  Enabling guest
+	// operating system features to see a list of available options.
 	GuestOsFeatures []*GuestOsFeature `json:"guestOsFeatures,omitempty"`
 
 	// Id: [Output Only] The unique identifier for the resource. This
@@ -8436,7 +8449,8 @@ func (s *ImageListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Instance: An Instance resource.
+// Instance: An Instance resource. (== resource_for beta.instances ==)
+// (== resource_for v1.instances ==)
 type Instance struct {
 	// CanIpForward: Allows this instance to send and receive packets with
 	// non-matching destination or source IPs. This is required if you plan
@@ -8770,6 +8784,10 @@ func (s *InstanceAggregatedListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// InstanceGroup: InstanceGroups (== resource_for beta.instanceGroups
+// ==) (== resource_for v1.instanceGroups ==) (== resource_for
+// beta.regionInstanceGroups ==) (== resource_for
+// v1.regionInstanceGroups ==)
 type InstanceGroup struct {
 	// CreationTimestamp: [Output Only] The creation timestamp for this
 	// instance group in RFC3339 text format.
@@ -9171,7 +9189,11 @@ func (s *InstanceGroupListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// InstanceGroupManager: An Instance Group Manager resource.
+// InstanceGroupManager: An Instance Group Manager resource. (==
+// resource_for beta.instanceGroupManagers ==) (== resource_for
+// v1.instanceGroupManagers ==) (== resource_for
+// beta.regionInstanceGroupManagers ==) (== resource_for
+// v1.regionInstanceGroupManagers ==)
 type InstanceGroupManager struct {
 	// BaseInstanceName: The base instance name to use for instances in this
 	// group. The value must be 1-58 characters long. Instances are named by
@@ -10712,7 +10734,8 @@ func (s *InstanceReference) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// InstanceTemplate: An Instance Template resource.
+// InstanceTemplate: An Instance Template resource. (== resource_for
+// beta.instanceTemplates ==) (== resource_for v1.instanceTemplates ==)
 type InstanceTemplate struct {
 	// CreationTimestamp: [Output Only] The creation timestamp for this
 	// instance template in RFC3339 text format.
@@ -11294,7 +11317,8 @@ func (s *InstancesStartWithEncryptionKeyRequest) MarshalJSON() ([]byte, error) {
 // Interconnect: Represents an Interconnects resource. The Interconnects
 // resource is a dedicated connection between Google's network and your
 // on-premises network. For more information, see the  Dedicated
-// overview page.
+// overview page. (== resource_for v1.interconnects ==) (== resource_for
+// beta.interconnects ==)
 type Interconnect struct {
 	// AdminEnabled: Administrative status of the interconnect. When this is
 	// set to true, the Interconnect is functional and can carry traffic.
@@ -11434,7 +11458,8 @@ func (s *Interconnect) MarshalJSON() ([]byte, error) {
 
 // InterconnectAttachment: Represents an InterconnectAttachment (VLAN
 // attachment) resource. For more information, see  Creating VLAN
-// Attachments.
+// Attachments. (== resource_for beta.interconnectAttachments ==) (==
+// resource_for v1.interconnectAttachments ==)
 type InterconnectAttachment struct {
 	// CloudRouterIpAddress: [Output Only] IPv4 address + prefix length to
 	// be configured on Cloud Router Interface for this interconnect
@@ -12628,7 +12653,8 @@ func (s *License) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// MachineType: A Machine Type resource.
+// MachineType: A Machine Type resource. (== resource_for
+// v1.machineTypes ==) (== resource_for beta.machineTypes ==)
 type MachineType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -13477,7 +13503,8 @@ func (s *NamedPort) MarshalJSON() ([]byte, error) {
 }
 
 // Network: Represents a Network resource. Read Networks and Firewalls
-// for more information.
+// for more information. (== resource_for v1.networks ==) (==
+// resource_for beta.networks ==)
 type Network struct {
 	// IPv4Range: The range of internal addresses that are legal on this
 	// network. This range is a CIDR specification, for example:
@@ -13967,7 +13994,10 @@ func (s *NetworksRemovePeeringRequest) MarshalJSON() ([]byte, error) {
 }
 
 // Operation: An Operation resource, used to manage asynchronous API
-// requests.
+// requests. (== resource_for v1.globalOperations ==) (== resource_for
+// beta.globalOperations ==) (== resource_for v1.regionOperations ==)
+// (== resource_for beta.regionOperations ==) (== resource_for
+// v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
 type Operation struct {
 	// ClientOperationId: [Output Only] Reserved for future use.
 	ClientOperationId string `json:"clientOperationId,omitempty"`
@@ -14787,9 +14817,9 @@ func (s *PathRule) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Project: A Project resource. Projects can only be created in the
-// Google Cloud Platform Console. Unless marked otherwise, values can
-// only be modified in the console.
+// Project: A Project resource. For an overview of projects, see  Cloud
+// Platform Resource Hierarchy. (== resource_for v1.projects ==) (==
+// resource_for beta.projects ==)
 type Project struct {
 	// CommonInstanceMetadata: Metadata key/value pairs available to all
 	// instances contained in this project. See Custom metadata for more
@@ -15096,7 +15126,8 @@ func (s *Quota) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Region: Region resource.
+// Region: Region resource. (== resource_for beta.regions ==) (==
+// resource_for v1.regions ==)
 type Region struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -16283,7 +16314,8 @@ func (s *ResourceGroupReference) MarshalJSON() ([]byte, error) {
 // Compute Engine-operated gateway.
 //
 // Packets that do not match any route in the sending instance's routing
-// table are dropped.
+// table are dropped. (== resource_for beta.routes ==) (== resource_for
+// v1.routes ==)
 type Route struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -17640,7 +17672,8 @@ func (s *ServiceAccount) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Snapshot: A persistent disk snapshot resource.
+// Snapshot: A persistent disk snapshot resource. (== resource_for
+// beta.snapshots ==) (== resource_for v1.snapshots ==)
 type Snapshot struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -17935,7 +17968,8 @@ func (s *SnapshotListWarningData) MarshalJSON() ([]byte, error) {
 
 // SslCertificate: An SslCertificate resource. This resource provides a
 // mechanism to upload an SSL key and certificate to the load balancer
-// to serve secure connections from the user.
+// to serve secure connections from the user. (== resource_for
+// beta.sslCertificates ==) (== resource_for v1.sslCertificates ==)
 type SslCertificate struct {
 	// Certificate: A local certificate file. The certificate must be in PEM
 	// format. The certificate chain must be no greater than 5 certs long.
@@ -18156,7 +18190,8 @@ func (s *SslCertificateListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Subnetwork: A Subnetwork resource.
+// Subnetwork: A Subnetwork resource. (== resource_for beta.subnetworks
+// ==) (== resource_for v1.subnetworks ==)
 type Subnetwork struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -18882,7 +18917,8 @@ func (s *Tags) MarshalJSON() ([]byte, error) {
 }
 
 // TargetHttpProxy: A TargetHttpProxy resource. This resource defines an
-// HTTP proxy.
+// HTTP proxy. (== resource_for beta.targetHttpProxies ==) (==
+// resource_for v1.targetHttpProxies ==)
 type TargetHttpProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -19131,7 +19167,8 @@ func (s *TargetHttpsProxiesSetSslCertificatesRequest) MarshalJSON() ([]byte, err
 }
 
 // TargetHttpsProxy: A TargetHttpsProxy resource. This resource defines
-// an HTTPS proxy.
+// an HTTPS proxy. (== resource_for beta.targetHttpsProxies ==) (==
+// resource_for v1.targetHttpsProxies ==)
 type TargetHttpsProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -19360,7 +19397,9 @@ func (s *TargetHttpsProxyListWarningData) MarshalJSON() ([]byte, error) {
 }
 
 // TargetInstance: A TargetInstance resource. This resource defines an
-// endpoint instance that terminates traffic of certain protocols.
+// endpoint instance that terminates traffic of certain protocols. (==
+// resource_for beta.targetInstances ==) (== resource_for
+// v1.targetInstances ==)
 type TargetInstance struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -19884,7 +19923,8 @@ func (s *TargetInstancesScopedListWarningData) MarshalJSON() ([]byte, error) {
 
 // TargetPool: A TargetPool resource. This resource defines a pool of
 // instances, an associated HttpHealthCheck resource, and the fallback
-// target pool.
+// target pool. (== resource_for beta.targetPools ==) (== resource_for
+// v1.targetPools ==)
 type TargetPool struct {
 	// BackupPool: This field is applicable only when the containing target
 	// pool is serving a forwarding rule as the primary pool, and its
@@ -20740,7 +20780,8 @@ func (s *TargetSslProxiesSetSslCertificatesRequest) MarshalJSON() ([]byte, error
 }
 
 // TargetSslProxy: A TargetSslProxy resource. This resource defines an
-// SSL proxy.
+// SSL proxy. (== resource_for beta.targetSslProxies ==) (==
+// resource_for v1.targetSslProxies ==)
 type TargetSslProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -21031,7 +21072,8 @@ func (s *TargetTcpProxiesSetProxyHeaderRequest) MarshalJSON() ([]byte, error) {
 }
 
 // TargetTcpProxy: A TargetTcpProxy resource. This resource defines a
-// TCP proxy.
+// TCP proxy. (== resource_for beta.targetTcpProxies ==) (==
+// resource_for v1.targetTcpProxies ==)
 type TargetTcpProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -21256,7 +21298,9 @@ func (s *TargetTcpProxyListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// TargetVpnGateway: Represents a Target VPN gateway resource.
+// TargetVpnGateway: Represents a Target VPN gateway resource. (==
+// resource_for beta.targetVpnGateways ==) (== resource_for
+// v1.targetVpnGateways ==)
 type TargetVpnGateway struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -22256,6 +22300,8 @@ func (s *UsageExportLocation) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// VpnTunnel: VPN tunnel resource. (== resource_for beta.vpnTunnels ==)
+// (== resource_for v1.vpnTunnels ==)
 type VpnTunnel struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -23005,7 +23051,8 @@ func (s *XpnResourceId) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Zone: A Zone resource.
+// Zone: A Zone resource. (== resource_for beta.zones ==) (==
+// resource_for v1.zones ==)
 type Zone struct {
 	// AvailableCpuPlatforms: [Output Only] Available cpu/platform
 	// selections for the zone.
@@ -30827,7 +30874,8 @@ type DisksResizeCall struct {
 	header_            http.Header
 }
 
-// Resize: Resizes the specified persistent disk.
+// Resize: Resizes the specified persistent disk. You can only increase
+// the size of the disk.
 func (r *DisksService) Resize(project string, zone string, disk string, disksresizerequest *DisksResizeRequest) *DisksResizeCall {
 	c := &DisksResizeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
@@ -30944,7 +30992,7 @@ func (c *DisksResizeCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Resizes the specified persistent disk.",
+	//   "description": "Resizes the specified persistent disk. You can only increase the size of the disk.",
 	//   "httpMethod": "POST",
 	//   "id": "compute.disks.resize",
 	//   "parameterOrder": [
@@ -44477,11 +44525,9 @@ type InstanceTemplatesDeleteCall struct {
 	header_          http.Header
 }
 
-// Delete: Deletes the specified instance template. If you delete an
-// instance template that is being referenced from another instance
-// group, the instance group will not be able to create or recreate
-// virtual machine instances. Deleting an instance template is permanent
-// and cannot be undone.
+// Delete: Deletes the specified instance template. Deleting an instance
+// template is permanent and cannot be undone. It's not possible to
+// delete templates which are in use by an instance group.
 // For details, see https://cloud.google.com/compute/docs/reference/latest/instanceTemplates/delete
 func (r *InstanceTemplatesService) Delete(project string, instanceTemplate string) *InstanceTemplatesDeleteCall {
 	c := &InstanceTemplatesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -44591,7 +44637,7 @@ func (c *InstanceTemplatesDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified instance template. If you delete an instance template that is being referenced from another instance group, the instance group will not be able to create or recreate virtual machine instances. Deleting an instance template is permanent and cannot be undone.",
+	//   "description": "Deletes the specified instance template. Deleting an instance template is permanent and cannot be undone. It's not possible to delete templates which are in use by an instance group.",
 	//   "httpMethod": "DELETE",
 	//   "id": "compute.instanceTemplates.delete",
 	//   "parameterOrder": [
@@ -53774,7 +53820,8 @@ type NetworksPatchCall struct {
 }
 
 // Patch: Patches the specified network with the data included in the
-// request.
+// request. Only the following fields can be modified:
+// routingConfig.routingMode.
 func (r *NetworksService) Patch(project string, network string, network2 *Network) *NetworksPatchCall {
 	c := &NetworksPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
@@ -53889,7 +53936,7 @@ func (c *NetworksPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 	}
 	return ret, nil
 	// {
-	//   "description": "Patches the specified network with the data included in the request.",
+	//   "description": "Patches the specified network with the data included in the request. Only the following fields can be modified: routingConfig.routingMode.",
 	//   "httpMethod": "PATCH",
 	//   "id": "compute.networks.patch",
 	//   "parameterOrder": [

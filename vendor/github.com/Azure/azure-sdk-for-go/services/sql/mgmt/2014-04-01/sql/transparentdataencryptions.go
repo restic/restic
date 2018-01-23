@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // that interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve,
 // update, and delete databases.
 type TransparentDataEncryptionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewTransparentDataEncryptionsClient creates an instance of the TransparentDataEncryptionsClient client.
@@ -47,8 +48,8 @@ func NewTransparentDataEncryptionsClientWithBaseURI(baseURI string, subscription
 // database for which setting the transparent data encryption applies. transparentDataEncryptionName is the name of the
 // transparent data encryption configuration. parameters is the required parameters for creating or updating
 // transparent data encryption.
-func (client TransparentDataEncryptionsClient) CreateOrUpdate(resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string, parameters TransparentDataEncryption) (result TransparentDataEncryption, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, databaseName, transparentDataEncryptionName, parameters)
+func (client TransparentDataEncryptionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string, parameters TransparentDataEncryption) (result TransparentDataEncryption, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, databaseName, transparentDataEncryptionName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.TransparentDataEncryptionsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -70,7 +71,7 @@ func (client TransparentDataEncryptionsClient) CreateOrUpdate(resourceGroupName 
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client TransparentDataEncryptionsClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string, parameters TransparentDataEncryption) (*http.Request, error) {
+func (client TransparentDataEncryptionsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string, parameters TransparentDataEncryption) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":                  autorest.Encode("path", databaseName),
 		"resourceGroupName":             autorest.Encode("path", resourceGroupName),
@@ -91,14 +92,13 @@ func (client TransparentDataEncryptionsClient) CreateOrUpdatePreparer(resourceGr
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/transparentDataEncryption/{transparentDataEncryptionName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client TransparentDataEncryptionsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -121,8 +121,8 @@ func (client TransparentDataEncryptionsClient) CreateOrUpdateResponder(resp *htt
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database for which the transparent data encryption applies. transparentDataEncryptionName is the name of the
 // transparent data encryption configuration.
-func (client TransparentDataEncryptionsClient) Get(resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string) (result TransparentDataEncryption, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, databaseName, transparentDataEncryptionName)
+func (client TransparentDataEncryptionsClient) Get(ctx context.Context, resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string) (result TransparentDataEncryption, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, databaseName, transparentDataEncryptionName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.TransparentDataEncryptionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -144,7 +144,7 @@ func (client TransparentDataEncryptionsClient) Get(resourceGroupName string, ser
 }
 
 // GetPreparer prepares the Get request.
-func (client TransparentDataEncryptionsClient) GetPreparer(resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string) (*http.Request, error) {
+func (client TransparentDataEncryptionsClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, transparentDataEncryptionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":                  autorest.Encode("path", databaseName),
 		"resourceGroupName":             autorest.Encode("path", resourceGroupName),
@@ -163,14 +163,13 @@ func (client TransparentDataEncryptionsClient) GetPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/transparentDataEncryption/{transparentDataEncryptionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client TransparentDataEncryptionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualNetworkClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type VirtualNetworkClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualNetworkClient creates an instance of the VirtualNetworkClient client.
@@ -39,48 +40,27 @@ func NewVirtualNetworkClientWithBaseURI(baseURI string, subscriptionID string) V
 }
 
 // CreateOrUpdateResource create or replace an existing virtual network. This operation can take a while to complete.
-// This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel
-// will be used to cancel polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the virtual
 // network.
-func (client VirtualNetworkClient) CreateOrUpdateResource(resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork, cancel <-chan struct{}) (<-chan VirtualNetwork, <-chan error) {
-	resultChan := make(chan VirtualNetwork, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result VirtualNetwork
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateResourcePreparer(resourceGroupName, labName, name, virtualNetwork, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "CreateOrUpdateResource", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualNetworkClient) CreateOrUpdateResource(ctx context.Context, resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (result VirtualNetworkCreateOrUpdateResourceFuture, err error) {
+	req, err := client.CreateOrUpdateResourcePreparer(ctx, resourceGroupName, labName, name, virtualNetwork)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "CreateOrUpdateResource", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateResourceSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "CreateOrUpdateResource", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateResourceSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "CreateOrUpdateResource", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResourceResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "CreateOrUpdateResource", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateResourcePreparer prepares the CreateOrUpdateResource request.
-func (client VirtualNetworkClient) CreateOrUpdateResourcePreparer(resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualNetworkClient) CreateOrUpdateResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -100,16 +80,22 @@ func (client VirtualNetworkClient) CreateOrUpdateResourcePreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/virtualnetworks/{name}", pathParameters),
 		autorest.WithJSON(virtualNetwork),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateResourceSender sends the CreateOrUpdateResource request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualNetworkClient) CreateOrUpdateResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualNetworkClient) CreateOrUpdateResourceSender(req *http.Request) (future VirtualNetworkCreateOrUpdateResourceFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResourceResponder handles the response to the CreateOrUpdateResource request. The method always
@@ -125,49 +111,28 @@ func (client VirtualNetworkClient) CreateOrUpdateResourceResponder(resp *http.Re
 	return
 }
 
-// DeleteResource delete virtual network. This operation can take a while to complete. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// DeleteResource delete virtual network. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the virtual
 // network.
-func (client VirtualNetworkClient) DeleteResource(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeleteResourcePreparer(resourceGroupName, labName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "DeleteResource", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualNetworkClient) DeleteResource(ctx context.Context, resourceGroupName string, labName string, name string) (result VirtualNetworkDeleteResourceFuture, err error) {
+	req, err := client.DeleteResourcePreparer(ctx, resourceGroupName, labName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "DeleteResource", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteResourceSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "DeleteResource", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteResourceSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "DeleteResource", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResourceResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "DeleteResource", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeleteResourcePreparer prepares the DeleteResource request.
-func (client VirtualNetworkClient) DeleteResourcePreparer(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualNetworkClient) DeleteResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -185,16 +150,22 @@ func (client VirtualNetworkClient) DeleteResourcePreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/virtualnetworks/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteResourceSender sends the DeleteResource request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualNetworkClient) DeleteResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualNetworkClient) DeleteResourceSender(req *http.Request) (future VirtualNetworkDeleteResourceFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResourceResponder handles the response to the DeleteResource request. The method always
@@ -213,8 +184,8 @@ func (client VirtualNetworkClient) DeleteResourceResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the virtual
 // network.
-func (client VirtualNetworkClient) GetResource(resourceGroupName string, labName string, name string) (result VirtualNetwork, err error) {
-	req, err := client.GetResourcePreparer(resourceGroupName, labName, name)
+func (client VirtualNetworkClient) GetResource(ctx context.Context, resourceGroupName string, labName string, name string) (result VirtualNetwork, err error) {
+	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "GetResource", nil, "Failure preparing request")
 		return
@@ -236,7 +207,7 @@ func (client VirtualNetworkClient) GetResource(resourceGroupName string, labName
 }
 
 // GetResourcePreparer prepares the GetResource request.
-func (client VirtualNetworkClient) GetResourcePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client VirtualNetworkClient) GetResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -254,14 +225,13 @@ func (client VirtualNetworkClient) GetResourcePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/virtualnetworks/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetResourceSender sends the GetResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualNetworkClient) GetResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -282,8 +252,9 @@ func (client VirtualNetworkClient) GetResourceResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
 // on the operation.
-func (client VirtualNetworkClient) List(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationVirtualNetwork, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, filter, top, orderBy)
+func (client VirtualNetworkClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationVirtualNetworkPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderBy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", nil, "Failure preparing request")
 		return
@@ -291,12 +262,12 @@ func (client VirtualNetworkClient) List(resourceGroupName string, labName string
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcvn.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcvn, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", resp, "Failure responding to request")
 	}
@@ -305,7 +276,7 @@ func (client VirtualNetworkClient) List(resourceGroupName string, labName string
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualNetworkClient) ListPreparer(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
+func (client VirtualNetworkClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -331,14 +302,13 @@ func (client VirtualNetworkClient) ListPreparer(resourceGroupName string, labNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/virtualnetworks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualNetworkClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -355,81 +325,39 @@ func (client VirtualNetworkClient) ListResponder(resp *http.Response) (result Re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualNetworkClient) ListNextResults(lastResults ResponseWithContinuationVirtualNetwork) (result ResponseWithContinuationVirtualNetwork, err error) {
-	req, err := lastResults.ResponseWithContinuationVirtualNetworkPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualNetworkClient) listNextResults(lastResults ResponseWithContinuationVirtualNetwork) (result ResponseWithContinuationVirtualNetwork, err error) {
+	req, err := lastResults.responseWithContinuationVirtualNetworkPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualNetworkClient) ListComplete(resourceGroupName string, labName string, filter string, top *int32, orderBy string, cancel <-chan struct{}) (<-chan VirtualNetwork, <-chan error) {
-	resultChan := make(chan VirtualNetwork)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, filter, top, orderBy)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualNetworkClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationVirtualNetworkIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, filter, top, orderBy)
+	return
 }
 
 // PatchResource modify properties of virtual networks.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the virtual
 // network.
-func (client VirtualNetworkClient) PatchResource(resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (result VirtualNetwork, err error) {
-	req, err := client.PatchResourcePreparer(resourceGroupName, labName, name, virtualNetwork)
+func (client VirtualNetworkClient) PatchResource(ctx context.Context, resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (result VirtualNetwork, err error) {
+	req, err := client.PatchResourcePreparer(ctx, resourceGroupName, labName, name, virtualNetwork)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.VirtualNetworkClient", "PatchResource", nil, "Failure preparing request")
 		return
@@ -451,7 +379,7 @@ func (client VirtualNetworkClient) PatchResource(resourceGroupName string, labNa
 }
 
 // PatchResourcePreparer prepares the PatchResource request.
-func (client VirtualNetworkClient) PatchResourcePreparer(resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (*http.Request, error) {
+func (client VirtualNetworkClient) PatchResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, virtualNetwork VirtualNetwork) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -471,14 +399,13 @@ func (client VirtualNetworkClient) PatchResourcePreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/virtualnetworks/{name}", pathParameters),
 		autorest.WithJSON(virtualNetwork),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchResourceSender sends the PatchResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualNetworkClient) PatchResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

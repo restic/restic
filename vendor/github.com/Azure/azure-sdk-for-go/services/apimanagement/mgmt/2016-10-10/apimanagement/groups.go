@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // GroupsClient is the apiManagement Client
 type GroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewGroupsClient creates an instance of the GroupsClient client.
@@ -43,7 +44,7 @@ func NewGroupsClientWithBaseURI(baseURI string, subscriptionID string) GroupsCli
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. groupID
 // is group identifier. Must be unique in the current API Management service instance. parameters is create parameters.
-func (client GroupsClient) CreateOrUpdate(resourceGroupName string, serviceName string, groupID string, parameters GroupCreateParameters) (result autorest.Response, err error) {
+func (client GroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serviceName string, groupID string, parameters GroupCreateParameters) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -61,7 +62,7 @@ func (client GroupsClient) CreateOrUpdate(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.GroupsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serviceName, groupID, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serviceName, groupID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -83,7 +84,7 @@ func (client GroupsClient) CreateOrUpdate(resourceGroupName string, serviceName 
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client GroupsClient) CreateOrUpdatePreparer(resourceGroupName string, serviceName string, groupID string, parameters GroupCreateParameters) (*http.Request, error) {
+func (client GroupsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, groupID string, parameters GroupCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -103,14 +104,13 @@ func (client GroupsClient) CreateOrUpdatePreparer(resourceGroupName string, serv
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/groups/{groupId}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -132,7 +132,7 @@ func (client GroupsClient) CreateOrUpdateResponder(resp *http.Response) (result 
 // is group identifier. Must be unique in the current API Management service instance. ifMatch is eTag of the Group
 // Entity. ETag should match the current entity state from the header response of the GET request or it should be * for
 // unconditional update.
-func (client GroupsClient) Delete(resourceGroupName string, serviceName string, groupID string, ifMatch string) (result ErrorBodyContract, err error) {
+func (client GroupsClient) Delete(ctx context.Context, resourceGroupName string, serviceName string, groupID string, ifMatch string) (result ErrorBodyContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -145,7 +145,7 @@ func (client GroupsClient) Delete(resourceGroupName string, serviceName string, 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.GroupsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, serviceName, groupID, ifMatch)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName, groupID, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -167,7 +167,7 @@ func (client GroupsClient) Delete(resourceGroupName string, serviceName string, 
 }
 
 // DeletePreparer prepares the Delete request.
-func (client GroupsClient) DeletePreparer(resourceGroupName string, serviceName string, groupID string, ifMatch string) (*http.Request, error) {
+func (client GroupsClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string, groupID string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -186,14 +186,13 @@ func (client GroupsClient) DeletePreparer(resourceGroupName string, serviceName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/groups/{groupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -214,7 +213,7 @@ func (client GroupsClient) DeleteResponder(resp *http.Response) (result ErrorBod
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. groupID
 // is group identifier. Must be unique in the current API Management service instance.
-func (client GroupsClient) Get(resourceGroupName string, serviceName string, groupID string) (result GroupContract, err error) {
+func (client GroupsClient) Get(ctx context.Context, resourceGroupName string, serviceName string, groupID string) (result GroupContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -227,7 +226,7 @@ func (client GroupsClient) Get(resourceGroupName string, serviceName string, gro
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.GroupsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, groupID)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, groupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -249,7 +248,7 @@ func (client GroupsClient) Get(resourceGroupName string, serviceName string, gro
 }
 
 // GetPreparer prepares the Get request.
-func (client GroupsClient) GetPreparer(resourceGroupName string, serviceName string, groupID string) (*http.Request, error) {
+func (client GroupsClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, groupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -267,14 +266,13 @@ func (client GroupsClient) GetPreparer(resourceGroupName string, serviceName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/groups/{groupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -301,7 +299,7 @@ func (client GroupsClient) GetResponder(resp *http.Response) (result GroupContra
 // | description | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith |
 // | type        | eq, ne                 | N/A                                         | top is number of records to
 // return. skip is number of records to skip.
-func (client GroupsClient) ListByService(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result GroupCollection, err error) {
+func (client GroupsClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result GroupCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -316,7 +314,8 @@ func (client GroupsClient) ListByService(resourceGroupName string, serviceName s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.GroupsClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName, filter, top, skip)
+	result.fn = client.listByServiceNextResults
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -324,12 +323,12 @@ func (client GroupsClient) ListByService(resourceGroupName string, serviceName s
 
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.gc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServiceResponder(resp)
+	result.gc, err = client.ListByServiceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", resp, "Failure responding to request")
 	}
@@ -338,7 +337,7 @@ func (client GroupsClient) ListByService(resourceGroupName string, serviceName s
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client GroupsClient) ListByServicePreparer(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client GroupsClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -364,14 +363,13 @@ func (client GroupsClient) ListByServicePreparer(resourceGroupName string, servi
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/groups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -388,73 +386,31 @@ func (client GroupsClient) ListByServiceResponder(resp *http.Response) (result G
 	return
 }
 
-// ListByServiceNextResults retrieves the next set of results, if any.
-func (client GroupsClient) ListByServiceNextResults(lastResults GroupCollection) (result GroupCollection, err error) {
-	req, err := lastResults.GroupCollectionPreparer()
+// listByServiceNextResults retrieves the next set of results, if any.
+func (client GroupsClient) listByServiceNextResults(lastResults GroupCollection) (result GroupCollection, err error) {
+	req, err := lastResults.groupCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "listByServiceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "listByServiceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServiceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "ListByService", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "listByServiceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServiceComplete gets all elements from the list without paging.
-func (client GroupsClient) ListByServiceComplete(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan GroupContract, <-chan error) {
-	resultChan := make(chan GroupContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByService(resourceGroupName, serviceName, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServiceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServiceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client GroupsClient) ListByServiceComplete(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result GroupCollectionIterator, err error) {
+	result.page, err = client.ListByService(ctx, resourceGroupName, serviceName, filter, top, skip)
+	return
 }
 
 // Update updates the details of the group specified by its identifier.
@@ -463,7 +419,7 @@ func (client GroupsClient) ListByServiceComplete(resourceGroupName string, servi
 // is group identifier. Must be unique in the current API Management service instance. parameters is update parameters.
 // ifMatch is eTag of the Group Entity. ETag should match the current entity state from the header response of the GET
 // request or it should be * for unconditional update.
-func (client GroupsClient) Update(resourceGroupName string, serviceName string, groupID string, parameters GroupUpdateParameters, ifMatch string) (result ErrorBodyContract, err error) {
+func (client GroupsClient) Update(ctx context.Context, resourceGroupName string, serviceName string, groupID string, parameters GroupUpdateParameters, ifMatch string) (result ErrorBodyContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -476,7 +432,7 @@ func (client GroupsClient) Update(resourceGroupName string, serviceName string, 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.GroupsClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, serviceName, groupID, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serviceName, groupID, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.GroupsClient", "Update", nil, "Failure preparing request")
 		return
@@ -498,7 +454,7 @@ func (client GroupsClient) Update(resourceGroupName string, serviceName string, 
 }
 
 // UpdatePreparer prepares the Update request.
-func (client GroupsClient) UpdatePreparer(resourceGroupName string, serviceName string, groupID string, parameters GroupUpdateParameters, ifMatch string) (*http.Request, error) {
+func (client GroupsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, groupID string, parameters GroupUpdateParameters, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -519,14 +475,13 @@ func (client GroupsClient) UpdatePreparer(resourceGroupName string, serviceName 
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client GroupsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClusterVersionsClient is the client for the ClusterVersions methods of the Servicefabric service.
 type ClusterVersionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterVersionsClient creates an instance of the ClusterVersionsClient client.
@@ -42,8 +43,8 @@ func NewClusterVersionsClientWithBaseURI(baseURI string, subscriptionID string) 
 //
 // location is the location for the cluster code versions, this is different from cluster location environment is
 // cluster operating system, the default means all clusterVersion is the cluster code version
-func (client ClusterVersionsClient) Get(location string, environment string, clusterVersion string) (result ClusterCodeVersionsResult, err error) {
-	req, err := client.GetPreparer(location, environment, clusterVersion)
+func (client ClusterVersionsClient) Get(ctx context.Context, location string, environment string, clusterVersion string) (result ClusterCodeVersionsResult, err error) {
+	req, err := client.GetPreparer(ctx, location, environment, clusterVersion)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ClusterVersionsClient) Get(location string, environment string, clu
 }
 
 // GetPreparer prepares the Get request.
-func (client ClusterVersionsClient) GetPreparer(location string, environment string, clusterVersion string) (*http.Request, error) {
+func (client ClusterVersionsClient) GetPreparer(ctx context.Context, location string, environment string, clusterVersion string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterVersion": autorest.Encode("path", clusterVersion),
 		"environment":    autorest.Encode("path", environment),
@@ -83,14 +84,13 @@ func (client ClusterVersionsClient) GetPreparer(location string, environment str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/environments/{environment}/clusterVersions/{clusterVersion}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -110,8 +110,9 @@ func (client ClusterVersionsClient) GetResponder(resp *http.Response) (result Cl
 // List list cluster code versions by location
 //
 // location is the location for the cluster code versions, this is different from cluster location
-func (client ClusterVersionsClient) List(location string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.ListPreparer(location)
+func (client ClusterVersionsClient) List(ctx context.Context, location string) (result ClusterCodeVersionsListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, location)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", nil, "Failure preparing request")
 		return
@@ -119,12 +120,12 @@ func (client ClusterVersionsClient) List(location string) (result ClusterCodeVer
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ccvlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ccvlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", resp, "Failure responding to request")
 	}
@@ -133,7 +134,7 @@ func (client ClusterVersionsClient) List(location string) (result ClusterCodeVer
 }
 
 // ListPreparer prepares the List request.
-func (client ClusterVersionsClient) ListPreparer(location string) (*http.Request, error) {
+func (client ClusterVersionsClient) ListPreparer(ctx context.Context, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -149,14 +150,13 @@ func (client ClusterVersionsClient) ListPreparer(location string) (*http.Request
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/clusterVersions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -173,81 +173,40 @@ func (client ClusterVersionsClient) ListResponder(resp *http.Response) (result C
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ClusterVersionsClient) ListNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
-	req, err := lastResults.ClusterCodeVersionsListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ClusterVersionsClient) listNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
+	req, err := lastResults.clusterCodeVersionsListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ClusterVersionsClient) ListComplete(location string, cancel <-chan struct{}) (<-chan ClusterCodeVersionsResult, <-chan error) {
-	resultChan := make(chan ClusterCodeVersionsResult)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(location)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClusterVersionsClient) ListComplete(ctx context.Context, location string) (result ClusterCodeVersionsListResultIterator, err error) {
+	result.page, err = client.List(ctx, location)
+	return
 }
 
 // ListByEnvironment list cluster code versions by environment
 //
 // location is the location for the cluster code versions, this is different from cluster location environment is
 // cluster operating system, the default means all
-func (client ClusterVersionsClient) ListByEnvironment(location string, environment string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.ListByEnvironmentPreparer(location, environment)
+func (client ClusterVersionsClient) ListByEnvironment(ctx context.Context, location string, environment string) (result ClusterCodeVersionsListResultPage, err error) {
+	result.fn = client.listByEnvironmentNextResults
+	req, err := client.ListByEnvironmentPreparer(ctx, location, environment)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", nil, "Failure preparing request")
 		return
@@ -255,12 +214,12 @@ func (client ClusterVersionsClient) ListByEnvironment(location string, environme
 
 	resp, err := client.ListByEnvironmentSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ccvlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByEnvironmentResponder(resp)
+	result.ccvlr, err = client.ListByEnvironmentResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", resp, "Failure responding to request")
 	}
@@ -269,7 +228,7 @@ func (client ClusterVersionsClient) ListByEnvironment(location string, environme
 }
 
 // ListByEnvironmentPreparer prepares the ListByEnvironment request.
-func (client ClusterVersionsClient) ListByEnvironmentPreparer(location string, environment string) (*http.Request, error) {
+func (client ClusterVersionsClient) ListByEnvironmentPreparer(ctx context.Context, location string, environment string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"environment":    autorest.Encode("path", environment),
 		"location":       autorest.Encode("path", location),
@@ -286,14 +245,13 @@ func (client ClusterVersionsClient) ListByEnvironmentPreparer(location string, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/environments/{environment}/clusterVersions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByEnvironmentSender sends the ListByEnvironment request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) ListByEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -310,81 +268,40 @@ func (client ClusterVersionsClient) ListByEnvironmentResponder(resp *http.Respon
 	return
 }
 
-// ListByEnvironmentNextResults retrieves the next set of results, if any.
-func (client ClusterVersionsClient) ListByEnvironmentNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
-	req, err := lastResults.ClusterCodeVersionsListResultPreparer()
+// listByEnvironmentNextResults retrieves the next set of results, if any.
+func (client ClusterVersionsClient) listByEnvironmentNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
+	req, err := lastResults.clusterCodeVersionsListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByEnvironmentNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByEnvironmentSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByEnvironmentNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByEnvironmentResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByEnvironmentNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByEnvironmentComplete gets all elements from the list without paging.
-func (client ClusterVersionsClient) ListByEnvironmentComplete(location string, environment string, cancel <-chan struct{}) (<-chan ClusterCodeVersionsResult, <-chan error) {
-	resultChan := make(chan ClusterCodeVersionsResult)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByEnvironment(location, environment)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByEnvironmentNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByEnvironmentComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClusterVersionsClient) ListByEnvironmentComplete(ctx context.Context, location string, environment string) (result ClusterCodeVersionsListResultIterator, err error) {
+	result.page, err = client.ListByEnvironment(ctx, location, environment)
+	return
 }
 
 // ListByVersion list cluster code versions by version
 //
 // location is the location for the cluster code versions, this is different from cluster location clusterVersion is
 // the cluster code version
-func (client ClusterVersionsClient) ListByVersion(location string, clusterVersion string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.ListByVersionPreparer(location, clusterVersion)
+func (client ClusterVersionsClient) ListByVersion(ctx context.Context, location string, clusterVersion string) (result ClusterCodeVersionsListResultPage, err error) {
+	result.fn = client.listByVersionNextResults
+	req, err := client.ListByVersionPreparer(ctx, location, clusterVersion)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", nil, "Failure preparing request")
 		return
@@ -392,12 +309,12 @@ func (client ClusterVersionsClient) ListByVersion(location string, clusterVersio
 
 	resp, err := client.ListByVersionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ccvlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByVersionResponder(resp)
+	result.ccvlr, err = client.ListByVersionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", resp, "Failure responding to request")
 	}
@@ -406,7 +323,7 @@ func (client ClusterVersionsClient) ListByVersion(location string, clusterVersio
 }
 
 // ListByVersionPreparer prepares the ListByVersion request.
-func (client ClusterVersionsClient) ListByVersionPreparer(location string, clusterVersion string) (*http.Request, error) {
+func (client ClusterVersionsClient) ListByVersionPreparer(ctx context.Context, location string, clusterVersion string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterVersion": autorest.Encode("path", clusterVersion),
 		"location":       autorest.Encode("path", location),
@@ -423,14 +340,13 @@ func (client ClusterVersionsClient) ListByVersionPreparer(location string, clust
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/clusterVersions/{clusterVersion}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByVersionSender sends the ListByVersion request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) ListByVersionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -447,71 +363,29 @@ func (client ClusterVersionsClient) ListByVersionResponder(resp *http.Response) 
 	return
 }
 
-// ListByVersionNextResults retrieves the next set of results, if any.
-func (client ClusterVersionsClient) ListByVersionNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
-	req, err := lastResults.ClusterCodeVersionsListResultPreparer()
+// listByVersionNextResults retrieves the next set of results, if any.
+func (client ClusterVersionsClient) listByVersionNextResults(lastResults ClusterCodeVersionsListResult) (result ClusterCodeVersionsListResult, err error) {
+	req, err := lastResults.clusterCodeVersionsListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByVersionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByVersionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByVersionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByVersionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByVersion", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "listByVersionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByVersionComplete gets all elements from the list without paging.
-func (client ClusterVersionsClient) ListByVersionComplete(location string, clusterVersion string, cancel <-chan struct{}) (<-chan ClusterCodeVersionsResult, <-chan error) {
-	resultChan := make(chan ClusterCodeVersionsResult)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByVersion(location, clusterVersion)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByVersionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByVersionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClusterVersionsClient) ListByVersionComplete(ctx context.Context, location string, clusterVersion string) (result ClusterCodeVersionsListResultIterator, err error) {
+	result.page, err = client.ListByVersion(ctx, location, clusterVersion)
+	return
 }

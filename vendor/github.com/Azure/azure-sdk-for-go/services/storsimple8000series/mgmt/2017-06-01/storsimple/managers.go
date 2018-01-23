@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ManagersClient is the client for the Managers methods of the Storsimple service.
 type ManagersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewManagersClient creates an instance of the ManagersClient client.
@@ -43,7 +44,7 @@ func NewManagersClientWithBaseURI(baseURI string, subscriptionID string) Manager
 //
 // parameters is the manager extended information. resourceGroupName is the resource group name managerName is the
 // manager name
-func (client ManagersClient) CreateExtendedInfo(parameters ManagerExtendedInfo, resourceGroupName string, managerName string) (result ManagerExtendedInfo, err error) {
+func (client ManagersClient) CreateExtendedInfo(ctx context.Context, parameters ManagerExtendedInfo, resourceGroupName string, managerName string) (result ManagerExtendedInfo, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ManagerExtendedInfoProperties", Name: validation.Null, Rule: false,
@@ -56,7 +57,7 @@ func (client ManagersClient) CreateExtendedInfo(parameters ManagerExtendedInfo, 
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "CreateExtendedInfo")
 	}
 
-	req, err := client.CreateExtendedInfoPreparer(parameters, resourceGroupName, managerName)
+	req, err := client.CreateExtendedInfoPreparer(ctx, parameters, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "CreateExtendedInfo", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client ManagersClient) CreateExtendedInfo(parameters ManagerExtendedInfo, 
 }
 
 // CreateExtendedInfoPreparer prepares the CreateExtendedInfo request.
-func (client ManagersClient) CreateExtendedInfoPreparer(parameters ManagerExtendedInfo, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) CreateExtendedInfoPreparer(ctx context.Context, parameters ManagerExtendedInfo, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -97,14 +98,13 @@ func (client ManagersClient) CreateExtendedInfoPreparer(parameters ManagerExtend
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/extendedInformation/vaultExtendedInfo", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateExtendedInfoSender sends the CreateExtendedInfo request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) CreateExtendedInfoSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -124,7 +124,7 @@ func (client ManagersClient) CreateExtendedInfoResponder(resp *http.Response) (r
 // CreateOrUpdate creates or updates the manager.
 //
 // parameters is the manager. resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) CreateOrUpdate(parameters Manager, resourceGroupName string, managerName string) (result Manager, err error) {
+func (client ManagersClient) CreateOrUpdate(ctx context.Context, parameters Manager, resourceGroupName string, managerName string) (result Manager, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ManagerProperties", Name: validation.Null, Rule: false,
@@ -137,7 +137,7 @@ func (client ManagersClient) CreateOrUpdate(parameters Manager, resourceGroupNam
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(parameters, resourceGroupName, managerName)
+	req, err := client.CreateOrUpdatePreparer(ctx, parameters, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -159,7 +159,7 @@ func (client ManagersClient) CreateOrUpdate(parameters Manager, resourceGroupNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ManagersClient) CreateOrUpdatePreparer(parameters Manager, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) CreateOrUpdatePreparer(ctx context.Context, parameters Manager, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -178,14 +178,13 @@ func (client ManagersClient) CreateOrUpdatePreparer(parameters Manager, resource
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -205,7 +204,7 @@ func (client ManagersClient) CreateOrUpdateResponder(resp *http.Response) (resul
 // Delete deletes the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) Delete(resourceGroupName string, managerName string) (result autorest.Response, err error) {
+func (client ManagersClient) Delete(ctx context.Context, resourceGroupName string, managerName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -213,7 +212,7 @@ func (client ManagersClient) Delete(resourceGroupName string, managerName string
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, managerName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -235,7 +234,7 @@ func (client ManagersClient) Delete(resourceGroupName string, managerName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ManagersClient) DeletePreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) DeletePreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -252,14 +251,13 @@ func (client ManagersClient) DeletePreparer(resourceGroupName string, managerNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -278,7 +276,7 @@ func (client ManagersClient) DeleteResponder(resp *http.Response) (result autore
 // DeleteExtendedInfo deletes the extended info of the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) DeleteExtendedInfo(resourceGroupName string, managerName string) (result autorest.Response, err error) {
+func (client ManagersClient) DeleteExtendedInfo(ctx context.Context, resourceGroupName string, managerName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -286,7 +284,7 @@ func (client ManagersClient) DeleteExtendedInfo(resourceGroupName string, manage
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "DeleteExtendedInfo")
 	}
 
-	req, err := client.DeleteExtendedInfoPreparer(resourceGroupName, managerName)
+	req, err := client.DeleteExtendedInfoPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "DeleteExtendedInfo", nil, "Failure preparing request")
 		return
@@ -308,7 +306,7 @@ func (client ManagersClient) DeleteExtendedInfo(resourceGroupName string, manage
 }
 
 // DeleteExtendedInfoPreparer prepares the DeleteExtendedInfo request.
-func (client ManagersClient) DeleteExtendedInfoPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) DeleteExtendedInfoPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -325,14 +323,13 @@ func (client ManagersClient) DeleteExtendedInfoPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/extendedInformation/vaultExtendedInfo", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteExtendedInfoSender sends the DeleteExtendedInfo request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) DeleteExtendedInfoSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -351,7 +348,7 @@ func (client ManagersClient) DeleteExtendedInfoResponder(resp *http.Response) (r
 // Get returns the properties of the specified manager name.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) Get(resourceGroupName string, managerName string) (result Manager, err error) {
+func (client ManagersClient) Get(ctx context.Context, resourceGroupName string, managerName string) (result Manager, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -359,7 +356,7 @@ func (client ManagersClient) Get(resourceGroupName string, managerName string) (
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "Get", nil, "Failure preparing request")
 		return
@@ -381,7 +378,7 @@ func (client ManagersClient) Get(resourceGroupName string, managerName string) (
 }
 
 // GetPreparer prepares the Get request.
-func (client ManagersClient) GetPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -398,14 +395,13 @@ func (client ManagersClient) GetPreparer(resourceGroupName string, managerName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -425,7 +421,7 @@ func (client ManagersClient) GetResponder(resp *http.Response) (result Manager, 
 // GetActivationKey returns the activation key of the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) GetActivationKey(resourceGroupName string, managerName string) (result Key, err error) {
+func (client ManagersClient) GetActivationKey(ctx context.Context, resourceGroupName string, managerName string) (result Key, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -433,7 +429,7 @@ func (client ManagersClient) GetActivationKey(resourceGroupName string, managerN
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "GetActivationKey")
 	}
 
-	req, err := client.GetActivationKeyPreparer(resourceGroupName, managerName)
+	req, err := client.GetActivationKeyPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "GetActivationKey", nil, "Failure preparing request")
 		return
@@ -455,7 +451,7 @@ func (client ManagersClient) GetActivationKey(resourceGroupName string, managerN
 }
 
 // GetActivationKeyPreparer prepares the GetActivationKey request.
-func (client ManagersClient) GetActivationKeyPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetActivationKeyPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -472,14 +468,13 @@ func (client ManagersClient) GetActivationKeyPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/listActivationKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetActivationKeySender sends the GetActivationKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetActivationKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -499,7 +494,7 @@ func (client ManagersClient) GetActivationKeyResponder(resp *http.Response) (res
 // GetDevicePublicEncryptionKey returns the public encryption key of the device.
 //
 // deviceName is the device name resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) GetDevicePublicEncryptionKey(deviceName string, resourceGroupName string, managerName string) (result PublicKey, err error) {
+func (client ManagersClient) GetDevicePublicEncryptionKey(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (result PublicKey, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -507,7 +502,7 @@ func (client ManagersClient) GetDevicePublicEncryptionKey(deviceName string, res
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "GetDevicePublicEncryptionKey")
 	}
 
-	req, err := client.GetDevicePublicEncryptionKeyPreparer(deviceName, resourceGroupName, managerName)
+	req, err := client.GetDevicePublicEncryptionKeyPreparer(ctx, deviceName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "GetDevicePublicEncryptionKey", nil, "Failure preparing request")
 		return
@@ -529,7 +524,7 @@ func (client ManagersClient) GetDevicePublicEncryptionKey(deviceName string, res
 }
 
 // GetDevicePublicEncryptionKeyPreparer prepares the GetDevicePublicEncryptionKey request.
-func (client ManagersClient) GetDevicePublicEncryptionKeyPreparer(deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetDevicePublicEncryptionKeyPreparer(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":        deviceName,
 		"managerName":       managerName,
@@ -547,14 +542,13 @@ func (client ManagersClient) GetDevicePublicEncryptionKeyPreparer(deviceName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/publicEncryptionKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDevicePublicEncryptionKeySender sends the GetDevicePublicEncryptionKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetDevicePublicEncryptionKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -574,7 +568,7 @@ func (client ManagersClient) GetDevicePublicEncryptionKeyResponder(resp *http.Re
 // GetEncryptionSettings returns the encryption settings of the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) GetEncryptionSettings(resourceGroupName string, managerName string) (result EncryptionSettings, err error) {
+func (client ManagersClient) GetEncryptionSettings(ctx context.Context, resourceGroupName string, managerName string) (result EncryptionSettings, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -582,7 +576,7 @@ func (client ManagersClient) GetEncryptionSettings(resourceGroupName string, man
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "GetEncryptionSettings")
 	}
 
-	req, err := client.GetEncryptionSettingsPreparer(resourceGroupName, managerName)
+	req, err := client.GetEncryptionSettingsPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "GetEncryptionSettings", nil, "Failure preparing request")
 		return
@@ -604,7 +598,7 @@ func (client ManagersClient) GetEncryptionSettings(resourceGroupName string, man
 }
 
 // GetEncryptionSettingsPreparer prepares the GetEncryptionSettings request.
-func (client ManagersClient) GetEncryptionSettingsPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetEncryptionSettingsPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -621,14 +615,13 @@ func (client ManagersClient) GetEncryptionSettingsPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/encryptionSettings/default", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetEncryptionSettingsSender sends the GetEncryptionSettings request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetEncryptionSettingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -648,7 +641,7 @@ func (client ManagersClient) GetEncryptionSettingsResponder(resp *http.Response)
 // GetExtendedInfo returns the extended information of the specified manager name.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) GetExtendedInfo(resourceGroupName string, managerName string) (result ManagerExtendedInfo, err error) {
+func (client ManagersClient) GetExtendedInfo(ctx context.Context, resourceGroupName string, managerName string) (result ManagerExtendedInfo, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -656,7 +649,7 @@ func (client ManagersClient) GetExtendedInfo(resourceGroupName string, managerNa
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "GetExtendedInfo")
 	}
 
-	req, err := client.GetExtendedInfoPreparer(resourceGroupName, managerName)
+	req, err := client.GetExtendedInfoPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "GetExtendedInfo", nil, "Failure preparing request")
 		return
@@ -678,7 +671,7 @@ func (client ManagersClient) GetExtendedInfo(resourceGroupName string, managerNa
 }
 
 // GetExtendedInfoPreparer prepares the GetExtendedInfo request.
-func (client ManagersClient) GetExtendedInfoPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetExtendedInfoPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -695,14 +688,13 @@ func (client ManagersClient) GetExtendedInfoPreparer(resourceGroupName string, m
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/extendedInformation/vaultExtendedInfo", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetExtendedInfoSender sends the GetExtendedInfo request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetExtendedInfoSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -722,7 +714,7 @@ func (client ManagersClient) GetExtendedInfoResponder(resp *http.Response) (resu
 // GetPublicEncryptionKey returns the symmetric encrypted public encryption key of the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) GetPublicEncryptionKey(resourceGroupName string, managerName string) (result SymmetricEncryptedSecret, err error) {
+func (client ManagersClient) GetPublicEncryptionKey(ctx context.Context, resourceGroupName string, managerName string) (result SymmetricEncryptedSecret, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -730,7 +722,7 @@ func (client ManagersClient) GetPublicEncryptionKey(resourceGroupName string, ma
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "GetPublicEncryptionKey")
 	}
 
-	req, err := client.GetPublicEncryptionKeyPreparer(resourceGroupName, managerName)
+	req, err := client.GetPublicEncryptionKeyPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "GetPublicEncryptionKey", nil, "Failure preparing request")
 		return
@@ -752,7 +744,7 @@ func (client ManagersClient) GetPublicEncryptionKey(resourceGroupName string, ma
 }
 
 // GetPublicEncryptionKeyPreparer prepares the GetPublicEncryptionKey request.
-func (client ManagersClient) GetPublicEncryptionKeyPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) GetPublicEncryptionKeyPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -769,14 +761,13 @@ func (client ManagersClient) GetPublicEncryptionKeyPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/listPublicEncryptionKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetPublicEncryptionKeySender sends the GetPublicEncryptionKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) GetPublicEncryptionKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -794,8 +785,8 @@ func (client ManagersClient) GetPublicEncryptionKeyResponder(resp *http.Response
 }
 
 // List retrieves all the managers in a subscription.
-func (client ManagersClient) List() (result ManagerList, err error) {
-	req, err := client.ListPreparer()
+func (client ManagersClient) List(ctx context.Context) (result ManagerList, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "List", nil, "Failure preparing request")
 		return
@@ -817,7 +808,7 @@ func (client ManagersClient) List() (result ManagerList, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client ManagersClient) ListPreparer() (*http.Request, error) {
+func (client ManagersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": client.SubscriptionID,
 	}
@@ -832,14 +823,13 @@ func (client ManagersClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.StorSimple/managers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -859,8 +849,8 @@ func (client ManagersClient) ListResponder(resp *http.Response) (result ManagerL
 // ListByResourceGroup retrieves all the managers in a resource group.
 //
 // resourceGroupName is the resource group name
-func (client ManagersClient) ListByResourceGroup(resourceGroupName string) (result ManagerList, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client ManagersClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ManagerList, err error) {
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -882,7 +872,7 @@ func (client ManagersClient) ListByResourceGroup(resourceGroupName string) (resu
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ManagersClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ManagersClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": resourceGroupName,
 		"subscriptionId":    client.SubscriptionID,
@@ -898,14 +888,13 @@ func (client ManagersClient) ListByResourceGroupPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -925,7 +914,7 @@ func (client ManagersClient) ListByResourceGroupResponder(resp *http.Response) (
 // ListFeatureSupportStatus lists the features and their support status
 //
 // resourceGroupName is the resource group name managerName is the manager name filter is oData Filter options
-func (client ManagersClient) ListFeatureSupportStatus(resourceGroupName string, managerName string, filter string) (result FeatureList, err error) {
+func (client ManagersClient) ListFeatureSupportStatus(ctx context.Context, resourceGroupName string, managerName string, filter string) (result FeatureList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -933,7 +922,7 @@ func (client ManagersClient) ListFeatureSupportStatus(resourceGroupName string, 
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "ListFeatureSupportStatus")
 	}
 
-	req, err := client.ListFeatureSupportStatusPreparer(resourceGroupName, managerName, filter)
+	req, err := client.ListFeatureSupportStatusPreparer(ctx, resourceGroupName, managerName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "ListFeatureSupportStatus", nil, "Failure preparing request")
 		return
@@ -955,7 +944,7 @@ func (client ManagersClient) ListFeatureSupportStatus(resourceGroupName string, 
 }
 
 // ListFeatureSupportStatusPreparer prepares the ListFeatureSupportStatus request.
-func (client ManagersClient) ListFeatureSupportStatusPreparer(resourceGroupName string, managerName string, filter string) (*http.Request, error) {
+func (client ManagersClient) ListFeatureSupportStatusPreparer(ctx context.Context, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -975,14 +964,13 @@ func (client ManagersClient) ListFeatureSupportStatusPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/features", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListFeatureSupportStatusSender sends the ListFeatureSupportStatus request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) ListFeatureSupportStatusSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1002,7 +990,7 @@ func (client ManagersClient) ListFeatureSupportStatusResponder(resp *http.Respon
 // ListMetricDefinition gets the metric definitions for the specified manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) ListMetricDefinition(resourceGroupName string, managerName string) (result MetricDefinitionList, err error) {
+func (client ManagersClient) ListMetricDefinition(ctx context.Context, resourceGroupName string, managerName string) (result MetricDefinitionList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -1010,7 +998,7 @@ func (client ManagersClient) ListMetricDefinition(resourceGroupName string, mana
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "ListMetricDefinition")
 	}
 
-	req, err := client.ListMetricDefinitionPreparer(resourceGroupName, managerName)
+	req, err := client.ListMetricDefinitionPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "ListMetricDefinition", nil, "Failure preparing request")
 		return
@@ -1032,7 +1020,7 @@ func (client ManagersClient) ListMetricDefinition(resourceGroupName string, mana
 }
 
 // ListMetricDefinitionPreparer prepares the ListMetricDefinition request.
-func (client ManagersClient) ListMetricDefinitionPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) ListMetricDefinitionPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -1049,14 +1037,13 @@ func (client ManagersClient) ListMetricDefinitionPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/metricsDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricDefinitionSender sends the ListMetricDefinition request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) ListMetricDefinitionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1076,7 +1063,7 @@ func (client ManagersClient) ListMetricDefinitionResponder(resp *http.Response) 
 // ListMetrics gets the metrics for the specified manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name filter is oData Filter options
-func (client ManagersClient) ListMetrics(resourceGroupName string, managerName string, filter string) (result MetricList, err error) {
+func (client ManagersClient) ListMetrics(ctx context.Context, resourceGroupName string, managerName string, filter string) (result MetricList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -1084,7 +1071,7 @@ func (client ManagersClient) ListMetrics(resourceGroupName string, managerName s
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "ListMetrics")
 	}
 
-	req, err := client.ListMetricsPreparer(resourceGroupName, managerName, filter)
+	req, err := client.ListMetricsPreparer(ctx, resourceGroupName, managerName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "ListMetrics", nil, "Failure preparing request")
 		return
@@ -1106,7 +1093,7 @@ func (client ManagersClient) ListMetrics(resourceGroupName string, managerName s
 }
 
 // ListMetricsPreparer prepares the ListMetrics request.
-func (client ManagersClient) ListMetricsPreparer(resourceGroupName string, managerName string, filter string) (*http.Request, error) {
+func (client ManagersClient) ListMetricsPreparer(ctx context.Context, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -1124,14 +1111,13 @@ func (client ManagersClient) ListMetricsPreparer(resourceGroupName string, manag
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricsSender sends the ListMetrics request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) ListMetricsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1151,7 +1137,7 @@ func (client ManagersClient) ListMetricsResponder(resp *http.Response) (result M
 // RegenerateActivationKey re-generates and returns the activation key of the manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client ManagersClient) RegenerateActivationKey(resourceGroupName string, managerName string) (result Key, err error) {
+func (client ManagersClient) RegenerateActivationKey(ctx context.Context, resourceGroupName string, managerName string) (result Key, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -1159,7 +1145,7 @@ func (client ManagersClient) RegenerateActivationKey(resourceGroupName string, m
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "RegenerateActivationKey")
 	}
 
-	req, err := client.RegenerateActivationKeyPreparer(resourceGroupName, managerName)
+	req, err := client.RegenerateActivationKeyPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "RegenerateActivationKey", nil, "Failure preparing request")
 		return
@@ -1181,7 +1167,7 @@ func (client ManagersClient) RegenerateActivationKey(resourceGroupName string, m
 }
 
 // RegenerateActivationKeyPreparer prepares the RegenerateActivationKey request.
-func (client ManagersClient) RegenerateActivationKeyPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) RegenerateActivationKeyPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -1198,14 +1184,13 @@ func (client ManagersClient) RegenerateActivationKeyPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/regenerateActivationKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateActivationKeySender sends the RegenerateActivationKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) RegenerateActivationKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1226,7 +1211,7 @@ func (client ManagersClient) RegenerateActivationKeyResponder(resp *http.Respons
 //
 // parameters is the manager update parameters. resourceGroupName is the resource group name managerName is the manager
 // name
-func (client ManagersClient) Update(parameters ManagerPatch, resourceGroupName string, managerName string) (result Manager, err error) {
+func (client ManagersClient) Update(ctx context.Context, parameters ManagerPatch, resourceGroupName string, managerName string) (result Manager, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -1234,7 +1219,7 @@ func (client ManagersClient) Update(parameters ManagerPatch, resourceGroupName s
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(parameters, resourceGroupName, managerName)
+	req, err := client.UpdatePreparer(ctx, parameters, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "Update", nil, "Failure preparing request")
 		return
@@ -1256,7 +1241,7 @@ func (client ManagersClient) Update(parameters ManagerPatch, resourceGroupName s
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ManagersClient) UpdatePreparer(parameters ManagerPatch, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client ManagersClient) UpdatePreparer(ctx context.Context, parameters ManagerPatch, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -1275,14 +1260,13 @@ func (client ManagersClient) UpdatePreparer(parameters ManagerPatch, resourceGro
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1303,7 +1287,7 @@ func (client ManagersClient) UpdateResponder(resp *http.Response) (result Manage
 //
 // parameters is the manager extended information. resourceGroupName is the resource group name managerName is the
 // manager name ifMatch is pass the ETag of ExtendedInfo fetched from GET call
-func (client ManagersClient) UpdateExtendedInfo(parameters ManagerExtendedInfo, resourceGroupName string, managerName string, ifMatch string) (result ManagerExtendedInfo, err error) {
+func (client ManagersClient) UpdateExtendedInfo(ctx context.Context, parameters ManagerExtendedInfo, resourceGroupName string, managerName string, ifMatch string) (result ManagerExtendedInfo, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -1311,7 +1295,7 @@ func (client ManagersClient) UpdateExtendedInfo(parameters ManagerExtendedInfo, 
 		return result, validation.NewErrorWithValidationError(err, "storsimple.ManagersClient", "UpdateExtendedInfo")
 	}
 
-	req, err := client.UpdateExtendedInfoPreparer(parameters, resourceGroupName, managerName, ifMatch)
+	req, err := client.UpdateExtendedInfoPreparer(ctx, parameters, resourceGroupName, managerName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.ManagersClient", "UpdateExtendedInfo", nil, "Failure preparing request")
 		return
@@ -1333,7 +1317,7 @@ func (client ManagersClient) UpdateExtendedInfo(parameters ManagerExtendedInfo, 
 }
 
 // UpdateExtendedInfoPreparer prepares the UpdateExtendedInfo request.
-func (client ManagersClient) UpdateExtendedInfoPreparer(parameters ManagerExtendedInfo, resourceGroupName string, managerName string, ifMatch string) (*http.Request, error) {
+func (client ManagersClient) UpdateExtendedInfoPreparer(ctx context.Context, parameters ManagerExtendedInfo, resourceGroupName string, managerName string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -1353,14 +1337,13 @@ func (client ManagersClient) UpdateExtendedInfoPreparer(parameters ManagerExtend
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateExtendedInfoSender sends the UpdateExtendedInfo request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagersClient) UpdateExtendedInfoSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

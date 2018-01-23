@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ExpressRouteServiceProvidersClient is the network Client
 type ExpressRouteServiceProvidersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewExpressRouteServiceProvidersClient creates an instance of the ExpressRouteServiceProvidersClient client.
@@ -40,8 +41,9 @@ func NewExpressRouteServiceProvidersClientWithBaseURI(baseURI string, subscripti
 }
 
 // List gets all the available express route service providers.
-func (client ExpressRouteServiceProvidersClient) List() (result ExpressRouteServiceProviderListResult, err error) {
-	req, err := client.ListPreparer()
+func (client ExpressRouteServiceProvidersClient) List(ctx context.Context) (result ExpressRouteServiceProviderListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", nil, "Failure preparing request")
 		return
@@ -49,12 +51,12 @@ func (client ExpressRouteServiceProvidersClient) List() (result ExpressRouteServ
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ersplr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ersplr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", resp, "Failure responding to request")
 	}
@@ -63,7 +65,7 @@ func (client ExpressRouteServiceProvidersClient) List() (result ExpressRouteServ
 }
 
 // ListPreparer prepares the List request.
-func (client ExpressRouteServiceProvidersClient) ListPreparer() (*http.Request, error) {
+func (client ExpressRouteServiceProvidersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -78,14 +80,13 @@ func (client ExpressRouteServiceProvidersClient) ListPreparer() (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Network/expressRouteServiceProviders", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExpressRouteServiceProvidersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -102,71 +103,29 @@ func (client ExpressRouteServiceProvidersClient) ListResponder(resp *http.Respon
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ExpressRouteServiceProvidersClient) ListNextResults(lastResults ExpressRouteServiceProviderListResult) (result ExpressRouteServiceProviderListResult, err error) {
-	req, err := lastResults.ExpressRouteServiceProviderListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ExpressRouteServiceProvidersClient) listNextResults(lastResults ExpressRouteServiceProviderListResult) (result ExpressRouteServiceProviderListResult, err error) {
+	req, err := lastResults.expressRouteServiceProviderListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.ExpressRouteServiceProvidersClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ExpressRouteServiceProvidersClient) ListComplete(cancel <-chan struct{}) (<-chan ExpressRouteServiceProvider, <-chan error) {
-	resultChan := make(chan ExpressRouteServiceProvider)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ExpressRouteServiceProvidersClient) ListComplete(ctx context.Context) (result ExpressRouteServiceProviderListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

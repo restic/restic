@@ -264,19 +264,18 @@ func TestConvertParamValue(t *testing.T) {
 }
 
 func TestIntegration_ScalarParam(t *testing.T) {
-	timeEqualMicrosec := cmp.Comparer(func(t1, t2 time.Time) bool {
-		return t1.Round(time.Microsecond).Equal(t2.Round(time.Microsecond))
-	})
+	roundToMicros := cmp.Transformer("RoundToMicros",
+		func(t time.Time) time.Time { return t.Round(time.Microsecond) })
 	c := getClient(t)
 	for _, test := range scalarTests {
 		gotData, gotParam, err := paramRoundTrip(c, test.val)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !testutil.Equal(gotData, test.val, timeEqualMicrosec) {
+		if !testutil.Equal(gotData, test.val, roundToMicros) {
 			t.Errorf("\ngot  %#v (%T)\nwant %#v (%T)", gotData, gotData, test.val, test.val)
 		}
-		if !testutil.Equal(gotParam, test.val, timeEqualMicrosec) {
+		if !testutil.Equal(gotParam, test.val, roundToMicros) {
 			t.Errorf("\ngot  %#v (%T)\nwant %#v (%T)", gotParam, gotParam, test.val, test.val)
 		}
 	}

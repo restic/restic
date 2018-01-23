@@ -33,6 +33,70 @@ make backwards-incompatible changes.
 
 ## News
 
+_January 18, 2018_
+
+*v0.18.0*
+
+- bigquery:
+  - Marked stable.
+  - Schema inference of nullable fields supported.
+  - Added TimePartitioning to QueryConfig.
+
+- firestore: Data provided to DocumentRef.Set with a Merge option can contain
+  Delete sentinels.
+
+- logging: Clients can accept parent resources other than projects.
+
+- pubsub:
+  - pubsub/pstest: A lighweight fake for pubsub. Experimental; feedback welcome.
+  - Support updating more subscription metadata: AckDeadline,
+    RetainAckedMessages and RetentionDuration.
+
+- oslogin/apiv1beta: New client for the Cloud OS Login API.
+
+- rpcreplay: A package for recording and replaying gRPC traffic.
+
+- spanner:
+  - Add a ReadWithOptions that supports a row limit, as well as an index.
+  - Support query plan and execution statistics.
+  - Added [OpenCensus](http://opencensus.io) support.
+
+- storage: Clarify checksum validation for gzipped files (it is not validated
+  when the file is served uncompressed).
+
+
+_December 11, 2017_
+
+*v0.17.0*
+
+- firestore BREAKING CHANGES:
+  - Remove UpdateMap and UpdateStruct; rename UpdatePaths to Update.
+    Change
+        `docref.UpdateMap(ctx, map[string]interface{}{"a.b", 1})`
+    to
+        `docref.Update(ctx, []firestore.Update{{Path: "a.b", Value: 1}})`
+
+    Change
+        `docref.UpdateStruct(ctx, []string{"Field"}, aStruct)`
+    to
+        `docref.Update(ctx, []firestore.Update{{Path: "Field", Value: aStruct.Field}})`
+  - Rename MergePaths to Merge; require args to be FieldPaths
+  - A value stored as an integer can be read into a floating-point field, and vice versa.
+- bigtable/cmd/cbt:
+  - Support deleting a column.
+  - Add regex option for row read.
+- spanner: Mark stable.
+- storage:
+  - Add Reader.ContentEncoding method.
+  - Fix handling of SignedURL headers.
+- bigquery:
+  - If Uploader.Put is called with no rows, it returns nil without making a
+    call.
+  - Schema inference supports the "nullable" option in struct tags for
+    non-required fields.
+  - TimePartitioning supports "Field".
+
+
 _October 30, 2017_
 
 *v0.16.0*
@@ -53,7 +117,7 @@ _October 30, 2017_
   - Support updating a table's view configuration.
   - Fix uploading civil times with nanoseconds.
 
-- storage: 
+- storage:
   - Support PubSub notifications.
   - Support Requester Pays buckets.
 
@@ -72,99 +136,31 @@ _October 3, 2017_
 - errors: This package has been removed. Use errorreporting.
 
 
-_September 28, 2017_
-
-*v0.14.0*
-
-- bigquery BREAKING CHANGES:
-  - Standard SQL is the default for queries and views.
-  - `Table.Create` takes `TableMetadata` as a second argument, instead of
-    options.
-  - `Dataset.Create` takes `DatasetMetadata` as a second argument.
-  - `DatasetMetadata` field `ID` renamed to `FullID`
-  - `TableMetadata` field `ID` renamed to `FullID`
-
-- Other bigquery changes:
-  - The client will append a random suffix to a provided job ID if you set
-    `AddJobIDSuffix` to true in a job config.
-  - Listing jobs is supported.
-  - Better retry logic.
-
-- vision, language, speech: clients are now stable
-
-- monitoring: client is now beta
-
-- profiler:
-  - Rename InstanceName to Instance, ZoneName to Zone
-  - Auto-detect service name and version on AppEngine.
-
-_September 8, 2017_
-
-*v0.13.0*
-
-- bigquery: UseLegacySQL options for CreateTable and QueryConfig. Use these
-  options to continue using Legacy SQL after the client switches its default
-  to Standard SQL.
-
-- bigquery: Support for updating dataset labels.
-
-- bigquery: Set DatasetIterator.ProjectID to list datasets in a project other
-  than the client's. DatasetsInProject is no longer needed and is deprecated.
-
-- bigtable: Fail ListInstances when any zones fail.
-
-- spanner: support decoding of slices of basic types (e.g. []string, []int64,
-  etc.)
-
-- logging/logadmin: UpdateSink no longer creates a sink if it is missing
-  (actually a change to the underlying service, not the client)
-
-- profiler: Service and ServiceVersion replace Target in Config.
-
-_August 22, 2017_
-
-*v0.12.0*
-
-- pubsub: Subscription.Receive now uses streaming pull.
-
-- pubsub: add Client.TopicInProject to access topics in a different project
-  than the client.
-
-- errors: renamed errorreporting. The errors package will be removed shortly.
-
-- datastore: improved retry behavior.
-
-- bigquery: support updates to dataset metadata, with etags.
-
-- bigquery: add etag support to Table.Update (BREAKING: etag argument added).
-
-- bigquery: generate all job IDs on the client.
-
-- storage: support bucket lifecycle configurations.
-
-
 [Older news](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/old-news.md)
 
 ## Supported APIs
 
 Google API                       | Status       | Package
 ---------------------------------|--------------|-----------------------------------------------------------
-[Datastore][cloud-datastore]     | stable       | [`cloud.google.com/go/datastore`][cloud-datastore-ref]
-[Firestore][cloud-firestore]     | beta         | [`cloud.google.com/go/firestore`][cloud-firestore-ref]
-[Storage][cloud-storage]         | stable       | [`cloud.google.com/go/storage`][cloud-storage-ref]
+[BigQuery][cloud-bigquery]       | stable       | [`cloud.google.com/go/bigquery`][cloud-bigquery-ref]
 [Bigtable][cloud-bigtable]       | beta         | [`cloud.google.com/go/bigtable`][cloud-bigtable-ref]
-[BigQuery][cloud-bigquery]       | beta         | [`cloud.google.com/go/bigquery`][cloud-bigquery-ref]
+[Container][cloud-container]     | alpha        | [`cloud.google.com/go/container/apiv1`][cloud-container-ref]
+[Data Loss Prevention][cloud-dlp]| alpha        | [`cloud.google.com/go/dlp/apiv2beta1`][cloud-dlp-ref]
+[Datastore][cloud-datastore]     | stable       | [`cloud.google.com/go/datastore`][cloud-datastore-ref]
+[Debugger][cloud-debugger]       | alpha        | [`cloud.google.com/go/debugger/apiv2`][cloud-debugger-ref]
+[ErrorReporting][cloud-errors]   | alpha        | [`cloud.google.com/go/errorreporting`][cloud-errors-ref]
+[Firestore][cloud-firestore]     | beta         | [`cloud.google.com/go/firestore`][cloud-firestore-ref]
+[Language][cloud-language]       | stable       | [`cloud.google.com/go/language/apiv1`][cloud-language-ref]
 [Logging][cloud-logging]         | stable       | [`cloud.google.com/go/logging`][cloud-logging-ref]
 [Monitoring][cloud-monitoring]   | beta         | [`cloud.google.com/go/monitoring/apiv3`][cloud-monitoring-ref]
+[OS Login][cloud-oslogin]              | alpha        | [`cloud.google.com/compute/docs/oslogin/rest`][cloud-oslogin-ref]
 [Pub/Sub][cloud-pubsub]          | beta         | [`cloud.google.com/go/pubsub`][cloud-pubsub-ref]
-[Vision][cloud-vision]           | stable       | [`cloud.google.com/go/vision/apiv1`][cloud-vision-ref]
-[Language][cloud-language]       | stable       | [`cloud.google.com/go/language/apiv1`][cloud-language-ref]
+[Spanner][cloud-spanner]         | stable       | [`cloud.google.com/go/spanner`][cloud-spanner-ref]
 [Speech][cloud-speech]           | stable       | [`cloud.google.com/go/speech/apiv1`][cloud-speech-ref]
-[Spanner][cloud-spanner]         | beta         | [`cloud.google.com/go/spanner`][cloud-spanner-ref]
+[Storage][cloud-storage]         | stable       | [`cloud.google.com/go/storage`][cloud-storage-ref]
 [Translation][cloud-translation] | stable       | [`cloud.google.com/go/translate`][cloud-translation-ref]
-[Trace][cloud-trace]             | alpha        | [`cloud.google.com/go/trace`][cloud-trace-ref]
 [Video Intelligence][cloud-video]| beta         | [`cloud.google.com/go/videointelligence/apiv1beta1`][cloud-video-ref]
-[ErrorReporting][cloud-errors]   | alpha        | [`cloud.google.com/go/errorreporting`][cloud-errors-ref]
+[Vision][cloud-vision]           | stable       | [`cloud.google.com/go/vision/apiv1`][cloud-vision-ref]
 
 
 > **Alpha status**: the API is still being actively developed. As a
@@ -519,6 +515,9 @@ for more information.
 [cloud-language]: https://cloud.google.com/natural-language
 [cloud-language-ref]: https://godoc.org/cloud.google.com/go/language/apiv1
 
+[cloud-oslogin]: https://cloud.google.com/compute/docs/oslogin/rest
+[cloud-oslogin-ref]: https://cloud.google.com/compute/docs/oslogin/rest
+
 [cloud-speech]: https://cloud.google.com/speech
 [cloud-speech-ref]: https://godoc.org/cloud.google.com/go/speech/apiv1
 
@@ -529,13 +528,19 @@ for more information.
 [cloud-translation]: https://cloud.google.com/translation
 [cloud-translation-ref]: https://godoc.org/cloud.google.com/go/translation
 
-[cloud-trace]: https://cloud.google.com/trace/
-[cloud-trace-ref]: https://godoc.org/cloud.google.com/go/trace
-
 [cloud-video]: https://cloud.google.com/video-intelligence/
 [cloud-video-ref]: https://godoc.org/cloud.google.com/go/videointelligence/apiv1beta1
 
 [cloud-errors]: https://cloud.google.com/error-reporting/
 [cloud-errors-ref]: https://godoc.org/cloud.google.com/go/errorreporting
+
+[cloud-container]: https://cloud.google.com/containers/
+[cloud-container-ref]: https://godoc.org/cloud.google.com/go/container/apiv1
+
+[cloud-debugger]: https://cloud.google.com/debugger/
+[cloud-debugger-ref]: https://godoc.org/cloud.google.com/go/debugger/apiv2
+
+[cloud-dlp]: https://cloud.google.com/dlp/
+[cloud-dlp-ref]: https://godoc.org/cloud.google.com/go/dlp/apiv2beta1
 
 [default-creds]: https://developers.google.com/identity/protocols/application-default-credentials

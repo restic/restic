@@ -29,20 +29,20 @@ const (
 	DefaultAdlaJobDNSSuffix = "azuredatalakeanalytics.net"
 )
 
-// ManagementClient is the base client for Job.
-type ManagementClient struct {
+// BaseClient is the base client for Job.
+type BaseClient struct {
 	autorest.Client
 	AdlaJobDNSSuffix string
 }
 
-// New creates an instance of the ManagementClient client.
-func New() ManagementClient {
+// New creates an instance of the BaseClient client.
+func New() BaseClient {
 	return NewWithoutDefaults(DefaultAdlaJobDNSSuffix)
 }
 
-// NewWithoutDefaults creates an instance of the ManagementClient client.
-func NewWithoutDefaults(adlaJobDNSSuffix string) ManagementClient {
-	return ManagementClient{
+// NewWithoutDefaults creates an instance of the BaseClient client.
+func NewWithoutDefaults(adlaJobDNSSuffix string) BaseClient {
+	return BaseClient{
 		Client:           autorest.NewClientWithUserAgent(UserAgent()),
 		AdlaJobDNSSuffix: adlaJobDNSSuffix,
 	}

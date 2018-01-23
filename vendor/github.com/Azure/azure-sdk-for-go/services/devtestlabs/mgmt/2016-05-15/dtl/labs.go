@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // LabsClient is the the DevTest Labs Client.
 type LabsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLabsClient creates an instance of the LabsClient client.
@@ -39,48 +40,27 @@ func NewLabsClientWithBaseURI(baseURI string, subscriptionID string) LabsClient 
 	return LabsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// ClaimAnyVM claim a random claimable virtual machine in the lab. This operation can take a while to complete. This
-// method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be
-// used to cancel polling and any outstanding HTTP requests.
+// ClaimAnyVM claim a random claimable virtual machine in the lab. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab.
-func (client LabsClient) ClaimAnyVM(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ClaimAnyVMPreparer(resourceGroupName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ClaimAnyVM", nil, "Failure preparing request")
-			return
-		}
+func (client LabsClient) ClaimAnyVM(ctx context.Context, resourceGroupName string, name string) (result LabsClaimAnyVMFuture, err error) {
+	req, err := client.ClaimAnyVMPreparer(ctx, resourceGroupName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ClaimAnyVM", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ClaimAnyVMSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ClaimAnyVM", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ClaimAnyVMSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ClaimAnyVM", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ClaimAnyVMResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ClaimAnyVM", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ClaimAnyVMPreparer prepares the ClaimAnyVM request.
-func (client LabsClient) ClaimAnyVMPreparer(resourceGroupName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client LabsClient) ClaimAnyVMPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -97,16 +77,22 @@ func (client LabsClient) ClaimAnyVMPreparer(resourceGroupName string, name strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}/claimAnyVm", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ClaimAnyVMSender sends the ClaimAnyVM request. The method will close the
 // http.Response Body if it receives an error.
-func (client LabsClient) ClaimAnyVMSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LabsClient) ClaimAnyVMSender(req *http.Request) (future LabsClaimAnyVMFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ClaimAnyVMResponder handles the response to the ClaimAnyVM request. The method always
@@ -121,15 +107,11 @@ func (client LabsClient) ClaimAnyVMResponder(resp *http.Response) (result autore
 	return
 }
 
-// CreateEnvironment create virtual machines in a lab. This operation can take a while to complete. This method may
-// poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to
-// cancel polling and any outstanding HTTP requests.
+// CreateEnvironment create virtual machines in a lab. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. labVirtualMachineCreationParameter
 // is properties for creating a virtual machine.
-func (client LabsClient) CreateEnvironment(resourceGroupName string, name string, labVirtualMachineCreationParameter LabVirtualMachineCreationParameter, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client LabsClient) CreateEnvironment(ctx context.Context, resourceGroupName string, name string, labVirtualMachineCreationParameter LabVirtualMachineCreationParameter) (result LabsCreateEnvironmentFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: labVirtualMachineCreationParameter,
 			Constraints: []validation.Constraint{{Target: "labVirtualMachineCreationParameter.LabVirtualMachineCreationParameterProperties", Name: validation.Null, Rule: false,
@@ -142,46 +124,26 @@ func (client LabsClient) CreateEnvironment(resourceGroupName string, name string
 						}},
 					}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "dtl.LabsClient", "CreateEnvironment")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "dtl.LabsClient", "CreateEnvironment")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateEnvironmentPreparer(resourceGroupName, name, labVirtualMachineCreationParameter, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateEnvironment", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateEnvironmentPreparer(ctx, resourceGroupName, name, labVirtualMachineCreationParameter)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateEnvironment", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateEnvironmentSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateEnvironment", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateEnvironmentSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateEnvironment", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateEnvironmentResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateEnvironment", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateEnvironmentPreparer prepares the CreateEnvironment request.
-func (client LabsClient) CreateEnvironmentPreparer(resourceGroupName string, name string, labVirtualMachineCreationParameter LabVirtualMachineCreationParameter, cancel <-chan struct{}) (*http.Request, error) {
+func (client LabsClient) CreateEnvironmentPreparer(ctx context.Context, resourceGroupName string, name string, labVirtualMachineCreationParameter LabVirtualMachineCreationParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -200,16 +162,22 @@ func (client LabsClient) CreateEnvironmentPreparer(resourceGroupName string, nam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}/createEnvironment", pathParameters),
 		autorest.WithJSON(labVirtualMachineCreationParameter),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateEnvironmentSender sends the CreateEnvironment request. The method will close the
 // http.Response Body if it receives an error.
-func (client LabsClient) CreateEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LabsClient) CreateEnvironmentSender(req *http.Request) (future LabsCreateEnvironmentFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateEnvironmentResponder handles the response to the CreateEnvironment request. The method always
@@ -224,48 +192,27 @@ func (client LabsClient) CreateEnvironmentResponder(resp *http.Response) (result
 	return
 }
 
-// CreateOrUpdate create or replace an existing lab. This operation can take a while to complete. This method may poll
-// for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// CreateOrUpdate create or replace an existing lab. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. lab is a lab.
-func (client LabsClient) CreateOrUpdate(resourceGroupName string, name string, lab Lab, cancel <-chan struct{}) (<-chan Lab, <-chan error) {
-	resultChan := make(chan Lab, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Lab
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, name, lab, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client LabsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, name string, lab Lab) (result LabsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, name, lab)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client LabsClient) CreateOrUpdatePreparer(resourceGroupName string, name string, lab Lab, cancel <-chan struct{}) (*http.Request, error) {
+func (client LabsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, name string, lab Lab) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -284,16 +231,22 @@ func (client LabsClient) CreateOrUpdatePreparer(resourceGroupName string, name s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}", pathParameters),
 		autorest.WithJSON(lab),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client LabsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LabsClient) CreateOrUpdateSender(req *http.Request) (future LabsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -309,48 +262,27 @@ func (client LabsClient) CreateOrUpdateResponder(resp *http.Response) (result La
 	return
 }
 
-// Delete delete lab. This operation can take a while to complete. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete delete lab. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab.
-func (client LabsClient) Delete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client LabsClient) Delete(ctx context.Context, resourceGroupName string, name string) (result LabsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LabsClient) DeletePreparer(resourceGroupName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client LabsClient) DeletePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -367,16 +299,22 @@ func (client LabsClient) DeletePreparer(resourceGroupName string, name string, c
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client LabsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LabsClient) DeleteSender(req *http.Request) (future LabsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -392,48 +330,28 @@ func (client LabsClient) DeleteResponder(resp *http.Response) (result autorest.R
 }
 
 // ExportResourceUsage exports the lab resource usage into a storage account This operation can take a while to
-// complete. This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The
-// channel will be used to cancel polling and any outstanding HTTP requests.
+// complete.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. exportResourceUsageParameters is
 // the parameters of the export operation.
-func (client LabsClient) ExportResourceUsage(resourceGroupName string, name string, exportResourceUsageParameters ExportResourceUsageParameters, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ExportResourceUsagePreparer(resourceGroupName, name, exportResourceUsageParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ExportResourceUsage", nil, "Failure preparing request")
-			return
-		}
+func (client LabsClient) ExportResourceUsage(ctx context.Context, resourceGroupName string, name string, exportResourceUsageParameters ExportResourceUsageParameters) (result LabsExportResourceUsageFuture, err error) {
+	req, err := client.ExportResourceUsagePreparer(ctx, resourceGroupName, name, exportResourceUsageParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ExportResourceUsage", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ExportResourceUsageSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ExportResourceUsage", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ExportResourceUsageSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ExportResourceUsage", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ExportResourceUsageResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ExportResourceUsage", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ExportResourceUsagePreparer prepares the ExportResourceUsage request.
-func (client LabsClient) ExportResourceUsagePreparer(resourceGroupName string, name string, exportResourceUsageParameters ExportResourceUsageParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client LabsClient) ExportResourceUsagePreparer(ctx context.Context, resourceGroupName string, name string, exportResourceUsageParameters ExportResourceUsageParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -452,16 +370,22 @@ func (client LabsClient) ExportResourceUsagePreparer(resourceGroupName string, n
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}/exportResourceUsage", pathParameters),
 		autorest.WithJSON(exportResourceUsageParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ExportResourceUsageSender sends the ExportResourceUsage request. The method will close the
 // http.Response Body if it receives an error.
-func (client LabsClient) ExportResourceUsageSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LabsClient) ExportResourceUsageSender(req *http.Request) (future LabsExportResourceUsageFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ExportResourceUsageResponder handles the response to the ExportResourceUsage request. The method always
@@ -480,8 +404,8 @@ func (client LabsClient) ExportResourceUsageResponder(resp *http.Response) (resu
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. generateUploadURIParameter is
 // properties for generating an upload URI.
-func (client LabsClient) GenerateUploadURI(resourceGroupName string, name string, generateUploadURIParameter GenerateUploadURIParameter) (result GenerateUploadURIResponse, err error) {
-	req, err := client.GenerateUploadURIPreparer(resourceGroupName, name, generateUploadURIParameter)
+func (client LabsClient) GenerateUploadURI(ctx context.Context, resourceGroupName string, name string, generateUploadURIParameter GenerateUploadURIParameter) (result GenerateUploadURIResponse, err error) {
+	req, err := client.GenerateUploadURIPreparer(ctx, resourceGroupName, name, generateUploadURIParameter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "GenerateUploadURI", nil, "Failure preparing request")
 		return
@@ -503,7 +427,7 @@ func (client LabsClient) GenerateUploadURI(resourceGroupName string, name string
 }
 
 // GenerateUploadURIPreparer prepares the GenerateUploadURI request.
-func (client LabsClient) GenerateUploadURIPreparer(resourceGroupName string, name string, generateUploadURIParameter GenerateUploadURIParameter) (*http.Request, error) {
+func (client LabsClient) GenerateUploadURIPreparer(ctx context.Context, resourceGroupName string, name string, generateUploadURIParameter GenerateUploadURIParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -522,14 +446,13 @@ func (client LabsClient) GenerateUploadURIPreparer(resourceGroupName string, nam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}/generateUploadUri", pathParameters),
 		autorest.WithJSON(generateUploadURIParameter),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateUploadURISender sends the GenerateUploadURI request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) GenerateUploadURISender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -550,8 +473,8 @@ func (client LabsClient) GenerateUploadURIResponder(resp *http.Response) (result
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. expand is specify the $expand
 // query. Example: 'properties($select=defaultStorageAccount)'
-func (client LabsClient) Get(resourceGroupName string, name string, expand string) (result Lab, err error) {
-	req, err := client.GetPreparer(resourceGroupName, name, expand)
+func (client LabsClient) Get(ctx context.Context, resourceGroupName string, name string, expand string) (result Lab, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, name, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Get", nil, "Failure preparing request")
 		return
@@ -573,7 +496,7 @@ func (client LabsClient) Get(resourceGroupName string, name string, expand strin
 }
 
 // GetPreparer prepares the Get request.
-func (client LabsClient) GetPreparer(resourceGroupName string, name string, expand string) (*http.Request, error) {
+func (client LabsClient) GetPreparer(ctx context.Context, resourceGroupName string, name string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -593,14 +516,13 @@ func (client LabsClient) GetPreparer(resourceGroupName string, name string, expa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -623,8 +545,9 @@ func (client LabsClient) GetResponder(resp *http.Response) (result Lab, err erro
 // 'properties($select=defaultStorageAccount)' filter is the filter to apply to the operation. top is the maximum
 // number of resources to return from the operation. orderby is the ordering expression for the results, using OData
 // notation.
-func (client LabsClient) ListByResourceGroup(resourceGroupName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLab, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, expand, filter, top, orderby)
+func (client LabsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLabPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, expand, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -632,12 +555,12 @@ func (client LabsClient) ListByResourceGroup(resourceGroupName string, expand st
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.rwcl, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -646,7 +569,7 @@ func (client LabsClient) ListByResourceGroup(resourceGroupName string, expand st
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client LabsClient) ListByResourceGroupPreparer(resourceGroupName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client LabsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -674,14 +597,13 @@ func (client LabsClient) ListByResourceGroupPreparer(resourceGroupName string, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -698,73 +620,31 @@ func (client LabsClient) ListByResourceGroupResponder(resp *http.Response) (resu
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client LabsClient) ListByResourceGroupNextResults(lastResults ResponseWithContinuationLab) (result ResponseWithContinuationLab, err error) {
-	req, err := lastResults.ResponseWithContinuationLabPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client LabsClient) listByResourceGroupNextResults(lastResults ResponseWithContinuationLab) (result ResponseWithContinuationLab, err error) {
+	req, err := lastResults.responseWithContinuationLabPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client LabsClient) ListByResourceGroupComplete(resourceGroupName string, expand string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan Lab, <-chan error) {
-	resultChan := make(chan Lab)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, expand, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LabsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLabIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, expand, filter, top, orderby)
+	return
 }
 
 // ListBySubscription list labs in a subscription.
@@ -772,8 +652,9 @@ func (client LabsClient) ListByResourceGroupComplete(resourceGroupName string, e
 // expand is specify the $expand query. Example: 'properties($select=defaultStorageAccount)' filter is the filter to
 // apply to the operation. top is the maximum number of resources to return from the operation. orderby is the ordering
 // expression for the results, using OData notation.
-func (client LabsClient) ListBySubscription(expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLab, err error) {
-	req, err := client.ListBySubscriptionPreparer(expand, filter, top, orderby)
+func (client LabsClient) ListBySubscription(ctx context.Context, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLabPage, err error) {
+	result.fn = client.listBySubscriptionNextResults
+	req, err := client.ListBySubscriptionPreparer(ctx, expand, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", nil, "Failure preparing request")
 		return
@@ -781,12 +662,12 @@ func (client LabsClient) ListBySubscription(expand string, filter string, top *i
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.rwcl, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -795,7 +676,7 @@ func (client LabsClient) ListBySubscription(expand string, filter string, top *i
 }
 
 // ListBySubscriptionPreparer prepares the ListBySubscription request.
-func (client LabsClient) ListBySubscriptionPreparer(expand string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client LabsClient) ListBySubscriptionPreparer(ctx context.Context, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -822,14 +703,13 @@ func (client LabsClient) ListBySubscriptionPreparer(expand string, filter string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DevTestLab/labs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionSender sends the ListBySubscription request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) ListBySubscriptionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -846,80 +726,39 @@ func (client LabsClient) ListBySubscriptionResponder(resp *http.Response) (resul
 	return
 }
 
-// ListBySubscriptionNextResults retrieves the next set of results, if any.
-func (client LabsClient) ListBySubscriptionNextResults(lastResults ResponseWithContinuationLab) (result ResponseWithContinuationLab, err error) {
-	req, err := lastResults.ResponseWithContinuationLabPreparer()
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client LabsClient) listBySubscriptionNextResults(lastResults ResponseWithContinuationLab) (result ResponseWithContinuationLab, err error) {
+	req, err := lastResults.responseWithContinuationLabPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListBySubscription", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionComplete gets all elements from the list without paging.
-func (client LabsClient) ListBySubscriptionComplete(expand string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan Lab, <-chan error) {
-	resultChan := make(chan Lab)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscription(expand, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LabsClient) ListBySubscriptionComplete(ctx context.Context, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationLabIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx, expand, filter, top, orderby)
+	return
 }
 
 // ListVhds list disk images available for custom image creation.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab.
-func (client LabsClient) ListVhds(resourceGroupName string, name string) (result ResponseWithContinuationLabVhd, err error) {
-	req, err := client.ListVhdsPreparer(resourceGroupName, name)
+func (client LabsClient) ListVhds(ctx context.Context, resourceGroupName string, name string) (result ResponseWithContinuationLabVhdPage, err error) {
+	result.fn = client.listVhdsNextResults
+	req, err := client.ListVhdsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", nil, "Failure preparing request")
 		return
@@ -927,12 +766,12 @@ func (client LabsClient) ListVhds(resourceGroupName string, name string) (result
 
 	resp, err := client.ListVhdsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwclv.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListVhdsResponder(resp)
+	result.rwclv, err = client.ListVhdsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", resp, "Failure responding to request")
 	}
@@ -941,7 +780,7 @@ func (client LabsClient) ListVhds(resourceGroupName string, name string) (result
 }
 
 // ListVhdsPreparer prepares the ListVhds request.
-func (client LabsClient) ListVhdsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client LabsClient) ListVhdsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -958,14 +797,13 @@ func (client LabsClient) ListVhdsPreparer(resourceGroupName string, name string)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}/listVhds", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListVhdsSender sends the ListVhds request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) ListVhdsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -982,80 +820,38 @@ func (client LabsClient) ListVhdsResponder(resp *http.Response) (result Response
 	return
 }
 
-// ListVhdsNextResults retrieves the next set of results, if any.
-func (client LabsClient) ListVhdsNextResults(lastResults ResponseWithContinuationLabVhd) (result ResponseWithContinuationLabVhd, err error) {
-	req, err := lastResults.ResponseWithContinuationLabVhdPreparer()
+// listVhdsNextResults retrieves the next set of results, if any.
+func (client LabsClient) listVhdsNextResults(lastResults ResponseWithContinuationLabVhd) (result ResponseWithContinuationLabVhd, err error) {
+	req, err := lastResults.responseWithContinuationLabVhdPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listVhdsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListVhdsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.LabsClient", "listVhdsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListVhdsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "ListVhds", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "listVhdsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListVhdsComplete gets all elements from the list without paging.
-func (client LabsClient) ListVhdsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan LabVhd, <-chan error) {
-	resultChan := make(chan LabVhd)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListVhds(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListVhdsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListVhdsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LabsClient) ListVhdsComplete(ctx context.Context, resourceGroupName string, name string) (result ResponseWithContinuationLabVhdIterator, err error) {
+	result.page, err = client.ListVhds(ctx, resourceGroupName, name)
+	return
 }
 
 // Update modify properties of labs.
 //
 // resourceGroupName is the name of the resource group. name is the name of the lab. lab is a lab.
-func (client LabsClient) Update(resourceGroupName string, name string, lab LabFragment) (result Lab, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, name, lab)
+func (client LabsClient) Update(ctx context.Context, resourceGroupName string, name string, lab LabFragment) (result Lab, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, name, lab)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.LabsClient", "Update", nil, "Failure preparing request")
 		return
@@ -1077,7 +873,7 @@ func (client LabsClient) Update(resourceGroupName string, name string, lab LabFr
 }
 
 // UpdatePreparer prepares the Update request.
-func (client LabsClient) UpdatePreparer(resourceGroupName string, name string, lab LabFragment) (*http.Request, error) {
+func (client LabsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, name string, lab LabFragment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1096,14 +892,13 @@ func (client LabsClient) UpdatePreparer(resourceGroupName string, name string, l
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{name}", pathParameters),
 		autorest.WithJSON(lab),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client LabsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

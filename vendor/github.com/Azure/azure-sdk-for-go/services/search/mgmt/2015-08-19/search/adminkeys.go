@@ -18,6 +18,7 @@ package search
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/satori/go.uuid"
@@ -26,7 +27,7 @@ import (
 
 // AdminKeysClient is the client that can be used to manage Azure Search services and API keys.
 type AdminKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAdminKeysClient creates an instance of the AdminKeysClient client.
@@ -45,8 +46,8 @@ func NewAdminKeysClientWithBaseURI(baseURI string, subscriptionID string) AdminK
 // the Azure Resource Manager API or the portal. searchServiceName is the name of the Azure Search service associated
 // with the specified resource group. clientRequestID is a client-generated GUID value that identifies this request. If
 // specified, this will be included in response information as a way to track the request.
-func (client AdminKeysClient) Get(resourceGroupName string, searchServiceName string, clientRequestID *uuid.UUID) (result AdminKeyResult, err error) {
-	req, err := client.GetPreparer(resourceGroupName, searchServiceName, clientRequestID)
+func (client AdminKeysClient) Get(ctx context.Context, resourceGroupName string, searchServiceName string, clientRequestID *uuid.UUID) (result AdminKeyResult, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, searchServiceName, clientRequestID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.AdminKeysClient", "Get", nil, "Failure preparing request")
 		return
@@ -68,7 +69,7 @@ func (client AdminKeysClient) Get(resourceGroupName string, searchServiceName st
 }
 
 // GetPreparer prepares the Get request.
-func (client AdminKeysClient) GetPreparer(resourceGroupName string, searchServiceName string, clientRequestID *uuid.UUID) (*http.Request, error) {
+func (client AdminKeysClient) GetPreparer(ctx context.Context, resourceGroupName string, searchServiceName string, clientRequestID *uuid.UUID) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"searchServiceName": autorest.Encode("path", searchServiceName),
@@ -89,14 +90,13 @@ func (client AdminKeysClient) GetPreparer(resourceGroupName string, searchServic
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("x-ms-client-request-id", autorest.String(clientRequestID)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client AdminKeysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -120,8 +120,8 @@ func (client AdminKeysClient) GetResponder(resp *http.Response) (result AdminKey
 // with the specified resource group. keyKind is specifies which key to regenerate. Valid values include 'primary' and
 // 'secondary'. clientRequestID is a client-generated GUID value that identifies this request. If specified, this will
 // be included in response information as a way to track the request.
-func (client AdminKeysClient) Regenerate(resourceGroupName string, searchServiceName string, keyKind AdminKeyKind, clientRequestID *uuid.UUID) (result AdminKeyResult, err error) {
-	req, err := client.RegeneratePreparer(resourceGroupName, searchServiceName, keyKind, clientRequestID)
+func (client AdminKeysClient) Regenerate(ctx context.Context, resourceGroupName string, searchServiceName string, keyKind AdminKeyKind, clientRequestID *uuid.UUID) (result AdminKeyResult, err error) {
+	req, err := client.RegeneratePreparer(ctx, resourceGroupName, searchServiceName, keyKind, clientRequestID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.AdminKeysClient", "Regenerate", nil, "Failure preparing request")
 		return
@@ -143,7 +143,7 @@ func (client AdminKeysClient) Regenerate(resourceGroupName string, searchService
 }
 
 // RegeneratePreparer prepares the Regenerate request.
-func (client AdminKeysClient) RegeneratePreparer(resourceGroupName string, searchServiceName string, keyKind AdminKeyKind, clientRequestID *uuid.UUID) (*http.Request, error) {
+func (client AdminKeysClient) RegeneratePreparer(ctx context.Context, resourceGroupName string, searchServiceName string, keyKind AdminKeyKind, clientRequestID *uuid.UUID) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyKind":           autorest.Encode("path", keyKind),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -165,14 +165,13 @@ func (client AdminKeysClient) RegeneratePreparer(resourceGroupName string, searc
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("x-ms-client-request-id", autorest.String(clientRequestID)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateSender sends the Regenerate request. The method will close the
 // http.Response Body if it receives an error.
 func (client AdminKeysClient) RegenerateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

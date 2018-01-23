@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ServicesClient is the client for the Services methods of the Servicefabric service.
 type ServicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServicesClient creates an instance of the ServicesClient client.
@@ -41,8 +42,8 @@ func NewServicesClientWithBaseURI(baseURI string, timeout *int32) ServicesClient
 // Create create services
 //
 // applicationName is the name of the application createServiceDescription is the description of the service
-func (client ServicesClient) Create(applicationName string, createServiceDescription CreateServiceDescription) (result String, err error) {
-	req, err := client.CreatePreparer(applicationName, createServiceDescription)
+func (client ServicesClient) Create(ctx context.Context, applicationName string, createServiceDescription BasicCreateServiceDescription) (result String, err error) {
+	req, err := client.CreatePreparer(ctx, applicationName, createServiceDescription)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "Create", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ServicesClient) Create(applicationName string, createServiceDescrip
 }
 
 // CreatePreparer prepares the Create request.
-func (client ServicesClient) CreatePreparer(applicationName string, createServiceDescription CreateServiceDescription) (*http.Request, error) {
+func (client ServicesClient) CreatePreparer(ctx context.Context, applicationName string, createServiceDescription BasicCreateServiceDescription) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -84,14 +85,13 @@ func (client ServicesClient) CreatePreparer(applicationName string, createServic
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices/$/Create", pathParameters),
 		autorest.WithJSON(createServiceDescription),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -111,8 +111,8 @@ func (client ServicesClient) CreateResponder(resp *http.Response) (result String
 // Get get services
 //
 // applicationName is the name of the application serviceName is the name of the service
-func (client ServicesClient) Get(applicationName string, serviceName string) (result Service, err error) {
-	req, err := client.GetPreparer(applicationName, serviceName)
+func (client ServicesClient) Get(ctx context.Context, applicationName string, serviceName string) (result Service, err error) {
+	req, err := client.GetPreparer(ctx, applicationName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "Get", nil, "Failure preparing request")
 		return
@@ -134,7 +134,7 @@ func (client ServicesClient) Get(applicationName string, serviceName string) (re
 }
 
 // GetPreparer prepares the Get request.
-func (client ServicesClient) GetPreparer(applicationName string, serviceName string) (*http.Request, error) {
+func (client ServicesClient) GetPreparer(ctx context.Context, applicationName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 		"serviceName":     serviceName,
@@ -153,14 +153,13 @@ func (client ServicesClient) GetPreparer(applicationName string, serviceName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices/{serviceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -180,8 +179,8 @@ func (client ServicesClient) GetResponder(resp *http.Response) (result Service, 
 // List list services
 //
 // applicationName is the name of the application
-func (client ServicesClient) List(applicationName string) (result ServiceList, err error) {
-	req, err := client.ListPreparer(applicationName)
+func (client ServicesClient) List(ctx context.Context, applicationName string) (result ServiceList, err error) {
+	req, err := client.ListPreparer(ctx, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "List", nil, "Failure preparing request")
 		return
@@ -203,7 +202,7 @@ func (client ServicesClient) List(applicationName string) (result ServiceList, e
 }
 
 // ListPreparer prepares the List request.
-func (client ServicesClient) ListPreparer(applicationName string) (*http.Request, error) {
+func (client ServicesClient) ListPreparer(ctx context.Context, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -221,14 +220,13 @@ func (client ServicesClient) ListPreparer(applicationName string) (*http.Request
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -248,8 +246,8 @@ func (client ServicesClient) ListResponder(resp *http.Response) (result ServiceL
 // Remove remove services
 //
 // serviceName is the name of the service
-func (client ServicesClient) Remove(serviceName string) (result String, err error) {
-	req, err := client.RemovePreparer(serviceName)
+func (client ServicesClient) Remove(ctx context.Context, serviceName string) (result String, err error) {
+	req, err := client.RemovePreparer(ctx, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "Remove", nil, "Failure preparing request")
 		return
@@ -271,7 +269,7 @@ func (client ServicesClient) Remove(serviceName string) (result String, err erro
 }
 
 // RemovePreparer prepares the Remove request.
-func (client ServicesClient) RemovePreparer(serviceName string) (*http.Request, error) {
+func (client ServicesClient) RemovePreparer(ctx context.Context, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -289,14 +287,13 @@ func (client ServicesClient) RemovePreparer(serviceName string) (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/Delete", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RemoveSender sends the Remove request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) RemoveSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -317,8 +314,8 @@ func (client ServicesClient) RemoveResponder(resp *http.Response) (result String
 //
 // serviceName is the name of the service partitionKeyType is the type of the partition key partitionKeyValue is the
 // value of the partition key previousRspVersion is the version of the previous rsp
-func (client ServicesClient) Resolve(serviceName string, partitionKeyType *int32, partitionKeyValue string, previousRspVersion string) (result ResolvedServicePartition, err error) {
-	req, err := client.ResolvePreparer(serviceName, partitionKeyType, partitionKeyValue, previousRspVersion)
+func (client ServicesClient) Resolve(ctx context.Context, serviceName string, partitionKeyType *int32, partitionKeyValue string, previousRspVersion string) (result ResolvedServicePartition, err error) {
+	req, err := client.ResolvePreparer(ctx, serviceName, partitionKeyType, partitionKeyValue, previousRspVersion)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "Resolve", nil, "Failure preparing request")
 		return
@@ -340,7 +337,7 @@ func (client ServicesClient) Resolve(serviceName string, partitionKeyType *int32
 }
 
 // ResolvePreparer prepares the Resolve request.
-func (client ServicesClient) ResolvePreparer(serviceName string, partitionKeyType *int32, partitionKeyValue string, previousRspVersion string) (*http.Request, error) {
+func (client ServicesClient) ResolvePreparer(ctx context.Context, serviceName string, partitionKeyType *int32, partitionKeyValue string, previousRspVersion string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -367,14 +364,13 @@ func (client ServicesClient) ResolvePreparer(serviceName string, partitionKeyTyp
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/ResolvePartition", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResolveSender sends the Resolve request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) ResolveSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -394,8 +390,8 @@ func (client ServicesClient) ResolveResponder(resp *http.Response) (result Resol
 // Update update services
 //
 // serviceName is the name of the service updateServiceDescription is the description of the service update
-func (client ServicesClient) Update(serviceName string, updateServiceDescription UpdateServiceDescription) (result String, err error) {
-	req, err := client.UpdatePreparer(serviceName, updateServiceDescription)
+func (client ServicesClient) Update(ctx context.Context, serviceName string, updateServiceDescription BasicUpdateServiceDescription) (result String, err error) {
+	req, err := client.UpdatePreparer(ctx, serviceName, updateServiceDescription)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServicesClient", "Update", nil, "Failure preparing request")
 		return
@@ -417,7 +413,7 @@ func (client ServicesClient) Update(serviceName string, updateServiceDescription
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ServicesClient) UpdatePreparer(serviceName string, updateServiceDescription UpdateServiceDescription) (*http.Request, error) {
+func (client ServicesClient) UpdatePreparer(ctx context.Context, serviceName string, updateServiceDescription BasicUpdateServiceDescription) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -437,14 +433,13 @@ func (client ServicesClient) UpdatePreparer(serviceName string, updateServiceDes
 		autorest.WithPathParameters("/Services/{serviceName}/$/Update", pathParameters),
 		autorest.WithJSON(updateServiceDescription),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

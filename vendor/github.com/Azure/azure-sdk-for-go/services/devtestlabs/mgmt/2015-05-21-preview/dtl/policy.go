@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // PolicyClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type PolicyClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPolicyClient creates an instance of the PolicyClient client.
@@ -42,8 +43,8 @@ func NewPolicyClientWithBaseURI(baseURI string, subscriptionID string) PolicyCli
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. policySetName is the name of
 // the policy set. name is the name of the policy.
-func (client PolicyClient) CreateOrUpdateResource(resourceGroupName string, labName string, policySetName string, name string, policy Policy) (result Policy, err error) {
-	req, err := client.CreateOrUpdateResourcePreparer(resourceGroupName, labName, policySetName, name, policy)
+func (client PolicyClient) CreateOrUpdateResource(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string, policy Policy) (result Policy, err error) {
+	req, err := client.CreateOrUpdateResourcePreparer(ctx, resourceGroupName, labName, policySetName, name, policy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "CreateOrUpdateResource", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client PolicyClient) CreateOrUpdateResource(resourceGroupName string, labN
 }
 
 // CreateOrUpdateResourcePreparer prepares the CreateOrUpdateResource request.
-func (client PolicyClient) CreateOrUpdateResourcePreparer(resourceGroupName string, labName string, policySetName string, name string, policy Policy) (*http.Request, error) {
+func (client PolicyClient) CreateOrUpdateResourcePreparer(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string, policy Policy) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -86,14 +87,13 @@ func (client PolicyClient) CreateOrUpdateResourcePreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{policySetName}/policies/{name}", pathParameters),
 		autorest.WithJSON(policy),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateResourceSender sends the CreateOrUpdateResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicyClient) CreateOrUpdateResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,8 +114,8 @@ func (client PolicyClient) CreateOrUpdateResourceResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. policySetName is the name of
 // the policy set. name is the name of the policy.
-func (client PolicyClient) DeleteResource(resourceGroupName string, labName string, policySetName string, name string) (result autorest.Response, err error) {
-	req, err := client.DeleteResourcePreparer(resourceGroupName, labName, policySetName, name)
+func (client PolicyClient) DeleteResource(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string) (result autorest.Response, err error) {
+	req, err := client.DeleteResourcePreparer(ctx, resourceGroupName, labName, policySetName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "DeleteResource", nil, "Failure preparing request")
 		return
@@ -137,7 +137,7 @@ func (client PolicyClient) DeleteResource(resourceGroupName string, labName stri
 }
 
 // DeleteResourcePreparer prepares the DeleteResource request.
-func (client PolicyClient) DeleteResourcePreparer(resourceGroupName string, labName string, policySetName string, name string) (*http.Request, error) {
+func (client PolicyClient) DeleteResourcePreparer(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -156,14 +156,13 @@ func (client PolicyClient) DeleteResourcePreparer(resourceGroupName string, labN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{policySetName}/policies/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteResourceSender sends the DeleteResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicyClient) DeleteResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -183,8 +182,8 @@ func (client PolicyClient) DeleteResourceResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. policySetName is the name of
 // the policy set. name is the name of the policy.
-func (client PolicyClient) GetResource(resourceGroupName string, labName string, policySetName string, name string) (result Policy, err error) {
-	req, err := client.GetResourcePreparer(resourceGroupName, labName, policySetName, name)
+func (client PolicyClient) GetResource(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string) (result Policy, err error) {
+	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, policySetName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "GetResource", nil, "Failure preparing request")
 		return
@@ -206,7 +205,7 @@ func (client PolicyClient) GetResource(resourceGroupName string, labName string,
 }
 
 // GetResourcePreparer prepares the GetResource request.
-func (client PolicyClient) GetResourcePreparer(resourceGroupName string, labName string, policySetName string, name string) (*http.Request, error) {
+func (client PolicyClient) GetResourcePreparer(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -225,14 +224,13 @@ func (client PolicyClient) GetResourcePreparer(resourceGroupName string, labName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{policySetName}/policies/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetResourceSender sends the GetResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicyClient) GetResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -253,8 +251,9 @@ func (client PolicyClient) GetResourceResponder(resp *http.Response) (result Pol
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. policySetName is the name of
 // the policy set. filter is the filter to apply on the operation.
-func (client PolicyClient) List(resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationPolicy, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, policySetName, filter, top, orderBy)
+func (client PolicyClient) List(ctx context.Context, resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationPolicyPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, policySetName, filter, top, orderBy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", nil, "Failure preparing request")
 		return
@@ -262,12 +261,12 @@ func (client PolicyClient) List(resourceGroupName string, labName string, policy
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcp.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcp, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", resp, "Failure responding to request")
 	}
@@ -276,7 +275,7 @@ func (client PolicyClient) List(resourceGroupName string, labName string, policy
 }
 
 // ListPreparer prepares the List request.
-func (client PolicyClient) ListPreparer(resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string) (*http.Request, error) {
+func (client PolicyClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"policySetName":     autorest.Encode("path", policySetName),
@@ -303,14 +302,13 @@ func (client PolicyClient) ListPreparer(resourceGroupName string, labName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{policySetName}/policies", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicyClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -327,81 +325,39 @@ func (client PolicyClient) ListResponder(resp *http.Response) (result ResponseWi
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client PolicyClient) ListNextResults(lastResults ResponseWithContinuationPolicy) (result ResponseWithContinuationPolicy, err error) {
-	req, err := lastResults.ResponseWithContinuationPolicyPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client PolicyClient) listNextResults(lastResults ResponseWithContinuationPolicy) (result ResponseWithContinuationPolicy, err error) {
+	req, err := lastResults.responseWithContinuationPolicyPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.PolicyClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.PolicyClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client PolicyClient) ListComplete(resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string, cancel <-chan struct{}) (<-chan Policy, <-chan error) {
-	resultChan := make(chan Policy)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, policySetName, filter, top, orderBy)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PolicyClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, policySetName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationPolicyIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, policySetName, filter, top, orderBy)
+	return
 }
 
 // PatchResource modify properties of policies.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. policySetName is the name of
 // the policy set. name is the name of the policy.
-func (client PolicyClient) PatchResource(resourceGroupName string, labName string, policySetName string, name string, policy Policy) (result Policy, err error) {
-	req, err := client.PatchResourcePreparer(resourceGroupName, labName, policySetName, name, policy)
+func (client PolicyClient) PatchResource(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string, policy Policy) (result Policy, err error) {
+	req, err := client.PatchResourcePreparer(ctx, resourceGroupName, labName, policySetName, name, policy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicyClient", "PatchResource", nil, "Failure preparing request")
 		return
@@ -423,7 +379,7 @@ func (client PolicyClient) PatchResource(resourceGroupName string, labName strin
 }
 
 // PatchResourcePreparer prepares the PatchResource request.
-func (client PolicyClient) PatchResourcePreparer(resourceGroupName string, labName string, policySetName string, name string, policy Policy) (*http.Request, error) {
+func (client PolicyClient) PatchResourcePreparer(ctx context.Context, resourceGroupName string, labName string, policySetName string, name string, policy Policy) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -444,14 +400,13 @@ func (client PolicyClient) PatchResourcePreparer(resourceGroupName string, labNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{policySetName}/policies/{name}", pathParameters),
 		autorest.WithJSON(policy),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchResourceSender sends the PatchResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicyClient) PatchResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

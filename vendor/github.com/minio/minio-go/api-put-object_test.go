@@ -22,32 +22,41 @@ import (
 
 func TestPutObjectOptionsValidate(t *testing.T) {
 	testCases := []struct {
-		metadata   map[string]string
-		shouldPass bool
+		name, value string
+		shouldPass  bool
 	}{
-		{map[string]string{"Content-Type": "custom/content-type"}, false},
-		{map[string]string{"content-type": "custom/content-type"}, false},
-		{map[string]string{"Content-Encoding": "gzip"}, false},
-		{map[string]string{"Cache-Control": "blah"}, false},
-		{map[string]string{"Content-Disposition": "something"}, false},
-		{map[string]string{"my-custom-header": "blah"}, true},
-		{map[string]string{"X-Amz-Iv": "blah"}, false},
-		{map[string]string{"X-Amz-Key": "blah"}, false},
-		{map[string]string{"X-Amz-Key-prefixed-header": "blah"}, false},
-		{map[string]string{"custom-X-Amz-Key-middle": "blah"}, true},
-		{map[string]string{"my-custom-header-X-Amz-Key": "blah"}, true},
-		{map[string]string{"X-Amz-Matdesc": "blah"}, false},
-		{map[string]string{"blah-X-Amz-Matdesc": "blah"}, true},
-		{map[string]string{"X-Amz-MatDesc-suffix": "blah"}, true},
-		{map[string]string{"x-amz-meta-X-Amz-Iv": "blah"}, false},
-		{map[string]string{"x-amz-meta-X-Amz-Key": "blah"}, false},
-		{map[string]string{"x-amz-meta-X-Amz-Matdesc": "blah"}, false},
+		// Invalid cases.
+		{"X-Amz-Matdesc", "blah", false},
+		{"x-amz-meta-X-Amz-Iv", "blah", false},
+		{"x-amz-meta-X-Amz-Key", "blah", false},
+		{"x-amz-meta-X-Amz-Matdesc", "blah", false},
+		{"It has spaces", "v", false},
+		{"It,has@illegal=characters", "v", false},
+		{"X-Amz-Iv", "blah", false},
+		{"X-Amz-Key", "blah", false},
+		{"X-Amz-Key-prefixed-header", "blah", false},
+		{"Content-Type", "custom/content-type", false},
+		{"content-type", "custom/content-type", false},
+		{"Content-Encoding", "gzip", false},
+		{"Cache-Control", "blah", false},
+		{"Content-Disposition", "something", false},
+
+		// Valid metadata names.
+		{"my-custom-header", "blah", true},
+		{"custom-X-Amz-Key-middle", "blah", true},
+		{"my-custom-header-X-Amz-Key", "blah", true},
+		{"blah-X-Amz-Matdesc", "blah", true},
+		{"X-Amz-MatDesc-suffix", "blah", true},
+		{"It-Is-Fine", "v", true},
+		{"Numbers-098987987-Should-Work", "v", true},
+		{"Crazy-!#$%&'*+-.^_`|~-Should-193832-Be-Fine", "v", true},
 	}
 	for i, testCase := range testCases {
-		err := PutObjectOptions{UserMetadata: testCase.metadata}.validate()
-
+		err := PutObjectOptions{UserMetadata: map[string]string{
+			testCase.name: testCase.value,
+		}}.validate()
 		if testCase.shouldPass && err != nil {
-			t.Errorf("Test %d - output did not match with reference results", i+1)
+			t.Errorf("Test %d - output did not match with reference results, %s", i+1, err)
 		}
 	}
 }

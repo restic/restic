@@ -18,7 +18,9 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 )
@@ -27,25 +29,25 @@ import (
 type ClusterState string
 
 const (
-	// AutoScale specifies the auto scale state for cluster state.
+	// AutoScale ...
 	AutoScale ClusterState = "AutoScale"
-	// BaselineUpgrade specifies the baseline upgrade state for cluster state.
+	// BaselineUpgrade ...
 	BaselineUpgrade ClusterState = "BaselineUpgrade"
-	// Deploying specifies the deploying state for cluster state.
+	// Deploying ...
 	Deploying ClusterState = "Deploying"
-	// EnforcingClusterVersion specifies the enforcing cluster version state for cluster state.
+	// EnforcingClusterVersion ...
 	EnforcingClusterVersion ClusterState = "EnforcingClusterVersion"
-	// Ready specifies the ready state for cluster state.
+	// Ready ...
 	Ready ClusterState = "Ready"
-	// UpdatingInfrastructure specifies the updating infrastructure state for cluster state.
+	// UpdatingInfrastructure ...
 	UpdatingInfrastructure ClusterState = "UpdatingInfrastructure"
-	// UpdatingUserCertificate specifies the updating user certificate state for cluster state.
+	// UpdatingUserCertificate ...
 	UpdatingUserCertificate ClusterState = "UpdatingUserCertificate"
-	// UpdatingUserConfiguration specifies the updating user configuration state for cluster state.
+	// UpdatingUserConfiguration ...
 	UpdatingUserConfiguration ClusterState = "UpdatingUserConfiguration"
-	// UpgradeServiceUnreachable specifies the upgrade service unreachable state for cluster state.
+	// UpgradeServiceUnreachable ...
 	UpgradeServiceUnreachable ClusterState = "UpgradeServiceUnreachable"
-	// WaitingForNodes specifies the waiting for nodes state for cluster state.
+	// WaitingForNodes ...
 	WaitingForNodes ClusterState = "WaitingForNodes"
 )
 
@@ -53,11 +55,11 @@ const (
 type DurabilityLevel string
 
 const (
-	// Bronze specifies the bronze state for durability level.
+	// Bronze ...
 	Bronze DurabilityLevel = "Bronze"
-	// Gold specifies the gold state for durability level.
+	// Gold ...
 	Gold DurabilityLevel = "Gold"
-	// Silver specifies the silver state for durability level.
+	// Silver ...
 	Silver DurabilityLevel = "Silver"
 )
 
@@ -65,9 +67,9 @@ const (
 type Environment string
 
 const (
-	// Linux specifies the linux state for environment.
+	// Linux ...
 	Linux Environment = "Linux"
-	// Windows specifies the windows state for environment.
+	// Windows ...
 	Windows Environment = "Windows"
 )
 
@@ -75,13 +77,13 @@ const (
 type ProvisioningState string
 
 const (
-	// Canceled specifies the canceled state for provisioning state.
+	// Canceled ...
 	Canceled ProvisioningState = "Canceled"
-	// Failed specifies the failed state for provisioning state.
+	// Failed ...
 	Failed ProvisioningState = "Failed"
-	// Succeeded specifies the succeeded state for provisioning state.
+	// Succeeded ...
 	Succeeded ProvisioningState = "Succeeded"
-	// Updating specifies the updating state for provisioning state.
+	// Updating ...
 	Updating ProvisioningState = "Updating"
 )
 
@@ -89,11 +91,11 @@ const (
 type ReliabilityLevel string
 
 const (
-	// ReliabilityLevelBronze specifies the reliability level bronze state for reliability level.
+	// ReliabilityLevelBronze ...
 	ReliabilityLevelBronze ReliabilityLevel = "Bronze"
-	// ReliabilityLevelGold specifies the reliability level gold state for reliability level.
+	// ReliabilityLevelGold ...
 	ReliabilityLevelGold ReliabilityLevel = "Gold"
-	// ReliabilityLevelSilver specifies the reliability level silver state for reliability level.
+	// ReliabilityLevelSilver ...
 	ReliabilityLevelSilver ReliabilityLevel = "Silver"
 )
 
@@ -101,13 +103,13 @@ const (
 type ReliabilityLevel1 string
 
 const (
-	// ReliabilityLevel1Bronze specifies the reliability level 1 bronze state for reliability level 1.
+	// ReliabilityLevel1Bronze ...
 	ReliabilityLevel1Bronze ReliabilityLevel1 = "Bronze"
-	// ReliabilityLevel1Gold specifies the reliability level 1 gold state for reliability level 1.
+	// ReliabilityLevel1Gold ...
 	ReliabilityLevel1Gold ReliabilityLevel1 = "Gold"
-	// ReliabilityLevel1Platinum specifies the reliability level 1 platinum state for reliability level 1.
+	// ReliabilityLevel1Platinum ...
 	ReliabilityLevel1Platinum ReliabilityLevel1 = "Platinum"
-	// ReliabilityLevel1Silver specifies the reliability level 1 silver state for reliability level 1.
+	// ReliabilityLevel1Silver ...
 	ReliabilityLevel1Silver ReliabilityLevel1 = "Silver"
 )
 
@@ -115,9 +117,9 @@ const (
 type UpgradeMode string
 
 const (
-	// Automatic specifies the automatic state for upgrade mode.
+	// Automatic ...
 	Automatic UpgradeMode = "Automatic"
-	// Manual specifies the manual state for upgrade mode.
+	// Manual ...
 	Manual UpgradeMode = "Manual"
 )
 
@@ -125,9 +127,9 @@ const (
 type UpgradeMode1 string
 
 const (
-	// UpgradeMode1Automatic specifies the upgrade mode 1 automatic state for upgrade mode 1.
+	// UpgradeMode1Automatic ...
 	UpgradeMode1Automatic UpgradeMode1 = "Automatic"
-	// UpgradeMode1Manual specifies the upgrade mode 1 manual state for upgrade mode 1.
+	// UpgradeMode1Manual ...
 	UpgradeMode1Manual UpgradeMode1 = "Manual"
 )
 
@@ -135,281 +137,850 @@ const (
 type X509StoreName string
 
 const (
-	// AddressBook specifies the address book state for x509 store name.
+	// AddressBook ...
 	AddressBook X509StoreName = "AddressBook"
-	// AuthRoot specifies the auth root state for x509 store name.
+	// AuthRoot ...
 	AuthRoot X509StoreName = "AuthRoot"
-	// CertificateAuthority specifies the certificate authority state for x509 store name.
+	// CertificateAuthority ...
 	CertificateAuthority X509StoreName = "CertificateAuthority"
-	// Disallowed specifies the disallowed state for x509 store name.
+	// Disallowed ...
 	Disallowed X509StoreName = "Disallowed"
-	// My specifies the my state for x509 store name.
+	// My ...
 	My X509StoreName = "My"
-	// Root specifies the root state for x509 store name.
+	// Root ...
 	Root X509StoreName = "Root"
-	// TrustedPeople specifies the trusted people state for x509 store name.
+	// TrustedPeople ...
 	TrustedPeople X509StoreName = "TrustedPeople"
-	// TrustedPublisher specifies the trusted publisher state for x509 store name.
+	// TrustedPublisher ...
 	TrustedPublisher X509StoreName = "TrustedPublisher"
 )
 
-// AvailableOperationDisplay is operation supported by ServiceFabric resource provider
+// AvailableOperationDisplay operation supported by ServiceFabric resource provider
 type AvailableOperationDisplay struct {
-	Provider    *string `json:"provider,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
+	// Provider - Provider name
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource name
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation name
+	Operation *string `json:"operation,omitempty"`
+	// Description - Operation description
 	Description *string `json:"description,omitempty"`
 }
 
-// AzureActiveDirectory is the settings to enable AAD authentication on the cluster
+// AzureActiveDirectory the settings to enable AAD authentication on the cluster
 type AzureActiveDirectory struct {
-	TenantID           *string `json:"tenantId,omitempty"`
+	// TenantID - Azure active directory tenant id
+	TenantID *string `json:"tenantId,omitempty"`
+	// ClusterApplication - Azure active directory cluster application id
 	ClusterApplication *string `json:"clusterApplication,omitempty"`
-	ClientApplication  *string `json:"clientApplication,omitempty"`
+	// ClientApplication - Azure active directory client application id
+	ClientApplication *string `json:"clientApplication,omitempty"`
 }
 
-// CertificateDescription is certificate details
+// CertificateDescription certificate details
 type CertificateDescription struct {
-	Thumbprint          *string       `json:"thumbprint,omitempty"`
-	ThumbprintSecondary *string       `json:"thumbprintSecondary,omitempty"`
-	X509StoreName       X509StoreName `json:"x509StoreName,omitempty"`
+	// Thumbprint - Thumbprint of the primary certificate
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// ThumbprintSecondary - Thumbprint of the secondary certificate
+	ThumbprintSecondary *string `json:"thumbprintSecondary,omitempty"`
+	// X509StoreName - The local certificate store location. Possible values include: 'AddressBook', 'AuthRoot', 'CertificateAuthority', 'Disallowed', 'My', 'Root', 'TrustedPeople', 'TrustedPublisher'
+	X509StoreName X509StoreName `json:"x509StoreName,omitempty"`
 }
 
-// ClientCertificateCommonName is client certificate details using common name
+// ClientCertificateCommonName client certificate details using common name
 type ClientCertificateCommonName struct {
-	IsAdmin                     *bool   `json:"isAdmin,omitempty"`
-	CertificateCommonName       *string `json:"certificateCommonName,omitempty"`
+	// IsAdmin - Is this certificate used for admin access from the client, if false , it is used or query only access
+	IsAdmin *bool `json:"isAdmin,omitempty"`
+	// CertificateCommonName - Certificate common name to be granted access; be carefull using wild card common names
+	CertificateCommonName *string `json:"certificateCommonName,omitempty"`
+	// CertificateIssuerThumbprint - Certificate issuer thumbprint
 	CertificateIssuerThumbprint *string `json:"certificateIssuerThumbprint,omitempty"`
 }
 
-// ClientCertificateThumbprint is client certificate details using thumbprint
+// ClientCertificateThumbprint client certificate details using thumbprint
 type ClientCertificateThumbprint struct {
-	IsAdmin               *bool   `json:"isAdmin,omitempty"`
+	// IsAdmin - Is this certificate used for admin access from the client, if false, it is used or query only access
+	IsAdmin *bool `json:"isAdmin,omitempty"`
+	// CertificateThumbprint - Certificate thumbprint
 	CertificateThumbprint *string `json:"certificateThumbprint,omitempty"`
 }
 
-// Cluster is the cluster resource
+// Cluster the cluster resource
 type Cluster struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags               *map[string]*string `json:"tags,omitempty"`
 	*ClusterProperties `json:"properties,omitempty"`
 }
 
-// ClusterCodeVersionsListResult is the list results of the ServiceFabric runtime versions
+// UnmarshalJSON is the custom unmarshaler for Cluster struct.
+func (c *Cluster) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClusterProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.ClusterProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		c.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		c.Tags = &tags
+	}
+
+	return nil
+}
+
+// ClusterCodeVersionsListResult the list results of the ServiceFabric runtime versions
 type ClusterCodeVersionsListResult struct {
 	autorest.Response `json:"-"`
 	Value             *[]ClusterCodeVersionsResult `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
+	// NextLink - The URL to use for getting the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ClusterCodeVersionsListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ClusterCodeVersionsListResult) ClusterCodeVersionsListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ClusterCodeVersionsListResultIterator provides access to a complete listing of ClusterCodeVersionsResult values.
+type ClusterCodeVersionsListResultIterator struct {
+	i    int
+	page ClusterCodeVersionsListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ClusterCodeVersionsListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ClusterCodeVersionsListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ClusterCodeVersionsListResultIterator) Response() ClusterCodeVersionsListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ClusterCodeVersionsListResultIterator) Value() ClusterCodeVersionsResult {
+	if !iter.page.NotDone() {
+		return ClusterCodeVersionsResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ccvlr ClusterCodeVersionsListResult) IsEmpty() bool {
+	return ccvlr.Value == nil || len(*ccvlr.Value) == 0
+}
+
+// clusterCodeVersionsListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ccvlr ClusterCodeVersionsListResult) clusterCodeVersionsListResultPreparer() (*http.Request, error) {
+	if ccvlr.NextLink == nil || len(to.String(ccvlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(ccvlr.NextLink)))
 }
 
-// ClusterCodeVersionsResult is the result of the ServiceFabric runtime versions
+// ClusterCodeVersionsListResultPage contains a page of ClusterCodeVersionsResult values.
+type ClusterCodeVersionsListResultPage struct {
+	fn    func(ClusterCodeVersionsListResult) (ClusterCodeVersionsListResult, error)
+	ccvlr ClusterCodeVersionsListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ClusterCodeVersionsListResultPage) Next() error {
+	next, err := page.fn(page.ccvlr)
+	if err != nil {
+		return err
+	}
+	page.ccvlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ClusterCodeVersionsListResultPage) NotDone() bool {
+	return !page.ccvlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ClusterCodeVersionsListResultPage) Response() ClusterCodeVersionsListResult {
+	return page.ccvlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ClusterCodeVersionsListResultPage) Values() []ClusterCodeVersionsResult {
+	if page.ccvlr.IsEmpty() {
+		return nil
+	}
+	return *page.ccvlr.Value
+}
+
+// ClusterCodeVersionsResult the result of the ServiceFabric runtime versions
 type ClusterCodeVersionsResult struct {
-	autorest.Response      `json:"-"`
-	ID                     *string `json:"id,omitempty"`
-	Name                   *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The identification of the result
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the result
+	Name *string `json:"name,omitempty"`
+	// Type - The result resource type
 	Type                   *string `json:"type,omitempty"`
 	*ClusterVersionDetails `json:"properties,omitempty"`
 }
 
-// ClusterHealthPolicy is defines a health policy used to evaluate the health of the cluster or of a cluster node.
+// UnmarshalJSON is the custom unmarshaler for ClusterCodeVersionsResult struct.
+func (ccvr *ClusterCodeVersionsResult) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ccvr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ccvr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ccvr.Type = &typeVar
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClusterVersionDetails
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ccvr.ClusterVersionDetails = &properties
+	}
+
+	return nil
+}
+
+// ClusterHealthPolicy defines a health policy used to evaluate the health of the cluster or of a cluster node.
 type ClusterHealthPolicy struct {
-	MaxPercentUnhealthyNodes        *int32 `json:"maxPercentUnhealthyNodes,omitempty"`
+	// MaxPercentUnhealthyNodes - The maximum allowed percentage of unhealthy nodes before reporting an error. For example, to allow 10% of nodes to be unhealthy, this value would be 10.
+	MaxPercentUnhealthyNodes *int32 `json:"maxPercentUnhealthyNodes,omitempty"`
+	// MaxPercentUnhealthyApplications - The maximum allowed percentage of unhealthy applications before reporting an error. For example, to allow 10% of applications to be unhealthy, this value would be 10.
 	MaxPercentUnhealthyApplications *int32 `json:"maxPercentUnhealthyApplications,omitempty"`
 }
 
-// ClusterListResult is cluster list results
+// ClusterListResult cluster list results
 type ClusterListResult struct {
 	autorest.Response `json:"-"`
 	Value             *[]Cluster `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// NextLink - The URL to use for getting the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ClusterListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ClusterListResult) ClusterListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ClusterListResultIterator provides access to a complete listing of Cluster values.
+type ClusterListResultIterator struct {
+	i    int
+	page ClusterListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ClusterListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ClusterListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ClusterListResultIterator) Response() ClusterListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ClusterListResultIterator) Value() Cluster {
+	if !iter.page.NotDone() {
+		return Cluster{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (clr ClusterListResult) IsEmpty() bool {
+	return clr.Value == nil || len(*clr.Value) == 0
+}
+
+// clusterListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (clr ClusterListResult) clusterListResultPreparer() (*http.Request, error) {
+	if clr.NextLink == nil || len(to.String(clr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(clr.NextLink)))
 }
 
-// ClusterProperties is the cluster resource properties
+// ClusterListResultPage contains a page of Cluster values.
+type ClusterListResultPage struct {
+	fn  func(ClusterListResult) (ClusterListResult, error)
+	clr ClusterListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ClusterListResultPage) Next() error {
+	next, err := page.fn(page.clr)
+	if err != nil {
+		return err
+	}
+	page.clr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ClusterListResultPage) NotDone() bool {
+	return !page.clr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ClusterListResultPage) Response() ClusterListResult {
+	return page.clr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ClusterListResultPage) Values() []Cluster {
+	if page.clr.IsEmpty() {
+		return nil
+	}
+	return *page.clr.Value
+}
+
+// ClusterProperties the cluster resource properties
 type ClusterProperties struct {
-	AvailableClusterVersions        *[]ClusterVersionDetails         `json:"availableClusterVersions,omitempty"`
-	ClusterID                       *string                          `json:"clusterId,omitempty"`
-	ClusterState                    ClusterState                     `json:"clusterState,omitempty"`
-	ClusterEndpoint                 *string                          `json:"clusterEndpoint,omitempty"`
-	ClusterCodeVersion              *string                          `json:"clusterCodeVersion,omitempty"`
-	Certificate                     *CertificateDescription          `json:"certificate,omitempty"`
-	ReliabilityLevel                ReliabilityLevel                 `json:"reliabilityLevel,omitempty"`
-	UpgradeMode                     UpgradeMode                      `json:"upgradeMode,omitempty"`
-	ClientCertificateThumbprints    *[]ClientCertificateThumbprint   `json:"clientCertificateThumbprints,omitempty"`
-	ClientCertificateCommonNames    *[]ClientCertificateCommonName   `json:"clientCertificateCommonNames,omitempty"`
-	FabricSettings                  *[]SettingsSectionDescription    `json:"fabricSettings,omitempty"`
-	ReverseProxyCertificate         *CertificateDescription          `json:"reverseProxyCertificate,omitempty"`
-	ManagementEndpoint              *string                          `json:"managementEndpoint,omitempty"`
-	NodeTypes                       *[]NodeTypeDescription           `json:"nodeTypes,omitempty"`
-	AzureActiveDirectory            *AzureActiveDirectory            `json:"azureActiveDirectory,omitempty"`
-	ProvisioningState               ProvisioningState                `json:"provisioningState,omitempty"`
-	VMImage                         *string                          `json:"vmImage,omitempty"`
-	DiagnosticsStorageAccountConfig *DiagnosticsStorageAccountConfig `json:"diagnosticsStorageAccountConfig,omitempty"`
-	UpgradeDescription              *ClusterUpgradePolicy            `json:"upgradeDescription,omitempty"`
-}
-
-// ClusterPropertiesUpdateParameters is the cluster resource properties can be updated
-type ClusterPropertiesUpdateParameters struct {
-	ReliabilityLevel             ReliabilityLevel               `json:"reliabilityLevel,omitempty"`
-	UpgradeMode                  UpgradeMode                    `json:"upgradeMode,omitempty"`
-	ClusterCodeVersion           *string                        `json:"clusterCodeVersion,omitempty"`
-	Certificate                  *CertificateDescription        `json:"certificate,omitempty"`
+	// AvailableClusterVersions - The available cluster code version which the cluster can upgrade to, note that you must choose upgradeMode to manual to upgrade to
+	AvailableClusterVersions *[]ClusterVersionDetails `json:"availableClusterVersions,omitempty"`
+	// ClusterID - The unique identifier for the cluster resource
+	ClusterID *string `json:"clusterId,omitempty"`
+	// ClusterState - The state for the cluster. Possible values include: 'WaitingForNodes', 'Deploying', 'BaselineUpgrade', 'UpdatingUserConfiguration', 'UpdatingUserCertificate', 'UpdatingInfrastructure', 'EnforcingClusterVersion', 'UpgradeServiceUnreachable', 'AutoScale', 'Ready'
+	ClusterState ClusterState `json:"clusterState,omitempty"`
+	// ClusterEndpoint - The endpoint for the cluster connecting to servicefabric resource provider
+	ClusterEndpoint *string `json:"clusterEndpoint,omitempty"`
+	// ClusterCodeVersion - The ServiceFabric code version running in your cluster
+	ClusterCodeVersion *string `json:"clusterCodeVersion,omitempty"`
+	// Certificate - This primay certificate will be used as cluster node to node security, SSL certificate for cluster management endpoint and default admin client
+	Certificate *CertificateDescription `json:"certificate,omitempty"`
+	// ReliabilityLevel - Cluster reliability level indicates replica set size of system service. Possible values include: 'ReliabilityLevel1Bronze', 'ReliabilityLevel1Silver', 'ReliabilityLevel1Gold', 'ReliabilityLevel1Platinum'
+	ReliabilityLevel ReliabilityLevel `json:"reliabilityLevel,omitempty"`
+	// UpgradeMode - Cluster upgrade mode indicates if fabric upgrade is initiated automatically by the system or not. Possible values include: 'UpgradeMode1Automatic', 'UpgradeMode1Manual'
+	UpgradeMode UpgradeMode `json:"upgradeMode,omitempty"`
+	// ClientCertificateThumbprints - The client thumbprint details ,it is used for client access for cluster operation
 	ClientCertificateThumbprints *[]ClientCertificateThumbprint `json:"clientCertificateThumbprints,omitempty"`
+	// ClientCertificateCommonNames -  List of client certificates to whitelist based on common names
 	ClientCertificateCommonNames *[]ClientCertificateCommonName `json:"clientCertificateCommonNames,omitempty"`
-	FabricSettings               *[]SettingsSectionDescription  `json:"fabricSettings,omitempty"`
-	ReverseProxyCertificate      *CertificateDescription        `json:"reverseProxyCertificate,omitempty"`
-	NodeTypes                    *[]NodeTypeDescription         `json:"nodeTypes,omitempty"`
-	UpgradeDescription           *ClusterUpgradePolicy          `json:"upgradeDescription,omitempty"`
+	// FabricSettings - List of custom fabric settings to configure the cluster.
+	FabricSettings *[]SettingsSectionDescription `json:"fabricSettings,omitempty"`
+	// ReverseProxyCertificate - The server certificate used by reverse proxy
+	ReverseProxyCertificate *CertificateDescription `json:"reverseProxyCertificate,omitempty"`
+	// ManagementEndpoint - The http management endpoint of the cluster
+	ManagementEndpoint *string `json:"managementEndpoint,omitempty"`
+	// NodeTypes - The list of nodetypes that make up the cluster
+	NodeTypes *[]NodeTypeDescription `json:"nodeTypes,omitempty"`
+	// AzureActiveDirectory - The settings to enable AAD authentication on the cluster
+	AzureActiveDirectory *AzureActiveDirectory `json:"azureActiveDirectory,omitempty"`
+	// ProvisioningState - The provisioning state of the cluster resource. Possible values include: 'Updating', 'Succeeded', 'Failed', 'Canceled'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// VMImage - The name of VM image VMSS has been configured with. Generic names such as Windows or Linux can be used.
+	VMImage *string `json:"vmImage,omitempty"`
+	// DiagnosticsStorageAccountConfig - The storage diagnostics account configuration details
+	DiagnosticsStorageAccountConfig *DiagnosticsStorageAccountConfig `json:"diagnosticsStorageAccountConfig,omitempty"`
+	// UpgradeDescription - The policy to use when upgrading the cluster.
+	UpgradeDescription *ClusterUpgradePolicy `json:"upgradeDescription,omitempty"`
 }
 
-// ClusterUpdateParameters is cluster update request
+// ClusterPropertiesUpdateParameters the cluster resource properties can be updated
+type ClusterPropertiesUpdateParameters struct {
+	// ReliabilityLevel - This level is used to set the number of replicas of the system services. Possible values include: 'ReliabilityLevelBronze', 'ReliabilityLevelSilver', 'ReliabilityLevelGold'
+	ReliabilityLevel ReliabilityLevel `json:"reliabilityLevel,omitempty"`
+	// UpgradeMode - Cluster upgrade mode indicates if fabric upgrade is initiated automatically by the system or not. Possible values include: 'Automatic', 'Manual'
+	UpgradeMode UpgradeMode `json:"upgradeMode,omitempty"`
+	// ClusterCodeVersion - The ServiceFabric code version, if set it, please make sure you have set upgradeMode to Manual, otherwise ,it will fail, if you are using PUT new cluster, you can get the version by using ClusterVersions_List, if you are updating existing cluster, you can get the availableClusterVersions from Clusters_Get
+	ClusterCodeVersion *string `json:"clusterCodeVersion,omitempty"`
+	// Certificate - This primay certificate will be used as cluster node to node security, SSL certificate for cluster management endpoint and default admin client, the certificate should exist in the virtual machine scale sets or Azure key vault, before you add it. It will override original value
+	Certificate *CertificateDescription `json:"certificate,omitempty"`
+	// ClientCertificateThumbprints - The client thumbprint details, it is used for client access for cluster operation, it will override existing collection
+	ClientCertificateThumbprints *[]ClientCertificateThumbprint `json:"clientCertificateThumbprints,omitempty"`
+	// ClientCertificateCommonNames - List of client certificates to whitelist based on common names.
+	ClientCertificateCommonNames *[]ClientCertificateCommonName `json:"clientCertificateCommonNames,omitempty"`
+	// FabricSettings - List of custom fabric settings to configure the cluster, Note, it will overwrite existing collection
+	FabricSettings *[]SettingsSectionDescription `json:"fabricSettings,omitempty"`
+	// ReverseProxyCertificate - Certificate for the reverse proxy
+	ReverseProxyCertificate *CertificateDescription `json:"reverseProxyCertificate,omitempty"`
+	// NodeTypes - The list of nodetypes that make up the cluster, it will override
+	NodeTypes *[]NodeTypeDescription `json:"nodeTypes,omitempty"`
+	// UpgradeDescription - The policy to use when upgrading the cluster.
+	UpgradeDescription *ClusterUpgradePolicy `json:"upgradeDescription,omitempty"`
+}
+
+// ClustersCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ClustersCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ClustersCreateFuture) Result(client ClustersClient) (c Cluster, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return c, autorest.NewError("servicefabric.ClustersCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		c, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	c, err = client.CreateResponder(resp)
+	return
+}
+
+// ClustersUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ClustersUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ClustersUpdateFuture) Result(client ClustersClient) (c Cluster, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return c, autorest.NewError("servicefabric.ClustersUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		c, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	c, err = client.UpdateResponder(resp)
+	return
+}
+
+// ClusterUpdateParameters cluster update request
 type ClusterUpdateParameters struct {
 	*ClusterPropertiesUpdateParameters `json:"properties,omitempty"`
-	Tags                               *map[string]*string `json:"tags,omitempty"`
+	// Tags - Cluster update parameters
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ClusterUpgradeDeltaHealthPolicy is delta health policy for the cluster
+// UnmarshalJSON is the custom unmarshaler for ClusterUpdateParameters struct.
+func (cup *ClusterUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClusterPropertiesUpdateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cup.ClusterPropertiesUpdateParameters = &properties
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cup.Tags = &tags
+	}
+
+	return nil
+}
+
+// ClusterUpgradeDeltaHealthPolicy delta health policy for the cluster
 type ClusterUpgradeDeltaHealthPolicy struct {
-	MaxPercentDeltaUnhealthyNodes              *int32 `json:"maxPercentDeltaUnhealthyNodes,omitempty"`
+	// MaxPercentDeltaUnhealthyNodes - Additional unhealthy nodes percentage
+	MaxPercentDeltaUnhealthyNodes *int32 `json:"maxPercentDeltaUnhealthyNodes,omitempty"`
+	// MaxPercentUpgradeDomainDeltaUnhealthyNodes - Additional unhealthy nodes percentage per upgrade domain
 	MaxPercentUpgradeDomainDeltaUnhealthyNodes *int32 `json:"maxPercentUpgradeDomainDeltaUnhealthyNodes,omitempty"`
-	MaxPercentDeltaUnhealthyApplications       *int32 `json:"maxPercentDeltaUnhealthyApplications,omitempty"`
+	// MaxPercentDeltaUnhealthyApplications - Additional unhealthy applications percentage
+	MaxPercentDeltaUnhealthyApplications *int32 `json:"maxPercentDeltaUnhealthyApplications,omitempty"`
 }
 
-// ClusterUpgradePolicy is cluster upgrade policy
+// ClusterUpgradePolicy cluster upgrade policy
 type ClusterUpgradePolicy struct {
-	OverrideUserUpgradePolicy     *bool                            `json:"overrideUserUpgradePolicy,omitempty"`
-	ForceRestart                  *bool                            `json:"forceRestart,omitempty"`
-	UpgradeReplicaSetCheckTimeout *string                          `json:"upgradeReplicaSetCheckTimeout,omitempty"`
-	HealthCheckWaitDuration       *string                          `json:"healthCheckWaitDuration,omitempty"`
-	HealthCheckStableDuration     *string                          `json:"healthCheckStableDuration,omitempty"`
-	HealthCheckRetryTimeout       *string                          `json:"healthCheckRetryTimeout,omitempty"`
-	UpgradeTimeout                *string                          `json:"upgradeTimeout,omitempty"`
-	UpgradeDomainTimeout          *string                          `json:"upgradeDomainTimeout,omitempty"`
-	HealthPolicy                  *ClusterHealthPolicy             `json:"healthPolicy,omitempty"`
-	DeltaHealthPolicy             *ClusterUpgradeDeltaHealthPolicy `json:"deltaHealthPolicy,omitempty"`
+	// OverrideUserUpgradePolicy - Use the user defined upgrade policy or not
+	OverrideUserUpgradePolicy *bool `json:"overrideUserUpgradePolicy,omitempty"`
+	// ForceRestart - Force node to restart or not
+	ForceRestart *bool `json:"forceRestart,omitempty"`
+	// UpgradeReplicaSetCheckTimeout - Timeout for replica set upgrade to complete,it represents .Net TimeSpan
+	UpgradeReplicaSetCheckTimeout *string `json:"upgradeReplicaSetCheckTimeout,omitempty"`
+	// HealthCheckWaitDuration - The length of time to wait after completing an upgrade domain before performing health checks, it represents .Net TimeSpan
+	HealthCheckWaitDuration *string `json:"healthCheckWaitDuration,omitempty"`
+	// HealthCheckStableDuration - The length of time that health checks must pass continuously,it represents .Net TimeSpan
+	HealthCheckStableDuration *string `json:"healthCheckStableDuration,omitempty"`
+	// HealthCheckRetryTimeout - The length of time that health checks can fail continuously,it represents .Net TimeSpan
+	HealthCheckRetryTimeout *string `json:"healthCheckRetryTimeout,omitempty"`
+	// UpgradeTimeout - The upgrade timeout,it represents .Net TimeSpan
+	UpgradeTimeout *string `json:"upgradeTimeout,omitempty"`
+	// UpgradeDomainTimeout - The timeout for any upgrade domain,it represents .Net TimeSpan
+	UpgradeDomainTimeout *string `json:"upgradeDomainTimeout,omitempty"`
+	// HealthPolicy - Cluster health Policy
+	HealthPolicy *ClusterHealthPolicy `json:"healthPolicy,omitempty"`
+	// DeltaHealthPolicy - Delta health policy
+	DeltaHealthPolicy *ClusterUpgradeDeltaHealthPolicy `json:"deltaHealthPolicy,omitempty"`
 }
 
-// ClusterVersionDetails is the detail of the ServiceFabric runtime version result
+// ClusterVersionDetails the detail of the ServiceFabric runtime version result
 type ClusterVersionDetails struct {
-	CodeVersion      *string     `json:"codeVersion,omitempty"`
-	SupportExpiryUtc *string     `json:"supportExpiryUtc,omitempty"`
-	Environment      Environment `json:"environment,omitempty"`
+	// CodeVersion - The ServiceFabric runtime version of the cluster
+	CodeVersion *string `json:"codeVersion,omitempty"`
+	// SupportExpiryUtc - The date of expiry of support of the version
+	SupportExpiryUtc *string `json:"supportExpiryUtc,omitempty"`
+	// Environment - Cluster operating system. Possible values include: 'Windows', 'Linux'
+	Environment Environment `json:"environment,omitempty"`
 }
 
-// DiagnosticsStorageAccountConfig is diagnostics storage account config
+// DiagnosticsStorageAccountConfig diagnostics storage account config
 type DiagnosticsStorageAccountConfig struct {
-	StorageAccountName      *string `json:"storageAccountName,omitempty"`
+	// StorageAccountName - Diagnostics storage account name
+	StorageAccountName *string `json:"storageAccountName,omitempty"`
+	// ProtectedAccountKeyName - Protected Diagnostics storage key name
 	ProtectedAccountKeyName *string `json:"protectedAccountKeyName,omitempty"`
-	BlobEndpoint            *string `json:"blobEndpoint,omitempty"`
-	QueueEndpoint           *string `json:"queueEndpoint,omitempty"`
-	TableEndpoint           *string `json:"tableEndpoint,omitempty"`
+	// BlobEndpoint - Diagnostics storage account blob endpoint
+	BlobEndpoint *string `json:"blobEndpoint,omitempty"`
+	// QueueEndpoint - Diagnostics storage account queue endpoint
+	QueueEndpoint *string `json:"queueEndpoint,omitempty"`
+	// TableEndpoint - Diagnostics storage account table endpoint
+	TableEndpoint *string `json:"tableEndpoint,omitempty"`
 }
 
-// EndpointRangeDescription is port range details
+// EndpointRangeDescription port range details
 type EndpointRangeDescription struct {
+	// StartPort - Starting port of a range of ports
 	StartPort *int32 `json:"startPort,omitempty"`
-	EndPort   *int32 `json:"endPort,omitempty"`
+	// EndPort - End port of a range of ports
+	EndPort *int32 `json:"endPort,omitempty"`
 }
 
-// ErrorModel is the structure of the error
+// ErrorModel the structure of the error
 type ErrorModel struct {
+	// Error - The error detail
 	Error *ErrorModelError `json:"error,omitempty"`
 }
 
-// ErrorModelError is the error detail
+// ErrorModelError the error detail
 type ErrorModelError struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - The error code
+	Code *string `json:"code,omitempty"`
+	// Message - The error message
 	Message *string `json:"message,omitempty"`
 }
 
-// NodeTypeDescription is describes a node type in the cluster, each node type represents sub set of nodes in the
-// cluster
+// NodeTypeDescription describes a node type in the cluster, each node type represents sub set of nodes in the cluster
 type NodeTypeDescription struct {
-	Name                         *string                   `json:"name,omitempty"`
-	PlacementProperties          *map[string]*string       `json:"placementProperties,omitempty"`
-	Capacities                   *map[string]*string       `json:"capacities,omitempty"`
-	ClientConnectionEndpointPort *int32                    `json:"clientConnectionEndpointPort,omitempty"`
-	HTTPGatewayEndpointPort      *int32                    `json:"httpGatewayEndpointPort,omitempty"`
-	DurabilityLevel              DurabilityLevel           `json:"durabilityLevel,omitempty"`
-	ApplicationPorts             *EndpointRangeDescription `json:"applicationPorts,omitempty"`
-	EphemeralPorts               *EndpointRangeDescription `json:"ephemeralPorts,omitempty"`
-	IsPrimary                    *bool                     `json:"isPrimary,omitempty"`
-	VMInstanceCount              *int32                    `json:"vmInstanceCount,omitempty"`
-	ReverseProxyEndpointPort     *int32                    `json:"reverseProxyEndpointPort,omitempty"`
+	// Name - Name of the node type
+	Name *string `json:"name,omitempty"`
+	// PlacementProperties - The placement tags applied to nodes in the node type, which can be used to indicate where certain services (workload) should run
+	PlacementProperties *map[string]*string `json:"placementProperties,omitempty"`
+	// Capacities - The capacity tags applied to the nodes in the node type, the cluster resource manager uses these tags to understand how much of a resource a node has
+	Capacities *map[string]*string `json:"capacities,omitempty"`
+	// ClientConnectionEndpointPort - The TCP cluster management endpoint port
+	ClientConnectionEndpointPort *int32 `json:"clientConnectionEndpointPort,omitempty"`
+	// HTTPGatewayEndpointPort - The HTTP cluster management endpoint port
+	HTTPGatewayEndpointPort *int32 `json:"httpGatewayEndpointPort,omitempty"`
+	// DurabilityLevel - Nodetype durability Level. Possible values include: 'Bronze', 'Silver', 'Gold'
+	DurabilityLevel DurabilityLevel `json:"durabilityLevel,omitempty"`
+	// ApplicationPorts - Ports used by applications
+	ApplicationPorts *EndpointRangeDescription `json:"applicationPorts,omitempty"`
+	// EphemeralPorts - System assgined application ports
+	EphemeralPorts *EndpointRangeDescription `json:"ephemeralPorts,omitempty"`
+	// IsPrimary - Mark this as the primary node type
+	IsPrimary *bool `json:"isPrimary,omitempty"`
+	// VMInstanceCount - The number of node instances in the node type
+	VMInstanceCount *int32 `json:"vmInstanceCount,omitempty"`
+	// ReverseProxyEndpointPort - Endpoint used by reverse proxy
+	ReverseProxyEndpointPort *int32 `json:"reverseProxyEndpointPort,omitempty"`
 }
 
-// OperationListResult is result of the request to list ServiceFabric operations. It contains a list of operations and
-// a URL link to get the next set of results.
+// OperationListResult result of the request to list ServiceFabric operations. It contains a list of operations and a
+// URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]OperationResult `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+	// Value - List of ServiceFabric operations supported by the Microsoft.ServiceFabric resource provider.
+	Value *[]OperationResult `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationListResultIterator provides access to a complete listing of OperationResult values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() OperationResult {
+	if !iter.page.NotDone() {
+		return OperationResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// OperationResult is available operation list result
+// OperationListResultPage contains a page of OperationResult values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []OperationResult {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// OperationResult available operation list result
 type OperationResult struct {
-	Name     *string                    `json:"name,omitempty"`
-	Display  *AvailableOperationDisplay `json:"display,omitempty"`
-	Origin   *string                    `json:"origin,omitempty"`
-	NextLink *string                    `json:"nextLink,omitempty"`
+	// Name - Result name
+	Name *string `json:"name,omitempty"`
+	// Display - Dispaly of the result
+	Display *AvailableOperationDisplay `json:"display,omitempty"`
+	// Origin - Origin result
+	Origin *string `json:"origin,omitempty"`
+	// NextLink - The URL to use for getting the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// Resource is the resource model definition.
+// Resource the resource model definition.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// SettingsParameterDescription is serviceFabric settings under sections
+// SettingsParameterDescription serviceFabric settings under sections
 type SettingsParameterDescription struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The name of settings property
+	Name *string `json:"name,omitempty"`
+	// Value - The value of the property
 	Value *string `json:"value,omitempty"`
 }
 
-// SettingsSectionDescription is serviceFabric section settings
+// SettingsSectionDescription serviceFabric section settings
 type SettingsSectionDescription struct {
-	Name       *string                         `json:"name,omitempty"`
+	// Name - The name of settings section
+	Name *string `json:"name,omitempty"`
+	// Parameters - Collection of settings in the section, each setting is a tuple consisting of setting name and value
 	Parameters *[]SettingsParameterDescription `json:"parameters,omitempty"`
 }

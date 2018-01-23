@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update, and
 // delete databases.
 type ElasticPoolsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewElasticPoolsClient creates an instance of the ElasticPoolsClient client.
@@ -40,51 +41,30 @@ func NewElasticPoolsClientWithBaseURI(baseURI string, subscriptionID string) Ela
 	return ElasticPoolsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a new elastic pool or updates an existing elastic pool. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdate creates a new elastic pool or updates an existing elastic pool.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be operated on (updated or created). parameters is the required parameters for creating or updating
 // an elastic pool.
-func (client ElasticPoolsClient) CreateOrUpdate(resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPool, cancel <-chan struct{}) (<-chan ElasticPool, <-chan error) {
-	resultChan := make(chan ElasticPool, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result ElasticPool
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, elasticPoolName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client ElasticPoolsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPool) (result ElasticPoolsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, elasticPoolName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ElasticPoolsClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPool, cancel <-chan struct{}) (*http.Request, error) {
+func (client ElasticPoolsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -104,16 +84,22 @@ func (client ElasticPoolsClient) CreateOrUpdatePreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ElasticPoolsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ElasticPoolsClient) CreateOrUpdateSender(req *http.Request) (future ElasticPoolsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -134,8 +120,8 @@ func (client ElasticPoolsClient) CreateOrUpdateResponder(resp *http.Response) (r
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be deleted.
-func (client ElasticPoolsClient) Delete(resourceGroupName string, serverName string, elasticPoolName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, serverName, elasticPoolName)
+func (client ElasticPoolsClient) Delete(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, elasticPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -157,7 +143,7 @@ func (client ElasticPoolsClient) Delete(resourceGroupName string, serverName str
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ElasticPoolsClient) DeletePreparer(resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
+func (client ElasticPoolsClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -175,14 +161,13 @@ func (client ElasticPoolsClient) DeletePreparer(resourceGroupName string, server
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ElasticPoolsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -203,8 +188,8 @@ func (client ElasticPoolsClient) DeleteResponder(resp *http.Response) (result au
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be retrieved.
-func (client ElasticPoolsClient) Get(resourceGroupName string, serverName string, elasticPoolName string) (result ElasticPool, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, elasticPoolName)
+func (client ElasticPoolsClient) Get(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (result ElasticPool, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, elasticPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Get", nil, "Failure preparing request")
 		return
@@ -226,7 +211,7 @@ func (client ElasticPoolsClient) Get(resourceGroupName string, serverName string
 }
 
 // GetPreparer prepares the Get request.
-func (client ElasticPoolsClient) GetPreparer(resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
+func (client ElasticPoolsClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -244,14 +229,13 @@ func (client ElasticPoolsClient) GetPreparer(resourceGroupName string, serverNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ElasticPoolsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -272,8 +256,8 @@ func (client ElasticPoolsClient) GetResponder(resp *http.Response) (result Elast
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ElasticPoolsClient) ListByServer(resourceGroupName string, serverName string) (result ElasticPoolListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client ElasticPoolsClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result ElasticPoolListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -295,7 +279,7 @@ func (client ElasticPoolsClient) ListByServer(resourceGroupName string, serverNa
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client ElasticPoolsClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ElasticPoolsClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -312,14 +296,13 @@ func (client ElasticPoolsClient) ListByServerPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client ElasticPoolsClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -341,8 +324,8 @@ func (client ElasticPoolsClient) ListByServerResponder(resp *http.Response) (res
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool.
-func (client ElasticPoolsClient) ListMetricDefinitions(resourceGroupName string, serverName string, elasticPoolName string) (result MetricDefinitionListResult, err error) {
-	req, err := client.ListMetricDefinitionsPreparer(resourceGroupName, serverName, elasticPoolName)
+func (client ElasticPoolsClient) ListMetricDefinitions(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (result MetricDefinitionListResult, err error) {
+	req, err := client.ListMetricDefinitionsPreparer(ctx, resourceGroupName, serverName, elasticPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "ListMetricDefinitions", nil, "Failure preparing request")
 		return
@@ -364,7 +347,7 @@ func (client ElasticPoolsClient) ListMetricDefinitions(resourceGroupName string,
 }
 
 // ListMetricDefinitionsPreparer prepares the ListMetricDefinitions request.
-func (client ElasticPoolsClient) ListMetricDefinitionsPreparer(resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
+func (client ElasticPoolsClient) ListMetricDefinitionsPreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -382,14 +365,13 @@ func (client ElasticPoolsClient) ListMetricDefinitionsPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}/metricDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricDefinitionsSender sends the ListMetricDefinitions request. The method will close the
 // http.Response Body if it receives an error.
 func (client ElasticPoolsClient) ListMetricDefinitionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -411,8 +393,8 @@ func (client ElasticPoolsClient) ListMetricDefinitionsResponder(resp *http.Respo
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool. filter is an OData filter expression that describes a subset of metrics to return.
-func (client ElasticPoolsClient) ListMetrics(resourceGroupName string, serverName string, elasticPoolName string, filter string) (result MetricListResult, err error) {
-	req, err := client.ListMetricsPreparer(resourceGroupName, serverName, elasticPoolName, filter)
+func (client ElasticPoolsClient) ListMetrics(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, filter string) (result MetricListResult, err error) {
+	req, err := client.ListMetricsPreparer(ctx, resourceGroupName, serverName, elasticPoolName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "ListMetrics", nil, "Failure preparing request")
 		return
@@ -434,7 +416,7 @@ func (client ElasticPoolsClient) ListMetrics(resourceGroupName string, serverNam
 }
 
 // ListMetricsPreparer prepares the ListMetrics request.
-func (client ElasticPoolsClient) ListMetricsPreparer(resourceGroupName string, serverName string, elasticPoolName string, filter string) (*http.Request, error) {
+func (client ElasticPoolsClient) ListMetricsPreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -453,14 +435,13 @@ func (client ElasticPoolsClient) ListMetricsPreparer(resourceGroupName string, s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricsSender sends the ListMetrics request. The method will close the
 // http.Response Body if it receives an error.
 func (client ElasticPoolsClient) ListMetricsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -477,49 +458,29 @@ func (client ElasticPoolsClient) ListMetricsResponder(resp *http.Response) (resu
 	return
 }
 
-// Update updates an existing elastic pool. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Update updates an existing elastic pool.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be updated. parameters is the required parameters for updating an elastic pool.
-func (client ElasticPoolsClient) Update(resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPoolUpdate, cancel <-chan struct{}) (<-chan ElasticPool, <-chan error) {
-	resultChan := make(chan ElasticPool, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result ElasticPool
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, serverName, elasticPoolName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Update", nil, "Failure preparing request")
-			return
-		}
+func (client ElasticPoolsClient) Update(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPoolUpdate) (result ElasticPoolsUpdateFuture, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serverName, elasticPoolName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ElasticPoolsClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ElasticPoolsClient) UpdatePreparer(resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPoolUpdate, cancel <-chan struct{}) (*http.Request, error) {
+func (client ElasticPoolsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, parameters ElasticPoolUpdate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -539,16 +500,22 @@ func (client ElasticPoolsClient) UpdatePreparer(resourceGroupName string, server
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client ElasticPoolsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ElasticPoolsClient) UpdateSender(req *http.Request) (future ElasticPoolsUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

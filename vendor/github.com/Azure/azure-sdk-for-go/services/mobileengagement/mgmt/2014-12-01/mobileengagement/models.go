@@ -19,7 +19,6 @@ package mobileengagement
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -30,15 +29,15 @@ import (
 type AudienceOperators string
 
 const (
-	// EQ specifies the eq state for audience operators.
+	// EQ ...
 	EQ AudienceOperators = "EQ"
-	// GE specifies the ge state for audience operators.
+	// GE ...
 	GE AudienceOperators = "GE"
-	// GT specifies the gt state for audience operators.
+	// GT ...
 	GT AudienceOperators = "GT"
-	// LE specifies the le state for audience operators.
+	// LE ...
 	LE AudienceOperators = "LE"
-	// LT specifies the lt state for audience operators.
+	// LT ...
 	LT AudienceOperators = "LT"
 )
 
@@ -46,13 +45,13 @@ const (
 type CampaignFeedbacks string
 
 const (
-	// Actioned specifies the actioned state for campaign feedbacks.
+	// Actioned ...
 	Actioned CampaignFeedbacks = "actioned"
-	// Exited specifies the exited state for campaign feedbacks.
+	// Exited ...
 	Exited CampaignFeedbacks = "exited"
-	// Pushed specifies the pushed state for campaign feedbacks.
+	// Pushed ...
 	Pushed CampaignFeedbacks = "pushed"
-	// Replied specifies the replied state for campaign feedbacks.
+	// Replied ...
 	Replied CampaignFeedbacks = "replied"
 )
 
@@ -60,13 +59,13 @@ const (
 type CampaignKinds string
 
 const (
-	// Announcements specifies the announcements state for campaign kinds.
+	// Announcements ...
 	Announcements CampaignKinds = "announcements"
-	// DataPushes specifies the data pushes state for campaign kinds.
+	// DataPushes ...
 	DataPushes CampaignKinds = "dataPushes"
-	// NativePushes specifies the native pushes state for campaign kinds.
+	// NativePushes ...
 	NativePushes CampaignKinds = "nativePushes"
-	// Polls specifies the polls state for campaign kinds.
+	// Polls ...
 	Polls CampaignKinds = "polls"
 )
 
@@ -74,15 +73,15 @@ const (
 type CampaignStates string
 
 const (
-	// Draft specifies the draft state for campaign states.
+	// Draft ...
 	Draft CampaignStates = "draft"
-	// Finished specifies the finished state for campaign states.
+	// Finished ...
 	Finished CampaignStates = "finished"
-	// InProgress specifies the in progress state for campaign states.
+	// InProgress ...
 	InProgress CampaignStates = "in-progress"
-	// Queued specifies the queued state for campaign states.
+	// Queued ...
 	Queued CampaignStates = "queued"
-	// Scheduled specifies the scheduled state for campaign states.
+	// Scheduled ...
 	Scheduled CampaignStates = "scheduled"
 )
 
@@ -90,13 +89,13 @@ const (
 type CampaignType string
 
 const (
-	// Announcement specifies the announcement state for campaign type.
+	// Announcement ...
 	Announcement CampaignType = "Announcement"
-	// DataPush specifies the data push state for campaign type.
+	// DataPush ...
 	DataPush CampaignType = "DataPush"
-	// NativePush specifies the native push state for campaign type.
+	// NativePush ...
 	NativePush CampaignType = "NativePush"
-	// Poll specifies the poll state for campaign type.
+	// Poll ...
 	Poll CampaignType = "Poll"
 )
 
@@ -104,13 +103,13 @@ const (
 type CampaignTypes string
 
 const (
-	// OnlyNotif specifies the only notif state for campaign types.
+	// OnlyNotif ...
 	OnlyNotif CampaignTypes = "only_notif"
-	// Textbase64 specifies the textbase 64 state for campaign types.
+	// Textbase64 ...
 	Textbase64 CampaignTypes = "text/base64"
-	// Texthtml specifies the texthtml state for campaign types.
+	// Texthtml ...
 	Texthtml CampaignTypes = "text/html"
-	// Textplain specifies the textplain state for campaign types.
+	// Textplain ...
 	Textplain CampaignTypes = "text/plain"
 )
 
@@ -118,11 +117,11 @@ const (
 type DeliveryTimes string
 
 const (
-	// Any specifies the any state for delivery times.
+	// Any ...
 	Any DeliveryTimes = "any"
-	// Background specifies the background state for delivery times.
+	// Background ...
 	Background DeliveryTimes = "background"
-	// Session specifies the session state for delivery times.
+	// Session ...
 	Session DeliveryTimes = "session"
 )
 
@@ -130,9 +129,9 @@ const (
 type ExportFormat string
 
 const (
-	// CsvBlob specifies the csv blob state for export format.
+	// CsvBlob ...
 	CsvBlob ExportFormat = "CsvBlob"
-	// JSONBlob specifies the json blob state for export format.
+	// JSONBlob ...
 	JSONBlob ExportFormat = "JsonBlob"
 )
 
@@ -140,13 +139,13 @@ const (
 type ExportState string
 
 const (
-	// ExportStateFailed specifies the export state failed state for export state.
+	// ExportStateFailed ...
 	ExportStateFailed ExportState = "Failed"
-	// ExportStateQueued specifies the export state queued state for export state.
+	// ExportStateQueued ...
 	ExportStateQueued ExportState = "Queued"
-	// ExportStateStarted specifies the export state started state for export state.
+	// ExportStateStarted ...
 	ExportStateStarted ExportState = "Started"
-	// ExportStateSucceeded specifies the export state succeeded state for export state.
+	// ExportStateSucceeded ...
 	ExportStateSucceeded ExportState = "Succeeded"
 )
 
@@ -154,23 +153,23 @@ const (
 type ExportType string
 
 const (
-	// ExportTypeActivity specifies the export type activity state for export type.
+	// ExportTypeActivity ...
 	ExportTypeActivity ExportType = "Activity"
-	// ExportTypeCrash specifies the export type crash state for export type.
+	// ExportTypeCrash ...
 	ExportTypeCrash ExportType = "Crash"
-	// ExportTypeError specifies the export type error state for export type.
+	// ExportTypeError ...
 	ExportTypeError ExportType = "Error"
-	// ExportTypeEvent specifies the export type event state for export type.
+	// ExportTypeEvent ...
 	ExportTypeEvent ExportType = "Event"
-	// ExportTypeJob specifies the export type job state for export type.
+	// ExportTypeJob ...
 	ExportTypeJob ExportType = "Job"
-	// ExportTypePush specifies the export type push state for export type.
+	// ExportTypePush ...
 	ExportTypePush ExportType = "Push"
-	// ExportTypeSession specifies the export type session state for export type.
+	// ExportTypeSession ...
 	ExportTypeSession ExportType = "Session"
-	// ExportTypeTag specifies the export type tag state for export type.
+	// ExportTypeTag ...
 	ExportTypeTag ExportType = "Tag"
-	// ExportTypeToken specifies the export type token state for export type.
+	// ExportTypeToken ...
 	ExportTypeToken ExportType = "Token"
 )
 
@@ -178,13 +177,13 @@ const (
 type JobStates string
 
 const (
-	// JobStatesFailed specifies the job states failed state for job states.
+	// JobStatesFailed ...
 	JobStatesFailed JobStates = "Failed"
-	// JobStatesQueued specifies the job states queued state for job states.
+	// JobStatesQueued ...
 	JobStatesQueued JobStates = "Queued"
-	// JobStatesStarted specifies the job states started state for job states.
+	// JobStatesStarted ...
 	JobStatesStarted JobStates = "Started"
-	// JobStatesSucceeded specifies the job states succeeded state for job states.
+	// JobStatesSucceeded ...
 	JobStatesSucceeded JobStates = "Succeeded"
 )
 
@@ -192,9 +191,9 @@ const (
 type NotificationTypes string
 
 const (
-	// Popup specifies the popup state for notification types.
+	// Popup ...
 	Popup NotificationTypes = "popup"
-	// System specifies the system state for notification types.
+	// System ...
 	System NotificationTypes = "system"
 )
 
@@ -202,9 +201,9 @@ const (
 type ProvisioningStates string
 
 const (
-	// Creating specifies the creating state for provisioning states.
+	// Creating ...
 	Creating ProvisioningStates = "Creating"
-	// Succeeded specifies the succeeded state for provisioning states.
+	// Succeeded ...
 	Succeeded ProvisioningStates = "Succeeded"
 )
 
@@ -212,11 +211,11 @@ const (
 type PushModes string
 
 const (
-	// Manual specifies the manual state for push modes.
+	// Manual ...
 	Manual PushModes = "manual"
-	// OneShot specifies the one shot state for push modes.
+	// OneShot ...
 	OneShot PushModes = "one-shot"
-	// RealTime specifies the real time state for push modes.
+	// RealTime ...
 	RealTime PushModes = "real-time"
 )
 
@@ -224,75 +223,82 @@ const (
 type Type string
 
 const (
-	// TypeAnnouncementFeedback specifies the type announcement feedback state for type.
+	// TypeAnnouncementFeedback ...
 	TypeAnnouncementFeedback Type = "announcement-feedback"
-	// TypeApplicationVersion specifies the type application version state for type.
+	// TypeApplicationVersion ...
 	TypeApplicationVersion Type = "application-version"
-	// TypeBooleanTag specifies the type boolean tag state for type.
+	// TypeBooleanTag ...
 	TypeBooleanTag Type = "boolean-tag"
-	// TypeCarrierCountry specifies the type carrier country state for type.
+	// TypeCarrierCountry ...
 	TypeCarrierCountry Type = "carrier-country"
-	// TypeCarrierName specifies the type carrier name state for type.
+	// TypeCarrierName ...
 	TypeCarrierName Type = "carrier-name"
-	// TypeDatapushFeedback specifies the type datapush feedback state for type.
+	// TypeCriterion ...
+	TypeCriterion Type = "Criterion"
+	// TypeDatapushFeedback ...
 	TypeDatapushFeedback Type = "datapush-feedback"
-	// TypeDateTag specifies the type date tag state for type.
+	// TypeDateTag ...
 	TypeDateTag Type = "date-tag"
-	// TypeDeviceManufacturer specifies the type device manufacturer state for type.
+	// TypeDeviceManufacturer ...
 	TypeDeviceManufacturer Type = "device-manufacturer"
-	// TypeDeviceModel specifies the type device model state for type.
+	// TypeDeviceModel ...
 	TypeDeviceModel Type = "device-model"
-	// TypeFirmwareVersion specifies the type firmware version state for type.
+	// TypeFirmwareVersion ...
 	TypeFirmwareVersion Type = "firmware-version"
-	// TypeGeoFencing specifies the type geo fencing state for type.
+	// TypeGeoFencing ...
 	TypeGeoFencing Type = "geo-fencing"
-	// TypeIntegerTag specifies the type integer tag state for type.
+	// TypeIntegerTag ...
 	TypeIntegerTag Type = "integer-tag"
-	// TypeLanguage specifies the type language state for type.
+	// TypeLanguage ...
 	TypeLanguage Type = "language"
-	// TypeLocation specifies the type location state for type.
+	// TypeLocation ...
 	TypeLocation Type = "location"
-	// TypeNetworkType specifies the type network type state for type.
+	// TypeNetworkType ...
 	TypeNetworkType Type = "network-type"
-	// TypePollAnswerFeedback specifies the type poll answer feedback state for type.
+	// TypePollAnswerFeedback ...
 	TypePollAnswerFeedback Type = "poll-answer-feedback"
-	// TypePollFeedback specifies the type poll feedback state for type.
+	// TypePollFeedback ...
 	TypePollFeedback Type = "poll-feedback"
-	// TypeScreenSize specifies the type screen size state for type.
+	// TypeScreenSize ...
 	TypeScreenSize Type = "screen-size"
-	// TypeSegment specifies the type segment state for type.
+	// TypeSegment ...
 	TypeSegment Type = "segment"
-	// TypeStringTag specifies the type string tag state for type.
+	// TypeStringTag ...
 	TypeStringTag Type = "string-tag"
 )
 
-// TypeFilter enumerates the values for type filter.
-type TypeFilter string
+// TypeBasicFilter enumerates the values for type basic filter.
+type TypeBasicFilter string
 
 const (
-	// TypeAppInfo specifies the type app info state for type filter.
-	TypeAppInfo TypeFilter = "app-info"
-	// TypeEngageActiveUsers specifies the type engage active users state for type filter.
-	TypeEngageActiveUsers TypeFilter = "engage-active-users"
-	// TypeEngageIdleUsers specifies the type engage idle users state for type filter.
-	TypeEngageIdleUsers TypeFilter = "engage-idle-users"
-	// TypeEngageNewUsers specifies the type engage new users state for type filter.
-	TypeEngageNewUsers TypeFilter = "engage-new-users"
-	// TypeEngageOldUsers specifies the type engage old users state for type filter.
-	TypeEngageOldUsers TypeFilter = "engage-old-users"
-	// TypeEngageSubset specifies the type engage subset state for type filter.
-	TypeEngageSubset TypeFilter = "engage-subset"
-	// TypeNativePushEnabled specifies the type native push enabled state for type filter.
-	TypeNativePushEnabled TypeFilter = "native-push-enabled"
-	// TypePushQuota specifies the type push quota state for type filter.
-	TypePushQuota TypeFilter = "push-quota"
+	// TypeAppInfo ...
+	TypeAppInfo TypeBasicFilter = "app-info"
+	// TypeEngageActiveUsers ...
+	TypeEngageActiveUsers TypeBasicFilter = "engage-active-users"
+	// TypeEngageIdleUsers ...
+	TypeEngageIdleUsers TypeBasicFilter = "engage-idle-users"
+	// TypeEngageNewUsers ...
+	TypeEngageNewUsers TypeBasicFilter = "engage-new-users"
+	// TypeEngageOldUsers ...
+	TypeEngageOldUsers TypeBasicFilter = "engage-old-users"
+	// TypeEngageSubset ...
+	TypeEngageSubset TypeBasicFilter = "engage-subset"
+	// TypeFilter ...
+	TypeFilter TypeBasicFilter = "Filter"
+	// TypeNativePushEnabled ...
+	TypeNativePushEnabled TypeBasicFilter = "native-push-enabled"
+	// TypePushQuota ...
+	TypePushQuota TypeBasicFilter = "push-quota"
 )
 
-// AnnouncementFeedbackCriterion is used to target devices who received an announcement.
+// AnnouncementFeedbackCriterion used to target devices who received an announcement.
 type AnnouncementFeedbackCriterion struct {
-	Type      Type              `json:"type,omitempty"`
-	ContentID *int32            `json:"content-id,omitempty"`
-	Action    CampaignFeedbacks `json:"action,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// ContentID - The unique identifier of the announcement.
+	ContentID *int32 `json:"content-id,omitempty"`
+	// Action - Action that was performed on the announcement. Possible values include: 'Pushed', 'Replied', 'Actioned', 'Exited'
+	Action CampaignFeedbacks `json:"action,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AnnouncementFeedbackCriterion.
@@ -306,175 +312,428 @@ func (afc AnnouncementFeedbackCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return &afc, true
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for AnnouncementFeedbackCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
 func (afc AnnouncementFeedbackCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// APIError is
+// AsCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
+func (afc AnnouncementFeedbackCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for AnnouncementFeedbackCriterion.
+func (afc AnnouncementFeedbackCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &afc, true
+}
+
+// APIError ...
 type APIError struct {
 	Error *APIErrorError `json:"error,omitempty"`
 }
 
-// APIErrorError is
+// APIErrorError ...
 type APIErrorError struct {
 	Code    *string `json:"code,omitempty"`
 	Message *string `json:"message,omitempty"`
 }
 
-// App is the Mobile Engagement App resource.
+// App the Mobile Engagement App resource.
 type App struct {
-	ID             *string             `json:"id,omitempty"`
-	Name           *string             `json:"name,omitempty"`
-	Type           *string             `json:"type,omitempty"`
-	Location       *string             `json:"location,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
 	Tags           *map[string]*string `json:"tags,omitempty"`
 	*AppProperties `json:"properties,omitempty"`
 }
 
-// AppCollection is the AppCollection resource.
+// UnmarshalJSON is the custom unmarshaler for App struct.
+func (a *App) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AppProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.AppProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		a.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		a.Tags = &tags
+	}
+
+	return nil
+}
+
+// AppCollection the AppCollection resource.
 type AppCollection struct {
-	ID                       *string             `json:"id,omitempty"`
-	Name                     *string             `json:"name,omitempty"`
-	Type                     *string             `json:"type,omitempty"`
-	Location                 *string             `json:"location,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
 	Tags                     *map[string]*string `json:"tags,omitempty"`
 	*AppCollectionProperties `json:"properties,omitempty"`
 }
 
-// AppCollectionListResult is the list AppCollections operation response.
-type AppCollectionListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]AppCollection `json:"value,omitempty"`
-	NextLink          *string          `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for AppCollection struct.
+func (ac *AppCollection) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AppCollectionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ac.AppCollectionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ac.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ac.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ac.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ac.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ac.Tags = &tags
+	}
+
+	return nil
 }
 
-// AppCollectionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AppCollectionListResult) AppCollectionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AppCollectionListResult the list AppCollections operation response.
+type AppCollectionListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of AppCollections and their properties.
+	Value *[]AppCollection `json:"value,omitempty"`
+	// NextLink - When the results are paged, the nextLink is the URI for the next page of results. This property is empty when there are no additional pages.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// AppCollectionListResultIterator provides access to a complete listing of AppCollection values.
+type AppCollectionListResultIterator struct {
+	i    int
+	page AppCollectionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AppCollectionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AppCollectionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AppCollectionListResultIterator) Response() AppCollectionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AppCollectionListResultIterator) Value() AppCollection {
+	if !iter.page.NotDone() {
+		return AppCollection{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (aclr AppCollectionListResult) IsEmpty() bool {
+	return aclr.Value == nil || len(*aclr.Value) == 0
+}
+
+// appCollectionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (aclr AppCollectionListResult) appCollectionListResultPreparer() (*http.Request, error) {
+	if aclr.NextLink == nil || len(to.String(aclr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(aclr.NextLink)))
 }
 
-// AppCollectionNameAvailability is
+// AppCollectionListResultPage contains a page of AppCollection values.
+type AppCollectionListResultPage struct {
+	fn   func(AppCollectionListResult) (AppCollectionListResult, error)
+	aclr AppCollectionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AppCollectionListResultPage) Next() error {
+	next, err := page.fn(page.aclr)
+	if err != nil {
+		return err
+	}
+	page.aclr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AppCollectionListResultPage) NotDone() bool {
+	return !page.aclr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AppCollectionListResultPage) Response() AppCollectionListResult {
+	return page.aclr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AppCollectionListResultPage) Values() []AppCollection {
+	if page.aclr.IsEmpty() {
+		return nil
+	}
+	return *page.aclr.Value
+}
+
+// AppCollectionNameAvailability ...
 type AppCollectionNameAvailability struct {
-	autorest.Response    `json:"-"`
-	Name                 *string `json:"name,omitempty"`
-	Available            *bool   `json:"available,omitempty"`
+	autorest.Response `json:"-"`
+	// Name - Name.
+	Name *string `json:"name,omitempty"`
+	// Available - Available.
+	Available *bool `json:"available,omitempty"`
+	// UnavailabilityReason - UnavailabilityReason.
 	UnavailabilityReason *string `json:"unavailabilityReason,omitempty"`
 }
 
-// AppCollectionProperties is
+// AppCollectionProperties ...
 type AppCollectionProperties struct {
+	// ProvisioningState - Mobile Engagement AppCollection Properties. Possible values include: 'Creating', 'Succeeded'
 	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
 }
 
-// AppInfoFilter is send only to users who have some app info set. This is a special filter that is automatically added
-// if your campaign contains appInfo parameters. It is not intended to be public and should not be used as it could be
+// AppInfoFilter send only to users who have some app info set. This is a special filter that is automatically added if
+// your campaign contains appInfo parameters. It is not intended to be public and should not be used as it could be
 // removed or replaced by the API.
 type AppInfoFilter struct {
-	Type    TypeFilter `json:"type,omitempty"`
-	AppInfo *[]string  `json:"appInfo,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// AppInfo - An array containing all the required appInfo.
+	AppInfo *[]string `json:"appInfo,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AppInfoFilter.
@@ -488,49 +747,61 @@ func (aif AppInfoFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for AppInfoFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for AppInfoFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for AppInfoFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for AppInfoFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for AppInfoFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for AppInfoFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for AppInfoFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for AppInfoFilter.
+// AsAppInfoFilter is the BasicFilter implementation for AppInfoFilter.
 func (aif AppInfoFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return &aif, true
 }
 
-// ApplicationVersionCriterion is used to target devices based on the version of the application they are using.
+// AsFilter is the BasicFilter implementation for AppInfoFilter.
+func (aif AppInfoFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for AppInfoFilter.
+func (aif AppInfoFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &aif, true
+}
+
+// ApplicationVersionCriterion used to target devices based on the version of the application they are using.
 type ApplicationVersionCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The application version.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -545,137 +816,236 @@ func (avc ApplicationVersionCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return &avc, true
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for ApplicationVersionCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
 func (avc ApplicationVersionCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// AppListResult is the list Apps operation response.
-type AppListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]App  `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+// AsCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
+func (avc ApplicationVersionCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
 }
 
-// AppListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AppListResult) AppListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AsBasicCriterion is the BasicCriterion implementation for ApplicationVersionCriterion.
+func (avc ApplicationVersionCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &avc, true
+}
+
+// AppListResult the list Apps operation response.
+type AppListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of Apps and their properties.
+	Value *[]App `json:"value,omitempty"`
+	// NextLink - When the results are paged, the nextLink is the URI for the next page of results. This property is empty when there are no additional pages.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// AppListResultIterator provides access to a complete listing of App values.
+type AppListResultIterator struct {
+	i    int
+	page AppListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AppListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AppListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AppListResultIterator) Response() AppListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AppListResultIterator) Value() App {
+	if !iter.page.NotDone() {
+		return App{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (alr AppListResult) IsEmpty() bool {
+	return alr.Value == nil || len(*alr.Value) == 0
+}
+
+// appListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (alr AppListResult) appListResultPreparer() (*http.Request, error) {
+	if alr.NextLink == nil || len(to.String(alr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(alr.NextLink)))
 }
 
-// AppProperties is
+// AppListResultPage contains a page of App values.
+type AppListResultPage struct {
+	fn  func(AppListResult) (AppListResult, error)
+	alr AppListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AppListResultPage) Next() error {
+	next, err := page.fn(page.alr)
+	if err != nil {
+		return err
+	}
+	page.alr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AppListResultPage) NotDone() bool {
+	return !page.alr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AppListResultPage) Response() AppListResult {
+	return page.alr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AppListResultPage) Values() []App {
+	if page.alr.IsEmpty() {
+		return nil
+	}
+	return *page.alr.Value
+}
+
+// AppProperties ...
 type AppProperties struct {
+	// BackendID - The application unique identifier.
 	BackendID *string `json:"backendId,omitempty"`
-	Platform  *string `json:"platform,omitempty"`
-	AppState  *string `json:"appState,omitempty"`
+	// Platform - The platform of the app.
+	Platform *string `json:"platform,omitempty"`
+	// AppState - The state of the application.
+	AppState *string `json:"appState,omitempty"`
 }
 
-// BooleanTagCriterion is target devices based on a boolean tag value.
+// BooleanTagCriterion target devices based on a boolean tag value.
 type BooleanTagCriterion struct {
-	Type  Type    `json:"type,omitempty"`
-	Name  *string `json:"name,omitempty"`
-	Value *bool   `json:"value,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The name of the custom tag.
+	Name *string `json:"name,omitempty"`
+	// Value - A custom boolean value to match.
+	Value *bool `json:"value,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for BooleanTagCriterion.
@@ -689,146 +1059,191 @@ func (btc BooleanTagCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for BooleanTagCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for BooleanTagCriterion.
 func (btc BooleanTagCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return &btc, true
 }
 
-// Campaign is
-type Campaign struct {
-	NotificationTitle     *string                           `json:"notificationTitle,omitempty"`
-	NotificationMessage   *string                           `json:"notificationMessage,omitempty"`
-	NotificationImage     *[]byte                           `json:"notificationImage,omitempty"`
-	NotificationOptions   *NotificationOptions              `json:"notificationOptions,omitempty"`
-	Title                 *string                           `json:"title,omitempty"`
-	Body                  *string                           `json:"body,omitempty"`
-	ActionButtonText      *string                           `json:"actionButtonText,omitempty"`
-	ExitButtonText        *string                           `json:"exitButtonText,omitempty"`
-	ActionURL             *string                           `json:"actionUrl,omitempty"`
-	Payload               *map[string]interface{}           `json:"payload,omitempty"`
-	Name                  *string                           `json:"name,omitempty"`
-	Audience              *CampaignAudience                 `json:"audience,omitempty"`
-	Category              *string                           `json:"category,omitempty"`
-	PushMode              PushModes                         `json:"pushMode,omitempty"`
-	Type                  CampaignTypes                     `json:"type,omitempty"`
-	DeliveryTime          DeliveryTimes                     `json:"deliveryTime,omitempty"`
-	DeliveryActivities    *[]string                         `json:"deliveryActivities,omitempty"`
-	StartTime             *string                           `json:"startTime,omitempty"`
-	EndTime               *string                           `json:"endTime,omitempty"`
-	Timezone              *string                           `json:"timezone,omitempty"`
-	NotificationType      NotificationTypes                 `json:"notificationType,omitempty"`
-	NotificationIcon      *bool                             `json:"notificationIcon,omitempty"`
-	NotificationCloseable *bool                             `json:"notificationCloseable,omitempty"`
-	NotificationVibrate   *bool                             `json:"notificationVibrate,omitempty"`
-	NotificationSound     *bool                             `json:"notificationSound,omitempty"`
-	NotificationBadge     *bool                             `json:"notificationBadge,omitempty"`
-	Localization          *map[string]*CampaignLocalization `json:"localization,omitempty"`
-	Questions             *[]PollQuestion                   `json:"questions,omitempty"`
+// AsCriterion is the BasicCriterion implementation for BooleanTagCriterion.
+func (btc BooleanTagCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
 }
 
-// CampaignAudience is specify which users will be targeted by this campaign. By default, all users will be targeted.
-// If you set `pushMode` property to `manual`, the only thing you can specify in the audience is the push quota filter.
-// An audience is a boolean expression made of criteria (variables) operators (`not`, `and` or `or`) and parenthesis.
+// AsBasicCriterion is the BasicCriterion implementation for BooleanTagCriterion.
+func (btc BooleanTagCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &btc, true
+}
+
+// Campaign ...
+type Campaign struct {
+	// NotificationTitle - Title of the notification. This field supports appInfo markers.
+	NotificationTitle *string `json:"notificationTitle,omitempty"`
+	// NotificationMessage - Message of the notification. This field supports appInfo markers.
+	NotificationMessage *string `json:"notificationMessage,omitempty"`
+	// NotificationImage - Optional image encoded in base 64. Usually included in the right part of in app notifications (or as a banner if there is neither text nor content icon). For Android system notifications, the image is used as the large icon (displayed only on Android 3+).
+	NotificationImage *[]byte `json:"notificationImage,omitempty"`
+	// NotificationOptions - Additional platform specific options.
+	NotificationOptions *NotificationOptions `json:"notificationOptions,omitempty"`
+	// Title - Title of the announcement or poll. This field supports appInfo markers.
+	Title *string `json:"title,omitempty"`
+	// Body - Body of the text/web announcement, poll or data push. This field supports appInfo markers.
+	Body *string `json:"body,omitempty"`
+	// ActionButtonText - Text of the action button for text/web announcements and polls (answer button).
+	ActionButtonText *string `json:"actionButtonText,omitempty"`
+	// ExitButtonText - Text of the exit button for text/web announcements and polls.
+	ExitButtonText *string `json:"exitButtonText,omitempty"`
+	// ActionURL - URL to launch when the announcement is actioned.
+	ActionURL *string `json:"actionUrl,omitempty"`
+	// Payload - Native push payload.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
+	// Name - Unique name of the campaign.
+	Name *string `json:"name,omitempty"`
+	// Audience - Specify which users will be targeted by this campaign. By default, all users will be targeted. If you set `pushMode` property to `manual`, the only thing you can specify in the audience is the push quota filter. An audience is a boolean expression made of criteria (variables) operators (`not`, `and` or `or`) and parenthesis. Additionally, a set of filters can be added to an audience. 65535 bytes max as per JSON encoding.
+	Audience *CampaignAudience `json:"audience,omitempty"`
+	// Category - Category of the campaign. Categories can be used on the application side to customize campaigns.
+	Category *string `json:"category,omitempty"`
+	// PushMode - Announcements/polls only. Defines how the campaign is pushed. Valid values are: * `real-time`: Never ending campaign, the campaign will be delivered  to your existing users and also to your new users. * `one-shot`: In this mode, the campaign will be delivered only to your existing users (campaign will stop after that). * `manual`: In this mode, the campaign will not be pushed automatically to devices. You will have to use the Push campaign command to push the campaign to your end-users. Campaigns can be pushed multiple times to the same device.
+	// . Possible values include: 'RealTime', 'OneShot', 'Manual'
+	PushMode PushModes `json:"pushMode,omitempty"`
+	// Type - Applicable only to announcements and data pushes. Type of announcement. Valid values are: * `text/plain`: Text-only announcement: `body` property should only contain plain text. * `text/html`: HTML announcement: `body` attribute can contain HTML code. * `only_notif`: Notification-only announcement. With this kind of announcements, the `body`, `title`, `actionButtonText` and `exitButtonText` are ignored. Type of data push. Valid values are: * `text/plain`: Text only data push: `body` property must be plain text. * `text/base64`: Base 64 data push: `body` property must be encoded in base 64.
+	// . Possible values include: 'Textplain', 'Texthtml', 'OnlyNotif', 'Textbase64'
+	Type CampaignTypes `json:"type,omitempty"`
+	// DeliveryTime - Announcements/polls only. Defines when the campaign should be delivered. Valid values are: * `any`: Campaign will be delivered as soon as possible. * `background`: iOS only. Campaign will be only delivered when the application is in background (out of app). * `session`: Campaign will be delivered when the application is running.
+	// . Possible values include: 'Any', 'Background', 'Session'
+	DeliveryTime DeliveryTimes `json:"deliveryTime,omitempty"`
+	// DeliveryActivities - Announcements/polls only. Array containing the list of activities in which the campaign can be delivered. deliveryTime must be set to session. If the platform is iOS, this option can also be set if deliveryTime is set to any. In that case, if the campaign is received when the application is launched, it will be delivered only in the specified list of activities.
+	DeliveryActivities *[]string `json:"deliveryActivities,omitempty"`
+	// StartTime - The date at which the campaign should be started. The date shall conform to the following format: `yyyy-MM-ddTHH:mm:ssZ`. * If you set pushMode property to manual, this attribute will be ignored. * If you set pushMode property to one-shot, then the timezone attribute must be specified. Example: `2011-11-21 15:23Z`
+	StartTime *string `json:"startTime,omitempty"`
+	// EndTime - The date at which the campaign should be finished. The date shall conform to the following format: `yyyy-MM-ddTHH:mm:ssZ`. Example: `2011-11-21 15:23Z`
+	EndTime *string `json:"endTime,omitempty"`
+	// Timezone - The id of the time zone to use for the startTime and endTime dates. If not provided, the two date attributes will be expressed using the device timezone. Example: America/Los_Angeles
+	Timezone *string `json:"timezone,omitempty"`
+	// NotificationType - Android only. Defines how the notification should be displayed. Valid values are: * `system`: Display the notification using a standard system notification. * `popup`: Display the notification using a in-app banner notification.
+	// . Possible values include: 'System', 'Popup'
+	NotificationType NotificationTypes `json:"notificationType,omitempty"`
+	// NotificationIcon - A flag indicating whether or not you want to display the resource icon in notification content.
+	NotificationIcon *bool `json:"notificationIcon,omitempty"`
+	// NotificationCloseable - A flag indicating whether or not you want the notification to be closeable.
+	NotificationCloseable *bool `json:"notificationCloseable,omitempty"`
+	// NotificationVibrate - Android only. A flag indicating whether or not you want the system notification to make a vibration. The notificationType property must be set to system.
+	NotificationVibrate *bool `json:"notificationVibrate,omitempty"`
+	// NotificationSound - * `Android`: A flag indicating whether or not you want the system notification to make a sound. The `notificationType` property must be set to `system`. * `iOS`: A flag indicating whether or not you want the native Apple Push notification to make a sound. The `deliveryTime` property must be set to `any` or `background`. This will play the 'default' sound. If you want to play a custom sound, see the `notificationOptions` property. * `Windows`: A flag indicating whether or not you want the native Windows Notification Service to make a sound. The `deliveryTime` property must be set to `any`.
+	NotificationSound *bool `json:"notificationSound,omitempty"`
+	// NotificationBadge - A flag indicating whether or not you want the native Apple Push notification to update the badge icon to the number of unread messages. The `deliveryTime` property must be set to `any` or `background`.
+	NotificationBadge *bool `json:"notificationBadge,omitempty"`
+	// Localization - Push campaigns can be localized using an optional JSON object. The JSON key is a two-character language code as specified by the ISO 639-1 standard. The corresponding value is an object containing the localizable properties.
+	Localization *map[string]*CampaignLocalization `json:"localization,omitempty"`
+	// Questions - Poll questions.
+	Questions *[]PollQuestion `json:"questions,omitempty"`
+}
+
+// CampaignAudience specify which users will be targeted by this campaign. By default, all users will be targeted. If
+// you set `pushMode` property to `manual`, the only thing you can specify in the audience is the push quota filter. An
+// audience is a boolean expression made of criteria (variables) operators (`not`, `and` or `or`) and parenthesis.
 // Additionally, a set of filters can be added to an audience. 65535 bytes max as per JSON encoding.
 type CampaignAudience struct {
-	Expression *string                `json:"expression,omitempty"`
-	Criteria   *map[string]*Criterion `json:"criteria,omitempty"`
-	Filters    *[]Filter              `json:"filters,omitempty"`
+	// Expression - Boolean expression made of criteria (variables) operators (`not`, `and` or `or`) and parenthesis. Criterion names in the audience expression must start with a capital letter and can only contain alphanumeric (A-Z,a-z,0-9) and underscore (_) characters.
+	Expression *string `json:"expression,omitempty"`
+	// Criteria - Criteria by name.
+	Criteria *map[string]*Criterion `json:"criteria,omitempty"`
+	// Filters - Global filters applied to all devices.
+	Filters *[]BasicFilter `json:"filters,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for CampaignAudience struct.
@@ -862,7 +1277,7 @@ func (c *CampaignAudience) UnmarshalJSON(body []byte) error {
 
 	v = m["filters"]
 	if v != nil {
-		filters, err := unmarshalFilterArray(*m["filters"])
+		filters, err := unmarshalBasicFilterArray(*m["filters"])
 		if err != nil {
 			return err
 		}
@@ -872,151 +1287,317 @@ func (c *CampaignAudience) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// CampaignListResult is
+// CampaignListResult ...
 type CampaignListResult struct {
-	State         CampaignStates `json:"state,omitempty"`
-	ID            *int32         `json:"id,omitempty"`
-	Name          *string        `json:"name,omitempty"`
-	ActivatedDate *date.Time     `json:"activatedDate,omitempty"`
-	FinishedDate  *date.Time     `json:"finishedDate,omitempty"`
-	StartTime     *date.Time     `json:"startTime,omitempty"`
-	EndTime       *date.Time     `json:"endTime,omitempty"`
-	Timezone      *string        `json:"timezone,omitempty"`
+	// State - State of the campaign, or 'queued' when testing a campaign. Possible values include: 'Draft', 'Scheduled', 'InProgress', 'Finished', 'Queued'
+	State CampaignStates `json:"state,omitempty"`
+	// ID - Campaign identifier.
+	ID *int32 `json:"id,omitempty"`
+	// Name - Name of the campaign.
+	Name *string `json:"name,omitempty"`
+	// ActivatedDate - The date at which the campaign was activated (Not present if not yet activated). The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard.
+	ActivatedDate *date.Time `json:"activatedDate,omitempty"`
+	// FinishedDate - The date at which the campaign was finished (Not present if not yet finished). The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard.
+	FinishedDate *date.Time `json:"finishedDate,omitempty"`
+	// StartTime - The date at which the campaign should be started if specified. The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard. Applicable only to announcements and polls.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The date at which the campaign should be finished if specified. The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard. Applicable only to announcements and polls.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Timezone - The id of the time zone to use for the `startTime` and `endTime` dates. If not provided, the two date attributes are referencing to the device timezone. Applicable only to announcements and polls.
+	Timezone *string `json:"timezone,omitempty"`
 }
 
-// CampaignLocalization is
+// CampaignLocalization ...
 type CampaignLocalization struct {
-	NotificationTitle   *string                 `json:"notificationTitle,omitempty"`
-	NotificationMessage *string                 `json:"notificationMessage,omitempty"`
-	NotificationImage   *[]byte                 `json:"notificationImage,omitempty"`
-	NotificationOptions *NotificationOptions    `json:"notificationOptions,omitempty"`
-	Title               *string                 `json:"title,omitempty"`
-	Body                *string                 `json:"body,omitempty"`
-	ActionButtonText    *string                 `json:"actionButtonText,omitempty"`
-	ExitButtonText      *string                 `json:"exitButtonText,omitempty"`
-	ActionURL           *string                 `json:"actionUrl,omitempty"`
-	Payload             *map[string]interface{} `json:"payload,omitempty"`
+	// NotificationTitle - Title of the notification. This field supports appInfo markers.
+	NotificationTitle *string `json:"notificationTitle,omitempty"`
+	// NotificationMessage - Message of the notification. This field supports appInfo markers.
+	NotificationMessage *string `json:"notificationMessage,omitempty"`
+	// NotificationImage - Optional image encoded in base 64. Usually included in the right part of in app notifications (or as a banner if there is neither text nor content icon). For Android system notifications, the image is used as the large icon (displayed only on Android 3+).
+	NotificationImage *[]byte `json:"notificationImage,omitempty"`
+	// NotificationOptions - Additional platform specific options.
+	NotificationOptions *NotificationOptions `json:"notificationOptions,omitempty"`
+	// Title - Title of the announcement or poll. This field supports appInfo markers.
+	Title *string `json:"title,omitempty"`
+	// Body - Body of the text/web announcement, poll or data push. This field supports appInfo markers.
+	Body *string `json:"body,omitempty"`
+	// ActionButtonText - Text of the action button for text/web announcements and polls (answer button).
+	ActionButtonText *string `json:"actionButtonText,omitempty"`
+	// ExitButtonText - Text of the exit button for text/web announcements and polls.
+	ExitButtonText *string `json:"exitButtonText,omitempty"`
+	// ActionURL - URL to launch when the announcement is actioned.
+	ActionURL *string `json:"actionUrl,omitempty"`
+	// Payload - Native push payload.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
 }
 
-// CampaignPushParameters is
+// CampaignPushParameters ...
 type CampaignPushParameters struct {
+	// DeviceIds - Device identifiers to push as a JSON array of strings. Note that if you want to push the same campaign several times to the same device, you need to make several API calls.
 	DeviceIds *[]string `json:"deviceIds,omitempty"`
-	Data      *Campaign `json:"data,omitempty"`
+	// Data - Alternative campaign's content to use instead of the referenced campaign. All campaign's properties can be overridden except for the following: `name`, `manualPush`, `audience`, `startTime` and `timezone`. `endTime` can be overridden while keeping original `timezone` parameter. The effect is to change the client side expiration of the received campaign for the specific devices. If your campaign is a *poll*, the provided data should contain the same number of questions and choices that the one you created with the create command. Please note that all the push messages created using this parameter will expire after 4 weeks at maximum (`endTime` property of the campaign will be used if lower than 4 weeks in the future).
+	Data *Campaign `json:"data,omitempty"`
 }
 
-// CampaignPushResult is
+// CampaignPushResult ...
 type CampaignPushResult struct {
 	autorest.Response `json:"-"`
-	InvalidDeviceIds  *[]string `json:"invalidDeviceIds,omitempty"`
+	// InvalidDeviceIds - A JSON array containing all identifiers that have been rejected. A device can be rejected for the following reasons: * The device hasn’t reported any session yet. * The device is over quota (if a push quota filter is applied on your campaign). Please note that if the request parameters are valid but all the specified devices are rejected, the status code is still `200` with a response including all the devices as being rejected.
+	InvalidDeviceIds *[]string `json:"invalidDeviceIds,omitempty"`
 }
 
-// CampaignResult is
+// CampaignResult ...
 type CampaignResult struct {
-	autorest.Response     `json:"-"`
-	NotificationTitle     *string                           `json:"notificationTitle,omitempty"`
-	NotificationMessage   *string                           `json:"notificationMessage,omitempty"`
-	NotificationImage     *[]byte                           `json:"notificationImage,omitempty"`
-	NotificationOptions   *NotificationOptions              `json:"notificationOptions,omitempty"`
-	Title                 *string                           `json:"title,omitempty"`
-	Body                  *string                           `json:"body,omitempty"`
-	ActionButtonText      *string                           `json:"actionButtonText,omitempty"`
-	ExitButtonText        *string                           `json:"exitButtonText,omitempty"`
-	ActionURL             *string                           `json:"actionUrl,omitempty"`
-	Payload               *map[string]interface{}           `json:"payload,omitempty"`
-	Name                  *string                           `json:"name,omitempty"`
-	Audience              *CampaignAudience                 `json:"audience,omitempty"`
-	Category              *string                           `json:"category,omitempty"`
-	PushMode              PushModes                         `json:"pushMode,omitempty"`
-	Type                  CampaignTypes                     `json:"type,omitempty"`
-	DeliveryTime          DeliveryTimes                     `json:"deliveryTime,omitempty"`
-	DeliveryActivities    *[]string                         `json:"deliveryActivities,omitempty"`
-	StartTime             *string                           `json:"startTime,omitempty"`
-	EndTime               *string                           `json:"endTime,omitempty"`
-	Timezone              *string                           `json:"timezone,omitempty"`
-	NotificationType      NotificationTypes                 `json:"notificationType,omitempty"`
-	NotificationIcon      *bool                             `json:"notificationIcon,omitempty"`
-	NotificationCloseable *bool                             `json:"notificationCloseable,omitempty"`
-	NotificationVibrate   *bool                             `json:"notificationVibrate,omitempty"`
-	NotificationSound     *bool                             `json:"notificationSound,omitempty"`
-	NotificationBadge     *bool                             `json:"notificationBadge,omitempty"`
-	Localization          *map[string]*CampaignLocalization `json:"localization,omitempty"`
-	Questions             *[]PollQuestion                   `json:"questions,omitempty"`
-	ID                    *int32                            `json:"id,omitempty"`
-	State                 CampaignStates                    `json:"state,omitempty"`
-	ActivatedDate         *date.Time                        `json:"activatedDate,omitempty"`
-	FinishedDate          *date.Time                        `json:"finishedDate,omitempty"`
+	autorest.Response `json:"-"`
+	// NotificationTitle - Title of the notification. This field supports appInfo markers.
+	NotificationTitle *string `json:"notificationTitle,omitempty"`
+	// NotificationMessage - Message of the notification. This field supports appInfo markers.
+	NotificationMessage *string `json:"notificationMessage,omitempty"`
+	// NotificationImage - Optional image encoded in base 64. Usually included in the right part of in app notifications (or as a banner if there is neither text nor content icon). For Android system notifications, the image is used as the large icon (displayed only on Android 3+).
+	NotificationImage *[]byte `json:"notificationImage,omitempty"`
+	// NotificationOptions - Additional platform specific options.
+	NotificationOptions *NotificationOptions `json:"notificationOptions,omitempty"`
+	// Title - Title of the announcement or poll. This field supports appInfo markers.
+	Title *string `json:"title,omitempty"`
+	// Body - Body of the text/web announcement, poll or data push. This field supports appInfo markers.
+	Body *string `json:"body,omitempty"`
+	// ActionButtonText - Text of the action button for text/web announcements and polls (answer button).
+	ActionButtonText *string `json:"actionButtonText,omitempty"`
+	// ExitButtonText - Text of the exit button for text/web announcements and polls.
+	ExitButtonText *string `json:"exitButtonText,omitempty"`
+	// ActionURL - URL to launch when the announcement is actioned.
+	ActionURL *string `json:"actionUrl,omitempty"`
+	// Payload - Native push payload.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
+	// Name - Unique name of the campaign.
+	Name *string `json:"name,omitempty"`
+	// Audience - Specify which users will be targeted by this campaign. By default, all users will be targeted. If you set `pushMode` property to `manual`, the only thing you can specify in the audience is the push quota filter. An audience is a boolean expression made of criteria (variables) operators (`not`, `and` or `or`) and parenthesis. Additionally, a set of filters can be added to an audience. 65535 bytes max as per JSON encoding.
+	Audience *CampaignAudience `json:"audience,omitempty"`
+	// Category - Category of the campaign. Categories can be used on the application side to customize campaigns.
+	Category *string `json:"category,omitempty"`
+	// PushMode - Announcements/polls only. Defines how the campaign is pushed. Valid values are: * `real-time`: Never ending campaign, the campaign will be delivered  to your existing users and also to your new users. * `one-shot`: In this mode, the campaign will be delivered only to your existing users (campaign will stop after that). * `manual`: In this mode, the campaign will not be pushed automatically to devices. You will have to use the Push campaign command to push the campaign to your end-users. Campaigns can be pushed multiple times to the same device.
+	// . Possible values include: 'RealTime', 'OneShot', 'Manual'
+	PushMode PushModes `json:"pushMode,omitempty"`
+	// Type - Applicable only to announcements and data pushes. Type of announcement. Valid values are: * `text/plain`: Text-only announcement: `body` property should only contain plain text. * `text/html`: HTML announcement: `body` attribute can contain HTML code. * `only_notif`: Notification-only announcement. With this kind of announcements, the `body`, `title`, `actionButtonText` and `exitButtonText` are ignored. Type of data push. Valid values are: * `text/plain`: Text only data push: `body` property must be plain text. * `text/base64`: Base 64 data push: `body` property must be encoded in base 64.
+	// . Possible values include: 'Textplain', 'Texthtml', 'OnlyNotif', 'Textbase64'
+	Type CampaignTypes `json:"type,omitempty"`
+	// DeliveryTime - Announcements/polls only. Defines when the campaign should be delivered. Valid values are: * `any`: Campaign will be delivered as soon as possible. * `background`: iOS only. Campaign will be only delivered when the application is in background (out of app). * `session`: Campaign will be delivered when the application is running.
+	// . Possible values include: 'Any', 'Background', 'Session'
+	DeliveryTime DeliveryTimes `json:"deliveryTime,omitempty"`
+	// DeliveryActivities - Announcements/polls only. Array containing the list of activities in which the campaign can be delivered. deliveryTime must be set to session. If the platform is iOS, this option can also be set if deliveryTime is set to any. In that case, if the campaign is received when the application is launched, it will be delivered only in the specified list of activities.
+	DeliveryActivities *[]string `json:"deliveryActivities,omitempty"`
+	// StartTime - The date at which the campaign should be started. The date shall conform to the following format: `yyyy-MM-ddTHH:mm:ssZ`. * If you set pushMode property to manual, this attribute will be ignored. * If you set pushMode property to one-shot, then the timezone attribute must be specified. Example: `2011-11-21 15:23Z`
+	StartTime *string `json:"startTime,omitempty"`
+	// EndTime - The date at which the campaign should be finished. The date shall conform to the following format: `yyyy-MM-ddTHH:mm:ssZ`. Example: `2011-11-21 15:23Z`
+	EndTime *string `json:"endTime,omitempty"`
+	// Timezone - The id of the time zone to use for the startTime and endTime dates. If not provided, the two date attributes will be expressed using the device timezone. Example: America/Los_Angeles
+	Timezone *string `json:"timezone,omitempty"`
+	// NotificationType - Android only. Defines how the notification should be displayed. Valid values are: * `system`: Display the notification using a standard system notification. * `popup`: Display the notification using a in-app banner notification.
+	// . Possible values include: 'System', 'Popup'
+	NotificationType NotificationTypes `json:"notificationType,omitempty"`
+	// NotificationIcon - A flag indicating whether or not you want to display the resource icon in notification content.
+	NotificationIcon *bool `json:"notificationIcon,omitempty"`
+	// NotificationCloseable - A flag indicating whether or not you want the notification to be closeable.
+	NotificationCloseable *bool `json:"notificationCloseable,omitempty"`
+	// NotificationVibrate - Android only. A flag indicating whether or not you want the system notification to make a vibration. The notificationType property must be set to system.
+	NotificationVibrate *bool `json:"notificationVibrate,omitempty"`
+	// NotificationSound - * `Android`: A flag indicating whether or not you want the system notification to make a sound. The `notificationType` property must be set to `system`. * `iOS`: A flag indicating whether or not you want the native Apple Push notification to make a sound. The `deliveryTime` property must be set to `any` or `background`. This will play the 'default' sound. If you want to play a custom sound, see the `notificationOptions` property. * `Windows`: A flag indicating whether or not you want the native Windows Notification Service to make a sound. The `deliveryTime` property must be set to `any`.
+	NotificationSound *bool `json:"notificationSound,omitempty"`
+	// NotificationBadge - A flag indicating whether or not you want the native Apple Push notification to update the badge icon to the number of unread messages. The `deliveryTime` property must be set to `any` or `background`.
+	NotificationBadge *bool `json:"notificationBadge,omitempty"`
+	// Localization - Push campaigns can be localized using an optional JSON object. The JSON key is a two-character language code as specified by the ISO 639-1 standard. The corresponding value is an object containing the localizable properties.
+	Localization *map[string]*CampaignLocalization `json:"localization,omitempty"`
+	// Questions - Poll questions.
+	Questions *[]PollQuestion `json:"questions,omitempty"`
+	// ID - Campaign identifier.
+	ID *int32 `json:"id,omitempty"`
+	// State - State of the campaign, or 'queued' when testing a campaign. Possible values include: 'Draft', 'Scheduled', 'InProgress', 'Finished', 'Queued'
+	State CampaignStates `json:"state,omitempty"`
+	// ActivatedDate - The date at which the campaign was activated (Not present if not yet activated). The date conforms to the following format: yyyy-MM-ddTHH:mm:ssZ as specified by the ISO 8601 standard.
+	ActivatedDate *date.Time `json:"activatedDate,omitempty"`
+	// FinishedDate - The date at which the campaign was finished (Not present if not yet finished). The date conforms to the following format: yyyy-MM-ddTHH:mm:ssZ as specified by the ISO 8601 standard.
+	FinishedDate *date.Time `json:"finishedDate,omitempty"`
 }
 
-// CampaignsListResult is the campaigns list result.
+// CampaignsListResult the campaigns list result.
 type CampaignsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]CampaignListResult `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - The list of campaigns.
+	Value *[]CampaignListResult `json:"value,omitempty"`
+	// NextLink - When using `top` parameter and if partial results are returned, this property describes a URI path to get the next results. This property is not set when reaching the last page.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CampaignsListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CampaignsListResult) CampaignsListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CampaignsListResultIterator provides access to a complete listing of CampaignListResult values.
+type CampaignsListResultIterator struct {
+	i    int
+	page CampaignsListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CampaignsListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CampaignsListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CampaignsListResultIterator) Response() CampaignsListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CampaignsListResultIterator) Value() CampaignListResult {
+	if !iter.page.NotDone() {
+		return CampaignListResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (clr CampaignsListResult) IsEmpty() bool {
+	return clr.Value == nil || len(*clr.Value) == 0
+}
+
+// campaignsListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (clr CampaignsListResult) campaignsListResultPreparer() (*http.Request, error) {
+	if clr.NextLink == nil || len(to.String(clr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(clr.NextLink)))
 }
 
-// CampaignState is
+// CampaignsListResultPage contains a page of CampaignListResult values.
+type CampaignsListResultPage struct {
+	fn  func(CampaignsListResult) (CampaignsListResult, error)
+	clr CampaignsListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CampaignsListResultPage) Next() error {
+	next, err := page.fn(page.clr)
+	if err != nil {
+		return err
+	}
+	page.clr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CampaignsListResultPage) NotDone() bool {
+	return !page.clr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CampaignsListResultPage) Response() CampaignsListResult {
+	return page.clr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CampaignsListResultPage) Values() []CampaignListResult {
+	if page.clr.IsEmpty() {
+		return nil
+	}
+	return *page.clr.Value
+}
+
+// CampaignState ...
 type CampaignState struct {
 	autorest.Response `json:"-"`
-	State             CampaignStates `json:"state,omitempty"`
+	// State - State of the campaign, or 'queued' when testing a campaign. Possible values include: 'Draft', 'Scheduled', 'InProgress', 'Finished', 'Queued'
+	State CampaignStates `json:"state,omitempty"`
 }
 
-// CampaignStateResult is
+// CampaignStateResult ...
 type CampaignStateResult struct {
 	autorest.Response `json:"-"`
-	State             CampaignStates `json:"state,omitempty"`
-	ID                *int32         `json:"id,omitempty"`
+	// State - State of the campaign, or 'queued' when testing a campaign. Possible values include: 'Draft', 'Scheduled', 'InProgress', 'Finished', 'Queued'
+	State CampaignStates `json:"state,omitempty"`
+	// ID - Campaign identifier.
+	ID *int32 `json:"id,omitempty"`
 }
 
-// CampaignStatisticsResult is
+// CampaignStatisticsResult ...
 type CampaignStatisticsResult struct {
-	autorest.Response           `json:"-"`
-	Queued                      *int32                              `json:"queued,omitempty"`
-	Pushed                      *int32                              `json:"pushed,omitempty"`
-	PushedNative                *int32                              `json:"pushed-native,omitempty"`
-	PushedNativeGoogle          *int32                              `json:"pushed-native-google,omitempty"`
-	PushedNativeAdm             *int32                              `json:"pushed-native-adm,omitempty"`
-	Delivered                   *int32                              `json:"delivered,omitempty"`
-	Dropped                     *int32                              `json:"dropped,omitempty"`
-	SystemNotificationDisplayed *int32                              `json:"system-notification-displayed,omitempty"`
-	InAppNotificationDisplayed  *int32                              `json:"in-app-notification-displayed,omitempty"`
-	ContentDisplayed            *int32                              `json:"content-displayed,omitempty"`
-	SystemNotificationActioned  *int32                              `json:"system-notification-actioned,omitempty"`
-	SystemNotificationExited    *int32                              `json:"system-notification-exited,omitempty"`
-	InAppNotificationActioned   *int32                              `json:"in-app-notification-actioned,omitempty"`
-	InAppNotificationExited     *int32                              `json:"in-app-notification-exited,omitempty"`
-	ContentActioned             *int32                              `json:"content-actioned,omitempty"`
-	ContentExited               *int32                              `json:"content-exited,omitempty"`
-	Answers                     *map[string]*map[string]interface{} `json:"answers,omitempty"`
+	autorest.Response `json:"-"`
+	// Queued - Number of times the campaign was registered to be pushed.
+	Queued *int32 `json:"queued,omitempty"`
+	// Pushed - Number of pushes performed.
+	Pushed *int32 `json:"pushed,omitempty"`
+	// PushedNative - Total number of native pushes. Information only available on Android, iOS, Windows Phone and Windows applications.
+	PushedNative *int32 `json:"pushed-native,omitempty"`
+	// PushedNativeGoogle - Number of C2DM/GCM pushes (available only on Android applications).
+	PushedNativeGoogle *int32 `json:"pushed-native-google,omitempty"`
+	// PushedNativeAdm - Number of ADM pushes (available only on Android applications).
+	PushedNativeAdm *int32 `json:"pushed-native-adm,omitempty"`
+	// Delivered - Number of times the campaign was received by the application (Not present in case of a native-push).
+	Delivered *int32 `json:"delivered,omitempty"`
+	// Dropped - Number of times the campaign was dropped by the application. It can happen if the SDK failed to parse the campaign payload or if an error occurred while trying to notify the end-user (Not present in case of a native-push).
+	Dropped *int32 `json:"dropped,omitempty"`
+	// SystemNotificationDisplayed - Number of times the system notification was displayed (Not present in case of a data-push or a native-push). On Android it corresponds to a status bar notification.
+	SystemNotificationDisplayed *int32 `json:"system-notification-displayed,omitempty"`
+	// InAppNotificationDisplayed - Number of times the in-app notification was displayed (Not present in case of a data-push or a native-push).
+	InAppNotificationDisplayed *int32 `json:"in-app-notification-displayed,omitempty"`
+	// ContentDisplayed - Number of times the campaign’s content view was displayed (Not present in case of a notification-only announcement, a data-push or a native-push).
+	ContentDisplayed *int32 `json:"content-displayed,omitempty"`
+	// SystemNotificationActioned - Number of times the system notification (On Android it corresponds to a status bar notification. On iOS, it is the Apple Push notification) was actioned.
+	SystemNotificationActioned *int32 `json:"system-notification-actioned,omitempty"`
+	// SystemNotificationExited - Number of times the system notification was exited (Not present in case of a data-push or a native-push).
+	SystemNotificationExited *int32 `json:"system-notification-exited,omitempty"`
+	// InAppNotificationActioned - Number of times the in-app notification was actioned (Not present in case of a data-push or a native-push).
+	InAppNotificationActioned *int32 `json:"in-app-notification-actioned,omitempty"`
+	// InAppNotificationExited - Number of times the in-app notification was exited (Not present in case of a data-push or a native-push).
+	InAppNotificationExited *int32 `json:"in-app-notification-exited,omitempty"`
+	// ContentActioned - Number of times the campaign’s content view was actioned (Not present in case of a notification-only announcement or a native-push).
+	ContentActioned *int32 `json:"content-actioned,omitempty"`
+	// ContentExited - Number of times the campaign’s content view was exited (Not present in case of a notification-only announcement or a native-push).
+	ContentExited *int32 `json:"content-exited,omitempty"`
+	// Answers - Poll specific statistics.
+	Answers *map[string]*map[string]interface{} `json:"answers,omitempty"`
 }
 
-// CampaignTestNewParameters is
+// CampaignTestNewParameters ...
 type CampaignTestNewParameters struct {
-	DeviceID *string   `json:"deviceId,omitempty"`
-	Lang     *string   `json:"lang,omitempty"`
-	Data     *Campaign `json:"data,omitempty"`
-}
-
-// CampaignTestSavedParameters is
-type CampaignTestSavedParameters struct {
+	// DeviceID - Device identifier (as returned by the SDK).
 	DeviceID *string `json:"deviceId,omitempty"`
-	Lang     *string `json:"lang,omitempty"`
+	// Lang - The language to test expressed using ISO 639-1 code. The default language of the campaign will be used if the parameter is not provided.
+	Lang *string   `json:"lang,omitempty"`
+	Data *Campaign `json:"data,omitempty"`
 }
 
-// CarrierCountryCriterion is used to target devices based on their carrier country.
+// CampaignTestSavedParameters ...
+type CampaignTestSavedParameters struct {
+	// DeviceID - Device identifier (as returned by the SDK).
+	DeviceID *string `json:"deviceId,omitempty"`
+	// Lang - The language to test expressed using ISO 639-1 code. The default language of the campaign will be used if the parameter is not provided.
+	Lang *string `json:"lang,omitempty"`
+}
+
+// CarrierCountryCriterion used to target devices based on their carrier country.
 type CarrierCountryCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - Two-characters country code (ISO 3166-1).
 	Name *string `json:"name,omitempty"`
 }
 
@@ -1031,109 +1612,121 @@ func (ccc CarrierCountryCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return &ccc, true
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for CarrierCountryCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
 func (ccc CarrierCountryCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// CarrierNameCriterion is used to target devices based on their carrier name.
+// AsCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
+func (ccc CarrierCountryCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for CarrierCountryCriterion.
+func (ccc CarrierCountryCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &ccc, true
+}
+
+// CarrierNameCriterion used to target devices based on their carrier name.
 type CarrierNameCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - Carrier name value.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -1148,108 +1741,118 @@ func (cnc CarrierNameCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return &cnc, true
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for CarrierNameCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for CarrierNameCriterion.
 func (cnc CarrierNameCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// Criterion is
-type Criterion interface {
+// AsCriterion is the BasicCriterion implementation for CarrierNameCriterion.
+func (cnc CarrierNameCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for CarrierNameCriterion.
+func (cnc CarrierNameCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &cnc, true
+}
+
+// BasicCriterion
+type BasicCriterion interface {
 	AsCarrierNameCriterion() (*CarrierNameCriterion, bool)
 	AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool)
 	AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool)
@@ -1270,9 +1873,16 @@ type Criterion interface {
 	AsDateTagCriterion() (*DateTagCriterion, bool)
 	AsIntegerTagCriterion() (*IntegerTagCriterion, bool)
 	AsBooleanTagCriterion() (*BooleanTagCriterion, bool)
+	AsCriterion() (*Criterion, bool)
 }
 
-func unmarshalCriterion(body []byte) (Criterion, error) {
+// Criterion
+type Criterion struct {
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+}
+
+func unmarshalBasicCriterion(body []byte) (BasicCriterion, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -1361,20 +1971,22 @@ func unmarshalCriterion(body []byte) (Criterion, error) {
 		err := json.Unmarshal(body, &btc)
 		return btc, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var c Criterion
+		err := json.Unmarshal(body, &c)
+		return c, err
 	}
 }
-func unmarshalCriterionArray(body []byte) ([]Criterion, error) {
+func unmarshalBasicCriterionArray(body []byte) ([]BasicCriterion, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	cArray := make([]Criterion, len(rawMessages))
+	cArray := make([]BasicCriterion, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		c, err := unmarshalCriterion(*rawMessage)
+		c, err := unmarshalBasicCriterion(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -1383,11 +1995,136 @@ func unmarshalCriterionArray(body []byte) ([]Criterion, error) {
 	return cArray, nil
 }
 
-// DatapushFeedbackCriterion is used to target devices who received a data push.
+// MarshalJSON is the custom marshaler for Criterion.
+func (c Criterion) MarshalJSON() ([]byte, error) {
+	c.Type = TypeCriterion
+	type Alias Criterion
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(c),
+	})
+}
+
+// AsCarrierNameCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
+	return nil, false
+}
+
+// AsCarrierCountryCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
+	return nil, false
+}
+
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
+	return nil, false
+}
+
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
+	return nil, false
+}
+
+// AsDeviceModelCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
+	return nil, false
+}
+
+// AsApplicationVersionCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
+	return nil, false
+}
+
+// AsNetworkTypeCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
+	return nil, false
+}
+
+// AsLanguageCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
+	return nil, false
+}
+
+// AsScreenSizeCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
+	return nil, false
+}
+
+// AsLocationCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsLocationCriterion() (*LocationCriterion, bool) {
+	return nil, false
+}
+
+// AsGeoFencingCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
+	return nil, false
+}
+
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
+	return nil, false
+}
+
+// AsPollFeedbackCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
+	return nil, false
+}
+
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
+	return nil, false
+}
+
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
+	return nil, false
+}
+
+// AsSegmentCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
+	return nil, false
+}
+
+// AsStringTagCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
+	return nil, false
+}
+
+// AsDateTagCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
+	return nil, false
+}
+
+// AsIntegerTagCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
+	return nil, false
+}
+
+// AsBooleanTagCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
+	return nil, false
+}
+
+// AsCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsCriterion() (*Criterion, bool) {
+	return &c, true
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for Criterion.
+func (c Criterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &c, true
+}
+
+// DatapushFeedbackCriterion used to target devices who received a data push.
 type DatapushFeedbackCriterion struct {
-	Type      Type              `json:"type,omitempty"`
-	ContentID *int32            `json:"content-id,omitempty"`
-	Action    CampaignFeedbacks `json:"action,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// ContentID - The unique identifier of the data push.
+	ContentID *int32 `json:"content-id,omitempty"`
+	// Action - Action that was performed on the data push (action depends on the return value in the callbacks you declared in the client code).
+	// . Possible values include: 'Pushed', 'Replied', 'Actioned', 'Exited'
+	Action CampaignFeedbacks `json:"action,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for DatapushFeedbackCriterion.
@@ -1401,121 +2138,139 @@ func (dfc DatapushFeedbackCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return &dfc, true
 }
 
-// AsSegmentCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for DatapushFeedbackCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
 func (dfc DatapushFeedbackCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// DateRangeExportTaskParameter is
+// AsCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
+func (dfc DatapushFeedbackCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for DatapushFeedbackCriterion.
+func (dfc DatapushFeedbackCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &dfc, true
+}
+
+// DateRangeExportTaskParameter ...
 type DateRangeExportTaskParameter struct {
-	ContainerURL *string      `json:"containerUrl,omitempty"`
-	Description  *string      `json:"description,omitempty"`
-	StartDate    *date.Date   `json:"startDate,omitempty"`
-	EndDate      *date.Date   `json:"endDate,omitempty"`
+	ContainerURL *string `json:"containerUrl,omitempty"`
+	// Description - A description of the export task.
+	Description *string `json:"description,omitempty"`
+	// StartDate - The RFC3339 full-date of the start of the period for which data is exported.
+	StartDate *date.Date `json:"startDate,omitempty"`
+	// EndDate - The RFC3339 full-date of the end of the period for which data is exported.
+	EndDate *date.Date `json:"endDate,omitempty"`
+	// ExportFormat - The format of the exported data. Possible values include: 'JSONBlob', 'CsvBlob'
 	ExportFormat ExportFormat `json:"exportFormat,omitempty"`
 }
 
-// DateTagCriterion is target devices based on a date tag value.
+// DateTagCriterion target devices based on a date tag value.
 type DateTagCriterion struct {
-	Type  Type              `json:"type,omitempty"`
-	Name  *string           `json:"name,omitempty"`
-	Value *date.Date        `json:"value,omitempty"`
-	Op    AudienceOperators `json:"op,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The name of the custom tag.
+	Name *string `json:"name,omitempty"`
+	// Value - It can be either: * an absolute date using yyyy-MM-dd format (e.g. 1969-12-07 stands for 7 Dec 1969). * an offset in days relative to the current day (`TODAY` + `value`).
+	Value *date.Date `json:"value,omitempty"`
+	// Op - comparison operator: `EQ` (equal to), `LT` (less than), `GT` (greater than), `LE` (less than or equal to) or `GE` (greater than or equal to). Possible values include: 'EQ', 'LT', 'GT', 'LE', 'GE'
+	Op AudienceOperators `json:"op,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for DateTagCriterion.
@@ -1529,144 +2284,178 @@ func (dtc DateTagCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for DateTagCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for DateTagCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for DateTagCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for DateTagCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for DateTagCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for DateTagCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for DateTagCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for DateTagCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for DateTagCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for DateTagCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for DateTagCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for DateTagCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for DateTagCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for DateTagCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for DateTagCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for DateTagCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for DateTagCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for DateTagCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return &dtc, true
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for DateTagCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for DateTagCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for DateTagCriterion.
 func (dtc DateTagCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// Device is
+// AsCriterion is the BasicCriterion implementation for DateTagCriterion.
+func (dtc DateTagCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for DateTagCriterion.
+func (dtc DateTagCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &dtc, true
+}
+
+// Device ...
 type Device struct {
 	autorest.Response `json:"-"`
-	DeviceID          *string             `json:"deviceId,omitempty"`
-	Meta              *DeviceMeta         `json:"meta,omitempty"`
-	Info              *DeviceInfo         `json:"info,omitempty"`
-	Location          *DeviceLocation     `json:"location,omitempty"`
-	AppInfo           *map[string]*string `json:"appInfo,omitempty"`
+	// DeviceID - The device result.
+	DeviceID *string `json:"deviceId,omitempty"`
+	// Meta - Application usage data.
+	Meta *DeviceMeta `json:"meta,omitempty"`
+	// Info - Last technical data received (concerning device, system, network and application identification).
+	Info *DeviceInfo `json:"info,omitempty"`
+	// Location - Last geo-location data received.
+	Location *DeviceLocation `json:"location,omitempty"`
+	// AppInfo - Also known as tags, a key-value set as a JSON object.
+	AppInfo *map[string]*string `json:"appInfo,omitempty"`
 }
 
-// DeviceInfo is
+// DeviceInfo ...
 type DeviceInfo struct {
-	PhoneModel             *string `json:"phoneModel,omitempty"`
-	PhoneManufacturer      *string `json:"phoneManufacturer,omitempty"`
-	FirmwareVersion        *string `json:"firmwareVersion,omitempty"`
-	FirmwareName           *string `json:"firmwareName,omitempty"`
-	AndroidAPILevel        *int32  `json:"androidAPILevel,omitempty"`
-	CarrierCountry         *string `json:"carrierCountry,omitempty"`
-	Locale                 *string `json:"locale,omitempty"`
-	CarrierName            *string `json:"carrierName,omitempty"`
-	NetworkType            *string `json:"networkType,omitempty"`
-	NetworkSubtype         *string `json:"networkSubtype,omitempty"`
+	// PhoneModel - Phone model.
+	PhoneModel *string `json:"phoneModel,omitempty"`
+	// PhoneManufacturer - Phone manufacturer
+	PhoneManufacturer *string `json:"phoneManufacturer,omitempty"`
+	// FirmwareVersion - Firmware version.
+	FirmwareVersion *string `json:"firmwareVersion,omitempty"`
+	// FirmwareName - Firmware name.
+	FirmwareName *string `json:"firmwareName,omitempty"`
+	// AndroidAPILevel - Android API level.
+	AndroidAPILevel *int32 `json:"androidAPILevel,omitempty"`
+	// CarrierCountry - Carrier country.
+	CarrierCountry *string `json:"carrierCountry,omitempty"`
+	// Locale - Locale code.
+	Locale *string `json:"locale,omitempty"`
+	// CarrierName - Carrier name.
+	CarrierName *string `json:"carrierName,omitempty"`
+	// NetworkType - Network type.
+	NetworkType *string `json:"networkType,omitempty"`
+	// NetworkSubtype - Network sub-type.
+	NetworkSubtype *string `json:"networkSubtype,omitempty"`
+	// ApplicationVersionName - Application version name.
 	ApplicationVersionName *string `json:"applicationVersionName,omitempty"`
-	ApplicationVersionCode *int32  `json:"applicationVersionCode,omitempty"`
-	TimeZoneOffset         *int32  `json:"timeZoneOffset,omitempty"`
-	ServiceVersion         *string `json:"serviceVersion,omitempty"`
+	// ApplicationVersionCode - Application version code.
+	ApplicationVersionCode *int32 `json:"applicationVersionCode,omitempty"`
+	// TimeZoneOffset - The offset in minutes from UTC for the device time zone, including daylight savings time.
+	TimeZoneOffset *int32 `json:"timeZoneOffset,omitempty"`
+	// ServiceVersion - SDK version.
+	ServiceVersion *string `json:"serviceVersion,omitempty"`
 }
 
-// DeviceLocation is
+// DeviceLocation ...
 type DeviceLocation struct {
+	// Countrycode - The ISO 3166 two-letter country code.
 	Countrycode *string `json:"countrycode,omitempty"`
-	Region      *string `json:"region,omitempty"`
-	Locality    *string `json:"locality,omitempty"`
+	// Region - An administrative region of the nation, such as a state or province.
+	Region *string `json:"region,omitempty"`
+	// Locality - A locality within the administrative region, such as a town or city.
+	Locality *string `json:"locality,omitempty"`
 }
 
-// DeviceManufacturerCriterion is used to target devices based on the device manufacturer.
+// DeviceManufacturerCriterion used to target devices based on the device manufacturer.
 type DeviceManufacturerCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The device manufacturer.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -1681,118 +2470,135 @@ func (dmc DeviceManufacturerCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return &dmc, true
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for DeviceManufacturerCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
 func (dmc DeviceManufacturerCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// DeviceMeta is
-type DeviceMeta struct {
-	FirstSeen         *int64 `json:"firstSeen,omitempty"`
-	LastSeen          *int64 `json:"lastSeen,omitempty"`
-	LastInfo          *int64 `json:"lastInfo,omitempty"`
-	LastLocation      *int64 `json:"lastLocation,omitempty"`
-	NativePushEnabled *bool  `json:"nativePushEnabled,omitempty"`
+// AsCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
+func (dmc DeviceManufacturerCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
 }
 
-// DeviceModelCriterion is used to target devices based on the device model.
+// AsBasicCriterion is the BasicCriterion implementation for DeviceManufacturerCriterion.
+func (dmc DeviceManufacturerCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &dmc, true
+}
+
+// DeviceMeta ...
+type DeviceMeta struct {
+	// FirstSeen - First time the device used the application in milliseconds since January 1st, 1970 UTC.
+	FirstSeen *int64 `json:"firstSeen,omitempty"`
+	// LastSeen - Last time the device used the application in milliseconds since January 1st, 1970 UTC.
+	LastSeen *int64 `json:"lastSeen,omitempty"`
+	// LastInfo - Timestamp corresponding to the info object in milliseconds since January 1st, 1970 UTC.
+	LastInfo *int64 `json:"lastInfo,omitempty"`
+	// LastLocation - Timestamp corresponding to the location object in milliseconds since January 1st, 1970 UTC.
+	LastLocation *int64 `json:"lastLocation,omitempty"`
+	// NativePushEnabled - Boolean indicating if native push notifications (like Android’s GCM or Apple’s APNS) are enabled for the application. This boolean is set to true when the application registers successfully to the native push service, and set to false when the native push service reports to Mobile Engagement that the application can no longer be pushed (which means that it has been uninstalled). This report is performed a few hours after Mobile Engagement has tried to perform a native push to a device on which the application has been uninstalled.
+	NativePushEnabled *bool `json:"nativePushEnabled,omitempty"`
+}
+
+// DeviceModelCriterion used to target devices based on the device model.
 type DeviceModelCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The device model.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -1807,148 +2613,249 @@ func (dmc DeviceModelCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return &dmc, true
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for DeviceModelCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for DeviceModelCriterion.
 func (dmc DeviceModelCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// DeviceQueryResult is
-type DeviceQueryResult struct {
-	DeviceID *string             `json:"deviceId,omitempty"`
-	Meta     *DeviceMeta         `json:"meta,omitempty"`
-	AppInfo  *map[string]*string `json:"appInfo,omitempty"`
+// AsCriterion is the BasicCriterion implementation for DeviceModelCriterion.
+func (dmc DeviceModelCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
 }
 
-// DevicesQueryResult is the campaigns list result.
+// AsBasicCriterion is the BasicCriterion implementation for DeviceModelCriterion.
+func (dmc DeviceModelCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &dmc, true
+}
+
+// DeviceQueryResult ...
+type DeviceQueryResult struct {
+	// DeviceID - The device result.
+	DeviceID *string `json:"deviceId,omitempty"`
+	// Meta - Application usage data.
+	Meta *DeviceMeta `json:"meta,omitempty"`
+	// AppInfo - Also known as tags, a key-value set as a JSON object.
+	AppInfo *map[string]*string `json:"appInfo,omitempty"`
+}
+
+// DevicesQueryResult the campaigns list result.
 type DevicesQueryResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]DeviceQueryResult `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - The list of devices.
+	Value *[]DeviceQueryResult `json:"value,omitempty"`
+	// NextLink - If partial results are returned, this property describes a URI path to get the next result page.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// DevicesQueryResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client DevicesQueryResult) DevicesQueryResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// DevicesQueryResultIterator provides access to a complete listing of DeviceQueryResult values.
+type DevicesQueryResultIterator struct {
+	i    int
+	page DevicesQueryResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *DevicesQueryResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter DevicesQueryResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter DevicesQueryResultIterator) Response() DevicesQueryResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter DevicesQueryResultIterator) Value() DeviceQueryResult {
+	if !iter.page.NotDone() {
+		return DeviceQueryResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (dqr DevicesQueryResult) IsEmpty() bool {
+	return dqr.Value == nil || len(*dqr.Value) == 0
+}
+
+// devicesQueryResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (dqr DevicesQueryResult) devicesQueryResultPreparer() (*http.Request, error) {
+	if dqr.NextLink == nil || len(to.String(dqr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(dqr.NextLink)))
 }
 
-// DeviceTagsParameters is
+// DevicesQueryResultPage contains a page of DeviceQueryResult values.
+type DevicesQueryResultPage struct {
+	fn  func(DevicesQueryResult) (DevicesQueryResult, error)
+	dqr DevicesQueryResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *DevicesQueryResultPage) Next() error {
+	next, err := page.fn(page.dqr)
+	if err != nil {
+		return err
+	}
+	page.dqr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page DevicesQueryResultPage) NotDone() bool {
+	return !page.dqr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page DevicesQueryResultPage) Response() DevicesQueryResult {
+	return page.dqr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page DevicesQueryResultPage) Values() []DeviceQueryResult {
+	if page.dqr.IsEmpty() {
+		return nil
+	}
+	return *page.dqr.Value
+}
+
+// DeviceTagsParameters ...
 type DeviceTagsParameters struct {
-	Tags         *map[string]map[string]*string `json:"tags,omitempty"`
-	DeleteOnNull *bool                          `json:"deleteOnNull,omitempty"`
+	// Tags - A JSON object describing the set of tags to record for a set of users. Each key is a device/user identifier, each value is itself a key/value set: the tags to set for the specified device/user identifier.
+	Tags *map[string]map[string]*string `json:"tags,omitempty"`
+	// DeleteOnNull - If this parameter is `true`, tags with a null value will be deleted.
+	DeleteOnNull *bool `json:"deleteOnNull,omitempty"`
 }
 
-// DeviceTagsResult is
+// DeviceTagsResult ...
 type DeviceTagsResult struct {
 	autorest.Response `json:"-"`
-	InvalidIds        *[]string `json:"invalidIds,omitempty"`
+	// InvalidIds - A JSON array containing all identifiers that have been rejected. Please note that if the request parameters are valid but all the specified devices are rejected, the status code is still `200` with a response including all the devices as being rejected.
+	InvalidIds *[]string `json:"invalidIds,omitempty"`
 }
 
-// EngageActiveUsersFilter is send only to users who have used the app in the last {threshold} days.
+// EngageActiveUsersFilter send only to users who have used the app in the last {threshold} days.
 type EngageActiveUsersFilter struct {
-	Type      TypeFilter `json:"type,omitempty"`
-	Threshold *int32     `json:"threshold,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// Threshold - An integer value representing the threshold to apply on this filter.
+	Threshold *int32 `json:"threshold,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EngageActiveUsersFilter.
@@ -1962,50 +2869,62 @@ func (eauf EngageActiveUsersFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return &eauf, true
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for EngageActiveUsersFilter.
+// AsAppInfoFilter is the BasicFilter implementation for EngageActiveUsersFilter.
 func (eauf EngageActiveUsersFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// EngageIdleUsersFilter is send only to users who haven't used the app in the last {threshold} days.
+// AsFilter is the BasicFilter implementation for EngageActiveUsersFilter.
+func (eauf EngageActiveUsersFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for EngageActiveUsersFilter.
+func (eauf EngageActiveUsersFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &eauf, true
+}
+
+// EngageIdleUsersFilter send only to users who haven't used the app in the last {threshold} days.
 type EngageIdleUsersFilter struct {
-	Type      TypeFilter `json:"type,omitempty"`
-	Threshold *int32     `json:"threshold,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// Threshold - An integer value representing the threshold to apply on this filter.
+	Threshold *int32 `json:"threshold,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EngageIdleUsersFilter.
@@ -2019,50 +2938,62 @@ func (eiuf EngageIdleUsersFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return &eiuf, true
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for EngageIdleUsersFilter.
+// AsAppInfoFilter is the BasicFilter implementation for EngageIdleUsersFilter.
 func (eiuf EngageIdleUsersFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// EngageNewUsersFilter is send only to users whose first app use is less than {threshold} days old.
+// AsFilter is the BasicFilter implementation for EngageIdleUsersFilter.
+func (eiuf EngageIdleUsersFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for EngageIdleUsersFilter.
+func (eiuf EngageIdleUsersFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &eiuf, true
+}
+
+// EngageNewUsersFilter send only to users whose first app use is less than {threshold} days old.
 type EngageNewUsersFilter struct {
-	Type      TypeFilter `json:"type,omitempty"`
-	Threshold *int32     `json:"threshold,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// Threshold - An integer value representing the threshold to apply on this filter.
+	Threshold *int32 `json:"threshold,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EngageNewUsersFilter.
@@ -2076,50 +3007,62 @@ func (enuf EngageNewUsersFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for EngageNewUsersFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for EngageNewUsersFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for EngageNewUsersFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return &enuf, true
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for EngageNewUsersFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for EngageNewUsersFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for EngageNewUsersFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for EngageNewUsersFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for EngageNewUsersFilter.
+// AsAppInfoFilter is the BasicFilter implementation for EngageNewUsersFilter.
 func (enuf EngageNewUsersFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// EngageOldUsersFilter is send only to users whose first app use is more than {threshold} days old.
+// AsFilter is the BasicFilter implementation for EngageNewUsersFilter.
+func (enuf EngageNewUsersFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for EngageNewUsersFilter.
+func (enuf EngageNewUsersFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &enuf, true
+}
+
+// EngageOldUsersFilter send only to users whose first app use is more than {threshold} days old.
 type EngageOldUsersFilter struct {
-	Type      TypeFilter `json:"type,omitempty"`
-	Threshold *int32     `json:"threshold,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// Threshold - An integer value representing the threshold to apply on this filter.
+	Threshold *int32 `json:"threshold,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EngageOldUsersFilter.
@@ -2133,50 +3076,62 @@ func (eouf EngageOldUsersFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for EngageOldUsersFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for EngageOldUsersFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return &eouf, true
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for EngageOldUsersFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for EngageOldUsersFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for EngageOldUsersFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for EngageOldUsersFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for EngageOldUsersFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for EngageOldUsersFilter.
+// AsAppInfoFilter is the BasicFilter implementation for EngageOldUsersFilter.
 func (eouf EngageOldUsersFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// EngageSubsetFilter is send only to a maximum of max users.
+// AsFilter is the BasicFilter implementation for EngageOldUsersFilter.
+func (eouf EngageOldUsersFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for EngageOldUsersFilter.
+func (eouf EngageOldUsersFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &eouf, true
+}
+
+// EngageSubsetFilter send only to a maximum of max users.
 type EngageSubsetFilter struct {
-	Type TypeFilter `json:"type,omitempty"`
-	Max  *int32     `json:"max,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+	// Max - An integer value representing the maximum users that should be pushed.
+	Max *int32 `json:"max,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EngageSubsetFilter.
@@ -2190,110 +3145,221 @@ func (esf EngageSubsetFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for EngageSubsetFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return &esf, true
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for EngageSubsetFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for EngageSubsetFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for EngageSubsetFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for EngageSubsetFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for EngageSubsetFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for EngageSubsetFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for EngageSubsetFilter.
+// AsAppInfoFilter is the BasicFilter implementation for EngageSubsetFilter.
 func (esf EngageSubsetFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// ExportOptions is options to control export generation.
+// AsFilter is the BasicFilter implementation for EngageSubsetFilter.
+func (esf EngageSubsetFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for EngageSubsetFilter.
+func (esf EngageSubsetFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &esf, true
+}
+
+// ExportOptions options to control export generation.
 type ExportOptions struct {
 	ExportUserID *bool `json:"exportUserId,omitempty"`
 }
 
-// ExportTaskListResult is gets a paged list of ExportTasks.
+// ExportTaskListResult gets a paged list of ExportTasks.
 type ExportTaskListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ExportTaskResult `json:"value,omitempty"`
-	NextLink          *string             `json:"nextLink,omitempty"`
+	// Value - The list of export tasks.
+	Value *[]ExportTaskResult `json:"value,omitempty"`
+	// NextLink - When the results are paged, the nextLink is the URI for the next page of results. This property is empty when there are no additional pages.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ExportTaskListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ExportTaskListResult) ExportTaskListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ExportTaskListResultIterator provides access to a complete listing of ExportTaskResult values.
+type ExportTaskListResultIterator struct {
+	i    int
+	page ExportTaskListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ExportTaskListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ExportTaskListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ExportTaskListResultIterator) Response() ExportTaskListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ExportTaskListResultIterator) Value() ExportTaskResult {
+	if !iter.page.NotDone() {
+		return ExportTaskResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (etlr ExportTaskListResult) IsEmpty() bool {
+	return etlr.Value == nil || len(*etlr.Value) == 0
+}
+
+// exportTaskListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (etlr ExportTaskListResult) exportTaskListResultPreparer() (*http.Request, error) {
+	if etlr.NextLink == nil || len(to.String(etlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(etlr.NextLink)))
 }
 
-// ExportTaskParameter is
+// ExportTaskListResultPage contains a page of ExportTaskResult values.
+type ExportTaskListResultPage struct {
+	fn   func(ExportTaskListResult) (ExportTaskListResult, error)
+	etlr ExportTaskListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ExportTaskListResultPage) Next() error {
+	next, err := page.fn(page.etlr)
+	if err != nil {
+		return err
+	}
+	page.etlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ExportTaskListResultPage) NotDone() bool {
+	return !page.etlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ExportTaskListResultPage) Response() ExportTaskListResult {
+	return page.etlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ExportTaskListResultPage) Values() []ExportTaskResult {
+	if page.etlr.IsEmpty() {
+		return nil
+	}
+	return *page.etlr.Value
+}
+
+// ExportTaskParameter ...
 type ExportTaskParameter struct {
-	ContainerURL *string      `json:"containerUrl,omitempty"`
-	Description  *string      `json:"description,omitempty"`
+	ContainerURL *string `json:"containerUrl,omitempty"`
+	// Description - A description of the export task.
+	Description *string `json:"description,omitempty"`
+	// ExportFormat - The format of the exported data. Possible values include: 'JSONBlob', 'CsvBlob'
 	ExportFormat ExportFormat `json:"exportFormat,omitempty"`
 }
 
-// ExportTaskResult is
+// ExportTaskResult ...
 type ExportTaskResult struct {
 	autorest.Response `json:"-"`
-	ID                *string     `json:"id,omitempty"`
-	Description       *string     `json:"description,omitempty"`
-	State             ExportState `json:"state,omitempty"`
-	DateCreated       *date.Time  `json:"dateCreated,omitempty"`
-	DateCompleted     *date.Time  `json:"dateCompleted,omitempty"`
-	ExportType        ExportType  `json:"exportType,omitempty"`
-	ErrorDetails      *string     `json:"errorDetails,omitempty"`
+	// ID - Unique identifier of the export task.
+	ID *string `json:"id,omitempty"`
+	// Description - A description of the export task.
+	Description *string `json:"description,omitempty"`
+	// State - Possible values include: 'ExportStateQueued', 'ExportStateStarted', 'ExportStateSucceeded', 'ExportStateFailed'
+	State ExportState `json:"state,omitempty"`
+	// DateCreated - The RFC3339 date-time the export task was created.
+	DateCreated *date.Time `json:"dateCreated,omitempty"`
+	// DateCompleted - The RFC3339 date-time the export task was completed.
+	DateCompleted *date.Time `json:"dateCompleted,omitempty"`
+	// ExportType - Possible values include: 'ExportTypeActivity', 'ExportTypeTag', 'ExportTypeCrash', 'ExportTypeError', 'ExportTypeEvent', 'ExportTypeJob', 'ExportTypeSession', 'ExportTypeToken', 'ExportTypePush'
+	ExportType ExportType `json:"exportType,omitempty"`
+	// ErrorDetails - Details of errors encountered during the export, if any.
+	ErrorDetails *string `json:"errorDetails,omitempty"`
 }
 
-// FeedbackByCampaignParameter is
+// FeedbackByCampaignParameter ...
 type FeedbackByCampaignParameter struct {
-	ContainerURL *string      `json:"containerUrl,omitempty"`
-	Description  *string      `json:"description,omitempty"`
+	ContainerURL *string `json:"containerUrl,omitempty"`
+	// Description - A description of the export task.
+	Description *string `json:"description,omitempty"`
+	// CampaignType - Possible values include: 'Announcement', 'DataPush', 'NativePush', 'Poll'
 	CampaignType CampaignType `json:"campaignType,omitempty"`
-	CampaignIds  *[]int32     `json:"campaignIds,omitempty"`
+	// CampaignIds - A list of campaign identifiers.
+	CampaignIds *[]int32 `json:"campaignIds,omitempty"`
+	// ExportFormat - The format of the exported data. Possible values include: 'JSONBlob', 'CsvBlob'
 	ExportFormat ExportFormat `json:"exportFormat,omitempty"`
 }
 
-// FeedbackByDateRangeParameter is
+// FeedbackByDateRangeParameter ...
 type FeedbackByDateRangeParameter struct {
-	ContainerURL        *string      `json:"containerUrl,omitempty"`
-	Description         *string      `json:"description,omitempty"`
-	CampaignType        CampaignType `json:"campaignType,omitempty"`
-	CampaignWindowStart *date.Time   `json:"campaignWindowStart,omitempty"`
-	CampaignWindowEnd   *date.Time   `json:"campaignWindowEnd,omitempty"`
-	ExportFormat        ExportFormat `json:"exportFormat,omitempty"`
+	ContainerURL *string `json:"containerUrl,omitempty"`
+	// Description - A description of the export task.
+	Description *string `json:"description,omitempty"`
+	// CampaignType - Possible values include: 'Announcement', 'DataPush', 'NativePush', 'Poll'
+	CampaignType CampaignType `json:"campaignType,omitempty"`
+	// CampaignWindowStart - The RFC3339 date-time start of the period for inclusion of active campaigns.
+	CampaignWindowStart *date.Time `json:"campaignWindowStart,omitempty"`
+	// CampaignWindowEnd - The RFC3339 date-time end of the period for inclusion of active campaigns.
+	CampaignWindowEnd *date.Time `json:"campaignWindowEnd,omitempty"`
+	// ExportFormat - The format of the exported data. Possible values include: 'JSONBlob', 'CsvBlob'
+	ExportFormat ExportFormat `json:"exportFormat,omitempty"`
 }
 
-// Filter is
-type Filter interface {
+// BasicFilter
+type BasicFilter interface {
 	AsEngageSubsetFilter() (*EngageSubsetFilter, bool)
 	AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool)
 	AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool)
@@ -2302,9 +3368,16 @@ type Filter interface {
 	AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool)
 	AsPushQuotaFilter() (*PushQuotaFilter, bool)
 	AsAppInfoFilter() (*AppInfoFilter, bool)
+	AsFilter() (*Filter, bool)
 }
 
-func unmarshalFilter(body []byte) (Filter, error) {
+// Filter
+type Filter struct {
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
+}
+
+func unmarshalBasicFilter(body []byte) (BasicFilter, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -2345,20 +3418,22 @@ func unmarshalFilter(body []byte) (Filter, error) {
 		err := json.Unmarshal(body, &aif)
 		return aif, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var f Filter
+		err := json.Unmarshal(body, &f)
+		return f, err
 	}
 }
-func unmarshalFilterArray(body []byte) ([]Filter, error) {
+func unmarshalBasicFilterArray(body []byte) ([]BasicFilter, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	fArray := make([]Filter, len(rawMessages))
+	fArray := make([]BasicFilter, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		f, err := unmarshalFilter(*rawMessage)
+		f, err := unmarshalBasicFilter(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -2367,9 +3442,72 @@ func unmarshalFilterArray(body []byte) ([]Filter, error) {
 	return fArray, nil
 }
 
-// FirmwareVersionCriterion is used to target devices based on their firmware version.
+// MarshalJSON is the custom marshaler for Filter.
+func (f Filter) MarshalJSON() ([]byte, error) {
+	f.Type = TypeFilter
+	type Alias Filter
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(f),
+	})
+}
+
+// AsEngageSubsetFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
+	return nil, false
+}
+
+// AsEngageOldUsersFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
+	return nil, false
+}
+
+// AsEngageNewUsersFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
+	return nil, false
+}
+
+// AsEngageActiveUsersFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
+	return nil, false
+}
+
+// AsEngageIdleUsersFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
+	return nil, false
+}
+
+// AsNativePushEnabledFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
+	return nil, false
+}
+
+// AsPushQuotaFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
+	return nil, false
+}
+
+// AsAppInfoFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsAppInfoFilter() (*AppInfoFilter, bool) {
+	return nil, false
+}
+
+// AsFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsFilter() (*Filter, bool) {
+	return &f, true
+}
+
+// AsBasicFilter is the BasicFilter implementation for Filter.
+func (f Filter) AsBasicFilter() (BasicFilter, bool) {
+	return &f, true
+}
+
+// FirmwareVersionCriterion used to target devices based on their firmware version.
 type FirmwareVersionCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - Firmware version.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -2384,115 +3522,130 @@ func (fvc FirmwareVersionCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return &fvc, true
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for FirmwareVersionCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
 func (fvc FirmwareVersionCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// GeoFencingCriterion is used to target devices based on a specific region. A center point (defined by a latitude and
+// AsCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
+func (fvc FirmwareVersionCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for FirmwareVersionCriterion.
+func (fvc FirmwareVersionCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &fvc, true
+}
+
+// GeoFencingCriterion used to target devices based on a specific region. A center point (defined by a latitude and
 // longitude) and a radius form the boundary for the region. This criterion will be met when the user crosses the
 // boundaries of the region.
 type GeoFencingCriterion struct {
-	Type       Type     `json:"type,omitempty"`
-	Lat        *float64 `json:"lat,omitempty"`
-	Lon        *float64 `json:"lon,omitempty"`
-	Radius     *int32   `json:"radius,omitempty"`
-	Expiration *int32   `json:"expiration,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Lat - The latitude of the central point of the region.
+	Lat *float64 `json:"lat,omitempty"`
+	// Lon - The longitude of the central point of the region.
+	Lon *float64 `json:"lon,omitempty"`
+	// Radius - The radius of the central point of the region, in meters.
+	Radius *int32 `json:"radius,omitempty"`
+	// Expiration - Number of minutes before device location is considered to be expired.
+	Expiration *int32 `json:"expiration,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for GeoFencingCriterion.
@@ -2506,147 +3659,253 @@ func (gfc GeoFencingCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return &gfc, true
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for GeoFencingCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for GeoFencingCriterion.
 func (gfc GeoFencingCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// ImportTask is
+// AsCriterion is the BasicCriterion implementation for GeoFencingCriterion.
+func (gfc GeoFencingCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for GeoFencingCriterion.
+func (gfc GeoFencingCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &gfc, true
+}
+
+// ImportTask ...
 type ImportTask struct {
+	// StorageURL - A shared Access Signature (SAS) Storage URI where the job results will be retrieved from.
 	StorageURL *string `json:"storageUrl,omitempty"`
 }
 
-// ImportTaskListResult is gets a paged list of import tasks.
+// ImportTaskListResult gets a paged list of import tasks.
 type ImportTaskListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ImportTaskResult `json:"value,omitempty"`
-	NextLink          *string             `json:"nextLink,omitempty"`
+	// Value - The list of import task.
+	Value *[]ImportTaskResult `json:"value,omitempty"`
+	// NextLink - When the results are paged, the nextLink is the URI for the next page of results. This property is empty when there are no additional pages.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ImportTaskListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ImportTaskListResult) ImportTaskListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ImportTaskListResultIterator provides access to a complete listing of ImportTaskResult values.
+type ImportTaskListResultIterator struct {
+	i    int
+	page ImportTaskListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ImportTaskListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ImportTaskListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ImportTaskListResultIterator) Response() ImportTaskListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ImportTaskListResultIterator) Value() ImportTaskResult {
+	if !iter.page.NotDone() {
+		return ImportTaskResult{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (itlr ImportTaskListResult) IsEmpty() bool {
+	return itlr.Value == nil || len(*itlr.Value) == 0
+}
+
+// importTaskListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (itlr ImportTaskListResult) importTaskListResultPreparer() (*http.Request, error) {
+	if itlr.NextLink == nil || len(to.String(itlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(itlr.NextLink)))
 }
 
-// ImportTaskResult is
+// ImportTaskListResultPage contains a page of ImportTaskResult values.
+type ImportTaskListResultPage struct {
+	fn   func(ImportTaskListResult) (ImportTaskListResult, error)
+	itlr ImportTaskListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ImportTaskListResultPage) Next() error {
+	next, err := page.fn(page.itlr)
+	if err != nil {
+		return err
+	}
+	page.itlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ImportTaskListResultPage) NotDone() bool {
+	return !page.itlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ImportTaskListResultPage) Response() ImportTaskListResult {
+	return page.itlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ImportTaskListResultPage) Values() []ImportTaskResult {
+	if page.itlr.IsEmpty() {
+		return nil
+	}
+	return *page.itlr.Value
+}
+
+// ImportTaskResult ...
 type ImportTaskResult struct {
 	autorest.Response `json:"-"`
-	StorageURL        *string    `json:"storageUrl,omitempty"`
-	ID                *string    `json:"id,omitempty"`
-	State             JobStates  `json:"state,omitempty"`
-	DateCreated       *date.Time `json:"dateCreated,omitempty"`
-	DateCompleted     *date.Time `json:"dateCompleted,omitempty"`
-	ErrorDetails      *string    `json:"errorDetails,omitempty"`
+	// StorageURL - A shared Access Signature (SAS) Storage URI where the job results will be retrieved from.
+	StorageURL *string `json:"storageUrl,omitempty"`
+	// ID - Unique identifier of the import task.
+	ID *string `json:"id,omitempty"`
+	// State - The current state of the import task. Possible values include: 'JobStatesQueued', 'JobStatesStarted', 'JobStatesSucceeded', 'JobStatesFailed'
+	State JobStates `json:"state,omitempty"`
+	// DateCreated - The date at which the import job was created.
+	// The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard.
+	DateCreated *date.Time `json:"dateCreated,omitempty"`
+	// DateCompleted - The date at which the import job completed (Not present if not yet completed).
+	// The date conforms to the following format: `yyyy-MM-ddTHH:mm:ssZ` as specified by the ISO 8601 standard.
+	DateCompleted *date.Time `json:"dateCompleted,omitempty"`
+	// ErrorDetails - Details of any errors encountered during the import, if any.
+	ErrorDetails *string `json:"errorDetails,omitempty"`
 }
 
-// IntegerTagCriterion is target devices based on an integer tag value.
+// IntegerTagCriterion target devices based on an integer tag value.
 type IntegerTagCriterion struct {
-	Type  Type              `json:"type,omitempty"`
-	Name  *string           `json:"name,omitempty"`
-	Value *int32            `json:"value,omitempty"`
-	Op    AudienceOperators `json:"op,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The name of the custom tag.
+	Name *string `json:"name,omitempty"`
+	// Value - A custom integer value to match.
+	Value *int32 `json:"value,omitempty"`
+	// Op - comparison operator: `EQ` (equal to), `LT` (less than), `GT` (greater than), `LE` (less than or equal to) or `GE` (greater than or equal to). Possible values include: 'EQ', 'LT', 'GT', 'LE', 'GE'
+	Op AudienceOperators `json:"op,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for IntegerTagCriterion.
@@ -2660,109 +3919,121 @@ func (itc IntegerTagCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return &itc, true
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for IntegerTagCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for IntegerTagCriterion.
 func (itc IntegerTagCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// LanguageCriterion is used to target devices based on the language of their device.
+// AsCriterion is the BasicCriterion implementation for IntegerTagCriterion.
+func (itc IntegerTagCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for IntegerTagCriterion.
+func (itc IntegerTagCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &itc, true
+}
+
+// LanguageCriterion used to target devices based on the language of their device.
 type LanguageCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - Two character language code (ISO 639-1).
 	Name *string `json:"name,omitempty"`
 }
 
@@ -2777,111 +4048,125 @@ func (lc LanguageCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for LanguageCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for LanguageCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for LanguageCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for LanguageCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for LanguageCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for LanguageCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for LanguageCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for LanguageCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return &lc, true
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for LanguageCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for LanguageCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for LanguageCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for LanguageCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for LanguageCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for LanguageCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for LanguageCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for LanguageCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for LanguageCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for LanguageCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for LanguageCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for LanguageCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for LanguageCriterion.
 func (lc LanguageCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// LocationCriterion is used to target devices based on their last know area.
+// AsCriterion is the BasicCriterion implementation for LanguageCriterion.
+func (lc LanguageCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for LanguageCriterion.
+func (lc LanguageCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &lc, true
+}
+
+// LocationCriterion used to target devices based on their last know area.
 type LocationCriterion struct {
-	Type     Type    `json:"type,omitempty"`
-	Country  *string `json:"country,omitempty"`
-	Region   *string `json:"region,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Country - Two character country code where the user is located (ISO 3166-1).
+	Country *string `json:"country,omitempty"`
+	// Region - An administrative region of the country, such as a state or province.
+	Region *string `json:"region,omitempty"`
+	// Locality - A locality within the administrative region, such as a town or city.
 	Locality *string `json:"locality,omitempty"`
 }
 
@@ -2896,109 +4181,120 @@ func (lc LocationCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for LocationCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for LocationCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for LocationCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for LocationCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for LocationCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for LocationCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for LocationCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for LocationCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for LocationCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for LocationCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return &lc, true
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for LocationCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for LocationCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for LocationCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for LocationCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for LocationCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for LocationCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for LocationCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for LocationCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for LocationCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for LocationCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for LocationCriterion.
 func (lc LocationCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// NativePushEnabledFilter is engage only users with native push enabled.
+// AsCriterion is the BasicCriterion implementation for LocationCriterion.
+func (lc LocationCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for LocationCriterion.
+func (lc LocationCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &lc, true
+}
+
+// NativePushEnabledFilter engage only users with native push enabled.
 type NativePushEnabledFilter struct {
-	Type TypeFilter `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for NativePushEnabledFilter.
@@ -3012,49 +4308,61 @@ func (npef NativePushEnabledFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for NativePushEnabledFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for NativePushEnabledFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for NativePushEnabledFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for NativePushEnabledFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for NativePushEnabledFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for NativePushEnabledFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return &npef, true
 }
 
-// AsPushQuotaFilter is the Filter implementation for NativePushEnabledFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return nil, false
 }
 
-// AsAppInfoFilter is the Filter implementation for NativePushEnabledFilter.
+// AsAppInfoFilter is the BasicFilter implementation for NativePushEnabledFilter.
 func (npef NativePushEnabledFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// NetworkTypeCriterion is used to target devices based their network type.
+// AsFilter is the BasicFilter implementation for NativePushEnabledFilter.
+func (npef NativePushEnabledFilter) AsFilter() (*Filter, bool) {
+	return nil, false
+}
+
+// AsBasicFilter is the BasicFilter implementation for NativePushEnabledFilter.
+func (npef NativePushEnabledFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &npef, true
+}
+
+// NetworkTypeCriterion used to target devices based their network type.
 type NetworkTypeCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The network type (Wifi, Mobile...).
 	Name *string `json:"name,omitempty"`
 }
 
@@ -3069,119 +4377,150 @@ func (ntc NetworkTypeCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return &ntc, true
 }
 
-// AsLanguageCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for NetworkTypeCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
 func (ntc NetworkTypeCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// NotificationOptions is
+// AsCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
+func (ntc NetworkTypeCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for NetworkTypeCriterion.
+func (ntc NetworkTypeCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &ntc, true
+}
+
+// NotificationOptions ...
 type NotificationOptions struct {
-	BigText    *string `json:"bigText,omitempty"`
+	// BigText - Android 4.1+ only. Multi line message shown in expanded notifications on Android 4.1+ devices. The `notificationType` property must be set to `system`.
+	BigText *string `json:"bigText,omitempty"`
+	// BigPicture - URL of a remote image displayed in expanded notifications on
+	// Android 4.1+ devices with the following constraints:
+	// * The URL length is limited to 2000 characters.
+	// * The image size must be less than 4 MiB.
+	// * The following MIME types are supported:
+	// ** image/png
+	// ** image/jpeg
+	// ** image/gif
+	// ** image/webp
+	// ** image/bmp
+	// ** image/x-bmp
+	// ** image/x-ms-bmp
+	// * URL scheme must be HTTP or HTTPS (with valid SSL certificate).
+	// * Incompatible with `bigText`, only one of the fields can be set.
+	// * The `notificationType` property must be set to `system`.
 	BigPicture *string `json:"bigPicture,omitempty"`
-	Sound      *string `json:"sound,omitempty"`
+	// Sound - iOS only. The name of a sound file in the application bundle. The sound in this file is played as an alert. If the sound file doesn’t exist or default is specified as the value, the default alert sound is played. The audio must be in one of the audio data formats that are compatible with system sounds. The `deliveryTime` property must be set to `any` or `background`.
+	Sound *string `json:"sound,omitempty"`
+	// ActionText - The action text is the title of the right button of the alert or the value of the unlock slider, where the value replaces 'unlock' in 'slide to unlock'. 'View' (localized to the preferred language) is used as the default value. The `deliveryTime` property must be set to `any` or `background`.
 	ActionText *string `json:"actionText,omitempty"`
 }
 
-// PollAnswerFeedbackCriterion is used to target devices who answered X to a given question.
+// PollAnswerFeedbackCriterion used to target devices who answered X to a given question.
 type PollAnswerFeedbackCriterion struct {
-	Type      Type   `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// ContentID - The unique identifier of the poll.
 	ContentID *int32 `json:"content-id,omitempty"`
-	ChoiceID  *int32 `json:"choice-id,omitempty"`
+	// ChoiceID - The unique identifier of the choice.
+	ChoiceID *int32 `json:"choice-id,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for PollAnswerFeedbackCriterion.
@@ -3195,111 +4534,124 @@ func (pafc PollAnswerFeedbackCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return &pafc, true
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for PollAnswerFeedbackCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
 func (pafc PollAnswerFeedbackCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// PollFeedbackCriterion is used to target devices who received a poll.
+// AsCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
+func (pafc PollAnswerFeedbackCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for PollAnswerFeedbackCriterion.
+func (pafc PollAnswerFeedbackCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &pafc, true
+}
+
+// PollFeedbackCriterion used to target devices who received a poll.
 type PollFeedbackCriterion struct {
-	Type      Type              `json:"type,omitempty"`
-	ContentID *int32            `json:"content-id,omitempty"`
-	Action    CampaignFeedbacks `json:"action,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// ContentID - The unique identifier of the poll.
+	ContentID *int32 `json:"content-id,omitempty"`
+	// Action - Action that was performed on the poll. Possible values include: 'Pushed', 'Replied', 'Actioned', 'Exited'
+	Action CampaignFeedbacks `json:"action,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for PollFeedbackCriterion.
@@ -3313,135 +4665,156 @@ func (pfc PollFeedbackCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return &pfc, true
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for PollFeedbackCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
 func (pfc PollFeedbackCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// PollQuestion is
+// AsCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
+func (pfc PollFeedbackCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for PollFeedbackCriterion.
+func (pfc PollFeedbackCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &pfc, true
+}
+
+// PollQuestion ...
 type PollQuestion struct {
-	Title        *string                               `json:"title,omitempty"`
-	ID           *int32                                `json:"id,omitempty"`
+	// Title - Title of the question.
+	Title *string `json:"title,omitempty"`
+	// ID - Unique identifier of the question.
+	ID *int32 `json:"id,omitempty"`
+	// Localization - Poll questions can be localized using an optional JSON object. The JSON key is a two-character language code as specified by the ISO 639-1 standard. The corresponding value is an object containing the localizable property title.
 	Localization *map[string]*PollQuestionLocalization `json:"localization,omitempty"`
-	Choices      *[]PollQuestionChoice                 `json:"choices,omitempty"`
+	// Choices - List of possible choices for this question.
+	Choices *[]PollQuestionChoice `json:"choices,omitempty"`
 }
 
-// PollQuestionChoice is
+// PollQuestionChoice ...
 type PollQuestionChoice struct {
-	Title        *string                                     `json:"title,omitempty"`
-	ID           *int32                                      `json:"id,omitempty"`
+	// Title - Title of the choice.
+	Title *string `json:"title,omitempty"`
+	// ID - Unique identifier of the choice.
+	ID *int32 `json:"id,omitempty"`
+	// Localization - Poll choices can be localized using an optional JSON object. The JSON key is a two-character language code as specified by the ISO 639-1 standard. The corresponding value is an object containing the localizable property title.
 	Localization *map[string]*PollQuestionChoiceLocalization `json:"localization,omitempty"`
-	IsDefault    *bool                                       `json:"isDefault,omitempty"`
+	// IsDefault - A flag indicating if this choice is the default choice for the associated question. Only one choice in the array can have this value set to true.
+	IsDefault *bool `json:"isDefault,omitempty"`
 }
 
-// PollQuestionChoiceLocalization is
+// PollQuestionChoiceLocalization ...
 type PollQuestionChoiceLocalization struct {
+	// Title - Title of the choice.
 	Title *string `json:"title,omitempty"`
 }
 
-// PollQuestionLocalization is
+// PollQuestionLocalization ...
 type PollQuestionLocalization struct {
+	// Title - Title of the question.
 	Title *string `json:"title,omitempty"`
 }
 
-// PushQuotaFilter is engage only users for whom the push quota is not reached.
+// PushQuotaFilter engage only users for whom the push quota is not reached.
 type PushQuotaFilter struct {
-	Type TypeFilter `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeFilter', 'TypeEngageSubset', 'TypeEngageOldUsers', 'TypeEngageNewUsers', 'TypeEngageActiveUsers', 'TypeEngageIdleUsers', 'TypeNativePushEnabled', 'TypePushQuota', 'TypeAppInfo'
+	Type TypeBasicFilter `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for PushQuotaFilter.
@@ -3455,58 +4828,75 @@ func (pqf PushQuotaFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsEngageSubsetFilter is the Filter implementation for PushQuotaFilter.
+// AsEngageSubsetFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsEngageSubsetFilter() (*EngageSubsetFilter, bool) {
 	return nil, false
 }
 
-// AsEngageOldUsersFilter is the Filter implementation for PushQuotaFilter.
+// AsEngageOldUsersFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsEngageOldUsersFilter() (*EngageOldUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageNewUsersFilter is the Filter implementation for PushQuotaFilter.
+// AsEngageNewUsersFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsEngageNewUsersFilter() (*EngageNewUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageActiveUsersFilter is the Filter implementation for PushQuotaFilter.
+// AsEngageActiveUsersFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsEngageActiveUsersFilter() (*EngageActiveUsersFilter, bool) {
 	return nil, false
 }
 
-// AsEngageIdleUsersFilter is the Filter implementation for PushQuotaFilter.
+// AsEngageIdleUsersFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsEngageIdleUsersFilter() (*EngageIdleUsersFilter, bool) {
 	return nil, false
 }
 
-// AsNativePushEnabledFilter is the Filter implementation for PushQuotaFilter.
+// AsNativePushEnabledFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsNativePushEnabledFilter() (*NativePushEnabledFilter, bool) {
 	return nil, false
 }
 
-// AsPushQuotaFilter is the Filter implementation for PushQuotaFilter.
+// AsPushQuotaFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsPushQuotaFilter() (*PushQuotaFilter, bool) {
 	return &pqf, true
 }
 
-// AsAppInfoFilter is the Filter implementation for PushQuotaFilter.
+// AsAppInfoFilter is the BasicFilter implementation for PushQuotaFilter.
 func (pqf PushQuotaFilter) AsAppInfoFilter() (*AppInfoFilter, bool) {
 	return nil, false
 }
 
-// Resource is
-type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+// AsFilter is the BasicFilter implementation for PushQuotaFilter.
+func (pqf PushQuotaFilter) AsFilter() (*Filter, bool) {
+	return nil, false
 }
 
-// ScreenSizeCriterion is used to target devices based on the screen resolution of their device.
+// AsBasicFilter is the BasicFilter implementation for PushQuotaFilter.
+func (pqf PushQuotaFilter) AsBasicFilter() (BasicFilter, bool) {
+	return &pqf, true
+}
+
+// Resource ...
+type Resource struct {
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// ScreenSizeCriterion used to target devices based on the screen resolution of their device.
 type ScreenSizeCriterion struct {
-	Type Type    `json:"type,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - Screen size using the following format WIDTH**x**HEIGHT.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -3521,111 +4911,124 @@ func (ssc ScreenSizeCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return &ssc, true
 }
 
-// AsLocationCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for ScreenSizeCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
 func (ssc ScreenSizeCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// SegmentCriterion is target devices based on an existing segment.
+// AsCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
+func (ssc ScreenSizeCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for ScreenSizeCriterion.
+func (ssc ScreenSizeCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &ssc, true
+}
+
+// SegmentCriterion target devices based on an existing segment.
 type SegmentCriterion struct {
-	Type    Type   `json:"type,omitempty"`
-	ID      *int32 `json:"id,omitempty"`
-	Exclude *bool  `json:"exclude,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// ID - Segment identifier.
+	ID *int32 `json:"id,omitempty"`
+	// Exclude - If value is true, the criterion will target users that are NOT part of the segment.
+	Exclude *bool `json:"exclude,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for SegmentCriterion.
@@ -3639,110 +5042,123 @@ func (sc SegmentCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for SegmentCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for SegmentCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for SegmentCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for SegmentCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for SegmentCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for SegmentCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for SegmentCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for SegmentCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for SegmentCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for SegmentCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for SegmentCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for SegmentCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for SegmentCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for SegmentCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for SegmentCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for SegmentCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return &sc, true
 }
 
-// AsStringTagCriterion is the Criterion implementation for SegmentCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return nil, false
 }
 
-// AsDateTagCriterion is the Criterion implementation for SegmentCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for SegmentCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for SegmentCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for SegmentCriterion.
 func (sc SegmentCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// StringTagCriterion is target devices based on a string tag value.
+// AsCriterion is the BasicCriterion implementation for SegmentCriterion.
+func (sc SegmentCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for SegmentCriterion.
+func (sc SegmentCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &sc, true
+}
+
+// StringTagCriterion target devices based on a string tag value.
 type StringTagCriterion struct {
-	Type  Type    `json:"type,omitempty"`
-	Name  *string `json:"name,omitempty"`
+	// Type - Possible values include: 'TypeCriterion', 'TypeCarrierName', 'TypeCarrierCountry', 'TypeFirmwareVersion', 'TypeDeviceManufacturer', 'TypeDeviceModel', 'TypeApplicationVersion', 'TypeNetworkType', 'TypeLanguage', 'TypeScreenSize', 'TypeLocation', 'TypeGeoFencing', 'TypeAnnouncementFeedback', 'TypePollFeedback', 'TypePollAnswerFeedback', 'TypeDatapushFeedback', 'TypeSegment', 'TypeStringTag', 'TypeDateTag', 'TypeIntegerTag', 'TypeBooleanTag'
+	Type Type `json:"type,omitempty"`
+	// Name - The name of the custom tag.
+	Name *string `json:"name,omitempty"`
+	// Value - A custom string to match for tag value (? and * characters can be used to perform wildcard matching).
 	Value *string `json:"value,omitempty"`
 }
 
@@ -3757,108 +5173,119 @@ func (stc StringTagCriterion) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsCarrierNameCriterion is the Criterion implementation for StringTagCriterion.
+// AsCarrierNameCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsCarrierNameCriterion() (*CarrierNameCriterion, bool) {
 	return nil, false
 }
 
-// AsCarrierCountryCriterion is the Criterion implementation for StringTagCriterion.
+// AsCarrierCountryCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsCarrierCountryCriterion() (*CarrierCountryCriterion, bool) {
 	return nil, false
 }
 
-// AsFirmwareVersionCriterion is the Criterion implementation for StringTagCriterion.
+// AsFirmwareVersionCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsFirmwareVersionCriterion() (*FirmwareVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceManufacturerCriterion is the Criterion implementation for StringTagCriterion.
+// AsDeviceManufacturerCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsDeviceManufacturerCriterion() (*DeviceManufacturerCriterion, bool) {
 	return nil, false
 }
 
-// AsDeviceModelCriterion is the Criterion implementation for StringTagCriterion.
+// AsDeviceModelCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsDeviceModelCriterion() (*DeviceModelCriterion, bool) {
 	return nil, false
 }
 
-// AsApplicationVersionCriterion is the Criterion implementation for StringTagCriterion.
+// AsApplicationVersionCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsApplicationVersionCriterion() (*ApplicationVersionCriterion, bool) {
 	return nil, false
 }
 
-// AsNetworkTypeCriterion is the Criterion implementation for StringTagCriterion.
+// AsNetworkTypeCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsNetworkTypeCriterion() (*NetworkTypeCriterion, bool) {
 	return nil, false
 }
 
-// AsLanguageCriterion is the Criterion implementation for StringTagCriterion.
+// AsLanguageCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsLanguageCriterion() (*LanguageCriterion, bool) {
 	return nil, false
 }
 
-// AsScreenSizeCriterion is the Criterion implementation for StringTagCriterion.
+// AsScreenSizeCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsScreenSizeCriterion() (*ScreenSizeCriterion, bool) {
 	return nil, false
 }
 
-// AsLocationCriterion is the Criterion implementation for StringTagCriterion.
+// AsLocationCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsLocationCriterion() (*LocationCriterion, bool) {
 	return nil, false
 }
 
-// AsGeoFencingCriterion is the Criterion implementation for StringTagCriterion.
+// AsGeoFencingCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsGeoFencingCriterion() (*GeoFencingCriterion, bool) {
 	return nil, false
 }
 
-// AsAnnouncementFeedbackCriterion is the Criterion implementation for StringTagCriterion.
+// AsAnnouncementFeedbackCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsAnnouncementFeedbackCriterion() (*AnnouncementFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollFeedbackCriterion is the Criterion implementation for StringTagCriterion.
+// AsPollFeedbackCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsPollFeedbackCriterion() (*PollFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsPollAnswerFeedbackCriterion is the Criterion implementation for StringTagCriterion.
+// AsPollAnswerFeedbackCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsPollAnswerFeedbackCriterion() (*PollAnswerFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsDatapushFeedbackCriterion is the Criterion implementation for StringTagCriterion.
+// AsDatapushFeedbackCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsDatapushFeedbackCriterion() (*DatapushFeedbackCriterion, bool) {
 	return nil, false
 }
 
-// AsSegmentCriterion is the Criterion implementation for StringTagCriterion.
+// AsSegmentCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsSegmentCriterion() (*SegmentCriterion, bool) {
 	return nil, false
 }
 
-// AsStringTagCriterion is the Criterion implementation for StringTagCriterion.
+// AsStringTagCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsStringTagCriterion() (*StringTagCriterion, bool) {
 	return &stc, true
 }
 
-// AsDateTagCriterion is the Criterion implementation for StringTagCriterion.
+// AsDateTagCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsDateTagCriterion() (*DateTagCriterion, bool) {
 	return nil, false
 }
 
-// AsIntegerTagCriterion is the Criterion implementation for StringTagCriterion.
+// AsIntegerTagCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsIntegerTagCriterion() (*IntegerTagCriterion, bool) {
 	return nil, false
 }
 
-// AsBooleanTagCriterion is the Criterion implementation for StringTagCriterion.
+// AsBooleanTagCriterion is the BasicCriterion implementation for StringTagCriterion.
 func (stc StringTagCriterion) AsBooleanTagCriterion() (*BooleanTagCriterion, bool) {
 	return nil, false
 }
 
-// SupportedPlatformsListResult is
+// AsCriterion is the BasicCriterion implementation for StringTagCriterion.
+func (stc StringTagCriterion) AsCriterion() (*Criterion, bool) {
+	return nil, false
+}
+
+// AsBasicCriterion is the BasicCriterion implementation for StringTagCriterion.
+func (stc StringTagCriterion) AsBasicCriterion() (BasicCriterion, bool) {
+	return &stc, true
+}
+
+// SupportedPlatformsListResult ...
 type SupportedPlatformsListResult struct {
 	autorest.Response `json:"-"`
-	Platforms         *[]string `json:"platforms,omitempty"`
+	// Platforms - List of supported platforms.
+	Platforms *[]string `json:"platforms,omitempty"`
 }

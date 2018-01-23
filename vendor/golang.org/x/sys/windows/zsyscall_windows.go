@@ -186,7 +186,7 @@ var (
 	procFindNextVolumeMountPointW          = modkernel32.NewProc("FindNextVolumeMountPointW")
 	procFindVolumeClose                    = modkernel32.NewProc("FindVolumeClose")
 	procFindVolumeMountPointClose          = modkernel32.NewProc("FindVolumeMountPointClose")
-	procGetDriveType                       = modkernel32.NewProc("GetDriveType")
+	procGetDriveTypeW                      = modkernel32.NewProc("GetDriveTypeW")
 	procGetLogicalDrives                   = modkernel32.NewProc("GetLogicalDrives")
 	procGetLogicalDriveStringsW            = modkernel32.NewProc("GetLogicalDriveStringsW")
 	procGetVolumeInformationW              = modkernel32.NewProc("GetVolumeInformationW")
@@ -1962,7 +1962,7 @@ func FindVolumeMountPointClose(findVolumeMountPoint Handle) (err error) {
 }
 
 func GetDriveType(rootPathName *uint16) (driveType uint32) {
-	r0, _, _ := syscall.Syscall(procGetDriveType.Addr(), 1, uintptr(unsafe.Pointer(rootPathName)), 0, 0)
+	r0, _, _ := syscall.Syscall(procGetDriveTypeW.Addr(), 1, uintptr(unsafe.Pointer(rootPathName)), 0, 0)
 	driveType = uint32(r0)
 	return
 }

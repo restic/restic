@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/DSG2TEF18bxTdYooKf_C2-FmmME\"",
+ "etag": "\"-iA1DTNe4s-I6JZXPt1t1Ypy8IU/o3DGRejYlQONYxz9qTIt_cgX6AA\"",
  "discoveryVersion": "v1",
  "id": "analytics:v3",
  "name": "analytics",
  "version": "v3",
- "revision": "20170807",
+ "revision": "20171211",
  "title": "Google Analytics API",
  "description": "Views and manages your Google Analytics data.",
  "ownerDomain": "google.com",
@@ -284,6 +284,128 @@
     "redirectUri": {
      "type": "string",
      "description": "Redirect URI where the user will be sent after accepting Terms of Service. Must be configured in APIs console as a callback URL."
+    },
+    "webproperty": {
+     "$ref": "Webproperty",
+     "description": "Web property for the account."
+    }
+   }
+  },
+  "AccountTreeRequest": {
+   "id": "AccountTreeRequest",
+   "type": "object",
+   "description": "JSON template for an Analytics account tree requests. The account tree request is used in the provisioning api to create an account, property, and view (profile). It contains the basic information required to make these fields.",
+   "properties": {
+    "accountName": {
+     "type": "string",
+     "annotations": {
+      "required": [
+       "analytics.provisioning.createAccountTree"
+      ]
+     }
+    },
+    "accountSettings": {
+     "type": "object",
+     "properties": {
+      "admobReporting": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleAnySales": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleProducts": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleSales": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleSupport": {
+       "type": "boolean"
+      },
+      "sharingWithOthers": {
+       "type": "boolean"
+      }
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Resource type for account ticket.",
+     "default": "analytics#accountTreeRequest"
+    },
+    "profileName": {
+     "type": "string",
+     "annotations": {
+      "required": [
+       "analytics.provisioning.createAccountTree"
+      ]
+     }
+    },
+    "timezone": {
+     "type": "string",
+     "annotations": {
+      "required": [
+       "analytics.provisioning.createAccountTree"
+      ]
+     }
+    },
+    "webpropertyName": {
+     "type": "string",
+     "annotations": {
+      "required": [
+       "analytics.provisioning.createAccountTree"
+      ]
+     }
+    },
+    "websiteUrl": {
+     "type": "string",
+     "annotations": {
+      "required": [
+       "analytics.provisioning.createAccountTree"
+      ]
+     }
+    }
+   }
+  },
+  "AccountTreeResponse": {
+   "id": "AccountTreeResponse",
+   "type": "object",
+   "description": "JSON template for an Analytics account tree response. The account tree response is used in the provisioning api to return the result of creating an account, property, and view (profile).",
+   "properties": {
+    "account": {
+     "$ref": "Account",
+     "description": "The account created."
+    },
+    "accountSettings": {
+     "type": "object",
+     "properties": {
+      "admobReporting": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleAnySales": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleProducts": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleSales": {
+       "type": "boolean"
+      },
+      "sharingWithGoogleSupport": {
+       "type": "boolean"
+      },
+      "sharingWithOthers": {
+       "type": "boolean"
+      }
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Resource type for account ticket.",
+     "default": "analytics#accountTreeResponse"
+    },
+    "profile": {
+     "$ref": "Profile",
+     "description": "View (Profile) for the account."
     },
     "webproperty": {
      "$ref": "Webproperty",
@@ -7222,6 +7344,21 @@
      },
      "response": {
       "$ref": "AccountTicket"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/analytics.provision"
+     ]
+    },
+    "createAccountTree": {
+     "id": "analytics.provisioning.createAccountTree",
+     "path": "provisioning/createAccount",
+     "httpMethod": "POST",
+     "description": "Provision account.",
+     "request": {
+      "$ref": "AccountTreeRequest"
+     },
+     "response": {
+      "$ref": "AccountTreeResponse"
      },
      "scopes": [
       "https://www.googleapis.com/auth/analytics.provision"

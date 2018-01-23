@@ -18,6 +18,7 @@ package streamanalytics
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // StreamingJobsClient is the stream Analytics Client
 type StreamingJobsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewStreamingJobsClient creates an instance of the StreamingJobsClient client.
@@ -38,9 +39,7 @@ func NewStreamingJobsClientWithBaseURI(baseURI string, subscriptionID string) St
 	return StreamingJobsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrReplace creates a streaming job or replaces an already existing streaming job. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// CreateOrReplace creates a streaming job or replaces an already existing streaming job.
 //
 // streamingJob is the definition of the streaming job that will be used to create a new streaming job or replace the
 // existing one. resourceGroupName is the name of the resource group that contains the resource. You can obtain this
@@ -49,43 +48,24 @@ func NewStreamingJobsClientWithBaseURI(baseURI string, subscriptionID string) St
 // value to prevent accidentally overwritting concurrent changes. ifNoneMatch is set to '*' to allow a new streaming
 // job to be created, but to prevent updating an existing record set. Other values will result in a 412 Pre-condition
 // Failed response.
-func (client StreamingJobsClient) CreateOrReplace(streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (<-chan StreamingJob, <-chan error) {
-	resultChan := make(chan StreamingJob, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result StreamingJob
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrReplacePreparer(streamingJob, resourceGroupName, jobName, ifMatch, ifNoneMatch, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "CreateOrReplace", nil, "Failure preparing request")
-			return
-		}
+func (client StreamingJobsClient) CreateOrReplace(ctx context.Context, streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string, ifNoneMatch string) (result StreamingJobsCreateOrReplaceFuture, err error) {
+	req, err := client.CreateOrReplacePreparer(ctx, streamingJob, resourceGroupName, jobName, ifMatch, ifNoneMatch)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "CreateOrReplace", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrReplaceSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "CreateOrReplace", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrReplaceSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "CreateOrReplace", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrReplaceResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "CreateOrReplace", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrReplacePreparer prepares the CreateOrReplace request.
-func (client StreamingJobsClient) CreateOrReplacePreparer(streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (*http.Request, error) {
+func (client StreamingJobsClient) CreateOrReplacePreparer(ctx context.Context, streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string, ifNoneMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -112,16 +92,22 @@ func (client StreamingJobsClient) CreateOrReplacePreparer(streamingJob Streaming
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-None-Match", autorest.String(ifNoneMatch)))
 	}
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrReplaceSender sends the CreateOrReplace request. The method will close the
 // http.Response Body if it receives an error.
-func (client StreamingJobsClient) CreateOrReplaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StreamingJobsClient) CreateOrReplaceSender(req *http.Request) (future StreamingJobsCreateOrReplaceFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrReplaceResponder handles the response to the CreateOrReplace request. The method always
@@ -137,48 +123,28 @@ func (client StreamingJobsClient) CreateOrReplaceResponder(resp *http.Response) 
 	return
 }
 
-// Delete deletes a streaming job. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a streaming job.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. jobName is the name of the streaming job.
-func (client StreamingJobsClient) Delete(resourceGroupName string, jobName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, jobName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client StreamingJobsClient) Delete(ctx context.Context, resourceGroupName string, jobName string) (result StreamingJobsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, jobName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client StreamingJobsClient) DeletePreparer(resourceGroupName string, jobName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client StreamingJobsClient) DeletePreparer(ctx context.Context, resourceGroupName string, jobName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -195,16 +161,22 @@ func (client StreamingJobsClient) DeletePreparer(resourceGroupName string, jobNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.StreamAnalytics/streamingjobs/{jobName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client StreamingJobsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StreamingJobsClient) DeleteSender(req *http.Request) (future StreamingJobsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -226,8 +198,8 @@ func (client StreamingJobsClient) DeleteResponder(resp *http.Response) (result a
 // query parameter. This is a comma-separated list of additional streaming job properties to include in the response,
 // beyond the default set returned when this parameter is absent. The default set is all streaming job properties other
 // than 'inputs', 'transformation', 'outputs', and 'functions'.
-func (client StreamingJobsClient) Get(resourceGroupName string, jobName string, expand string) (result StreamingJob, err error) {
-	req, err := client.GetPreparer(resourceGroupName, jobName, expand)
+func (client StreamingJobsClient) Get(ctx context.Context, resourceGroupName string, jobName string, expand string) (result StreamingJob, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, jobName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Get", nil, "Failure preparing request")
 		return
@@ -249,7 +221,7 @@ func (client StreamingJobsClient) Get(resourceGroupName string, jobName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client StreamingJobsClient) GetPreparer(resourceGroupName string, jobName string, expand string) (*http.Request, error) {
+func (client StreamingJobsClient) GetPreparer(ctx context.Context, resourceGroupName string, jobName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -269,14 +241,13 @@ func (client StreamingJobsClient) GetPreparer(resourceGroupName string, jobName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.StreamAnalytics/streamingjobs/{jobName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client StreamingJobsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -298,8 +269,9 @@ func (client StreamingJobsClient) GetResponder(resp *http.Response) (result Stre
 // expand is the $expand OData query parameter. This is a comma-separated list of additional streaming job properties
 // to include in the response, beyond the default set returned when this parameter is absent. The default set is all
 // streaming job properties other than 'inputs', 'transformation', 'outputs', and 'functions'.
-func (client StreamingJobsClient) List(expand string) (result StreamingJobListResult, err error) {
-	req, err := client.ListPreparer(expand)
+func (client StreamingJobsClient) List(ctx context.Context, expand string) (result StreamingJobListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", nil, "Failure preparing request")
 		return
@@ -307,12 +279,12 @@ func (client StreamingJobsClient) List(expand string) (result StreamingJobListRe
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sjlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.sjlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", resp, "Failure responding to request")
 	}
@@ -321,7 +293,7 @@ func (client StreamingJobsClient) List(expand string) (result StreamingJobListRe
 }
 
 // ListPreparer prepares the List request.
-func (client StreamingJobsClient) ListPreparer(expand string) (*http.Request, error) {
+func (client StreamingJobsClient) ListPreparer(ctx context.Context, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -339,14 +311,13 @@ func (client StreamingJobsClient) ListPreparer(expand string) (*http.Request, er
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.StreamAnalytics/streamingjobs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client StreamingJobsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -363,73 +334,31 @@ func (client StreamingJobsClient) ListResponder(resp *http.Response) (result Str
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client StreamingJobsClient) ListNextResults(lastResults StreamingJobListResult) (result StreamingJobListResult, err error) {
-	req, err := lastResults.StreamingJobListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client StreamingJobsClient) listNextResults(lastResults StreamingJobListResult) (result StreamingJobListResult, err error) {
+	req, err := lastResults.streamingJobListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client StreamingJobsClient) ListComplete(expand string, cancel <-chan struct{}) (<-chan StreamingJob, <-chan error) {
-	resultChan := make(chan StreamingJob)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client StreamingJobsClient) ListComplete(ctx context.Context, expand string) (result StreamingJobListResultIterator, err error) {
+	result.page, err = client.List(ctx, expand)
+	return
 }
 
 // ListByResourceGroup lists all of the streaming jobs in the specified resource group.
@@ -439,8 +368,9 @@ func (client StreamingJobsClient) ListComplete(expand string, cancel <-chan stru
 // list of additional streaming job properties to include in the response, beyond the default set returned when this
 // parameter is absent. The default set is all streaming job properties other than 'inputs', 'transformation',
 // 'outputs', and 'functions'.
-func (client StreamingJobsClient) ListByResourceGroup(resourceGroupName string, expand string) (result StreamingJobListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, expand)
+func (client StreamingJobsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, expand string) (result StreamingJobListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -448,12 +378,12 @@ func (client StreamingJobsClient) ListByResourceGroup(resourceGroupName string, 
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sjlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.sjlr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -462,7 +392,7 @@ func (client StreamingJobsClient) ListByResourceGroup(resourceGroupName string, 
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client StreamingJobsClient) ListByResourceGroupPreparer(resourceGroupName string, expand string) (*http.Request, error) {
+func (client StreamingJobsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -481,14 +411,13 @@ func (client StreamingJobsClient) ListByResourceGroupPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.StreamAnalytics/streamingjobs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client StreamingJobsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -505,119 +434,56 @@ func (client StreamingJobsClient) ListByResourceGroupResponder(resp *http.Respon
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client StreamingJobsClient) ListByResourceGroupNextResults(lastResults StreamingJobListResult) (result StreamingJobListResult, err error) {
-	req, err := lastResults.StreamingJobListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client StreamingJobsClient) listByResourceGroupNextResults(lastResults StreamingJobListResult) (result StreamingJobListResult, err error) {
+	req, err := lastResults.streamingJobListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client StreamingJobsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, expand string) (result StreamingJobListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, expand)
+	return
+}
+
+// Start starts a streaming job. Once a job is started it will start processing input events and produce output.
+//
+// resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
+// Azure Resource Manager API or the portal. jobName is the name of the streaming job. startJobParameters is parameters
+// applicable to a start streaming job operation.
+func (client StreamingJobsClient) Start(ctx context.Context, resourceGroupName string, jobName string, startJobParameters *StartStreamingJobParameters) (result StreamingJobsStartFuture, err error) {
+	req, err := client.StartPreparer(ctx, resourceGroupName, jobName, startJobParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Start", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.StartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Start", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client StreamingJobsClient) ListByResourceGroupComplete(resourceGroupName string, expand string, cancel <-chan struct{}) (<-chan StreamingJob, <-chan error) {
-	resultChan := make(chan StreamingJob)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// Start starts a streaming job. Once a job is started it will start processing input events and produce output. This
-// method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be
-// used to cancel polling and any outstanding HTTP requests.
-//
-// resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
-// Azure Resource Manager API or the portal. jobName is the name of the streaming job. startJobParameters is parameters
-// applicable to a start streaming job operation.
-func (client StreamingJobsClient) Start(resourceGroupName string, jobName string, startJobParameters *StartStreamingJobParameters, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartPreparer(resourceGroupName, jobName, startJobParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Start", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.StartSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Start", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.StartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Start", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // StartPreparer prepares the Start request.
-func (client StreamingJobsClient) StartPreparer(resourceGroupName string, jobName string, startJobParameters *StartStreamingJobParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client StreamingJobsClient) StartPreparer(ctx context.Context, resourceGroupName string, jobName string, startJobParameters *StartStreamingJobParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -639,16 +505,22 @@ func (client StreamingJobsClient) StartPreparer(resourceGroupName string, jobNam
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithJSON(startJobParameters))
 	}
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
-func (client StreamingJobsClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StreamingJobsClient) StartSender(req *http.Request) (future StreamingJobsStartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StartResponder handles the response to the Start request. The method always
@@ -664,48 +536,28 @@ func (client StreamingJobsClient) StartResponder(resp *http.Response) (result au
 }
 
 // Stop stops a running streaming job. This will cause a running streaming job to stop processing input events and
-// producing output. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// producing output.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. jobName is the name of the streaming job.
-func (client StreamingJobsClient) Stop(resourceGroupName string, jobName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StopPreparer(resourceGroupName, jobName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Stop", nil, "Failure preparing request")
-			return
-		}
+func (client StreamingJobsClient) Stop(ctx context.Context, resourceGroupName string, jobName string) (result StreamingJobsStopFuture, err error) {
+	req, err := client.StopPreparer(ctx, resourceGroupName, jobName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Stop", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StopSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Stop", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StopSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Stop", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StopResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Stop", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StopPreparer prepares the Stop request.
-func (client StreamingJobsClient) StopPreparer(resourceGroupName string, jobName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client StreamingJobsClient) StopPreparer(ctx context.Context, resourceGroupName string, jobName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -722,16 +574,22 @@ func (client StreamingJobsClient) StopPreparer(resourceGroupName string, jobName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.StreamAnalytics/streamingjobs/{jobName}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSender sends the Stop request. The method will close the
 // http.Response Body if it receives an error.
-func (client StreamingJobsClient) StopSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StreamingJobsClient) StopSender(req *http.Request) (future StreamingJobsStopFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StopResponder handles the response to the Stop request. The method always
@@ -756,8 +614,8 @@ func (client StreamingJobsClient) StopResponder(resp *http.Response) (result aut
 // value from the Azure Resource Manager API or the portal. jobName is the name of the streaming job. ifMatch is the
 // ETag of the streaming job. Omit this value to always overwrite the current record set. Specify the last-seen ETag
 // value to prevent accidentally overwritting concurrent changes.
-func (client StreamingJobsClient) Update(streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string) (result StreamingJob, err error) {
-	req, err := client.UpdatePreparer(streamingJob, resourceGroupName, jobName, ifMatch)
+func (client StreamingJobsClient) Update(ctx context.Context, streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string) (result StreamingJob, err error) {
+	req, err := client.UpdatePreparer(ctx, streamingJob, resourceGroupName, jobName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsClient", "Update", nil, "Failure preparing request")
 		return
@@ -779,7 +637,7 @@ func (client StreamingJobsClient) Update(streamingJob StreamingJob, resourceGrou
 }
 
 // UpdatePreparer prepares the Update request.
-func (client StreamingJobsClient) UpdatePreparer(streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string) (*http.Request, error) {
+func (client StreamingJobsClient) UpdatePreparer(ctx context.Context, streamingJob StreamingJob, resourceGroupName string, jobName string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":           autorest.Encode("path", jobName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -802,14 +660,13 @@ func (client StreamingJobsClient) UpdatePreparer(streamingJob StreamingJob, reso
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client StreamingJobsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

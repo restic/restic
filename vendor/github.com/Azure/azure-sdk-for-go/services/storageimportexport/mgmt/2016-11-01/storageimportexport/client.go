@@ -29,22 +29,22 @@ const (
 	DefaultBaseURI = "https://management.azure.com"
 )
 
-// ManagementClient is the base client for Storageimportexport.
-type ManagementClient struct {
+// BaseClient is the base client for Storageimportexport.
+type BaseClient struct {
 	autorest.Client
 	BaseURI        string
 	SubscriptionID string
 	AcceptLanguage string
 }
 
-// New creates an instance of the ManagementClient client.
-func New(subscriptionID string, acceptLanguage string) ManagementClient {
+// New creates an instance of the BaseClient client.
+func New(subscriptionID string, acceptLanguage string) BaseClient {
 	return NewWithBaseURI(DefaultBaseURI, subscriptionID, acceptLanguage)
 }
 
-// NewWithBaseURI creates an instance of the ManagementClient client.
-func NewWithBaseURI(baseURI string, subscriptionID string, acceptLanguage string) ManagementClient {
-	return ManagementClient{
+// NewWithBaseURI creates an instance of the BaseClient client.
+func NewWithBaseURI(baseURI string, subscriptionID string, acceptLanguage string) BaseClient {
+	return BaseClient{
 		Client:         autorest.NewClientWithUserAgent(UserAgent()),
 		BaseURI:        baseURI,
 		SubscriptionID: subscriptionID,

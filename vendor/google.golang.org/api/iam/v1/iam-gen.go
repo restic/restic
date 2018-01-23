@@ -279,13 +279,6 @@ type BindingDelta struct {
 	//   "REMOVE" - Removal of a Binding.
 	Action string `json:"action,omitempty"`
 
-	// Condition: The condition that is associated with this binding.
-	// This field is GOOGLE_INTERNAL.
-	// This field is not logged in IAM side because it's only for audit
-	// logging.
-	// Optional
-	Condition *Expr `json:"condition,omitempty"`
-
 	// Member: A single identity requesting access for a Cloud Platform
 	// resource.
 	// Follows the same format of Binding.members.
@@ -364,12 +357,13 @@ type CreateServiceAccountKeyRequest struct {
 	//   "KEY_ALG_UNSPECIFIED" - An unspecified key algorithm.
 	//   "KEY_ALG_RSA_1024" - 1k RSA Key.
 	//   "KEY_ALG_RSA_2048" - 2k RSA Key.
-	//   "KEY_ALG_GCS_SYMMETRIC_HMAC" - HMAC.
 	KeyAlgorithm string `json:"keyAlgorithm,omitempty"`
 
-	// PrivateKeyType: The output format of the private key.
-	// `GOOGLE_CREDENTIALS_FILE` is the
-	// default output format.
+	// PrivateKeyType: The output format of the private key. The default
+	// value is
+	// `TYPE_GOOGLE_CREDENTIALS_FILE`, which is the Google Credentials
+	// File
+	// format.
 	//
 	// Possible values:
 	//   "TYPE_UNSPECIFIED" - Unspecified. Equivalent to
@@ -459,60 +453,6 @@ type Empty struct {
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
-}
-
-// Expr: Represents an expression text. Example:
-//
-//     title: "User account presence"
-//     description: "Determines whether the request has a user account"
-//     expression: "size(request.user) > 0"
-type Expr struct {
-	// Description: An optional description of the expression. This is a
-	// longer text which
-	// describes the expression, e.g. when hovered over it in a UI.
-	Description string `json:"description,omitempty"`
-
-	// Expression: Textual representation of an expression in
-	// Common Expression Language syntax.
-	//
-	// The application context of the containing message determines
-	// which
-	// well-known feature set of CEL is supported.
-	Expression string `json:"expression,omitempty"`
-
-	// Location: An optional string indicating the location of the
-	// expression for error
-	// reporting, e.g. a file name and a position in the file.
-	Location string `json:"location,omitempty"`
-
-	// Title: An optional title for the expression, i.e. a short string
-	// describing
-	// its purpose. This can be used e.g. in UIs which allow to enter
-	// the
-	// expression.
-	Title string `json:"title,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Description") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Description") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Expr) MarshalJSON() ([]byte, error) {
-	type NoMethod Expr
-	raw := NoMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // ListRolesResponse: The response containing the roles defined under a
@@ -717,7 +657,7 @@ func (s *Permission) MarshalJSON() ([]byte, error) {
 //     }
 //
 // For a description of IAM and its features, see the
-// [IAM developer's guide](https://cloud.google.com/iam).
+// [IAM developer's guide](https://cloud.google.com/iam/docs).
 type Policy struct {
 	// Bindings: Associates a list of `members` to a `role`.
 	// `bindings` with no members will result in an error.
@@ -743,7 +683,7 @@ type Policy struct {
 	// policy is overwritten blindly.
 	Etag string `json:"etag,omitempty"`
 
-	// Version: Version of the `Policy`. The default version is 0.
+	// Version: Deprecated.
 	Version int64 `json:"version,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1175,7 +1115,6 @@ type ServiceAccountKey struct {
 	//   "KEY_ALG_UNSPECIFIED" - An unspecified key algorithm.
 	//   "KEY_ALG_RSA_1024" - 1k RSA Key.
 	//   "KEY_ALG_RSA_2048" - 2k RSA Key.
-	//   "KEY_ALG_GCS_SYMMETRIC_HMAC" - HMAC.
 	KeyAlgorithm string `json:"keyAlgorithm,omitempty"`
 
 	// Name: The resource name of the service account key in the following

@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // A FileMinioClient retrieves credentials from the current user's home

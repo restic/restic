@@ -89,6 +89,10 @@ func f1() {
 	})
 	//]
 
+	//[ docref.Update
+	_, err = ca.Update(ctx, []firestore.Update{{Path: "capital", Value: "Sacramento"}})
+	//]
+
 	//[ docref.Delete
 	_, err = ny.Delete(ctx)
 	//]
@@ -98,21 +102,15 @@ func f1() {
 	if err != nil {
 		// TODO: Handle error.
 	}
-	_, err = ca.UpdateStruct(ctx, []string{"capital"}, State{Capital: "Sacramento"},
+	_, err = ca.Update(ctx,
+		[]firestore.Update{{Path: "capital", Value: "Sacramento"}},
 		firestore.LastUpdateTime(docsnap.UpdateTime))
-	//]
-
-	//[ docref.UpdateMap
-	_, err = ca.UpdateMap(ctx, map[string]interface{}{"pop": 39.2})
-	//]
-	//[ docref.UpdateStruct
-	_, err = ca.UpdateStruct(ctx, []string{"pop"}, State{Population: 39.2})
 	//]
 
 	//[ WriteBatch
 	writeResults, err := client.Batch().
 		Create(ny, State{Capital: "Albany"}).
-		UpdateStruct(ca, []string{"capital"}, State{Capital: "Sacramento"}).
+		Update(ca, []firestore.Update{{Path: "capital", Value: "Sacramento"}}).
 		Delete(client.Doc("States/WestDakota")).
 		Commit(ctx)
 	//]
@@ -154,8 +152,7 @@ func txn() {
 		if err != nil {
 			return err
 		}
-		return tx.UpdateStruct(ny, []string{"pop"},
-			State{Population: pop.(float64) + 0.2})
+		return tx.Update(ny, []firestore.Update{{Path: "pop", Value: pop.(float64) + 0.2}})
 	})
 	if err != nil {
 		// TODO: Handle error.

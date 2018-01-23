@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/jaYfrc5Po9fYu5zMoC7jTk55tSA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/fAl5BHlYqwU8XIUMb6QGOitbCcM\"",
  "discoveryVersion": "v1",
  "id": "androidenterprise:v1",
  "name": "androidenterprise",
  "canonicalName": "Android Enterprise",
  "version": "v1",
- "revision": "20171123",
+ "revision": "20180111",
  "title": "Google Play EMM API",
  "description": "Manages the deployment of apps to Android for Work users.",
  "ownerDomain": "google.com",
@@ -859,6 +859,10 @@
      "type": "string",
      "description": "The Android ID of the device. This field will always be present."
     },
+    "dpcPackageName": {
+     "type": "string",
+     "description": "Policy app on the device."
+    },
     "managementType": {
      "type": "string",
      "description": "Identifies the extent to which the device is controlled by an Android EMM in various deployment configurations.\n\nPossible values include: \n- \"managedDevice\", a device where the DPC is set as device owner, \n- \"managedProfile\", a device where the DPC is set as profile owner."
@@ -1041,12 +1045,31 @@
      "type": "string",
      "description": "The name of the author of the product (for example, the app developer)."
     },
+    "availableCountries": {
+     "type": "array",
+     "description": "The countries which this app is available in.",
+     "items": {
+      "type": "string"
+     }
+    },
     "availableTracks": {
      "type": "array",
      "description": "The tracks that are visible to the enterprise.",
      "items": {
       "type": "string"
      }
+    },
+    "category": {
+     "type": "string",
+     "description": "The app category (e.g. RACING, SOCIAL, etc.)"
+    },
+    "contentRating": {
+     "type": "string",
+     "description": "The content rating for this app."
+    },
+    "description": {
+     "type": "string",
+     "description": "The localized promotional description, if available."
     },
     "detailsUrl": {
      "type": "string",
@@ -1065,6 +1088,23 @@
      "description": "Identifies what kind of resource this is. Value: the fixed string \"androidenterprise#product\".",
      "default": "androidenterprise#product"
     },
+    "lastUpdatedTimestampMillis": {
+     "type": "string",
+     "description": "The approximate time (within 7 days) the app was last published, expressed in milliseconds since epoch.",
+     "format": "int64"
+    },
+    "minAndroidSdkVersion": {
+     "type": "integer",
+     "description": "The minimum Android SDK necessary to run the app.",
+     "format": "int32"
+    },
+    "permissions": {
+     "type": "array",
+     "description": "A list of permissions required by the app.",
+     "items": {
+      "$ref": "ProductPermission"
+     }
+    },
     "productId": {
      "type": "string",
      "description": "A string of the form app:\u003cpackage name\u003e. For example, app:com.google.android.gm represents the Gmail app."
@@ -1073,9 +1113,20 @@
      "type": "string",
      "description": "Whether this product is free, free with in-app purchases, or paid. If the pricing is unknown, this means the product is not generally available anymore (even though it might still be available to people who own it)."
     },
+    "recentChanges": {
+     "type": "string",
+     "description": "A description of the recent changes made to the app."
+    },
     "requiresContainerApp": {
      "type": "boolean",
      "description": "Deprecated."
+    },
+    "screenshotUrls": {
+     "type": "array",
+     "description": "A list of screenshot links representing the app.",
+     "items": {
+      "type": "string"
+     }
     },
     "signingCertificate": {
      "$ref": "ProductSigningCertificate",

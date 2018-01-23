@@ -18,7 +18,9 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,9 +30,9 @@ import (
 type AlertEmailNotificationStatus string
 
 const (
-	// Disabled specifies the disabled state for alert email notification status.
+	// Disabled ...
 	Disabled AlertEmailNotificationStatus = "Disabled"
-	// Enabled specifies the enabled state for alert email notification status.
+	// Enabled ...
 	Enabled AlertEmailNotificationStatus = "Enabled"
 )
 
@@ -38,9 +40,9 @@ const (
 type AlertScope string
 
 const (
-	// AlertScopeDevice specifies the alert scope device state for alert scope.
+	// AlertScopeDevice ...
 	AlertScopeDevice AlertScope = "Device"
-	// AlertScopeResource specifies the alert scope resource state for alert scope.
+	// AlertScopeResource ...
 	AlertScopeResource AlertScope = "Resource"
 )
 
@@ -48,11 +50,11 @@ const (
 type AlertSeverity string
 
 const (
-	// Critical specifies the critical state for alert severity.
+	// Critical ...
 	Critical AlertSeverity = "Critical"
-	// Informational specifies the informational state for alert severity.
+	// Informational ...
 	Informational AlertSeverity = "Informational"
-	// Warning specifies the warning state for alert severity.
+	// Warning ...
 	Warning AlertSeverity = "Warning"
 )
 
@@ -60,9 +62,9 @@ const (
 type AlertSourceType string
 
 const (
-	// AlertSourceTypeDevice specifies the alert source type device state for alert source type.
+	// AlertSourceTypeDevice ...
 	AlertSourceTypeDevice AlertSourceType = "Device"
-	// AlertSourceTypeResource specifies the alert source type resource state for alert source type.
+	// AlertSourceTypeResource ...
 	AlertSourceTypeResource AlertSourceType = "Resource"
 )
 
@@ -70,9 +72,9 @@ const (
 type AlertStatus string
 
 const (
-	// Active specifies the active state for alert status.
+	// Active ...
 	Active AlertStatus = "Active"
-	// Cleared specifies the cleared state for alert status.
+	// Cleared ...
 	Cleared AlertStatus = "Cleared"
 )
 
@@ -80,13 +82,13 @@ const (
 type AuthenticationType string
 
 const (
-	// Basic specifies the basic state for authentication type.
+	// Basic ...
 	Basic AuthenticationType = "Basic"
-	// Invalid specifies the invalid state for authentication type.
+	// Invalid ...
 	Invalid AuthenticationType = "Invalid"
-	// None specifies the none state for authentication type.
+	// None ...
 	None AuthenticationType = "None"
-	// NTLM specifies the ntlm state for authentication type.
+	// NTLM ...
 	NTLM AuthenticationType = "NTLM"
 )
 
@@ -94,9 +96,9 @@ const (
 type AuthorizationEligibility string
 
 const (
-	// Eligible specifies the eligible state for authorization eligibility.
+	// Eligible ...
 	Eligible AuthorizationEligibility = "Eligible"
-	// InEligible specifies the in eligible state for authorization eligibility.
+	// InEligible ...
 	InEligible AuthorizationEligibility = "InEligible"
 )
 
@@ -104,9 +106,9 @@ const (
 type AuthorizationStatus string
 
 const (
-	// AuthorizationStatusDisabled specifies the authorization status disabled state for authorization status.
+	// AuthorizationStatusDisabled ...
 	AuthorizationStatusDisabled AuthorizationStatus = "Disabled"
-	// AuthorizationStatusEnabled specifies the authorization status enabled state for authorization status.
+	// AuthorizationStatusEnabled ...
 	AuthorizationStatusEnabled AuthorizationStatus = "Enabled"
 )
 
@@ -114,11 +116,11 @@ const (
 type BackupJobCreationType string
 
 const (
-	// Adhoc specifies the adhoc state for backup job creation type.
+	// Adhoc ...
 	Adhoc BackupJobCreationType = "Adhoc"
-	// BySchedule specifies the by schedule state for backup job creation type.
+	// BySchedule ...
 	BySchedule BackupJobCreationType = "BySchedule"
-	// BySSM specifies the by ssm state for backup job creation type.
+	// BySSM ...
 	BySSM BackupJobCreationType = "BySSM"
 )
 
@@ -126,11 +128,9 @@ const (
 type BackupPolicyCreationType string
 
 const (
-	// BackupPolicyCreationTypeBySaaS specifies the backup policy creation type by saa s state for backup policy creation
-	// type.
+	// BackupPolicyCreationTypeBySaaS ...
 	BackupPolicyCreationTypeBySaaS BackupPolicyCreationType = "BySaaS"
-	// BackupPolicyCreationTypeBySSM specifies the backup policy creation type by ssm state for backup policy creation
-	// type.
+	// BackupPolicyCreationTypeBySSM ...
 	BackupPolicyCreationTypeBySSM BackupPolicyCreationType = "BySSM"
 )
 
@@ -138,9 +138,9 @@ const (
 type BackupStatus string
 
 const (
-	// BackupStatusDisabled specifies the backup status disabled state for backup status.
+	// BackupStatusDisabled ...
 	BackupStatusDisabled BackupStatus = "Disabled"
-	// BackupStatusEnabled specifies the backup status enabled state for backup status.
+	// BackupStatusEnabled ...
 	BackupStatusEnabled BackupStatus = "Enabled"
 )
 
@@ -148,9 +148,9 @@ const (
 type BackupType string
 
 const (
-	// CloudSnapshot specifies the cloud snapshot state for backup type.
+	// CloudSnapshot ...
 	CloudSnapshot BackupType = "CloudSnapshot"
-	// LocalSnapshot specifies the local snapshot state for backup type.
+	// LocalSnapshot ...
 	LocalSnapshot BackupType = "LocalSnapshot"
 )
 
@@ -158,13 +158,13 @@ const (
 type ControllerID string
 
 const (
-	// ControllerIDController0 specifies the controller id controller 0 state for controller id.
+	// ControllerIDController0 ...
 	ControllerIDController0 ControllerID = "Controller0"
-	// ControllerIDController1 specifies the controller id controller 1 state for controller id.
+	// ControllerIDController1 ...
 	ControllerIDController1 ControllerID = "Controller1"
-	// ControllerIDNone specifies the controller id none state for controller id.
+	// ControllerIDNone ...
 	ControllerIDNone ControllerID = "None"
-	// ControllerIDUnknown specifies the controller id unknown state for controller id.
+	// ControllerIDUnknown ...
 	ControllerIDUnknown ControllerID = "Unknown"
 )
 
@@ -172,11 +172,11 @@ const (
 type ControllerPowerStateAction string
 
 const (
-	// Restart specifies the restart state for controller power state action.
+	// Restart ...
 	Restart ControllerPowerStateAction = "Restart"
-	// Shutdown specifies the shutdown state for controller power state action.
+	// Shutdown ...
 	Shutdown ControllerPowerStateAction = "Shutdown"
-	// Start specifies the start state for controller power state action.
+	// Start ...
 	Start ControllerPowerStateAction = "Start"
 )
 
@@ -184,17 +184,17 @@ const (
 type ControllerStatus string
 
 const (
-	// ControllerStatusFailure specifies the controller status failure state for controller status.
+	// ControllerStatusFailure ...
 	ControllerStatusFailure ControllerStatus = "Failure"
-	// ControllerStatusNotPresent specifies the controller status not present state for controller status.
+	// ControllerStatusNotPresent ...
 	ControllerStatusNotPresent ControllerStatus = "NotPresent"
-	// ControllerStatusOk specifies the controller status ok state for controller status.
+	// ControllerStatusOk ...
 	ControllerStatusOk ControllerStatus = "Ok"
-	// ControllerStatusPoweredOff specifies the controller status powered off state for controller status.
+	// ControllerStatusPoweredOff ...
 	ControllerStatusPoweredOff ControllerStatus = "PoweredOff"
-	// ControllerStatusRecovering specifies the controller status recovering state for controller status.
+	// ControllerStatusRecovering ...
 	ControllerStatusRecovering ControllerStatus = "Recovering"
-	// ControllerStatusWarning specifies the controller status warning state for controller status.
+	// ControllerStatusWarning ...
 	ControllerStatusWarning ControllerStatus = "Warning"
 )
 
@@ -202,19 +202,19 @@ const (
 type DayOfWeek string
 
 const (
-	// Friday specifies the friday state for day of week.
+	// Friday ...
 	Friday DayOfWeek = "Friday"
-	// Monday specifies the monday state for day of week.
+	// Monday ...
 	Monday DayOfWeek = "Monday"
-	// Saturday specifies the saturday state for day of week.
+	// Saturday ...
 	Saturday DayOfWeek = "Saturday"
-	// Sunday specifies the sunday state for day of week.
+	// Sunday ...
 	Sunday DayOfWeek = "Sunday"
-	// Thursday specifies the thursday state for day of week.
+	// Thursday ...
 	Thursday DayOfWeek = "Thursday"
-	// Tuesday specifies the tuesday state for day of week.
+	// Tuesday ...
 	Tuesday DayOfWeek = "Tuesday"
-	// Wednesday specifies the wednesday state for day of week.
+	// Wednesday ...
 	Wednesday DayOfWeek = "Wednesday"
 )
 
@@ -222,9 +222,9 @@ const (
 type DeviceConfigurationStatus string
 
 const (
-	// Complete specifies the complete state for device configuration status.
+	// Complete ...
 	Complete DeviceConfigurationStatus = "Complete"
-	// Pending specifies the pending state for device configuration status.
+	// Pending ...
 	Pending DeviceConfigurationStatus = "Pending"
 )
 
@@ -232,27 +232,27 @@ const (
 type DeviceStatus string
 
 const (
-	// Creating specifies the creating state for device status.
+	// Creating ...
 	Creating DeviceStatus = "Creating"
-	// Deactivated specifies the deactivated state for device status.
+	// Deactivated ...
 	Deactivated DeviceStatus = "Deactivated"
-	// Deactivating specifies the deactivating state for device status.
+	// Deactivating ...
 	Deactivating DeviceStatus = "Deactivating"
-	// Deleted specifies the deleted state for device status.
+	// Deleted ...
 	Deleted DeviceStatus = "Deleted"
-	// MaintenanceMode specifies the maintenance mode state for device status.
+	// MaintenanceMode ...
 	MaintenanceMode DeviceStatus = "MaintenanceMode"
-	// Offline specifies the offline state for device status.
+	// Offline ...
 	Offline DeviceStatus = "Offline"
-	// Online specifies the online state for device status.
+	// Online ...
 	Online DeviceStatus = "Online"
-	// Provisioning specifies the provisioning state for device status.
+	// Provisioning ...
 	Provisioning DeviceStatus = "Provisioning"
-	// ReadyToSetup specifies the ready to setup state for device status.
+	// ReadyToSetup ...
 	ReadyToSetup DeviceStatus = "ReadyToSetup"
-	// RequiresAttention specifies the requires attention state for device status.
+	// RequiresAttention ...
 	RequiresAttention DeviceStatus = "RequiresAttention"
-	// Unknown specifies the unknown state for device status.
+	// Unknown ...
 	Unknown DeviceStatus = "Unknown"
 )
 
@@ -260,12 +260,11 @@ const (
 type DeviceType string
 
 const (
-	// DeviceTypeInvalid specifies the device type invalid state for device type.
+	// DeviceTypeInvalid ...
 	DeviceTypeInvalid DeviceType = "Invalid"
-	// DeviceTypeSeries8000PhysicalAppliance specifies the device type series 8000 physical appliance state for device
-	// type.
+	// DeviceTypeSeries8000PhysicalAppliance ...
 	DeviceTypeSeries8000PhysicalAppliance DeviceType = "Series8000PhysicalAppliance"
-	// DeviceTypeSeries8000VirtualAppliance specifies the device type series 8000 virtual appliance state for device type.
+	// DeviceTypeSeries8000VirtualAppliance ...
 	DeviceTypeSeries8000VirtualAppliance DeviceType = "Series8000VirtualAppliance"
 )
 
@@ -273,11 +272,11 @@ const (
 type EncryptionAlgorithm string
 
 const (
-	// EncryptionAlgorithmAES256 specifies the encryption algorithm aes256 state for encryption algorithm.
+	// EncryptionAlgorithmAES256 ...
 	EncryptionAlgorithmAES256 EncryptionAlgorithm = "AES256"
-	// EncryptionAlgorithmNone specifies the encryption algorithm none state for encryption algorithm.
+	// EncryptionAlgorithmNone ...
 	EncryptionAlgorithmNone EncryptionAlgorithm = "None"
-	// EncryptionAlgorithmRSAESPKCS1V15 specifies the encryption algorithm rsaespkcs1v15 state for encryption algorithm.
+	// EncryptionAlgorithmRSAESPKCS1V15 ...
 	EncryptionAlgorithmRSAESPKCS1V15 EncryptionAlgorithm = "RSAES_PKCS1_v_1_5"
 )
 
@@ -285,9 +284,9 @@ const (
 type EncryptionStatus string
 
 const (
-	// EncryptionStatusDisabled specifies the encryption status disabled state for encryption status.
+	// EncryptionStatusDisabled ...
 	EncryptionStatusDisabled EncryptionStatus = "Disabled"
-	// EncryptionStatusEnabled specifies the encryption status enabled state for encryption status.
+	// EncryptionStatusEnabled ...
 	EncryptionStatusEnabled EncryptionStatus = "Enabled"
 )
 
@@ -295,11 +294,11 @@ const (
 type FeatureSupportStatus string
 
 const (
-	// NotAvailable specifies the not available state for feature support status.
+	// NotAvailable ...
 	NotAvailable FeatureSupportStatus = "NotAvailable"
-	// Supported specifies the supported state for feature support status.
+	// Supported ...
 	Supported FeatureSupportStatus = "Supported"
-	// UnsupportedDeviceVersion specifies the unsupported device version state for feature support status.
+	// UnsupportedDeviceVersion ...
 	UnsupportedDeviceVersion FeatureSupportStatus = "UnsupportedDeviceVersion"
 )
 
@@ -307,22 +306,19 @@ const (
 type HardwareComponentStatus string
 
 const (
-	// HardwareComponentStatusFailure specifies the hardware component status failure state for hardware component status.
+	// HardwareComponentStatusFailure ...
 	HardwareComponentStatusFailure HardwareComponentStatus = "Failure"
-	// HardwareComponentStatusNotPresent specifies the hardware component status not present state for hardware component
-	// status.
+	// HardwareComponentStatusNotPresent ...
 	HardwareComponentStatusNotPresent HardwareComponentStatus = "NotPresent"
-	// HardwareComponentStatusOk specifies the hardware component status ok state for hardware component status.
+	// HardwareComponentStatusOk ...
 	HardwareComponentStatusOk HardwareComponentStatus = "Ok"
-	// HardwareComponentStatusPoweredOff specifies the hardware component status powered off state for hardware component
-	// status.
+	// HardwareComponentStatusPoweredOff ...
 	HardwareComponentStatusPoweredOff HardwareComponentStatus = "PoweredOff"
-	// HardwareComponentStatusRecovering specifies the hardware component status recovering state for hardware component
-	// status.
+	// HardwareComponentStatusRecovering ...
 	HardwareComponentStatusRecovering HardwareComponentStatus = "Recovering"
-	// HardwareComponentStatusUnknown specifies the hardware component status unknown state for hardware component status.
+	// HardwareComponentStatusUnknown ...
 	HardwareComponentStatusUnknown HardwareComponentStatus = "Unknown"
-	// HardwareComponentStatusWarning specifies the hardware component status warning state for hardware component status.
+	// HardwareComponentStatusWarning ...
 	HardwareComponentStatusWarning HardwareComponentStatus = "Warning"
 )
 
@@ -330,11 +326,11 @@ const (
 type InEligibilityCategory string
 
 const (
-	// DeviceNotOnline specifies the device not online state for in eligibility category.
+	// DeviceNotOnline ...
 	DeviceNotOnline InEligibilityCategory = "DeviceNotOnline"
-	// NotSupportedAppliance specifies the not supported appliance state for in eligibility category.
+	// NotSupportedAppliance ...
 	NotSupportedAppliance InEligibilityCategory = "NotSupportedAppliance"
-	// RolloverPending specifies the rollover pending state for in eligibility category.
+	// RolloverPending ...
 	RolloverPending InEligibilityCategory = "RolloverPending"
 )
 
@@ -342,14 +338,13 @@ const (
 type ISCSIAndCloudStatus string
 
 const (
-	// ISCSIAndCloudStatusCloudEnabled specifies the iscsi and cloud status cloud enabled state for iscsi and cloud status.
+	// ISCSIAndCloudStatusCloudEnabled ...
 	ISCSIAndCloudStatusCloudEnabled ISCSIAndCloudStatus = "CloudEnabled"
-	// ISCSIAndCloudStatusDisabled specifies the iscsi and cloud status disabled state for iscsi and cloud status.
+	// ISCSIAndCloudStatusDisabled ...
 	ISCSIAndCloudStatusDisabled ISCSIAndCloudStatus = "Disabled"
-	// ISCSIAndCloudStatusIscsiAndCloudEnabled specifies the iscsi and cloud status iscsi and cloud enabled state for iscsi
-	// and cloud status.
+	// ISCSIAndCloudStatusIscsiAndCloudEnabled ...
 	ISCSIAndCloudStatusIscsiAndCloudEnabled ISCSIAndCloudStatus = "IscsiAndCloudEnabled"
-	// ISCSIAndCloudStatusIscsiEnabled specifies the iscsi and cloud status iscsi enabled state for iscsi and cloud status.
+	// ISCSIAndCloudStatusIscsiEnabled ...
 	ISCSIAndCloudStatusIscsiEnabled ISCSIAndCloudStatus = "IscsiEnabled"
 )
 
@@ -357,13 +352,13 @@ const (
 type JobStatus string
 
 const (
-	// Canceled specifies the canceled state for job status.
+	// Canceled ...
 	Canceled JobStatus = "Canceled"
-	// Failed specifies the failed state for job status.
+	// Failed ...
 	Failed JobStatus = "Failed"
-	// Running specifies the running state for job status.
+	// Running ...
 	Running JobStatus = "Running"
-	// Succeeded specifies the succeeded state for job status.
+	// Succeeded ...
 	Succeeded JobStatus = "Succeeded"
 )
 
@@ -371,25 +366,25 @@ const (
 type JobType string
 
 const (
-	// CloneVolume specifies the clone volume state for job type.
+	// CloneVolume ...
 	CloneVolume JobType = "CloneVolume"
-	// CreateCloudAppliance specifies the create cloud appliance state for job type.
+	// CreateCloudAppliance ...
 	CreateCloudAppliance JobType = "CreateCloudAppliance"
-	// CreateLocallyPinnedVolume specifies the create locally pinned volume state for job type.
+	// CreateLocallyPinnedVolume ...
 	CreateLocallyPinnedVolume JobType = "CreateLocallyPinnedVolume"
-	// FailoverVolumeContainers specifies the failover volume containers state for job type.
+	// FailoverVolumeContainers ...
 	FailoverVolumeContainers JobType = "FailoverVolumeContainers"
-	// InstallUpdates specifies the install updates state for job type.
+	// InstallUpdates ...
 	InstallUpdates JobType = "InstallUpdates"
-	// ManualBackup specifies the manual backup state for job type.
+	// ManualBackup ...
 	ManualBackup JobType = "ManualBackup"
-	// ModifyVolume specifies the modify volume state for job type.
+	// ModifyVolume ...
 	ModifyVolume JobType = "ModifyVolume"
-	// RestoreBackup specifies the restore backup state for job type.
+	// RestoreBackup ...
 	RestoreBackup JobType = "RestoreBackup"
-	// ScheduledBackup specifies the scheduled backup state for job type.
+	// ScheduledBackup ...
 	ScheduledBackup JobType = "ScheduledBackup"
-	// SupportPackageLogs specifies the support package logs state for job type.
+	// SupportPackageLogs ...
 	SupportPackageLogs JobType = "SupportPackageLogs"
 )
 
@@ -397,9 +392,9 @@ const (
 type KeyRolloverStatus string
 
 const (
-	// NotRequired specifies the not required state for key rollover status.
+	// NotRequired ...
 	NotRequired KeyRolloverStatus = "NotRequired"
-	// Required specifies the required state for key rollover status.
+	// Required ...
 	Required KeyRolloverStatus = "Required"
 )
 
@@ -407,7 +402,7 @@ const (
 type Kind string
 
 const (
-	// Series8000 specifies the series 8000 state for kind.
+	// Series8000 ...
 	Series8000 Kind = "Series8000"
 )
 
@@ -415,9 +410,9 @@ const (
 type ManagerType string
 
 const (
-	// GardaV1 specifies the garda v1 state for manager type.
+	// GardaV1 ...
 	GardaV1 ManagerType = "GardaV1"
-	// HelsinkiV1 specifies the helsinki v1 state for manager type.
+	// HelsinkiV1 ...
 	HelsinkiV1 ManagerType = "HelsinkiV1"
 )
 
@@ -425,17 +420,17 @@ const (
 type MetricAggregationType string
 
 const (
-	// MetricAggregationTypeAverage specifies the metric aggregation type average state for metric aggregation type.
+	// MetricAggregationTypeAverage ...
 	MetricAggregationTypeAverage MetricAggregationType = "Average"
-	// MetricAggregationTypeLast specifies the metric aggregation type last state for metric aggregation type.
+	// MetricAggregationTypeLast ...
 	MetricAggregationTypeLast MetricAggregationType = "Last"
-	// MetricAggregationTypeMaximum specifies the metric aggregation type maximum state for metric aggregation type.
+	// MetricAggregationTypeMaximum ...
 	MetricAggregationTypeMaximum MetricAggregationType = "Maximum"
-	// MetricAggregationTypeMinimum specifies the metric aggregation type minimum state for metric aggregation type.
+	// MetricAggregationTypeMinimum ...
 	MetricAggregationTypeMinimum MetricAggregationType = "Minimum"
-	// MetricAggregationTypeNone specifies the metric aggregation type none state for metric aggregation type.
+	// MetricAggregationTypeNone ...
 	MetricAggregationTypeNone MetricAggregationType = "None"
-	// MetricAggregationTypeTotal specifies the metric aggregation type total state for metric aggregation type.
+	// MetricAggregationTypeTotal ...
 	MetricAggregationTypeTotal MetricAggregationType = "Total"
 )
 
@@ -443,17 +438,17 @@ const (
 type MetricUnit string
 
 const (
-	// Bytes specifies the bytes state for metric unit.
+	// Bytes ...
 	Bytes MetricUnit = "Bytes"
-	// BytesPerSecond specifies the bytes per second state for metric unit.
+	// BytesPerSecond ...
 	BytesPerSecond MetricUnit = "BytesPerSecond"
-	// Count specifies the count state for metric unit.
+	// Count ...
 	Count MetricUnit = "Count"
-	// CountPerSecond specifies the count per second state for metric unit.
+	// CountPerSecond ...
 	CountPerSecond MetricUnit = "CountPerSecond"
-	// Percent specifies the percent state for metric unit.
+	// Percent ...
 	Percent MetricUnit = "Percent"
-	// Seconds specifies the seconds state for metric unit.
+	// Seconds ...
 	Seconds MetricUnit = "Seconds"
 )
 
@@ -461,9 +456,9 @@ const (
 type MonitoringStatus string
 
 const (
-	// MonitoringStatusDisabled specifies the monitoring status disabled state for monitoring status.
+	// MonitoringStatusDisabled ...
 	MonitoringStatusDisabled MonitoringStatus = "Disabled"
-	// MonitoringStatusEnabled specifies the monitoring status enabled state for monitoring status.
+	// MonitoringStatusEnabled ...
 	MonitoringStatusEnabled MonitoringStatus = "Enabled"
 )
 
@@ -471,19 +466,19 @@ const (
 type NetInterfaceID string
 
 const (
-	// NetInterfaceIDData0 specifies the net interface id data 0 state for net interface id.
+	// NetInterfaceIDData0 ...
 	NetInterfaceIDData0 NetInterfaceID = "Data0"
-	// NetInterfaceIDData1 specifies the net interface id data 1 state for net interface id.
+	// NetInterfaceIDData1 ...
 	NetInterfaceIDData1 NetInterfaceID = "Data1"
-	// NetInterfaceIDData2 specifies the net interface id data 2 state for net interface id.
+	// NetInterfaceIDData2 ...
 	NetInterfaceIDData2 NetInterfaceID = "Data2"
-	// NetInterfaceIDData3 specifies the net interface id data 3 state for net interface id.
+	// NetInterfaceIDData3 ...
 	NetInterfaceIDData3 NetInterfaceID = "Data3"
-	// NetInterfaceIDData4 specifies the net interface id data 4 state for net interface id.
+	// NetInterfaceIDData4 ...
 	NetInterfaceIDData4 NetInterfaceID = "Data4"
-	// NetInterfaceIDData5 specifies the net interface id data 5 state for net interface id.
+	// NetInterfaceIDData5 ...
 	NetInterfaceIDData5 NetInterfaceID = "Data5"
-	// NetInterfaceIDInvalid specifies the net interface id invalid state for net interface id.
+	// NetInterfaceIDInvalid ...
 	NetInterfaceIDInvalid NetInterfaceID = "Invalid"
 )
 
@@ -491,9 +486,9 @@ const (
 type NetInterfaceStatus string
 
 const (
-	// NetInterfaceStatusDisabled specifies the net interface status disabled state for net interface status.
+	// NetInterfaceStatusDisabled ...
 	NetInterfaceStatusDisabled NetInterfaceStatus = "Disabled"
-	// NetInterfaceStatusEnabled specifies the net interface status enabled state for net interface status.
+	// NetInterfaceStatusEnabled ...
 	NetInterfaceStatusEnabled NetInterfaceStatus = "Enabled"
 )
 
@@ -501,13 +496,13 @@ const (
 type NetworkMode string
 
 const (
-	// NetworkModeBOTH specifies the network mode both state for network mode.
+	// NetworkModeBOTH ...
 	NetworkModeBOTH NetworkMode = "BOTH"
-	// NetworkModeInvalid specifies the network mode invalid state for network mode.
+	// NetworkModeInvalid ...
 	NetworkModeInvalid NetworkMode = "Invalid"
-	// NetworkModeIPV4 specifies the network mode ipv4 state for network mode.
+	// NetworkModeIPV4 ...
 	NetworkModeIPV4 NetworkMode = "IPV4"
-	// NetworkModeIPV6 specifies the network mode ipv6 state for network mode.
+	// NetworkModeIPV6 ...
 	NetworkModeIPV6 NetworkMode = "IPV6"
 )
 
@@ -515,13 +510,13 @@ const (
 type OperationStatus string
 
 const (
-	// OperationStatusDeleting specifies the operation status deleting state for operation status.
+	// OperationStatusDeleting ...
 	OperationStatusDeleting OperationStatus = "Deleting"
-	// OperationStatusNone specifies the operation status none state for operation status.
+	// OperationStatusNone ...
 	OperationStatusNone OperationStatus = "None"
-	// OperationStatusRestoring specifies the operation status restoring state for operation status.
+	// OperationStatusRestoring ...
 	OperationStatusRestoring OperationStatus = "Restoring"
-	// OperationStatusUpdating specifies the operation status updating state for operation status.
+	// OperationStatusUpdating ...
 	OperationStatusUpdating OperationStatus = "Updating"
 )
 
@@ -529,9 +524,9 @@ const (
 type OwnerShipStatus string
 
 const (
-	// NotOwned specifies the not owned state for owner ship status.
+	// NotOwned ...
 	NotOwned OwnerShipStatus = "NotOwned"
-	// Owned specifies the owned state for owner ship status.
+	// Owned ...
 	Owned OwnerShipStatus = "Owned"
 )
 
@@ -539,13 +534,13 @@ const (
 type RecurrenceType string
 
 const (
-	// Daily specifies the daily state for recurrence type.
+	// Daily ...
 	Daily RecurrenceType = "Daily"
-	// Hourly specifies the hourly state for recurrence type.
+	// Hourly ...
 	Hourly RecurrenceType = "Hourly"
-	// Minutes specifies the minutes state for recurrence type.
+	// Minutes ...
 	Minutes RecurrenceType = "Minutes"
-	// Weekly specifies the weekly state for recurrence type.
+	// Weekly ...
 	Weekly RecurrenceType = "Weekly"
 )
 
@@ -553,17 +548,13 @@ const (
 type RemoteManagementModeConfiguration string
 
 const (
-	// RemoteManagementModeConfigurationDisabled specifies the remote management mode configuration disabled state for
-	// remote management mode configuration.
+	// RemoteManagementModeConfigurationDisabled ...
 	RemoteManagementModeConfigurationDisabled RemoteManagementModeConfiguration = "Disabled"
-	// RemoteManagementModeConfigurationHTTPSAndHTTPEnabled specifies the remote management mode configuration https and
-	// http enabled state for remote management mode configuration.
+	// RemoteManagementModeConfigurationHTTPSAndHTTPEnabled ...
 	RemoteManagementModeConfigurationHTTPSAndHTTPEnabled RemoteManagementModeConfiguration = "HttpsAndHttpEnabled"
-	// RemoteManagementModeConfigurationHTTPSEnabled specifies the remote management mode configuration https enabled state
-	// for remote management mode configuration.
+	// RemoteManagementModeConfigurationHTTPSEnabled ...
 	RemoteManagementModeConfigurationHTTPSEnabled RemoteManagementModeConfiguration = "HttpsEnabled"
-	// RemoteManagementModeConfigurationUnknown specifies the remote management mode configuration unknown state for remote
-	// management mode configuration.
+	// RemoteManagementModeConfigurationUnknown ...
 	RemoteManagementModeConfigurationUnknown RemoteManagementModeConfiguration = "Unknown"
 )
 
@@ -571,9 +562,9 @@ const (
 type ScheduledBackupStatus string
 
 const (
-	// ScheduledBackupStatusDisabled specifies the scheduled backup status disabled state for scheduled backup status.
+	// ScheduledBackupStatusDisabled ...
 	ScheduledBackupStatusDisabled ScheduledBackupStatus = "Disabled"
-	// ScheduledBackupStatusEnabled specifies the scheduled backup status enabled state for scheduled backup status.
+	// ScheduledBackupStatusEnabled ...
 	ScheduledBackupStatusEnabled ScheduledBackupStatus = "Enabled"
 )
 
@@ -581,9 +572,9 @@ const (
 type ScheduleStatus string
 
 const (
-	// ScheduleStatusDisabled specifies the schedule status disabled state for schedule status.
+	// ScheduleStatusDisabled ...
 	ScheduleStatusDisabled ScheduleStatus = "Disabled"
-	// ScheduleStatusEnabled specifies the schedule status enabled state for schedule status.
+	// ScheduleStatusEnabled ...
 	ScheduleStatusEnabled ScheduleStatus = "Enabled"
 )
 
@@ -591,9 +582,9 @@ const (
 type SslStatus string
 
 const (
-	// SslStatusDisabled specifies the ssl status disabled state for ssl status.
+	// SslStatusDisabled ...
 	SslStatusDisabled SslStatus = "Disabled"
-	// SslStatusEnabled specifies the ssl status enabled state for ssl status.
+	// SslStatusEnabled ...
 	SslStatusEnabled SslStatus = "Enabled"
 )
 
@@ -601,25 +592,19 @@ const (
 type TargetEligibilityResultCode string
 
 const (
-	// LocalToTieredVolumesConversionWarning specifies the local to tiered volumes conversion warning state for target
-	// eligibility result code.
+	// LocalToTieredVolumesConversionWarning ...
 	LocalToTieredVolumesConversionWarning TargetEligibilityResultCode = "LocalToTieredVolumesConversionWarning"
-	// TargetAndSourceCannotBeSameError specifies the target and source cannot be same error state for target eligibility
-	// result code.
+	// TargetAndSourceCannotBeSameError ...
 	TargetAndSourceCannotBeSameError TargetEligibilityResultCode = "TargetAndSourceCannotBeSameError"
-	// TargetInsufficientCapacityError specifies the target insufficient capacity error state for target eligibility result
-	// code.
+	// TargetInsufficientCapacityError ...
 	TargetInsufficientCapacityError TargetEligibilityResultCode = "TargetInsufficientCapacityError"
-	// TargetInsufficientLocalVolumeMemoryError specifies the target insufficient local volume memory error state for
-	// target eligibility result code.
+	// TargetInsufficientLocalVolumeMemoryError ...
 	TargetInsufficientLocalVolumeMemoryError TargetEligibilityResultCode = "TargetInsufficientLocalVolumeMemoryError"
-	// TargetInsufficientTieredVolumeMemoryError specifies the target insufficient tiered volume memory error state for
-	// target eligibility result code.
+	// TargetInsufficientTieredVolumeMemoryError ...
 	TargetInsufficientTieredVolumeMemoryError TargetEligibilityResultCode = "TargetInsufficientTieredVolumeMemoryError"
-	// TargetIsNotOnlineError specifies the target is not online error state for target eligibility result code.
+	// TargetIsNotOnlineError ...
 	TargetIsNotOnlineError TargetEligibilityResultCode = "TargetIsNotOnlineError"
-	// TargetSourceIncompatibleVersionError specifies the target source incompatible version error state for target
-	// eligibility result code.
+	// TargetSourceIncompatibleVersionError ...
 	TargetSourceIncompatibleVersionError TargetEligibilityResultCode = "TargetSourceIncompatibleVersionError"
 )
 
@@ -627,11 +612,9 @@ const (
 type TargetEligibilityStatus string
 
 const (
-	// TargetEligibilityStatusEligible specifies the target eligibility status eligible state for target eligibility
-	// status.
+	// TargetEligibilityStatusEligible ...
 	TargetEligibilityStatusEligible TargetEligibilityStatus = "Eligible"
-	// TargetEligibilityStatusNotEligible specifies the target eligibility status not eligible state for target eligibility
-	// status.
+	// TargetEligibilityStatusNotEligible ...
 	TargetEligibilityStatusNotEligible TargetEligibilityStatus = "NotEligible"
 )
 
@@ -639,9 +622,9 @@ const (
 type VirtualMachineAPIType string
 
 const (
-	// Arm specifies the arm state for virtual machine api type.
+	// Arm ...
 	Arm VirtualMachineAPIType = "Arm"
-	// Classic specifies the classic state for virtual machine api type.
+	// Classic ...
 	Classic VirtualMachineAPIType = "Classic"
 )
 
@@ -649,9 +632,9 @@ const (
 type VolumeStatus string
 
 const (
-	// VolumeStatusOffline specifies the volume status offline state for volume status.
+	// VolumeStatusOffline ...
 	VolumeStatusOffline VolumeStatus = "Offline"
-	// VolumeStatusOnline specifies the volume status online state for volume status.
+	// VolumeStatusOnline ...
 	VolumeStatusOnline VolumeStatus = "Online"
 )
 
@@ -659,1177 +642,4601 @@ const (
 type VolumeType string
 
 const (
-	// Archival specifies the archival state for volume type.
+	// Archival ...
 	Archival VolumeType = "Archival"
-	// LocallyPinned specifies the locally pinned state for volume type.
+	// LocallyPinned ...
 	LocallyPinned VolumeType = "LocallyPinned"
-	// Tiered specifies the tiered state for volume type.
+	// Tiered ...
 	Tiered VolumeType = "Tiered"
 )
 
-// AccessControlRecord is the access control record.
+// AccessControlRecord the access control record.
 type AccessControlRecord struct {
-	autorest.Response              `json:"-"`
-	ID                             *string `json:"id,omitempty"`
-	Name                           *string `json:"name,omitempty"`
-	Type                           *string `json:"type,omitempty"`
-	Kind                           Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// AccessControlRecordProperties - The properties of access control record.
 	*AccessControlRecordProperties `json:"properties,omitempty"`
 }
 
-// AccessControlRecordList is the collection of access control records.
+// UnmarshalJSON is the custom unmarshaler for AccessControlRecord struct.
+func (acr *AccessControlRecord) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccessControlRecordProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		acr.AccessControlRecordProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		acr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		acr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		acr.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		acr.Kind = kind
+	}
+
+	return nil
+}
+
+// AccessControlRecordList the collection of access control records.
 type AccessControlRecordList struct {
 	autorest.Response `json:"-"`
-	Value             *[]AccessControlRecord `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]AccessControlRecord `json:"value,omitempty"`
 }
 
-// AccessControlRecordProperties is the properties of access control record.
+// AccessControlRecordProperties the properties of access control record.
 type AccessControlRecordProperties struct {
+	// InitiatorName - The iSCSI initiator name (IQN).
 	InitiatorName *string `json:"initiatorName,omitempty"`
-	VolumeCount   *int32  `json:"volumeCount,omitempty"`
+	// VolumeCount - The number of volumes using the access control record.
+	VolumeCount *int32 `json:"volumeCount,omitempty"`
 }
 
-// AcsConfiguration is the ACS configuration.
+// AccessControlRecordsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type AccessControlRecordsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccessControlRecordsCreateOrUpdateFuture) Result(client AccessControlRecordsClient) (acr AccessControlRecord, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return acr, autorest.NewError("storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		acr, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	acr, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// AccessControlRecordsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type AccessControlRecordsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccessControlRecordsDeleteFuture) Result(client AccessControlRecordsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.AccessControlRecordsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// AcsConfiguration the ACS configuration.
 type AcsConfiguration struct {
-	Namespace  *string `json:"namespace,omitempty"`
-	Realm      *string `json:"realm,omitempty"`
+	// Namespace - The namespace.
+	Namespace *string `json:"namespace,omitempty"`
+	// Realm - The realm.
+	Realm *string `json:"realm,omitempty"`
+	// ServiceURL - The service URL.
 	ServiceURL *string `json:"serviceUrl,omitempty"`
 }
 
-// Alert is the alert.
+// Alert the alert.
 type Alert struct {
-	ID               *string `json:"id,omitempty"`
-	Name             *string `json:"name,omitempty"`
-	Type             *string `json:"type,omitempty"`
-	Kind             Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// AlertProperties - The properties of the alert.
 	*AlertProperties `json:"properties,omitempty"`
 }
 
-// AlertErrorDetails is the details of the error for which the alert was raised
+// UnmarshalJSON is the custom unmarshaler for Alert struct.
+func (a *Alert) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AlertProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.AlertProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		a.Kind = kind
+	}
+
+	return nil
+}
+
+// AlertErrorDetails the details of the error for which the alert was raised
 type AlertErrorDetails struct {
-	ErrorCode    *string `json:"errorCode,omitempty"`
+	// ErrorCode - The error code
+	ErrorCode *string `json:"errorCode,omitempty"`
+	// ErrorMessage - The error message
 	ErrorMessage *string `json:"errorMessage,omitempty"`
-	Occurences   *int32  `json:"occurences,omitempty"`
+	// Occurences - The number of occurences
+	Occurences *int32 `json:"occurences,omitempty"`
 }
 
-// AlertFilter is the OData filters to be used for Alert
+// AlertFilter the OData filters to be used for Alert
 type AlertFilter struct {
-	Status         AlertStatus     `json:"status,omitempty"`
-	Severity       AlertSeverity   `json:"severity,omitempty"`
-	SourceType     AlertSourceType `json:"sourceType,omitempty"`
-	SourceName     *string         `json:"sourceName,omitempty"`
-	AppearedOnTime *date.Time      `json:"appearedOnTime,omitempty"`
+	// Status - Specifies the status of the alerts to be filtered. Only 'Equality' operator is supported for this property. Possible values include: 'Active', 'Cleared'
+	Status AlertStatus `json:"status,omitempty"`
+	// Severity - Specifies the severity of the alerts to be filtered. Only 'Equality' operator is supported for this property. Possible values include: 'Informational', 'Warning', 'Critical'
+	Severity AlertSeverity `json:"severity,omitempty"`
+	// SourceType - Specifies the source type of the alerts to be filtered. Only 'Equality' operator is supported for this property. Possible values include: 'AlertSourceTypeResource', 'AlertSourceTypeDevice'
+	SourceType AlertSourceType `json:"sourceType,omitempty"`
+	// SourceName - Specifies the source name of the alerts to be filtered. Only 'Equality' operator is supported for this property.
+	SourceName *string `json:"sourceName,omitempty"`
+	// AppearedOnTime - Specifies the appeared time (in UTC) of the alerts to be filtered. Only 'Greater-Than' and 'Lesser-Than' operators are supported for this property.
+	AppearedOnTime *date.Time `json:"appearedOnTime,omitempty"`
 }
 
-// AlertList is the collection of alerts.
+// AlertList the collection of alerts.
 type AlertList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Alert `json:"value,omitempty"`
-	NextLink          *string  `json:"nextLink,omitempty"`
+	// Value - The value.
+	Value *[]Alert `json:"value,omitempty"`
+	// NextLink - The URI of the next page of alerts.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AlertListPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AlertList) AlertListPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AlertListIterator provides access to a complete listing of Alert values.
+type AlertListIterator struct {
+	i    int
+	page AlertListPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AlertListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AlertListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AlertListIterator) Response() AlertList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AlertListIterator) Value() Alert {
+	if !iter.page.NotDone() {
+		return Alert{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (al AlertList) IsEmpty() bool {
+	return al.Value == nil || len(*al.Value) == 0
+}
+
+// alertListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (al AlertList) alertListPreparer() (*http.Request, error) {
+	if al.NextLink == nil || len(to.String(al.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(al.NextLink)))
 }
 
-// AlertNotificationProperties is the properties of the alert notification settings.
+// AlertListPage contains a page of Alert values.
+type AlertListPage struct {
+	fn func(AlertList) (AlertList, error)
+	al AlertList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AlertListPage) Next() error {
+	next, err := page.fn(page.al)
+	if err != nil {
+		return err
+	}
+	page.al = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AlertListPage) NotDone() bool {
+	return !page.al.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AlertListPage) Response() AlertList {
+	return page.al
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AlertListPage) Values() []Alert {
+	if page.al.IsEmpty() {
+		return nil
+	}
+	return *page.al.Value
+}
+
+// AlertNotificationProperties the properties of the alert notification settings.
 type AlertNotificationProperties struct {
-	EmailNotification            AlertEmailNotificationStatus `json:"emailNotification,omitempty"`
-	AlertNotificationCulture     *string                      `json:"alertNotificationCulture,omitempty"`
-	NotificationToServiceOwners  AlertEmailNotificationStatus `json:"notificationToServiceOwners,omitempty"`
-	AdditionalRecipientEmailList *[]string                    `json:"additionalRecipientEmailList,omitempty"`
+	// EmailNotification - Indicates whether email notification enabled or not. Possible values include: 'Enabled', 'Disabled'
+	EmailNotification AlertEmailNotificationStatus `json:"emailNotification,omitempty"`
+	// AlertNotificationCulture - The alert notification culture.
+	AlertNotificationCulture *string `json:"alertNotificationCulture,omitempty"`
+	// NotificationToServiceOwners - The value indicating whether alert notification enabled for admin or not. Possible values include: 'Enabled', 'Disabled'
+	NotificationToServiceOwners AlertEmailNotificationStatus `json:"notificationToServiceOwners,omitempty"`
+	// AdditionalRecipientEmailList - The alert notification email list.
+	AdditionalRecipientEmailList *[]string `json:"additionalRecipientEmailList,omitempty"`
 }
 
-// AlertProperties is the properties of alert
+// AlertProperties the properties of alert
 type AlertProperties struct {
-	Title                *string             `json:"title,omitempty"`
-	Scope                AlertScope          `json:"scope,omitempty"`
-	AlertType            *string             `json:"alertType,omitempty"`
-	AppearedAtTime       *date.Time          `json:"appearedAtTime,omitempty"`
-	AppearedAtSourceTime *date.Time          `json:"appearedAtSourceTime,omitempty"`
-	ClearedAtTime        *date.Time          `json:"clearedAtTime,omitempty"`
-	ClearedAtSourceTime  *date.Time          `json:"clearedAtSourceTime,omitempty"`
-	Source               *AlertSource        `json:"source,omitempty"`
-	Recommendation       *string             `json:"recommendation,omitempty"`
-	ResolutionReason     *string             `json:"resolutionReason,omitempty"`
-	Severity             AlertSeverity       `json:"severity,omitempty"`
-	Status               AlertStatus         `json:"status,omitempty"`
-	ErrorDetails         *AlertErrorDetails  `json:"errorDetails,omitempty"`
-	DetailedInformation  *map[string]*string `json:"detailedInformation,omitempty"`
+	// Title - The title of the alert
+	Title *string `json:"title,omitempty"`
+	// Scope - The scope of the alert. Possible values include: 'AlertScopeResource', 'AlertScopeDevice'
+	Scope AlertScope `json:"scope,omitempty"`
+	// AlertType - The type of the alert
+	AlertType *string `json:"alertType,omitempty"`
+	// AppearedAtTime - The UTC time at which the alert was raised
+	AppearedAtTime *date.Time `json:"appearedAtTime,omitempty"`
+	// AppearedAtSourceTime - The source time at which the alert was raised
+	AppearedAtSourceTime *date.Time `json:"appearedAtSourceTime,omitempty"`
+	// ClearedAtTime - The UTC time at which the alert was cleared
+	ClearedAtTime *date.Time `json:"clearedAtTime,omitempty"`
+	// ClearedAtSourceTime - The source time at which the alert was cleared
+	ClearedAtSourceTime *date.Time `json:"clearedAtSourceTime,omitempty"`
+	// Source - The source at which the alert was raised
+	Source *AlertSource `json:"source,omitempty"`
+	// Recommendation - The recommended action for the issue raised in the alert
+	Recommendation *string `json:"recommendation,omitempty"`
+	// ResolutionReason - The reason for resolving the alert
+	ResolutionReason *string `json:"resolutionReason,omitempty"`
+	// Severity - The severity of the alert. Possible values include: 'Informational', 'Warning', 'Critical'
+	Severity AlertSeverity `json:"severity,omitempty"`
+	// Status - The current status of the alert. Possible values include: 'Active', 'Cleared'
+	Status AlertStatus `json:"status,omitempty"`
+	// ErrorDetails - The details of the error for which the alert was raised
+	ErrorDetails *AlertErrorDetails `json:"errorDetails,omitempty"`
+	// DetailedInformation - More details about the alert
+	DetailedInformation *map[string]*string `json:"detailedInformation,omitempty"`
 }
 
-// AlertSettings is the alert settings.
+// AlertSettings the alert settings.
 type AlertSettings struct {
-	autorest.Response            `json:"-"`
-	ID                           *string `json:"id,omitempty"`
-	Name                         *string `json:"name,omitempty"`
-	Type                         *string `json:"type,omitempty"`
-	Kind                         Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// AlertNotificationProperties - The properties of the alert notification settings.
 	*AlertNotificationProperties `json:"properties,omitempty"`
 }
 
-// AlertSource is the source details at which the alert was raised
+// UnmarshalJSON is the custom unmarshaler for AlertSettings struct.
+func (as *AlertSettings) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AlertNotificationProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		as.AlertNotificationProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		as.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		as.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		as.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		as.Kind = kind
+	}
+
+	return nil
+}
+
+// AlertSource the source details at which the alert was raised
 type AlertSource struct {
-	Name            *string         `json:"name,omitempty"`
-	TimeZone        *string         `json:"timeZone,omitempty"`
+	// Name - The name of the source
+	Name *string `json:"name,omitempty"`
+	// TimeZone - The time zone of the source
+	TimeZone *string `json:"timeZone,omitempty"`
+	// AlertSourceType - The source type of the alert. Possible values include: 'AlertSourceTypeResource', 'AlertSourceTypeDevice'
 	AlertSourceType AlertSourceType `json:"alertSourceType,omitempty"`
 }
 
-// AsymmetricEncryptedSecret is represent the secrets intended for encryption with asymmetric key pair.
+// AsymmetricEncryptedSecret represent the secrets intended for encryption with asymmetric key pair.
 type AsymmetricEncryptedSecret struct {
-	Value                    *string             `json:"value,omitempty"`
-	EncryptionCertThumbprint *string             `json:"encryptionCertThumbprint,omitempty"`
-	EncryptionAlgorithm      EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
+	// Value - The value of the secret.
+	Value *string `json:"value,omitempty"`
+	// EncryptionCertThumbprint - Thumbprint certificate that was used to encrypt "Value". If the value in unencrypted, it will be null.
+	EncryptionCertThumbprint *string `json:"encryptionCertThumbprint,omitempty"`
+	// EncryptionAlgorithm - The algorithm used to encrypt "Value". Possible values include: 'EncryptionAlgorithmNone', 'EncryptionAlgorithmAES256', 'EncryptionAlgorithmRSAESPKCS1V15'
+	EncryptionAlgorithm EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
 }
 
-// AvailableProviderOperation is represents available provider operation.
+// AvailableProviderOperation represents available provider operation.
 type AvailableProviderOperation struct {
-	Name       *string                            `json:"name,omitempty"`
-	Display    *AvailableProviderOperationDisplay `json:"display,omitempty"`
-	Origin     *string                            `json:"origin,omitempty"`
-	Properties *map[string]interface{}            `json:"properties,omitempty"`
+	// Name - The name of the operation being performed on a particular object. Name format: "{resourceProviderNamespace}/{resourceType}/{read|write|delete|action}". Eg. Microsoft.StorSimple/managers/devices/volumeContainers/read, Microsoft.StorSimple/managers/devices/alerts/clearAlerts/action
+	Name *string `json:"name,omitempty"`
+	// Display - Contains the localized display information for this particular operation/action.
+	Display *AvailableProviderOperationDisplay `json:"display,omitempty"`
+	// Origin - The intended executor of the operation; governs the display of the operation in the RBAC UX and the audit logs UX. Default value is "user,system"
+	Origin *string `json:"origin,omitempty"`
+	// Properties - Reserved for future use.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
 }
 
-// AvailableProviderOperationDisplay is contains the localized display information for this particular
-// operation/action. These value will be used by several clients for (a) custom role definitions for RBAC, (b) complex
-// query filters for the event service and (c) audit history/records for management operations.
+// AvailableProviderOperationDisplay contains the localized display information for this particular operation/action.
+// These value will be used by several clients for (a) custom role definitions for RBAC, (b) complex query filters for
+// the event service and (c) audit history/records for management operations.
 type AvailableProviderOperationDisplay struct {
-	Provider    *string `json:"provider,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
+	// Provider - The localized friendly form of the resource provider name - it is expected to also include the publisher/company responsible. It should use Title Casing and begin with 'Microsoft' for 1st party services.
+	Provider *string `json:"provider,omitempty"`
+	// Resource - The localized friendly form of the resource type related to this action/operation - it should match the public documentation for the resource provider. It should use Title Casing - for examples, please refer to the 'name' section.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - The localized friendly name for the operation, as it should be shown to the user. It should be concise (to fit in drop downs) but clear (i.e. self-documenting). It should use Title Casing and include the entity/resource to which it applies.
+	Operation *string `json:"operation,omitempty"`
+	// Description - The localized friendly description for the operation, as it should be shown to the user. It should be thorough, yet concise - it will be used in tool tips and detailed views.
 	Description *string `json:"description,omitempty"`
 }
 
-// AvailableProviderOperationList is list of available provider operations.
+// AvailableProviderOperationList list of available provider operations.
 type AvailableProviderOperationList struct {
 	autorest.Response `json:"-"`
-	Value             *[]AvailableProviderOperation `json:"value,omitempty"`
-	NextLink          *string                       `json:"nextLink,omitempty"`
+	// Value - The value.
+	Value *[]AvailableProviderOperation `json:"value,omitempty"`
+	// NextLink - The NextLink.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AvailableProviderOperationListPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AvailableProviderOperationList) AvailableProviderOperationListPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AvailableProviderOperationListIterator provides access to a complete listing of AvailableProviderOperation values.
+type AvailableProviderOperationListIterator struct {
+	i    int
+	page AvailableProviderOperationListPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AvailableProviderOperationListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AvailableProviderOperationListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AvailableProviderOperationListIterator) Response() AvailableProviderOperationList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AvailableProviderOperationListIterator) Value() AvailableProviderOperation {
+	if !iter.page.NotDone() {
+		return AvailableProviderOperation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (apol AvailableProviderOperationList) IsEmpty() bool {
+	return apol.Value == nil || len(*apol.Value) == 0
+}
+
+// availableProviderOperationListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (apol AvailableProviderOperationList) availableProviderOperationListPreparer() (*http.Request, error) {
+	if apol.NextLink == nil || len(to.String(apol.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(apol.NextLink)))
 }
 
-// Backup is the backup.
+// AvailableProviderOperationListPage contains a page of AvailableProviderOperation values.
+type AvailableProviderOperationListPage struct {
+	fn   func(AvailableProviderOperationList) (AvailableProviderOperationList, error)
+	apol AvailableProviderOperationList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AvailableProviderOperationListPage) Next() error {
+	next, err := page.fn(page.apol)
+	if err != nil {
+		return err
+	}
+	page.apol = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AvailableProviderOperationListPage) NotDone() bool {
+	return !page.apol.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AvailableProviderOperationListPage) Response() AvailableProviderOperationList {
+	return page.apol
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AvailableProviderOperationListPage) Values() []AvailableProviderOperation {
+	if page.apol.IsEmpty() {
+		return nil
+	}
+	return *page.apol.Value
+}
+
+// Backup the backup.
 type Backup struct {
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	Kind              Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// BackupProperties - The properties of the backup.
 	*BackupProperties `json:"properties,omitempty"`
 }
 
-// BackupElement is the backup element.
+// UnmarshalJSON is the custom unmarshaler for Backup struct.
+func (b *Backup) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackupProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		b.BackupProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		b.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		b.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		b.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		b.Kind = kind
+	}
+
+	return nil
+}
+
+// BackupElement the backup element.
 type BackupElement struct {
-	ElementID         *string    `json:"elementId,omitempty"`
-	ElementName       *string    `json:"elementName,omitempty"`
-	ElementType       *string    `json:"elementType,omitempty"`
-	SizeInBytes       *int64     `json:"sizeInBytes,omitempty"`
-	VolumeName        *string    `json:"volumeName,omitempty"`
-	VolumeContainerID *string    `json:"volumeContainerId,omitempty"`
-	VolumeType        VolumeType `json:"volumeType,omitempty"`
+	// ElementID - The path ID that uniquely identifies the backup element.
+	ElementID *string `json:"elementId,omitempty"`
+	// ElementName - The name of the backup element.
+	ElementName *string `json:"elementName,omitempty"`
+	// ElementType - The hierarchical type of the backup element.
+	ElementType *string `json:"elementType,omitempty"`
+	// SizeInBytes - The size in bytes.
+	SizeInBytes *int64 `json:"sizeInBytes,omitempty"`
+	// VolumeName - The name of the volume.
+	VolumeName *string `json:"volumeName,omitempty"`
+	// VolumeContainerID - The path ID of the volume container.
+	VolumeContainerID *string `json:"volumeContainerId,omitempty"`
+	// VolumeType - The volume type. Possible values include: 'Tiered', 'Archival', 'LocallyPinned'
+	VolumeType VolumeType `json:"volumeType,omitempty"`
 }
 
-// BackupFilter is the OData filters to be used for backups.
+// BackupFilter the OData filters to be used for backups.
 type BackupFilter struct {
-	BackupPolicyID *string    `json:"backupPolicyId,omitempty"`
-	VolumeID       *string    `json:"volumeId,omitempty"`
-	CreatedTime    *date.Time `json:"createdTime,omitempty"`
+	// BackupPolicyID - Specifies the backupPolicyId of the backups to be filtered. Only 'Equality' operator is supported for this property.
+	BackupPolicyID *string `json:"backupPolicyId,omitempty"`
+	// VolumeID - Specifies the volumeId of the backups to be filtered. Only 'Equality' operator is supported for this property.
+	VolumeID *string `json:"volumeId,omitempty"`
+	// CreatedTime - Specifies the creation time of the backups to be filtered. Only 'Greater Than or Equal To' and 'Lesser Than or Equal To' operators are supported for this property.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
 }
 
-// BackupList is the collection of backups.
+// BackupList the collection of backups.
 type BackupList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Backup `json:"value,omitempty"`
-	NextLink          *string   `json:"nextLink,omitempty"`
+	// Value - The value.
+	Value *[]Backup `json:"value,omitempty"`
+	// NextLink - The NextLink.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// BackupListPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client BackupList) BackupListPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// BackupListIterator provides access to a complete listing of Backup values.
+type BackupListIterator struct {
+	i    int
+	page BackupListPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *BackupListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter BackupListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter BackupListIterator) Response() BackupList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter BackupListIterator) Value() Backup {
+	if !iter.page.NotDone() {
+		return Backup{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (bl BackupList) IsEmpty() bool {
+	return bl.Value == nil || len(*bl.Value) == 0
+}
+
+// backupListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (bl BackupList) backupListPreparer() (*http.Request, error) {
+	if bl.NextLink == nil || len(to.String(bl.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(bl.NextLink)))
 }
 
-// BackupPolicy is the backup policy.
+// BackupListPage contains a page of Backup values.
+type BackupListPage struct {
+	fn func(BackupList) (BackupList, error)
+	bl BackupList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *BackupListPage) Next() error {
+	next, err := page.fn(page.bl)
+	if err != nil {
+		return err
+	}
+	page.bl = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page BackupListPage) NotDone() bool {
+	return !page.bl.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page BackupListPage) Response() BackupList {
+	return page.bl
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page BackupListPage) Values() []Backup {
+	if page.bl.IsEmpty() {
+		return nil
+	}
+	return *page.bl.Value
+}
+
+// BackupPoliciesBackupNowFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupPoliciesBackupNowFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupPoliciesBackupNowFuture) Result(client BackupPoliciesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupPoliciesBackupNowFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.BackupNowResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.BackupNowResponder(resp)
+	return
+}
+
+// BackupPoliciesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type BackupPoliciesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupPoliciesCreateOrUpdateFuture) Result(client BackupPoliciesClient) (bp BackupPolicy, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return bp, autorest.NewError("storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		bp, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	bp, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// BackupPoliciesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupPoliciesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupPoliciesDeleteFuture) Result(client BackupPoliciesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupPoliciesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// BackupPolicy the backup policy.
 type BackupPolicy struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
-	Kind                    Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// BackupPolicyProperties - The properties of the backup policy.
 	*BackupPolicyProperties `json:"properties,omitempty"`
 }
 
-// BackupPolicyList is the collection of backup policies.
+// UnmarshalJSON is the custom unmarshaler for BackupPolicy struct.
+func (bp *BackupPolicy) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackupPolicyProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		bp.BackupPolicyProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		bp.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		bp.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		bp.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		bp.Kind = kind
+	}
+
+	return nil
+}
+
+// BackupPolicyList the collection of backup policies.
 type BackupPolicyList struct {
 	autorest.Response `json:"-"`
-	Value             *[]BackupPolicy `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]BackupPolicy `json:"value,omitempty"`
 }
 
-// BackupPolicyProperties is the properties of the backup policy.
+// BackupPolicyProperties the properties of the backup policy.
 type BackupPolicyProperties struct {
-	VolumeIds                *[]string                `json:"volumeIds,omitempty"`
-	NextBackupTime           *date.Time               `json:"nextBackupTime,omitempty"`
-	LastBackupTime           *date.Time               `json:"lastBackupTime,omitempty"`
-	SchedulesCount           *int64                   `json:"schedulesCount,omitempty"`
-	ScheduledBackupStatus    ScheduledBackupStatus    `json:"scheduledBackupStatus,omitempty"`
+	// VolumeIds - The path IDs of the volumes which are part of the backup policy.
+	VolumeIds *[]string `json:"volumeIds,omitempty"`
+	// NextBackupTime - The time of the next backup for the backup policy.
+	NextBackupTime *date.Time `json:"nextBackupTime,omitempty"`
+	// LastBackupTime - The time of the last backup for the backup policy.
+	LastBackupTime *date.Time `json:"lastBackupTime,omitempty"`
+	// SchedulesCount - The count of schedules the backup policy contains.
+	SchedulesCount *int64 `json:"schedulesCount,omitempty"`
+	// ScheduledBackupStatus - Indicates whether atleast one of the schedules in the backup policy is active or not. Possible values include: 'ScheduledBackupStatusDisabled', 'ScheduledBackupStatusEnabled'
+	ScheduledBackupStatus ScheduledBackupStatus `json:"scheduledBackupStatus,omitempty"`
+	// BackupPolicyCreationType - The backup policy creation type. Indicates whether this was created through SaaS or through StorSimple Snapshot Manager. Possible values include: 'BackupPolicyCreationTypeBySaaS', 'BackupPolicyCreationTypeBySSM'
 	BackupPolicyCreationType BackupPolicyCreationType `json:"backupPolicyCreationType,omitempty"`
-	SsmHostName              *string                  `json:"ssmHostName,omitempty"`
+	// SsmHostName - If the backup policy was created by StorSimple Snapshot Manager, then this field indicates the hostname of the StorSimple Snapshot Manager.
+	SsmHostName *string `json:"ssmHostName,omitempty"`
 }
 
-// BackupProperties is the properties of the backup.
+// BackupProperties the properties of the backup.
 type BackupProperties struct {
-	CreatedOn             *date.Time            `json:"createdOn,omitempty"`
-	SizeInBytes           *int64                `json:"sizeInBytes,omitempty"`
-	BackupType            BackupType            `json:"backupType,omitempty"`
+	// CreatedOn - The time when the backup was created.
+	CreatedOn *date.Time `json:"createdOn,omitempty"`
+	// SizeInBytes - The backup size in bytes.
+	SizeInBytes *int64 `json:"sizeInBytes,omitempty"`
+	// BackupType - The type of the backup. Possible values include: 'LocalSnapshot', 'CloudSnapshot'
+	BackupType BackupType `json:"backupType,omitempty"`
+	// BackupJobCreationType - The backup job creation type. Possible values include: 'Adhoc', 'BySchedule', 'BySSM'
 	BackupJobCreationType BackupJobCreationType `json:"backupJobCreationType,omitempty"`
-	BackupPolicyID        *string               `json:"backupPolicyId,omitempty"`
-	SsmHostName           *string               `json:"ssmHostName,omitempty"`
-	Elements              *[]BackupElement      `json:"elements,omitempty"`
+	// BackupPolicyID - The path ID of the backup policy.
+	BackupPolicyID *string `json:"backupPolicyId,omitempty"`
+	// SsmHostName - The StorSimple Snapshot Manager host name.
+	SsmHostName *string `json:"ssmHostName,omitempty"`
+	// Elements - The backup elements.
+	Elements *[]BackupElement `json:"elements,omitempty"`
 }
 
-// BackupSchedule is the backup schedule.
+// BackupSchedule the backup schedule.
 type BackupSchedule struct {
-	autorest.Response         `json:"-"`
-	ID                        *string `json:"id,omitempty"`
-	Name                      *string `json:"name,omitempty"`
-	Type                      *string `json:"type,omitempty"`
-	Kind                      Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// BackupScheduleProperties - The properties of the backup schedule.
 	*BackupScheduleProperties `json:"properties,omitempty"`
 }
 
-// BackupScheduleList is the backup schedule list.
+// UnmarshalJSON is the custom unmarshaler for BackupSchedule struct.
+func (bs *BackupSchedule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BackupScheduleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		bs.BackupScheduleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		bs.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		bs.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		bs.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		bs.Kind = kind
+	}
+
+	return nil
+}
+
+// BackupScheduleList the backup schedule list.
 type BackupScheduleList struct {
 	autorest.Response `json:"-"`
-	Value             *[]BackupSchedule `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]BackupSchedule `json:"value,omitempty"`
 }
 
-// BackupScheduleProperties is the properties of the backup schedule.
+// BackupScheduleProperties the properties of the backup schedule.
 type BackupScheduleProperties struct {
+	// ScheduleRecurrence - The schedule recurrence.
 	ScheduleRecurrence *ScheduleRecurrence `json:"scheduleRecurrence,omitempty"`
-	BackupType         BackupType          `json:"backupType,omitempty"`
-	RetentionCount     *int64              `json:"retentionCount,omitempty"`
-	StartTime          *date.Time          `json:"startTime,omitempty"`
-	ScheduleStatus     ScheduleStatus      `json:"scheduleStatus,omitempty"`
-	LastSuccessfulRun  *date.Time          `json:"lastSuccessfulRun,omitempty"`
+	// BackupType - The type of backup which needs to be taken. Possible values include: 'LocalSnapshot', 'CloudSnapshot'
+	BackupType BackupType `json:"backupType,omitempty"`
+	// RetentionCount - The number of backups to be retained.
+	RetentionCount *int64 `json:"retentionCount,omitempty"`
+	// StartTime - The start time of the schedule.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// ScheduleStatus - The schedule status. Possible values include: 'ScheduleStatusEnabled', 'ScheduleStatusDisabled'
+	ScheduleStatus ScheduleStatus `json:"scheduleStatus,omitempty"`
+	// LastSuccessfulRun - The last successful backup run which was triggered for the schedule.
+	LastSuccessfulRun *date.Time `json:"lastSuccessfulRun,omitempty"`
 }
 
-// BandwidthRateSettingProperties is the properties of the bandwidth setting.
+// BackupSchedulesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type BackupSchedulesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupSchedulesCreateOrUpdateFuture) Result(client BackupSchedulesClient) (bs BackupSchedule, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return bs, autorest.NewError("storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		bs, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	bs, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// BackupSchedulesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupSchedulesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupSchedulesDeleteFuture) Result(client BackupSchedulesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupSchedulesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// BackupsCloneFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupsCloneFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupsCloneFuture) Result(client BackupsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupsCloneFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.CloneResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.CloneResponder(resp)
+	return
+}
+
+// BackupsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupsDeleteFuture) Result(client BackupsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// BackupsRestoreFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BackupsRestoreFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BackupsRestoreFuture) Result(client BackupsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BackupsRestoreFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.RestoreResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.RestoreResponder(resp)
+	return
+}
+
+// BandwidthRateSettingProperties the properties of the bandwidth setting.
 type BandwidthRateSettingProperties struct {
-	Schedules   *[]BandwidthSchedule `json:"schedules,omitempty"`
-	VolumeCount *int32               `json:"volumeCount,omitempty"`
+	// Schedules - The schedules.
+	Schedules *[]BandwidthSchedule `json:"schedules,omitempty"`
+	// VolumeCount - The number of volumes that uses the bandwidth setting.
+	VolumeCount *int32 `json:"volumeCount,omitempty"`
 }
 
-// BandwidthSchedule is the schedule for bandwidth setting.
+// BandwidthSchedule the schedule for bandwidth setting.
 type BandwidthSchedule struct {
-	Start      *Time        `json:"start,omitempty"`
-	Stop       *Time        `json:"stop,omitempty"`
-	RateInMbps *int32       `json:"rateInMbps,omitempty"`
-	Days       *[]DayOfWeek `json:"days,omitempty"`
+	// Start - The start time of the schdule.
+	Start *Time `json:"start,omitempty"`
+	// Stop - The stop time of the schedule.
+	Stop *Time `json:"stop,omitempty"`
+	// RateInMbps - The rate in Mbps.
+	RateInMbps *int32 `json:"rateInMbps,omitempty"`
+	// Days - The days of the week when this schedule is applicable.
+	Days *[]DayOfWeek `json:"days,omitempty"`
 }
 
-// BandwidthSetting is the bandwidth setting.
+// BandwidthSetting the bandwidth setting.
 type BandwidthSetting struct {
-	autorest.Response               `json:"-"`
-	ID                              *string `json:"id,omitempty"`
-	Name                            *string `json:"name,omitempty"`
-	Type                            *string `json:"type,omitempty"`
-	Kind                            Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// BandwidthRateSettingProperties - The properties of the bandwidth setting.
 	*BandwidthRateSettingProperties `json:"properties,omitempty"`
 }
 
-// BandwidthSettingList is the collection of bandwidth setting entities.
+// UnmarshalJSON is the custom unmarshaler for BandwidthSetting struct.
+func (bs *BandwidthSetting) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties BandwidthRateSettingProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		bs.BandwidthRateSettingProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		bs.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		bs.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		bs.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		bs.Kind = kind
+	}
+
+	return nil
+}
+
+// BandwidthSettingList the collection of bandwidth setting entities.
 type BandwidthSettingList struct {
 	autorest.Response `json:"-"`
-	Value             *[]BandwidthSetting `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]BandwidthSetting `json:"value,omitempty"`
 }
 
-// BaseModel is represents the base class for all other ARM object models
+// BandwidthSettingsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type BandwidthSettingsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BandwidthSettingsCreateOrUpdateFuture) Result(client BandwidthSettingsClient) (bs BandwidthSetting, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return bs, autorest.NewError("storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		bs, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	bs, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// BandwidthSettingsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type BandwidthSettingsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future BandwidthSettingsDeleteFuture) Result(client BandwidthSettingsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.BandwidthSettingsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// BaseModel represents the base class for all other ARM object models
 type BaseModel struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
 	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
 	Type *string `json:"type,omitempty"`
-	Kind Kind    `json:"kind,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
 }
 
-// ChapSettings is the Challenge-Handshake Authentication Protocol (CHAP) settings.
+// ChapSettings the Challenge-Handshake Authentication Protocol (CHAP) settings.
 type ChapSettings struct {
-	InitiatorUser   *string                    `json:"initiatorUser,omitempty"`
+	// InitiatorUser - The CHAP initiator user.
+	InitiatorUser *string `json:"initiatorUser,omitempty"`
+	// InitiatorSecret - The CHAP initiator secret.
 	InitiatorSecret *AsymmetricEncryptedSecret `json:"initiatorSecret,omitempty"`
-	TargetUser      *string                    `json:"targetUser,omitempty"`
-	TargetSecret    *AsymmetricEncryptedSecret `json:"targetSecret,omitempty"`
+	// TargetUser - The CHAP target user.
+	TargetUser *string `json:"targetUser,omitempty"`
+	// TargetSecret - The target secret.
+	TargetSecret *AsymmetricEncryptedSecret `json:"targetSecret,omitempty"`
 }
 
-// ClearAlertRequest is the request for clearing the alert
+// ClearAlertRequest the request for clearing the alert
 type ClearAlertRequest struct {
-	ResolutionMessage *string   `json:"resolutionMessage,omitempty"`
-	Alerts            *[]string `json:"alerts,omitempty"`
+	// ResolutionMessage - The resolution message while clearing the alert
+	ResolutionMessage *string `json:"resolutionMessage,omitempty"`
+	// Alerts - The list of alert IDs to be cleared
+	Alerts *[]string `json:"alerts,omitempty"`
 }
 
-// CloneRequest is the clone job request.
+// CloneRequest the clone job request.
 type CloneRequest struct {
-	TargetDeviceID               *string        `json:"targetDeviceId,omitempty"`
-	TargetVolumeName             *string        `json:"targetVolumeName,omitempty"`
-	TargetAccessControlRecordIds *[]string      `json:"targetAccessControlRecordIds,omitempty"`
-	BackupElement                *BackupElement `json:"backupElement,omitempty"`
+	// TargetDeviceID - The path ID of the device which will act as the clone target.
+	TargetDeviceID *string `json:"targetDeviceId,omitempty"`
+	// TargetVolumeName - The name of the new volume which will be created and the backup will be cloned into.
+	TargetVolumeName *string `json:"targetVolumeName,omitempty"`
+	// TargetAccessControlRecordIds - The list of path IDs of the access control records to be associated to the new cloned volume.
+	TargetAccessControlRecordIds *[]string `json:"targetAccessControlRecordIds,omitempty"`
+	// BackupElement - The backup element that is cloned.
+	BackupElement *BackupElement `json:"backupElement,omitempty"`
 }
 
-// CloudAppliance is the cloud appliance.
+// CloudAppliance the cloud appliance.
 type CloudAppliance struct {
-	Name                    *string `json:"name,omitempty"`
-	VnetName                *string `json:"vnetName,omitempty"`
-	VnetRegion              *string `json:"vnetRegion,omitempty"`
-	IsVnetDNSConfigured     *bool   `json:"isVnetDnsConfigured,omitempty"`
-	IsVnetExpressConfigured *bool   `json:"isVnetExpressConfigured,omitempty"`
-	SubnetName              *string `json:"subnetName,omitempty"`
-	StorageAccountName      *string `json:"storageAccountName,omitempty"`
-	StorageAccountType      *string `json:"storageAccountType,omitempty"`
-	VMType                  *string `json:"vmType,omitempty"`
-	VMImageName             *string `json:"vmImageName,omitempty"`
-	ModelNumber             *string `json:"modelNumber,omitempty"`
+	// Name - The name.
+	Name *string `json:"name,omitempty"`
+	// VnetName - The name of the virtual network.
+	VnetName *string `json:"vnetName,omitempty"`
+	// VnetRegion - The virtual network region.
+	VnetRegion *string `json:"vnetRegion,omitempty"`
+	// IsVnetDNSConfigured - Indicates whether virtual network used is configured with DNS or not.
+	IsVnetDNSConfigured *bool `json:"isVnetDnsConfigured,omitempty"`
+	// IsVnetExpressConfigured - Indicates whether virtual network used is configured with express route or not.
+	IsVnetExpressConfigured *bool `json:"isVnetExpressConfigured,omitempty"`
+	// SubnetName - The name of the subnet.
+	SubnetName *string `json:"subnetName,omitempty"`
+	// StorageAccountName - The name of the storage account.
+	StorageAccountName *string `json:"storageAccountName,omitempty"`
+	// StorageAccountType - The type of the storage account.
+	StorageAccountType *string `json:"storageAccountType,omitempty"`
+	// VMType - The type of the virtual machine.
+	VMType *string `json:"vmType,omitempty"`
+	// VMImageName - The name of the virtual machine image.
+	VMImageName *string `json:"vmImageName,omitempty"`
+	// ModelNumber - The model number.
+	ModelNumber *string `json:"modelNumber,omitempty"`
 }
 
-// CloudApplianceConfiguration is the cloud appliance configuration
+// CloudApplianceConfiguration the cloud appliance configuration
 type CloudApplianceConfiguration struct {
-	ID                                     *string `json:"id,omitempty"`
-	Name                                   *string `json:"name,omitempty"`
-	Type                                   *string `json:"type,omitempty"`
-	Kind                                   Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// CloudApplianceConfigurationProperties - The properties.
 	*CloudApplianceConfigurationProperties `json:"properties,omitempty"`
 }
 
-// CloudApplianceConfigurationList is the cloud appliance configuration list
+// UnmarshalJSON is the custom unmarshaler for CloudApplianceConfiguration struct.
+func (cac *CloudApplianceConfiguration) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CloudApplianceConfigurationProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cac.CloudApplianceConfigurationProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cac.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cac.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cac.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cac.Kind = kind
+	}
+
+	return nil
+}
+
+// CloudApplianceConfigurationList the cloud appliance configuration list
 type CloudApplianceConfigurationList struct {
 	autorest.Response `json:"-"`
-	Value             *[]CloudApplianceConfiguration `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]CloudApplianceConfiguration `json:"value,omitempty"`
 }
 
-// CloudApplianceConfigurationProperties is the properties of cloud appliance configuration.
+// CloudApplianceConfigurationProperties the properties of cloud appliance configuration.
 type CloudApplianceConfigurationProperties struct {
-	ModelNumber                  *string           `json:"modelNumber,omitempty"`
-	CloudPlatform                *string           `json:"cloudPlatform,omitempty"`
-	AcsConfiguration             *AcsConfiguration `json:"acsConfiguration,omitempty"`
-	SupportedStorageAccountTypes *[]string         `json:"supportedStorageAccountTypes,omitempty"`
-	SupportedRegions             *[]string         `json:"supportedRegions,omitempty"`
-	SupportedVMTypes             *[]string         `json:"supportedVmTypes,omitempty"`
-	SupportedVMImages            *[]VMImage        `json:"supportedVmImages,omitempty"`
+	// ModelNumber - The model number.
+	ModelNumber *string `json:"modelNumber,omitempty"`
+	// CloudPlatform - The cloud platform.
+	CloudPlatform *string `json:"cloudPlatform,omitempty"`
+	// AcsConfiguration - The ACS configuration.
+	AcsConfiguration *AcsConfiguration `json:"acsConfiguration,omitempty"`
+	// SupportedStorageAccountTypes - The supported storage account types.
+	SupportedStorageAccountTypes *[]string `json:"supportedStorageAccountTypes,omitempty"`
+	// SupportedRegions - The supported regions.
+	SupportedRegions *[]string `json:"supportedRegions,omitempty"`
+	// SupportedVMTypes - The supported virtual machine types.
+	SupportedVMTypes *[]string `json:"supportedVmTypes,omitempty"`
+	// SupportedVMImages - The supported virtual machine images.
+	SupportedVMImages *[]VMImage `json:"supportedVmImages,omitempty"`
 }
 
-// CloudApplianceSettings is the cloud appliance settings.
+// CloudApplianceSettings the cloud appliance settings.
 type CloudApplianceSettings struct {
+	// ServiceDataEncryptionKey - The service data encryption key (encrypted with DAK).
 	ServiceDataEncryptionKey *AsymmetricEncryptedSecret `json:"serviceDataEncryptionKey,omitempty"`
-	ChannelIntegrityKey      *AsymmetricEncryptedSecret `json:"channelIntegrityKey,omitempty"`
+	// ChannelIntegrityKey - The channel integrity key (encrypted with DAK).
+	ChannelIntegrityKey *AsymmetricEncryptedSecret `json:"channelIntegrityKey,omitempty"`
 }
 
-// ConfigureDeviceRequest is the mandatory device configuration request.
+// CloudAppliancesProvisionFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CloudAppliancesProvisionFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CloudAppliancesProvisionFuture) Result(client CloudAppliancesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.CloudAppliancesProvisionFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ProvisionResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ProvisionResponder(resp)
+	return
+}
+
+// ConfigureDeviceRequest the mandatory device configuration request.
 type ConfigureDeviceRequest struct {
-	ID                                *string `json:"id,omitempty"`
-	Name                              *string `json:"name,omitempty"`
-	Type                              *string `json:"type,omitempty"`
-	Kind                              Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// ConfigureDeviceRequestProperties - The properties of the configure device request.
 	*ConfigureDeviceRequestProperties `json:"properties,omitempty"`
 }
 
-// ConfigureDeviceRequestProperties is the properties of the configure device request.
+// UnmarshalJSON is the custom unmarshaler for ConfigureDeviceRequest struct.
+func (cdr *ConfigureDeviceRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConfigureDeviceRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cdr.ConfigureDeviceRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cdr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cdr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cdr.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cdr.Kind = kind
+	}
+
+	return nil
+}
+
+// ConfigureDeviceRequestProperties the properties of the configure device request.
 type ConfigureDeviceRequestProperties struct {
-	FriendlyName                  *string                        `json:"friendlyName,omitempty"`
-	CurrentDeviceName             *string                        `json:"currentDeviceName,omitempty"`
-	TimeZone                      *string                        `json:"timeZone,omitempty"`
-	DNSSettings                   *SecondaryDNSSettings          `json:"dnsSettings,omitempty"`
+	// FriendlyName - The friendly name for the device.
+	FriendlyName *string `json:"friendlyName,omitempty"`
+	// CurrentDeviceName - The current name of the device.
+	CurrentDeviceName *string `json:"currentDeviceName,omitempty"`
+	// TimeZone - The device time zone. For eg: "Pacific Standard Time"
+	TimeZone *string `json:"timeZone,omitempty"`
+	// DNSSettings - The secondary DNS Settings of the device.
+	DNSSettings *SecondaryDNSSettings `json:"dnsSettings,omitempty"`
+	// NetworkInterfaceData0Settings - The 'Data 0' network interface card settings.
 	NetworkInterfaceData0Settings *NetworkInterfaceData0Settings `json:"networkInterfaceData0Settings,omitempty"`
 }
 
-// ControllerPowerStateChangeRequest is the controller power state change request.
+// ControllerPowerStateChangeRequest the controller power state change request.
 type ControllerPowerStateChangeRequest struct {
-	ID                                           *string `json:"id,omitempty"`
-	Name                                         *string `json:"name,omitempty"`
-	Type                                         *string `json:"type,omitempty"`
-	Kind                                         Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// ControllerPowerStateChangeRequestProperties - The properties of the controller power state change request.
 	*ControllerPowerStateChangeRequestProperties `json:"properties,omitempty"`
 }
 
-// ControllerPowerStateChangeRequestProperties is the properties of the controller power state change request.
+// UnmarshalJSON is the custom unmarshaler for ControllerPowerStateChangeRequest struct.
+func (cpscr *ControllerPowerStateChangeRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ControllerPowerStateChangeRequestProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cpscr.ControllerPowerStateChangeRequestProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cpscr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cpscr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cpscr.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cpscr.Kind = kind
+	}
+
+	return nil
+}
+
+// ControllerPowerStateChangeRequestProperties the properties of the controller power state change request.
 type ControllerPowerStateChangeRequestProperties struct {
-	Action           ControllerPowerStateAction `json:"action,omitempty"`
-	ActiveController ControllerID               `json:"activeController,omitempty"`
-	Controller0State ControllerStatus           `json:"controller0State,omitempty"`
-	Controller1State ControllerStatus           `json:"controller1State,omitempty"`
+	// Action - The power state that the request is expecting for the controller of the device. Possible values include: 'Start', 'Restart', 'Shutdown'
+	Action ControllerPowerStateAction `json:"action,omitempty"`
+	// ActiveController - The active controller that the request is expecting on the device. Possible values include: 'ControllerIDUnknown', 'ControllerIDNone', 'ControllerIDController0', 'ControllerIDController1'
+	ActiveController ControllerID `json:"activeController,omitempty"`
+	// Controller0State - The controller 0's status that the request is expecting on the device. Possible values include: 'ControllerStatusNotPresent', 'ControllerStatusPoweredOff', 'ControllerStatusOk', 'ControllerStatusRecovering', 'ControllerStatusWarning', 'ControllerStatusFailure'
+	Controller0State ControllerStatus `json:"controller0State,omitempty"`
+	// Controller1State - The controller 1's status that the request is expecting on the device. Possible values include: 'ControllerStatusNotPresent', 'ControllerStatusPoweredOff', 'ControllerStatusOk', 'ControllerStatusRecovering', 'ControllerStatusWarning', 'ControllerStatusFailure'
+	Controller1State ControllerStatus `json:"controller1State,omitempty"`
 }
 
-// DataStatistics is the additional details related to the data related statistics of a job. Currently applicable only
-// for Backup, Clone and Restore jobs.
+// DataStatistics the additional details related to the data related statistics of a job. Currently applicable only for
+// Backup, Clone and Restore jobs.
 type DataStatistics struct {
-	TotalData     *int64 `json:"totalData,omitempty"`
+	// TotalData - The total bytes of data to be processed, as part of the job.
+	TotalData *int64 `json:"totalData,omitempty"`
+	// ProcessedData - The number of bytes of data processed till now, as part of the job.
 	ProcessedData *int64 `json:"processedData,omitempty"`
-	CloudData     *int64 `json:"cloudData,omitempty"`
-	Throughput    *int64 `json:"throughput,omitempty"`
+	// CloudData - The number of bytes of data written to cloud, as part of the job.
+	CloudData *int64 `json:"cloudData,omitempty"`
+	// Throughput - The average throughput of data processed(bytes/sec), as part of the job.
+	Throughput *int64 `json:"throughput,omitempty"`
 }
 
-// Device is the StorSimple device.
+// Device the StorSimple device.
 type Device struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	Kind              Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// DeviceProperties - The properties of the StorSimple device.
 	*DeviceProperties `json:"properties,omitempty"`
 }
 
-// DeviceDetails is the additional device details regarding the end point count and volume container count.
+// UnmarshalJSON is the custom unmarshaler for Device struct.
+func (d *Device) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DeviceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		d.DeviceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		d.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		d.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		d.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		d.Kind = kind
+	}
+
+	return nil
+}
+
+// DeviceDetails the additional device details regarding the end point count and volume container count.
 type DeviceDetails struct {
-	EndpointCount        *int32 `json:"endpointCount,omitempty"`
+	// EndpointCount - The total number of endpoints that are currently on the device ( i.e. number of volumes).
+	EndpointCount *int32 `json:"endpointCount,omitempty"`
+	// VolumeContainerCount - The total number of volume containers on the device.
 	VolumeContainerCount *int32 `json:"volumeContainerCount,omitempty"`
 }
 
-// DeviceList is the collection of devices.
+// DeviceList the collection of devices.
 type DeviceList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Device `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]Device `json:"value,omitempty"`
 }
 
-// DevicePatch is the device patch.
+// DevicePatch the device patch.
 type DevicePatch struct {
+	// DevicePatchProperties - The properties of the device patch.
 	*DevicePatchProperties `json:"properties,omitempty"`
 }
 
-// DevicePatchProperties is the properties of the device patch.
+// UnmarshalJSON is the custom unmarshaler for DevicePatch struct.
+func (dp *DevicePatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DevicePatchProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dp.DevicePatchProperties = &properties
+	}
+
+	return nil
+}
+
+// DevicePatchProperties the properties of the device patch.
 type DevicePatchProperties struct {
+	// DeviceDescription - Short description given for the device
 	DeviceDescription *string `json:"deviceDescription,omitempty"`
 }
 
-// DeviceProperties is the properties of the StorSimple device.
+// DeviceProperties the properties of the StorSimple device.
 type DeviceProperties struct {
-	FriendlyName                    *string                   `json:"friendlyName,omitempty"`
-	ActivationTime                  *date.Time                `json:"activationTime,omitempty"`
-	Culture                         *string                   `json:"culture,omitempty"`
-	DeviceDescription               *string                   `json:"deviceDescription,omitempty"`
-	DeviceSoftwareVersion           *string                   `json:"deviceSoftwareVersion,omitempty"`
-	FriendlySoftwareName            *string                   `json:"friendlySoftwareName,omitempty"`
-	DeviceConfigurationStatus       DeviceConfigurationStatus `json:"deviceConfigurationStatus,omitempty"`
-	TargetIqn                       *string                   `json:"targetIqn,omitempty"`
-	ModelDescription                *string                   `json:"modelDescription,omitempty"`
-	Status                          DeviceStatus              `json:"status,omitempty"`
-	SerialNumber                    *string                   `json:"serialNumber,omitempty"`
-	DeviceType                      DeviceType                `json:"deviceType,omitempty"`
-	ActiveController                ControllerID              `json:"activeController,omitempty"`
-	FriendlySoftwareVersion         *string                   `json:"friendlySoftwareVersion,omitempty"`
-	AvailableLocalStorageInBytes    *int64                    `json:"availableLocalStorageInBytes,omitempty"`
-	AvailableTieredStorageInBytes   *int64                    `json:"availableTieredStorageInBytes,omitempty"`
-	ProvisionedTieredStorageInBytes *int64                    `json:"provisionedTieredStorageInBytes,omitempty"`
-	ProvisionedLocalStorageInBytes  *int64                    `json:"provisionedLocalStorageInBytes,omitempty"`
-	ProvisionedVolumeSizeInBytes    *int64                    `json:"provisionedVolumeSizeInBytes,omitempty"`
-	UsingStorageInBytes             *int64                    `json:"usingStorageInBytes,omitempty"`
-	TotalTieredStorageInBytes       *int64                    `json:"totalTieredStorageInBytes,omitempty"`
-	AgentGroupVersion               *int32                    `json:"agentGroupVersion,omitempty"`
-	NetworkInterfaceCardCount       *int32                    `json:"networkInterfaceCardCount,omitempty"`
-	DeviceLocation                  *string                   `json:"deviceLocation,omitempty"`
-	VirtualMachineAPIType           VirtualMachineAPIType     `json:"virtualMachineApiType,omitempty"`
-	Details                         *DeviceDetails            `json:"details,omitempty"`
-	RolloverDetails                 *DeviceRolloverDetails    `json:"rolloverDetails,omitempty"`
+	// FriendlyName - The friendly name of the device.
+	FriendlyName *string `json:"friendlyName,omitempty"`
+	// ActivationTime - The UTC time at which the device was activated
+	ActivationTime *date.Time `json:"activationTime,omitempty"`
+	// Culture - The language culture setting on the device. For eg: "en-US"
+	Culture *string `json:"culture,omitempty"`
+	// DeviceDescription - The device description.
+	DeviceDescription *string `json:"deviceDescription,omitempty"`
+	// DeviceSoftwareVersion - The version number of the software running on the device.
+	DeviceSoftwareVersion *string `json:"deviceSoftwareVersion,omitempty"`
+	// FriendlySoftwareName - The friendly name of the software running on the device.
+	FriendlySoftwareName *string `json:"friendlySoftwareName,omitempty"`
+	// DeviceConfigurationStatus - The current configuration status of the device. Possible values include: 'Complete', 'Pending'
+	DeviceConfigurationStatus DeviceConfigurationStatus `json:"deviceConfigurationStatus,omitempty"`
+	// TargetIqn - The target IQN.
+	TargetIqn *string `json:"targetIqn,omitempty"`
+	// ModelDescription - The device model.
+	ModelDescription *string `json:"modelDescription,omitempty"`
+	// Status - The current status of the device. Possible values include: 'Unknown', 'Online', 'Offline', 'Deactivated', 'RequiresAttention', 'MaintenanceMode', 'Creating', 'Provisioning', 'Deactivating', 'Deleted', 'ReadyToSetup'
+	Status DeviceStatus `json:"status,omitempty"`
+	// SerialNumber - The serial number.
+	SerialNumber *string `json:"serialNumber,omitempty"`
+	// DeviceType - The type of the device. Possible values include: 'DeviceTypeInvalid', 'DeviceTypeSeries8000VirtualAppliance', 'DeviceTypeSeries8000PhysicalAppliance'
+	DeviceType DeviceType `json:"deviceType,omitempty"`
+	// ActiveController - The identifier of the active controller of the device. Possible values include: 'ControllerIDUnknown', 'ControllerIDNone', 'ControllerIDController0', 'ControllerIDController1'
+	ActiveController ControllerID `json:"activeController,omitempty"`
+	// FriendlySoftwareVersion - The device friendly software version.
+	FriendlySoftwareVersion *string `json:"friendlySoftwareVersion,omitempty"`
+	// AvailableLocalStorageInBytes - The storage in bytes that is available locally on the device.
+	AvailableLocalStorageInBytes *int64 `json:"availableLocalStorageInBytes,omitempty"`
+	// AvailableTieredStorageInBytes - The storage in bytes that is available on the device for tiered volumes.
+	AvailableTieredStorageInBytes *int64 `json:"availableTieredStorageInBytes,omitempty"`
+	// ProvisionedTieredStorageInBytes - The storage in bytes that has been provisioned on the device for tiered volumes.
+	ProvisionedTieredStorageInBytes *int64 `json:"provisionedTieredStorageInBytes,omitempty"`
+	// ProvisionedLocalStorageInBytes - The storage in bytes used for locally pinned volumes on the device (including additional local reservation).
+	ProvisionedLocalStorageInBytes *int64 `json:"provisionedLocalStorageInBytes,omitempty"`
+	// ProvisionedVolumeSizeInBytes - Total capacity in bytes of tiered and locally pinned volumes on the device
+	ProvisionedVolumeSizeInBytes *int64 `json:"provisionedVolumeSizeInBytes,omitempty"`
+	// UsingStorageInBytes - The storage in bytes that is currently being used on the device, including both local and cloud.
+	UsingStorageInBytes *int64 `json:"usingStorageInBytes,omitempty"`
+	// TotalTieredStorageInBytes - The total tiered storage available on the device in bytes.
+	TotalTieredStorageInBytes *int64 `json:"totalTieredStorageInBytes,omitempty"`
+	// AgentGroupVersion - The device agent group version.
+	AgentGroupVersion *int32 `json:"agentGroupVersion,omitempty"`
+	// NetworkInterfaceCardCount - The number of network interface cards
+	NetworkInterfaceCardCount *int32 `json:"networkInterfaceCardCount,omitempty"`
+	// DeviceLocation - The location of the virtual appliance.
+	DeviceLocation *string `json:"deviceLocation,omitempty"`
+	// VirtualMachineAPIType - The virtual machine API type. Possible values include: 'Classic', 'Arm'
+	VirtualMachineAPIType VirtualMachineAPIType `json:"virtualMachineApiType,omitempty"`
+	// Details - The additional device details regarding the end point count and volume container count.
+	Details *DeviceDetails `json:"details,omitempty"`
+	// RolloverDetails - The additional device details for the service data encryption key rollover.
+	RolloverDetails *DeviceRolloverDetails `json:"rolloverDetails,omitempty"`
 }
 
-// DeviceRolloverDetails is the additional device details for the service data encryption key rollover.
+// DeviceRolloverDetails the additional device details for the service data encryption key rollover.
 type DeviceRolloverDetails struct {
+	// AuthorizationEligibility - The eligibility status of device for service data encryption key rollover. Possible values include: 'InEligible', 'Eligible'
 	AuthorizationEligibility AuthorizationEligibility `json:"authorizationEligibility,omitempty"`
-	AuthorizationStatus      AuthorizationStatus      `json:"authorizationStatus,omitempty"`
-	InEligibilityReason      InEligibilityCategory    `json:"inEligibilityReason,omitempty"`
+	// AuthorizationStatus - The authorization status of the device for service data encryption key rollover. Possible values include: 'AuthorizationStatusDisabled', 'AuthorizationStatusEnabled'
+	AuthorizationStatus AuthorizationStatus `json:"authorizationStatus,omitempty"`
+	// InEligibilityReason - The reason for inEligibility of device, in case it's not eligible for service data encryption key rollover. Possible values include: 'DeviceNotOnline', 'NotSupportedAppliance', 'RolloverPending'
+	InEligibilityReason InEligibilityCategory `json:"inEligibilityReason,omitempty"`
 }
 
-// DimensionFilter is the dimension filter.
+// DevicesConfigureFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesConfigureFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesConfigureFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesConfigureFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ConfigureResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ConfigureResponder(resp)
+	return
+}
+
+// DevicesDeactivateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesDeactivateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesDeactivateFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesDeactivateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeactivateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeactivateResponder(resp)
+	return
+}
+
+// DevicesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesDeleteFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// DeviceSettingsCreateOrUpdateAlertSettingsFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type DeviceSettingsCreateOrUpdateAlertSettingsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DeviceSettingsCreateOrUpdateAlertSettingsFuture) Result(client DeviceSettingsClient) (as AlertSettings, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return as, autorest.NewError("storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		as, err = client.CreateOrUpdateAlertSettingsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	as, err = client.CreateOrUpdateAlertSettingsResponder(resp)
+	return
+}
+
+// DeviceSettingsCreateOrUpdateTimeSettingsFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type DeviceSettingsCreateOrUpdateTimeSettingsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DeviceSettingsCreateOrUpdateTimeSettingsFuture) Result(client DeviceSettingsClient) (ts TimeSettings, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ts, autorest.NewError("storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ts, err = client.CreateOrUpdateTimeSettingsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ts, err = client.CreateOrUpdateTimeSettingsResponder(resp)
+	return
+}
+
+// DeviceSettingsSyncRemotemanagementCertificateFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type DeviceSettingsSyncRemotemanagementCertificateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DeviceSettingsSyncRemotemanagementCertificateFuture) Result(client DeviceSettingsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.SyncRemotemanagementCertificateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.SyncRemotemanagementCertificateResponder(resp)
+	return
+}
+
+// DeviceSettingsUpdateNetworkSettingsFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type DeviceSettingsUpdateNetworkSettingsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DeviceSettingsUpdateNetworkSettingsFuture) Result(client DeviceSettingsClient) (ns NetworkSettings, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ns, autorest.NewError("storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ns, err = client.UpdateNetworkSettingsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ns, err = client.UpdateNetworkSettingsResponder(resp)
+	return
+}
+
+// DeviceSettingsUpdateSecuritySettingsFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type DeviceSettingsUpdateSecuritySettingsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DeviceSettingsUpdateSecuritySettingsFuture) Result(client DeviceSettingsClient) (ss SecuritySettings, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ss, autorest.NewError("storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ss, err = client.UpdateSecuritySettingsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ss, err = client.UpdateSecuritySettingsResponder(resp)
+	return
+}
+
+// DevicesFailoverFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesFailoverFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesFailoverFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesFailoverFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.FailoverResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.FailoverResponder(resp)
+	return
+}
+
+// DevicesInstallUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesInstallUpdatesFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesInstallUpdatesFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesInstallUpdatesFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.InstallUpdatesResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.InstallUpdatesResponder(resp)
+	return
+}
+
+// DevicesScanForUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DevicesScanForUpdatesFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DevicesScanForUpdatesFuture) Result(client DevicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.DevicesScanForUpdatesFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ScanForUpdatesResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ScanForUpdatesResponder(resp)
+	return
+}
+
+// DimensionFilter the dimension filter.
 type DimensionFilter struct {
-	Name   *string `json:"name,omitempty"`
+	// Name - Specifies the dimension name. E.g., NetworkInterface. Valid values are the ones specified in the field "dimensions" in the ListMetricDefinitions call. Only 'Equality' operator is supported for this property.
+	Name *string `json:"name,omitempty"`
+	// Values - Specifies the dimension value. E.g., Data0. Valid values are the ones returned in the field "dimensions" in the ListMetricDefinitions call. Only 'Equality' operator is supported for this property.
 	Values *string `json:"values,omitempty"`
 }
 
-// DNSSettings is the DNS(Domain Name Server) settings of a device.
+// DNSSettings the DNS(Domain Name Server) settings of a device.
 type DNSSettings struct {
-	PrimaryDNSServer        *string   `json:"primaryDnsServer,omitempty"`
-	PrimaryIpv6DNSServer    *string   `json:"primaryIpv6DnsServer,omitempty"`
-	SecondaryDNSServers     *[]string `json:"secondaryDnsServers,omitempty"`
+	// PrimaryDNSServer - The primary IPv4 DNS server for the device
+	PrimaryDNSServer *string `json:"primaryDnsServer,omitempty"`
+	// PrimaryIpv6DNSServer - The primary IPv6 DNS server for the device
+	PrimaryIpv6DNSServer *string `json:"primaryIpv6DnsServer,omitempty"`
+	// SecondaryDNSServers - The secondary IPv4 DNS server for the device
+	SecondaryDNSServers *[]string `json:"secondaryDnsServers,omitempty"`
+	// SecondaryIpv6DNSServers - The secondary IPv6 DNS server for the device
 	SecondaryIpv6DNSServers *[]string `json:"secondaryIpv6DnsServers,omitempty"`
 }
 
-// EncryptionSettings is the encryption settings.
+// EncryptionSettings the encryption settings.
 type EncryptionSettings struct {
-	autorest.Response             `json:"-"`
-	ID                            *string `json:"id,omitempty"`
-	Name                          *string `json:"name,omitempty"`
-	Type                          *string `json:"type,omitempty"`
-	Kind                          Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// EncryptionSettingsProperties - The properties of the encryption settings.
 	*EncryptionSettingsProperties `json:"properties,omitempty"`
 }
 
-// EncryptionSettingsProperties is the properties of encryption settings.
+// UnmarshalJSON is the custom unmarshaler for EncryptionSettings struct.
+func (es *EncryptionSettings) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EncryptionSettingsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		es.EncryptionSettingsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		es.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		es.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		es.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		es.Kind = kind
+	}
+
+	return nil
+}
+
+// EncryptionSettingsProperties the properties of encryption settings.
 type EncryptionSettingsProperties struct {
-	EncryptionStatus  EncryptionStatus  `json:"encryptionStatus,omitempty"`
+	// EncryptionStatus - The encryption status to indicates if encryption is enabled or not. Possible values include: 'EncryptionStatusEnabled', 'EncryptionStatusDisabled'
+	EncryptionStatus EncryptionStatus `json:"encryptionStatus,omitempty"`
+	// KeyRolloverStatus - The key rollover status to indicates if key rollover is required or not. If secret's encryption has been upgraded, then it requires key rollover. Possible values include: 'Required', 'NotRequired'
 	KeyRolloverStatus KeyRolloverStatus `json:"keyRolloverStatus,omitempty"`
 }
 
-// FailoverRequest is the request object for triggering a failover of volume containers, from a source device to a
-// target device.
+// FailoverRequest the request object for triggering a failover of volume containers, from a source device to a target
+// device.
 type FailoverRequest struct {
-	TargetDeviceID   *string   `json:"targetDeviceId,omitempty"`
+	// TargetDeviceID - The ARM path ID of the device which will act as the failover target.
+	TargetDeviceID *string `json:"targetDeviceId,omitempty"`
+	// VolumeContainers - The list of path IDs of the volume containers which needs to be failed-over to the target device.
 	VolumeContainers *[]string `json:"volumeContainers,omitempty"`
 }
 
-// FailoverSet is the failover set on a device.
+// FailoverSet the failover set on a device.
 type FailoverSet struct {
-	VolumeContainers  *[]VolumeContainerFailoverMetadata `json:"volumeContainers,omitempty"`
-	EligibilityResult *FailoverSetEligibilityResult      `json:"eligibilityResult,omitempty"`
+	// VolumeContainers - The list of meta data of volume containers, which are part of the failover set.
+	VolumeContainers *[]VolumeContainerFailoverMetadata `json:"volumeContainers,omitempty"`
+	// EligibilityResult - The eligibility result of the failover set, for failover.
+	EligibilityResult *FailoverSetEligibilityResult `json:"eligibilityResult,omitempty"`
 }
 
-// FailoverSetEligibilityResult is the eligibility result of failover set, for failover.
+// FailoverSetEligibilityResult the eligibility result of failover set, for failover.
 type FailoverSetEligibilityResult struct {
-	IsEligibleForFailover *bool   `json:"isEligibleForFailover,omitempty"`
-	ErrorMessage          *string `json:"errorMessage,omitempty"`
+	// IsEligibleForFailover - Represents if this failover set is eligible for failover or not.
+	IsEligibleForFailover *bool `json:"isEligibleForFailover,omitempty"`
+	// ErrorMessage - The error message, if the failover set is not eligible for failover.
+	ErrorMessage *string `json:"errorMessage,omitempty"`
 }
 
-// FailoverSetsList is the list of failover sets.
+// FailoverSetsList the list of failover sets.
 type FailoverSetsList struct {
 	autorest.Response `json:"-"`
-	Value             *[]FailoverSet `json:"value,omitempty"`
+	// Value - The list of failover sets.
+	Value *[]FailoverSet `json:"value,omitempty"`
 }
 
-// FailoverTarget is represents the eligibility of a device as a failover target device.
+// FailoverTarget represents the eligibility of a device as a failover target device.
 type FailoverTarget struct {
-	DeviceID                      *string                  `json:"deviceId,omitempty"`
-	DeviceStatus                  DeviceStatus             `json:"deviceStatus,omitempty"`
-	ModelDescription              *string                  `json:"modelDescription,omitempty"`
-	DeviceSoftwareVersion         *string                  `json:"deviceSoftwareVersion,omitempty"`
-	DataContainersCount           *int32                   `json:"dataContainersCount,omitempty"`
-	VolumesCount                  *int32                   `json:"volumesCount,omitempty"`
-	AvailableLocalStorageInBytes  *int64                   `json:"availableLocalStorageInBytes,omitempty"`
-	AvailableTieredStorageInBytes *int64                   `json:"availableTieredStorageInBytes,omitempty"`
-	DeviceLocation                *string                  `json:"deviceLocation,omitempty"`
-	FriendlyDeviceSoftwareVersion *string                  `json:"friendlyDeviceSoftwareVersion,omitempty"`
-	EligibilityResult             *TargetEligibilityResult `json:"eligibilityResult,omitempty"`
+	// DeviceID - The path ID of the device.
+	DeviceID *string `json:"deviceId,omitempty"`
+	// DeviceStatus - The status of the device. Possible values include: 'Unknown', 'Online', 'Offline', 'Deactivated', 'RequiresAttention', 'MaintenanceMode', 'Creating', 'Provisioning', 'Deactivating', 'Deleted', 'ReadyToSetup'
+	DeviceStatus DeviceStatus `json:"deviceStatus,omitempty"`
+	// ModelDescription - The model number of the device.
+	ModelDescription *string `json:"modelDescription,omitempty"`
+	// DeviceSoftwareVersion - The software version of the device.
+	DeviceSoftwareVersion *string `json:"deviceSoftwareVersion,omitempty"`
+	// DataContainersCount - The count of datacontainers on the device.
+	DataContainersCount *int32 `json:"dataContainersCount,omitempty"`
+	// VolumesCount - The count of volumes on the device.
+	VolumesCount *int32 `json:"volumesCount,omitempty"`
+	// AvailableLocalStorageInBytes - The amount of free local storage available on the device in bytes.
+	AvailableLocalStorageInBytes *int64 `json:"availableLocalStorageInBytes,omitempty"`
+	// AvailableTieredStorageInBytes - The amount of free tiered storage available for the device in bytes.
+	AvailableTieredStorageInBytes *int64 `json:"availableTieredStorageInBytes,omitempty"`
+	// DeviceLocation - The geo location (applicable only for cloud appliances) of the device.
+	DeviceLocation *string `json:"deviceLocation,omitempty"`
+	// FriendlyDeviceSoftwareVersion - The friendly name for the current version of software on the device.
+	FriendlyDeviceSoftwareVersion *string `json:"friendlyDeviceSoftwareVersion,omitempty"`
+	// EligibilityResult - The eligibility result of the device, as a failover target device.
+	EligibilityResult *TargetEligibilityResult `json:"eligibilityResult,omitempty"`
 }
 
-// FailoverTargetsList is the list of all devices in a resource and their eligibility status as a failover target
-// device.
+// FailoverTargetsList the list of all devices in a resource and their eligibility status as a failover target device.
 type FailoverTargetsList struct {
 	autorest.Response `json:"-"`
-	Value             *[]FailoverTarget `json:"value,omitempty"`
+	// Value - The list of all the failover targets.
+	Value *[]FailoverTarget `json:"value,omitempty"`
 }
 
-// Feature is the feature.
+// Feature the feature.
 type Feature struct {
-	Name   *string              `json:"name,omitempty"`
+	// Name - The name of the feature.
+	Name *string `json:"name,omitempty"`
+	// Status - The feature support status. Possible values include: 'NotAvailable', 'UnsupportedDeviceVersion', 'Supported'
 	Status FeatureSupportStatus `json:"status,omitempty"`
 }
 
-// FeatureFilter is the OData filter to be used for features.
+// FeatureFilter the OData filter to be used for features.
 type FeatureFilter struct {
+	// DeviceID - Specifies the device ID for which the features are required. Only 'Equality' operator is supported for this property.
 	DeviceID *string `json:"deviceId,omitempty"`
 }
 
-// FeatureList is the collections of features.
+// FeatureList the collections of features.
 type FeatureList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Feature `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]Feature `json:"value,omitempty"`
 }
 
-// HardwareComponent is the hardware component.
+// HardwareComponent the hardware component.
 type HardwareComponent struct {
-	ComponentID       *string                 `json:"componentId,omitempty"`
-	DisplayName       *string                 `json:"displayName,omitempty"`
-	Status            HardwareComponentStatus `json:"status,omitempty"`
-	StatusDisplayName *string                 `json:"statusDisplayName,omitempty"`
+	// ComponentID - The component ID.
+	ComponentID *string `json:"componentId,omitempty"`
+	// DisplayName - The display name of the hardware component.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Status - The status of the hardware component. Possible values include: 'HardwareComponentStatusUnknown', 'HardwareComponentStatusNotPresent', 'HardwareComponentStatusPoweredOff', 'HardwareComponentStatusOk', 'HardwareComponentStatusRecovering', 'HardwareComponentStatusWarning', 'HardwareComponentStatusFailure'
+	Status HardwareComponentStatus `json:"status,omitempty"`
+	// StatusDisplayName - The display name of the status of hardware component.
+	StatusDisplayName *string `json:"statusDisplayName,omitempty"`
 }
 
-// HardwareComponentGroup is the hardware component group.
+// HardwareComponentGroup the hardware component group.
 type HardwareComponentGroup struct {
-	ID                                *string `json:"id,omitempty"`
-	Name                              *string `json:"name,omitempty"`
-	Type                              *string `json:"type,omitempty"`
-	Kind                              Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// HardwareComponentGroupProperties - The properties of the hardware component group.
 	*HardwareComponentGroupProperties `json:"properties,omitempty"`
 }
 
-// HardwareComponentGroupList is the collection of hardware component groups.
+// UnmarshalJSON is the custom unmarshaler for HardwareComponentGroup struct.
+func (hcg *HardwareComponentGroup) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties HardwareComponentGroupProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		hcg.HardwareComponentGroupProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		hcg.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		hcg.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		hcg.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		hcg.Kind = kind
+	}
+
+	return nil
+}
+
+// HardwareComponentGroupList the collection of hardware component groups.
 type HardwareComponentGroupList struct {
 	autorest.Response `json:"-"`
-	Value             *[]HardwareComponentGroup `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]HardwareComponentGroup `json:"value,omitempty"`
 }
 
-// HardwareComponentGroupProperties is the properties of hardware component group.
+// HardwareComponentGroupProperties the properties of hardware component group.
 type HardwareComponentGroupProperties struct {
-	DisplayName     *string              `json:"displayName,omitempty"`
-	LastUpdatedTime *date.Time           `json:"lastUpdatedTime,omitempty"`
-	Components      *[]HardwareComponent `json:"components,omitempty"`
+	// DisplayName - The display name the hardware component group.
+	DisplayName *string `json:"displayName,omitempty"`
+	// LastUpdatedTime - The last updated time.
+	LastUpdatedTime *date.Time `json:"lastUpdatedTime,omitempty"`
+	// Components - The list of hardware components.
+	Components *[]HardwareComponent `json:"components,omitempty"`
 }
 
-// Job is the job.
+// HardwareComponentGroupsChangeControllerPowerStateFuture an abstraction for monitoring and retrieving the results of
+// a long-running operation.
+type HardwareComponentGroupsChangeControllerPowerStateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HardwareComponentGroupsChangeControllerPowerStateFuture) Result(client HardwareComponentGroupsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ChangeControllerPowerStateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ChangeControllerPowerStateResponder(resp)
+	return
+}
+
+// Job the job.
 type Job struct {
 	autorest.Response `json:"-"`
-	ID                *string          `json:"id,omitempty"`
-	Name              *string          `json:"name,omitempty"`
-	Type              *string          `json:"type,omitempty"`
-	Kind              Kind             `json:"kind,omitempty"`
-	Status            JobStatus        `json:"status,omitempty"`
-	StartTime         *date.Time       `json:"startTime,omitempty"`
-	EndTime           *date.Time       `json:"endTime,omitempty"`
-	PercentComplete   *int32           `json:"percentComplete,omitempty"`
-	Error             *JobErrorDetails `json:"error,omitempty"`
-	*JobProperties    `json:"properties,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// Status - The current status of the job. Possible values include: 'Running', 'Succeeded', 'Failed', 'Canceled'
+	Status JobStatus `json:"status,omitempty"`
+	// StartTime - The UTC time at which the job was started.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The UTC time at which the job completed.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// PercentComplete - The percentage of the job that is already complete.
+	PercentComplete *int32 `json:"percentComplete,omitempty"`
+	// Error - The error details, if any, for the job.
+	Error *JobErrorDetails `json:"error,omitempty"`
+	// JobProperties - The properties of the job.
+	*JobProperties `json:"properties,omitempty"`
 }
 
-// JobErrorDetails is the job error details. Contains list of job error items.
+// UnmarshalJSON is the custom unmarshaler for Job struct.
+func (j *Job) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["status"]
+	if v != nil {
+		var status JobStatus
+		err = json.Unmarshal(*m["status"], &status)
+		if err != nil {
+			return err
+		}
+		j.Status = status
+	}
+
+	v = m["startTime"]
+	if v != nil {
+		var startTime date.Time
+		err = json.Unmarshal(*m["startTime"], &startTime)
+		if err != nil {
+			return err
+		}
+		j.StartTime = &startTime
+	}
+
+	v = m["endTime"]
+	if v != nil {
+		var endTime date.Time
+		err = json.Unmarshal(*m["endTime"], &endTime)
+		if err != nil {
+			return err
+		}
+		j.EndTime = &endTime
+	}
+
+	v = m["percentComplete"]
+	if v != nil {
+		var percentComplete int32
+		err = json.Unmarshal(*m["percentComplete"], &percentComplete)
+		if err != nil {
+			return err
+		}
+		j.PercentComplete = &percentComplete
+	}
+
+	v = m["error"]
+	if v != nil {
+		var errorVar JobErrorDetails
+		err = json.Unmarshal(*m["error"], &errorVar)
+		if err != nil {
+			return err
+		}
+		j.Error = &errorVar
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties JobProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		j.JobProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		j.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		j.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		j.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		j.Kind = kind
+	}
+
+	return nil
+}
+
+// JobErrorDetails the job error details. Contains list of job error items.
 type JobErrorDetails struct {
+	// ErrorDetails - The error details.
 	ErrorDetails *[]JobErrorItem `json:"errorDetails,omitempty"`
-	Code         *string         `json:"code,omitempty"`
-	Message      *string         `json:"message,omitempty"`
+	// Code - The error code intended for programmatic access.
+	Code *string `json:"code,omitempty"`
+	// Message - The error message intended to describe the error in detail.
+	Message *string `json:"message,omitempty"`
 }
 
-// JobErrorItem is the job error items.
+// JobErrorItem the job error items.
 type JobErrorItem struct {
+	// Recommendations - The recommended actions.
 	Recommendations *[]string `json:"recommendations,omitempty"`
-	Code            *string   `json:"code,omitempty"`
-	Message         *string   `json:"message,omitempty"`
+	// Code - The error code intended for programmatic access.
+	Code *string `json:"code,omitempty"`
+	// Message - The error message intended to describe the error in detail.
+	Message *string `json:"message,omitempty"`
 }
 
-// JobFilter is the OData filter to be used for jobs.
+// JobFilter the OData filter to be used for jobs.
 type JobFilter struct {
-	Status    *string    `json:"status,omitempty"`
-	JobType   *string    `json:"jobType,omitempty"`
+	// Status - Specifies the status of the jobs to be filtered. For e.g., "Running", "Succeeded", "Failed" or "Canceled". Only 'Equality' operator is supported for this property.
+	Status *string `json:"status,omitempty"`
+	// JobType - Specifies the type of the jobs to be filtered. For e.g., "ScheduledBackup", "ManualBackup", "RestoreBackup", "CloneVolume", "FailoverVolumeContainers", "CreateLocallyPinnedVolume", "ModifyVolume", "InstallUpdates", "SupportPackageLogs", or "CreateCloudAppliance". Only 'Equality' operator can be used for this property.
+	JobType *string `json:"jobType,omitempty"`
+	// StartTime - Specifies the start time of the jobs to be filtered.  Only 'Greater Than or Equal To' and 'Lesser Than or Equal To' operators are supported for this property.
 	StartTime *date.Time `json:"startTime,omitempty"`
 }
 
-// JobList is the collection of jobs.
+// JobList the collection of jobs.
 type JobList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Job  `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - The value.
+	Value *[]Job `json:"value,omitempty"`
+	// NextLink - The NextLink.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// JobListPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client JobList) JobListPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// JobListIterator provides access to a complete listing of Job values.
+type JobListIterator struct {
+	i    int
+	page JobListPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *JobListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter JobListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter JobListIterator) Response() JobList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter JobListIterator) Value() Job {
+	if !iter.page.NotDone() {
+		return Job{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (jl JobList) IsEmpty() bool {
+	return jl.Value == nil || len(*jl.Value) == 0
+}
+
+// jobListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (jl JobList) jobListPreparer() (*http.Request, error) {
+	if jl.NextLink == nil || len(to.String(jl.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(jl.NextLink)))
 }
 
-// JobProperties is the properties of the job.
+// JobListPage contains a page of Job values.
+type JobListPage struct {
+	fn func(JobList) (JobList, error)
+	jl JobList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *JobListPage) Next() error {
+	next, err := page.fn(page.jl)
+	if err != nil {
+		return err
+	}
+	page.jl = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page JobListPage) NotDone() bool {
+	return !page.jl.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page JobListPage) Response() JobList {
+	return page.jl
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page JobListPage) Values() []Job {
+	if page.jl.IsEmpty() {
+		return nil
+	}
+	return *page.jl.Value
+}
+
+// JobProperties the properties of the job.
 type JobProperties struct {
-	JobType           JobType         `json:"jobType,omitempty"`
-	DataStats         *DataStatistics `json:"dataStats,omitempty"`
-	EntityLabel       *string         `json:"entityLabel,omitempty"`
-	EntityType        *string         `json:"entityType,omitempty"`
-	JobStages         *[]JobStage     `json:"jobStages,omitempty"`
-	DeviceID          *string         `json:"deviceId,omitempty"`
-	IsCancellable     *bool           `json:"isCancellable,omitempty"`
-	BackupType        BackupType      `json:"backupType,omitempty"`
-	SourceDeviceID    *string         `json:"sourceDeviceId,omitempty"`
-	BackupPointInTime *date.Time      `json:"backupPointInTime,omitempty"`
+	// JobType - The type of the job. Possible values include: 'ScheduledBackup', 'ManualBackup', 'RestoreBackup', 'CloneVolume', 'FailoverVolumeContainers', 'CreateLocallyPinnedVolume', 'ModifyVolume', 'InstallUpdates', 'SupportPackageLogs', 'CreateCloudAppliance'
+	JobType JobType `json:"jobType,omitempty"`
+	// DataStats - The data statistics properties of the job.
+	DataStats *DataStatistics `json:"dataStats,omitempty"`
+	// EntityLabel - The entity identifier for which the job ran.
+	EntityLabel *string `json:"entityLabel,omitempty"`
+	// EntityType - The entity type for which the job ran.
+	EntityType *string `json:"entityType,omitempty"`
+	// JobStages - The job stages.
+	JobStages *[]JobStage `json:"jobStages,omitempty"`
+	// DeviceID - The device ID in which the job ran.
+	DeviceID *string `json:"deviceId,omitempty"`
+	// IsCancellable - Represents whether the job is cancellable or not.
+	IsCancellable *bool `json:"isCancellable,omitempty"`
+	// BackupType - The backup type (CloudSnapshot | LocalSnapshot). Applicable only for backup jobs. Possible values include: 'LocalSnapshot', 'CloudSnapshot'
+	BackupType BackupType `json:"backupType,omitempty"`
+	// SourceDeviceID - The source device ID of the failover job.
+	SourceDeviceID *string `json:"sourceDeviceId,omitempty"`
+	// BackupPointInTime - The time of the backup used for the failover.
+	BackupPointInTime *date.Time `json:"backupPointInTime,omitempty"`
 }
 
-// JobStage is the details about the specific stage of a job.
+// JobsCancelFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type JobsCancelFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future JobsCancelFuture) Result(client JobsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.JobsCancelFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.CancelResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.CancelResponder(resp)
+	return
+}
+
+// JobStage the details about the specific stage of a job.
 type JobStage struct {
-	Message     *string   `json:"message,omitempty"`
+	// Message - The message of the job stage.
+	Message *string `json:"message,omitempty"`
+	// StageStatus - The stage status. Possible values include: 'Running', 'Succeeded', 'Failed', 'Canceled'
 	StageStatus JobStatus `json:"stageStatus,omitempty"`
-	Detail      *string   `json:"detail,omitempty"`
-	ErrorCode   *string   `json:"errorCode,omitempty"`
+	// Detail - The details of the stage.
+	Detail *string `json:"detail,omitempty"`
+	// ErrorCode - The error code of the stage if any.
+	ErrorCode *string `json:"errorCode,omitempty"`
 }
 
-// Key is the key.
+// Key the key.
 type Key struct {
 	autorest.Response `json:"-"`
-	ActivationKey     *string `json:"activationKey,omitempty"`
+	// ActivationKey - The activation key for the device.
+	ActivationKey *string `json:"activationKey,omitempty"`
 }
 
-// ListFailoverTargetsRequest is the request object for fetching the list of failover targets (eligible devices for
+// ListFailoverTargetsRequest the request object for fetching the list of failover targets (eligible devices for
 // failover).
 type ListFailoverTargetsRequest struct {
+	// VolumeContainers - The list of path IDs of the volume containers that needs to be failed-over, for which we want to fetch the eligible targets.
 	VolumeContainers *[]string `json:"volumeContainers,omitempty"`
 }
 
-// Manager is the StorSimple Manager.
+// Manager the StorSimple Manager.
 type Manager struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The geo location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags attached to the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ManagerProperties - The properties of the StorSimple Manager.
 	*ManagerProperties `json:"properties,omitempty"`
-	Etag               *string `json:"etag,omitempty"`
+	// Etag - The etag of the manager.
+	Etag *string `json:"etag,omitempty"`
 }
 
-// ManagerExtendedInfo is the extended info of the manager.
+// UnmarshalJSON is the custom unmarshaler for Manager struct.
+func (mVar *Manager) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ManagerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mVar.ManagerProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		mVar.Etag = &etag
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mVar.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mVar.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mVar.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		mVar.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		mVar.Tags = &tags
+	}
+
+	return nil
+}
+
+// ManagerExtendedInfo the extended info of the manager.
 type ManagerExtendedInfo struct {
-	autorest.Response              `json:"-"`
-	ID                             *string `json:"id,omitempty"`
-	Name                           *string `json:"name,omitempty"`
-	Type                           *string `json:"type,omitempty"`
-	Kind                           Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// ManagerExtendedInfoProperties - The extended info properties.
 	*ManagerExtendedInfoProperties `json:"properties,omitempty"`
-	Etag                           *string `json:"etag,omitempty"`
+	// Etag - The etag of the resource.
+	Etag *string `json:"etag,omitempty"`
 }
 
-// ManagerExtendedInfoProperties is the properties of the manager extended info.
+// UnmarshalJSON is the custom unmarshaler for ManagerExtendedInfo struct.
+func (mei *ManagerExtendedInfo) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ManagerExtendedInfoProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mei.ManagerExtendedInfoProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		mei.Etag = &etag
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mei.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mei.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mei.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		mei.Kind = kind
+	}
+
+	return nil
+}
+
+// ManagerExtendedInfoProperties the properties of the manager extended info.
 type ManagerExtendedInfoProperties struct {
-	Version                     *string `json:"version,omitempty"`
-	IntegrityKey                *string `json:"integrityKey,omitempty"`
-	EncryptionKey               *string `json:"encryptionKey,omitempty"`
-	EncryptionKeyThumbprint     *string `json:"encryptionKeyThumbprint,omitempty"`
+	// Version - The version of the extended info being persisted.
+	Version *string `json:"version,omitempty"`
+	// IntegrityKey - Represents the CIK of the resource.
+	IntegrityKey *string `json:"integrityKey,omitempty"`
+	// EncryptionKey - Represents the CEK of the resource.
+	EncryptionKey *string `json:"encryptionKey,omitempty"`
+	// EncryptionKeyThumbprint - Represents the Cert thumbprint that was used to encrypt the CEK.
+	EncryptionKeyThumbprint *string `json:"encryptionKeyThumbprint,omitempty"`
+	// PortalCertificateThumbprint - Represents the portal thumbprint which can be used optionally to encrypt the entire data before storing it.
 	PortalCertificateThumbprint *string `json:"portalCertificateThumbprint,omitempty"`
-	Algorithm                   *string `json:"algorithm,omitempty"`
+	// Algorithm - Represents the encryption algorithm used to encrypt the keys. None - if Key is saved in plain text format. Algorithm name - if key is encrypted
+	Algorithm *string `json:"algorithm,omitempty"`
 }
 
-// ManagerIntrinsicSettings is intrinsic settings which refers to the type of the Storsimple Manager.
+// ManagerIntrinsicSettings intrinsic settings which refers to the type of the Storsimple Manager.
 type ManagerIntrinsicSettings struct {
+	// Type - The type of StorSimple Manager. Possible values include: 'GardaV1', 'HelsinkiV1'
 	Type ManagerType `json:"type,omitempty"`
 }
 
-// ManagerList is the list of StorSimple Managers.
+// ManagerList the list of StorSimple Managers.
 type ManagerList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Manager `json:"value,omitempty"`
+	// Value - The list of storsimple managers.
+	Value *[]Manager `json:"value,omitempty"`
 }
 
-// ManagerPatch is the StorSimple Manager patch.
+// ManagerPatch the StorSimple Manager patch.
 type ManagerPatch struct {
+	// Tags - The tags attached to the Manager.
 	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ManagerProperties is the properties of the StorSimple Manager.
+// ManagerProperties the properties of the StorSimple Manager.
 type ManagerProperties struct {
+	// CisIntrinsicSettings - Represents the type of StorSimple Manager.
 	CisIntrinsicSettings *ManagerIntrinsicSettings `json:"cisIntrinsicSettings,omitempty"`
-	Sku                  *ManagerSku               `json:"sku,omitempty"`
-	ProvisioningState    *string                   `json:"provisioningState,omitempty"`
+	// Sku - Specifies the Sku.
+	Sku *ManagerSku `json:"sku,omitempty"`
+	// ProvisioningState - Specifies the state of the resource as it is getting provisioned. Value of "Succeeded" means the Manager was successfully created.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// ManagerSku is the Sku.
+// ManagerSku the Sku.
 type ManagerSku struct {
+	// Name - Refers to the sku name which should be "Standard"
 	Name *string `json:"name,omitempty"`
 }
 
-// MetricAvailablity is the metric availability.
+// MetricAvailablity the metric availability.
 type MetricAvailablity struct {
+	// TimeGrain - The aggregation interval for the metric.
 	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Retention - The retention period for the metric at the specified timegrain.
 	Retention *string `json:"retention,omitempty"`
 }
 
-// MetricData is the metric data.
+// MetricData the metric data.
 type MetricData struct {
+	// TimeStamp - The time stamp of the metric data.
 	TimeStamp *date.Time `json:"timeStamp,omitempty"`
-	Sum       *float64   `json:"sum,omitempty"`
-	Count     *int32     `json:"count,omitempty"`
-	Average   *float64   `json:"average,omitempty"`
-	Minimum   *float64   `json:"minimum,omitempty"`
-	Maximum   *float64   `json:"maximum,omitempty"`
+	// Sum - The sum of all samples at the time stamp.
+	Sum *float64 `json:"sum,omitempty"`
+	// Count - The count of all samples at the time stamp.
+	Count *int32 `json:"count,omitempty"`
+	// Average - The average of all samples at the time stamp.
+	Average *float64 `json:"average,omitempty"`
+	// Minimum - The minimum of all samples at the time stamp.
+	Minimum *float64 `json:"minimum,omitempty"`
+	// Maximum - The maximum of all samples at the time stamp.
+	Maximum *float64 `json:"maximum,omitempty"`
 }
 
-// MetricDefinition is the monitoring metric definition.
+// MetricDefinition the monitoring metric definition.
 type MetricDefinition struct {
-	Name                   *MetricName           `json:"name,omitempty"`
-	Unit                   MetricUnit            `json:"unit,omitempty"`
+	// Name - The metric name.
+	Name *MetricName `json:"name,omitempty"`
+	// Unit - The metric unit. Possible values include: 'Bytes', 'BytesPerSecond', 'Count', 'CountPerSecond', 'Percent', 'Seconds'
+	Unit MetricUnit `json:"unit,omitempty"`
+	// PrimaryAggregationType - The metric aggregation type. Possible values include: 'MetricAggregationTypeAverage', 'MetricAggregationTypeLast', 'MetricAggregationTypeMaximum', 'MetricAggregationTypeMinimum', 'MetricAggregationTypeNone', 'MetricAggregationTypeTotal'
 	PrimaryAggregationType MetricAggregationType `json:"primaryAggregationType,omitempty"`
-	ResourceID             *string               `json:"resourceId,omitempty"`
-	MetricAvailabilities   *[]MetricAvailablity  `json:"metricAvailabilities,omitempty"`
-	Dimensions             *[]MetricDimension    `json:"dimensions,omitempty"`
-	Category               *string               `json:"category,omitempty"`
-	Type                   *string               `json:"type,omitempty"`
+	// ResourceID - The metric source ID.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// MetricAvailabilities - The available metric granularities.
+	MetricAvailabilities *[]MetricAvailablity `json:"metricAvailabilities,omitempty"`
+	// Dimensions - The available metric dimensions.
+	Dimensions *[]MetricDimension `json:"dimensions,omitempty"`
+	// Category - The category of the metric.
+	Category *string `json:"category,omitempty"`
+	// Type - The metric definition type.
+	Type *string `json:"type,omitempty"`
 }
 
-// MetricDefinitionList is the list of metric definitions.
+// MetricDefinitionList the list of metric definitions.
 type MetricDefinitionList struct {
 	autorest.Response `json:"-"`
-	Value             *[]MetricDefinition `json:"value,omitempty"`
+	// Value - The list of metric definitions.
+	Value *[]MetricDefinition `json:"value,omitempty"`
 }
 
-// MetricDimension is the metric dimension. It indicates the source of the metric.
+// MetricDimension the metric dimension. It indicates the source of the metric.
 type MetricDimension struct {
-	Name  *string `json:"name,omitempty"`
+	// Name - The metric dimension name.
+	Name *string `json:"name,omitempty"`
+	// Value - The metric dimension values.
 	Value *string `json:"value,omitempty"`
 }
 
-// MetricFilter is the OData filters to be used for metrics.
+// MetricFilter the OData filters to be used for metrics.
 type MetricFilter struct {
-	Name       *MetricNameFilter `json:"name,omitempty"`
-	StartTime  *date.Time        `json:"startTime,omitempty"`
-	EndTime    *date.Time        `json:"endTime,omitempty"`
-	TimeGrain  *string           `json:"timeGrain,omitempty"`
-	Category   *string           `json:"category,omitempty"`
-	Dimensions *DimensionFilter  `json:"dimensions,omitempty"`
+	// Name - Specifies the metric name filter specifying the name of the metric to be filtered on. Only 'Equality' operator is supported for this property.
+	Name *MetricNameFilter `json:"name,omitempty"`
+	// StartTime - Specifies the start time of the time range to be queried. Only 'Greater Than Or Equal To' operator is supported for this property.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Specifies the end time of the time range to be queried. Only 'Less Than Or Equal To' operator is supported for this property.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TimeGrain - Specifies the time granularity of the metrics to be returned. E.g., "P1D". Valid values are the ones returned as the field "timeGrain" in the ListMetricDefinitions call. Only 'Equality' operator is supported for this property.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Category - Specifies the category of the metrics to be filtered. E.g., "CapacityUtilization". Valid values are the ones returned as the field "category" in the ListMetricDefinitions call. Only 'Equality' operator is supported for this property.
+	Category *string `json:"category,omitempty"`
+	// Dimensions - Specifies the source(the dimension) of the metrics to be filtered. Only 'Equality' operator is supported for this property.
+	Dimensions *DimensionFilter `json:"dimensions,omitempty"`
 }
 
-// MetricList is the metric list.
+// MetricList the metric list.
 type MetricList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Metrics `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]Metrics `json:"value,omitempty"`
 }
 
-// MetricName is the metric name.
+// MetricName the metric name.
 type MetricName struct {
-	Value          *string `json:"value,omitempty"`
+	// Value - The metric name.
+	Value *string `json:"value,omitempty"`
+	// LocalizedValue - The localized metric name.
 	LocalizedValue *string `json:"localizedValue,omitempty"`
 }
 
-// MetricNameFilter is the metric name filter, specifying the name of the metric to be filtered on.
+// MetricNameFilter the metric name filter, specifying the name of the metric to be filtered on.
 type MetricNameFilter struct {
+	// Value - Specifies the metric name to be filtered on. E.g., CloudStorageUsed. Valid values are the ones returned in the field "name" in the ListMetricDefinitions call. Only 'Equality' operator is supported for this property.
 	Value *string `json:"value,omitempty"`
 }
 
-// Metrics is the monitoring metric.
+// Metrics the monitoring metric.
 type Metrics struct {
-	ResourceID         *string               `json:"resourceId,omitempty"`
-	StartTime          *date.Time            `json:"startTime,omitempty"`
-	EndTime            *date.Time            `json:"endTime,omitempty"`
-	TimeGrain          *string               `json:"timeGrain,omitempty"`
+	// ResourceID - The ID of metric source.
+	ResourceID *string `json:"resourceId,omitempty"`
+	// StartTime - The start time of the metric data.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The end time of the metric data.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TimeGrain - The time granularity of the metric data.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// PrimaryAggregation - The metric aggregation type. Possible values include: 'MetricAggregationTypeAverage', 'MetricAggregationTypeLast', 'MetricAggregationTypeMaximum', 'MetricAggregationTypeMinimum', 'MetricAggregationTypeNone', 'MetricAggregationTypeTotal'
 	PrimaryAggregation MetricAggregationType `json:"primaryAggregation,omitempty"`
-	Name               *MetricName           `json:"name,omitempty"`
-	Dimensions         *[]MetricDimension    `json:"dimensions,omitempty"`
-	Unit               MetricUnit            `json:"unit,omitempty"`
-	Type               *string               `json:"type,omitempty"`
-	Values             *[]MetricData         `json:"values,omitempty"`
+	// Name - The name of the metric.
+	Name *MetricName `json:"name,omitempty"`
+	// Dimensions - The metric dimensions.
+	Dimensions *[]MetricDimension `json:"dimensions,omitempty"`
+	// Unit - The unit of the metric data. Possible values include: 'Bytes', 'BytesPerSecond', 'Count', 'CountPerSecond', 'Percent', 'Seconds'
+	Unit MetricUnit `json:"unit,omitempty"`
+	// Type - The type of the metric data.
+	Type *string `json:"type,omitempty"`
+	// Values - The list of the metric data.
+	Values *[]MetricData `json:"values,omitempty"`
 }
 
-// NetworkAdapterList is the collection of network adapters on the device.
+// NetworkAdapterList the collection of network adapters on the device.
 type NetworkAdapterList struct {
+	// Value - The value.
 	Value *[]NetworkAdapters `json:"value,omitempty"`
 }
 
-// NetworkAdapters is represents the network adapter on device.
+// NetworkAdapters represents the network adapter on device.
 type NetworkAdapters struct {
-	InterfaceID         NetInterfaceID      `json:"interfaceId,omitempty"`
-	NetInterfaceStatus  NetInterfaceStatus  `json:"netInterfaceStatus,omitempty"`
-	IsDefault           *bool               `json:"isDefault,omitempty"`
+	// InterfaceID - The ID of the network adapter. Possible values include: 'NetInterfaceIDInvalid', 'NetInterfaceIDData0', 'NetInterfaceIDData1', 'NetInterfaceIDData2', 'NetInterfaceIDData3', 'NetInterfaceIDData4', 'NetInterfaceIDData5'
+	InterfaceID NetInterfaceID `json:"interfaceId,omitempty"`
+	// NetInterfaceStatus - Value indicating status of network adapter. Possible values include: 'NetInterfaceStatusEnabled', 'NetInterfaceStatusDisabled'
+	NetInterfaceStatus NetInterfaceStatus `json:"netInterfaceStatus,omitempty"`
+	// IsDefault - Value indicating whether this instance is default.
+	IsDefault *bool `json:"isDefault,omitempty"`
+	// IscsiAndCloudStatus - Value indicating cloud and ISCSI status of network adapter. Possible values include: 'ISCSIAndCloudStatusDisabled', 'ISCSIAndCloudStatusIscsiEnabled', 'ISCSIAndCloudStatusCloudEnabled', 'ISCSIAndCloudStatusIscsiAndCloudEnabled'
 	IscsiAndCloudStatus ISCSIAndCloudStatus `json:"iscsiAndCloudStatus,omitempty"`
-	Speed               *int64              `json:"speed,omitempty"`
-	Mode                NetworkMode         `json:"mode,omitempty"`
-	NicIpv4Settings     *NicIPv4            `json:"nicIpv4Settings,omitempty"`
-	NicIpv6Settings     *NicIPv6            `json:"nicIpv6Settings,omitempty"`
+	// Speed - The speed of the network adapter.
+	Speed *int64 `json:"speed,omitempty"`
+	// Mode - The mode of network adapter, either IPv4, IPv6 or both. Possible values include: 'NetworkModeInvalid', 'NetworkModeIPV4', 'NetworkModeIPV6', 'NetworkModeBOTH'
+	Mode NetworkMode `json:"mode,omitempty"`
+	// NicIpv4Settings - The IPv4 configuration of the network adapter.
+	NicIpv4Settings *NicIPv4 `json:"nicIpv4Settings,omitempty"`
+	// NicIpv6Settings - The IPv6 configuration of the network adapter.
+	NicIpv6Settings *NicIPv6 `json:"nicIpv6Settings,omitempty"`
 }
 
-// NetworkInterfaceData0Settings is the 'Data 0' network interface card settings.
+// NetworkInterfaceData0Settings the 'Data 0' network interface card settings.
 type NetworkInterfaceData0Settings struct {
+	// ControllerZeroIP - The controller 0's IPv4 address.
 	ControllerZeroIP *string `json:"controllerZeroIp,omitempty"`
-	ControllerOneIP  *string `json:"controllerOneIp,omitempty"`
+	// ControllerOneIP - The controller 1's IPv4 address.
+	ControllerOneIP *string `json:"controllerOneIp,omitempty"`
 }
 
-// NetworkSettings is represents the network settings of a device.
+// NetworkSettings represents the network settings of a device.
 type NetworkSettings struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
-	Kind                       Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// NetworkSettingsProperties - The properties of network settings of a device.
 	*NetworkSettingsProperties `json:"properties,omitempty"`
 }
 
-// NetworkSettingsPatch is represents the patch request for the network settings of a device.
+// UnmarshalJSON is the custom unmarshaler for NetworkSettings struct.
+func (ns *NetworkSettings) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NetworkSettingsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ns.NetworkSettingsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ns.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ns.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ns.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ns.Kind = kind
+	}
+
+	return nil
+}
+
+// NetworkSettingsPatch represents the patch request for the network settings of a device.
 type NetworkSettingsPatch struct {
+	// NetworkSettingsPatchProperties - The properties of the network settings patch.
 	*NetworkSettingsPatchProperties `json:"properties,omitempty"`
 }
 
-// NetworkSettingsPatchProperties is the properties of the network settings patch.
+// UnmarshalJSON is the custom unmarshaler for NetworkSettingsPatch struct.
+func (nsp *NetworkSettingsPatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NetworkSettingsPatchProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		nsp.NetworkSettingsPatchProperties = &properties
+	}
+
+	return nil
+}
+
+// NetworkSettingsPatchProperties the properties of the network settings patch.
 type NetworkSettingsPatchProperties struct {
-	DNSSettings     *DNSSettings        `json:"dnsSettings,omitempty"`
+	// DNSSettings - The DNS (Domain Name System) settings of device.
+	DNSSettings *DNSSettings `json:"dnsSettings,omitempty"`
+	// NetworkAdapters - The network adapter list of device.
 	NetworkAdapters *NetworkAdapterList `json:"networkAdapters,omitempty"`
 }
 
-// NetworkSettingsProperties is the properties of the network settings of device.
+// NetworkSettingsProperties the properties of the network settings of device.
 type NetworkSettingsProperties struct {
-	DNSSettings      *DNSSettings        `json:"dnsSettings,omitempty"`
-	NetworkAdapters  *NetworkAdapterList `json:"networkAdapters,omitempty"`
-	WebproxySettings *WebproxySettings   `json:"webproxySettings,omitempty"`
+	// DNSSettings - The DNS (Domain Name System) settings of device.
+	DNSSettings *DNSSettings `json:"dnsSettings,omitempty"`
+	// NetworkAdapters - The network adapter list of device.
+	NetworkAdapters *NetworkAdapterList `json:"networkAdapters,omitempty"`
+	// WebproxySettings - The webproxy settings of device.
+	WebproxySettings *WebproxySettings `json:"webproxySettings,omitempty"`
 }
 
-// NicIPv4 is details related to the IPv4 address configuration.
+// NicIPv4 details related to the IPv4 address configuration.
 type NicIPv4 struct {
-	Ipv4Address            *string `json:"ipv4Address,omitempty"`
-	Ipv4Netmask            *string `json:"ipv4Netmask,omitempty"`
-	Ipv4Gateway            *string `json:"ipv4Gateway,omitempty"`
+	// Ipv4Address - The IPv4 address of the network adapter.
+	Ipv4Address *string `json:"ipv4Address,omitempty"`
+	// Ipv4Netmask - The IPv4 netmask of the network adapter.
+	Ipv4Netmask *string `json:"ipv4Netmask,omitempty"`
+	// Ipv4Gateway - The IPv4 gateway of the network adapter.
+	Ipv4Gateway *string `json:"ipv4Gateway,omitempty"`
+	// Controller0Ipv4Address - The IPv4 address of Controller0.
 	Controller0Ipv4Address *string `json:"controller0Ipv4Address,omitempty"`
+	// Controller1Ipv4Address - The IPv4 address of Controller1.
 	Controller1Ipv4Address *string `json:"controller1Ipv4Address,omitempty"`
 }
 
-// NicIPv6 is details related to the IPv6 address configuration.
+// NicIPv6 details related to the IPv6 address configuration.
 type NicIPv6 struct {
-	Ipv6Address            *string `json:"ipv6Address,omitempty"`
-	Ipv6Prefix             *string `json:"ipv6Prefix,omitempty"`
-	Ipv6Gateway            *string `json:"ipv6Gateway,omitempty"`
+	// Ipv6Address - The IPv6 address of the network adapter.
+	Ipv6Address *string `json:"ipv6Address,omitempty"`
+	// Ipv6Prefix - The IPv6 prefix of the network adapter.
+	Ipv6Prefix *string `json:"ipv6Prefix,omitempty"`
+	// Ipv6Gateway - The IPv6 gateway of the network adapter.
+	Ipv6Gateway *string `json:"ipv6Gateway,omitempty"`
+	// Controller0Ipv6Address - The IPv6 address of Controller0.
 	Controller0Ipv6Address *string `json:"controller0Ipv6Address,omitempty"`
+	// Controller1Ipv6Address - The IPv6 address of Controller1.
 	Controller1Ipv6Address *string `json:"controller1Ipv6Address,omitempty"`
 }
 
-// PublicKey is the public key.
+// PublicKey the public key.
 type PublicKey struct {
 	autorest.Response `json:"-"`
-	Key               *string `json:"key,omitempty"`
+	// Key - The key.
+	Key *string `json:"key,omitempty"`
 }
 
-// RemoteManagementSettings is the settings for remote management of a device.
+// RemoteManagementSettings the settings for remote management of a device.
 type RemoteManagementSettings struct {
-	RemoteManagementMode        RemoteManagementModeConfiguration `json:"remoteManagementMode,omitempty"`
-	RemoteManagementCertificate *string                           `json:"remoteManagementCertificate,omitempty"`
+	// RemoteManagementMode - The remote management mode. Possible values include: 'RemoteManagementModeConfigurationUnknown', 'RemoteManagementModeConfigurationDisabled', 'RemoteManagementModeConfigurationHTTPSEnabled', 'RemoteManagementModeConfigurationHTTPSAndHTTPEnabled'
+	RemoteManagementMode RemoteManagementModeConfiguration `json:"remoteManagementMode,omitempty"`
+	// RemoteManagementCertificate - The remote management certificates.
+	RemoteManagementCertificate *string `json:"remoteManagementCertificate,omitempty"`
 }
 
-// RemoteManagementSettingsPatch is the settings for updating remote management mode of the device.
+// RemoteManagementSettingsPatch the settings for updating remote management mode of the device.
 type RemoteManagementSettingsPatch struct {
+	// RemoteManagementMode - The remote management mode. Possible values include: 'RemoteManagementModeConfigurationUnknown', 'RemoteManagementModeConfigurationDisabled', 'RemoteManagementModeConfigurationHTTPSEnabled', 'RemoteManagementModeConfigurationHTTPSAndHTTPEnabled'
 	RemoteManagementMode RemoteManagementModeConfiguration `json:"remoteManagementMode,omitempty"`
 }
 
-// Resource is the Azure Resource.
+// Resource the Azure Resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The geo location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags attached to the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ScheduleRecurrence is the schedule recurrence.
+// ScheduleRecurrence the schedule recurrence.
 type ScheduleRecurrence struct {
-	RecurrenceType  RecurrenceType `json:"recurrenceType,omitempty"`
-	RecurrenceValue *int32         `json:"recurrenceValue,omitempty"`
-	WeeklyDaysList  *[]DayOfWeek   `json:"weeklyDaysList,omitempty"`
+	// RecurrenceType - The recurrence type. Possible values include: 'Minutes', 'Hourly', 'Daily', 'Weekly'
+	RecurrenceType RecurrenceType `json:"recurrenceType,omitempty"`
+	// RecurrenceValue - The recurrence value.
+	RecurrenceValue *int32 `json:"recurrenceValue,omitempty"`
+	// WeeklyDaysList - The week days list. Applicable only for schedules of recurrence type 'weekly'.
+	WeeklyDaysList *[]DayOfWeek `json:"weeklyDaysList,omitempty"`
 }
 
-// SecondaryDNSSettings is the secondary DNS settings.
+// SecondaryDNSSettings the secondary DNS settings.
 type SecondaryDNSSettings struct {
+	// SecondaryDNSServers - The list of secondary DNS Server IP addresses.
 	SecondaryDNSServers *[]string `json:"secondaryDnsServers,omitempty"`
 }
 
-// SecuritySettings is the security settings of a device.
+// SecuritySettings the security settings of a device.
 type SecuritySettings struct {
-	autorest.Response           `json:"-"`
-	ID                          *string `json:"id,omitempty"`
-	Name                        *string `json:"name,omitempty"`
-	Type                        *string `json:"type,omitempty"`
-	Kind                        Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// SecuritySettingsProperties - The properties of the security settings of a device.
 	*SecuritySettingsProperties `json:"properties,omitempty"`
 }
 
-// SecuritySettingsPatch is represents the patch request for the security settings of a device.
+// UnmarshalJSON is the custom unmarshaler for SecuritySettings struct.
+func (ss *SecuritySettings) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SecuritySettingsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ss.SecuritySettingsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ss.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ss.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ss.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ss.Kind = kind
+	}
+
+	return nil
+}
+
+// SecuritySettingsPatch represents the patch request for the security settings of a device.
 type SecuritySettingsPatch struct {
+	// SecuritySettingsPatchProperties - The properties of the security settings patch.
 	*SecuritySettingsPatchProperties `json:"properties,omitempty"`
 }
 
-// SecuritySettingsPatchProperties is the properties of the security settings patch.
+// UnmarshalJSON is the custom unmarshaler for SecuritySettingsPatch struct.
+func (ssp *SecuritySettingsPatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SecuritySettingsPatchProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ssp.SecuritySettingsPatchProperties = &properties
+	}
+
+	return nil
+}
+
+// SecuritySettingsPatchProperties the properties of the security settings patch.
 type SecuritySettingsPatchProperties struct {
+	// RemoteManagementSettings - The remote management settings.
 	RemoteManagementSettings *RemoteManagementSettingsPatch `json:"remoteManagementSettings,omitempty"`
-	DeviceAdminPassword      *AsymmetricEncryptedSecret     `json:"deviceAdminPassword,omitempty"`
-	SnapshotPassword         *AsymmetricEncryptedSecret     `json:"snapshotPassword,omitempty"`
-	ChapSettings             *ChapSettings                  `json:"chapSettings,omitempty"`
-	CloudApplianceSettings   *CloudApplianceSettings        `json:"cloudApplianceSettings,omitempty"`
+	// DeviceAdminPassword - The device administrator password.
+	DeviceAdminPassword *AsymmetricEncryptedSecret `json:"deviceAdminPassword,omitempty"`
+	// SnapshotPassword - The snapshot manager password.
+	SnapshotPassword *AsymmetricEncryptedSecret `json:"snapshotPassword,omitempty"`
+	// ChapSettings - The device CHAP and reverse-CHAP settings.
+	ChapSettings *ChapSettings `json:"chapSettings,omitempty"`
+	// CloudApplianceSettings - The cloud appliance settings.
+	CloudApplianceSettings *CloudApplianceSettings `json:"cloudApplianceSettings,omitempty"`
 }
 
-// SecuritySettingsProperties is the properties of security settings of a device.
+// SecuritySettingsProperties the properties of security settings of a device.
 type SecuritySettingsProperties struct {
+	// RemoteManagementSettings - The settings for remote management of a device.
 	RemoteManagementSettings *RemoteManagementSettings `json:"remoteManagementSettings,omitempty"`
-	ChapSettings             *ChapSettings             `json:"chapSettings,omitempty"`
+	// ChapSettings - The Challenge-Handshake Authentication Protocol (CHAP) settings.
+	ChapSettings *ChapSettings `json:"chapSettings,omitempty"`
 }
 
-// SendTestAlertEmailRequest is the request for sending test alert email
+// SendTestAlertEmailRequest the request for sending test alert email
 type SendTestAlertEmailRequest struct {
+	// EmailList - The list of email IDs to send the test alert email
 	EmailList *[]string `json:"emailList,omitempty"`
 }
 
-// StorageAccountCredential is the storage account credential.
+// StorageAccountCredential the storage account credential.
 type StorageAccountCredential struct {
-	autorest.Response                   `json:"-"`
-	ID                                  *string `json:"id,omitempty"`
-	Name                                *string `json:"name,omitempty"`
-	Type                                *string `json:"type,omitempty"`
-	Kind                                Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// StorageAccountCredentialProperties - The storage account credential properties.
 	*StorageAccountCredentialProperties `json:"properties,omitempty"`
 }
 
-// StorageAccountCredentialList is the collection of storage account credential entities.
+// UnmarshalJSON is the custom unmarshaler for StorageAccountCredential struct.
+func (sac *StorageAccountCredential) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties StorageAccountCredentialProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sac.StorageAccountCredentialProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sac.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sac.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sac.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		sac.Kind = kind
+	}
+
+	return nil
+}
+
+// StorageAccountCredentialList the collection of storage account credential entities.
 type StorageAccountCredentialList struct {
 	autorest.Response `json:"-"`
-	Value             *[]StorageAccountCredential `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]StorageAccountCredential `json:"value,omitempty"`
 }
 
-// StorageAccountCredentialProperties is the storage account credential properties.
+// StorageAccountCredentialProperties the storage account credential properties.
 type StorageAccountCredentialProperties struct {
-	EndPoint     *string                    `json:"endPoint,omitempty"`
-	SslStatus    SslStatus                  `json:"sslStatus,omitempty"`
-	AccessKey    *AsymmetricEncryptedSecret `json:"accessKey,omitempty"`
-	VolumesCount *int32                     `json:"volumesCount,omitempty"`
+	// EndPoint - The storage endpoint
+	EndPoint *string `json:"endPoint,omitempty"`
+	// SslStatus - Signifies whether SSL needs to be enabled or not. Possible values include: 'SslStatusEnabled', 'SslStatusDisabled'
+	SslStatus SslStatus `json:"sslStatus,omitempty"`
+	// AccessKey - The details of the storage account password.
+	AccessKey *AsymmetricEncryptedSecret `json:"accessKey,omitempty"`
+	// VolumesCount - The count of volumes using this storage account credential.
+	VolumesCount *int32 `json:"volumesCount,omitempty"`
 }
 
-// SymmetricEncryptedSecret is represents the secrets encrypted using Symmetric Encryption Key.
+// StorageAccountCredentialsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type StorageAccountCredentialsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future StorageAccountCredentialsCreateOrUpdateFuture) Result(client StorageAccountCredentialsClient) (sac StorageAccountCredential, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return sac, autorest.NewError("storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		sac, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	sac, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// StorageAccountCredentialsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type StorageAccountCredentialsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future StorageAccountCredentialsDeleteFuture) Result(client StorageAccountCredentialsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.StorageAccountCredentialsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// SymmetricEncryptedSecret represents the secrets encrypted using Symmetric Encryption Key.
 type SymmetricEncryptedSecret struct {
-	autorest.Response          `json:"-"`
-	Value                      *string             `json:"value,omitempty"`
-	ValueCertificateThumbprint *string             `json:"valueCertificateThumbprint,omitempty"`
-	EncryptionAlgorithm        EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
+	autorest.Response `json:"-"`
+	// Value - The value of the secret itself. If the secret is in plaintext or null then EncryptionAlgorithm will be none.
+	Value *string `json:"value,omitempty"`
+	// ValueCertificateThumbprint - The thumbprint of the cert that was used to encrypt "Value".
+	ValueCertificateThumbprint *string `json:"valueCertificateThumbprint,omitempty"`
+	// EncryptionAlgorithm - The algorithm used to encrypt the "Value". Possible values include: 'EncryptionAlgorithmNone', 'EncryptionAlgorithmAES256', 'EncryptionAlgorithmRSAESPKCS1V15'
+	EncryptionAlgorithm EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
 }
 
-// TargetEligibilityErrorMessage is the error/warning message due to which the device is ineligible as a failover
-// target device.
+// TargetEligibilityErrorMessage the error/warning message due to which the device is ineligible as a failover target
+// device.
 type TargetEligibilityErrorMessage struct {
-	Message    *string                     `json:"message,omitempty"`
-	Resolution *string                     `json:"resolution,omitempty"`
+	// Message - The localized error message stating the reason why the device is not eligible as a target device.
+	Message *string `json:"message,omitempty"`
+	// Resolution - The localized resolution message for the error.
+	Resolution *string `json:"resolution,omitempty"`
+	// ResultCode - The result code for the error, due to which the device does not qualify as a failover target device. Possible values include: 'TargetAndSourceCannotBeSameError', 'TargetIsNotOnlineError', 'TargetSourceIncompatibleVersionError', 'LocalToTieredVolumesConversionWarning', 'TargetInsufficientCapacityError', 'TargetInsufficientLocalVolumeMemoryError', 'TargetInsufficientTieredVolumeMemoryError'
 	ResultCode TargetEligibilityResultCode `json:"resultCode,omitempty"`
 }
 
-// TargetEligibilityResult is the eligibility result of device, as a failover target device.
+// TargetEligibilityResult the eligibility result of device, as a failover target device.
 type TargetEligibilityResult struct {
-	EligibilityStatus TargetEligibilityStatus          `json:"eligibilityStatus,omitempty"`
-	Messages          *[]TargetEligibilityErrorMessage `json:"messages,omitempty"`
+	// EligibilityStatus - The eligibility status of device, as a failover target device. Possible values include: 'TargetEligibilityStatusNotEligible', 'TargetEligibilityStatusEligible'
+	EligibilityStatus TargetEligibilityStatus `json:"eligibilityStatus,omitempty"`
+	// Messages - The list of error messages, if a device does not qualify as a failover target device.
+	Messages *[]TargetEligibilityErrorMessage `json:"messages,omitempty"`
 }
 
-// Time is the time.
+// Time the time.
 type Time struct {
-	Hours   *int32 `json:"hours,omitempty"`
+	// Hours - The hour.
+	Hours *int32 `json:"hours,omitempty"`
+	// Minutes - The minute.
 	Minutes *int32 `json:"minutes,omitempty"`
+	// Seconds - The second.
 	Seconds *int32 `json:"seconds,omitempty"`
 }
 
-// TimeSettings is the time settings of a device.
+// TimeSettings the time settings of a device.
 type TimeSettings struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
-	Kind                    Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// TimeSettingsProperties - The properties of the time settings of a device.
 	*TimeSettingsProperties `json:"properties,omitempty"`
 }
 
-// TimeSettingsProperties is the properties of time settings of a device.
+// UnmarshalJSON is the custom unmarshaler for TimeSettings struct.
+func (ts *TimeSettings) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties TimeSettingsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ts.TimeSettingsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ts.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ts.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ts.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ts.Kind = kind
+	}
+
+	return nil
+}
+
+// TimeSettingsProperties the properties of time settings of a device.
 type TimeSettingsProperties struct {
-	TimeZone            *string   `json:"timeZone,omitempty"`
-	PrimaryTimeServer   *string   `json:"primaryTimeServer,omitempty"`
+	// TimeZone - The timezone of device, like '(UTC -06:00) Central America'
+	TimeZone *string `json:"timeZone,omitempty"`
+	// PrimaryTimeServer - The primary Network Time Protocol (NTP) server name, like 'time.windows.com'.
+	PrimaryTimeServer *string `json:"primaryTimeServer,omitempty"`
+	// SecondaryTimeServer - The secondary Network Time Protocol (NTP) server name, like 'time.contoso.com'. It's optional.
 	SecondaryTimeServer *[]string `json:"secondaryTimeServer,omitempty"`
 }
 
-// Updates is the updates profile of a device.
+// Updates the updates profile of a device.
 type Updates struct {
-	autorest.Response  `json:"-"`
-	ID                 *string `json:"id,omitempty"`
-	Name               *string `json:"name,omitempty"`
-	Type               *string `json:"type,omitempty"`
-	Kind               Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// UpdatesProperties - The properties of the updates profile.
 	*UpdatesProperties `json:"properties,omitempty"`
 }
 
-// UpdatesProperties is the properties of the updates profile.
+// UnmarshalJSON is the custom unmarshaler for Updates struct.
+func (u *Updates) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UpdatesProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		u.UpdatesProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		u.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		u.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		u.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		u.Kind = kind
+	}
+
+	return nil
+}
+
+// UpdatesProperties the properties of the updates profile.
 type UpdatesProperties struct {
-	RegularUpdatesAvailable         *bool      `json:"regularUpdatesAvailable,omitempty"`
-	MaintenanceModeUpdatesAvailable *bool      `json:"maintenanceModeUpdatesAvailable,omitempty"`
-	IsUpdateInProgress              *bool      `json:"isUpdateInProgress,omitempty"`
-	LastUpdatedTime                 *date.Time `json:"lastUpdatedTime,omitempty"`
+	// RegularUpdatesAvailable - Set to 'true' if regular updates are available for the device.
+	RegularUpdatesAvailable *bool `json:"regularUpdatesAvailable,omitempty"`
+	// MaintenanceModeUpdatesAvailable - Set to 'true' if maintenance mode update available.
+	MaintenanceModeUpdatesAvailable *bool `json:"maintenanceModeUpdatesAvailable,omitempty"`
+	// IsUpdateInProgress - Indicates whether an update is in progress or not.
+	IsUpdateInProgress *bool `json:"isUpdateInProgress,omitempty"`
+	// LastUpdatedTime - The time when the last update was completed.
+	LastUpdatedTime *date.Time `json:"lastUpdatedTime,omitempty"`
 }
 
-// VMImage is the virtual machine image.
+// VMImage the virtual machine image.
 type VMImage struct {
-	Name      *string `json:"name,omitempty"`
-	Version   *string `json:"version,omitempty"`
-	Offer     *string `json:"offer,omitempty"`
+	// Name - The name.
+	Name *string `json:"name,omitempty"`
+	// Version - The version.
+	Version *string `json:"version,omitempty"`
+	// Offer - The offer.
+	Offer *string `json:"offer,omitempty"`
+	// Publisher - The publisher.
 	Publisher *string `json:"publisher,omitempty"`
-	Sku       *string `json:"sku,omitempty"`
+	// Sku - The SKU.
+	Sku *string `json:"sku,omitempty"`
 }
 
-// Volume is the volume.
+// Volume the volume.
 type Volume struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	Kind              Kind    `json:"kind,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// VolumeProperties - The properties of the volume.
 	*VolumeProperties `json:"properties,omitempty"`
 }
 
-// VolumeContainer is the volume container.
+// UnmarshalJSON is the custom unmarshaler for Volume struct.
+func (vVar *Volume) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VolumeProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vVar.VolumeProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vVar.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vVar.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vVar.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		vVar.Kind = kind
+	}
+
+	return nil
+}
+
+// VolumeContainer the volume container.
 type VolumeContainer struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
-	Kind                       Kind    `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+	// VolumeContainerProperties - The volume container properties.
 	*VolumeContainerProperties `json:"properties,omitempty"`
 }
 
-// VolumeContainerFailoverMetadata is the metadata of the volume container, that is being considered as part of a
-// failover set.
-type VolumeContainerFailoverMetadata struct {
-	VolumeContainerID *string                   `json:"volumeContainerId,omitempty"`
-	Volumes           *[]VolumeFailoverMetadata `json:"volumes,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for VolumeContainer struct.
+func (vc *VolumeContainer) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties VolumeContainerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vc.VolumeContainerProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vc.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vc.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vc.Type = &typeVar
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		vc.Kind = kind
+	}
+
+	return nil
 }
 
-// VolumeContainerList is the collection of volume container entities.
+// VolumeContainerFailoverMetadata the metadata of the volume container, that is being considered as part of a failover
+// set.
+type VolumeContainerFailoverMetadata struct {
+	// VolumeContainerID - The path ID of the volume container.
+	VolumeContainerID *string `json:"volumeContainerId,omitempty"`
+	// Volumes - The list of metadata of volumes inside the volume container, which contains valid cloud snapshots.
+	Volumes *[]VolumeFailoverMetadata `json:"volumes,omitempty"`
+}
+
+// VolumeContainerList the collection of volume container entities.
 type VolumeContainerList struct {
 	autorest.Response `json:"-"`
-	Value             *[]VolumeContainer `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]VolumeContainer `json:"value,omitempty"`
 }
 
-// VolumeContainerProperties is the properties of volume container.
+// VolumeContainerProperties the properties of volume container.
 type VolumeContainerProperties struct {
-	EncryptionKey                 *AsymmetricEncryptedSecret `json:"encryptionKey,omitempty"`
-	EncryptionStatus              EncryptionStatus           `json:"encryptionStatus,omitempty"`
-	VolumeCount                   *int32                     `json:"volumeCount,omitempty"`
-	StorageAccountCredentialID    *string                    `json:"storageAccountCredentialId,omitempty"`
-	OwnerShipStatus               OwnerShipStatus            `json:"ownerShipStatus,omitempty"`
-	BandWidthRateInMbps           *int32                     `json:"bandWidthRateInMbps,omitempty"`
-	BandwidthSettingID            *string                    `json:"bandwidthSettingId,omitempty"`
-	TotalCloudStorageUsageInBytes *int64                     `json:"totalCloudStorageUsageInBytes,omitempty"`
+	// EncryptionKey - The key used to encrypt data in the volume container. It is required when property 'EncryptionStatus' is "Enabled".
+	EncryptionKey *AsymmetricEncryptedSecret `json:"encryptionKey,omitempty"`
+	// EncryptionStatus - The flag to denote whether encryption is enabled or not. Possible values include: 'EncryptionStatusEnabled', 'EncryptionStatusDisabled'
+	EncryptionStatus EncryptionStatus `json:"encryptionStatus,omitempty"`
+	// VolumeCount - The number of volumes in the volume Container.
+	VolumeCount *int32 `json:"volumeCount,omitempty"`
+	// StorageAccountCredentialID - The path ID of storage account associated with the volume container.
+	StorageAccountCredentialID *string `json:"storageAccountCredentialId,omitempty"`
+	// OwnerShipStatus - The owner ship status of the volume container. Only when the status is "NotOwned", the delete operation on the volume container is permitted. Possible values include: 'Owned', 'NotOwned'
+	OwnerShipStatus OwnerShipStatus `json:"ownerShipStatus,omitempty"`
+	// BandWidthRateInMbps - The bandwidth-rate set on the volume container.
+	BandWidthRateInMbps *int32 `json:"bandWidthRateInMbps,omitempty"`
+	// BandwidthSettingID - The ID of the bandwidth setting associated with the volume container.
+	BandwidthSettingID *string `json:"bandwidthSettingId,omitempty"`
+	// TotalCloudStorageUsageInBytes - The total cloud storage for the volume container.
+	TotalCloudStorageUsageInBytes *int64 `json:"totalCloudStorageUsageInBytes,omitempty"`
 }
 
-// VolumeFailoverMetadata is the metadata of a volume that has valid cloud snapshot.
+// VolumeContainersCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type VolumeContainersCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VolumeContainersCreateOrUpdateFuture) Result(client VolumeContainersClient) (vc VolumeContainer, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return vc, autorest.NewError("storsimple.VolumeContainersCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		vc, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	vc, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// VolumeContainersDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VolumeContainersDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VolumeContainersDeleteFuture) Result(client VolumeContainersClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.VolumeContainersDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// VolumeFailoverMetadata the metadata of a volume that has valid cloud snapshot.
 type VolumeFailoverMetadata struct {
-	VolumeID          *string    `json:"volumeId,omitempty"`
-	VolumeType        VolumeType `json:"volumeType,omitempty"`
-	SizeInBytes       *int64     `json:"sizeInBytes,omitempty"`
+	// VolumeID - The path ID of the volume.
+	VolumeID *string `json:"volumeId,omitempty"`
+	// VolumeType - The type of the volume. Possible values include: 'Tiered', 'Archival', 'LocallyPinned'
+	VolumeType VolumeType `json:"volumeType,omitempty"`
+	// SizeInBytes - The size of the volume in bytes at the time the snapshot was taken.
+	SizeInBytes *int64 `json:"sizeInBytes,omitempty"`
+	// BackupCreatedDate - The date at which the snapshot was taken.
 	BackupCreatedDate *date.Time `json:"backupCreatedDate,omitempty"`
-	BackupElementID   *string    `json:"backupElementId,omitempty"`
-	BackupID          *string    `json:"backupId,omitempty"`
-	BackupPolicyID    *string    `json:"backupPolicyId,omitempty"`
+	// BackupElementID - The path ID of the backup-element for this volume, inside the backup set.
+	BackupElementID *string `json:"backupElementId,omitempty"`
+	// BackupID - The path ID of the backup set.
+	BackupID *string `json:"backupId,omitempty"`
+	// BackupPolicyID - The path ID of the backup policy using which the snapshot was taken.
+	BackupPolicyID *string `json:"backupPolicyId,omitempty"`
 }
 
-// VolumeList is the collection of volumes.
+// VolumeList the collection of volumes.
 type VolumeList struct {
 	autorest.Response `json:"-"`
-	Value             *[]Volume `json:"value,omitempty"`
+	// Value - The value.
+	Value *[]Volume `json:"value,omitempty"`
 }
 
-// VolumeProperties is the properties of volume.
+// VolumeProperties the properties of volume.
 type VolumeProperties struct {
-	SizeInBytes            *int64           `json:"sizeInBytes,omitempty"`
-	VolumeType             VolumeType       `json:"volumeType,omitempty"`
-	VolumeContainerID      *string          `json:"volumeContainerId,omitempty"`
-	AccessControlRecordIds *[]string        `json:"accessControlRecordIds,omitempty"`
-	VolumeStatus           VolumeStatus     `json:"volumeStatus,omitempty"`
-	OperationStatus        OperationStatus  `json:"operationStatus,omitempty"`
-	BackupStatus           BackupStatus     `json:"backupStatus,omitempty"`
-	MonitoringStatus       MonitoringStatus `json:"monitoringStatus,omitempty"`
-	BackupPolicyIds        *[]string        `json:"backupPolicyIds,omitempty"`
+	// SizeInBytes - The size of the volume in bytes.
+	SizeInBytes *int64 `json:"sizeInBytes,omitempty"`
+	// VolumeType - The type of the volume. Possible values include: 'Tiered', 'Archival', 'LocallyPinned'
+	VolumeType VolumeType `json:"volumeType,omitempty"`
+	// VolumeContainerID - The ID of the volume container, in which this volume is created.
+	VolumeContainerID *string `json:"volumeContainerId,omitempty"`
+	// AccessControlRecordIds - The IDs of the access control records, associated with the volume.
+	AccessControlRecordIds *[]string `json:"accessControlRecordIds,omitempty"`
+	// VolumeStatus - The volume status. Possible values include: 'VolumeStatusOnline', 'VolumeStatusOffline'
+	VolumeStatus VolumeStatus `json:"volumeStatus,omitempty"`
+	// OperationStatus - The operation status on the volume. Possible values include: 'OperationStatusNone', 'OperationStatusUpdating', 'OperationStatusDeleting', 'OperationStatusRestoring'
+	OperationStatus OperationStatus `json:"operationStatus,omitempty"`
+	// BackupStatus - The backup status of the volume. Possible values include: 'BackupStatusEnabled', 'BackupStatusDisabled'
+	BackupStatus BackupStatus `json:"backupStatus,omitempty"`
+	// MonitoringStatus - The monitoring status of the volume. Possible values include: 'MonitoringStatusEnabled', 'MonitoringStatusDisabled'
+	MonitoringStatus MonitoringStatus `json:"monitoringStatus,omitempty"`
+	// BackupPolicyIds - The IDs of the backup policies, in which this volume is part of.
+	BackupPolicyIds *[]string `json:"backupPolicyIds,omitempty"`
 }
 
-// WebproxySettings is the web proxy settings on the device.
+// VolumesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VolumesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VolumesCreateOrUpdateFuture) Result(client VolumesClient) (vVar Volume, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return vVar, autorest.NewError("storsimple.VolumesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		vVar, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	vVar, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// VolumesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type VolumesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future VolumesDeleteFuture) Result(client VolumesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("storsimple.VolumesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// WebproxySettings the web proxy settings on the device.
 type WebproxySettings struct {
-	ConnectionURI  *string            `json:"connectionUri,omitempty"`
+	// ConnectionURI - The connection URI.
+	ConnectionURI *string `json:"connectionUri,omitempty"`
+	// Authentication - The authentication type. Possible values include: 'Invalid', 'None', 'Basic', 'NTLM'
 	Authentication AuthenticationType `json:"authentication,omitempty"`
-	Username       *string            `json:"username,omitempty"`
+	// Username - The webproxy username.
+	Username *string `json:"username,omitempty"`
 }

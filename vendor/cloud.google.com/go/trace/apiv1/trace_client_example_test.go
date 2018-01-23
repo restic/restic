@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,6 +33,40 @@ func ExampleNewClient() {
 	_ = c
 }
 
+func ExampleClient_PatchTraces() {
+	ctx := context.Background()
+	c, err := trace.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &cloudtracepb.PatchTracesRequest{
+		// TODO: Fill request struct fields.
+	}
+	err = c.PatchTraces(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+}
+
+func ExampleClient_GetTrace() {
+	ctx := context.Background()
+	c, err := trace.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &cloudtracepb.GetTraceRequest{
+		// TODO: Fill request struct fields.
+	}
+	resp, err := c.GetTrace(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
 func ExampleClient_ListTraces() {
 	ctx := context.Background()
 	c, err := trace.NewClient(ctx)
@@ -41,7 +75,7 @@ func ExampleClient_ListTraces() {
 	}
 
 	req := &cloudtracepb.ListTracesRequest{
-	// TODO: Fill request struct fields.
+		// TODO: Fill request struct fields.
 	}
 	it := c.ListTraces(ctx, req)
 	for {
@@ -54,39 +88,5 @@ func ExampleClient_ListTraces() {
 		}
 		// TODO: Use resp.
 		_ = resp
-	}
-}
-
-func ExampleClient_GetTrace() {
-	ctx := context.Background()
-	c, err := trace.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &cloudtracepb.GetTraceRequest{
-	// TODO: Fill request struct fields.
-	}
-	resp, err := c.GetTrace(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
-	}
-	// TODO: Use resp.
-	_ = resp
-}
-
-func ExampleClient_PatchTraces() {
-	ctx := context.Background()
-	c, err := trace.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &cloudtracepb.PatchTracesRequest{
-	// TODO: Fill request struct fields.
-	}
-	err = c.PatchTraces(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
 	}
 }

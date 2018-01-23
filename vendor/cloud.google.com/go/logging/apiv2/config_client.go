@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -94,8 +94,8 @@ type ConfigClient struct {
 	// The call options for this service.
 	CallOptions *ConfigCallOptions
 
-	// The metadata to be sent with each request.
-	Metadata metadata.MD
+	// The x-goog-* metadata to be sent with each request.
+	xGoogMetadata metadata.MD
 }
 
 // NewConfigClient creates a new config service v2 client.
@@ -134,40 +134,12 @@ func (c *ConfigClient) Close() error {
 func (c *ConfigClient) SetGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", version.Go()}, keyval...)
 	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
-	c.Metadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
-}
-
-// ConfigProjectPath returns the path for the project resource.
-func ConfigProjectPath(project string) string {
-	return "" +
-		"projects/" +
-		project +
-		""
-}
-
-// ConfigSinkPath returns the path for the sink resource.
-func ConfigSinkPath(project, sink string) string {
-	return "" +
-		"projects/" +
-		project +
-		"/sinks/" +
-		sink +
-		""
-}
-
-// ConfigExclusionPath returns the path for the exclusion resource.
-func ConfigExclusionPath(project, exclusion string) string {
-	return "" +
-		"projects/" +
-		project +
-		"/exclusions/" +
-		exclusion +
-		""
+	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
 }
 
 // ListSinks lists sinks.
 func (c *ConfigClient) ListSinks(ctx context.Context, req *loggingpb.ListSinksRequest, opts ...gax.CallOption) *LogSinkIterator {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListSinks[0:len(c.CallOptions.ListSinks):len(c.CallOptions.ListSinks)], opts...)
 	it := &LogSinkIterator{}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*loggingpb.LogSink, string, error) {
@@ -202,7 +174,7 @@ func (c *ConfigClient) ListSinks(ctx context.Context, req *loggingpb.ListSinksRe
 
 // GetSink gets a sink.
 func (c *ConfigClient) GetSink(ctx context.Context, req *loggingpb.GetSinkRequest, opts ...gax.CallOption) (*loggingpb.LogSink, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.GetSink[0:len(c.CallOptions.GetSink):len(c.CallOptions.GetSink)], opts...)
 	var resp *loggingpb.LogSink
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -217,12 +189,11 @@ func (c *ConfigClient) GetSink(ctx context.Context, req *loggingpb.GetSinkReques
 }
 
 // CreateSink creates a sink that exports specified log entries to a destination.  The
-// export of newly-ingested log entries begins immediately, unless the current
-// time is outside the sink's start and end times or the sink's
+// export of newly-ingested log entries begins immediately, unless the sink's
 // writer_identity is not permitted to write to the destination.  A sink can
 // export log entries only from the resource owning the sink.
 func (c *ConfigClient) CreateSink(ctx context.Context, req *loggingpb.CreateSinkRequest, opts ...gax.CallOption) (*loggingpb.LogSink, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.CreateSink[0:len(c.CallOptions.CreateSink):len(c.CallOptions.CreateSink)], opts...)
 	var resp *loggingpb.LogSink
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -237,12 +208,11 @@ func (c *ConfigClient) CreateSink(ctx context.Context, req *loggingpb.CreateSink
 }
 
 // UpdateSink updates a sink.  This method replaces the following fields in the existing
-// sink with values from the new sink: destination, filter,
-// output_version_format, start_time, and end_time.
+// sink with values from the new sink: destination, and filter.
 // The updated sink might also have a new writer_identity; see the
 // unique_writer_identity field.
 func (c *ConfigClient) UpdateSink(ctx context.Context, req *loggingpb.UpdateSinkRequest, opts ...gax.CallOption) (*loggingpb.LogSink, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.UpdateSink[0:len(c.CallOptions.UpdateSink):len(c.CallOptions.UpdateSink)], opts...)
 	var resp *loggingpb.LogSink
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -259,7 +229,7 @@ func (c *ConfigClient) UpdateSink(ctx context.Context, req *loggingpb.UpdateSink
 // DeleteSink deletes a sink. If the sink has a unique writer_identity, then that
 // service account is also deleted.
 func (c *ConfigClient) DeleteSink(ctx context.Context, req *loggingpb.DeleteSinkRequest, opts ...gax.CallOption) error {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.DeleteSink[0:len(c.CallOptions.DeleteSink):len(c.CallOptions.DeleteSink)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
@@ -271,7 +241,7 @@ func (c *ConfigClient) DeleteSink(ctx context.Context, req *loggingpb.DeleteSink
 
 // ListExclusions lists all the exclusions in a parent resource.
 func (c *ConfigClient) ListExclusions(ctx context.Context, req *loggingpb.ListExclusionsRequest, opts ...gax.CallOption) *LogExclusionIterator {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListExclusions[0:len(c.CallOptions.ListExclusions):len(c.CallOptions.ListExclusions)], opts...)
 	it := &LogExclusionIterator{}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*loggingpb.LogExclusion, string, error) {
@@ -306,7 +276,7 @@ func (c *ConfigClient) ListExclusions(ctx context.Context, req *loggingpb.ListEx
 
 // GetExclusion gets the description of an exclusion.
 func (c *ConfigClient) GetExclusion(ctx context.Context, req *loggingpb.GetExclusionRequest, opts ...gax.CallOption) (*loggingpb.LogExclusion, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.GetExclusion[0:len(c.CallOptions.GetExclusion):len(c.CallOptions.GetExclusion)], opts...)
 	var resp *loggingpb.LogExclusion
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -324,7 +294,7 @@ func (c *ConfigClient) GetExclusion(ctx context.Context, req *loggingpb.GetExclu
 // Only log entries belonging to that resource can be excluded.
 // You can have up to 10 exclusions in a resource.
 func (c *ConfigClient) CreateExclusion(ctx context.Context, req *loggingpb.CreateExclusionRequest, opts ...gax.CallOption) (*loggingpb.LogExclusion, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.CreateExclusion[0:len(c.CallOptions.CreateExclusion):len(c.CallOptions.CreateExclusion)], opts...)
 	var resp *loggingpb.LogExclusion
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -340,7 +310,7 @@ func (c *ConfigClient) CreateExclusion(ctx context.Context, req *loggingpb.Creat
 
 // UpdateExclusion changes one or more properties of an existing exclusion.
 func (c *ConfigClient) UpdateExclusion(ctx context.Context, req *loggingpb.UpdateExclusionRequest, opts ...gax.CallOption) (*loggingpb.LogExclusion, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.UpdateExclusion[0:len(c.CallOptions.UpdateExclusion):len(c.CallOptions.UpdateExclusion)], opts...)
 	var resp *loggingpb.LogExclusion
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -356,7 +326,7 @@ func (c *ConfigClient) UpdateExclusion(ctx context.Context, req *loggingpb.Updat
 
 // DeleteExclusion deletes an exclusion.
 func (c *ConfigClient) DeleteExclusion(ctx context.Context, req *loggingpb.DeleteExclusionRequest, opts ...gax.CallOption) error {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.DeleteExclusion[0:len(c.CallOptions.DeleteExclusion):len(c.CallOptions.DeleteExclusion)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error

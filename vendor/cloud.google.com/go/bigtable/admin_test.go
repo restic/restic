@@ -15,13 +15,16 @@
 package bigtable
 
 import (
+	"math"
 	"sort"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/internal/testutil"
+
 	"fmt"
 	"golang.org/x/net/context"
-	"reflect"
+	"google.golang.org/api/iterator"
 	"strings"
 )
 
@@ -97,6 +100,9 @@ func TestAdminIntegration(t *testing.T) {
 	if got, want := list(), []string{"myothertable", "mytable"}; !containsAll(got, want) {
 		t.Errorf("adminClient.Tables returned %#v, want %#v", got, want)
 	}
+
+	adminClient.WaitForReplication(ctx, "mytable")
+
 	if err := adminClient.DeleteTable(ctx, "myothertable"); err != nil {
 		t.Fatalf("Deleting table: %v", err)
 	}
@@ -126,7 +132,7 @@ func TestAdminIntegration(t *testing.T) {
 	}
 	sort.Strings(tblInfo.Families)
 	wantFams := []string{"fam1", "fam2"}
-	if !reflect.DeepEqual(tblInfo.Families, wantFams) {
+	if !testutil.Equal(tblInfo.Families, wantFams) {
 		t.Errorf("Column family mismatch, got %v, want %v", tblInfo.Families, wantFams)
 	}
 
@@ -174,5 +180,122 @@ func TestAdminIntegration(t *testing.T) {
 	})
 	if gotRowCount != 5 {
 		t.Errorf("Invalid row count after dropping range: got %v, want %v", gotRowCount, 5)
+	}
+}
+
+func TestAdminSnapshotIntegration(t *testing.T) {
+	testEnv, err := NewIntegrationEnv()
+	if err != nil {
+		t.Fatalf("IntegrationEnv: %v", err)
+	}
+	defer testEnv.Close()
+
+	if !testEnv.Config().UseProd {
+		t.Skip("emulator doesn't support snapshots")
+	}
+
+	timeout := 2 * time.Second
+	if testEnv.Config().UseProd {
+		timeout = 5 * time.Minute
+	}
+	ctx, _ := context.WithTimeout(context.Background(), timeout)
+
+	adminClient, err := testEnv.NewAdminClient()
+	if err != nil {
+		t.Fatalf("NewAdminClient: %v", err)
+	}
+	defer adminClient.Close()
+
+	table := testEnv.Config().Table
+	cluster := testEnv.Config().Cluster
+
+	list := func(cluster string) ([]*SnapshotInfo, error) {
+		infos := []*SnapshotInfo(nil)
+
+		it := adminClient.ListSnapshots(ctx, cluster)
+		for {
+			s, err := it.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			infos = append(infos, s)
+		}
+		return infos, err
+	}
+
+	// Delete the table at the end of the test. Schedule ahead of time
+	// in case the client fails
+	defer adminClient.DeleteTable(ctx, table)
+
+	if err := adminClient.CreateTable(ctx, table); err != nil {
+		t.Fatalf("Creating table: %v", err)
+	}
+
+	// Precondition: no snapshots
+	snapshots, err := list(cluster)
+	if err != nil {
+		t.Fatalf("Initial snapshot list: %v", err)
+	}
+	if got, want := len(snapshots), 0; got != want {
+		t.Fatalf("Initial snapshot list len: %d, want: %d", got, want)
+	}
+
+	// Create snapshot
+	defer adminClient.DeleteSnapshot(ctx, cluster, "mysnapshot")
+
+	if err = adminClient.SnapshotTable(ctx, table, cluster, "mysnapshot", 5*time.Hour); err != nil {
+		t.Fatalf("Creating snaphot: %v", err)
+	}
+
+	// List snapshot
+	snapshots, err = list(cluster)
+	if err != nil {
+		t.Fatalf("Listing snapshots: %v", err)
+	}
+	if got, want := len(snapshots), 1; got != want {
+		t.Fatalf("Listing snapshot count: %d, want: %d", got, want)
+	}
+	if got, want := snapshots[0].Name, "mysnapshot"; got != want {
+		t.Fatalf("Snapshot name: %s, want: %s", got, want)
+	}
+	if got, want := snapshots[0].SourceTable, table; got != want {
+		t.Fatalf("Snapshot SourceTable: %s, want: %s", got, want)
+	}
+	if got, want := snapshots[0].DeleteTime, snapshots[0].CreateTime.Add(5*time.Hour); math.Abs(got.Sub(want).Minutes()) > 1 {
+		t.Fatalf("Snapshot DeleteTime: %s, want: %s", got, want)
+	}
+
+	// Get snapshot
+	snapshot, err := adminClient.SnapshotInfo(ctx, cluster, "mysnapshot")
+	if err != nil {
+		t.Fatalf("SnapshotInfo: %v", snapshot)
+	}
+	if got, want := *snapshot, *snapshots[0]; got != want {
+		t.Fatalf("SnapshotInfo: %v, want: %v", got, want)
+	}
+
+	// Restore
+	restoredTable := table + "-restored"
+	defer adminClient.DeleteTable(ctx, restoredTable)
+	if err = adminClient.CreateTableFromSnapshot(ctx, restoredTable, cluster, "mysnapshot"); err != nil {
+		t.Fatalf("CreateTableFromSnapshot: %v", err)
+	}
+	if _, err := adminClient.TableInfo(ctx, restoredTable); err != nil {
+		t.Fatalf("Restored TableInfo: %v", err)
+	}
+
+	// Delete snapshot
+	if err = adminClient.DeleteSnapshot(ctx, cluster, "mysnapshot"); err != nil {
+		t.Fatalf("DeleteSnapshot: %v", err)
+	}
+	snapshots, err = list(cluster)
+	if err != nil {
+		t.Fatalf("List after Delete: %v", err)
+	}
+	if got, want := len(snapshots), 0; got != want {
+		t.Fatalf("List after delete len: %d, want: %d", got, want)
 	}
 }

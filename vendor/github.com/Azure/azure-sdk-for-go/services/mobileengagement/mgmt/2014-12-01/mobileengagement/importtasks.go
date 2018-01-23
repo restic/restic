@@ -18,6 +18,7 @@ package mobileengagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ImportTasksClient is the microsoft Azure Mobile Engagement REST APIs.
 type ImportTasksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewImportTasksClient creates an instance of the ImportTasksClient client.
@@ -43,8 +44,8 @@ func NewImportTasksClientWithBaseURI(baseURI string, subscriptionID string) Impo
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ImportTasksClient) Create(resourceGroupName string, appCollection string, appName string, parameters ImportTask) (result ImportTaskResult, err error) {
-	req, err := client.CreatePreparer(resourceGroupName, appCollection, appName, parameters)
+func (client ImportTasksClient) Create(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ImportTask) (result ImportTaskResult, err error) {
+	req, err := client.CreatePreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "Create", nil, "Failure preparing request")
 		return
@@ -66,7 +67,7 @@ func (client ImportTasksClient) Create(resourceGroupName string, appCollection s
 }
 
 // CreatePreparer prepares the Create request.
-func (client ImportTasksClient) CreatePreparer(resourceGroupName string, appCollection string, appName string, parameters ImportTask) (*http.Request, error) {
+func (client ImportTasksClient) CreatePreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ImportTask) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -86,14 +87,13 @@ func (client ImportTasksClient) CreatePreparer(resourceGroupName string, appColl
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/importTasks", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ImportTasksClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,8 +114,8 @@ func (client ImportTasksClient) CreateResponder(resp *http.Response) (result Imp
 //
 // ID is import job identifier. resourceGroupName is the name of the resource group. appCollection is application
 // collection. appName is application resource name.
-func (client ImportTasksClient) Get(ID string, resourceGroupName string, appCollection string, appName string) (result ImportTaskResult, err error) {
-	req, err := client.GetPreparer(ID, resourceGroupName, appCollection, appName)
+func (client ImportTasksClient) Get(ctx context.Context, ID string, resourceGroupName string, appCollection string, appName string) (result ImportTaskResult, err error) {
+	req, err := client.GetPreparer(ctx, ID, resourceGroupName, appCollection, appName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "Get", nil, "Failure preparing request")
 		return
@@ -137,7 +137,7 @@ func (client ImportTasksClient) Get(ID string, resourceGroupName string, appColl
 }
 
 // GetPreparer prepares the Get request.
-func (client ImportTasksClient) GetPreparer(ID string, resourceGroupName string, appCollection string, appName string) (*http.Request, error) {
+func (client ImportTasksClient) GetPreparer(ctx context.Context, ID string, resourceGroupName string, appCollection string, appName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -156,14 +156,13 @@ func (client ImportTasksClient) GetPreparer(ID string, resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/importTasks/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ImportTasksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -194,7 +193,7 @@ func (client ImportTasksClient) GetResponder(resp *http.Response) (result Import
 // The available directions are asc (for ascending order) and desc (for descending order).
 // When not specified the asc direction is used.
 // Only one orderby property can be specified.
-func (client ImportTasksClient) List(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ImportTaskListResult, err error) {
+func (client ImportTasksClient) List(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ImportTaskListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: skip,
 			Constraints: []validation.Constraint{{Target: "skip", Name: validation.Null, Rule: false,
@@ -207,7 +206,8 @@ func (client ImportTasksClient) List(resourceGroupName string, appCollection str
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ImportTasksClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, appCollection, appName, skip, top, orderby)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, appCollection, appName, skip, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", nil, "Failure preparing request")
 		return
@@ -215,12 +215,12 @@ func (client ImportTasksClient) List(resourceGroupName string, appCollection str
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.itlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.itlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", resp, "Failure responding to request")
 	}
@@ -229,7 +229,7 @@ func (client ImportTasksClient) List(resourceGroupName string, appCollection str
 }
 
 // ListPreparer prepares the List request.
-func (client ImportTasksClient) ListPreparer(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (*http.Request, error) {
+func (client ImportTasksClient) ListPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -256,14 +256,13 @@ func (client ImportTasksClient) ListPreparer(resourceGroupName string, appCollec
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/importTasks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ImportTasksClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -280,71 +279,29 @@ func (client ImportTasksClient) ListResponder(resp *http.Response) (result Impor
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ImportTasksClient) ListNextResults(lastResults ImportTaskListResult) (result ImportTaskListResult, err error) {
-	req, err := lastResults.ImportTaskListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ImportTasksClient) listNextResults(lastResults ImportTaskListResult) (result ImportTaskListResult, err error) {
+	req, err := lastResults.importTaskListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "mobileengagement.ImportTasksClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ImportTasksClient) ListComplete(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string, cancel <-chan struct{}) (<-chan ImportTaskResult, <-chan error) {
-	resultChan := make(chan ImportTaskResult)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, appCollection, appName, skip, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ImportTasksClient) ListComplete(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ImportTaskListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, appCollection, appName, skip, top, orderby)
+	return
 }

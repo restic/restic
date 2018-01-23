@@ -482,15 +482,20 @@ type GoogleCloudVisionV1p1beta1Block struct {
 	// is
 	// read in the 'natural' orientation.
 	// For example:
-	//   * when the text is horizontal it might look like:
-	//      0----1
-	//      |    |
-	//      3----2
-	//   * when it's rotated 180 degrees around the top-left corner it
+	//
+	// * when the text is horizontal it might look like:
+	//
+	//         0----1
+	//         |    |
+	//         3----2
+	//
+	// * when it's rotated 180 degrees around the top-left corner it
 	// becomes:
-	//      2----3
-	//      |    |
-	//      1----0
+	//
+	//         2----3
+	//         |    |
+	//         1----0
+	//
 	//   and the vertice order will still be (0, 1, 2, 3).
 	BoundingBox *GoogleCloudVisionV1p1beta1BoundingPoly `json:"boundingBox,omitempty"`
 
@@ -784,7 +789,8 @@ type GoogleCloudVisionV1p1beta1EntityAnnotation struct {
 	// for `LABEL_DETECTION` features.
 	BoundingPoly *GoogleCloudVisionV1p1beta1BoundingPoly `json:"boundingPoly,omitempty"`
 
-	// Confidence: The accuracy of the entity detection in an image.
+	// Confidence: **Deprecated. Use `score` instead.**
+	// The accuracy of the entity detection in an image.
 	// For example, for an image in which the "Eiffel Tower" entity is
 	// detected,
 	// this field represents the confidence that there is a tower in the
@@ -1162,16 +1168,15 @@ func (s *GoogleCloudVisionV1p1beta1FaceAnnotationLandmark) MarshalJSON() ([]byte
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// GoogleCloudVisionV1p1beta1Feature: Users describe the type of Google
-// Cloud Vision API tasks to perform over
-// images by using *Feature*s. Each Feature indicates a type of
-// image
-// detection task to perform. Features encode the Cloud Vision
-// API
-// vertical to operate on and the number of top-scoring results to
-// return.
+// GoogleCloudVisionV1p1beta1Feature: The type of Google Cloud Vision
+// API detection to perform, and the maximum
+// number of results to return for that type. Multiple `Feature` objects
+// can
+// be specified in the `features` list.
 type GoogleCloudVisionV1p1beta1Feature struct {
-	// MaxResults: Maximum number of results of this type.
+	// MaxResults: Maximum number of results of this type. Does not apply
+	// to
+	// `TEXT_DETECTION`, `DOCUMENT_TEXT_DETECTION`, or `CROP_HINTS`.
 	MaxResults int64 `json:"maxResults,omitempty"`
 
 	// Model: Model to use for the feature.
@@ -1188,13 +1193,19 @@ type GoogleCloudVisionV1p1beta1Feature struct {
 	//   "LANDMARK_DETECTION" - Run landmark detection.
 	//   "LOGO_DETECTION" - Run logo detection.
 	//   "LABEL_DETECTION" - Run label detection.
-	//   "TEXT_DETECTION" - Run OCR.
+	//   "TEXT_DETECTION" - Run text detection / optical character
+	// recognition (OCR). Text detection
+	// is optimized for areas of text within a larger image; if the image
+	// is
+	// a document, use `DOCUMENT_TEXT_DETECTION` instead.
 	//   "DOCUMENT_TEXT_DETECTION" - Run dense text document OCR. Takes
 	// precedence when both
-	// DOCUMENT_TEXT_DETECTION and TEXT_DETECTION are present.
-	//   "SAFE_SEARCH_DETECTION" - Run computer vision models to compute
-	// image safe-search properties.
-	//   "IMAGE_PROPERTIES" - Compute a set of image properties, such as the
+	// `DOCUMENT_TEXT_DETECTION` and `TEXT_DETECTION` are present.
+	//   "SAFE_SEARCH_DETECTION" - Run Safe Search to detect potentially
+	// unsafe
+	// or undesirable content.
+	//   "IMAGE_PROPERTIES" - Compute a set of image properties, such as
+	// the
 	// image's dominant colors.
 	//   "CROP_HINTS" - Run crop hints.
 	//   "WEB_DETECTION" - Run web detection.
@@ -1227,15 +1238,16 @@ func (s *GoogleCloudVisionV1p1beta1Feature) MarshalJSON() ([]byte, error) {
 // Vision API tasks over.
 type GoogleCloudVisionV1p1beta1Image struct {
 	// Content: Image content, represented as a stream of bytes.
-	// Note: as with all `bytes` fields, protobuffers use a pure
+	// Note: As with all `bytes` fields, protobuffers use a pure
 	// binary
 	// representation, whereas JSON representations use base64.
 	Content string `json:"content,omitempty"`
 
-	// Source: Google Cloud Storage image location. If both `content` and
-	// `source`
-	// are provided for an image, `content` takes precedence and is
-	// used to perform the image annotation request.
+	// Source: Google Cloud Storage image location, or publicly-accessible
+	// image
+	// URL. If both `content` and `source` are provided for an image,
+	// `content`
+	// takes precedence and is used to perform the image annotation request.
 	Source *GoogleCloudVisionV1p1beta1ImageSource `json:"source,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Content") to
@@ -1346,33 +1358,42 @@ func (s *GoogleCloudVisionV1p1beta1ImageProperties) MarshalJSON() ([]byte, error
 }
 
 // GoogleCloudVisionV1p1beta1ImageSource: External image source (Google
-// Cloud Storage image location).
+// Cloud Storage or web URL image location).
 type GoogleCloudVisionV1p1beta1ImageSource struct {
-	// GcsImageUri: NOTE: For new code `image_uri` below is
-	// preferred.
-	// Google Cloud Storage image URI, which must be in the following
-	// form:
-	// `gs://bucket_name/object_name` (for details, see
+	// GcsImageUri: **Use `image_uri` instead.**
+	//
+	// The Google Cloud Storage  URI of the
+	// form
+	// `gs://bucket_name/object_name`. Object versioning is not supported.
+	// See
 	// [Google Cloud Storage
 	// Request
-	// URIs](https://cloud.google.com/storage/docs/reference-uris)).
-	//
-	// NOTE: Cloud Storage object versioning is not supported.
+	// URIs](https://cloud.google.com/storage/docs/reference-uris) for more
+	// info.
 	GcsImageUri string `json:"gcsImageUri,omitempty"`
 
-	// ImageUri: Image URI which supports:
-	// 1) Google Cloud Storage image URI, which must be in the following
-	// form:
-	// `gs://bucket_name/object_name` (for details, see
-	// [Google Cloud Storage
-	// Request
-	// URIs](https://cloud.google.com/storage/docs/reference-uris)).
+	// ImageUri: The URI of the source image. Can be either:
 	//
-	// NOTE: Cloud Storage object versioning is not supported.
-	// 2) Publicly accessible image HTTP/HTTPS URL.
-	// This is preferred over the legacy `gcs_image_uri` above. When
-	// both
-	// `gcs_image_uri` and `image_uri` are specified, `image_uri`
+	// 1. A Google Cloud Storage URI of the form
+	//    `gs://bucket_name/object_name`. Object versioning is not
+	// supported. See
+	//    [Google Cloud Storage Request
+	//    URIs](https://cloud.google.com/storage/docs/reference-uris) for
+	// more
+	//    info.
+	//
+	// 2. A publicly-accessible image HTTP/HTTPS URL. When fetching images
+	// from
+	//    HTTP/HTTPS URLs, Google cannot guarantee that the request will be
+	//    completed. Your request may fail if the specified host denies the
+	//    request (e.g. due to request throttling or DOS prevention), or if
+	// Google
+	//    throttles requests to the site for abuse prevention. You should
+	// not
+	//    depend on externally-hosted images for production
+	// applications.
+	//
+	// When both `gcs_image_uri` and `image_uri` are specified, `image_uri`
 	// takes
 	// precedence.
 	ImageUri string `json:"imageUri,omitempty"`

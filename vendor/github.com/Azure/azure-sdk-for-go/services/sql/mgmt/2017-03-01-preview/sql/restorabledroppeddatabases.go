@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // that interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve,
 // update, and delete databases.
 type RestorableDroppedDatabasesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewRestorableDroppedDatabasesClient creates an instance of the RestorableDroppedDatabasesClient client.
@@ -45,8 +46,8 @@ func NewRestorableDroppedDatabasesClientWithBaseURI(baseURI string, subscription
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. restorableDroppededDatabaseID is the
 // id of the deleted database in the form of databaseName,deletionTimeInFileTimeFormat
-func (client RestorableDroppedDatabasesClient) Get(resourceGroupName string, serverName string, restorableDroppededDatabaseID string) (result RestorableDroppedDatabase, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, restorableDroppededDatabaseID)
+func (client RestorableDroppedDatabasesClient) Get(ctx context.Context, resourceGroupName string, serverName string, restorableDroppededDatabaseID string) (result RestorableDroppedDatabase, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, restorableDroppededDatabaseID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.RestorableDroppedDatabasesClient", "Get", nil, "Failure preparing request")
 		return
@@ -68,7 +69,7 @@ func (client RestorableDroppedDatabasesClient) Get(resourceGroupName string, ser
 }
 
 // GetPreparer prepares the Get request.
-func (client RestorableDroppedDatabasesClient) GetPreparer(resourceGroupName string, serverName string, restorableDroppededDatabaseID string) (*http.Request, error) {
+func (client RestorableDroppedDatabasesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, restorableDroppededDatabaseID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":             autorest.Encode("path", resourceGroupName),
 		"restorableDroppededDatabaseId": autorest.Encode("path", restorableDroppededDatabaseID),
@@ -86,14 +87,13 @@ func (client RestorableDroppedDatabasesClient) GetPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/restorableDroppedDatabases/{restorableDroppededDatabaseId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client RestorableDroppedDatabasesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,8 +114,8 @@ func (client RestorableDroppedDatabasesClient) GetResponder(resp *http.Response)
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client RestorableDroppedDatabasesClient) ListByServer(resourceGroupName string, serverName string) (result RestorableDroppedDatabaseListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client RestorableDroppedDatabasesClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result RestorableDroppedDatabaseListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.RestorableDroppedDatabasesClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -137,7 +137,7 @@ func (client RestorableDroppedDatabasesClient) ListByServer(resourceGroupName st
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client RestorableDroppedDatabasesClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client RestorableDroppedDatabasesClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -154,14 +154,13 @@ func (client RestorableDroppedDatabasesClient) ListByServerPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/restorableDroppedDatabases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client RestorableDroppedDatabasesClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

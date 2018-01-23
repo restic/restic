@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // SitesClient is the webSite Management Client
 type SitesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSitesClient creates an instance of the SitesClient client.
@@ -40,8 +41,8 @@ func NewSitesClientWithBaseURI(baseURI string, subscriptionID string) SitesClien
 
 // AddSitePremierAddOn sends the add site premier add on request.
 //
-func (client SitesClient) AddSitePremierAddOn(resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest) (result SetObject, err error) {
-	req, err := client.AddSitePremierAddOnPreparer(resourceGroupName, name, premierAddOnName, premierAddOn)
+func (client SitesClient) AddSitePremierAddOn(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest) (result SetObject, err error) {
+	req, err := client.AddSitePremierAddOnPreparer(ctx, resourceGroupName, name, premierAddOnName, premierAddOn)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "AddSitePremierAddOn", nil, "Failure preparing request")
 		return
@@ -63,7 +64,7 @@ func (client SitesClient) AddSitePremierAddOn(resourceGroupName string, name str
 }
 
 // AddSitePremierAddOnPreparer prepares the AddSitePremierAddOn request.
-func (client SitesClient) AddSitePremierAddOnPreparer(resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest) (*http.Request, error) {
+func (client SitesClient) AddSitePremierAddOnPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -83,14 +84,13 @@ func (client SitesClient) AddSitePremierAddOnPreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithJSON(premierAddOn),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // AddSitePremierAddOnSender sends the AddSitePremierAddOn request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) AddSitePremierAddOnSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -109,8 +109,8 @@ func (client SitesClient) AddSitePremierAddOnResponder(resp *http.Response) (res
 
 // AddSitePremierAddOnSlot sends the add site premier add on slot request.
 //
-func (client SitesClient) AddSitePremierAddOnSlot(resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest, slot string) (result SetObject, err error) {
-	req, err := client.AddSitePremierAddOnSlotPreparer(resourceGroupName, name, premierAddOnName, premierAddOn, slot)
+func (client SitesClient) AddSitePremierAddOnSlot(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest, slot string) (result SetObject, err error) {
+	req, err := client.AddSitePremierAddOnSlotPreparer(ctx, resourceGroupName, name, premierAddOnName, premierAddOn, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "AddSitePremierAddOnSlot", nil, "Failure preparing request")
 		return
@@ -132,7 +132,7 @@ func (client SitesClient) AddSitePremierAddOnSlot(resourceGroupName string, name
 }
 
 // AddSitePremierAddOnSlotPreparer prepares the AddSitePremierAddOnSlot request.
-func (client SitesClient) AddSitePremierAddOnSlotPreparer(resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest, slot string) (*http.Request, error) {
+func (client SitesClient) AddSitePremierAddOnSlotPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, premierAddOn PremierAddOnRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -153,14 +153,13 @@ func (client SitesClient) AddSitePremierAddOnSlotPreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithJSON(premierAddOn),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // AddSitePremierAddOnSlotSender sends the AddSitePremierAddOnSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) AddSitePremierAddOnSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -182,8 +181,8 @@ func (client SitesClient) AddSitePremierAddOnSlotResponder(resp *http.Response) 
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name. Settings from that slot will be applied on the source slot slot is name of the source slot.
 // Settings from the target slot will be applied onto this slot
-func (client SitesClient) ApplySlotConfigSlot(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SetObject, err error) {
-	req, err := client.ApplySlotConfigSlotPreparer(resourceGroupName, name, slotSwapEntity, slot)
+func (client SitesClient) ApplySlotConfigSlot(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SetObject, err error) {
+	req, err := client.ApplySlotConfigSlotPreparer(ctx, resourceGroupName, name, slotSwapEntity, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ApplySlotConfigSlot", nil, "Failure preparing request")
 		return
@@ -205,7 +204,7 @@ func (client SitesClient) ApplySlotConfigSlot(resourceGroupName string, name str
 }
 
 // ApplySlotConfigSlotPreparer prepares the ApplySlotConfigSlot request.
-func (client SitesClient) ApplySlotConfigSlotPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (*http.Request, error) {
+func (client SitesClient) ApplySlotConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -225,14 +224,13 @@ func (client SitesClient) ApplySlotConfigSlotPreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/applySlotConfig", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ApplySlotConfigSlotSender sends the ApplySlotConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ApplySlotConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -253,8 +251,8 @@ func (client SitesClient) ApplySlotConfigSlotResponder(resp *http.Response) (res
 //
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name. Settings from that slot will be applied on the source slot
-func (client SitesClient) ApplySlotConfigToProduction(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SetObject, err error) {
-	req, err := client.ApplySlotConfigToProductionPreparer(resourceGroupName, name, slotSwapEntity)
+func (client SitesClient) ApplySlotConfigToProduction(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SetObject, err error) {
+	req, err := client.ApplySlotConfigToProductionPreparer(ctx, resourceGroupName, name, slotSwapEntity)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ApplySlotConfigToProduction", nil, "Failure preparing request")
 		return
@@ -276,7 +274,7 @@ func (client SitesClient) ApplySlotConfigToProduction(resourceGroupName string, 
 }
 
 // ApplySlotConfigToProductionPreparer prepares the ApplySlotConfigToProduction request.
-func (client SitesClient) ApplySlotConfigToProductionPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (*http.Request, error) {
+func (client SitesClient) ApplySlotConfigToProductionPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -295,14 +293,13 @@ func (client SitesClient) ApplySlotConfigToProductionPreparer(resourceGroupName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/applySlotConfig", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ApplySlotConfigToProductionSender sends the ApplySlotConfigToProduction request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ApplySlotConfigToProductionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -322,8 +319,8 @@ func (client SitesClient) ApplySlotConfigToProductionResponder(resp *http.Respon
 // BackupSite sends the backup site request.
 //
 // resourceGroupName is name of resource group name is name of web app request is information on backup request
-func (client SitesClient) BackupSite(resourceGroupName string, name string, request BackupRequest) (result BackupItem, err error) {
-	req, err := client.BackupSitePreparer(resourceGroupName, name, request)
+func (client SitesClient) BackupSite(ctx context.Context, resourceGroupName string, name string, request BackupRequest) (result BackupItem, err error) {
+	req, err := client.BackupSitePreparer(ctx, resourceGroupName, name, request)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "BackupSite", nil, "Failure preparing request")
 		return
@@ -345,7 +342,7 @@ func (client SitesClient) BackupSite(resourceGroupName string, name string, requ
 }
 
 // BackupSitePreparer prepares the BackupSite request.
-func (client SitesClient) BackupSitePreparer(resourceGroupName string, name string, request BackupRequest) (*http.Request, error) {
+func (client SitesClient) BackupSitePreparer(ctx context.Context, resourceGroupName string, name string, request BackupRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -364,14 +361,13 @@ func (client SitesClient) BackupSitePreparer(resourceGroupName string, name stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backup", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // BackupSiteSender sends the BackupSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) BackupSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -392,8 +388,8 @@ func (client SitesClient) BackupSiteResponder(resp *http.Response) (result Backu
 //
 // resourceGroupName is name of resource group name is name of web app request is information on backup request slot is
 // name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) BackupSiteSlot(resourceGroupName string, name string, request BackupRequest, slot string) (result BackupItem, err error) {
-	req, err := client.BackupSiteSlotPreparer(resourceGroupName, name, request, slot)
+func (client SitesClient) BackupSiteSlot(ctx context.Context, resourceGroupName string, name string, request BackupRequest, slot string) (result BackupItem, err error) {
+	req, err := client.BackupSiteSlotPreparer(ctx, resourceGroupName, name, request, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "BackupSiteSlot", nil, "Failure preparing request")
 		return
@@ -415,7 +411,7 @@ func (client SitesClient) BackupSiteSlot(resourceGroupName string, name string, 
 }
 
 // BackupSiteSlotPreparer prepares the BackupSiteSlot request.
-func (client SitesClient) BackupSiteSlotPreparer(resourceGroupName string, name string, request BackupRequest, slot string) (*http.Request, error) {
+func (client SitesClient) BackupSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, request BackupRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -435,14 +431,13 @@ func (client SitesClient) BackupSiteSlotPreparer(resourceGroupName string, name 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backup", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // BackupSiteSlotSender sends the BackupSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) BackupSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -463,8 +458,8 @@ func (client SitesClient) BackupSiteSlotResponder(resp *http.Response) (result B
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment deployment is details
 // of deployment
-func (client SitesClient) CreateDeployment(resourceGroupName string, name string, ID string, deployment Deployment) (result Deployment, err error) {
-	req, err := client.CreateDeploymentPreparer(resourceGroupName, name, ID, deployment)
+func (client SitesClient) CreateDeployment(ctx context.Context, resourceGroupName string, name string, ID string, deployment Deployment) (result Deployment, err error) {
+	req, err := client.CreateDeploymentPreparer(ctx, resourceGroupName, name, ID, deployment)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateDeployment", nil, "Failure preparing request")
 		return
@@ -486,7 +481,7 @@ func (client SitesClient) CreateDeployment(resourceGroupName string, name string
 }
 
 // CreateDeploymentPreparer prepares the CreateDeployment request.
-func (client SitesClient) CreateDeploymentPreparer(resourceGroupName string, name string, ID string, deployment Deployment) (*http.Request, error) {
+func (client SitesClient) CreateDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string, deployment Deployment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -506,14 +501,13 @@ func (client SitesClient) CreateDeploymentPreparer(resourceGroupName string, nam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/deployments/{id}", pathParameters),
 		autorest.WithJSON(deployment),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateDeploymentSender sends the CreateDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -534,8 +528,8 @@ func (client SitesClient) CreateDeploymentResponder(resp *http.Response) (result
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot. deployment is details of deployment
-func (client SitesClient) CreateDeploymentSlot(resourceGroupName string, name string, ID string, slot string, deployment Deployment) (result Deployment, err error) {
-	req, err := client.CreateDeploymentSlotPreparer(resourceGroupName, name, ID, slot, deployment)
+func (client SitesClient) CreateDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string, deployment Deployment) (result Deployment, err error) {
+	req, err := client.CreateDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot, deployment)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -557,7 +551,7 @@ func (client SitesClient) CreateDeploymentSlot(resourceGroupName string, name st
 }
 
 // CreateDeploymentSlotPreparer prepares the CreateDeploymentSlot request.
-func (client SitesClient) CreateDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string, deployment Deployment) (*http.Request, error) {
+func (client SitesClient) CreateDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string, deployment Deployment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -578,14 +572,13 @@ func (client SitesClient) CreateDeploymentSlotPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/deployments/{id}", pathParameters),
 		autorest.WithJSON(deployment),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateDeploymentSlotSender sends the CreateDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -606,8 +599,8 @@ func (client SitesClient) CreateDeploymentSlotResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment instanceID is id of
 // web app instance deployment is details of deployment
-func (client SitesClient) CreateInstanceDeployment(resourceGroupName string, name string, ID string, instanceID string, deployment Deployment) (result Deployment, err error) {
-	req, err := client.CreateInstanceDeploymentPreparer(resourceGroupName, name, ID, instanceID, deployment)
+func (client SitesClient) CreateInstanceDeployment(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string, deployment Deployment) (result Deployment, err error) {
+	req, err := client.CreateInstanceDeploymentPreparer(ctx, resourceGroupName, name, ID, instanceID, deployment)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateInstanceDeployment", nil, "Failure preparing request")
 		return
@@ -629,7 +622,7 @@ func (client SitesClient) CreateInstanceDeployment(resourceGroupName string, nam
 }
 
 // CreateInstanceDeploymentPreparer prepares the CreateInstanceDeployment request.
-func (client SitesClient) CreateInstanceDeploymentPreparer(resourceGroupName string, name string, ID string, instanceID string, deployment Deployment) (*http.Request, error) {
+func (client SitesClient) CreateInstanceDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string, deployment Deployment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -650,14 +643,13 @@ func (client SitesClient) CreateInstanceDeploymentPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithJSON(deployment),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateInstanceDeploymentSender sends the CreateInstanceDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateInstanceDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -679,8 +671,8 @@ func (client SitesClient) CreateInstanceDeploymentResponder(resp *http.Response)
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot. instanceID is id of web app instance deployment is
 // details of deployment
-func (client SitesClient) CreateInstanceDeploymentSlot(resourceGroupName string, name string, ID string, slot string, instanceID string, deployment Deployment) (result Deployment, err error) {
-	req, err := client.CreateInstanceDeploymentSlotPreparer(resourceGroupName, name, ID, slot, instanceID, deployment)
+func (client SitesClient) CreateInstanceDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string, deployment Deployment) (result Deployment, err error) {
+	req, err := client.CreateInstanceDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot, instanceID, deployment)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateInstanceDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -702,7 +694,7 @@ func (client SitesClient) CreateInstanceDeploymentSlot(resourceGroupName string,
 }
 
 // CreateInstanceDeploymentSlotPreparer prepares the CreateInstanceDeploymentSlot request.
-func (client SitesClient) CreateInstanceDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string, instanceID string, deployment Deployment) (*http.Request, error) {
+func (client SitesClient) CreateInstanceDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string, deployment Deployment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -724,14 +716,13 @@ func (client SitesClient) CreateInstanceDeploymentSlotPreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithJSON(deployment),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateInstanceDeploymentSlotSender sends the CreateInstanceDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateInstanceDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -748,9 +739,7 @@ func (client SitesClient) CreateInstanceDeploymentSlotResponder(resp *http.Respo
 	return
 }
 
-// CreateOrUpdateSite sends the create or update site request. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdateSite sends the create or update site request.
 //
 // resourceGroupName is name of the resource group name is name of the web app siteEnvelope is details of web app if it
 // exists already skipDNSRegistration is if true web app hostname is not registered with DNS on creation. This
@@ -758,43 +747,24 @@ func (client SitesClient) CreateInstanceDeploymentSlotResponder(resp *http.Respo
 // only used for app creation skipCustomDomainVerification is if true, custom (non *.azurewebsites.net) domains
 // associated with web app are not verified. forceDNSRegistration is if true, web app hostname is force registered with
 // DNS TTLInSeconds is time to live in seconds for web app's default domain name
-func (client SitesClient) CreateOrUpdateSite(resourceGroupName string, name string, siteEnvelope Site, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Site
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateSitePreparer(resourceGroupName, name, siteEnvelope, skipDNSRegistration, skipCustomDomainVerification, forceDNSRegistration, TTLInSeconds, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSite", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) CreateOrUpdateSite(ctx context.Context, resourceGroupName string, name string, siteEnvelope Site, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string) (result SitesCreateOrUpdateSiteFuture, err error) {
+	req, err := client.CreateOrUpdateSitePreparer(ctx, resourceGroupName, name, siteEnvelope, skipDNSRegistration, skipCustomDomainVerification, forceDNSRegistration, TTLInSeconds)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSite", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSiteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSite", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSiteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSite", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateSiteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSite", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateSitePreparer prepares the CreateOrUpdateSite request.
-func (client SitesClient) CreateOrUpdateSitePreparer(resourceGroupName string, name string, siteEnvelope Site, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSitePreparer(ctx context.Context, resourceGroupName string, name string, siteEnvelope Site, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -825,16 +795,22 @@ func (client SitesClient) CreateOrUpdateSitePreparer(resourceGroupName string, n
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}", pathParameters),
 		autorest.WithJSON(siteEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteSender sends the CreateOrUpdateSite request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) CreateOrUpdateSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) CreateOrUpdateSiteSender(req *http.Request) (future SitesCreateOrUpdateSiteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateSiteResponder handles the response to the CreateOrUpdateSite request. The method always
@@ -854,8 +830,8 @@ func (client SitesClient) CreateOrUpdateSiteResponder(resp *http.Response) (resu
 //
 // resourceGroupName is name of resource group name is name of web app siteConfig is request body that contains the
 // configuraiton setting for the web app
-func (client SitesClient) CreateOrUpdateSiteConfig(resourceGroupName string, name string, siteConfig SiteConfig) (result SiteConfig, err error) {
-	req, err := client.CreateOrUpdateSiteConfigPreparer(resourceGroupName, name, siteConfig)
+func (client SitesClient) CreateOrUpdateSiteConfig(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig) (result SiteConfig, err error) {
+	req, err := client.CreateOrUpdateSiteConfigPreparer(ctx, resourceGroupName, name, siteConfig)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteConfig", nil, "Failure preparing request")
 		return
@@ -877,7 +853,7 @@ func (client SitesClient) CreateOrUpdateSiteConfig(resourceGroupName string, nam
 }
 
 // CreateOrUpdateSiteConfigPreparer prepares the CreateOrUpdateSiteConfig request.
-func (client SitesClient) CreateOrUpdateSiteConfigPreparer(resourceGroupName string, name string, siteConfig SiteConfig) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteConfigPreparer(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -896,14 +872,13 @@ func (client SitesClient) CreateOrUpdateSiteConfigPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/web", pathParameters),
 		autorest.WithJSON(siteConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteConfigSender sends the CreateOrUpdateSiteConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -925,8 +900,8 @@ func (client SitesClient) CreateOrUpdateSiteConfigResponder(resp *http.Response)
 // resourceGroupName is name of resource group name is name of web app siteConfig is request body that contains the
 // configuraiton setting for the web app slot is name of web app slot. If not specified then will default to production
 // slot.
-func (client SitesClient) CreateOrUpdateSiteConfigSlot(resourceGroupName string, name string, siteConfig SiteConfig, slot string) (result SiteConfig, err error) {
-	req, err := client.CreateOrUpdateSiteConfigSlotPreparer(resourceGroupName, name, siteConfig, slot)
+func (client SitesClient) CreateOrUpdateSiteConfigSlot(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig, slot string) (result SiteConfig, err error) {
+	req, err := client.CreateOrUpdateSiteConfigSlotPreparer(ctx, resourceGroupName, name, siteConfig, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteConfigSlot", nil, "Failure preparing request")
 		return
@@ -948,7 +923,7 @@ func (client SitesClient) CreateOrUpdateSiteConfigSlot(resourceGroupName string,
 }
 
 // CreateOrUpdateSiteConfigSlotPreparer prepares the CreateOrUpdateSiteConfigSlot request.
-func (client SitesClient) CreateOrUpdateSiteConfigSlotPreparer(resourceGroupName string, name string, siteConfig SiteConfig, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -968,14 +943,13 @@ func (client SitesClient) CreateOrUpdateSiteConfigSlotPreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/web", pathParameters),
 		autorest.WithJSON(siteConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteConfigSlotSender sends the CreateOrUpdateSiteConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -996,8 +970,8 @@ func (client SitesClient) CreateOrUpdateSiteConfigSlotResponder(resp *http.Respo
 //
 // resourceGroupName is name of resource group name is name of web app hostName is name of host hostNameBinding is host
 // name binding information
-func (client SitesClient) CreateOrUpdateSiteHostNameBinding(resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding) (result HostNameBinding, err error) {
-	req, err := client.CreateOrUpdateSiteHostNameBindingPreparer(resourceGroupName, name, hostName, hostNameBinding)
+func (client SitesClient) CreateOrUpdateSiteHostNameBinding(ctx context.Context, resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding) (result HostNameBinding, err error) {
+	req, err := client.CreateOrUpdateSiteHostNameBindingPreparer(ctx, resourceGroupName, name, hostName, hostNameBinding)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteHostNameBinding", nil, "Failure preparing request")
 		return
@@ -1019,7 +993,7 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBinding(resourceGroupName st
 }
 
 // CreateOrUpdateSiteHostNameBindingPreparer prepares the CreateOrUpdateSiteHostNameBinding request.
-func (client SitesClient) CreateOrUpdateSiteHostNameBindingPreparer(resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteHostNameBindingPreparer(ctx context.Context, resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -1039,14 +1013,13 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBindingPreparer(resourceGrou
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithJSON(hostNameBinding),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteHostNameBindingSender sends the CreateOrUpdateSiteHostNameBinding request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteHostNameBindingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1067,8 +1040,8 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBindingResponder(resp *http.
 //
 // resourceGroupName is name of resource group name is name of web app hostName is name of host hostNameBinding is host
 // name binding information slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlot(resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding, slot string) (result HostNameBinding, err error) {
-	req, err := client.CreateOrUpdateSiteHostNameBindingSlotPreparer(resourceGroupName, name, hostName, hostNameBinding, slot)
+func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlot(ctx context.Context, resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding, slot string) (result HostNameBinding, err error) {
+	req, err := client.CreateOrUpdateSiteHostNameBindingSlotPreparer(ctx, resourceGroupName, name, hostName, hostNameBinding, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteHostNameBindingSlot", nil, "Failure preparing request")
 		return
@@ -1090,7 +1063,7 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlot(resourceGroupNam
 }
 
 // CreateOrUpdateSiteHostNameBindingSlotPreparer prepares the CreateOrUpdateSiteHostNameBindingSlot request.
-func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlotPreparer(resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlotPreparer(ctx context.Context, resourceGroupName string, name string, hostName string, hostNameBinding HostNameBinding, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -1111,14 +1084,13 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlotPreparer(resource
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithJSON(hostNameBinding),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteHostNameBindingSlotSender sends the CreateOrUpdateSiteHostNameBindingSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1139,8 +1111,8 @@ func (client SitesClient) CreateOrUpdateSiteHostNameBindingSlotResponder(resp *h
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified connectionEnvelope is the details of the Hybrid Connection
-func (client SitesClient) CreateOrUpdateSiteRelayServiceConnection(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.CreateOrUpdateSiteRelayServiceConnectionPreparer(resourceGroupName, name, entityName, connectionEnvelope)
+func (client SitesClient) CreateOrUpdateSiteRelayServiceConnection(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.CreateOrUpdateSiteRelayServiceConnectionPreparer(ctx, resourceGroupName, name, entityName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteRelayServiceConnection", nil, "Failure preparing request")
 		return
@@ -1162,7 +1134,7 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnection(resourceGroup
 }
 
 // CreateOrUpdateSiteRelayServiceConnectionPreparer prepares the CreateOrUpdateSiteRelayServiceConnection request.
-func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionPreparer(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -1182,14 +1154,13 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionPreparer(resou
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteRelayServiceConnectionSender sends the CreateOrUpdateSiteRelayServiceConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1211,8 +1182,8 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionResponder(resp
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified connectionEnvelope is the details of the Hybrid Connection slot is the name of the
 // slot for the web app.
-func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlot(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.CreateOrUpdateSiteRelayServiceConnectionSlotPreparer(resourceGroupName, name, entityName, connectionEnvelope, slot)
+func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlot(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.CreateOrUpdateSiteRelayServiceConnectionSlotPreparer(ctx, resourceGroupName, name, entityName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteRelayServiceConnectionSlot", nil, "Failure preparing request")
 		return
@@ -1234,7 +1205,7 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlot(resourceG
 }
 
 // CreateOrUpdateSiteRelayServiceConnectionSlotPreparer prepares the CreateOrUpdateSiteRelayServiceConnectionSlot request.
-func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotPreparer(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -1255,14 +1226,13 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotPreparer(r
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteRelayServiceConnectionSlotSender sends the CreateOrUpdateSiteRelayServiceConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1279,9 +1249,7 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotResponder(
 	return
 }
 
-// CreateOrUpdateSiteSlot sends the create or update site slot request. This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdateSiteSlot sends the create or update site slot request.
 //
 // resourceGroupName is name of the resource group name is name of the web app siteEnvelope is details of web app if it
 // exists already slot is name of web app slot. If not specified then will default to production slot.
@@ -1289,43 +1257,24 @@ func (client SitesClient) CreateOrUpdateSiteRelayServiceConnectionSlotResponder(
 // only used for app creation skipCustomDomainVerification is if true, custom (non *.azurewebsites.net) domains
 // associated with web app are not verified. forceDNSRegistration is if true, web app hostname is force registered with
 // DNS TTLInSeconds is time to live in seconds for web app's default domain name
-func (client SitesClient) CreateOrUpdateSiteSlot(resourceGroupName string, name string, siteEnvelope Site, slot string, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Site
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateSiteSlotPreparer(resourceGroupName, name, siteEnvelope, slot, skipDNSRegistration, skipCustomDomainVerification, forceDNSRegistration, TTLInSeconds, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSlot", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) CreateOrUpdateSiteSlot(ctx context.Context, resourceGroupName string, name string, siteEnvelope Site, slot string, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string) (result SitesCreateOrUpdateSiteSlotFuture, err error) {
+	req, err := client.CreateOrUpdateSiteSlotPreparer(ctx, resourceGroupName, name, siteEnvelope, slot, skipDNSRegistration, skipCustomDomainVerification, forceDNSRegistration, TTLInSeconds)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSlot", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSiteSlotSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSlot", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSiteSlotSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSlot", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateSiteSlotResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSlot", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateSiteSlotPreparer prepares the CreateOrUpdateSiteSlot request.
-func (client SitesClient) CreateOrUpdateSiteSlotPreparer(resourceGroupName string, name string, siteEnvelope Site, slot string, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteEnvelope Site, slot string, skipDNSRegistration string, skipCustomDomainVerification string, forceDNSRegistration string, TTLInSeconds string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1357,16 +1306,22 @@ func (client SitesClient) CreateOrUpdateSiteSlotPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}", pathParameters),
 		autorest.WithJSON(siteEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteSlotSender sends the CreateOrUpdateSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) CreateOrUpdateSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) CreateOrUpdateSiteSlotSender(req *http.Request) (future SitesCreateOrUpdateSiteSlotFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateSiteSlotResponder handles the response to the CreateOrUpdateSiteSlot request. The method always
@@ -1386,8 +1341,8 @@ func (client SitesClient) CreateOrUpdateSiteSlotResponder(resp *http.Response) (
 //
 // resourceGroupName is name of resource group name is name of web app siteSourceControl is request body that contains
 // the source control parameters
-func (client SitesClient) CreateOrUpdateSiteSourceControl(resourceGroupName string, name string, siteSourceControl SiteSourceControl) (result SiteSourceControl, err error) {
-	req, err := client.CreateOrUpdateSiteSourceControlPreparer(resourceGroupName, name, siteSourceControl)
+func (client SitesClient) CreateOrUpdateSiteSourceControl(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl) (result SiteSourceControl, err error) {
+	req, err := client.CreateOrUpdateSiteSourceControlPreparer(ctx, resourceGroupName, name, siteSourceControl)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSourceControl", nil, "Failure preparing request")
 		return
@@ -1409,7 +1364,7 @@ func (client SitesClient) CreateOrUpdateSiteSourceControl(resourceGroupName stri
 }
 
 // CreateOrUpdateSiteSourceControlPreparer prepares the CreateOrUpdateSiteSourceControl request.
-func (client SitesClient) CreateOrUpdateSiteSourceControlPreparer(resourceGroupName string, name string, siteSourceControl SiteSourceControl) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteSourceControlPreparer(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1428,14 +1383,13 @@ func (client SitesClient) CreateOrUpdateSiteSourceControlPreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/sourcecontrols/web", pathParameters),
 		autorest.WithJSON(siteSourceControl),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteSourceControlSender sends the CreateOrUpdateSiteSourceControl request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteSourceControlSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1456,8 +1410,8 @@ func (client SitesClient) CreateOrUpdateSiteSourceControlResponder(resp *http.Re
 //
 // resourceGroupName is name of resource group name is name of web app siteSourceControl is request body that contains
 // the source control parameters slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) CreateOrUpdateSiteSourceControlSlot(resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (result SiteSourceControl, err error) {
-	req, err := client.CreateOrUpdateSiteSourceControlSlotPreparer(resourceGroupName, name, siteSourceControl, slot)
+func (client SitesClient) CreateOrUpdateSiteSourceControlSlot(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (result SiteSourceControl, err error) {
+	req, err := client.CreateOrUpdateSiteSourceControlSlotPreparer(ctx, resourceGroupName, name, siteSourceControl, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteSourceControlSlot", nil, "Failure preparing request")
 		return
@@ -1479,7 +1433,7 @@ func (client SitesClient) CreateOrUpdateSiteSourceControlSlot(resourceGroupName 
 }
 
 // CreateOrUpdateSiteSourceControlSlotPreparer prepares the CreateOrUpdateSiteSourceControlSlot request.
-func (client SitesClient) CreateOrUpdateSiteSourceControlSlotPreparer(resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteSourceControlSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1499,14 +1453,13 @@ func (client SitesClient) CreateOrUpdateSiteSourceControlSlotPreparer(resourceGr
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/sourcecontrols/web", pathParameters),
 		autorest.WithJSON(siteSourceControl),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteSourceControlSlotSender sends the CreateOrUpdateSiteSourceControlSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteSourceControlSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1527,8 +1480,8 @@ func (client SitesClient) CreateOrUpdateSiteSourceControlSlotResponder(resp *htt
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network connectionEnvelope is the properties of this Virtual Network Connection
-func (client SitesClient) CreateOrUpdateSiteVNETConnection(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (result VnetInfo, err error) {
-	req, err := client.CreateOrUpdateSiteVNETConnectionPreparer(resourceGroupName, name, vnetName, connectionEnvelope)
+func (client SitesClient) CreateOrUpdateSiteVNETConnection(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (result VnetInfo, err error) {
+	req, err := client.CreateOrUpdateSiteVNETConnectionPreparer(ctx, resourceGroupName, name, vnetName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteVNETConnection", nil, "Failure preparing request")
 		return
@@ -1550,7 +1503,7 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnection(resourceGroupName str
 }
 
 // CreateOrUpdateSiteVNETConnectionPreparer prepares the CreateOrUpdateSiteVNETConnection request.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionPreparer(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1570,14 +1523,13 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionPreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteVNETConnectionSender sends the CreateOrUpdateSiteVNETConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteVNETConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1599,8 +1551,8 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionResponder(resp *http.R
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary"
 // connectionEnvelope is the properties to update this gateway with.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionGateway(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (result VnetGateway, err error) {
-	req, err := client.CreateOrUpdateSiteVNETConnectionGatewayPreparer(resourceGroupName, name, vnetName, gatewayName, connectionEnvelope)
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionGateway(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (result VnetGateway, err error) {
+	req, err := client.CreateOrUpdateSiteVNETConnectionGatewayPreparer(ctx, resourceGroupName, name, vnetName, gatewayName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteVNETConnectionGateway", nil, "Failure preparing request")
 		return
@@ -1622,7 +1574,7 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGateway(resourceGroupN
 }
 
 // CreateOrUpdateSiteVNETConnectionGatewayPreparer prepares the CreateOrUpdateSiteVNETConnectionGateway request.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewayPreparer(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewayPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -1643,14 +1595,13 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewayPreparer(resour
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteVNETConnectionGatewaySender sends the CreateOrUpdateSiteVNETConnectionGateway request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1672,8 +1623,8 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewayResponder(resp 
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary"
 // connectionEnvelope is the properties to update this gateway with. slot is the name of the slot for this web app.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlot(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (result VnetGateway, err error) {
-	req, err := client.CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer(resourceGroupName, name, vnetName, gatewayName, connectionEnvelope, slot)
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlot(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (result VnetGateway, err error) {
+	req, err := client.CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer(ctx, resourceGroupName, name, vnetName, gatewayName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteVNETConnectionGatewaySlot", nil, "Failure preparing request")
 		return
@@ -1695,7 +1646,7 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlot(resourceGr
 }
 
 // CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer prepares the CreateOrUpdateSiteVNETConnectionGatewaySlot request.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -1717,14 +1668,13 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlotPreparer(re
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteVNETConnectionGatewaySlotSender sends the CreateOrUpdateSiteVNETConnectionGatewaySlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1746,8 +1696,8 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionGatewaySlotResponder(r
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network connectionEnvelope is the properties of this Virtual Network Connection slot is the name of the slot for
 // this web app.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlot(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (result VnetInfo, err error) {
-	req, err := client.CreateOrUpdateSiteVNETConnectionSlotPreparer(resourceGroupName, name, vnetName, connectionEnvelope, slot)
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlot(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (result VnetInfo, err error) {
+	req, err := client.CreateOrUpdateSiteVNETConnectionSlotPreparer(ctx, resourceGroupName, name, vnetName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "CreateOrUpdateSiteVNETConnectionSlot", nil, "Failure preparing request")
 		return
@@ -1769,7 +1719,7 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlot(resourceGroupName
 }
 
 // CreateOrUpdateSiteVNETConnectionSlotPreparer prepares the CreateOrUpdateSiteVNETConnectionSlot request.
-func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlotPreparer(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (*http.Request, error) {
+func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1790,14 +1740,13 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlotPreparer(resourceG
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSiteVNETConnectionSlotSender sends the CreateOrUpdateSiteVNETConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1817,8 +1766,8 @@ func (client SitesClient) CreateOrUpdateSiteVNETConnectionSlotResponder(resp *ht
 // DeleteBackup sends the delete backup request.
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup
-func (client SitesClient) DeleteBackup(resourceGroupName string, name string, backupID string) (result BackupItem, err error) {
-	req, err := client.DeleteBackupPreparer(resourceGroupName, name, backupID)
+func (client SitesClient) DeleteBackup(ctx context.Context, resourceGroupName string, name string, backupID string) (result BackupItem, err error) {
+	req, err := client.DeleteBackupPreparer(ctx, resourceGroupName, name, backupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteBackup", nil, "Failure preparing request")
 		return
@@ -1840,7 +1789,7 @@ func (client SitesClient) DeleteBackup(resourceGroupName string, name string, ba
 }
 
 // DeleteBackupPreparer prepares the DeleteBackup request.
-func (client SitesClient) DeleteBackupPreparer(resourceGroupName string, name string, backupID string) (*http.Request, error) {
+func (client SitesClient) DeleteBackupPreparer(ctx context.Context, resourceGroupName string, name string, backupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -1858,14 +1807,13 @@ func (client SitesClient) DeleteBackupPreparer(resourceGroupName string, name st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteBackupSender sends the DeleteBackup request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteBackupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1886,8 +1834,8 @@ func (client SitesClient) DeleteBackupResponder(resp *http.Response) (result Bac
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup slot is name of web app
 // slot. If not specified then will default to production slot.
-func (client SitesClient) DeleteBackupSlot(resourceGroupName string, name string, backupID string, slot string) (result BackupItem, err error) {
-	req, err := client.DeleteBackupSlotPreparer(resourceGroupName, name, backupID, slot)
+func (client SitesClient) DeleteBackupSlot(ctx context.Context, resourceGroupName string, name string, backupID string, slot string) (result BackupItem, err error) {
+	req, err := client.DeleteBackupSlotPreparer(ctx, resourceGroupName, name, backupID, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteBackupSlot", nil, "Failure preparing request")
 		return
@@ -1909,7 +1857,7 @@ func (client SitesClient) DeleteBackupSlot(resourceGroupName string, name string
 }
 
 // DeleteBackupSlotPreparer prepares the DeleteBackupSlot request.
-func (client SitesClient) DeleteBackupSlotPreparer(resourceGroupName string, name string, backupID string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteBackupSlotPreparer(ctx context.Context, resourceGroupName string, name string, backupID string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -1928,14 +1876,13 @@ func (client SitesClient) DeleteBackupSlotPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteBackupSlotSender sends the DeleteBackupSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteBackupSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1955,8 +1902,8 @@ func (client SitesClient) DeleteBackupSlotResponder(resp *http.Response) (result
 // DeleteDeployment sends the delete deployment request.
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment
-func (client SitesClient) DeleteDeployment(resourceGroupName string, name string, ID string) (result SetObject, err error) {
-	req, err := client.DeleteDeploymentPreparer(resourceGroupName, name, ID)
+func (client SitesClient) DeleteDeployment(ctx context.Context, resourceGroupName string, name string, ID string) (result SetObject, err error) {
+	req, err := client.DeleteDeploymentPreparer(ctx, resourceGroupName, name, ID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteDeployment", nil, "Failure preparing request")
 		return
@@ -1978,7 +1925,7 @@ func (client SitesClient) DeleteDeployment(resourceGroupName string, name string
 }
 
 // DeleteDeploymentPreparer prepares the DeleteDeployment request.
-func (client SitesClient) DeleteDeploymentPreparer(resourceGroupName string, name string, ID string) (*http.Request, error) {
+func (client SitesClient) DeleteDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -1996,14 +1943,13 @@ func (client SitesClient) DeleteDeploymentPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteDeploymentSender sends the DeleteDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2024,8 +1970,8 @@ func (client SitesClient) DeleteDeploymentResponder(resp *http.Response) (result
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot.
-func (client SitesClient) DeleteDeploymentSlot(resourceGroupName string, name string, ID string, slot string) (result SetObject, err error) {
-	req, err := client.DeleteDeploymentSlotPreparer(resourceGroupName, name, ID, slot)
+func (client SitesClient) DeleteDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string) (result SetObject, err error) {
+	req, err := client.DeleteDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -2047,7 +1993,7 @@ func (client SitesClient) DeleteDeploymentSlot(resourceGroupName string, name st
 }
 
 // DeleteDeploymentSlotPreparer prepares the DeleteDeploymentSlot request.
-func (client SitesClient) DeleteDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -2066,14 +2012,13 @@ func (client SitesClient) DeleteDeploymentSlotPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteDeploymentSlotSender sends the DeleteDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2094,8 +2039,8 @@ func (client SitesClient) DeleteDeploymentSlotResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment instanceID is id of
 // web app instance
-func (client SitesClient) DeleteInstanceDeployment(resourceGroupName string, name string, ID string, instanceID string) (result SetObject, err error) {
-	req, err := client.DeleteInstanceDeploymentPreparer(resourceGroupName, name, ID, instanceID)
+func (client SitesClient) DeleteInstanceDeployment(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string) (result SetObject, err error) {
+	req, err := client.DeleteInstanceDeploymentPreparer(ctx, resourceGroupName, name, ID, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteInstanceDeployment", nil, "Failure preparing request")
 		return
@@ -2117,7 +2062,7 @@ func (client SitesClient) DeleteInstanceDeployment(resourceGroupName string, nam
 }
 
 // DeleteInstanceDeploymentPreparer prepares the DeleteInstanceDeployment request.
-func (client SitesClient) DeleteInstanceDeploymentPreparer(resourceGroupName string, name string, ID string, instanceID string) (*http.Request, error) {
+func (client SitesClient) DeleteInstanceDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -2136,14 +2081,13 @@ func (client SitesClient) DeleteInstanceDeploymentPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteInstanceDeploymentSender sends the DeleteInstanceDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteInstanceDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2164,8 +2108,8 @@ func (client SitesClient) DeleteInstanceDeploymentResponder(resp *http.Response)
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot. instanceID is id of web app instance
-func (client SitesClient) DeleteInstanceDeploymentSlot(resourceGroupName string, name string, ID string, slot string, instanceID string) (result SetObject, err error) {
-	req, err := client.DeleteInstanceDeploymentSlotPreparer(resourceGroupName, name, ID, slot, instanceID)
+func (client SitesClient) DeleteInstanceDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string) (result SetObject, err error) {
+	req, err := client.DeleteInstanceDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteInstanceDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -2187,7 +2131,7 @@ func (client SitesClient) DeleteInstanceDeploymentSlot(resourceGroupName string,
 }
 
 // DeleteInstanceDeploymentSlotPreparer prepares the DeleteInstanceDeploymentSlot request.
-func (client SitesClient) DeleteInstanceDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string, instanceID string) (*http.Request, error) {
+func (client SitesClient) DeleteInstanceDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -2207,14 +2151,13 @@ func (client SitesClient) DeleteInstanceDeploymentSlotPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteInstanceDeploymentSlotSender sends the DeleteInstanceDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteInstanceDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2237,8 +2180,8 @@ func (client SitesClient) DeleteInstanceDeploymentSlotResponder(resp *http.Respo
 // also deleted deleteEmptyServerFarm is if true and App Service Plan is empty after web app deletion, App Service Plan
 // is also deleted skipDNSRegistration is if true, DNS registration is skipped deleteAllSlots is if true, all slots
 // associated with web app are also deleted
-func (client SitesClient) DeleteSite(resourceGroupName string, name string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (result SetObject, err error) {
-	req, err := client.DeleteSitePreparer(resourceGroupName, name, deleteMetrics, deleteEmptyServerFarm, skipDNSRegistration, deleteAllSlots)
+func (client SitesClient) DeleteSite(ctx context.Context, resourceGroupName string, name string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (result SetObject, err error) {
+	req, err := client.DeleteSitePreparer(ctx, resourceGroupName, name, deleteMetrics, deleteEmptyServerFarm, skipDNSRegistration, deleteAllSlots)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSite", nil, "Failure preparing request")
 		return
@@ -2260,7 +2203,7 @@ func (client SitesClient) DeleteSite(resourceGroupName string, name string, dele
 }
 
 // DeleteSitePreparer prepares the DeleteSite request.
-func (client SitesClient) DeleteSitePreparer(resourceGroupName string, name string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (*http.Request, error) {
+func (client SitesClient) DeleteSitePreparer(ctx context.Context, resourceGroupName string, name string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -2289,14 +2232,13 @@ func (client SitesClient) DeleteSitePreparer(resourceGroupName string, name stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteSender sends the DeleteSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2316,8 +2258,8 @@ func (client SitesClient) DeleteSiteResponder(resp *http.Response) (result SetOb
 // DeleteSiteHostNameBinding sends the delete site host name binding request.
 //
 // resourceGroupName is name of resource group name is name of web app hostName is name of host
-func (client SitesClient) DeleteSiteHostNameBinding(resourceGroupName string, name string, hostName string) (result SetObject, err error) {
-	req, err := client.DeleteSiteHostNameBindingPreparer(resourceGroupName, name, hostName)
+func (client SitesClient) DeleteSiteHostNameBinding(ctx context.Context, resourceGroupName string, name string, hostName string) (result SetObject, err error) {
+	req, err := client.DeleteSiteHostNameBindingPreparer(ctx, resourceGroupName, name, hostName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteHostNameBinding", nil, "Failure preparing request")
 		return
@@ -2339,7 +2281,7 @@ func (client SitesClient) DeleteSiteHostNameBinding(resourceGroupName string, na
 }
 
 // DeleteSiteHostNameBindingPreparer prepares the DeleteSiteHostNameBinding request.
-func (client SitesClient) DeleteSiteHostNameBindingPreparer(resourceGroupName string, name string, hostName string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteHostNameBindingPreparer(ctx context.Context, resourceGroupName string, name string, hostName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -2357,14 +2299,13 @@ func (client SitesClient) DeleteSiteHostNameBindingPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteHostNameBindingSender sends the DeleteSiteHostNameBinding request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteHostNameBindingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2385,8 +2326,8 @@ func (client SitesClient) DeleteSiteHostNameBindingResponder(resp *http.Response
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot. hostName is name of host
-func (client SitesClient) DeleteSiteHostNameBindingSlot(resourceGroupName string, name string, slot string, hostName string) (result SetObject, err error) {
-	req, err := client.DeleteSiteHostNameBindingSlotPreparer(resourceGroupName, name, slot, hostName)
+func (client SitesClient) DeleteSiteHostNameBindingSlot(ctx context.Context, resourceGroupName string, name string, slot string, hostName string) (result SetObject, err error) {
+	req, err := client.DeleteSiteHostNameBindingSlotPreparer(ctx, resourceGroupName, name, slot, hostName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteHostNameBindingSlot", nil, "Failure preparing request")
 		return
@@ -2408,7 +2349,7 @@ func (client SitesClient) DeleteSiteHostNameBindingSlot(resourceGroupName string
 }
 
 // DeleteSiteHostNameBindingSlotPreparer prepares the DeleteSiteHostNameBindingSlot request.
-func (client SitesClient) DeleteSiteHostNameBindingSlotPreparer(resourceGroupName string, name string, slot string, hostName string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteHostNameBindingSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, hostName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -2427,14 +2368,13 @@ func (client SitesClient) DeleteSiteHostNameBindingSlotPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteHostNameBindingSlotSender sends the DeleteSiteHostNameBindingSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteHostNameBindingSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2453,8 +2393,8 @@ func (client SitesClient) DeleteSiteHostNameBindingSlotResponder(resp *http.Resp
 
 // DeleteSitePremierAddOn sends the delete site premier add on request.
 //
-func (client SitesClient) DeleteSitePremierAddOn(resourceGroupName string, name string, premierAddOnName string) (result SetObject, err error) {
-	req, err := client.DeleteSitePremierAddOnPreparer(resourceGroupName, name, premierAddOnName)
+func (client SitesClient) DeleteSitePremierAddOn(ctx context.Context, resourceGroupName string, name string, premierAddOnName string) (result SetObject, err error) {
+	req, err := client.DeleteSitePremierAddOnPreparer(ctx, resourceGroupName, name, premierAddOnName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSitePremierAddOn", nil, "Failure preparing request")
 		return
@@ -2476,7 +2416,7 @@ func (client SitesClient) DeleteSitePremierAddOn(resourceGroupName string, name 
 }
 
 // DeleteSitePremierAddOnPreparer prepares the DeleteSitePremierAddOn request.
-func (client SitesClient) DeleteSitePremierAddOnPreparer(resourceGroupName string, name string, premierAddOnName string) (*http.Request, error) {
+func (client SitesClient) DeleteSitePremierAddOnPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -2494,14 +2434,13 @@ func (client SitesClient) DeleteSitePremierAddOnPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSitePremierAddOnSender sends the DeleteSitePremierAddOn request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSitePremierAddOnSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2520,8 +2459,8 @@ func (client SitesClient) DeleteSitePremierAddOnResponder(resp *http.Response) (
 
 // DeleteSitePremierAddOnSlot sends the delete site premier add on slot request.
 //
-func (client SitesClient) DeleteSitePremierAddOnSlot(resourceGroupName string, name string, premierAddOnName string, slot string) (result SetObject, err error) {
-	req, err := client.DeleteSitePremierAddOnSlotPreparer(resourceGroupName, name, premierAddOnName, slot)
+func (client SitesClient) DeleteSitePremierAddOnSlot(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, slot string) (result SetObject, err error) {
+	req, err := client.DeleteSitePremierAddOnSlotPreparer(ctx, resourceGroupName, name, premierAddOnName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSitePremierAddOnSlot", nil, "Failure preparing request")
 		return
@@ -2543,7 +2482,7 @@ func (client SitesClient) DeleteSitePremierAddOnSlot(resourceGroupName string, n
 }
 
 // DeleteSitePremierAddOnSlotPreparer prepares the DeleteSitePremierAddOnSlot request.
-func (client SitesClient) DeleteSitePremierAddOnSlotPreparer(resourceGroupName string, name string, premierAddOnName string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteSitePremierAddOnSlotPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -2562,14 +2501,13 @@ func (client SitesClient) DeleteSitePremierAddOnSlotPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSitePremierAddOnSlotSender sends the DeleteSitePremierAddOnSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSitePremierAddOnSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2590,8 +2528,8 @@ func (client SitesClient) DeleteSitePremierAddOnSlotResponder(resp *http.Respons
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified
-func (client SitesClient) DeleteSiteRelayServiceConnection(resourceGroupName string, name string, entityName string) (result SetObject, err error) {
-	req, err := client.DeleteSiteRelayServiceConnectionPreparer(resourceGroupName, name, entityName)
+func (client SitesClient) DeleteSiteRelayServiceConnection(ctx context.Context, resourceGroupName string, name string, entityName string) (result SetObject, err error) {
+	req, err := client.DeleteSiteRelayServiceConnectionPreparer(ctx, resourceGroupName, name, entityName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteRelayServiceConnection", nil, "Failure preparing request")
 		return
@@ -2613,7 +2551,7 @@ func (client SitesClient) DeleteSiteRelayServiceConnection(resourceGroupName str
 }
 
 // DeleteSiteRelayServiceConnectionPreparer prepares the DeleteSiteRelayServiceConnection request.
-func (client SitesClient) DeleteSiteRelayServiceConnectionPreparer(resourceGroupName string, name string, entityName string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteRelayServiceConnectionPreparer(ctx context.Context, resourceGroupName string, name string, entityName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -2631,14 +2569,13 @@ func (client SitesClient) DeleteSiteRelayServiceConnectionPreparer(resourceGroup
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteRelayServiceConnectionSender sends the DeleteSiteRelayServiceConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteRelayServiceConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2659,8 +2596,8 @@ func (client SitesClient) DeleteSiteRelayServiceConnectionResponder(resp *http.R
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified slot is the name of the slot for the web app.
-func (client SitesClient) DeleteSiteRelayServiceConnectionSlot(resourceGroupName string, name string, entityName string, slot string) (result SetObject, err error) {
-	req, err := client.DeleteSiteRelayServiceConnectionSlotPreparer(resourceGroupName, name, entityName, slot)
+func (client SitesClient) DeleteSiteRelayServiceConnectionSlot(ctx context.Context, resourceGroupName string, name string, entityName string, slot string) (result SetObject, err error) {
+	req, err := client.DeleteSiteRelayServiceConnectionSlotPreparer(ctx, resourceGroupName, name, entityName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteRelayServiceConnectionSlot", nil, "Failure preparing request")
 		return
@@ -2682,7 +2619,7 @@ func (client SitesClient) DeleteSiteRelayServiceConnectionSlot(resourceGroupName
 }
 
 // DeleteSiteRelayServiceConnectionSlotPreparer prepares the DeleteSiteRelayServiceConnectionSlot request.
-func (client SitesClient) DeleteSiteRelayServiceConnectionSlotPreparer(resourceGroupName string, name string, entityName string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteRelayServiceConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -2701,14 +2638,13 @@ func (client SitesClient) DeleteSiteRelayServiceConnectionSlotPreparer(resourceG
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteRelayServiceConnectionSlotSender sends the DeleteSiteRelayServiceConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteRelayServiceConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2732,8 +2668,8 @@ func (client SitesClient) DeleteSiteRelayServiceConnectionSlotResponder(resp *ht
 // deleteEmptyServerFarm is if true and App Service Plan is empty after web app deletion, App Service Plan is also
 // deleted skipDNSRegistration is if true, DNS registration is skipped deleteAllSlots is if true, all slots associated
 // with web app are also deleted
-func (client SitesClient) DeleteSiteSlot(resourceGroupName string, name string, slot string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (result SetObject, err error) {
-	req, err := client.DeleteSiteSlotPreparer(resourceGroupName, name, slot, deleteMetrics, deleteEmptyServerFarm, skipDNSRegistration, deleteAllSlots)
+func (client SitesClient) DeleteSiteSlot(ctx context.Context, resourceGroupName string, name string, slot string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (result SetObject, err error) {
+	req, err := client.DeleteSiteSlotPreparer(ctx, resourceGroupName, name, slot, deleteMetrics, deleteEmptyServerFarm, skipDNSRegistration, deleteAllSlots)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteSlot", nil, "Failure preparing request")
 		return
@@ -2755,7 +2691,7 @@ func (client SitesClient) DeleteSiteSlot(resourceGroupName string, name string, 
 }
 
 // DeleteSiteSlotPreparer prepares the DeleteSiteSlot request.
-func (client SitesClient) DeleteSiteSlotPreparer(resourceGroupName string, name string, slot string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, deleteMetrics string, deleteEmptyServerFarm string, skipDNSRegistration string, deleteAllSlots string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -2785,14 +2721,13 @@ func (client SitesClient) DeleteSiteSlotPreparer(resourceGroupName string, name 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteSlotSender sends the DeleteSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2812,8 +2747,8 @@ func (client SitesClient) DeleteSiteSlotResponder(resp *http.Response) (result S
 // DeleteSiteSourceControl sends the delete site source control request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) DeleteSiteSourceControl(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.DeleteSiteSourceControlPreparer(resourceGroupName, name)
+func (client SitesClient) DeleteSiteSourceControl(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.DeleteSiteSourceControlPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteSourceControl", nil, "Failure preparing request")
 		return
@@ -2835,7 +2770,7 @@ func (client SitesClient) DeleteSiteSourceControl(resourceGroupName string, name
 }
 
 // DeleteSiteSourceControlPreparer prepares the DeleteSiteSourceControl request.
-func (client SitesClient) DeleteSiteSourceControlPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteSourceControlPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -2852,14 +2787,13 @@ func (client SitesClient) DeleteSiteSourceControlPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/sourcecontrols/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteSourceControlSender sends the DeleteSiteSourceControl request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteSourceControlSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2880,8 +2814,8 @@ func (client SitesClient) DeleteSiteSourceControlResponder(resp *http.Response) 
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) DeleteSiteSourceControlSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.DeleteSiteSourceControlSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) DeleteSiteSourceControlSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.DeleteSiteSourceControlSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteSourceControlSlot", nil, "Failure preparing request")
 		return
@@ -2903,7 +2837,7 @@ func (client SitesClient) DeleteSiteSourceControlSlot(resourceGroupName string, 
 }
 
 // DeleteSiteSourceControlSlotPreparer prepares the DeleteSiteSourceControlSlot request.
-func (client SitesClient) DeleteSiteSourceControlSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteSourceControlSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -2921,14 +2855,13 @@ func (client SitesClient) DeleteSiteSourceControlSlotPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/sourcecontrols/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteSourceControlSlotSender sends the DeleteSiteSourceControlSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteSourceControlSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -2949,8 +2882,8 @@ func (client SitesClient) DeleteSiteSourceControlSlotResponder(resp *http.Respon
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network
-func (client SitesClient) DeleteSiteVNETConnection(resourceGroupName string, name string, vnetName string) (result SetObject, err error) {
-	req, err := client.DeleteSiteVNETConnectionPreparer(resourceGroupName, name, vnetName)
+func (client SitesClient) DeleteSiteVNETConnection(ctx context.Context, resourceGroupName string, name string, vnetName string) (result SetObject, err error) {
+	req, err := client.DeleteSiteVNETConnectionPreparer(ctx, resourceGroupName, name, vnetName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteVNETConnection", nil, "Failure preparing request")
 		return
@@ -2972,7 +2905,7 @@ func (client SitesClient) DeleteSiteVNETConnection(resourceGroupName string, nam
 }
 
 // DeleteSiteVNETConnectionPreparer prepares the DeleteSiteVNETConnection request.
-func (client SitesClient) DeleteSiteVNETConnectionPreparer(resourceGroupName string, name string, vnetName string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteVNETConnectionPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -2990,14 +2923,13 @@ func (client SitesClient) DeleteSiteVNETConnectionPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteVNETConnectionSender sends the DeleteSiteVNETConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteVNETConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3018,8 +2950,8 @@ func (client SitesClient) DeleteSiteVNETConnectionResponder(resp *http.Response)
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network slot is the name of the slot for this web app.
-func (client SitesClient) DeleteSiteVNETConnectionSlot(resourceGroupName string, name string, vnetName string, slot string) (result SetObject, err error) {
-	req, err := client.DeleteSiteVNETConnectionSlotPreparer(resourceGroupName, name, vnetName, slot)
+func (client SitesClient) DeleteSiteVNETConnectionSlot(ctx context.Context, resourceGroupName string, name string, vnetName string, slot string) (result SetObject, err error) {
+	req, err := client.DeleteSiteVNETConnectionSlotPreparer(ctx, resourceGroupName, name, vnetName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DeleteSiteVNETConnectionSlot", nil, "Failure preparing request")
 		return
@@ -3041,7 +2973,7 @@ func (client SitesClient) DeleteSiteVNETConnectionSlot(resourceGroupName string,
 }
 
 // DeleteSiteVNETConnectionSlotPreparer prepares the DeleteSiteVNETConnectionSlot request.
-func (client SitesClient) DeleteSiteVNETConnectionSlotPreparer(resourceGroupName string, name string, vnetName string, slot string) (*http.Request, error) {
+func (client SitesClient) DeleteSiteVNETConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3060,14 +2992,13 @@ func (client SitesClient) DeleteSiteVNETConnectionSlotPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSiteVNETConnectionSlotSender sends the DeleteSiteVNETConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DeleteSiteVNETConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3087,8 +3018,8 @@ func (client SitesClient) DeleteSiteVNETConnectionSlotResponder(resp *http.Respo
 // DiscoverSiteRestore sends the discover site restore request.
 //
 // resourceGroupName is name of resource group name is name of web app request is information on restore request
-func (client SitesClient) DiscoverSiteRestore(resourceGroupName string, name string, request RestoreRequest) (result RestoreRequest, err error) {
-	req, err := client.DiscoverSiteRestorePreparer(resourceGroupName, name, request)
+func (client SitesClient) DiscoverSiteRestore(ctx context.Context, resourceGroupName string, name string, request RestoreRequest) (result RestoreRequest, err error) {
+	req, err := client.DiscoverSiteRestorePreparer(ctx, resourceGroupName, name, request)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DiscoverSiteRestore", nil, "Failure preparing request")
 		return
@@ -3110,7 +3041,7 @@ func (client SitesClient) DiscoverSiteRestore(resourceGroupName string, name str
 }
 
 // DiscoverSiteRestorePreparer prepares the DiscoverSiteRestore request.
-func (client SitesClient) DiscoverSiteRestorePreparer(resourceGroupName string, name string, request RestoreRequest) (*http.Request, error) {
+func (client SitesClient) DiscoverSiteRestorePreparer(ctx context.Context, resourceGroupName string, name string, request RestoreRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3129,14 +3060,13 @@ func (client SitesClient) DiscoverSiteRestorePreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/discover", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DiscoverSiteRestoreSender sends the DiscoverSiteRestore request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DiscoverSiteRestoreSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3157,8 +3087,8 @@ func (client SitesClient) DiscoverSiteRestoreResponder(resp *http.Response) (res
 //
 // resourceGroupName is name of resource group name is name of web app request is information on restore request slot
 // is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) DiscoverSiteRestoreSlot(resourceGroupName string, name string, request RestoreRequest, slot string) (result RestoreRequest, err error) {
-	req, err := client.DiscoverSiteRestoreSlotPreparer(resourceGroupName, name, request, slot)
+func (client SitesClient) DiscoverSiteRestoreSlot(ctx context.Context, resourceGroupName string, name string, request RestoreRequest, slot string) (result RestoreRequest, err error) {
+	req, err := client.DiscoverSiteRestoreSlotPreparer(ctx, resourceGroupName, name, request, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "DiscoverSiteRestoreSlot", nil, "Failure preparing request")
 		return
@@ -3180,7 +3110,7 @@ func (client SitesClient) DiscoverSiteRestoreSlot(resourceGroupName string, name
 }
 
 // DiscoverSiteRestoreSlotPreparer prepares the DiscoverSiteRestoreSlot request.
-func (client SitesClient) DiscoverSiteRestoreSlotPreparer(resourceGroupName string, name string, request RestoreRequest, slot string) (*http.Request, error) {
+func (client SitesClient) DiscoverSiteRestoreSlotPreparer(ctx context.Context, resourceGroupName string, name string, request RestoreRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3200,14 +3130,13 @@ func (client SitesClient) DiscoverSiteRestoreSlotPreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/discover", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DiscoverSiteRestoreSlotSender sends the DiscoverSiteRestoreSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) DiscoverSiteRestoreSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3227,8 +3156,8 @@ func (client SitesClient) DiscoverSiteRestoreSlotResponder(resp *http.Response) 
 // GenerateNewSitePublishingPassword sends the generate new site publishing password request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GenerateNewSitePublishingPassword(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.GenerateNewSitePublishingPasswordPreparer(resourceGroupName, name)
+func (client SitesClient) GenerateNewSitePublishingPassword(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.GenerateNewSitePublishingPasswordPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GenerateNewSitePublishingPassword", nil, "Failure preparing request")
 		return
@@ -3250,7 +3179,7 @@ func (client SitesClient) GenerateNewSitePublishingPassword(resourceGroupName st
 }
 
 // GenerateNewSitePublishingPasswordPreparer prepares the GenerateNewSitePublishingPassword request.
-func (client SitesClient) GenerateNewSitePublishingPasswordPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GenerateNewSitePublishingPasswordPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3267,14 +3196,13 @@ func (client SitesClient) GenerateNewSitePublishingPasswordPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/newpassword", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateNewSitePublishingPasswordSender sends the GenerateNewSitePublishingPassword request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GenerateNewSitePublishingPasswordSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3295,8 +3223,8 @@ func (client SitesClient) GenerateNewSitePublishingPasswordResponder(resp *http.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GenerateNewSitePublishingPasswordSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.GenerateNewSitePublishingPasswordSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GenerateNewSitePublishingPasswordSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.GenerateNewSitePublishingPasswordSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GenerateNewSitePublishingPasswordSlot", nil, "Failure preparing request")
 		return
@@ -3318,7 +3246,7 @@ func (client SitesClient) GenerateNewSitePublishingPasswordSlot(resourceGroupNam
 }
 
 // GenerateNewSitePublishingPasswordSlotPreparer prepares the GenerateNewSitePublishingPasswordSlot request.
-func (client SitesClient) GenerateNewSitePublishingPasswordSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GenerateNewSitePublishingPasswordSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3336,14 +3264,13 @@ func (client SitesClient) GenerateNewSitePublishingPasswordSlotPreparer(resource
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/newpassword", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateNewSitePublishingPasswordSlotSender sends the GenerateNewSitePublishingPasswordSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GenerateNewSitePublishingPasswordSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3364,8 +3291,9 @@ func (client SitesClient) GenerateNewSitePublishingPasswordSlotResponder(resp *h
 //
 // resourceGroupName is name of resource group propertiesToInclude is additional web app properties included in the
 // response includeSiteTypes is types of apps included in the response
-func (client SitesClient) GetDeletedSites(resourceGroupName string, propertiesToInclude string, includeSiteTypes string) (result DeletedSiteCollection, err error) {
-	req, err := client.GetDeletedSitesPreparer(resourceGroupName, propertiesToInclude, includeSiteTypes)
+func (client SitesClient) GetDeletedSites(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string) (result DeletedSiteCollectionPage, err error) {
+	result.fn = client.getDeletedSitesNextResults
+	req, err := client.GetDeletedSitesPreparer(ctx, resourceGroupName, propertiesToInclude, includeSiteTypes)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", nil, "Failure preparing request")
 		return
@@ -3373,12 +3301,12 @@ func (client SitesClient) GetDeletedSites(resourceGroupName string, propertiesTo
 
 	resp, err := client.GetDeletedSitesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dsc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetDeletedSitesResponder(resp)
+	result.dsc, err = client.GetDeletedSitesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", resp, "Failure responding to request")
 	}
@@ -3387,7 +3315,7 @@ func (client SitesClient) GetDeletedSites(resourceGroupName string, propertiesTo
 }
 
 // GetDeletedSitesPreparer prepares the GetDeletedSites request.
-func (client SitesClient) GetDeletedSitesPreparer(resourceGroupName string, propertiesToInclude string, includeSiteTypes string) (*http.Request, error) {
+func (client SitesClient) GetDeletedSitesPreparer(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -3409,14 +3337,13 @@ func (client SitesClient) GetDeletedSitesPreparer(resourceGroupName string, prop
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/deletedSites", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeletedSitesSender sends the GetDeletedSites request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetDeletedSitesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3433,80 +3360,38 @@ func (client SitesClient) GetDeletedSitesResponder(resp *http.Response) (result 
 	return
 }
 
-// GetDeletedSitesNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetDeletedSitesNextResults(lastResults DeletedSiteCollection) (result DeletedSiteCollection, err error) {
-	req, err := lastResults.DeletedSiteCollectionPreparer()
+// getDeletedSitesNextResults retrieves the next set of results, if any.
+func (client SitesClient) getDeletedSitesNextResults(lastResults DeletedSiteCollection) (result DeletedSiteCollection, err error) {
+	req, err := lastResults.deletedSiteCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeletedSitesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetDeletedSitesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeletedSitesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetDeletedSitesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeletedSites", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getDeletedSitesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetDeletedSitesComplete gets all elements from the list without paging.
-func (client SitesClient) GetDeletedSitesComplete(resourceGroupName string, propertiesToInclude string, includeSiteTypes string, cancel <-chan struct{}) (<-chan DeletedSite, <-chan error) {
-	resultChan := make(chan DeletedSite)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetDeletedSites(resourceGroupName, propertiesToInclude, includeSiteTypes)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetDeletedSitesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetDeletedSitesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetDeletedSitesComplete(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string) (result DeletedSiteCollectionIterator, err error) {
+	result.page, err = client.GetDeletedSites(ctx, resourceGroupName, propertiesToInclude, includeSiteTypes)
+	return
 }
 
 // GetDeployment sends the get deployment request.
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment
-func (client SitesClient) GetDeployment(resourceGroupName string, name string, ID string) (result Deployment, err error) {
-	req, err := client.GetDeploymentPreparer(resourceGroupName, name, ID)
+func (client SitesClient) GetDeployment(ctx context.Context, resourceGroupName string, name string, ID string) (result Deployment, err error) {
+	req, err := client.GetDeploymentPreparer(ctx, resourceGroupName, name, ID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployment", nil, "Failure preparing request")
 		return
@@ -3528,7 +3413,7 @@ func (client SitesClient) GetDeployment(resourceGroupName string, name string, I
 }
 
 // GetDeploymentPreparer prepares the GetDeployment request.
-func (client SitesClient) GetDeploymentPreparer(resourceGroupName string, name string, ID string) (*http.Request, error) {
+func (client SitesClient) GetDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -3546,14 +3431,13 @@ func (client SitesClient) GetDeploymentPreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeploymentSender sends the GetDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3573,8 +3457,9 @@ func (client SitesClient) GetDeploymentResponder(resp *http.Response) (result De
 // GetDeployments sends the get deployments request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetDeployments(resourceGroupName string, name string) (result DeploymentCollection, err error) {
-	req, err := client.GetDeploymentsPreparer(resourceGroupName, name)
+func (client SitesClient) GetDeployments(ctx context.Context, resourceGroupName string, name string) (result DeploymentCollectionPage, err error) {
+	result.fn = client.getDeploymentsNextResults
+	req, err := client.GetDeploymentsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", nil, "Failure preparing request")
 		return
@@ -3582,12 +3467,12 @@ func (client SitesClient) GetDeployments(resourceGroupName string, name string) 
 
 	resp, err := client.GetDeploymentsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetDeploymentsResponder(resp)
+	result.dc, err = client.GetDeploymentsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", resp, "Failure responding to request")
 	}
@@ -3596,7 +3481,7 @@ func (client SitesClient) GetDeployments(resourceGroupName string, name string) 
 }
 
 // GetDeploymentsPreparer prepares the GetDeployments request.
-func (client SitesClient) GetDeploymentsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetDeploymentsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3613,14 +3498,13 @@ func (client SitesClient) GetDeploymentsPreparer(resourceGroupName string, name 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/deployments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeploymentsSender sends the GetDeployments request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetDeploymentsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3637,81 +3521,39 @@ func (client SitesClient) GetDeploymentsResponder(resp *http.Response) (result D
 	return
 }
 
-// GetDeploymentsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetDeploymentsNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
-	req, err := lastResults.DeploymentCollectionPreparer()
+// getDeploymentsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getDeploymentsNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
+	req, err := lastResults.deploymentCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetDeploymentsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetDeploymentsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeployments", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetDeploymentsComplete gets all elements from the list without paging.
-func (client SitesClient) GetDeploymentsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan Deployment, <-chan error) {
-	resultChan := make(chan Deployment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetDeployments(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetDeploymentsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetDeploymentsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetDeploymentsComplete(ctx context.Context, resourceGroupName string, name string) (result DeploymentCollectionIterator, err error) {
+	result.page, err = client.GetDeployments(ctx, resourceGroupName, name)
+	return
 }
 
 // GetDeploymentSlot sends the get deployment slot request.
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot.
-func (client SitesClient) GetDeploymentSlot(resourceGroupName string, name string, ID string, slot string) (result Deployment, err error) {
-	req, err := client.GetDeploymentSlotPreparer(resourceGroupName, name, ID, slot)
+func (client SitesClient) GetDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string) (result Deployment, err error) {
+	req, err := client.GetDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -3733,7 +3575,7 @@ func (client SitesClient) GetDeploymentSlot(resourceGroupName string, name strin
 }
 
 // GetDeploymentSlotPreparer prepares the GetDeploymentSlot request.
-func (client SitesClient) GetDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string) (*http.Request, error) {
+func (client SitesClient) GetDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"name":              autorest.Encode("path", name),
@@ -3752,14 +3594,13 @@ func (client SitesClient) GetDeploymentSlotPreparer(resourceGroupName string, na
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeploymentSlotSender sends the GetDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3780,8 +3621,9 @@ func (client SitesClient) GetDeploymentSlotResponder(resp *http.Response) (resul
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetDeploymentsSlot(resourceGroupName string, name string, slot string) (result DeploymentCollection, err error) {
-	req, err := client.GetDeploymentsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetDeploymentsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result DeploymentCollectionPage, err error) {
+	result.fn = client.getDeploymentsSlotNextResults
+	req, err := client.GetDeploymentsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", nil, "Failure preparing request")
 		return
@@ -3789,12 +3631,12 @@ func (client SitesClient) GetDeploymentsSlot(resourceGroupName string, name stri
 
 	resp, err := client.GetDeploymentsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetDeploymentsSlotResponder(resp)
+	result.dc, err = client.GetDeploymentsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", resp, "Failure responding to request")
 	}
@@ -3803,7 +3645,7 @@ func (client SitesClient) GetDeploymentsSlot(resourceGroupName string, name stri
 }
 
 // GetDeploymentsSlotPreparer prepares the GetDeploymentsSlot request.
-func (client SitesClient) GetDeploymentsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetDeploymentsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -3821,14 +3663,13 @@ func (client SitesClient) GetDeploymentsSlotPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/deployments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeploymentsSlotSender sends the GetDeploymentsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetDeploymentsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3845,81 +3686,39 @@ func (client SitesClient) GetDeploymentsSlotResponder(resp *http.Response) (resu
 	return
 }
 
-// GetDeploymentsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetDeploymentsSlotNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
-	req, err := lastResults.DeploymentCollectionPreparer()
+// getDeploymentsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getDeploymentsSlotNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
+	req, err := lastResults.deploymentCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetDeploymentsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetDeploymentsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetDeploymentsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getDeploymentsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetDeploymentsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetDeploymentsSlotComplete(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan Deployment, <-chan error) {
-	resultChan := make(chan Deployment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetDeploymentsSlot(resourceGroupName, name, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetDeploymentsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetDeploymentsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetDeploymentsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string) (result DeploymentCollectionIterator, err error) {
+	result.page, err = client.GetDeploymentsSlot(ctx, resourceGroupName, name, slot)
+	return
 }
 
 // GetInstanceDeployment sends the get instance deployment request.
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment instanceID is id of
 // web app instance
-func (client SitesClient) GetInstanceDeployment(resourceGroupName string, name string, ID string, instanceID string) (result Deployment, err error) {
-	req, err := client.GetInstanceDeploymentPreparer(resourceGroupName, name, ID, instanceID)
+func (client SitesClient) GetInstanceDeployment(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string) (result Deployment, err error) {
+	req, err := client.GetInstanceDeploymentPreparer(ctx, resourceGroupName, name, ID, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployment", nil, "Failure preparing request")
 		return
@@ -3941,7 +3740,7 @@ func (client SitesClient) GetInstanceDeployment(resourceGroupName string, name s
 }
 
 // GetInstanceDeploymentPreparer prepares the GetInstanceDeployment request.
-func (client SitesClient) GetInstanceDeploymentPreparer(resourceGroupName string, name string, ID string, instanceID string) (*http.Request, error) {
+func (client SitesClient) GetInstanceDeploymentPreparer(ctx context.Context, resourceGroupName string, name string, ID string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -3960,14 +3759,13 @@ func (client SitesClient) GetInstanceDeploymentPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetInstanceDeploymentSender sends the GetInstanceDeployment request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetInstanceDeploymentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -3987,8 +3785,9 @@ func (client SitesClient) GetInstanceDeploymentResponder(resp *http.Response) (r
 // GetInstanceDeployments sends the get instance deployments request.
 //
 // resourceGroupName is name of resource group name is name of web app instanceID is id of web app instance
-func (client SitesClient) GetInstanceDeployments(resourceGroupName string, name string, instanceID string) (result DeploymentCollection, err error) {
-	req, err := client.GetInstanceDeploymentsPreparer(resourceGroupName, name, instanceID)
+func (client SitesClient) GetInstanceDeployments(ctx context.Context, resourceGroupName string, name string, instanceID string) (result DeploymentCollectionPage, err error) {
+	result.fn = client.getInstanceDeploymentsNextResults
+	req, err := client.GetInstanceDeploymentsPreparer(ctx, resourceGroupName, name, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", nil, "Failure preparing request")
 		return
@@ -3996,12 +3795,12 @@ func (client SitesClient) GetInstanceDeployments(resourceGroupName string, name 
 
 	resp, err := client.GetInstanceDeploymentsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetInstanceDeploymentsResponder(resp)
+	result.dc, err = client.GetInstanceDeploymentsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", resp, "Failure responding to request")
 	}
@@ -4010,7 +3809,7 @@ func (client SitesClient) GetInstanceDeployments(resourceGroupName string, name 
 }
 
 // GetInstanceDeploymentsPreparer prepares the GetInstanceDeployments request.
-func (client SitesClient) GetInstanceDeploymentsPreparer(resourceGroupName string, name string, instanceID string) (*http.Request, error) {
+func (client SitesClient) GetInstanceDeploymentsPreparer(ctx context.Context, resourceGroupName string, name string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"name":              autorest.Encode("path", name),
@@ -4028,14 +3827,13 @@ func (client SitesClient) GetInstanceDeploymentsPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/instances/{instanceId}/deployments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetInstanceDeploymentsSender sends the GetInstanceDeployments request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetInstanceDeploymentsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4052,81 +3850,39 @@ func (client SitesClient) GetInstanceDeploymentsResponder(resp *http.Response) (
 	return
 }
 
-// GetInstanceDeploymentsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetInstanceDeploymentsNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
-	req, err := lastResults.DeploymentCollectionPreparer()
+// getInstanceDeploymentsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getInstanceDeploymentsNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
+	req, err := lastResults.deploymentCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetInstanceDeploymentsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetInstanceDeploymentsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeployments", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetInstanceDeploymentsComplete gets all elements from the list without paging.
-func (client SitesClient) GetInstanceDeploymentsComplete(resourceGroupName string, name string, instanceID string, cancel <-chan struct{}) (<-chan Deployment, <-chan error) {
-	resultChan := make(chan Deployment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetInstanceDeployments(resourceGroupName, name, instanceID)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetInstanceDeploymentsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetInstanceDeploymentsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetInstanceDeploymentsComplete(ctx context.Context, resourceGroupName string, name string, instanceID string) (result DeploymentCollectionIterator, err error) {
+	result.page, err = client.GetInstanceDeployments(ctx, resourceGroupName, name, instanceID)
+	return
 }
 
 // GetInstanceDeploymentSlot sends the get instance deployment slot request.
 //
 // resourceGroupName is name of resource group name is name of web app ID is id of the deployment slot is name of web
 // app slot. If not specified then will default to production slot. instanceID is id of web app instance
-func (client SitesClient) GetInstanceDeploymentSlot(resourceGroupName string, name string, ID string, slot string, instanceID string) (result Deployment, err error) {
-	req, err := client.GetInstanceDeploymentSlotPreparer(resourceGroupName, name, ID, slot, instanceID)
+func (client SitesClient) GetInstanceDeploymentSlot(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string) (result Deployment, err error) {
+	req, err := client.GetInstanceDeploymentSlotPreparer(ctx, resourceGroupName, name, ID, slot, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentSlot", nil, "Failure preparing request")
 		return
@@ -4148,7 +3904,7 @@ func (client SitesClient) GetInstanceDeploymentSlot(resourceGroupName string, na
 }
 
 // GetInstanceDeploymentSlotPreparer prepares the GetInstanceDeploymentSlot request.
-func (client SitesClient) GetInstanceDeploymentSlotPreparer(resourceGroupName string, name string, ID string, slot string, instanceID string) (*http.Request, error) {
+func (client SitesClient) GetInstanceDeploymentSlotPreparer(ctx context.Context, resourceGroupName string, name string, ID string, slot string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"instanceId":        autorest.Encode("path", instanceID),
@@ -4168,14 +3924,13 @@ func (client SitesClient) GetInstanceDeploymentSlotPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/instances/{instanceId}/deployments/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetInstanceDeploymentSlotSender sends the GetInstanceDeploymentSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetInstanceDeploymentSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4196,8 +3951,9 @@ func (client SitesClient) GetInstanceDeploymentSlotResponder(resp *http.Response
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot. instanceID is id of web app instance
-func (client SitesClient) GetInstanceDeploymentsSlot(resourceGroupName string, name string, slot string, instanceID string) (result DeploymentCollection, err error) {
-	req, err := client.GetInstanceDeploymentsSlotPreparer(resourceGroupName, name, slot, instanceID)
+func (client SitesClient) GetInstanceDeploymentsSlot(ctx context.Context, resourceGroupName string, name string, slot string, instanceID string) (result DeploymentCollectionPage, err error) {
+	result.fn = client.getInstanceDeploymentsSlotNextResults
+	req, err := client.GetInstanceDeploymentsSlotPreparer(ctx, resourceGroupName, name, slot, instanceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", nil, "Failure preparing request")
 		return
@@ -4205,12 +3961,12 @@ func (client SitesClient) GetInstanceDeploymentsSlot(resourceGroupName string, n
 
 	resp, err := client.GetInstanceDeploymentsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetInstanceDeploymentsSlotResponder(resp)
+	result.dc, err = client.GetInstanceDeploymentsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", resp, "Failure responding to request")
 	}
@@ -4219,7 +3975,7 @@ func (client SitesClient) GetInstanceDeploymentsSlot(resourceGroupName string, n
 }
 
 // GetInstanceDeploymentsSlotPreparer prepares the GetInstanceDeploymentsSlot request.
-func (client SitesClient) GetInstanceDeploymentsSlotPreparer(resourceGroupName string, name string, slot string, instanceID string) (*http.Request, error) {
+func (client SitesClient) GetInstanceDeploymentsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, instanceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"instanceId":        autorest.Encode("path", instanceID),
 		"name":              autorest.Encode("path", name),
@@ -4238,14 +3994,13 @@ func (client SitesClient) GetInstanceDeploymentsSlotPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/instances/{instanceId}/deployments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetInstanceDeploymentsSlotSender sends the GetInstanceDeploymentsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetInstanceDeploymentsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4262,81 +4017,39 @@ func (client SitesClient) GetInstanceDeploymentsSlotResponder(resp *http.Respons
 	return
 }
 
-// GetInstanceDeploymentsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetInstanceDeploymentsSlotNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
-	req, err := lastResults.DeploymentCollectionPreparer()
+// getInstanceDeploymentsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getInstanceDeploymentsSlotNextResults(lastResults DeploymentCollection) (result DeploymentCollection, err error) {
+	req, err := lastResults.deploymentCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetInstanceDeploymentsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetInstanceDeploymentsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetInstanceDeploymentsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getInstanceDeploymentsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetInstanceDeploymentsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetInstanceDeploymentsSlotComplete(resourceGroupName string, name string, slot string, instanceID string, cancel <-chan struct{}) (<-chan Deployment, <-chan error) {
-	resultChan := make(chan Deployment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetInstanceDeploymentsSlot(resourceGroupName, name, slot, instanceID)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetInstanceDeploymentsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetInstanceDeploymentsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetInstanceDeploymentsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string, instanceID string) (result DeploymentCollectionIterator, err error) {
+	result.page, err = client.GetInstanceDeploymentsSlot(ctx, resourceGroupName, name, slot, instanceID)
+	return
 }
 
 // GetSite sends the get site request.
 //
 // resourceGroupName is name of resource group name is name of web app propertiesToInclude is additional web app
 // properties included in the response
-func (client SitesClient) GetSite(resourceGroupName string, name string, propertiesToInclude string) (result Site, err error) {
-	req, err := client.GetSitePreparer(resourceGroupName, name, propertiesToInclude)
+func (client SitesClient) GetSite(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (result Site, err error) {
+	req, err := client.GetSitePreparer(ctx, resourceGroupName, name, propertiesToInclude)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSite", nil, "Failure preparing request")
 		return
@@ -4358,7 +4071,7 @@ func (client SitesClient) GetSite(resourceGroupName string, name string, propert
 }
 
 // GetSitePreparer prepares the GetSite request.
-func (client SitesClient) GetSitePreparer(resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
+func (client SitesClient) GetSitePreparer(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -4378,14 +4091,13 @@ func (client SitesClient) GetSitePreparer(resourceGroupName string, name string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSender sends the GetSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4405,8 +4117,8 @@ func (client SitesClient) GetSiteResponder(resp *http.Response) (result Site, er
 // GetSiteBackupConfiguration sends the get site backup configuration request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteBackupConfiguration(resourceGroupName string, name string) (result BackupRequest, err error) {
-	req, err := client.GetSiteBackupConfigurationPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteBackupConfiguration(ctx context.Context, resourceGroupName string, name string) (result BackupRequest, err error) {
+	req, err := client.GetSiteBackupConfigurationPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupConfiguration", nil, "Failure preparing request")
 		return
@@ -4428,7 +4140,7 @@ func (client SitesClient) GetSiteBackupConfiguration(resourceGroupName string, n
 }
 
 // GetSiteBackupConfigurationPreparer prepares the GetSiteBackupConfiguration request.
-func (client SitesClient) GetSiteBackupConfigurationPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupConfigurationPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -4445,14 +4157,13 @@ func (client SitesClient) GetSiteBackupConfigurationPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/backup/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupConfigurationSender sends the GetSiteBackupConfiguration request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupConfigurationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4473,8 +4184,8 @@ func (client SitesClient) GetSiteBackupConfigurationResponder(resp *http.Respons
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteBackupConfigurationSlot(resourceGroupName string, name string, slot string) (result BackupRequest, err error) {
-	req, err := client.GetSiteBackupConfigurationSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteBackupConfigurationSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result BackupRequest, err error) {
+	req, err := client.GetSiteBackupConfigurationSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupConfigurationSlot", nil, "Failure preparing request")
 		return
@@ -4496,7 +4207,7 @@ func (client SitesClient) GetSiteBackupConfigurationSlot(resourceGroupName strin
 }
 
 // GetSiteBackupConfigurationSlotPreparer prepares the GetSiteBackupConfigurationSlot request.
-func (client SitesClient) GetSiteBackupConfigurationSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupConfigurationSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -4514,14 +4225,13 @@ func (client SitesClient) GetSiteBackupConfigurationSlotPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/backup/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupConfigurationSlotSender sends the GetSiteBackupConfigurationSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupConfigurationSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4541,8 +4251,8 @@ func (client SitesClient) GetSiteBackupConfigurationSlotResponder(resp *http.Res
 // GetSiteBackupStatus sends the get site backup status request.
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup
-func (client SitesClient) GetSiteBackupStatus(resourceGroupName string, name string, backupID string) (result BackupItem, err error) {
-	req, err := client.GetSiteBackupStatusPreparer(resourceGroupName, name, backupID)
+func (client SitesClient) GetSiteBackupStatus(ctx context.Context, resourceGroupName string, name string, backupID string) (result BackupItem, err error) {
+	req, err := client.GetSiteBackupStatusPreparer(ctx, resourceGroupName, name, backupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupStatus", nil, "Failure preparing request")
 		return
@@ -4564,7 +4274,7 @@ func (client SitesClient) GetSiteBackupStatus(resourceGroupName string, name str
 }
 
 // GetSiteBackupStatusPreparer prepares the GetSiteBackupStatus request.
-func (client SitesClient) GetSiteBackupStatusPreparer(resourceGroupName string, name string, backupID string) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupStatusPreparer(ctx context.Context, resourceGroupName string, name string, backupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -4582,14 +4292,13 @@ func (client SitesClient) GetSiteBackupStatusPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupStatusSender sends the GetSiteBackupStatus request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupStatusSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4610,8 +4319,8 @@ func (client SitesClient) GetSiteBackupStatusResponder(resp *http.Response) (res
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup request is information
 // on backup request
-func (client SitesClient) GetSiteBackupStatusSecrets(resourceGroupName string, name string, backupID string, request BackupRequest) (result BackupItem, err error) {
-	req, err := client.GetSiteBackupStatusSecretsPreparer(resourceGroupName, name, backupID, request)
+func (client SitesClient) GetSiteBackupStatusSecrets(ctx context.Context, resourceGroupName string, name string, backupID string, request BackupRequest) (result BackupItem, err error) {
+	req, err := client.GetSiteBackupStatusSecretsPreparer(ctx, resourceGroupName, name, backupID, request)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupStatusSecrets", nil, "Failure preparing request")
 		return
@@ -4633,7 +4342,7 @@ func (client SitesClient) GetSiteBackupStatusSecrets(resourceGroupName string, n
 }
 
 // GetSiteBackupStatusSecretsPreparer prepares the GetSiteBackupStatusSecrets request.
-func (client SitesClient) GetSiteBackupStatusSecretsPreparer(resourceGroupName string, name string, backupID string, request BackupRequest) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupStatusSecretsPreparer(ctx context.Context, resourceGroupName string, name string, backupID string, request BackupRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -4653,14 +4362,13 @@ func (client SitesClient) GetSiteBackupStatusSecretsPreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}/list", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupStatusSecretsSender sends the GetSiteBackupStatusSecrets request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupStatusSecretsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4681,8 +4389,8 @@ func (client SitesClient) GetSiteBackupStatusSecretsResponder(resp *http.Respons
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup request is information
 // on backup request slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) GetSiteBackupStatusSecretsSlot(resourceGroupName string, name string, backupID string, request BackupRequest, slot string) (result BackupItem, err error) {
-	req, err := client.GetSiteBackupStatusSecretsSlotPreparer(resourceGroupName, name, backupID, request, slot)
+func (client SitesClient) GetSiteBackupStatusSecretsSlot(ctx context.Context, resourceGroupName string, name string, backupID string, request BackupRequest, slot string) (result BackupItem, err error) {
+	req, err := client.GetSiteBackupStatusSecretsSlotPreparer(ctx, resourceGroupName, name, backupID, request, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupStatusSecretsSlot", nil, "Failure preparing request")
 		return
@@ -4704,7 +4412,7 @@ func (client SitesClient) GetSiteBackupStatusSecretsSlot(resourceGroupName strin
 }
 
 // GetSiteBackupStatusSecretsSlotPreparer prepares the GetSiteBackupStatusSecretsSlot request.
-func (client SitesClient) GetSiteBackupStatusSecretsSlotPreparer(resourceGroupName string, name string, backupID string, request BackupRequest, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupStatusSecretsSlotPreparer(ctx context.Context, resourceGroupName string, name string, backupID string, request BackupRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -4725,14 +4433,13 @@ func (client SitesClient) GetSiteBackupStatusSecretsSlotPreparer(resourceGroupNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}/list", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupStatusSecretsSlotSender sends the GetSiteBackupStatusSecretsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupStatusSecretsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4753,8 +4460,8 @@ func (client SitesClient) GetSiteBackupStatusSecretsSlotResponder(resp *http.Res
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup slot is name of web app
 // slot. If not specified then will default to production slot.
-func (client SitesClient) GetSiteBackupStatusSlot(resourceGroupName string, name string, backupID string, slot string) (result BackupItem, err error) {
-	req, err := client.GetSiteBackupStatusSlotPreparer(resourceGroupName, name, backupID, slot)
+func (client SitesClient) GetSiteBackupStatusSlot(ctx context.Context, resourceGroupName string, name string, backupID string, slot string) (result BackupItem, err error) {
+	req, err := client.GetSiteBackupStatusSlotPreparer(ctx, resourceGroupName, name, backupID, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteBackupStatusSlot", nil, "Failure preparing request")
 		return
@@ -4776,7 +4483,7 @@ func (client SitesClient) GetSiteBackupStatusSlot(resourceGroupName string, name
 }
 
 // GetSiteBackupStatusSlotPreparer prepares the GetSiteBackupStatusSlot request.
-func (client SitesClient) GetSiteBackupStatusSlotPreparer(resourceGroupName string, name string, backupID string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteBackupStatusSlotPreparer(ctx context.Context, resourceGroupName string, name string, backupID string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -4795,14 +4502,13 @@ func (client SitesClient) GetSiteBackupStatusSlotPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteBackupStatusSlotSender sends the GetSiteBackupStatusSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteBackupStatusSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4822,8 +4528,8 @@ func (client SitesClient) GetSiteBackupStatusSlotResponder(resp *http.Response) 
 // GetSiteConfig sends the get site config request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteConfig(resourceGroupName string, name string) (result SiteConfig, err error) {
-	req, err := client.GetSiteConfigPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteConfig(ctx context.Context, resourceGroupName string, name string) (result SiteConfig, err error) {
+	req, err := client.GetSiteConfigPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteConfig", nil, "Failure preparing request")
 		return
@@ -4845,7 +4551,7 @@ func (client SitesClient) GetSiteConfig(resourceGroupName string, name string) (
 }
 
 // GetSiteConfigPreparer prepares the GetSiteConfig request.
-func (client SitesClient) GetSiteConfigPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteConfigPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -4862,14 +4568,13 @@ func (client SitesClient) GetSiteConfigPreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteConfigSender sends the GetSiteConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4890,8 +4595,8 @@ func (client SitesClient) GetSiteConfigResponder(resp *http.Response) (result Si
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteConfigSlot(resourceGroupName string, name string, slot string) (result SiteConfig, err error) {
-	req, err := client.GetSiteConfigSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteConfigSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteConfig, err error) {
+	req, err := client.GetSiteConfigSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteConfigSlot", nil, "Failure preparing request")
 		return
@@ -4913,7 +4618,7 @@ func (client SitesClient) GetSiteConfigSlot(resourceGroupName string, name strin
 }
 
 // GetSiteConfigSlotPreparer prepares the GetSiteConfigSlot request.
-func (client SitesClient) GetSiteConfigSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -4931,14 +4636,13 @@ func (client SitesClient) GetSiteConfigSlotPreparer(resourceGroupName string, na
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteConfigSlotSender sends the GetSiteConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -4958,8 +4662,8 @@ func (client SitesClient) GetSiteConfigSlotResponder(resp *http.Response) (resul
 // GetSiteHostNameBinding sends the get site host name binding request.
 //
 // resourceGroupName is name of resource group name is name of web app hostName is name of host
-func (client SitesClient) GetSiteHostNameBinding(resourceGroupName string, name string, hostName string) (result HostNameBinding, err error) {
-	req, err := client.GetSiteHostNameBindingPreparer(resourceGroupName, name, hostName)
+func (client SitesClient) GetSiteHostNameBinding(ctx context.Context, resourceGroupName string, name string, hostName string) (result HostNameBinding, err error) {
+	req, err := client.GetSiteHostNameBindingPreparer(ctx, resourceGroupName, name, hostName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBinding", nil, "Failure preparing request")
 		return
@@ -4981,7 +4685,7 @@ func (client SitesClient) GetSiteHostNameBinding(resourceGroupName string, name 
 }
 
 // GetSiteHostNameBindingPreparer prepares the GetSiteHostNameBinding request.
-func (client SitesClient) GetSiteHostNameBindingPreparer(resourceGroupName string, name string, hostName string) (*http.Request, error) {
+func (client SitesClient) GetSiteHostNameBindingPreparer(ctx context.Context, resourceGroupName string, name string, hostName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -4999,14 +4703,13 @@ func (client SitesClient) GetSiteHostNameBindingPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteHostNameBindingSender sends the GetSiteHostNameBinding request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteHostNameBindingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5026,8 +4729,9 @@ func (client SitesClient) GetSiteHostNameBindingResponder(resp *http.Response) (
 // GetSiteHostNameBindings sends the get site host name bindings request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteHostNameBindings(resourceGroupName string, name string) (result HostNameBindingCollection, err error) {
-	req, err := client.GetSiteHostNameBindingsPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteHostNameBindings(ctx context.Context, resourceGroupName string, name string) (result HostNameBindingCollectionPage, err error) {
+	result.fn = client.getSiteHostNameBindingsNextResults
+	req, err := client.GetSiteHostNameBindingsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", nil, "Failure preparing request")
 		return
@@ -5035,12 +4739,12 @@ func (client SitesClient) GetSiteHostNameBindings(resourceGroupName string, name
 
 	resp, err := client.GetSiteHostNameBindingsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.hnbc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteHostNameBindingsResponder(resp)
+	result.hnbc, err = client.GetSiteHostNameBindingsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", resp, "Failure responding to request")
 	}
@@ -5049,7 +4753,7 @@ func (client SitesClient) GetSiteHostNameBindings(resourceGroupName string, name
 }
 
 // GetSiteHostNameBindingsPreparer prepares the GetSiteHostNameBindings request.
-func (client SitesClient) GetSiteHostNameBindingsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteHostNameBindingsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5066,14 +4770,13 @@ func (client SitesClient) GetSiteHostNameBindingsPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hostNameBindings", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteHostNameBindingsSender sends the GetSiteHostNameBindings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteHostNameBindingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5090,81 +4793,39 @@ func (client SitesClient) GetSiteHostNameBindingsResponder(resp *http.Response) 
 	return
 }
 
-// GetSiteHostNameBindingsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteHostNameBindingsNextResults(lastResults HostNameBindingCollection) (result HostNameBindingCollection, err error) {
-	req, err := lastResults.HostNameBindingCollectionPreparer()
+// getSiteHostNameBindingsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteHostNameBindingsNextResults(lastResults HostNameBindingCollection) (result HostNameBindingCollection, err error) {
+	req, err := lastResults.hostNameBindingCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteHostNameBindingsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteHostNameBindingsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindings", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteHostNameBindingsComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteHostNameBindingsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan HostNameBinding, <-chan error) {
-	resultChan := make(chan HostNameBinding)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteHostNameBindings(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteHostNameBindingsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteHostNameBindingsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteHostNameBindingsComplete(ctx context.Context, resourceGroupName string, name string) (result HostNameBindingCollectionIterator, err error) {
+	result.page, err = client.GetSiteHostNameBindings(ctx, resourceGroupName, name)
+	return
 }
 
 // GetSiteHostNameBindingSlot sends the get site host name binding slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot. hostName is name of host
-func (client SitesClient) GetSiteHostNameBindingSlot(resourceGroupName string, name string, slot string, hostName string) (result HostNameBinding, err error) {
-	req, err := client.GetSiteHostNameBindingSlotPreparer(resourceGroupName, name, slot, hostName)
+func (client SitesClient) GetSiteHostNameBindingSlot(ctx context.Context, resourceGroupName string, name string, slot string, hostName string) (result HostNameBinding, err error) {
+	req, err := client.GetSiteHostNameBindingSlotPreparer(ctx, resourceGroupName, name, slot, hostName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingSlot", nil, "Failure preparing request")
 		return
@@ -5186,7 +4847,7 @@ func (client SitesClient) GetSiteHostNameBindingSlot(resourceGroupName string, n
 }
 
 // GetSiteHostNameBindingSlotPreparer prepares the GetSiteHostNameBindingSlot request.
-func (client SitesClient) GetSiteHostNameBindingSlotPreparer(resourceGroupName string, name string, slot string, hostName string) (*http.Request, error) {
+func (client SitesClient) GetSiteHostNameBindingSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, hostName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hostName":          autorest.Encode("path", hostName),
 		"name":              autorest.Encode("path", name),
@@ -5205,14 +4866,13 @@ func (client SitesClient) GetSiteHostNameBindingSlotPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hostNameBindings/{hostName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteHostNameBindingSlotSender sends the GetSiteHostNameBindingSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteHostNameBindingSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5233,8 +4893,9 @@ func (client SitesClient) GetSiteHostNameBindingSlotResponder(resp *http.Respons
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteHostNameBindingsSlot(resourceGroupName string, name string, slot string) (result HostNameBindingCollection, err error) {
-	req, err := client.GetSiteHostNameBindingsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteHostNameBindingsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result HostNameBindingCollectionPage, err error) {
+	result.fn = client.getSiteHostNameBindingsSlotNextResults
+	req, err := client.GetSiteHostNameBindingsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", nil, "Failure preparing request")
 		return
@@ -5242,12 +4903,12 @@ func (client SitesClient) GetSiteHostNameBindingsSlot(resourceGroupName string, 
 
 	resp, err := client.GetSiteHostNameBindingsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.hnbc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteHostNameBindingsSlotResponder(resp)
+	result.hnbc, err = client.GetSiteHostNameBindingsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", resp, "Failure responding to request")
 	}
@@ -5256,7 +4917,7 @@ func (client SitesClient) GetSiteHostNameBindingsSlot(resourceGroupName string, 
 }
 
 // GetSiteHostNameBindingsSlotPreparer prepares the GetSiteHostNameBindingsSlot request.
-func (client SitesClient) GetSiteHostNameBindingsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteHostNameBindingsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5274,14 +4935,13 @@ func (client SitesClient) GetSiteHostNameBindingsSlotPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hostNameBindings", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteHostNameBindingsSlotSender sends the GetSiteHostNameBindingsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteHostNameBindingsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5298,80 +4958,39 @@ func (client SitesClient) GetSiteHostNameBindingsSlotResponder(resp *http.Respon
 	return
 }
 
-// GetSiteHostNameBindingsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteHostNameBindingsSlotNextResults(lastResults HostNameBindingCollection) (result HostNameBindingCollection, err error) {
-	req, err := lastResults.HostNameBindingCollectionPreparer()
+// getSiteHostNameBindingsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteHostNameBindingsSlotNextResults(lastResults HostNameBindingCollection) (result HostNameBindingCollection, err error) {
+	req, err := lastResults.hostNameBindingCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteHostNameBindingsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteHostNameBindingsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteHostNameBindingsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteHostNameBindingsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteHostNameBindingsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteHostNameBindingsSlotComplete(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan HostNameBinding, <-chan error) {
-	resultChan := make(chan HostNameBinding)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteHostNameBindingsSlot(resourceGroupName, name, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteHostNameBindingsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteHostNameBindingsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteHostNameBindingsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string) (result HostNameBindingCollectionIterator, err error) {
+	result.page, err = client.GetSiteHostNameBindingsSlot(ctx, resourceGroupName, name, slot)
+	return
 }
 
 // GetSiteInstanceIdentifiers sends the get site instance identifiers request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteInstanceIdentifiers(resourceGroupName string, name string) (result SiteInstanceCollection, err error) {
-	req, err := client.GetSiteInstanceIdentifiersPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteInstanceIdentifiers(ctx context.Context, resourceGroupName string, name string) (result SiteInstanceCollectionPage, err error) {
+	result.fn = client.getSiteInstanceIdentifiersNextResults
+	req, err := client.GetSiteInstanceIdentifiersPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", nil, "Failure preparing request")
 		return
@@ -5379,12 +4998,12 @@ func (client SitesClient) GetSiteInstanceIdentifiers(resourceGroupName string, n
 
 	resp, err := client.GetSiteInstanceIdentifiersSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sic.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteInstanceIdentifiersResponder(resp)
+	result.sic, err = client.GetSiteInstanceIdentifiersResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", resp, "Failure responding to request")
 	}
@@ -5393,7 +5012,7 @@ func (client SitesClient) GetSiteInstanceIdentifiers(resourceGroupName string, n
 }
 
 // GetSiteInstanceIdentifiersPreparer prepares the GetSiteInstanceIdentifiers request.
-func (client SitesClient) GetSiteInstanceIdentifiersPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteInstanceIdentifiersPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5410,14 +5029,13 @@ func (client SitesClient) GetSiteInstanceIdentifiersPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/instances", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteInstanceIdentifiersSender sends the GetSiteInstanceIdentifiers request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteInstanceIdentifiersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5434,81 +5052,40 @@ func (client SitesClient) GetSiteInstanceIdentifiersResponder(resp *http.Respons
 	return
 }
 
-// GetSiteInstanceIdentifiersNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteInstanceIdentifiersNextResults(lastResults SiteInstanceCollection) (result SiteInstanceCollection, err error) {
-	req, err := lastResults.SiteInstanceCollectionPreparer()
+// getSiteInstanceIdentifiersNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteInstanceIdentifiersNextResults(lastResults SiteInstanceCollection) (result SiteInstanceCollection, err error) {
+	req, err := lastResults.siteInstanceCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteInstanceIdentifiersSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteInstanceIdentifiersResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiers", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteInstanceIdentifiersComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteInstanceIdentifiersComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan SiteInstance, <-chan error) {
-	resultChan := make(chan SiteInstance)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteInstanceIdentifiers(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteInstanceIdentifiersNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteInstanceIdentifiersComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteInstanceIdentifiersComplete(ctx context.Context, resourceGroupName string, name string) (result SiteInstanceCollectionIterator, err error) {
+	result.page, err = client.GetSiteInstanceIdentifiers(ctx, resourceGroupName, name)
+	return
 }
 
 // GetSiteInstanceIdentifiersSlot sends the get site instance identifiers slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteInstanceIdentifiersSlot(resourceGroupName string, name string, slot string) (result SiteInstanceCollection, err error) {
-	req, err := client.GetSiteInstanceIdentifiersSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteInstanceIdentifiersSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteInstanceCollectionPage, err error) {
+	result.fn = client.getSiteInstanceIdentifiersSlotNextResults
+	req, err := client.GetSiteInstanceIdentifiersSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", nil, "Failure preparing request")
 		return
@@ -5516,12 +5093,12 @@ func (client SitesClient) GetSiteInstanceIdentifiersSlot(resourceGroupName strin
 
 	resp, err := client.GetSiteInstanceIdentifiersSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sic.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteInstanceIdentifiersSlotResponder(resp)
+	result.sic, err = client.GetSiteInstanceIdentifiersSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", resp, "Failure responding to request")
 	}
@@ -5530,7 +5107,7 @@ func (client SitesClient) GetSiteInstanceIdentifiersSlot(resourceGroupName strin
 }
 
 // GetSiteInstanceIdentifiersSlotPreparer prepares the GetSiteInstanceIdentifiersSlot request.
-func (client SitesClient) GetSiteInstanceIdentifiersSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteInstanceIdentifiersSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5548,14 +5125,13 @@ func (client SitesClient) GetSiteInstanceIdentifiersSlotPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/instances", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteInstanceIdentifiersSlotSender sends the GetSiteInstanceIdentifiersSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteInstanceIdentifiersSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5572,80 +5148,38 @@ func (client SitesClient) GetSiteInstanceIdentifiersSlotResponder(resp *http.Res
 	return
 }
 
-// GetSiteInstanceIdentifiersSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteInstanceIdentifiersSlotNextResults(lastResults SiteInstanceCollection) (result SiteInstanceCollection, err error) {
-	req, err := lastResults.SiteInstanceCollectionPreparer()
+// getSiteInstanceIdentifiersSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteInstanceIdentifiersSlotNextResults(lastResults SiteInstanceCollection) (result SiteInstanceCollection, err error) {
+	req, err := lastResults.siteInstanceCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteInstanceIdentifiersSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteInstanceIdentifiersSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteInstanceIdentifiersSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteInstanceIdentifiersSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteInstanceIdentifiersSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteInstanceIdentifiersSlotComplete(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan SiteInstance, <-chan error) {
-	resultChan := make(chan SiteInstance)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteInstanceIdentifiersSlot(resourceGroupName, name, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteInstanceIdentifiersSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteInstanceIdentifiersSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteInstanceIdentifiersSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteInstanceCollectionIterator, err error) {
+	result.page, err = client.GetSiteInstanceIdentifiersSlot(ctx, resourceGroupName, name, slot)
+	return
 }
 
 // GetSiteLogsConfig sends the get site logs config request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteLogsConfig(resourceGroupName string, name string) (result SiteLogsConfig, err error) {
-	req, err := client.GetSiteLogsConfigPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteLogsConfig(ctx context.Context, resourceGroupName string, name string) (result SiteLogsConfig, err error) {
+	req, err := client.GetSiteLogsConfigPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteLogsConfig", nil, "Failure preparing request")
 		return
@@ -5667,7 +5201,7 @@ func (client SitesClient) GetSiteLogsConfig(resourceGroupName string, name strin
 }
 
 // GetSiteLogsConfigPreparer prepares the GetSiteLogsConfig request.
-func (client SitesClient) GetSiteLogsConfigPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteLogsConfigPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5684,14 +5218,13 @@ func (client SitesClient) GetSiteLogsConfigPreparer(resourceGroupName string, na
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/logs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteLogsConfigSender sends the GetSiteLogsConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteLogsConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5712,8 +5245,8 @@ func (client SitesClient) GetSiteLogsConfigResponder(resp *http.Response) (resul
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteLogsConfigSlot(resourceGroupName string, name string, slot string) (result SiteLogsConfig, err error) {
-	req, err := client.GetSiteLogsConfigSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteLogsConfigSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteLogsConfig, err error) {
+	req, err := client.GetSiteLogsConfigSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteLogsConfigSlot", nil, "Failure preparing request")
 		return
@@ -5735,7 +5268,7 @@ func (client SitesClient) GetSiteLogsConfigSlot(resourceGroupName string, name s
 }
 
 // GetSiteLogsConfigSlotPreparer prepares the GetSiteLogsConfigSlot request.
-func (client SitesClient) GetSiteLogsConfigSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteLogsConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5753,14 +5286,13 @@ func (client SitesClient) GetSiteLogsConfigSlotPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/logs", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteLogsConfigSlotSender sends the GetSiteLogsConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteLogsConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5780,8 +5312,9 @@ func (client SitesClient) GetSiteLogsConfigSlotResponder(resp *http.Response) (r
 // GetSiteMetricDefinitions sends the get site metric definitions request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteMetricDefinitions(resourceGroupName string, name string) (result MetricDefinitionCollection, err error) {
-	req, err := client.GetSiteMetricDefinitionsPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteMetricDefinitions(ctx context.Context, resourceGroupName string, name string) (result MetricDefinitionCollectionPage, err error) {
+	result.fn = client.getSiteMetricDefinitionsNextResults
+	req, err := client.GetSiteMetricDefinitionsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", nil, "Failure preparing request")
 		return
@@ -5789,12 +5322,12 @@ func (client SitesClient) GetSiteMetricDefinitions(resourceGroupName string, nam
 
 	resp, err := client.GetSiteMetricDefinitionsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.mdc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteMetricDefinitionsResponder(resp)
+	result.mdc, err = client.GetSiteMetricDefinitionsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", resp, "Failure responding to request")
 	}
@@ -5803,7 +5336,7 @@ func (client SitesClient) GetSiteMetricDefinitions(resourceGroupName string, nam
 }
 
 // GetSiteMetricDefinitionsPreparer prepares the GetSiteMetricDefinitions request.
-func (client SitesClient) GetSiteMetricDefinitionsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteMetricDefinitionsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5820,14 +5353,13 @@ func (client SitesClient) GetSiteMetricDefinitionsPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/metricdefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteMetricDefinitionsSender sends the GetSiteMetricDefinitions request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteMetricDefinitionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5844,81 +5376,40 @@ func (client SitesClient) GetSiteMetricDefinitionsResponder(resp *http.Response)
 	return
 }
 
-// GetSiteMetricDefinitionsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteMetricDefinitionsNextResults(lastResults MetricDefinitionCollection) (result MetricDefinitionCollection, err error) {
-	req, err := lastResults.MetricDefinitionCollectionPreparer()
+// getSiteMetricDefinitionsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteMetricDefinitionsNextResults(lastResults MetricDefinitionCollection) (result MetricDefinitionCollection, err error) {
+	req, err := lastResults.metricDefinitionCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteMetricDefinitionsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteMetricDefinitionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitions", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteMetricDefinitionsComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteMetricDefinitionsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan MetricDefinition, <-chan error) {
-	resultChan := make(chan MetricDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteMetricDefinitions(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteMetricDefinitionsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteMetricDefinitionsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteMetricDefinitionsComplete(ctx context.Context, resourceGroupName string, name string) (result MetricDefinitionCollectionIterator, err error) {
+	result.page, err = client.GetSiteMetricDefinitions(ctx, resourceGroupName, name)
+	return
 }
 
 // GetSiteMetricDefinitionsSlot sends the get site metric definitions slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteMetricDefinitionsSlot(resourceGroupName string, name string, slot string) (result MetricDefinitionCollection, err error) {
-	req, err := client.GetSiteMetricDefinitionsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteMetricDefinitionsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result MetricDefinitionCollectionPage, err error) {
+	result.fn = client.getSiteMetricDefinitionsSlotNextResults
+	req, err := client.GetSiteMetricDefinitionsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", nil, "Failure preparing request")
 		return
@@ -5926,12 +5417,12 @@ func (client SitesClient) GetSiteMetricDefinitionsSlot(resourceGroupName string,
 
 	resp, err := client.GetSiteMetricDefinitionsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.mdc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteMetricDefinitionsSlotResponder(resp)
+	result.mdc, err = client.GetSiteMetricDefinitionsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", resp, "Failure responding to request")
 	}
@@ -5940,7 +5431,7 @@ func (client SitesClient) GetSiteMetricDefinitionsSlot(resourceGroupName string,
 }
 
 // GetSiteMetricDefinitionsSlotPreparer prepares the GetSiteMetricDefinitionsSlot request.
-func (client SitesClient) GetSiteMetricDefinitionsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteMetricDefinitionsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -5958,14 +5449,13 @@ func (client SitesClient) GetSiteMetricDefinitionsSlotPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/metricdefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteMetricDefinitionsSlotSender sends the GetSiteMetricDefinitionsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteMetricDefinitionsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -5982,73 +5472,31 @@ func (client SitesClient) GetSiteMetricDefinitionsSlotResponder(resp *http.Respo
 	return
 }
 
-// GetSiteMetricDefinitionsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteMetricDefinitionsSlotNextResults(lastResults MetricDefinitionCollection) (result MetricDefinitionCollection, err error) {
-	req, err := lastResults.MetricDefinitionCollectionPreparer()
+// getSiteMetricDefinitionsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteMetricDefinitionsSlotNextResults(lastResults MetricDefinitionCollection) (result MetricDefinitionCollection, err error) {
+	req, err := lastResults.metricDefinitionCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteMetricDefinitionsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteMetricDefinitionsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricDefinitionsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricDefinitionsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteMetricDefinitionsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteMetricDefinitionsSlotComplete(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan MetricDefinition, <-chan error) {
-	resultChan := make(chan MetricDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteMetricDefinitionsSlot(resourceGroupName, name, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteMetricDefinitionsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteMetricDefinitionsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteMetricDefinitionsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string) (result MetricDefinitionCollectionIterator, err error) {
+	result.page, err = client.GetSiteMetricDefinitionsSlot(ctx, resourceGroupName, name, slot)
+	return
 }
 
 // GetSiteMetrics sends the get site metrics request.
@@ -6057,8 +5505,9 @@ func (client SitesClient) GetSiteMetricDefinitionsSlotComplete(resourceGroupName
 // in response filter is return only usages/metrics specified in the filter. Filter conforms to odata syntax. Example:
 // $filter=(name.value eq 'Metric1' or name.value eq 'Metric2') and startTime eq '2014-01-01T00:00:00Z' and endTime eq
 // '2014-12-31T23:59:59Z' and timeGrain eq duration'[Hour|Minute|Day]'.
-func (client SitesClient) GetSiteMetrics(resourceGroupName string, name string, details *bool, filter string) (result ResourceMetricCollection, err error) {
-	req, err := client.GetSiteMetricsPreparer(resourceGroupName, name, details, filter)
+func (client SitesClient) GetSiteMetrics(ctx context.Context, resourceGroupName string, name string, details *bool, filter string) (result ResourceMetricCollectionPage, err error) {
+	result.fn = client.getSiteMetricsNextResults
+	req, err := client.GetSiteMetricsPreparer(ctx, resourceGroupName, name, details, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", nil, "Failure preparing request")
 		return
@@ -6066,12 +5515,12 @@ func (client SitesClient) GetSiteMetrics(resourceGroupName string, name string, 
 
 	resp, err := client.GetSiteMetricsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rmc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteMetricsResponder(resp)
+	result.rmc, err = client.GetSiteMetricsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", resp, "Failure responding to request")
 	}
@@ -6080,7 +5529,7 @@ func (client SitesClient) GetSiteMetrics(resourceGroupName string, name string, 
 }
 
 // GetSiteMetricsPreparer prepares the GetSiteMetrics request.
-func (client SitesClient) GetSiteMetricsPreparer(resourceGroupName string, name string, details *bool, filter string) (*http.Request, error) {
+func (client SitesClient) GetSiteMetricsPreparer(ctx context.Context, resourceGroupName string, name string, details *bool, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -6103,14 +5552,13 @@ func (client SitesClient) GetSiteMetricsPreparer(resourceGroupName string, name 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteMetricsSender sends the GetSiteMetrics request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteMetricsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6127,73 +5575,31 @@ func (client SitesClient) GetSiteMetricsResponder(resp *http.Response) (result R
 	return
 }
 
-// GetSiteMetricsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteMetricsNextResults(lastResults ResourceMetricCollection) (result ResourceMetricCollection, err error) {
-	req, err := lastResults.ResourceMetricCollectionPreparer()
+// getSiteMetricsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteMetricsNextResults(lastResults ResourceMetricCollection) (result ResourceMetricCollection, err error) {
+	req, err := lastResults.resourceMetricCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteMetricsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteMetricsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetrics", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteMetricsComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteMetricsComplete(resourceGroupName string, name string, details *bool, filter string, cancel <-chan struct{}) (<-chan ResourceMetric, <-chan error) {
-	resultChan := make(chan ResourceMetric)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteMetrics(resourceGroupName, name, details, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteMetricsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteMetricsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteMetricsComplete(ctx context.Context, resourceGroupName string, name string, details *bool, filter string) (result ResourceMetricCollectionIterator, err error) {
+	result.page, err = client.GetSiteMetrics(ctx, resourceGroupName, name, details, filter)
+	return
 }
 
 // GetSiteMetricsSlot sends the get site metrics slot request.
@@ -6203,8 +5609,9 @@ func (client SitesClient) GetSiteMetricsComplete(resourceGroupName string, name 
 // only usages/metrics specified in the filter. Filter conforms to odata syntax. Example: $filter=(name.value eq
 // 'Metric1' or name.value eq 'Metric2') and startTime eq '2014-01-01T00:00:00Z' and endTime eq '2014-12-31T23:59:59Z'
 // and timeGrain eq duration'[Hour|Minute|Day]'.
-func (client SitesClient) GetSiteMetricsSlot(resourceGroupName string, name string, slot string, details *bool, filter string) (result ResourceMetricCollection, err error) {
-	req, err := client.GetSiteMetricsSlotPreparer(resourceGroupName, name, slot, details, filter)
+func (client SitesClient) GetSiteMetricsSlot(ctx context.Context, resourceGroupName string, name string, slot string, details *bool, filter string) (result ResourceMetricCollectionPage, err error) {
+	result.fn = client.getSiteMetricsSlotNextResults
+	req, err := client.GetSiteMetricsSlotPreparer(ctx, resourceGroupName, name, slot, details, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", nil, "Failure preparing request")
 		return
@@ -6212,12 +5619,12 @@ func (client SitesClient) GetSiteMetricsSlot(resourceGroupName string, name stri
 
 	resp, err := client.GetSiteMetricsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rmc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteMetricsSlotResponder(resp)
+	result.rmc, err = client.GetSiteMetricsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", resp, "Failure responding to request")
 	}
@@ -6226,7 +5633,7 @@ func (client SitesClient) GetSiteMetricsSlot(resourceGroupName string, name stri
 }
 
 // GetSiteMetricsSlotPreparer prepares the GetSiteMetricsSlot request.
-func (client SitesClient) GetSiteMetricsSlotPreparer(resourceGroupName string, name string, slot string, details *bool, filter string) (*http.Request, error) {
+func (client SitesClient) GetSiteMetricsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, details *bool, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -6250,14 +5657,13 @@ func (client SitesClient) GetSiteMetricsSlotPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteMetricsSlotSender sends the GetSiteMetricsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteMetricsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6274,81 +5680,39 @@ func (client SitesClient) GetSiteMetricsSlotResponder(resp *http.Response) (resu
 	return
 }
 
-// GetSiteMetricsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteMetricsSlotNextResults(lastResults ResourceMetricCollection) (result ResourceMetricCollection, err error) {
-	req, err := lastResults.ResourceMetricCollectionPreparer()
+// getSiteMetricsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteMetricsSlotNextResults(lastResults ResourceMetricCollection) (result ResourceMetricCollection, err error) {
+	req, err := lastResults.resourceMetricCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteMetricsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteMetricsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteMetricsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteMetricsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteMetricsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteMetricsSlotComplete(resourceGroupName string, name string, slot string, details *bool, filter string, cancel <-chan struct{}) (<-chan ResourceMetric, <-chan error) {
-	resultChan := make(chan ResourceMetric)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteMetricsSlot(resourceGroupName, name, slot, details, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteMetricsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteMetricsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteMetricsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string, details *bool, filter string) (result ResourceMetricCollectionIterator, err error) {
+	result.page, err = client.GetSiteMetricsSlot(ctx, resourceGroupName, name, slot, details, filter)
+	return
 }
 
 // GetSiteNetworkFeatures sends the get site network features request.
 //
 // resourceGroupName is the resource group name name is the name of the web app view is the type of view. This can
 // either be "summary" or "detailed".
-func (client SitesClient) GetSiteNetworkFeatures(resourceGroupName string, name string, view string) (result NetworkFeatures, err error) {
-	req, err := client.GetSiteNetworkFeaturesPreparer(resourceGroupName, name, view)
+func (client SitesClient) GetSiteNetworkFeatures(ctx context.Context, resourceGroupName string, name string, view string) (result NetworkFeatures, err error) {
+	req, err := client.GetSiteNetworkFeaturesPreparer(ctx, resourceGroupName, name, view)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteNetworkFeatures", nil, "Failure preparing request")
 		return
@@ -6370,7 +5734,7 @@ func (client SitesClient) GetSiteNetworkFeatures(resourceGroupName string, name 
 }
 
 // GetSiteNetworkFeaturesPreparer prepares the GetSiteNetworkFeatures request.
-func (client SitesClient) GetSiteNetworkFeaturesPreparer(resourceGroupName string, name string, view string) (*http.Request, error) {
+func (client SitesClient) GetSiteNetworkFeaturesPreparer(ctx context.Context, resourceGroupName string, name string, view string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -6388,14 +5752,13 @@ func (client SitesClient) GetSiteNetworkFeaturesPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/networkFeatures/{view}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteNetworkFeaturesSender sends the GetSiteNetworkFeatures request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteNetworkFeaturesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6416,8 +5779,8 @@ func (client SitesClient) GetSiteNetworkFeaturesResponder(resp *http.Response) (
 //
 // resourceGroupName is the resource group name name is the name of the web app view is the type of view. This can
 // either be "summary" or "detailed". slot is the name of the slot for this web app.
-func (client SitesClient) GetSiteNetworkFeaturesSlot(resourceGroupName string, name string, view string, slot string) (result NetworkFeatures, err error) {
-	req, err := client.GetSiteNetworkFeaturesSlotPreparer(resourceGroupName, name, view, slot)
+func (client SitesClient) GetSiteNetworkFeaturesSlot(ctx context.Context, resourceGroupName string, name string, view string, slot string) (result NetworkFeatures, err error) {
+	req, err := client.GetSiteNetworkFeaturesSlotPreparer(ctx, resourceGroupName, name, view, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteNetworkFeaturesSlot", nil, "Failure preparing request")
 		return
@@ -6439,7 +5802,7 @@ func (client SitesClient) GetSiteNetworkFeaturesSlot(resourceGroupName string, n
 }
 
 // GetSiteNetworkFeaturesSlotPreparer prepares the GetSiteNetworkFeaturesSlot request.
-func (client SitesClient) GetSiteNetworkFeaturesSlotPreparer(resourceGroupName string, name string, view string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteNetworkFeaturesSlotPreparer(ctx context.Context, resourceGroupName string, name string, view string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -6458,14 +5821,13 @@ func (client SitesClient) GetSiteNetworkFeaturesSlotPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/networkFeatures/{view}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteNetworkFeaturesSlotSender sends the GetSiteNetworkFeaturesSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteNetworkFeaturesSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6485,8 +5847,8 @@ func (client SitesClient) GetSiteNetworkFeaturesSlotResponder(resp *http.Respons
 // GetSiteOperation sends the get site operation request.
 //
 // resourceGroupName is name of resource group name is name of web app operationID is id of an operation
-func (client SitesClient) GetSiteOperation(resourceGroupName string, name string, operationID string) (result SetObject, err error) {
-	req, err := client.GetSiteOperationPreparer(resourceGroupName, name, operationID)
+func (client SitesClient) GetSiteOperation(ctx context.Context, resourceGroupName string, name string, operationID string) (result SetObject, err error) {
+	req, err := client.GetSiteOperationPreparer(ctx, resourceGroupName, name, operationID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteOperation", nil, "Failure preparing request")
 		return
@@ -6508,7 +5870,7 @@ func (client SitesClient) GetSiteOperation(resourceGroupName string, name string
 }
 
 // GetSiteOperationPreparer prepares the GetSiteOperation request.
-func (client SitesClient) GetSiteOperationPreparer(resourceGroupName string, name string, operationID string) (*http.Request, error) {
+func (client SitesClient) GetSiteOperationPreparer(ctx context.Context, resourceGroupName string, name string, operationID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"operationId":       autorest.Encode("path", operationID),
@@ -6526,14 +5888,13 @@ func (client SitesClient) GetSiteOperationPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/operationresults/{operationId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteOperationSender sends the GetSiteOperation request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6554,8 +5915,8 @@ func (client SitesClient) GetSiteOperationResponder(resp *http.Response) (result
 //
 // resourceGroupName is name of resource group name is name of web app operationID is id of an operation slot is name
 // of web app slot. If not specified then will default to production slot.
-func (client SitesClient) GetSiteOperationSlot(resourceGroupName string, name string, operationID string, slot string) (result SetObject, err error) {
-	req, err := client.GetSiteOperationSlotPreparer(resourceGroupName, name, operationID, slot)
+func (client SitesClient) GetSiteOperationSlot(ctx context.Context, resourceGroupName string, name string, operationID string, slot string) (result SetObject, err error) {
+	req, err := client.GetSiteOperationSlotPreparer(ctx, resourceGroupName, name, operationID, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteOperationSlot", nil, "Failure preparing request")
 		return
@@ -6577,7 +5938,7 @@ func (client SitesClient) GetSiteOperationSlot(resourceGroupName string, name st
 }
 
 // GetSiteOperationSlotPreparer prepares the GetSiteOperationSlot request.
-func (client SitesClient) GetSiteOperationSlotPreparer(resourceGroupName string, name string, operationID string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteOperationSlotPreparer(ctx context.Context, resourceGroupName string, name string, operationID string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"operationId":       autorest.Encode("path", operationID),
@@ -6596,14 +5957,13 @@ func (client SitesClient) GetSiteOperationSlotPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/operationresults/{operationId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteOperationSlotSender sends the GetSiteOperationSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteOperationSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6622,8 +5982,8 @@ func (client SitesClient) GetSiteOperationSlotResponder(resp *http.Response) (re
 
 // GetSitePremierAddOn sends the get site premier add on request.
 //
-func (client SitesClient) GetSitePremierAddOn(resourceGroupName string, name string, premierAddOnName string) (result SetObject, err error) {
-	req, err := client.GetSitePremierAddOnPreparer(resourceGroupName, name, premierAddOnName)
+func (client SitesClient) GetSitePremierAddOn(ctx context.Context, resourceGroupName string, name string, premierAddOnName string) (result SetObject, err error) {
+	req, err := client.GetSitePremierAddOnPreparer(ctx, resourceGroupName, name, premierAddOnName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSitePremierAddOn", nil, "Failure preparing request")
 		return
@@ -6645,7 +6005,7 @@ func (client SitesClient) GetSitePremierAddOn(resourceGroupName string, name str
 }
 
 // GetSitePremierAddOnPreparer prepares the GetSitePremierAddOn request.
-func (client SitesClient) GetSitePremierAddOnPreparer(resourceGroupName string, name string, premierAddOnName string) (*http.Request, error) {
+func (client SitesClient) GetSitePremierAddOnPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -6663,14 +6023,13 @@ func (client SitesClient) GetSitePremierAddOnPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSitePremierAddOnSender sends the GetSitePremierAddOn request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSitePremierAddOnSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6689,8 +6048,8 @@ func (client SitesClient) GetSitePremierAddOnResponder(resp *http.Response) (res
 
 // GetSitePremierAddOnSlot sends the get site premier add on slot request.
 //
-func (client SitesClient) GetSitePremierAddOnSlot(resourceGroupName string, name string, premierAddOnName string, slot string) (result SetObject, err error) {
-	req, err := client.GetSitePremierAddOnSlotPreparer(resourceGroupName, name, premierAddOnName, slot)
+func (client SitesClient) GetSitePremierAddOnSlot(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, slot string) (result SetObject, err error) {
+	req, err := client.GetSitePremierAddOnSlotPreparer(ctx, resourceGroupName, name, premierAddOnName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSitePremierAddOnSlot", nil, "Failure preparing request")
 		return
@@ -6712,7 +6071,7 @@ func (client SitesClient) GetSitePremierAddOnSlot(resourceGroupName string, name
 }
 
 // GetSitePremierAddOnSlotPreparer prepares the GetSitePremierAddOnSlot request.
-func (client SitesClient) GetSitePremierAddOnSlotPreparer(resourceGroupName string, name string, premierAddOnName string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSitePremierAddOnSlotPreparer(ctx context.Context, resourceGroupName string, name string, premierAddOnName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"premierAddOnName":  autorest.Encode("path", premierAddOnName),
@@ -6731,14 +6090,13 @@ func (client SitesClient) GetSitePremierAddOnSlotPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/premieraddons/{premierAddOnName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSitePremierAddOnSlotSender sends the GetSitePremierAddOnSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSitePremierAddOnSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6759,8 +6117,8 @@ func (client SitesClient) GetSitePremierAddOnSlotResponder(resp *http.Response) 
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified
-func (client SitesClient) GetSiteRelayServiceConnection(resourceGroupName string, name string, entityName string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.GetSiteRelayServiceConnectionPreparer(resourceGroupName, name, entityName)
+func (client SitesClient) GetSiteRelayServiceConnection(ctx context.Context, resourceGroupName string, name string, entityName string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.GetSiteRelayServiceConnectionPreparer(ctx, resourceGroupName, name, entityName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteRelayServiceConnection", nil, "Failure preparing request")
 		return
@@ -6782,7 +6140,7 @@ func (client SitesClient) GetSiteRelayServiceConnection(resourceGroupName string
 }
 
 // GetSiteRelayServiceConnectionPreparer prepares the GetSiteRelayServiceConnection request.
-func (client SitesClient) GetSiteRelayServiceConnectionPreparer(resourceGroupName string, name string, entityName string) (*http.Request, error) {
+func (client SitesClient) GetSiteRelayServiceConnectionPreparer(ctx context.Context, resourceGroupName string, name string, entityName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -6800,14 +6158,13 @@ func (client SitesClient) GetSiteRelayServiceConnectionPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteRelayServiceConnectionSender sends the GetSiteRelayServiceConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteRelayServiceConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6828,8 +6185,8 @@ func (client SitesClient) GetSiteRelayServiceConnectionResponder(resp *http.Resp
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified slot is the name of the slot for the web app.
-func (client SitesClient) GetSiteRelayServiceConnectionSlot(resourceGroupName string, name string, entityName string, slot string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.GetSiteRelayServiceConnectionSlotPreparer(resourceGroupName, name, entityName, slot)
+func (client SitesClient) GetSiteRelayServiceConnectionSlot(ctx context.Context, resourceGroupName string, name string, entityName string, slot string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.GetSiteRelayServiceConnectionSlotPreparer(ctx, resourceGroupName, name, entityName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteRelayServiceConnectionSlot", nil, "Failure preparing request")
 		return
@@ -6851,7 +6208,7 @@ func (client SitesClient) GetSiteRelayServiceConnectionSlot(resourceGroupName st
 }
 
 // GetSiteRelayServiceConnectionSlotPreparer prepares the GetSiteRelayServiceConnectionSlot request.
-func (client SitesClient) GetSiteRelayServiceConnectionSlotPreparer(resourceGroupName string, name string, entityName string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteRelayServiceConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -6870,14 +6227,13 @@ func (client SitesClient) GetSiteRelayServiceConnectionSlotPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteRelayServiceConnectionSlotSender sends the GetSiteRelayServiceConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteRelayServiceConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6899,8 +6255,9 @@ func (client SitesClient) GetSiteRelayServiceConnectionSlotResponder(resp *http.
 // resourceGroupName is name of resource group propertiesToInclude is additional web app properties included in the
 // response includeSiteTypes is types of apps included in the response includeSlots is whether or not to include
 // deployments slots in results
-func (client SitesClient) GetSites(resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool) (result SiteCollection, err error) {
-	req, err := client.GetSitesPreparer(resourceGroupName, propertiesToInclude, includeSiteTypes, includeSlots)
+func (client SitesClient) GetSites(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool) (result SiteCollectionPage, err error) {
+	result.fn = client.getSitesNextResults
+	req, err := client.GetSitesPreparer(ctx, resourceGroupName, propertiesToInclude, includeSiteTypes, includeSlots)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", nil, "Failure preparing request")
 		return
@@ -6908,12 +6265,12 @@ func (client SitesClient) GetSites(resourceGroupName string, propertiesToInclude
 
 	resp, err := client.GetSitesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSitesResponder(resp)
+	result.sc, err = client.GetSitesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", resp, "Failure responding to request")
 	}
@@ -6922,7 +6279,7 @@ func (client SitesClient) GetSites(resourceGroupName string, propertiesToInclude
 }
 
 // GetSitesPreparer prepares the GetSites request.
-func (client SitesClient) GetSitesPreparer(resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool) (*http.Request, error) {
+func (client SitesClient) GetSitesPreparer(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -6947,14 +6304,13 @@ func (client SitesClient) GetSitesPreparer(resourceGroupName string, propertiesT
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSitesSender sends the GetSites request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSitesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -6971,81 +6327,39 @@ func (client SitesClient) GetSitesResponder(resp *http.Response) (result SiteCol
 	return
 }
 
-// GetSitesNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSitesNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
-	req, err := lastResults.SiteCollectionPreparer()
+// getSitesNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSitesNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
+	req, err := lastResults.siteCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSitesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSitesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSitesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSitesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSites", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSitesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSitesComplete gets all elements from the list without paging.
-func (client SitesClient) GetSitesComplete(resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSites(resourceGroupName, propertiesToInclude, includeSiteTypes, includeSlots)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSitesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSitesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSitesComplete(ctx context.Context, resourceGroupName string, propertiesToInclude string, includeSiteTypes string, includeSlots *bool) (result SiteCollectionIterator, err error) {
+	result.page, err = client.GetSites(ctx, resourceGroupName, propertiesToInclude, includeSiteTypes, includeSlots)
+	return
 }
 
 // GetSiteSlot sends the get site slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot. propertiesToInclude is additional web app properties included in the response
-func (client SitesClient) GetSiteSlot(resourceGroupName string, name string, slot string, propertiesToInclude string) (result Site, err error) {
-	req, err := client.GetSiteSlotPreparer(resourceGroupName, name, slot, propertiesToInclude)
+func (client SitesClient) GetSiteSlot(ctx context.Context, resourceGroupName string, name string, slot string, propertiesToInclude string) (result Site, err error) {
+	req, err := client.GetSiteSlotPreparer(ctx, resourceGroupName, name, slot, propertiesToInclude)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlot", nil, "Failure preparing request")
 		return
@@ -7067,7 +6381,7 @@ func (client SitesClient) GetSiteSlot(resourceGroupName string, name string, slo
 }
 
 // GetSiteSlotPreparer prepares the GetSiteSlot request.
-func (client SitesClient) GetSiteSlotPreparer(resourceGroupName string, name string, slot string, propertiesToInclude string) (*http.Request, error) {
+func (client SitesClient) GetSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, propertiesToInclude string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7088,14 +6402,13 @@ func (client SitesClient) GetSiteSlotPreparer(resourceGroupName string, name str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSlotSender sends the GetSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7116,8 +6429,9 @@ func (client SitesClient) GetSiteSlotResponder(resp *http.Response) (result Site
 //
 // resourceGroupName is name of resource group name is name of web app propertiesToInclude is list of app properties to
 // include in the response
-func (client SitesClient) GetSiteSlots(resourceGroupName string, name string, propertiesToInclude string) (result SiteCollection, err error) {
-	req, err := client.GetSiteSlotsPreparer(resourceGroupName, name, propertiesToInclude)
+func (client SitesClient) GetSiteSlots(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (result SiteCollectionPage, err error) {
+	result.fn = client.getSiteSlotsNextResults
+	req, err := client.GetSiteSlotsPreparer(ctx, resourceGroupName, name, propertiesToInclude)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", nil, "Failure preparing request")
 		return
@@ -7125,12 +6439,12 @@ func (client SitesClient) GetSiteSlots(resourceGroupName string, name string, pr
 
 	resp, err := client.GetSiteSlotsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteSlotsResponder(resp)
+	result.sc, err = client.GetSiteSlotsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", resp, "Failure responding to request")
 	}
@@ -7139,7 +6453,7 @@ func (client SitesClient) GetSiteSlots(resourceGroupName string, name string, pr
 }
 
 // GetSiteSlotsPreparer prepares the GetSiteSlots request.
-func (client SitesClient) GetSiteSlotsPreparer(resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
+func (client SitesClient) GetSiteSlotsPreparer(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7159,14 +6473,13 @@ func (client SitesClient) GetSiteSlotsPreparer(resourceGroupName string, name st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSlotsSender sends the GetSiteSlots request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSlotsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7183,80 +6496,38 @@ func (client SitesClient) GetSiteSlotsResponder(resp *http.Response) (result Sit
 	return
 }
 
-// GetSiteSlotsNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteSlotsNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
-	req, err := lastResults.SiteCollectionPreparer()
+// getSiteSlotsNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteSlotsNextResults(lastResults SiteCollection) (result SiteCollection, err error) {
+	req, err := lastResults.siteCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteSlotsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteSlotsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteSlotsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteSlotsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSlots", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteSlotsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteSlotsComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteSlotsComplete(resourceGroupName string, name string, propertiesToInclude string, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteSlots(resourceGroupName, name, propertiesToInclude)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteSlotsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteSlotsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteSlotsComplete(ctx context.Context, resourceGroupName string, name string, propertiesToInclude string) (result SiteCollectionIterator, err error) {
+	result.page, err = client.GetSiteSlots(ctx, resourceGroupName, name, propertiesToInclude)
+	return
 }
 
 // GetSiteSnapshots sends the get site snapshots request.
 //
 // resourceGroupName is webspace name is website Name
-func (client SitesClient) GetSiteSnapshots(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.GetSiteSnapshotsPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteSnapshots(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.GetSiteSnapshotsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSnapshots", nil, "Failure preparing request")
 		return
@@ -7278,7 +6549,7 @@ func (client SitesClient) GetSiteSnapshots(resourceGroupName string, name string
 }
 
 // GetSiteSnapshotsPreparer prepares the GetSiteSnapshots request.
-func (client SitesClient) GetSiteSnapshotsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteSnapshotsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7295,14 +6566,13 @@ func (client SitesClient) GetSiteSnapshotsPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/snapshots", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSnapshotsSender sends the GetSiteSnapshots request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSnapshotsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7322,8 +6592,8 @@ func (client SitesClient) GetSiteSnapshotsResponder(resp *http.Response) (result
 // GetSiteSnapshotsSlot sends the get site snapshots slot request.
 //
 // resourceGroupName is webspace name is website Name slot is website Slot
-func (client SitesClient) GetSiteSnapshotsSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.GetSiteSnapshotsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteSnapshotsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.GetSiteSnapshotsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSnapshotsSlot", nil, "Failure preparing request")
 		return
@@ -7345,7 +6615,7 @@ func (client SitesClient) GetSiteSnapshotsSlot(resourceGroupName string, name st
 }
 
 // GetSiteSnapshotsSlotPreparer prepares the GetSiteSnapshotsSlot request.
-func (client SitesClient) GetSiteSnapshotsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteSnapshotsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7363,14 +6633,13 @@ func (client SitesClient) GetSiteSnapshotsSlotPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/snapshots", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSnapshotsSlotSender sends the GetSiteSnapshotsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSnapshotsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7390,8 +6659,8 @@ func (client SitesClient) GetSiteSnapshotsSlotResponder(resp *http.Response) (re
 // GetSiteSourceControl sends the get site source control request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSiteSourceControl(resourceGroupName string, name string) (result SiteSourceControl, err error) {
-	req, err := client.GetSiteSourceControlPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteSourceControl(ctx context.Context, resourceGroupName string, name string) (result SiteSourceControl, err error) {
+	req, err := client.GetSiteSourceControlPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSourceControl", nil, "Failure preparing request")
 		return
@@ -7413,7 +6682,7 @@ func (client SitesClient) GetSiteSourceControl(resourceGroupName string, name st
 }
 
 // GetSiteSourceControlPreparer prepares the GetSiteSourceControl request.
-func (client SitesClient) GetSiteSourceControlPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteSourceControlPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7430,14 +6699,13 @@ func (client SitesClient) GetSiteSourceControlPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/sourcecontrols/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSourceControlSender sends the GetSiteSourceControl request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSourceControlSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7458,8 +6726,8 @@ func (client SitesClient) GetSiteSourceControlResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) GetSiteSourceControlSlot(resourceGroupName string, name string, slot string) (result SiteSourceControl, err error) {
-	req, err := client.GetSiteSourceControlSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteSourceControlSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteSourceControl, err error) {
+	req, err := client.GetSiteSourceControlSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteSourceControlSlot", nil, "Failure preparing request")
 		return
@@ -7481,7 +6749,7 @@ func (client SitesClient) GetSiteSourceControlSlot(resourceGroupName string, nam
 }
 
 // GetSiteSourceControlSlotPreparer prepares the GetSiteSourceControlSlot request.
-func (client SitesClient) GetSiteSourceControlSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteSourceControlSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7499,14 +6767,13 @@ func (client SitesClient) GetSiteSourceControlSlotPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/sourcecontrols/web", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteSourceControlSlotSender sends the GetSiteSourceControlSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteSourceControlSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7529,8 +6796,9 @@ func (client SitesClient) GetSiteSourceControlSlotResponder(resp *http.Response)
 // filter. Filter is specified by using OData syntax. Example: $filter=(name.value eq 'Metric1' or name.value eq
 // 'Metric2') and startTime eq '2014-01-01T00:00:00Z' and endTime eq '2014-12-31T23:59:59Z' and timeGrain eq
 // duration'[Hour|Minute|Day]'.
-func (client SitesClient) GetSiteUsages(resourceGroupName string, name string, filter string) (result CsmUsageQuotaCollection, err error) {
-	req, err := client.GetSiteUsagesPreparer(resourceGroupName, name, filter)
+func (client SitesClient) GetSiteUsages(ctx context.Context, resourceGroupName string, name string, filter string) (result CsmUsageQuotaCollectionPage, err error) {
+	result.fn = client.getSiteUsagesNextResults
+	req, err := client.GetSiteUsagesPreparer(ctx, resourceGroupName, name, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", nil, "Failure preparing request")
 		return
@@ -7538,12 +6806,12 @@ func (client SitesClient) GetSiteUsages(resourceGroupName string, name string, f
 
 	resp, err := client.GetSiteUsagesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cuqc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteUsagesResponder(resp)
+	result.cuqc, err = client.GetSiteUsagesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", resp, "Failure responding to request")
 	}
@@ -7552,7 +6820,7 @@ func (client SitesClient) GetSiteUsages(resourceGroupName string, name string, f
 }
 
 // GetSiteUsagesPreparer prepares the GetSiteUsages request.
-func (client SitesClient) GetSiteUsagesPreparer(resourceGroupName string, name string, filter string) (*http.Request, error) {
+func (client SitesClient) GetSiteUsagesPreparer(ctx context.Context, resourceGroupName string, name string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7572,14 +6840,13 @@ func (client SitesClient) GetSiteUsagesPreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/usages", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteUsagesSender sends the GetSiteUsages request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteUsagesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7596,73 +6863,31 @@ func (client SitesClient) GetSiteUsagesResponder(resp *http.Response) (result Cs
 	return
 }
 
-// GetSiteUsagesNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteUsagesNextResults(lastResults CsmUsageQuotaCollection) (result CsmUsageQuotaCollection, err error) {
-	req, err := lastResults.CsmUsageQuotaCollectionPreparer()
+// getSiteUsagesNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteUsagesNextResults(lastResults CsmUsageQuotaCollection) (result CsmUsageQuotaCollection, err error) {
+	req, err := lastResults.csmUsageQuotaCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteUsagesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteUsagesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsages", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteUsagesComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteUsagesComplete(resourceGroupName string, name string, filter string, cancel <-chan struct{}) (<-chan CsmUsageQuota, <-chan error) {
-	resultChan := make(chan CsmUsageQuota)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteUsages(resourceGroupName, name, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteUsagesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteUsagesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteUsagesComplete(ctx context.Context, resourceGroupName string, name string, filter string) (result CsmUsageQuotaCollectionIterator, err error) {
+	result.page, err = client.GetSiteUsages(ctx, resourceGroupName, name, filter)
+	return
 }
 
 // GetSiteUsagesSlot sends the get site usages slot request.
@@ -7671,8 +6896,9 @@ func (client SitesClient) GetSiteUsagesComplete(resourceGroupName string, name s
 // then will default to production slot. filter is return only usages specified in the filter. Filter is specified by
 // using OData syntax. Example: $filter=(name.value eq 'Metric1' or name.value eq 'Metric2') and startTime eq
 // '2014-01-01T00:00:00Z' and endTime eq '2014-12-31T23:59:59Z' and timeGrain eq duration'[Hour|Minute|Day]'.
-func (client SitesClient) GetSiteUsagesSlot(resourceGroupName string, name string, slot string, filter string) (result CsmUsageQuotaCollection, err error) {
-	req, err := client.GetSiteUsagesSlotPreparer(resourceGroupName, name, slot, filter)
+func (client SitesClient) GetSiteUsagesSlot(ctx context.Context, resourceGroupName string, name string, slot string, filter string) (result CsmUsageQuotaCollectionPage, err error) {
+	result.fn = client.getSiteUsagesSlotNextResults
+	req, err := client.GetSiteUsagesSlotPreparer(ctx, resourceGroupName, name, slot, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", nil, "Failure preparing request")
 		return
@@ -7680,12 +6906,12 @@ func (client SitesClient) GetSiteUsagesSlot(resourceGroupName string, name strin
 
 	resp, err := client.GetSiteUsagesSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cuqc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSiteUsagesSlotResponder(resp)
+	result.cuqc, err = client.GetSiteUsagesSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", resp, "Failure responding to request")
 	}
@@ -7694,7 +6920,7 @@ func (client SitesClient) GetSiteUsagesSlot(resourceGroupName string, name strin
 }
 
 // GetSiteUsagesSlotPreparer prepares the GetSiteUsagesSlot request.
-func (client SitesClient) GetSiteUsagesSlotPreparer(resourceGroupName string, name string, slot string, filter string) (*http.Request, error) {
+func (client SitesClient) GetSiteUsagesSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7715,14 +6941,13 @@ func (client SitesClient) GetSiteUsagesSlotPreparer(resourceGroupName string, na
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/usages", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteUsagesSlotSender sends the GetSiteUsagesSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteUsagesSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7739,81 +6964,39 @@ func (client SitesClient) GetSiteUsagesSlotResponder(resp *http.Response) (resul
 	return
 }
 
-// GetSiteUsagesSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSiteUsagesSlotNextResults(lastResults CsmUsageQuotaCollection) (result CsmUsageQuotaCollection, err error) {
-	req, err := lastResults.CsmUsageQuotaCollectionPreparer()
+// getSiteUsagesSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSiteUsagesSlotNextResults(lastResults CsmUsageQuotaCollection) (result CsmUsageQuotaCollection, err error) {
+	req, err := lastResults.csmUsageQuotaCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSiteUsagesSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSiteUsagesSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteUsagesSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSiteUsagesSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSiteUsagesSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSiteUsagesSlotComplete(resourceGroupName string, name string, slot string, filter string, cancel <-chan struct{}) (<-chan CsmUsageQuota, <-chan error) {
-	resultChan := make(chan CsmUsageQuota)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSiteUsagesSlot(resourceGroupName, name, slot, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSiteUsagesSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSiteUsagesSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSiteUsagesSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string, filter string) (result CsmUsageQuotaCollectionIterator, err error) {
+	result.page, err = client.GetSiteUsagesSlot(ctx, resourceGroupName, name, slot, filter)
+	return
 }
 
 // GetSiteVNETConnection sends the get site vnet connection request.
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network
-func (client SitesClient) GetSiteVNETConnection(resourceGroupName string, name string, vnetName string) (result VnetInfo, err error) {
-	req, err := client.GetSiteVNETConnectionPreparer(resourceGroupName, name, vnetName)
+func (client SitesClient) GetSiteVNETConnection(ctx context.Context, resourceGroupName string, name string, vnetName string) (result VnetInfo, err error) {
+	req, err := client.GetSiteVNETConnectionPreparer(ctx, resourceGroupName, name, vnetName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVNETConnection", nil, "Failure preparing request")
 		return
@@ -7835,7 +7018,7 @@ func (client SitesClient) GetSiteVNETConnection(resourceGroupName string, name s
 }
 
 // GetSiteVNETConnectionPreparer prepares the GetSiteVNETConnection request.
-func (client SitesClient) GetSiteVNETConnectionPreparer(resourceGroupName string, name string, vnetName string) (*http.Request, error) {
+func (client SitesClient) GetSiteVNETConnectionPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7853,14 +7036,13 @@ func (client SitesClient) GetSiteVNETConnectionPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVNETConnectionSender sends the GetSiteVNETConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVNETConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7880,8 +7062,8 @@ func (client SitesClient) GetSiteVNETConnectionResponder(resp *http.Response) (r
 // GetSiteVNETConnections sends the get site vnet connections request.
 //
 // resourceGroupName is the resource group name name is the name of the web app
-func (client SitesClient) GetSiteVNETConnections(resourceGroupName string, name string) (result ListVnetInfo, err error) {
-	req, err := client.GetSiteVNETConnectionsPreparer(resourceGroupName, name)
+func (client SitesClient) GetSiteVNETConnections(ctx context.Context, resourceGroupName string, name string) (result ListVnetInfo, err error) {
+	req, err := client.GetSiteVNETConnectionsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVNETConnections", nil, "Failure preparing request")
 		return
@@ -7903,7 +7085,7 @@ func (client SitesClient) GetSiteVNETConnections(resourceGroupName string, name 
 }
 
 // GetSiteVNETConnectionsPreparer prepares the GetSiteVNETConnections request.
-func (client SitesClient) GetSiteVNETConnectionsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSiteVNETConnectionsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7920,14 +7102,13 @@ func (client SitesClient) GetSiteVNETConnectionsPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVNETConnectionsSender sends the GetSiteVNETConnections request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVNETConnectionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -7948,8 +7129,8 @@ func (client SitesClient) GetSiteVNETConnectionsResponder(resp *http.Response) (
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network slot is the name of the slot for this web app.
-func (client SitesClient) GetSiteVNETConnectionSlot(resourceGroupName string, name string, vnetName string, slot string) (result VnetInfo, err error) {
-	req, err := client.GetSiteVNETConnectionSlotPreparer(resourceGroupName, name, vnetName, slot)
+func (client SitesClient) GetSiteVNETConnectionSlot(ctx context.Context, resourceGroupName string, name string, vnetName string, slot string) (result VnetInfo, err error) {
+	req, err := client.GetSiteVNETConnectionSlotPreparer(ctx, resourceGroupName, name, vnetName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVNETConnectionSlot", nil, "Failure preparing request")
 		return
@@ -7971,7 +7152,7 @@ func (client SitesClient) GetSiteVNETConnectionSlot(resourceGroupName string, na
 }
 
 // GetSiteVNETConnectionSlotPreparer prepares the GetSiteVNETConnectionSlot request.
-func (client SitesClient) GetSiteVNETConnectionSlotPreparer(resourceGroupName string, name string, vnetName string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteVNETConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -7990,14 +7171,13 @@ func (client SitesClient) GetSiteVNETConnectionSlotPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVNETConnectionSlotSender sends the GetSiteVNETConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVNETConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8018,8 +7198,8 @@ func (client SitesClient) GetSiteVNETConnectionSlotResponder(resp *http.Response
 //
 // resourceGroupName is the resource group name name is the name of the web app slot is the name of the slot for this
 // web app.
-func (client SitesClient) GetSiteVNETConnectionsSlot(resourceGroupName string, name string, slot string) (result ListVnetInfo, err error) {
-	req, err := client.GetSiteVNETConnectionsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) GetSiteVNETConnectionsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result ListVnetInfo, err error) {
+	req, err := client.GetSiteVNETConnectionsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVNETConnectionsSlot", nil, "Failure preparing request")
 		return
@@ -8041,7 +7221,7 @@ func (client SitesClient) GetSiteVNETConnectionsSlot(resourceGroupName string, n
 }
 
 // GetSiteVNETConnectionsSlotPreparer prepares the GetSiteVNETConnectionsSlot request.
-func (client SitesClient) GetSiteVNETConnectionsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteVNETConnectionsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8059,14 +7239,13 @@ func (client SitesClient) GetSiteVNETConnectionsSlotPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVNETConnectionsSlotSender sends the GetSiteVNETConnectionsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVNETConnectionsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8087,8 +7266,8 @@ func (client SitesClient) GetSiteVNETConnectionsSlotResponder(resp *http.Respons
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary"
-func (client SitesClient) GetSiteVnetGateway(resourceGroupName string, name string, vnetName string, gatewayName string) (result SetObject, err error) {
-	req, err := client.GetSiteVnetGatewayPreparer(resourceGroupName, name, vnetName, gatewayName)
+func (client SitesClient) GetSiteVnetGateway(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string) (result SetObject, err error) {
+	req, err := client.GetSiteVnetGatewayPreparer(ctx, resourceGroupName, name, vnetName, gatewayName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVnetGateway", nil, "Failure preparing request")
 		return
@@ -8110,7 +7289,7 @@ func (client SitesClient) GetSiteVnetGateway(resourceGroupName string, name stri
 }
 
 // GetSiteVnetGatewayPreparer prepares the GetSiteVnetGateway request.
-func (client SitesClient) GetSiteVnetGatewayPreparer(resourceGroupName string, name string, vnetName string, gatewayName string) (*http.Request, error) {
+func (client SitesClient) GetSiteVnetGatewayPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -8129,14 +7308,13 @@ func (client SitesClient) GetSiteVnetGatewayPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVnetGatewaySender sends the GetSiteVnetGateway request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVnetGatewaySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8158,8 +7336,8 @@ func (client SitesClient) GetSiteVnetGatewayResponder(resp *http.Response) (resu
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary" slot is the name
 // of the slot for this web app.
-func (client SitesClient) GetSiteVnetGatewaySlot(resourceGroupName string, name string, vnetName string, gatewayName string, slot string) (result SetObject, err error) {
-	req, err := client.GetSiteVnetGatewaySlotPreparer(resourceGroupName, name, vnetName, gatewayName, slot)
+func (client SitesClient) GetSiteVnetGatewaySlot(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, slot string) (result SetObject, err error) {
+	req, err := client.GetSiteVnetGatewaySlotPreparer(ctx, resourceGroupName, name, vnetName, gatewayName, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSiteVnetGatewaySlot", nil, "Failure preparing request")
 		return
@@ -8181,7 +7359,7 @@ func (client SitesClient) GetSiteVnetGatewaySlot(resourceGroupName string, name 
 }
 
 // GetSiteVnetGatewaySlotPreparer prepares the GetSiteVnetGatewaySlot request.
-func (client SitesClient) GetSiteVnetGatewaySlotPreparer(resourceGroupName string, name string, vnetName string, gatewayName string, slot string) (*http.Request, error) {
+func (client SitesClient) GetSiteVnetGatewaySlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -8201,14 +7379,13 @@ func (client SitesClient) GetSiteVnetGatewaySlotPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSiteVnetGatewaySlotSender sends the GetSiteVnetGatewaySlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSiteVnetGatewaySlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8228,8 +7405,8 @@ func (client SitesClient) GetSiteVnetGatewaySlotResponder(resp *http.Response) (
 // GetSlotConfigNames sends the get slot config names request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) GetSlotConfigNames(resourceGroupName string, name string) (result SlotConfigNamesResource, err error) {
-	req, err := client.GetSlotConfigNamesPreparer(resourceGroupName, name)
+func (client SitesClient) GetSlotConfigNames(ctx context.Context, resourceGroupName string, name string) (result SlotConfigNamesResource, err error) {
+	req, err := client.GetSlotConfigNamesPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotConfigNames", nil, "Failure preparing request")
 		return
@@ -8251,7 +7428,7 @@ func (client SitesClient) GetSlotConfigNames(resourceGroupName string, name stri
 }
 
 // GetSlotConfigNamesPreparer prepares the GetSlotConfigNames request.
-func (client SitesClient) GetSlotConfigNamesPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) GetSlotConfigNamesPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8268,14 +7445,13 @@ func (client SitesClient) GetSlotConfigNamesPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/slotConfigNames", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSlotConfigNamesSender sends the GetSlotConfigNames request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSlotConfigNamesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8296,8 +7472,9 @@ func (client SitesClient) GetSlotConfigNamesResponder(resp *http.Response) (resu
 //
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name
-func (client SitesClient) GetSlotsDifferencesFromProduction(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SlotDifferenceCollection, err error) {
-	req, err := client.GetSlotsDifferencesFromProductionPreparer(resourceGroupName, name, slotSwapEntity)
+func (client SitesClient) GetSlotsDifferencesFromProduction(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SlotDifferenceCollectionPage, err error) {
+	result.fn = client.getSlotsDifferencesFromProductionNextResults
+	req, err := client.GetSlotsDifferencesFromProductionPreparer(ctx, resourceGroupName, name, slotSwapEntity)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", nil, "Failure preparing request")
 		return
@@ -8305,12 +7482,12 @@ func (client SitesClient) GetSlotsDifferencesFromProduction(resourceGroupName st
 
 	resp, err := client.GetSlotsDifferencesFromProductionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSlotsDifferencesFromProductionResponder(resp)
+	result.sdc, err = client.GetSlotsDifferencesFromProductionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", resp, "Failure responding to request")
 	}
@@ -8319,7 +7496,7 @@ func (client SitesClient) GetSlotsDifferencesFromProduction(resourceGroupName st
 }
 
 // GetSlotsDifferencesFromProductionPreparer prepares the GetSlotsDifferencesFromProduction request.
-func (client SitesClient) GetSlotsDifferencesFromProductionPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (*http.Request, error) {
+func (client SitesClient) GetSlotsDifferencesFromProductionPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8338,14 +7515,13 @@ func (client SitesClient) GetSlotsDifferencesFromProductionPreparer(resourceGrou
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slotsdiffs", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSlotsDifferencesFromProductionSender sends the GetSlotsDifferencesFromProduction request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSlotsDifferencesFromProductionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8362,81 +7538,40 @@ func (client SitesClient) GetSlotsDifferencesFromProductionResponder(resp *http.
 	return
 }
 
-// GetSlotsDifferencesFromProductionNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSlotsDifferencesFromProductionNextResults(lastResults SlotDifferenceCollection) (result SlotDifferenceCollection, err error) {
-	req, err := lastResults.SlotDifferenceCollectionPreparer()
+// getSlotsDifferencesFromProductionNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSlotsDifferencesFromProductionNextResults(lastResults SlotDifferenceCollection) (result SlotDifferenceCollection, err error) {
+	req, err := lastResults.slotDifferenceCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesFromProductionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSlotsDifferencesFromProductionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesFromProductionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSlotsDifferencesFromProductionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesFromProduction", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesFromProductionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSlotsDifferencesFromProductionComplete gets all elements from the list without paging.
-func (client SitesClient) GetSlotsDifferencesFromProductionComplete(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, cancel <-chan struct{}) (<-chan SlotDifference, <-chan error) {
-	resultChan := make(chan SlotDifference)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSlotsDifferencesFromProduction(resourceGroupName, name, slotSwapEntity)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSlotsDifferencesFromProductionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSlotsDifferencesFromProductionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSlotsDifferencesFromProductionComplete(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SlotDifferenceCollectionIterator, err error) {
+	result.page, err = client.GetSlotsDifferencesFromProduction(ctx, resourceGroupName, name, slotSwapEntity)
+	return
 }
 
 // GetSlotsDifferencesSlot sends the get slots differences slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name slot is name of the source slot
-func (client SitesClient) GetSlotsDifferencesSlot(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SlotDifferenceCollection, err error) {
-	req, err := client.GetSlotsDifferencesSlotPreparer(resourceGroupName, name, slotSwapEntity, slot)
+func (client SitesClient) GetSlotsDifferencesSlot(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SlotDifferenceCollectionPage, err error) {
+	result.fn = client.getSlotsDifferencesSlotNextResults
+	req, err := client.GetSlotsDifferencesSlotPreparer(ctx, resourceGroupName, name, slotSwapEntity, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", nil, "Failure preparing request")
 		return
@@ -8444,12 +7579,12 @@ func (client SitesClient) GetSlotsDifferencesSlot(resourceGroupName string, name
 
 	resp, err := client.GetSlotsDifferencesSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSlotsDifferencesSlotResponder(resp)
+	result.sdc, err = client.GetSlotsDifferencesSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", resp, "Failure responding to request")
 	}
@@ -8458,7 +7593,7 @@ func (client SitesClient) GetSlotsDifferencesSlot(resourceGroupName string, name
 }
 
 // GetSlotsDifferencesSlotPreparer prepares the GetSlotsDifferencesSlot request.
-func (client SitesClient) GetSlotsDifferencesSlotPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (*http.Request, error) {
+func (client SitesClient) GetSlotsDifferencesSlotPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8478,14 +7613,13 @@ func (client SitesClient) GetSlotsDifferencesSlotPreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/slotsdiffs", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSlotsDifferencesSlotSender sends the GetSlotsDifferencesSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) GetSlotsDifferencesSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8502,80 +7636,38 @@ func (client SitesClient) GetSlotsDifferencesSlotResponder(resp *http.Response) 
 	return
 }
 
-// GetSlotsDifferencesSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) GetSlotsDifferencesSlotNextResults(lastResults SlotDifferenceCollection) (result SlotDifferenceCollection, err error) {
-	req, err := lastResults.SlotDifferenceCollectionPreparer()
+// getSlotsDifferencesSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) getSlotsDifferencesSlotNextResults(lastResults SlotDifferenceCollection) (result SlotDifferenceCollection, err error) {
+	req, err := lastResults.slotDifferenceCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSlotsDifferencesSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSlotsDifferencesSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "GetSlotsDifferencesSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "getSlotsDifferencesSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSlotsDifferencesSlotComplete gets all elements from the list without paging.
-func (client SitesClient) GetSlotsDifferencesSlotComplete(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string, cancel <-chan struct{}) (<-chan SlotDifference, <-chan error) {
-	resultChan := make(chan SlotDifference)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSlotsDifferencesSlot(resourceGroupName, name, slotSwapEntity, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSlotsDifferencesSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSlotsDifferencesSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) GetSlotsDifferencesSlotComplete(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SlotDifferenceCollectionIterator, err error) {
+	result.page, err = client.GetSlotsDifferencesSlot(ctx, resourceGroupName, name, slotSwapEntity, slot)
+	return
 }
 
 // IsSiteCloneable sends the is site cloneable request.
 //
 // resourceGroupName is name of the resource group name is name of the web app
-func (client SitesClient) IsSiteCloneable(resourceGroupName string, name string) (result SiteCloneability, err error) {
-	req, err := client.IsSiteCloneablePreparer(resourceGroupName, name)
+func (client SitesClient) IsSiteCloneable(ctx context.Context, resourceGroupName string, name string) (result SiteCloneability, err error) {
+	req, err := client.IsSiteCloneablePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "IsSiteCloneable", nil, "Failure preparing request")
 		return
@@ -8597,7 +7689,7 @@ func (client SitesClient) IsSiteCloneable(resourceGroupName string, name string)
 }
 
 // IsSiteCloneablePreparer prepares the IsSiteCloneable request.
-func (client SitesClient) IsSiteCloneablePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) IsSiteCloneablePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8614,14 +7706,13 @@ func (client SitesClient) IsSiteCloneablePreparer(resourceGroupName string, name
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/iscloneable", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // IsSiteCloneableSender sends the IsSiteCloneable request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) IsSiteCloneableSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8642,8 +7733,8 @@ func (client SitesClient) IsSiteCloneableResponder(resp *http.Response) (result 
 //
 // resourceGroupName is name of the resource group name is name of the web app slot is name of web app slot. If not
 // specified then will default to production slot.
-func (client SitesClient) IsSiteCloneableSlot(resourceGroupName string, name string, slot string) (result SiteCloneability, err error) {
-	req, err := client.IsSiteCloneableSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) IsSiteCloneableSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteCloneability, err error) {
+	req, err := client.IsSiteCloneableSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "IsSiteCloneableSlot", nil, "Failure preparing request")
 		return
@@ -8665,7 +7756,7 @@ func (client SitesClient) IsSiteCloneableSlot(resourceGroupName string, name str
 }
 
 // IsSiteCloneableSlotPreparer prepares the IsSiteCloneableSlot request.
-func (client SitesClient) IsSiteCloneableSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) IsSiteCloneableSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8683,14 +7774,13 @@ func (client SitesClient) IsSiteCloneableSlotPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/iscloneable", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // IsSiteCloneableSlotSender sends the IsSiteCloneableSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) IsSiteCloneableSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8710,8 +7800,8 @@ func (client SitesClient) IsSiteCloneableSlotResponder(resp *http.Response) (res
 // ListSiteAppSettings sends the list site app settings request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSiteAppSettings(resourceGroupName string, name string) (result StringDictionary, err error) {
-	req, err := client.ListSiteAppSettingsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteAppSettings(ctx context.Context, resourceGroupName string, name string) (result StringDictionary, err error) {
+	req, err := client.ListSiteAppSettingsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteAppSettings", nil, "Failure preparing request")
 		return
@@ -8733,7 +7823,7 @@ func (client SitesClient) ListSiteAppSettings(resourceGroupName string, name str
 }
 
 // ListSiteAppSettingsPreparer prepares the ListSiteAppSettings request.
-func (client SitesClient) ListSiteAppSettingsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteAppSettingsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8750,14 +7840,13 @@ func (client SitesClient) ListSiteAppSettingsPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/appsettings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteAppSettingsSender sends the ListSiteAppSettings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteAppSettingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8778,8 +7867,8 @@ func (client SitesClient) ListSiteAppSettingsResponder(resp *http.Response) (res
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSiteAppSettingsSlot(resourceGroupName string, name string, slot string) (result StringDictionary, err error) {
-	req, err := client.ListSiteAppSettingsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteAppSettingsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result StringDictionary, err error) {
+	req, err := client.ListSiteAppSettingsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteAppSettingsSlot", nil, "Failure preparing request")
 		return
@@ -8801,7 +7890,7 @@ func (client SitesClient) ListSiteAppSettingsSlot(resourceGroupName string, name
 }
 
 // ListSiteAppSettingsSlotPreparer prepares the ListSiteAppSettingsSlot request.
-func (client SitesClient) ListSiteAppSettingsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteAppSettingsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8819,14 +7908,13 @@ func (client SitesClient) ListSiteAppSettingsSlotPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/appsettings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteAppSettingsSlotSender sends the ListSiteAppSettingsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteAppSettingsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8846,8 +7934,8 @@ func (client SitesClient) ListSiteAppSettingsSlotResponder(resp *http.Response) 
 // ListSiteAuthSettings sends the list site auth settings request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSiteAuthSettings(resourceGroupName string, name string) (result SiteAuthSettings, err error) {
-	req, err := client.ListSiteAuthSettingsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteAuthSettings(ctx context.Context, resourceGroupName string, name string) (result SiteAuthSettings, err error) {
+	req, err := client.ListSiteAuthSettingsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteAuthSettings", nil, "Failure preparing request")
 		return
@@ -8869,7 +7957,7 @@ func (client SitesClient) ListSiteAuthSettings(resourceGroupName string, name st
 }
 
 // ListSiteAuthSettingsPreparer prepares the ListSiteAuthSettings request.
-func (client SitesClient) ListSiteAuthSettingsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteAuthSettingsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8886,14 +7974,13 @@ func (client SitesClient) ListSiteAuthSettingsPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/authsettings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteAuthSettingsSender sends the ListSiteAuthSettings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteAuthSettingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8914,8 +8001,8 @@ func (client SitesClient) ListSiteAuthSettingsResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSiteAuthSettingsSlot(resourceGroupName string, name string, slot string) (result SiteAuthSettings, err error) {
-	req, err := client.ListSiteAuthSettingsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteAuthSettingsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SiteAuthSettings, err error) {
+	req, err := client.ListSiteAuthSettingsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteAuthSettingsSlot", nil, "Failure preparing request")
 		return
@@ -8937,7 +8024,7 @@ func (client SitesClient) ListSiteAuthSettingsSlot(resourceGroupName string, nam
 }
 
 // ListSiteAuthSettingsSlotPreparer prepares the ListSiteAuthSettingsSlot request.
-func (client SitesClient) ListSiteAuthSettingsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteAuthSettingsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -8955,14 +8042,13 @@ func (client SitesClient) ListSiteAuthSettingsSlotPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/authsettings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteAuthSettingsSlotSender sends the ListSiteAuthSettingsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteAuthSettingsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -8982,8 +8068,9 @@ func (client SitesClient) ListSiteAuthSettingsSlotResponder(resp *http.Response)
 // ListSiteBackups sends the list site backups request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSiteBackups(resourceGroupName string, name string) (result BackupItemCollection, err error) {
-	req, err := client.ListSiteBackupsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteBackups(ctx context.Context, resourceGroupName string, name string) (result BackupItemCollectionPage, err error) {
+	result.fn = client.listSiteBackupsNextResults
+	req, err := client.ListSiteBackupsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", nil, "Failure preparing request")
 		return
@@ -8991,12 +8078,12 @@ func (client SitesClient) ListSiteBackups(resourceGroupName string, name string)
 
 	resp, err := client.ListSiteBackupsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.bic.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListSiteBackupsResponder(resp)
+	result.bic, err = client.ListSiteBackupsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", resp, "Failure responding to request")
 	}
@@ -9005,7 +8092,7 @@ func (client SitesClient) ListSiteBackups(resourceGroupName string, name string)
 }
 
 // ListSiteBackupsPreparer prepares the ListSiteBackups request.
-func (client SitesClient) ListSiteBackupsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteBackupsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9022,14 +8109,13 @@ func (client SitesClient) ListSiteBackupsPreparer(resourceGroupName string, name
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteBackupsSender sends the ListSiteBackups request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteBackupsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9046,81 +8132,40 @@ func (client SitesClient) ListSiteBackupsResponder(resp *http.Response) (result 
 	return
 }
 
-// ListSiteBackupsNextResults retrieves the next set of results, if any.
-func (client SitesClient) ListSiteBackupsNextResults(lastResults BackupItemCollection) (result BackupItemCollection, err error) {
-	req, err := lastResults.BackupItemCollectionPreparer()
+// listSiteBackupsNextResults retrieves the next set of results, if any.
+func (client SitesClient) listSiteBackupsNextResults(lastResults BackupItemCollection) (result BackupItemCollection, err error) {
+	req, err := lastResults.backupItemCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSiteBackupsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListSiteBackupsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackups", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListSiteBackupsComplete gets all elements from the list without paging.
-func (client SitesClient) ListSiteBackupsComplete(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan BackupItem, <-chan error) {
-	resultChan := make(chan BackupItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListSiteBackups(resourceGroupName, name)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListSiteBackupsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListSiteBackupsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) ListSiteBackupsComplete(ctx context.Context, resourceGroupName string, name string) (result BackupItemCollectionIterator, err error) {
+	result.page, err = client.ListSiteBackups(ctx, resourceGroupName, name)
+	return
 }
 
 // ListSiteBackupsSlot sends the list site backups slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSiteBackupsSlot(resourceGroupName string, name string, slot string) (result BackupItemCollection, err error) {
-	req, err := client.ListSiteBackupsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteBackupsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result BackupItemCollectionPage, err error) {
+	result.fn = client.listSiteBackupsSlotNextResults
+	req, err := client.ListSiteBackupsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", nil, "Failure preparing request")
 		return
@@ -9128,12 +8173,12 @@ func (client SitesClient) ListSiteBackupsSlot(resourceGroupName string, name str
 
 	resp, err := client.ListSiteBackupsSlotSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.bic.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListSiteBackupsSlotResponder(resp)
+	result.bic, err = client.ListSiteBackupsSlotResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", resp, "Failure responding to request")
 	}
@@ -9142,7 +8187,7 @@ func (client SitesClient) ListSiteBackupsSlot(resourceGroupName string, name str
 }
 
 // ListSiteBackupsSlotPreparer prepares the ListSiteBackupsSlot request.
-func (client SitesClient) ListSiteBackupsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteBackupsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9160,14 +8205,13 @@ func (client SitesClient) ListSiteBackupsSlotPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteBackupsSlotSender sends the ListSiteBackupsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteBackupsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9184,80 +8228,38 @@ func (client SitesClient) ListSiteBackupsSlotResponder(resp *http.Response) (res
 	return
 }
 
-// ListSiteBackupsSlotNextResults retrieves the next set of results, if any.
-func (client SitesClient) ListSiteBackupsSlotNextResults(lastResults BackupItemCollection) (result BackupItemCollection, err error) {
-	req, err := lastResults.BackupItemCollectionPreparer()
+// listSiteBackupsSlotNextResults retrieves the next set of results, if any.
+func (client SitesClient) listSiteBackupsSlotNextResults(lastResults BackupItemCollection) (result BackupItemCollection, err error) {
+	req, err := lastResults.backupItemCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsSlotNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSiteBackupsSlotSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsSlotNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListSiteBackupsSlotResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteBackupsSlot", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "listSiteBackupsSlotNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListSiteBackupsSlotComplete gets all elements from the list without paging.
-func (client SitesClient) ListSiteBackupsSlotComplete(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan BackupItem, <-chan error) {
-	resultChan := make(chan BackupItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListSiteBackupsSlot(resourceGroupName, name, slot)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListSiteBackupsSlotNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListSiteBackupsSlotComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SitesClient) ListSiteBackupsSlotComplete(ctx context.Context, resourceGroupName string, name string, slot string) (result BackupItemCollectionIterator, err error) {
+	result.page, err = client.ListSiteBackupsSlot(ctx, resourceGroupName, name, slot)
+	return
 }
 
 // ListSiteConnectionStrings sends the list site connection strings request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSiteConnectionStrings(resourceGroupName string, name string) (result ConnectionStringDictionary, err error) {
-	req, err := client.ListSiteConnectionStringsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteConnectionStrings(ctx context.Context, resourceGroupName string, name string) (result ConnectionStringDictionary, err error) {
+	req, err := client.ListSiteConnectionStringsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteConnectionStrings", nil, "Failure preparing request")
 		return
@@ -9279,7 +8281,7 @@ func (client SitesClient) ListSiteConnectionStrings(resourceGroupName string, na
 }
 
 // ListSiteConnectionStringsPreparer prepares the ListSiteConnectionStrings request.
-func (client SitesClient) ListSiteConnectionStringsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteConnectionStringsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9296,14 +8298,13 @@ func (client SitesClient) ListSiteConnectionStringsPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/connectionstrings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteConnectionStringsSender sends the ListSiteConnectionStrings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteConnectionStringsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9324,8 +8325,8 @@ func (client SitesClient) ListSiteConnectionStringsResponder(resp *http.Response
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSiteConnectionStringsSlot(resourceGroupName string, name string, slot string) (result ConnectionStringDictionary, err error) {
-	req, err := client.ListSiteConnectionStringsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteConnectionStringsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result ConnectionStringDictionary, err error) {
+	req, err := client.ListSiteConnectionStringsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteConnectionStringsSlot", nil, "Failure preparing request")
 		return
@@ -9347,7 +8348,7 @@ func (client SitesClient) ListSiteConnectionStringsSlot(resourceGroupName string
 }
 
 // ListSiteConnectionStringsSlotPreparer prepares the ListSiteConnectionStringsSlot request.
-func (client SitesClient) ListSiteConnectionStringsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteConnectionStringsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9365,14 +8366,13 @@ func (client SitesClient) ListSiteConnectionStringsSlotPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/connectionstrings/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteConnectionStringsSlotSender sends the ListSiteConnectionStringsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteConnectionStringsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9392,8 +8392,8 @@ func (client SitesClient) ListSiteConnectionStringsSlotResponder(resp *http.Resp
 // ListSiteMetadata sends the list site metadata request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSiteMetadata(resourceGroupName string, name string) (result StringDictionary, err error) {
-	req, err := client.ListSiteMetadataPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteMetadata(ctx context.Context, resourceGroupName string, name string) (result StringDictionary, err error) {
+	req, err := client.ListSiteMetadataPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteMetadata", nil, "Failure preparing request")
 		return
@@ -9415,7 +8415,7 @@ func (client SitesClient) ListSiteMetadata(resourceGroupName string, name string
 }
 
 // ListSiteMetadataPreparer prepares the ListSiteMetadata request.
-func (client SitesClient) ListSiteMetadataPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteMetadataPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9432,14 +8432,13 @@ func (client SitesClient) ListSiteMetadataPreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/metadata/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteMetadataSender sends the ListSiteMetadata request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteMetadataSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9460,8 +8459,8 @@ func (client SitesClient) ListSiteMetadataResponder(resp *http.Response) (result
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSiteMetadataSlot(resourceGroupName string, name string, slot string) (result StringDictionary, err error) {
-	req, err := client.ListSiteMetadataSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteMetadataSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result StringDictionary, err error) {
+	req, err := client.ListSiteMetadataSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteMetadataSlot", nil, "Failure preparing request")
 		return
@@ -9483,7 +8482,7 @@ func (client SitesClient) ListSiteMetadataSlot(resourceGroupName string, name st
 }
 
 // ListSiteMetadataSlotPreparer prepares the ListSiteMetadataSlot request.
-func (client SitesClient) ListSiteMetadataSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteMetadataSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9501,14 +8500,13 @@ func (client SitesClient) ListSiteMetadataSlotPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/metadata/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteMetadataSlotSender sends the ListSiteMetadataSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteMetadataSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9527,8 +8525,8 @@ func (client SitesClient) ListSiteMetadataSlotResponder(resp *http.Response) (re
 
 // ListSitePremierAddOns sends the list site premier add ons request.
 //
-func (client SitesClient) ListSitePremierAddOns(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.ListSitePremierAddOnsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSitePremierAddOns(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.ListSitePremierAddOnsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePremierAddOns", nil, "Failure preparing request")
 		return
@@ -9550,7 +8548,7 @@ func (client SitesClient) ListSitePremierAddOns(resourceGroupName string, name s
 }
 
 // ListSitePremierAddOnsPreparer prepares the ListSitePremierAddOns request.
-func (client SitesClient) ListSitePremierAddOnsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSitePremierAddOnsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9567,14 +8565,13 @@ func (client SitesClient) ListSitePremierAddOnsPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/premieraddons", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePremierAddOnsSender sends the ListSitePremierAddOns request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSitePremierAddOnsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9593,8 +8590,8 @@ func (client SitesClient) ListSitePremierAddOnsResponder(resp *http.Response) (r
 
 // ListSitePremierAddOnsSlot sends the list site premier add ons slot request.
 //
-func (client SitesClient) ListSitePremierAddOnsSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.ListSitePremierAddOnsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSitePremierAddOnsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.ListSitePremierAddOnsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePremierAddOnsSlot", nil, "Failure preparing request")
 		return
@@ -9616,7 +8613,7 @@ func (client SitesClient) ListSitePremierAddOnsSlot(resourceGroupName string, na
 }
 
 // ListSitePremierAddOnsSlotPreparer prepares the ListSitePremierAddOnsSlot request.
-func (client SitesClient) ListSitePremierAddOnsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSitePremierAddOnsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9634,14 +8631,13 @@ func (client SitesClient) ListSitePremierAddOnsSlotPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/premieraddons", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePremierAddOnsSlotSender sends the ListSitePremierAddOnsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSitePremierAddOnsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9658,48 +8654,27 @@ func (client SitesClient) ListSitePremierAddOnsSlotResponder(resp *http.Response
 	return
 }
 
-// ListSitePublishingCredentials sends the list site publishing credentials request. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// ListSitePublishingCredentials sends the list site publishing credentials request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ListSitePublishingCredentials(resourceGroupName string, name string, cancel <-chan struct{}) (<-chan User, <-chan error) {
-	resultChan := make(chan User, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result User
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ListSitePublishingCredentialsPreparer(resourceGroupName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentials", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) ListSitePublishingCredentials(ctx context.Context, resourceGroupName string, name string) (result SitesListSitePublishingCredentialsFuture, err error) {
+	req, err := client.ListSitePublishingCredentialsPreparer(ctx, resourceGroupName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentials", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ListSitePublishingCredentialsSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentials", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ListSitePublishingCredentialsSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentials", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ListSitePublishingCredentialsResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentials", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ListSitePublishingCredentialsPreparer prepares the ListSitePublishingCredentials request.
-func (client SitesClient) ListSitePublishingCredentialsPreparer(resourceGroupName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) ListSitePublishingCredentialsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9716,16 +8691,22 @@ func (client SitesClient) ListSitePublishingCredentialsPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/publishingcredentials/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePublishingCredentialsSender sends the ListSitePublishingCredentials request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) ListSitePublishingCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) ListSitePublishingCredentialsSender(req *http.Request) (future SitesListSitePublishingCredentialsFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // ListSitePublishingCredentialsResponder handles the response to the ListSitePublishingCredentials request. The method always
@@ -9741,49 +8722,28 @@ func (client SitesClient) ListSitePublishingCredentialsResponder(resp *http.Resp
 	return
 }
 
-// ListSitePublishingCredentialsSlot sends the list site publishing credentials slot request. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// ListSitePublishingCredentialsSlot sends the list site publishing credentials slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ListSitePublishingCredentialsSlot(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (<-chan User, <-chan error) {
-	resultChan := make(chan User, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result User
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ListSitePublishingCredentialsSlotPreparer(resourceGroupName, name, slot, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentialsSlot", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) ListSitePublishingCredentialsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SitesListSitePublishingCredentialsSlotFuture, err error) {
+	req, err := client.ListSitePublishingCredentialsSlotPreparer(ctx, resourceGroupName, name, slot)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentialsSlot", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ListSitePublishingCredentialsSlotSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentialsSlot", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ListSitePublishingCredentialsSlotSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentialsSlot", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ListSitePublishingCredentialsSlotResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingCredentialsSlot", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ListSitePublishingCredentialsSlotPreparer prepares the ListSitePublishingCredentialsSlot request.
-func (client SitesClient) ListSitePublishingCredentialsSlotPreparer(resourceGroupName string, name string, slot string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) ListSitePublishingCredentialsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9801,16 +8761,22 @@ func (client SitesClient) ListSitePublishingCredentialsSlotPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/publishingcredentials/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePublishingCredentialsSlotSender sends the ListSitePublishingCredentialsSlot request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) ListSitePublishingCredentialsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) ListSitePublishingCredentialsSlotSender(req *http.Request) (future SitesListSitePublishingCredentialsSlotFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // ListSitePublishingCredentialsSlotResponder handles the response to the ListSitePublishingCredentialsSlot request. The method always
@@ -9830,8 +8796,8 @@ func (client SitesClient) ListSitePublishingCredentialsSlotResponder(resp *http.
 //
 // resourceGroupName is name of resource group name is name of web app options is specifies options for publishing
 // profile. Pass CsmPublishingProfileOptions.Format=FileZilla3 for FileZilla FTP format.
-func (client SitesClient) ListSitePublishingProfileXML(resourceGroupName string, name string, options CsmPublishingProfileOptions) (result ReadCloser, err error) {
-	req, err := client.ListSitePublishingProfileXMLPreparer(resourceGroupName, name, options)
+func (client SitesClient) ListSitePublishingProfileXML(ctx context.Context, resourceGroupName string, name string, options CsmPublishingProfileOptions) (result ReadCloser, err error) {
+	req, err := client.ListSitePublishingProfileXMLPreparer(ctx, resourceGroupName, name, options)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingProfileXML", nil, "Failure preparing request")
 		return
@@ -9853,7 +8819,7 @@ func (client SitesClient) ListSitePublishingProfileXML(resourceGroupName string,
 }
 
 // ListSitePublishingProfileXMLPreparer prepares the ListSitePublishingProfileXML request.
-func (client SitesClient) ListSitePublishingProfileXMLPreparer(resourceGroupName string, name string, options CsmPublishingProfileOptions) (*http.Request, error) {
+func (client SitesClient) ListSitePublishingProfileXMLPreparer(ctx context.Context, resourceGroupName string, name string, options CsmPublishingProfileOptions) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9872,14 +8838,13 @@ func (client SitesClient) ListSitePublishingProfileXMLPreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/publishxml", pathParameters),
 		autorest.WithJSON(options),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePublishingProfileXMLSender sends the ListSitePublishingProfileXML request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSitePublishingProfileXMLSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9900,8 +8865,8 @@ func (client SitesClient) ListSitePublishingProfileXMLResponder(resp *http.Respo
 // resourceGroupName is name of resource group name is name of web app options is specifies options for publishing
 // profile. Pass CsmPublishingProfileOptions.Format=FileZilla3 for FileZilla FTP format. slot is name of web app slot.
 // If not specified then will default to production slot.
-func (client SitesClient) ListSitePublishingProfileXMLSlot(resourceGroupName string, name string, options CsmPublishingProfileOptions, slot string) (result ReadCloser, err error) {
-	req, err := client.ListSitePublishingProfileXMLSlotPreparer(resourceGroupName, name, options, slot)
+func (client SitesClient) ListSitePublishingProfileXMLSlot(ctx context.Context, resourceGroupName string, name string, options CsmPublishingProfileOptions, slot string) (result ReadCloser, err error) {
+	req, err := client.ListSitePublishingProfileXMLSlotPreparer(ctx, resourceGroupName, name, options, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSitePublishingProfileXMLSlot", nil, "Failure preparing request")
 		return
@@ -9923,7 +8888,7 @@ func (client SitesClient) ListSitePublishingProfileXMLSlot(resourceGroupName str
 }
 
 // ListSitePublishingProfileXMLSlotPreparer prepares the ListSitePublishingProfileXMLSlot request.
-func (client SitesClient) ListSitePublishingProfileXMLSlotPreparer(resourceGroupName string, name string, options CsmPublishingProfileOptions, slot string) (*http.Request, error) {
+func (client SitesClient) ListSitePublishingProfileXMLSlotPreparer(ctx context.Context, resourceGroupName string, name string, options CsmPublishingProfileOptions, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -9943,14 +8908,13 @@ func (client SitesClient) ListSitePublishingProfileXMLSlotPreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/publishxml", pathParameters),
 		autorest.WithJSON(options),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSitePublishingProfileXMLSlotSender sends the ListSitePublishingProfileXMLSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSitePublishingProfileXMLSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -9969,8 +8933,8 @@ func (client SitesClient) ListSitePublishingProfileXMLSlotResponder(resp *http.R
 // ListSiteRelayServiceConnections sends the list site relay service connections request.
 //
 // resourceGroupName is the resource group name name is the name of the web app
-func (client SitesClient) ListSiteRelayServiceConnections(resourceGroupName string, name string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.ListSiteRelayServiceConnectionsPreparer(resourceGroupName, name)
+func (client SitesClient) ListSiteRelayServiceConnections(ctx context.Context, resourceGroupName string, name string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.ListSiteRelayServiceConnectionsPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteRelayServiceConnections", nil, "Failure preparing request")
 		return
@@ -9992,7 +8956,7 @@ func (client SitesClient) ListSiteRelayServiceConnections(resourceGroupName stri
 }
 
 // ListSiteRelayServiceConnectionsPreparer prepares the ListSiteRelayServiceConnections request.
-func (client SitesClient) ListSiteRelayServiceConnectionsPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ListSiteRelayServiceConnectionsPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10009,14 +8973,13 @@ func (client SitesClient) ListSiteRelayServiceConnectionsPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hybridconnection", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteRelayServiceConnectionsSender sends the ListSiteRelayServiceConnections request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteRelayServiceConnectionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10037,8 +9000,8 @@ func (client SitesClient) ListSiteRelayServiceConnectionsResponder(resp *http.Re
 //
 // resourceGroupName is the resource group name name is the name of the web app slot is the name of the slot for the
 // web app.
-func (client SitesClient) ListSiteRelayServiceConnectionsSlot(resourceGroupName string, name string, slot string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.ListSiteRelayServiceConnectionsSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ListSiteRelayServiceConnectionsSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.ListSiteRelayServiceConnectionsSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ListSiteRelayServiceConnectionsSlot", nil, "Failure preparing request")
 		return
@@ -10060,7 +9023,7 @@ func (client SitesClient) ListSiteRelayServiceConnectionsSlot(resourceGroupName 
 }
 
 // ListSiteRelayServiceConnectionsSlotPreparer prepares the ListSiteRelayServiceConnectionsSlot request.
-func (client SitesClient) ListSiteRelayServiceConnectionsSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ListSiteRelayServiceConnectionsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10078,14 +9041,13 @@ func (client SitesClient) ListSiteRelayServiceConnectionsSlotPreparer(resourceGr
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hybridconnection", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSiteRelayServiceConnectionsSlotSender sends the ListSiteRelayServiceConnectionsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ListSiteRelayServiceConnectionsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10102,48 +9064,28 @@ func (client SitesClient) ListSiteRelayServiceConnectionsSlotResponder(resp *htt
 	return
 }
 
-// RecoverSite sends the recover site request. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// RecoverSite sends the recover site request.
 //
 // resourceGroupName is name of resource group name is name of web app recoveryEntity is snapshot data used for web app
 // recovery. Snapshot information can be obtained by calling GetDeletedSites or GetSiteSnapshots API.
-func (client SitesClient) RecoverSite(resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Site
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RecoverSitePreparer(resourceGroupName, name, recoveryEntity, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSite", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) RecoverSite(ctx context.Context, resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity) (result SitesRecoverSiteFuture, err error) {
+	req, err := client.RecoverSitePreparer(ctx, resourceGroupName, name, recoveryEntity)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSite", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RecoverSiteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSite", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RecoverSiteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSite", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RecoverSiteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSite", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RecoverSitePreparer prepares the RecoverSite request.
-func (client SitesClient) RecoverSitePreparer(resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) RecoverSitePreparer(ctx context.Context, resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10162,16 +9104,22 @@ func (client SitesClient) RecoverSitePreparer(resourceGroupName string, name str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/recover", pathParameters),
 		autorest.WithJSON(recoveryEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RecoverSiteSender sends the RecoverSite request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) RecoverSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) RecoverSiteSender(req *http.Request) (future SitesRecoverSiteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNotFound))
+	return
 }
 
 // RecoverSiteResponder handles the response to the RecoverSite request. The method always
@@ -10187,49 +9135,29 @@ func (client SitesClient) RecoverSiteResponder(resp *http.Response) (result Site
 	return
 }
 
-// RecoverSiteSlot sends the recover site slot request. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// RecoverSiteSlot sends the recover site slot request.
 //
 // resourceGroupName is name of resource group name is name of web app recoveryEntity is snapshot data used for web app
 // recovery. Snapshot information can be obtained by calling GetDeletedSites or GetSiteSnapshots API. slot is name of
 // web app slot. If not specified then will default to production slot.
-func (client SitesClient) RecoverSiteSlot(resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, slot string, cancel <-chan struct{}) (<-chan Site, <-chan error) {
-	resultChan := make(chan Site, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Site
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RecoverSiteSlotPreparer(resourceGroupName, name, recoveryEntity, slot, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSiteSlot", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) RecoverSiteSlot(ctx context.Context, resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, slot string) (result SitesRecoverSiteSlotFuture, err error) {
+	req, err := client.RecoverSiteSlotPreparer(ctx, resourceGroupName, name, recoveryEntity, slot)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSiteSlot", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RecoverSiteSlotSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSiteSlot", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RecoverSiteSlotSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSiteSlot", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RecoverSiteSlotResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RecoverSiteSlot", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RecoverSiteSlotPreparer prepares the RecoverSiteSlot request.
-func (client SitesClient) RecoverSiteSlotPreparer(resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, slot string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) RecoverSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, recoveryEntity CsmSiteRecoveryEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10249,16 +9177,22 @@ func (client SitesClient) RecoverSiteSlotPreparer(resourceGroupName string, name
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/recover", pathParameters),
 		autorest.WithJSON(recoveryEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RecoverSiteSlotSender sends the RecoverSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) RecoverSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) RecoverSiteSlotSender(req *http.Request) (future SitesRecoverSiteSlotFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNotFound))
+	return
 }
 
 // RecoverSiteSlotResponder handles the response to the RecoverSiteSlot request. The method always
@@ -10277,8 +9211,8 @@ func (client SitesClient) RecoverSiteSlotResponder(resp *http.Response) (result 
 // ResetProductionSlotConfig sends the reset production slot config request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) ResetProductionSlotConfig(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.ResetProductionSlotConfigPreparer(resourceGroupName, name)
+func (client SitesClient) ResetProductionSlotConfig(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.ResetProductionSlotConfigPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ResetProductionSlotConfig", nil, "Failure preparing request")
 		return
@@ -10300,7 +9234,7 @@ func (client SitesClient) ResetProductionSlotConfig(resourceGroupName string, na
 }
 
 // ResetProductionSlotConfigPreparer prepares the ResetProductionSlotConfig request.
-func (client SitesClient) ResetProductionSlotConfigPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) ResetProductionSlotConfigPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10317,14 +9251,13 @@ func (client SitesClient) ResetProductionSlotConfigPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/resetSlotConfig", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResetProductionSlotConfigSender sends the ResetProductionSlotConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ResetProductionSlotConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10345,8 +9278,8 @@ func (client SitesClient) ResetProductionSlotConfigResponder(resp *http.Response
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) ResetSlotConfigSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.ResetSlotConfigSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) ResetSlotConfigSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.ResetSlotConfigSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "ResetSlotConfigSlot", nil, "Failure preparing request")
 		return
@@ -10368,7 +9301,7 @@ func (client SitesClient) ResetSlotConfigSlot(resourceGroupName string, name str
 }
 
 // ResetSlotConfigSlotPreparer prepares the ResetSlotConfigSlot request.
-func (client SitesClient) ResetSlotConfigSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) ResetSlotConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10386,14 +9319,13 @@ func (client SitesClient) ResetSlotConfigSlotPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/resetSlotConfig", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResetSlotConfigSlotSender sends the ResetSlotConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) ResetSlotConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10415,8 +9347,8 @@ func (client SitesClient) ResetSlotConfigSlotResponder(resp *http.Response) (res
 // resourceGroupName is name of resource group name is name of web app softRestart is soft restart applies the
 // configuration settings and restarts the app if necessary. Hard restart always restarts and reprovisions the app
 // synchronous is if true then the API will block until the app has been restarted
-func (client SitesClient) RestartSite(resourceGroupName string, name string, softRestart *bool, synchronous *bool) (result SetObject, err error) {
-	req, err := client.RestartSitePreparer(resourceGroupName, name, softRestart, synchronous)
+func (client SitesClient) RestartSite(ctx context.Context, resourceGroupName string, name string, softRestart *bool, synchronous *bool) (result SetObject, err error) {
+	req, err := client.RestartSitePreparer(ctx, resourceGroupName, name, softRestart, synchronous)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestartSite", nil, "Failure preparing request")
 		return
@@ -10438,7 +9370,7 @@ func (client SitesClient) RestartSite(resourceGroupName string, name string, sof
 }
 
 // RestartSitePreparer prepares the RestartSite request.
-func (client SitesClient) RestartSitePreparer(resourceGroupName string, name string, softRestart *bool, synchronous *bool) (*http.Request, error) {
+func (client SitesClient) RestartSitePreparer(ctx context.Context, resourceGroupName string, name string, softRestart *bool, synchronous *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10461,14 +9393,13 @@ func (client SitesClient) RestartSitePreparer(resourceGroupName string, name str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/restart", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestartSiteSender sends the RestartSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) RestartSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10491,8 +9422,8 @@ func (client SitesClient) RestartSiteResponder(resp *http.Response) (result SetO
 // then will default to production slot. softRestart is soft restart applies the configuration settings and restarts
 // the app if necessary. Hard restart always restarts and reprovisions the app synchronous is if true then the API will
 // block until the app has been restarted
-func (client SitesClient) RestartSiteSlot(resourceGroupName string, name string, slot string, softRestart *bool, synchronous *bool) (result SetObject, err error) {
-	req, err := client.RestartSiteSlotPreparer(resourceGroupName, name, slot, softRestart, synchronous)
+func (client SitesClient) RestartSiteSlot(ctx context.Context, resourceGroupName string, name string, slot string, softRestart *bool, synchronous *bool) (result SetObject, err error) {
+	req, err := client.RestartSiteSlotPreparer(ctx, resourceGroupName, name, slot, softRestart, synchronous)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestartSiteSlot", nil, "Failure preparing request")
 		return
@@ -10514,7 +9445,7 @@ func (client SitesClient) RestartSiteSlot(resourceGroupName string, name string,
 }
 
 // RestartSiteSlotPreparer prepares the RestartSiteSlot request.
-func (client SitesClient) RestartSiteSlotPreparer(resourceGroupName string, name string, slot string, softRestart *bool, synchronous *bool) (*http.Request, error) {
+func (client SitesClient) RestartSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string, softRestart *bool, synchronous *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10538,14 +9469,13 @@ func (client SitesClient) RestartSiteSlotPreparer(resourceGroupName string, name
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/restart", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestartSiteSlotSender sends the RestartSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) RestartSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10562,48 +9492,28 @@ func (client SitesClient) RestartSiteSlotResponder(resp *http.Response) (result 
 	return
 }
 
-// RestoreSite sends the restore site request. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// RestoreSite sends the restore site request.
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup to restore request is
 // information on restore request
-func (client SitesClient) RestoreSite(resourceGroupName string, name string, backupID string, request RestoreRequest, cancel <-chan struct{}) (<-chan RestoreResponse, <-chan error) {
-	resultChan := make(chan RestoreResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result RestoreResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RestoreSitePreparer(resourceGroupName, name, backupID, request, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSite", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) RestoreSite(ctx context.Context, resourceGroupName string, name string, backupID string, request RestoreRequest) (result SitesRestoreSiteFuture, err error) {
+	req, err := client.RestoreSitePreparer(ctx, resourceGroupName, name, backupID, request)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSite", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RestoreSiteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSite", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RestoreSiteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSite", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RestoreSiteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSite", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RestoreSitePreparer prepares the RestoreSite request.
-func (client SitesClient) RestoreSitePreparer(resourceGroupName string, name string, backupID string, request RestoreRequest, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) RestoreSitePreparer(ctx context.Context, resourceGroupName string, name string, backupID string, request RestoreRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -10623,16 +9533,22 @@ func (client SitesClient) RestoreSitePreparer(resourceGroupName string, name str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/backups/{backupId}/restore", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestoreSiteSender sends the RestoreSite request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) RestoreSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) RestoreSiteSender(req *http.Request) (future SitesRestoreSiteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // RestoreSiteResponder handles the response to the RestoreSite request. The method always
@@ -10648,48 +9564,28 @@ func (client SitesClient) RestoreSiteResponder(resp *http.Response) (result Rest
 	return
 }
 
-// RestoreSiteSlot sends the restore site slot request. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// RestoreSiteSlot sends the restore site slot request.
 //
 // resourceGroupName is name of resource group name is name of web app backupID is id of backup to restore request is
 // information on restore request slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) RestoreSiteSlot(resourceGroupName string, name string, backupID string, request RestoreRequest, slot string, cancel <-chan struct{}) (<-chan RestoreResponse, <-chan error) {
-	resultChan := make(chan RestoreResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result RestoreResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RestoreSiteSlotPreparer(resourceGroupName, name, backupID, request, slot, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSiteSlot", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) RestoreSiteSlot(ctx context.Context, resourceGroupName string, name string, backupID string, request RestoreRequest, slot string) (result SitesRestoreSiteSlotFuture, err error) {
+	req, err := client.RestoreSiteSlotPreparer(ctx, resourceGroupName, name, backupID, request, slot)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSiteSlot", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RestoreSiteSlotSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSiteSlot", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RestoreSiteSlotSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSiteSlot", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RestoreSiteSlotResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "RestoreSiteSlot", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RestoreSiteSlotPreparer prepares the RestoreSiteSlot request.
-func (client SitesClient) RestoreSiteSlotPreparer(resourceGroupName string, name string, backupID string, request RestoreRequest, slot string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) RestoreSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, backupID string, request RestoreRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupId":          autorest.Encode("path", backupID),
 		"name":              autorest.Encode("path", name),
@@ -10710,16 +9606,22 @@ func (client SitesClient) RestoreSiteSlotPreparer(resourceGroupName string, name
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/backups/{backupId}/restore", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestoreSiteSlotSender sends the RestoreSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) RestoreSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) RestoreSiteSlotSender(req *http.Request) (future SitesRestoreSiteSlotFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // RestoreSiteSlotResponder handles the response to the RestoreSiteSlot request. The method always
@@ -10738,8 +9640,8 @@ func (client SitesClient) RestoreSiteSlotResponder(resp *http.Response) (result 
 // StartSite sends the start site request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) StartSite(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.StartSitePreparer(resourceGroupName, name)
+func (client SitesClient) StartSite(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.StartSitePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "StartSite", nil, "Failure preparing request")
 		return
@@ -10761,7 +9663,7 @@ func (client SitesClient) StartSite(resourceGroupName string, name string) (resu
 }
 
 // StartSitePreparer prepares the StartSite request.
-func (client SitesClient) StartSitePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) StartSitePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10778,14 +9680,13 @@ func (client SitesClient) StartSitePreparer(resourceGroupName string, name strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSiteSender sends the StartSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) StartSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10806,8 +9707,8 @@ func (client SitesClient) StartSiteResponder(resp *http.Response) (result SetObj
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) StartSiteSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.StartSiteSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) StartSiteSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.StartSiteSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "StartSiteSlot", nil, "Failure preparing request")
 		return
@@ -10829,7 +9730,7 @@ func (client SitesClient) StartSiteSlot(resourceGroupName string, name string, s
 }
 
 // StartSiteSlotPreparer prepares the StartSiteSlot request.
-func (client SitesClient) StartSiteSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) StartSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10847,14 +9748,13 @@ func (client SitesClient) StartSiteSlotPreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSiteSlotSender sends the StartSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) StartSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10874,8 +9774,8 @@ func (client SitesClient) StartSiteSlotResponder(resp *http.Response) (result Se
 // StopSite sends the stop site request.
 //
 // resourceGroupName is name of resource group name is name of web app
-func (client SitesClient) StopSite(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.StopSitePreparer(resourceGroupName, name)
+func (client SitesClient) StopSite(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.StopSitePreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "StopSite", nil, "Failure preparing request")
 		return
@@ -10897,7 +9797,7 @@ func (client SitesClient) StopSite(resourceGroupName string, name string) (resul
 }
 
 // StopSitePreparer prepares the StopSite request.
-func (client SitesClient) StopSitePreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) StopSitePreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10914,14 +9814,13 @@ func (client SitesClient) StopSitePreparer(resourceGroupName string, name string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSiteSender sends the StopSite request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) StopSiteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -10942,8 +9841,8 @@ func (client SitesClient) StopSiteResponder(resp *http.Response) (result SetObje
 //
 // resourceGroupName is name of resource group name is name of web app slot is name of web app slot. If not specified
 // then will default to production slot.
-func (client SitesClient) StopSiteSlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.StopSiteSlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) StopSiteSlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.StopSiteSlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "StopSiteSlot", nil, "Failure preparing request")
 		return
@@ -10965,7 +9864,7 @@ func (client SitesClient) StopSiteSlot(resourceGroupName string, name string, sl
 }
 
 // StopSiteSlotPreparer prepares the StopSiteSlot request.
-func (client SitesClient) StopSiteSlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) StopSiteSlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -10983,14 +9882,13 @@ func (client SitesClient) StopSiteSlotPreparer(resourceGroupName string, name st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSiteSlotSender sends the StopSiteSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) StopSiteSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11007,48 +9905,28 @@ func (client SitesClient) StopSiteSlotResponder(resp *http.Response) (result Set
 	return
 }
 
-// SwapSlotsSlot sends the swap slots slot request. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// SwapSlotsSlot sends the swap slots slot request.
 //
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name slot is name of source slot for the swap
-func (client SitesClient) SwapSlotsSlot(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string, cancel <-chan struct{}) (<-chan SetObject, <-chan error) {
-	resultChan := make(chan SetObject, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result SetObject
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.SwapSlotsSlotPreparer(resourceGroupName, name, slotSwapEntity, slot, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotsSlot", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) SwapSlotsSlot(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (result SitesSwapSlotsSlotFuture, err error) {
+	req, err := client.SwapSlotsSlotPreparer(ctx, resourceGroupName, name, slotSwapEntity, slot)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotsSlot", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.SwapSlotsSlotSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotsSlot", resp, "Failure sending request")
-			return
-		}
+	result, err = client.SwapSlotsSlotSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotsSlot", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.SwapSlotsSlotResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotsSlot", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // SwapSlotsSlotPreparer prepares the SwapSlotsSlot request.
-func (client SitesClient) SwapSlotsSlotPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) SwapSlotsSlotPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11068,16 +9946,22 @@ func (client SitesClient) SwapSlotsSlotPreparer(resourceGroupName string, name s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/slotsswap", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SwapSlotsSlotSender sends the SwapSlotsSlot request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) SwapSlotsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) SwapSlotsSlotSender(req *http.Request) (future SitesSwapSlotsSlotFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // SwapSlotsSlotResponder handles the response to the SwapSlotsSlot request. The method always
@@ -11087,55 +9971,34 @@ func (client SitesClient) SwapSlotsSlotResponder(resp *http.Response) (result Se
 		resp,
 		client.ByInspecting(),
 		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
-		autorest.ByUnmarshallingJSON(&result.Value),
+		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// SwapSlotWithProduction sends the swap slot with production request. This method may poll for completion. Polling can
-// be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// SwapSlotWithProduction sends the swap slot with production request.
 //
 // resourceGroupName is name of resource group name is name of web app slotSwapEntity is request body that contains the
 // target slot name
-func (client SitesClient) SwapSlotWithProduction(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, cancel <-chan struct{}) (<-chan SetObject, <-chan error) {
-	resultChan := make(chan SetObject, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result SetObject
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.SwapSlotWithProductionPreparer(resourceGroupName, name, slotSwapEntity, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotWithProduction", nil, "Failure preparing request")
-			return
-		}
+func (client SitesClient) SwapSlotWithProduction(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (result SitesSwapSlotWithProductionFuture, err error) {
+	req, err := client.SwapSlotWithProductionPreparer(ctx, resourceGroupName, name, slotSwapEntity)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotWithProduction", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.SwapSlotWithProductionSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotWithProduction", resp, "Failure sending request")
-			return
-		}
+	result, err = client.SwapSlotWithProductionSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotWithProduction", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.SwapSlotWithProductionResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "web.SitesClient", "SwapSlotWithProduction", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // SwapSlotWithProductionPreparer prepares the SwapSlotWithProduction request.
-func (client SitesClient) SwapSlotWithProductionPreparer(resourceGroupName string, name string, slotSwapEntity CsmSlotEntity, cancel <-chan struct{}) (*http.Request, error) {
+func (client SitesClient) SwapSlotWithProductionPreparer(ctx context.Context, resourceGroupName string, name string, slotSwapEntity CsmSlotEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11154,16 +10017,22 @@ func (client SitesClient) SwapSlotWithProductionPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slotsswap", pathParameters),
 		autorest.WithJSON(slotSwapEntity),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SwapSlotWithProductionSender sends the SwapSlotWithProduction request. The method will close the
 // http.Response Body if it receives an error.
-func (client SitesClient) SwapSlotWithProductionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SitesClient) SwapSlotWithProductionSender(req *http.Request) (future SitesSwapSlotWithProductionFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // SwapSlotWithProductionResponder handles the response to the SwapSlotWithProduction request. The method always
@@ -11173,7 +10042,7 @@ func (client SitesClient) SwapSlotWithProductionResponder(resp *http.Response) (
 		resp,
 		client.ByInspecting(),
 		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
-		autorest.ByUnmarshallingJSON(&result.Value),
+		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
@@ -11181,8 +10050,8 @@ func (client SitesClient) SwapSlotWithProductionResponder(resp *http.Response) (
 
 // SyncSiteRepository sends the sync site repository request.
 //
-func (client SitesClient) SyncSiteRepository(resourceGroupName string, name string) (result SetObject, err error) {
-	req, err := client.SyncSiteRepositoryPreparer(resourceGroupName, name)
+func (client SitesClient) SyncSiteRepository(ctx context.Context, resourceGroupName string, name string) (result SetObject, err error) {
+	req, err := client.SyncSiteRepositoryPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "SyncSiteRepository", nil, "Failure preparing request")
 		return
@@ -11204,7 +10073,7 @@ func (client SitesClient) SyncSiteRepository(resourceGroupName string, name stri
 }
 
 // SyncSiteRepositoryPreparer prepares the SyncSiteRepository request.
-func (client SitesClient) SyncSiteRepositoryPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client SitesClient) SyncSiteRepositoryPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11221,14 +10090,13 @@ func (client SitesClient) SyncSiteRepositoryPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/sync", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SyncSiteRepositorySender sends the SyncSiteRepository request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) SyncSiteRepositorySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11247,8 +10115,8 @@ func (client SitesClient) SyncSiteRepositoryResponder(resp *http.Response) (resu
 
 // SyncSiteRepositorySlot sends the sync site repository slot request.
 //
-func (client SitesClient) SyncSiteRepositorySlot(resourceGroupName string, name string, slot string) (result SetObject, err error) {
-	req, err := client.SyncSiteRepositorySlotPreparer(resourceGroupName, name, slot)
+func (client SitesClient) SyncSiteRepositorySlot(ctx context.Context, resourceGroupName string, name string, slot string) (result SetObject, err error) {
+	req, err := client.SyncSiteRepositorySlotPreparer(ctx, resourceGroupName, name, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "SyncSiteRepositorySlot", nil, "Failure preparing request")
 		return
@@ -11270,7 +10138,7 @@ func (client SitesClient) SyncSiteRepositorySlot(resourceGroupName string, name 
 }
 
 // SyncSiteRepositorySlotPreparer prepares the SyncSiteRepositorySlot request.
-func (client SitesClient) SyncSiteRepositorySlotPreparer(resourceGroupName string, name string, slot string) (*http.Request, error) {
+func (client SitesClient) SyncSiteRepositorySlotPreparer(ctx context.Context, resourceGroupName string, name string, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11288,14 +10156,13 @@ func (client SitesClient) SyncSiteRepositorySlotPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/sync", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SyncSiteRepositorySlotSender sends the SyncSiteRepositorySlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) SyncSiteRepositorySlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11315,8 +10182,8 @@ func (client SitesClient) SyncSiteRepositorySlotResponder(resp *http.Response) (
 // UpdateSiteAppSettings sends the update site app settings request.
 //
 // resourceGroupName is name of resource group name is name of web app appSettings is application settings of web app
-func (client SitesClient) UpdateSiteAppSettings(resourceGroupName string, name string, appSettings StringDictionary) (result StringDictionary, err error) {
-	req, err := client.UpdateSiteAppSettingsPreparer(resourceGroupName, name, appSettings)
+func (client SitesClient) UpdateSiteAppSettings(ctx context.Context, resourceGroupName string, name string, appSettings StringDictionary) (result StringDictionary, err error) {
+	req, err := client.UpdateSiteAppSettingsPreparer(ctx, resourceGroupName, name, appSettings)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteAppSettings", nil, "Failure preparing request")
 		return
@@ -11338,7 +10205,7 @@ func (client SitesClient) UpdateSiteAppSettings(resourceGroupName string, name s
 }
 
 // UpdateSiteAppSettingsPreparer prepares the UpdateSiteAppSettings request.
-func (client SitesClient) UpdateSiteAppSettingsPreparer(resourceGroupName string, name string, appSettings StringDictionary) (*http.Request, error) {
+func (client SitesClient) UpdateSiteAppSettingsPreparer(ctx context.Context, resourceGroupName string, name string, appSettings StringDictionary) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11357,14 +10224,13 @@ func (client SitesClient) UpdateSiteAppSettingsPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/appsettings", pathParameters),
 		autorest.WithJSON(appSettings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteAppSettingsSender sends the UpdateSiteAppSettings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteAppSettingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11385,8 +10251,8 @@ func (client SitesClient) UpdateSiteAppSettingsResponder(resp *http.Response) (r
 //
 // resourceGroupName is name of resource group name is name of web app appSettings is application settings of web app
 // slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteAppSettingsSlot(resourceGroupName string, name string, appSettings StringDictionary, slot string) (result StringDictionary, err error) {
-	req, err := client.UpdateSiteAppSettingsSlotPreparer(resourceGroupName, name, appSettings, slot)
+func (client SitesClient) UpdateSiteAppSettingsSlot(ctx context.Context, resourceGroupName string, name string, appSettings StringDictionary, slot string) (result StringDictionary, err error) {
+	req, err := client.UpdateSiteAppSettingsSlotPreparer(ctx, resourceGroupName, name, appSettings, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteAppSettingsSlot", nil, "Failure preparing request")
 		return
@@ -11408,7 +10274,7 @@ func (client SitesClient) UpdateSiteAppSettingsSlot(resourceGroupName string, na
 }
 
 // UpdateSiteAppSettingsSlotPreparer prepares the UpdateSiteAppSettingsSlot request.
-func (client SitesClient) UpdateSiteAppSettingsSlotPreparer(resourceGroupName string, name string, appSettings StringDictionary, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteAppSettingsSlotPreparer(ctx context.Context, resourceGroupName string, name string, appSettings StringDictionary, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11428,14 +10294,13 @@ func (client SitesClient) UpdateSiteAppSettingsSlotPreparer(resourceGroupName st
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/appsettings", pathParameters),
 		autorest.WithJSON(appSettings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteAppSettingsSlotSender sends the UpdateSiteAppSettingsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteAppSettingsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11456,8 +10321,8 @@ func (client SitesClient) UpdateSiteAppSettingsSlotResponder(resp *http.Response
 //
 // resourceGroupName is name of resource group name is name of web app siteAuthSettings is auth settings associated
 // with web app
-func (client SitesClient) UpdateSiteAuthSettings(resourceGroupName string, name string, siteAuthSettings SiteAuthSettings) (result SiteAuthSettings, err error) {
-	req, err := client.UpdateSiteAuthSettingsPreparer(resourceGroupName, name, siteAuthSettings)
+func (client SitesClient) UpdateSiteAuthSettings(ctx context.Context, resourceGroupName string, name string, siteAuthSettings SiteAuthSettings) (result SiteAuthSettings, err error) {
+	req, err := client.UpdateSiteAuthSettingsPreparer(ctx, resourceGroupName, name, siteAuthSettings)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteAuthSettings", nil, "Failure preparing request")
 		return
@@ -11479,7 +10344,7 @@ func (client SitesClient) UpdateSiteAuthSettings(resourceGroupName string, name 
 }
 
 // UpdateSiteAuthSettingsPreparer prepares the UpdateSiteAuthSettings request.
-func (client SitesClient) UpdateSiteAuthSettingsPreparer(resourceGroupName string, name string, siteAuthSettings SiteAuthSettings) (*http.Request, error) {
+func (client SitesClient) UpdateSiteAuthSettingsPreparer(ctx context.Context, resourceGroupName string, name string, siteAuthSettings SiteAuthSettings) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11498,14 +10363,13 @@ func (client SitesClient) UpdateSiteAuthSettingsPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/authsettings", pathParameters),
 		autorest.WithJSON(siteAuthSettings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteAuthSettingsSender sends the UpdateSiteAuthSettings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteAuthSettingsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11526,8 +10390,8 @@ func (client SitesClient) UpdateSiteAuthSettingsResponder(resp *http.Response) (
 //
 // resourceGroupName is name of resource group name is name of web app siteAuthSettings is auth settings associated
 // with web app slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteAuthSettingsSlot(resourceGroupName string, name string, siteAuthSettings SiteAuthSettings, slot string) (result SiteAuthSettings, err error) {
-	req, err := client.UpdateSiteAuthSettingsSlotPreparer(resourceGroupName, name, siteAuthSettings, slot)
+func (client SitesClient) UpdateSiteAuthSettingsSlot(ctx context.Context, resourceGroupName string, name string, siteAuthSettings SiteAuthSettings, slot string) (result SiteAuthSettings, err error) {
+	req, err := client.UpdateSiteAuthSettingsSlotPreparer(ctx, resourceGroupName, name, siteAuthSettings, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteAuthSettingsSlot", nil, "Failure preparing request")
 		return
@@ -11549,7 +10413,7 @@ func (client SitesClient) UpdateSiteAuthSettingsSlot(resourceGroupName string, n
 }
 
 // UpdateSiteAuthSettingsSlotPreparer prepares the UpdateSiteAuthSettingsSlot request.
-func (client SitesClient) UpdateSiteAuthSettingsSlotPreparer(resourceGroupName string, name string, siteAuthSettings SiteAuthSettings, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteAuthSettingsSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteAuthSettings SiteAuthSettings, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11569,14 +10433,13 @@ func (client SitesClient) UpdateSiteAuthSettingsSlotPreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/authsettings", pathParameters),
 		autorest.WithJSON(siteAuthSettings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteAuthSettingsSlotSender sends the UpdateSiteAuthSettingsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteAuthSettingsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11596,8 +10459,8 @@ func (client SitesClient) UpdateSiteAuthSettingsSlotResponder(resp *http.Respons
 // UpdateSiteBackupConfiguration sends the update site backup configuration request.
 //
 // resourceGroupName is name of resource group name is name of web app request is information on backup request
-func (client SitesClient) UpdateSiteBackupConfiguration(resourceGroupName string, name string, request BackupRequest) (result BackupRequest, err error) {
-	req, err := client.UpdateSiteBackupConfigurationPreparer(resourceGroupName, name, request)
+func (client SitesClient) UpdateSiteBackupConfiguration(ctx context.Context, resourceGroupName string, name string, request BackupRequest) (result BackupRequest, err error) {
+	req, err := client.UpdateSiteBackupConfigurationPreparer(ctx, resourceGroupName, name, request)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteBackupConfiguration", nil, "Failure preparing request")
 		return
@@ -11619,7 +10482,7 @@ func (client SitesClient) UpdateSiteBackupConfiguration(resourceGroupName string
 }
 
 // UpdateSiteBackupConfigurationPreparer prepares the UpdateSiteBackupConfiguration request.
-func (client SitesClient) UpdateSiteBackupConfigurationPreparer(resourceGroupName string, name string, request BackupRequest) (*http.Request, error) {
+func (client SitesClient) UpdateSiteBackupConfigurationPreparer(ctx context.Context, resourceGroupName string, name string, request BackupRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11638,14 +10501,13 @@ func (client SitesClient) UpdateSiteBackupConfigurationPreparer(resourceGroupNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/backup", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteBackupConfigurationSender sends the UpdateSiteBackupConfiguration request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteBackupConfigurationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11666,8 +10528,8 @@ func (client SitesClient) UpdateSiteBackupConfigurationResponder(resp *http.Resp
 //
 // resourceGroupName is name of resource group name is name of web app request is information on backup request slot is
 // name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteBackupConfigurationSlot(resourceGroupName string, name string, request BackupRequest, slot string) (result BackupRequest, err error) {
-	req, err := client.UpdateSiteBackupConfigurationSlotPreparer(resourceGroupName, name, request, slot)
+func (client SitesClient) UpdateSiteBackupConfigurationSlot(ctx context.Context, resourceGroupName string, name string, request BackupRequest, slot string) (result BackupRequest, err error) {
+	req, err := client.UpdateSiteBackupConfigurationSlotPreparer(ctx, resourceGroupName, name, request, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteBackupConfigurationSlot", nil, "Failure preparing request")
 		return
@@ -11689,7 +10551,7 @@ func (client SitesClient) UpdateSiteBackupConfigurationSlot(resourceGroupName st
 }
 
 // UpdateSiteBackupConfigurationSlotPreparer prepares the UpdateSiteBackupConfigurationSlot request.
-func (client SitesClient) UpdateSiteBackupConfigurationSlotPreparer(resourceGroupName string, name string, request BackupRequest, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteBackupConfigurationSlotPreparer(ctx context.Context, resourceGroupName string, name string, request BackupRequest, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11709,14 +10571,13 @@ func (client SitesClient) UpdateSiteBackupConfigurationSlotPreparer(resourceGrou
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/backup", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteBackupConfigurationSlotSender sends the UpdateSiteBackupConfigurationSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteBackupConfigurationSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11737,8 +10598,8 @@ func (client SitesClient) UpdateSiteBackupConfigurationSlotResponder(resp *http.
 //
 // resourceGroupName is name of resource group name is name of web app siteConfig is request body that contains the
 // configuraiton setting for the web app
-func (client SitesClient) UpdateSiteConfig(resourceGroupName string, name string, siteConfig SiteConfig) (result SiteConfig, err error) {
-	req, err := client.UpdateSiteConfigPreparer(resourceGroupName, name, siteConfig)
+func (client SitesClient) UpdateSiteConfig(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig) (result SiteConfig, err error) {
+	req, err := client.UpdateSiteConfigPreparer(ctx, resourceGroupName, name, siteConfig)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteConfig", nil, "Failure preparing request")
 		return
@@ -11760,7 +10621,7 @@ func (client SitesClient) UpdateSiteConfig(resourceGroupName string, name string
 }
 
 // UpdateSiteConfigPreparer prepares the UpdateSiteConfig request.
-func (client SitesClient) UpdateSiteConfigPreparer(resourceGroupName string, name string, siteConfig SiteConfig) (*http.Request, error) {
+func (client SitesClient) UpdateSiteConfigPreparer(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11779,14 +10640,13 @@ func (client SitesClient) UpdateSiteConfigPreparer(resourceGroupName string, nam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/web", pathParameters),
 		autorest.WithJSON(siteConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteConfigSender sends the UpdateSiteConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11808,8 +10668,8 @@ func (client SitesClient) UpdateSiteConfigResponder(resp *http.Response) (result
 // resourceGroupName is name of resource group name is name of web app siteConfig is request body that contains the
 // configuraiton setting for the web app slot is name of web app slot. If not specified then will default to production
 // slot.
-func (client SitesClient) UpdateSiteConfigSlot(resourceGroupName string, name string, siteConfig SiteConfig, slot string) (result SiteConfig, err error) {
-	req, err := client.UpdateSiteConfigSlotPreparer(resourceGroupName, name, siteConfig, slot)
+func (client SitesClient) UpdateSiteConfigSlot(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig, slot string) (result SiteConfig, err error) {
+	req, err := client.UpdateSiteConfigSlotPreparer(ctx, resourceGroupName, name, siteConfig, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteConfigSlot", nil, "Failure preparing request")
 		return
@@ -11831,7 +10691,7 @@ func (client SitesClient) UpdateSiteConfigSlot(resourceGroupName string, name st
 }
 
 // UpdateSiteConfigSlotPreparer prepares the UpdateSiteConfigSlot request.
-func (client SitesClient) UpdateSiteConfigSlotPreparer(resourceGroupName string, name string, siteConfig SiteConfig, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteConfig SiteConfig, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11851,14 +10711,13 @@ func (client SitesClient) UpdateSiteConfigSlotPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/web", pathParameters),
 		autorest.WithJSON(siteConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteConfigSlotSender sends the UpdateSiteConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11879,8 +10738,8 @@ func (client SitesClient) UpdateSiteConfigSlotResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app connectionStrings is connection strings
 // associated with web app
-func (client SitesClient) UpdateSiteConnectionStrings(resourceGroupName string, name string, connectionStrings ConnectionStringDictionary) (result ConnectionStringDictionary, err error) {
-	req, err := client.UpdateSiteConnectionStringsPreparer(resourceGroupName, name, connectionStrings)
+func (client SitesClient) UpdateSiteConnectionStrings(ctx context.Context, resourceGroupName string, name string, connectionStrings ConnectionStringDictionary) (result ConnectionStringDictionary, err error) {
+	req, err := client.UpdateSiteConnectionStringsPreparer(ctx, resourceGroupName, name, connectionStrings)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteConnectionStrings", nil, "Failure preparing request")
 		return
@@ -11902,7 +10761,7 @@ func (client SitesClient) UpdateSiteConnectionStrings(resourceGroupName string, 
 }
 
 // UpdateSiteConnectionStringsPreparer prepares the UpdateSiteConnectionStrings request.
-func (client SitesClient) UpdateSiteConnectionStringsPreparer(resourceGroupName string, name string, connectionStrings ConnectionStringDictionary) (*http.Request, error) {
+func (client SitesClient) UpdateSiteConnectionStringsPreparer(ctx context.Context, resourceGroupName string, name string, connectionStrings ConnectionStringDictionary) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11921,14 +10780,13 @@ func (client SitesClient) UpdateSiteConnectionStringsPreparer(resourceGroupName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/connectionstrings", pathParameters),
 		autorest.WithJSON(connectionStrings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteConnectionStringsSender sends the UpdateSiteConnectionStrings request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteConnectionStringsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -11949,8 +10807,8 @@ func (client SitesClient) UpdateSiteConnectionStringsResponder(resp *http.Respon
 //
 // resourceGroupName is name of resource group name is name of web app connectionStrings is connection strings
 // associated with web app slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteConnectionStringsSlot(resourceGroupName string, name string, connectionStrings ConnectionStringDictionary, slot string) (result ConnectionStringDictionary, err error) {
-	req, err := client.UpdateSiteConnectionStringsSlotPreparer(resourceGroupName, name, connectionStrings, slot)
+func (client SitesClient) UpdateSiteConnectionStringsSlot(ctx context.Context, resourceGroupName string, name string, connectionStrings ConnectionStringDictionary, slot string) (result ConnectionStringDictionary, err error) {
+	req, err := client.UpdateSiteConnectionStringsSlotPreparer(ctx, resourceGroupName, name, connectionStrings, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteConnectionStringsSlot", nil, "Failure preparing request")
 		return
@@ -11972,7 +10830,7 @@ func (client SitesClient) UpdateSiteConnectionStringsSlot(resourceGroupName stri
 }
 
 // UpdateSiteConnectionStringsSlotPreparer prepares the UpdateSiteConnectionStringsSlot request.
-func (client SitesClient) UpdateSiteConnectionStringsSlotPreparer(resourceGroupName string, name string, connectionStrings ConnectionStringDictionary, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteConnectionStringsSlotPreparer(ctx context.Context, resourceGroupName string, name string, connectionStrings ConnectionStringDictionary, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -11992,14 +10850,13 @@ func (client SitesClient) UpdateSiteConnectionStringsSlotPreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/connectionstrings", pathParameters),
 		autorest.WithJSON(connectionStrings),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteConnectionStringsSlotSender sends the UpdateSiteConnectionStringsSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteConnectionStringsSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12019,8 +10876,8 @@ func (client SitesClient) UpdateSiteConnectionStringsSlotResponder(resp *http.Re
 // UpdateSiteLogsConfig sends the update site logs config request.
 //
 // resourceGroupName is name of resource group name is name of web app siteLogsConfig is site logs configuration
-func (client SitesClient) UpdateSiteLogsConfig(resourceGroupName string, name string, siteLogsConfig SiteLogsConfig) (result SiteLogsConfig, err error) {
-	req, err := client.UpdateSiteLogsConfigPreparer(resourceGroupName, name, siteLogsConfig)
+func (client SitesClient) UpdateSiteLogsConfig(ctx context.Context, resourceGroupName string, name string, siteLogsConfig SiteLogsConfig) (result SiteLogsConfig, err error) {
+	req, err := client.UpdateSiteLogsConfigPreparer(ctx, resourceGroupName, name, siteLogsConfig)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteLogsConfig", nil, "Failure preparing request")
 		return
@@ -12042,7 +10899,7 @@ func (client SitesClient) UpdateSiteLogsConfig(resourceGroupName string, name st
 }
 
 // UpdateSiteLogsConfigPreparer prepares the UpdateSiteLogsConfig request.
-func (client SitesClient) UpdateSiteLogsConfigPreparer(resourceGroupName string, name string, siteLogsConfig SiteLogsConfig) (*http.Request, error) {
+func (client SitesClient) UpdateSiteLogsConfigPreparer(ctx context.Context, resourceGroupName string, name string, siteLogsConfig SiteLogsConfig) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12061,14 +10918,13 @@ func (client SitesClient) UpdateSiteLogsConfigPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/logs", pathParameters),
 		autorest.WithJSON(siteLogsConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteLogsConfigSender sends the UpdateSiteLogsConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteLogsConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12089,8 +10945,8 @@ func (client SitesClient) UpdateSiteLogsConfigResponder(resp *http.Response) (re
 //
 // resourceGroupName is name of resource group name is name of web app siteLogsConfig is site logs configuration slot
 // is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteLogsConfigSlot(resourceGroupName string, name string, siteLogsConfig SiteLogsConfig, slot string) (result SiteLogsConfig, err error) {
-	req, err := client.UpdateSiteLogsConfigSlotPreparer(resourceGroupName, name, siteLogsConfig, slot)
+func (client SitesClient) UpdateSiteLogsConfigSlot(ctx context.Context, resourceGroupName string, name string, siteLogsConfig SiteLogsConfig, slot string) (result SiteLogsConfig, err error) {
+	req, err := client.UpdateSiteLogsConfigSlotPreparer(ctx, resourceGroupName, name, siteLogsConfig, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteLogsConfigSlot", nil, "Failure preparing request")
 		return
@@ -12112,7 +10968,7 @@ func (client SitesClient) UpdateSiteLogsConfigSlot(resourceGroupName string, nam
 }
 
 // UpdateSiteLogsConfigSlotPreparer prepares the UpdateSiteLogsConfigSlot request.
-func (client SitesClient) UpdateSiteLogsConfigSlotPreparer(resourceGroupName string, name string, siteLogsConfig SiteLogsConfig, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteLogsConfigSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteLogsConfig SiteLogsConfig, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12132,14 +10988,13 @@ func (client SitesClient) UpdateSiteLogsConfigSlotPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/logs", pathParameters),
 		autorest.WithJSON(siteLogsConfig),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteLogsConfigSlotSender sends the UpdateSiteLogsConfigSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteLogsConfigSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12159,8 +11014,8 @@ func (client SitesClient) UpdateSiteLogsConfigSlotResponder(resp *http.Response)
 // UpdateSiteMetadata sends the update site metadata request.
 //
 // resourceGroupName is name of resource group name is name of web app metadata is meta data of web app
-func (client SitesClient) UpdateSiteMetadata(resourceGroupName string, name string, metadata StringDictionary) (result StringDictionary, err error) {
-	req, err := client.UpdateSiteMetadataPreparer(resourceGroupName, name, metadata)
+func (client SitesClient) UpdateSiteMetadata(ctx context.Context, resourceGroupName string, name string, metadata StringDictionary) (result StringDictionary, err error) {
+	req, err := client.UpdateSiteMetadataPreparer(ctx, resourceGroupName, name, metadata)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteMetadata", nil, "Failure preparing request")
 		return
@@ -12182,7 +11037,7 @@ func (client SitesClient) UpdateSiteMetadata(resourceGroupName string, name stri
 }
 
 // UpdateSiteMetadataPreparer prepares the UpdateSiteMetadata request.
-func (client SitesClient) UpdateSiteMetadataPreparer(resourceGroupName string, name string, metadata StringDictionary) (*http.Request, error) {
+func (client SitesClient) UpdateSiteMetadataPreparer(ctx context.Context, resourceGroupName string, name string, metadata StringDictionary) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12201,14 +11056,13 @@ func (client SitesClient) UpdateSiteMetadataPreparer(resourceGroupName string, n
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/metadata", pathParameters),
 		autorest.WithJSON(metadata),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteMetadataSender sends the UpdateSiteMetadata request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteMetadataSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12229,8 +11083,8 @@ func (client SitesClient) UpdateSiteMetadataResponder(resp *http.Response) (resu
 //
 // resourceGroupName is name of resource group name is name of web app metadata is meta data of web app slot is name of
 // web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteMetadataSlot(resourceGroupName string, name string, metadata StringDictionary, slot string) (result StringDictionary, err error) {
-	req, err := client.UpdateSiteMetadataSlotPreparer(resourceGroupName, name, metadata, slot)
+func (client SitesClient) UpdateSiteMetadataSlot(ctx context.Context, resourceGroupName string, name string, metadata StringDictionary, slot string) (result StringDictionary, err error) {
+	req, err := client.UpdateSiteMetadataSlotPreparer(ctx, resourceGroupName, name, metadata, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteMetadataSlot", nil, "Failure preparing request")
 		return
@@ -12252,7 +11106,7 @@ func (client SitesClient) UpdateSiteMetadataSlot(resourceGroupName string, name 
 }
 
 // UpdateSiteMetadataSlotPreparer prepares the UpdateSiteMetadataSlot request.
-func (client SitesClient) UpdateSiteMetadataSlotPreparer(resourceGroupName string, name string, metadata StringDictionary, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteMetadataSlotPreparer(ctx context.Context, resourceGroupName string, name string, metadata StringDictionary, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12272,14 +11126,13 @@ func (client SitesClient) UpdateSiteMetadataSlotPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/config/metadata", pathParameters),
 		autorest.WithJSON(metadata),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteMetadataSlotSender sends the UpdateSiteMetadataSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteMetadataSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12300,8 +11153,8 @@ func (client SitesClient) UpdateSiteMetadataSlotResponder(resp *http.Response) (
 //
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified connectionEnvelope is the details of the Hybrid Connection
-func (client SitesClient) UpdateSiteRelayServiceConnection(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.UpdateSiteRelayServiceConnectionPreparer(resourceGroupName, name, entityName, connectionEnvelope)
+func (client SitesClient) UpdateSiteRelayServiceConnection(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.UpdateSiteRelayServiceConnectionPreparer(ctx, resourceGroupName, name, entityName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteRelayServiceConnection", nil, "Failure preparing request")
 		return
@@ -12323,7 +11176,7 @@ func (client SitesClient) UpdateSiteRelayServiceConnection(resourceGroupName str
 }
 
 // UpdateSiteRelayServiceConnectionPreparer prepares the UpdateSiteRelayServiceConnection request.
-func (client SitesClient) UpdateSiteRelayServiceConnectionPreparer(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (*http.Request, error) {
+func (client SitesClient) UpdateSiteRelayServiceConnectionPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -12343,14 +11196,13 @@ func (client SitesClient) UpdateSiteRelayServiceConnectionPreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteRelayServiceConnectionSender sends the UpdateSiteRelayServiceConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteRelayServiceConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12372,8 +11224,8 @@ func (client SitesClient) UpdateSiteRelayServiceConnectionResponder(resp *http.R
 // resourceGroupName is the resource group name name is the name of the web app entityName is the name by which the
 // Hybrid Connection is identified connectionEnvelope is the details of the Hybrid Connection slot is the name of the
 // slot for the web app.
-func (client SitesClient) UpdateSiteRelayServiceConnectionSlot(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (result RelayServiceConnectionEntity, err error) {
-	req, err := client.UpdateSiteRelayServiceConnectionSlotPreparer(resourceGroupName, name, entityName, connectionEnvelope, slot)
+func (client SitesClient) UpdateSiteRelayServiceConnectionSlot(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (result RelayServiceConnectionEntity, err error) {
+	req, err := client.UpdateSiteRelayServiceConnectionSlotPreparer(ctx, resourceGroupName, name, entityName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteRelayServiceConnectionSlot", nil, "Failure preparing request")
 		return
@@ -12395,7 +11247,7 @@ func (client SitesClient) UpdateSiteRelayServiceConnectionSlot(resourceGroupName
 }
 
 // UpdateSiteRelayServiceConnectionSlotPreparer prepares the UpdateSiteRelayServiceConnectionSlot request.
-func (client SitesClient) UpdateSiteRelayServiceConnectionSlotPreparer(resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteRelayServiceConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, entityName string, connectionEnvelope RelayServiceConnectionEntity, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"entityName":        autorest.Encode("path", entityName),
 		"name":              autorest.Encode("path", name),
@@ -12416,14 +11268,13 @@ func (client SitesClient) UpdateSiteRelayServiceConnectionSlotPreparer(resourceG
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/hybridconnection/{entityName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteRelayServiceConnectionSlotSender sends the UpdateSiteRelayServiceConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteRelayServiceConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12444,8 +11295,8 @@ func (client SitesClient) UpdateSiteRelayServiceConnectionSlotResponder(resp *ht
 //
 // resourceGroupName is name of resource group name is name of web app siteSourceControl is request body that contains
 // the source control parameters
-func (client SitesClient) UpdateSiteSourceControl(resourceGroupName string, name string, siteSourceControl SiteSourceControl) (result SiteSourceControl, err error) {
-	req, err := client.UpdateSiteSourceControlPreparer(resourceGroupName, name, siteSourceControl)
+func (client SitesClient) UpdateSiteSourceControl(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl) (result SiteSourceControl, err error) {
+	req, err := client.UpdateSiteSourceControlPreparer(ctx, resourceGroupName, name, siteSourceControl)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteSourceControl", nil, "Failure preparing request")
 		return
@@ -12467,7 +11318,7 @@ func (client SitesClient) UpdateSiteSourceControl(resourceGroupName string, name
 }
 
 // UpdateSiteSourceControlPreparer prepares the UpdateSiteSourceControl request.
-func (client SitesClient) UpdateSiteSourceControlPreparer(resourceGroupName string, name string, siteSourceControl SiteSourceControl) (*http.Request, error) {
+func (client SitesClient) UpdateSiteSourceControlPreparer(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12486,14 +11337,13 @@ func (client SitesClient) UpdateSiteSourceControlPreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/sourcecontrols/web", pathParameters),
 		autorest.WithJSON(siteSourceControl),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteSourceControlSender sends the UpdateSiteSourceControl request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteSourceControlSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12514,8 +11364,8 @@ func (client SitesClient) UpdateSiteSourceControlResponder(resp *http.Response) 
 //
 // resourceGroupName is name of resource group name is name of web app siteSourceControl is request body that contains
 // the source control parameters slot is name of web app slot. If not specified then will default to production slot.
-func (client SitesClient) UpdateSiteSourceControlSlot(resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (result SiteSourceControl, err error) {
-	req, err := client.UpdateSiteSourceControlSlotPreparer(resourceGroupName, name, siteSourceControl, slot)
+func (client SitesClient) UpdateSiteSourceControlSlot(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (result SiteSourceControl, err error) {
+	req, err := client.UpdateSiteSourceControlSlotPreparer(ctx, resourceGroupName, name, siteSourceControl, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteSourceControlSlot", nil, "Failure preparing request")
 		return
@@ -12537,7 +11387,7 @@ func (client SitesClient) UpdateSiteSourceControlSlot(resourceGroupName string, 
 }
 
 // UpdateSiteSourceControlSlotPreparer prepares the UpdateSiteSourceControlSlot request.
-func (client SitesClient) UpdateSiteSourceControlSlotPreparer(resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteSourceControlSlotPreparer(ctx context.Context, resourceGroupName string, name string, siteSourceControl SiteSourceControl, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12557,14 +11407,13 @@ func (client SitesClient) UpdateSiteSourceControlSlotPreparer(resourceGroupName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/sourcecontrols/web", pathParameters),
 		autorest.WithJSON(siteSourceControl),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteSourceControlSlotSender sends the UpdateSiteSourceControlSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteSourceControlSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12585,8 +11434,8 @@ func (client SitesClient) UpdateSiteSourceControlSlotResponder(resp *http.Respon
 //
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network connectionEnvelope is the properties of this Virtual Network Connection
-func (client SitesClient) UpdateSiteVNETConnection(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (result VnetInfo, err error) {
-	req, err := client.UpdateSiteVNETConnectionPreparer(resourceGroupName, name, vnetName, connectionEnvelope)
+func (client SitesClient) UpdateSiteVNETConnection(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (result VnetInfo, err error) {
+	req, err := client.UpdateSiteVNETConnectionPreparer(ctx, resourceGroupName, name, vnetName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteVNETConnection", nil, "Failure preparing request")
 		return
@@ -12608,7 +11457,7 @@ func (client SitesClient) UpdateSiteVNETConnection(resourceGroupName string, nam
 }
 
 // UpdateSiteVNETConnectionPreparer prepares the UpdateSiteVNETConnection request.
-func (client SitesClient) UpdateSiteVNETConnectionPreparer(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (*http.Request, error) {
+func (client SitesClient) UpdateSiteVNETConnectionPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12628,14 +11477,13 @@ func (client SitesClient) UpdateSiteVNETConnectionPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteVNETConnectionSender sends the UpdateSiteVNETConnection request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteVNETConnectionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12657,8 +11505,8 @@ func (client SitesClient) UpdateSiteVNETConnectionResponder(resp *http.Response)
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary"
 // connectionEnvelope is the properties to update this gateway with.
-func (client SitesClient) UpdateSiteVNETConnectionGateway(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (result VnetGateway, err error) {
-	req, err := client.UpdateSiteVNETConnectionGatewayPreparer(resourceGroupName, name, vnetName, gatewayName, connectionEnvelope)
+func (client SitesClient) UpdateSiteVNETConnectionGateway(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (result VnetGateway, err error) {
+	req, err := client.UpdateSiteVNETConnectionGatewayPreparer(ctx, resourceGroupName, name, vnetName, gatewayName, connectionEnvelope)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteVNETConnectionGateway", nil, "Failure preparing request")
 		return
@@ -12680,7 +11528,7 @@ func (client SitesClient) UpdateSiteVNETConnectionGateway(resourceGroupName stri
 }
 
 // UpdateSiteVNETConnectionGatewayPreparer prepares the UpdateSiteVNETConnectionGateway request.
-func (client SitesClient) UpdateSiteVNETConnectionGatewayPreparer(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (*http.Request, error) {
+func (client SitesClient) UpdateSiteVNETConnectionGatewayPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -12701,14 +11549,13 @@ func (client SitesClient) UpdateSiteVNETConnectionGatewayPreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteVNETConnectionGatewaySender sends the UpdateSiteVNETConnectionGateway request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteVNETConnectionGatewaySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12730,8 +11577,8 @@ func (client SitesClient) UpdateSiteVNETConnectionGatewayResponder(resp *http.Re
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network gatewayName is the name of the gateway. The only gateway that exists presently is "primary"
 // connectionEnvelope is the properties to update this gateway with. slot is the name of the slot for this web app.
-func (client SitesClient) UpdateSiteVNETConnectionGatewaySlot(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (result VnetGateway, err error) {
-	req, err := client.UpdateSiteVNETConnectionGatewaySlotPreparer(resourceGroupName, name, vnetName, gatewayName, connectionEnvelope, slot)
+func (client SitesClient) UpdateSiteVNETConnectionGatewaySlot(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (result VnetGateway, err error) {
+	req, err := client.UpdateSiteVNETConnectionGatewaySlotPreparer(ctx, resourceGroupName, name, vnetName, gatewayName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteVNETConnectionGatewaySlot", nil, "Failure preparing request")
 		return
@@ -12753,7 +11600,7 @@ func (client SitesClient) UpdateSiteVNETConnectionGatewaySlot(resourceGroupName 
 }
 
 // UpdateSiteVNETConnectionGatewaySlotPreparer prepares the UpdateSiteVNETConnectionGatewaySlot request.
-func (client SitesClient) UpdateSiteVNETConnectionGatewaySlotPreparer(resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteVNETConnectionGatewaySlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, gatewayName string, connectionEnvelope VnetGateway, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"gatewayName":       autorest.Encode("path", gatewayName),
 		"name":              autorest.Encode("path", name),
@@ -12775,14 +11622,13 @@ func (client SitesClient) UpdateSiteVNETConnectionGatewaySlotPreparer(resourceGr
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}/gateways/{gatewayName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteVNETConnectionGatewaySlotSender sends the UpdateSiteVNETConnectionGatewaySlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteVNETConnectionGatewaySlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12804,8 +11650,8 @@ func (client SitesClient) UpdateSiteVNETConnectionGatewaySlotResponder(resp *htt
 // resourceGroupName is the resource group name name is the name of the web app vnetName is the name of the Virtual
 // Network connectionEnvelope is the properties of this Virtual Network Connection slot is the name of the slot for
 // this web app.
-func (client SitesClient) UpdateSiteVNETConnectionSlot(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (result VnetInfo, err error) {
-	req, err := client.UpdateSiteVNETConnectionSlotPreparer(resourceGroupName, name, vnetName, connectionEnvelope, slot)
+func (client SitesClient) UpdateSiteVNETConnectionSlot(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (result VnetInfo, err error) {
+	req, err := client.UpdateSiteVNETConnectionSlotPreparer(ctx, resourceGroupName, name, vnetName, connectionEnvelope, slot)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSiteVNETConnectionSlot", nil, "Failure preparing request")
 		return
@@ -12827,7 +11673,7 @@ func (client SitesClient) UpdateSiteVNETConnectionSlot(resourceGroupName string,
 }
 
 // UpdateSiteVNETConnectionSlotPreparer prepares the UpdateSiteVNETConnectionSlot request.
-func (client SitesClient) UpdateSiteVNETConnectionSlotPreparer(resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (*http.Request, error) {
+func (client SitesClient) UpdateSiteVNETConnectionSlotPreparer(ctx context.Context, resourceGroupName string, name string, vnetName string, connectionEnvelope VnetInfo, slot string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12848,14 +11694,13 @@ func (client SitesClient) UpdateSiteVNETConnectionSlotPreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/slots/{slot}/virtualNetworkConnections/{vnetName}", pathParameters),
 		autorest.WithJSON(connectionEnvelope),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSiteVNETConnectionSlotSender sends the UpdateSiteVNETConnectionSlot request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSiteVNETConnectionSlotSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -12876,8 +11721,8 @@ func (client SitesClient) UpdateSiteVNETConnectionSlotResponder(resp *http.Respo
 //
 // resourceGroupName is name of resource group name is name of web app slotConfigNames is request body containing the
 // names of application settings and connection strings
-func (client SitesClient) UpdateSlotConfigNames(resourceGroupName string, name string, slotConfigNames SlotConfigNamesResource) (result SlotConfigNamesResource, err error) {
-	req, err := client.UpdateSlotConfigNamesPreparer(resourceGroupName, name, slotConfigNames)
+func (client SitesClient) UpdateSlotConfigNames(ctx context.Context, resourceGroupName string, name string, slotConfigNames SlotConfigNamesResource) (result SlotConfigNamesResource, err error) {
+	req, err := client.UpdateSlotConfigNamesPreparer(ctx, resourceGroupName, name, slotConfigNames)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.SitesClient", "UpdateSlotConfigNames", nil, "Failure preparing request")
 		return
@@ -12899,7 +11744,7 @@ func (client SitesClient) UpdateSlotConfigNames(resourceGroupName string, name s
 }
 
 // UpdateSlotConfigNamesPreparer prepares the UpdateSlotConfigNames request.
-func (client SitesClient) UpdateSlotConfigNamesPreparer(resourceGroupName string, name string, slotConfigNames SlotConfigNamesResource) (*http.Request, error) {
+func (client SitesClient) UpdateSlotConfigNamesPreparer(ctx context.Context, resourceGroupName string, name string, slotConfigNames SlotConfigNamesResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -12918,14 +11763,13 @@ func (client SitesClient) UpdateSlotConfigNamesPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{name}/config/slotConfigNames", pathParameters),
 		autorest.WithJSON(slotConfigNames),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSlotConfigNamesSender sends the UpdateSlotConfigNames request. The method will close the
 // http.Response Body if it receives an error.
 func (client SitesClient) UpdateSlotConfigNamesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

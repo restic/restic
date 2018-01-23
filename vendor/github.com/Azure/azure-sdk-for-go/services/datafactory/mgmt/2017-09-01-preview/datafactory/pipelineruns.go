@@ -18,6 +18,7 @@ package datafactory
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // PipelineRunsClient is the the Azure Data Factory V2 management API provides a RESTful set of web services that
 // interact with Azure Data Factory V2 services.
 type PipelineRunsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPipelineRunsClient creates an instance of the PipelineRunsClient client.
@@ -43,7 +44,7 @@ func NewPipelineRunsClientWithBaseURI(baseURI string, subscriptionID string) Pip
 // Get get a pipeline run by its run ID.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. runID is the pipeline run identifier.
-func (client PipelineRunsClient) Get(resourceGroupName string, factoryName string, runID string) (result PipelineRun, err error) {
+func (client PipelineRunsClient) Get(ctx context.Context, resourceGroupName string, factoryName string, runID string) (result PipelineRun, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -56,7 +57,7 @@ func (client PipelineRunsClient) Get(resourceGroupName string, factoryName strin
 		return result, validation.NewErrorWithValidationError(err, "datafactory.PipelineRunsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, factoryName, runID)
+	req, err := client.GetPreparer(ctx, resourceGroupName, factoryName, runID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.PipelineRunsClient", "Get", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client PipelineRunsClient) Get(resourceGroupName string, factoryName strin
 }
 
 // GetPreparer prepares the Get request.
-func (client PipelineRunsClient) GetPreparer(resourceGroupName string, factoryName string, runID string) (*http.Request, error) {
+func (client PipelineRunsClient) GetPreparer(ctx context.Context, resourceGroupName string, factoryName string, runID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -96,14 +97,13 @@ func (client PipelineRunsClient) GetPreparer(resourceGroupName string, factoryNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/pipelineruns/{runId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PipelineRunsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -124,7 +124,7 @@ func (client PipelineRunsClient) GetResponder(resp *http.Response) (result Pipel
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. filterParameters is parameters to
 // filter the pipeline run.
-func (client PipelineRunsClient) QueryByFactory(resourceGroupName string, factoryName string, filterParameters PipelineRunFilterParameters) (result PipelineRunQueryResponse, err error) {
+func (client PipelineRunsClient) QueryByFactory(ctx context.Context, resourceGroupName string, factoryName string, filterParameters PipelineRunFilterParameters) (result PipelineRunQueryResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -140,7 +140,7 @@ func (client PipelineRunsClient) QueryByFactory(resourceGroupName string, factor
 		return result, validation.NewErrorWithValidationError(err, "datafactory.PipelineRunsClient", "QueryByFactory")
 	}
 
-	req, err := client.QueryByFactoryPreparer(resourceGroupName, factoryName, filterParameters)
+	req, err := client.QueryByFactoryPreparer(ctx, resourceGroupName, factoryName, filterParameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.PipelineRunsClient", "QueryByFactory", nil, "Failure preparing request")
 		return
@@ -162,7 +162,7 @@ func (client PipelineRunsClient) QueryByFactory(resourceGroupName string, factor
 }
 
 // QueryByFactoryPreparer prepares the QueryByFactory request.
-func (client PipelineRunsClient) QueryByFactoryPreparer(resourceGroupName string, factoryName string, filterParameters PipelineRunFilterParameters) (*http.Request, error) {
+func (client PipelineRunsClient) QueryByFactoryPreparer(ctx context.Context, resourceGroupName string, factoryName string, filterParameters PipelineRunFilterParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -181,14 +181,13 @@ func (client PipelineRunsClient) QueryByFactoryPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/pipelineruns", pathParameters),
 		autorest.WithJSON(filterParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // QueryByFactorySender sends the QueryByFactory request. The method will close the
 // http.Response Body if it receives an error.
 func (client PipelineRunsClient) QueryByFactorySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

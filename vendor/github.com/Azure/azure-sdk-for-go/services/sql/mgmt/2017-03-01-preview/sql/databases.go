@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update, and
 // delete databases.
 type DatabasesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDatabasesClient creates an instance of the DatabasesClient client.
@@ -42,60 +43,37 @@ func NewDatabasesClientWithBaseURI(baseURI string, subscriptionID string) Databa
 }
 
 // CreateImportOperation creates an import operation that imports a bacpac into an existing database. The existing
-// database must be empty. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// database must be empty.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to import into extensionName is the name of the operation to perform parameters is the required parameters
 // for importing a Bacpac into a database.
-func (client DatabasesClient) CreateImportOperation(resourceGroupName string, serverName string, databaseName string, extensionName string, parameters ImportExtensionRequest, cancel <-chan struct{}) (<-chan ImportExportResponse, <-chan error) {
-	resultChan := make(chan ImportExportResponse, 1)
-	errChan := make(chan error, 1)
+func (client DatabasesClient) CreateImportOperation(ctx context.Context, resourceGroupName string, serverName string, databaseName string, extensionName string, parameters ImportExtensionRequest) (result DatabasesCreateImportOperationFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ImportExtensionProperties", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.ImportExtensionProperties.OperationMode", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "CreateImportOperation")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "CreateImportOperation")
 	}
 
-	go func() {
-		var err error
-		var result ImportExportResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateImportOperationPreparer(resourceGroupName, serverName, databaseName, extensionName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateImportOperation", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateImportOperationPreparer(ctx, resourceGroupName, serverName, databaseName, extensionName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateImportOperation", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateImportOperationSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateImportOperation", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateImportOperationSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateImportOperation", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateImportOperationResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateImportOperation", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateImportOperationPreparer prepares the CreateImportOperation request.
-func (client DatabasesClient) CreateImportOperationPreparer(resourceGroupName string, serverName string, databaseName string, extensionName string, parameters ImportExtensionRequest, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) CreateImportOperationPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, extensionName string, parameters ImportExtensionRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"extensionName":     autorest.Encode("path", extensionName),
@@ -116,16 +94,22 @@ func (client DatabasesClient) CreateImportOperationPreparer(resourceGroupName st
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/extensions/{extensionName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateImportOperationSender sends the CreateImportOperation request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) CreateImportOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) CreateImportOperationSender(req *http.Request) (future DatabasesCreateImportOperationFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateImportOperationResponder handles the response to the CreateImportOperation request. The method always
@@ -141,51 +125,30 @@ func (client DatabasesClient) CreateImportOperationResponder(resp *http.Response
 	return
 }
 
-// CreateOrUpdate creates a new database or updates an existing database. This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdate creates a new database or updates an existing database.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to be operated on (updated or created). parameters is the required parameters for creating or updating a
 // database.
-func (client DatabasesClient) CreateOrUpdate(resourceGroupName string, serverName string, databaseName string, parameters Database, cancel <-chan struct{}) (<-chan Database, <-chan error) {
-	resultChan := make(chan Database, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Database
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, databaseName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client DatabasesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters Database) (result DatabasesCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, databaseName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DatabasesClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, databaseName string, parameters Database, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters Database) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -205,16 +168,22 @@ func (client DatabasesClient) CreateOrUpdatePreparer(resourceGroupName string, s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) CreateOrUpdateSender(req *http.Request) (future DatabasesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -235,8 +204,8 @@ func (client DatabasesClient) CreateOrUpdateResponder(resp *http.Response) (resu
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to be deleted.
-func (client DatabasesClient) Delete(resourceGroupName string, serverName string, databaseName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, serverName, databaseName)
+func (client DatabasesClient) Delete(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, databaseName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -258,7 +227,7 @@ func (client DatabasesClient) Delete(resourceGroupName string, serverName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DatabasesClient) DeletePreparer(resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
+func (client DatabasesClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -276,14 +245,13 @@ func (client DatabasesClient) DeletePreparer(resourceGroupName string, serverNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -299,61 +267,38 @@ func (client DatabasesClient) DeleteResponder(resp *http.Response) (result autor
 	return
 }
 
-// Export exports a database to a bacpac. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Export exports a database to a bacpac.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to be exported. parameters is the required parameters for exporting a database.
-func (client DatabasesClient) Export(resourceGroupName string, serverName string, databaseName string, parameters ExportRequest, cancel <-chan struct{}) (<-chan ImportExportResponse, <-chan error) {
-	resultChan := make(chan ImportExportResponse, 1)
-	errChan := make(chan error, 1)
+func (client DatabasesClient) Export(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters ExportRequest) (result DatabasesExportFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.StorageKey", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.StorageURI", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.AdministratorLogin", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.AdministratorLoginPassword", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "Export")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "Export")
 	}
 
-	go func() {
-		var err error
-		var result ImportExportResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ExportPreparer(resourceGroupName, serverName, databaseName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Export", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.ExportPreparer(ctx, resourceGroupName, serverName, databaseName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Export", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ExportSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Export", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ExportSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Export", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ExportResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Export", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ExportPreparer prepares the Export request.
-func (client DatabasesClient) ExportPreparer(resourceGroupName string, serverName string, databaseName string, parameters ExportRequest, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) ExportPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters ExportRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -373,16 +318,22 @@ func (client DatabasesClient) ExportPreparer(resourceGroupName string, serverNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/export", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ExportSender sends the Export request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) ExportSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) ExportSender(req *http.Request) (future DatabasesExportFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ExportResponder handles the response to the Export request. The method always
@@ -404,8 +355,8 @@ func (client DatabasesClient) ExportResponder(resp *http.Response) (result Impor
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to be retrieved. expand is a comma separated list of child objects to expand in the response. Possible
 // properties: serviceTierAdvisors, transparentDataEncryption.
-func (client DatabasesClient) Get(resourceGroupName string, serverName string, databaseName string, expand string) (result Database, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, databaseName, expand)
+func (client DatabasesClient) Get(ctx context.Context, resourceGroupName string, serverName string, databaseName string, expand string) (result Database, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, databaseName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Get", nil, "Failure preparing request")
 		return
@@ -427,7 +378,7 @@ func (client DatabasesClient) Get(resourceGroupName string, serverName string, d
 }
 
 // GetPreparer prepares the Get request.
-func (client DatabasesClient) GetPreparer(resourceGroupName string, serverName string, databaseName string, expand string) (*http.Request, error) {
+func (client DatabasesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -448,14 +399,13 @@ func (client DatabasesClient) GetPreparer(resourceGroupName string, serverName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -477,8 +427,8 @@ func (client DatabasesClient) GetResponder(resp *http.Response) (result Database
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be retrieved. databaseName is the name of the database to be retrieved.
-func (client DatabasesClient) GetByElasticPool(resourceGroupName string, serverName string, elasticPoolName string, databaseName string) (result Database, err error) {
-	req, err := client.GetByElasticPoolPreparer(resourceGroupName, serverName, elasticPoolName, databaseName)
+func (client DatabasesClient) GetByElasticPool(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, databaseName string) (result Database, err error) {
+	req, err := client.GetByElasticPoolPreparer(ctx, resourceGroupName, serverName, elasticPoolName, databaseName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "GetByElasticPool", nil, "Failure preparing request")
 		return
@@ -500,7 +450,7 @@ func (client DatabasesClient) GetByElasticPool(resourceGroupName string, serverN
 }
 
 // GetByElasticPoolPreparer prepares the GetByElasticPool request.
-func (client DatabasesClient) GetByElasticPoolPreparer(resourceGroupName string, serverName string, elasticPoolName string, databaseName string) (*http.Request, error) {
+func (client DatabasesClient) GetByElasticPoolPreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
@@ -519,14 +469,13 @@ func (client DatabasesClient) GetByElasticPoolPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}/databases/{databaseName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetByElasticPoolSender sends the GetByElasticPool request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) GetByElasticPoolSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -548,8 +497,8 @@ func (client DatabasesClient) GetByElasticPoolResponder(resp *http.Response) (re
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. recommendedElasticPoolName is the
 // name of the elastic pool to be retrieved. databaseName is the name of the database to be retrieved.
-func (client DatabasesClient) GetByRecommendedElasticPool(resourceGroupName string, serverName string, recommendedElasticPoolName string, databaseName string) (result Database, err error) {
-	req, err := client.GetByRecommendedElasticPoolPreparer(resourceGroupName, serverName, recommendedElasticPoolName, databaseName)
+func (client DatabasesClient) GetByRecommendedElasticPool(ctx context.Context, resourceGroupName string, serverName string, recommendedElasticPoolName string, databaseName string) (result Database, err error) {
+	req, err := client.GetByRecommendedElasticPoolPreparer(ctx, resourceGroupName, serverName, recommendedElasticPoolName, databaseName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "GetByRecommendedElasticPool", nil, "Failure preparing request")
 		return
@@ -571,7 +520,7 @@ func (client DatabasesClient) GetByRecommendedElasticPool(resourceGroupName stri
 }
 
 // GetByRecommendedElasticPoolPreparer prepares the GetByRecommendedElasticPool request.
-func (client DatabasesClient) GetByRecommendedElasticPoolPreparer(resourceGroupName string, serverName string, recommendedElasticPoolName string, databaseName string) (*http.Request, error) {
+func (client DatabasesClient) GetByRecommendedElasticPoolPreparer(ctx context.Context, resourceGroupName string, serverName string, recommendedElasticPoolName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":               autorest.Encode("path", databaseName),
 		"recommendedElasticPoolName": autorest.Encode("path", recommendedElasticPoolName),
@@ -590,14 +539,13 @@ func (client DatabasesClient) GetByRecommendedElasticPoolPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/recommendedElasticPools/{recommendedElasticPoolName}/databases/{databaseName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetByRecommendedElasticPoolSender sends the GetByRecommendedElasticPool request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) GetByRecommendedElasticPoolSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -614,59 +562,36 @@ func (client DatabasesClient) GetByRecommendedElasticPoolResponder(resp *http.Re
 	return
 }
 
-// Import imports a bacpac into a new database.  This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Import imports a bacpac into a new database.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. parameters is the required
 // parameters for importing a Bacpac into a database.
-func (client DatabasesClient) Import(resourceGroupName string, serverName string, parameters ImportRequest, cancel <-chan struct{}) (<-chan ImportExportResponse, <-chan error) {
-	resultChan := make(chan ImportExportResponse, 1)
-	errChan := make(chan error, 1)
+func (client DatabasesClient) Import(ctx context.Context, resourceGroupName string, serverName string, parameters ImportRequest) (result DatabasesImportFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.DatabaseName", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.MaxSizeBytes", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "Import")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "Import")
 	}
 
-	go func() {
-		var err error
-		var result ImportExportResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ImportPreparer(resourceGroupName, serverName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Import", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.ImportPreparer(ctx, resourceGroupName, serverName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Import", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ImportSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Import", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ImportSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Import", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ImportResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Import", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ImportPreparer prepares the Import request.
-func (client DatabasesClient) ImportPreparer(resourceGroupName string, serverName string, parameters ImportRequest, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) ImportPreparer(ctx context.Context, resourceGroupName string, serverName string, parameters ImportRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -685,16 +610,22 @@ func (client DatabasesClient) ImportPreparer(resourceGroupName string, serverNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/import", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ImportSender sends the Import request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) ImportSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) ImportSender(req *http.Request) (future DatabasesImportFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ImportResponder handles the response to the Import request. The method always
@@ -715,8 +646,8 @@ func (client DatabasesClient) ImportResponder(resp *http.Response) (result Impor
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. elasticPoolName is the name of the
 // elastic pool to be retrieved.
-func (client DatabasesClient) ListByElasticPool(resourceGroupName string, serverName string, elasticPoolName string) (result DatabaseListResult, err error) {
-	req, err := client.ListByElasticPoolPreparer(resourceGroupName, serverName, elasticPoolName)
+func (client DatabasesClient) ListByElasticPool(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (result DatabaseListResult, err error) {
+	req, err := client.ListByElasticPoolPreparer(ctx, resourceGroupName, serverName, elasticPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "ListByElasticPool", nil, "Failure preparing request")
 		return
@@ -738,7 +669,7 @@ func (client DatabasesClient) ListByElasticPool(resourceGroupName string, server
 }
 
 // ListByElasticPoolPreparer prepares the ListByElasticPool request.
-func (client DatabasesClient) ListByElasticPoolPreparer(resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
+func (client DatabasesClient) ListByElasticPoolPreparer(ctx context.Context, resourceGroupName string, serverName string, elasticPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"elasticPoolName":   autorest.Encode("path", elasticPoolName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -756,14 +687,13 @@ func (client DatabasesClient) ListByElasticPoolPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/elasticPools/{elasticPoolName}/databases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByElasticPoolSender sends the ListByElasticPool request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) ListByElasticPoolSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -785,8 +715,8 @@ func (client DatabasesClient) ListByElasticPoolResponder(resp *http.Response) (r
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. recommendedElasticPoolName is the
 // name of the recommended elastic pool to be retrieved.
-func (client DatabasesClient) ListByRecommendedElasticPool(resourceGroupName string, serverName string, recommendedElasticPoolName string) (result DatabaseListResult, err error) {
-	req, err := client.ListByRecommendedElasticPoolPreparer(resourceGroupName, serverName, recommendedElasticPoolName)
+func (client DatabasesClient) ListByRecommendedElasticPool(ctx context.Context, resourceGroupName string, serverName string, recommendedElasticPoolName string) (result DatabaseListResult, err error) {
+	req, err := client.ListByRecommendedElasticPoolPreparer(ctx, resourceGroupName, serverName, recommendedElasticPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "ListByRecommendedElasticPool", nil, "Failure preparing request")
 		return
@@ -808,7 +738,7 @@ func (client DatabasesClient) ListByRecommendedElasticPool(resourceGroupName str
 }
 
 // ListByRecommendedElasticPoolPreparer prepares the ListByRecommendedElasticPool request.
-func (client DatabasesClient) ListByRecommendedElasticPoolPreparer(resourceGroupName string, serverName string, recommendedElasticPoolName string) (*http.Request, error) {
+func (client DatabasesClient) ListByRecommendedElasticPoolPreparer(ctx context.Context, resourceGroupName string, serverName string, recommendedElasticPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"recommendedElasticPoolName": autorest.Encode("path", recommendedElasticPoolName),
 		"resourceGroupName":          autorest.Encode("path", resourceGroupName),
@@ -826,14 +756,13 @@ func (client DatabasesClient) ListByRecommendedElasticPoolPreparer(resourceGroup
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/recommendedElasticPools/{recommendedElasticPoolName}/databases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByRecommendedElasticPoolSender sends the ListByRecommendedElasticPool request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) ListByRecommendedElasticPoolSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -856,8 +785,8 @@ func (client DatabasesClient) ListByRecommendedElasticPoolResponder(resp *http.R
 // Azure Resource Manager API or the portal. serverName is the name of the server. expand is a comma separated list of
 // child objects to expand in the response. Possible properties: serviceTierAdvisors, transparentDataEncryption. filter
 // is an OData filter expression that describes a subset of databases to return.
-func (client DatabasesClient) ListByServer(resourceGroupName string, serverName string, expand string, filter string) (result DatabaseListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName, expand, filter)
+func (client DatabasesClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string, expand string, filter string) (result DatabaseListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName, expand, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -879,7 +808,7 @@ func (client DatabasesClient) ListByServer(resourceGroupName string, serverName 
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client DatabasesClient) ListByServerPreparer(resourceGroupName string, serverName string, expand string, filter string) (*http.Request, error) {
+func (client DatabasesClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string, expand string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -902,14 +831,13 @@ func (client DatabasesClient) ListByServerPreparer(resourceGroupName string, ser
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -931,8 +859,8 @@ func (client DatabasesClient) ListByServerResponder(resp *http.Response) (result
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database.
-func (client DatabasesClient) ListMetricDefinitions(resourceGroupName string, serverName string, databaseName string) (result MetricDefinitionListResult, err error) {
-	req, err := client.ListMetricDefinitionsPreparer(resourceGroupName, serverName, databaseName)
+func (client DatabasesClient) ListMetricDefinitions(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (result MetricDefinitionListResult, err error) {
+	req, err := client.ListMetricDefinitionsPreparer(ctx, resourceGroupName, serverName, databaseName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "ListMetricDefinitions", nil, "Failure preparing request")
 		return
@@ -954,7 +882,7 @@ func (client DatabasesClient) ListMetricDefinitions(resourceGroupName string, se
 }
 
 // ListMetricDefinitionsPreparer prepares the ListMetricDefinitions request.
-func (client DatabasesClient) ListMetricDefinitionsPreparer(resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
+func (client DatabasesClient) ListMetricDefinitionsPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -972,14 +900,13 @@ func (client DatabasesClient) ListMetricDefinitionsPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/metricDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricDefinitionsSender sends the ListMetricDefinitions request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) ListMetricDefinitionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1001,8 +928,8 @@ func (client DatabasesClient) ListMetricDefinitionsResponder(resp *http.Response
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database. filter is an OData filter expression that describes a subset of metrics to return.
-func (client DatabasesClient) ListMetrics(resourceGroupName string, serverName string, databaseName string, filter string) (result MetricListResult, err error) {
-	req, err := client.ListMetricsPreparer(resourceGroupName, serverName, databaseName, filter)
+func (client DatabasesClient) ListMetrics(ctx context.Context, resourceGroupName string, serverName string, databaseName string, filter string) (result MetricListResult, err error) {
+	req, err := client.ListMetricsPreparer(ctx, resourceGroupName, serverName, databaseName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "ListMetrics", nil, "Failure preparing request")
 		return
@@ -1024,7 +951,7 @@ func (client DatabasesClient) ListMetrics(resourceGroupName string, serverName s
 }
 
 // ListMetricsPreparer prepares the ListMetrics request.
-func (client DatabasesClient) ListMetricsPreparer(resourceGroupName string, serverName string, databaseName string, filter string) (*http.Request, error) {
+func (client DatabasesClient) ListMetricsPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1043,14 +970,13 @@ func (client DatabasesClient) ListMetricsPreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/metrics", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMetricsSender sends the ListMetrics request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabasesClient) ListMetricsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -1067,49 +993,29 @@ func (client DatabasesClient) ListMetricsResponder(resp *http.Response) (result 
 	return
 }
 
-// Pause pauses a data warehouse. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Pause pauses a data warehouse.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the data
 // warehouse to pause.
-func (client DatabasesClient) Pause(resourceGroupName string, serverName string, databaseName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.PausePreparer(resourceGroupName, serverName, databaseName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Pause", nil, "Failure preparing request")
-			return
-		}
+func (client DatabasesClient) Pause(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (result DatabasesPauseFuture, err error) {
+	req, err := client.PausePreparer(ctx, resourceGroupName, serverName, databaseName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Pause", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.PauseSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Pause", resp, "Failure sending request")
-			return
-		}
+	result, err = client.PauseSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Pause", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.PauseResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Pause", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // PausePreparer prepares the Pause request.
-func (client DatabasesClient) PausePreparer(resourceGroupName string, serverName string, databaseName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) PausePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1127,16 +1033,22 @@ func (client DatabasesClient) PausePreparer(resourceGroupName string, serverName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/pause", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PauseSender sends the Pause request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) PauseSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) PauseSender(req *http.Request) (future DatabasesPauseFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PauseResponder handles the response to the Pause request. The method always
@@ -1151,49 +1063,105 @@ func (client DatabasesClient) PauseResponder(resp *http.Response) (result autore
 	return
 }
 
-// Resume resumes a data warehouse. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Rename renames a database.
+//
+// resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
+// Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
+// database to rename. parameters is the resource move definition for renaming this database.
+func (client DatabasesClient) Rename(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters ResourceMoveDefinition) (result autorest.Response, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: parameters,
+			Constraints: []validation.Constraint{{Target: "parameters.ID", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "sql.DatabasesClient", "Rename")
+	}
+
+	req, err := client.RenamePreparer(ctx, resourceGroupName, serverName, databaseName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Rename", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.RenameSender(req)
+	if err != nil {
+		result.Response = resp
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Rename", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.RenameResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Rename", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// RenamePreparer prepares the Rename request.
+func (client DatabasesClient) RenamePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters ResourceMoveDefinition) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"databaseName":      autorest.Encode("path", databaseName),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"serverName":        autorest.Encode("path", serverName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-03-01-preview"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsJSON(),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/move", pathParameters),
+		autorest.WithJSON(parameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// RenameSender sends the Rename request. The method will close the
+// http.Response Body if it receives an error.
+func (client DatabasesClient) RenameSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// RenameResponder handles the response to the Rename request. The method always
+// closes the http.Response Body.
+func (client DatabasesClient) RenameResponder(resp *http.Response) (result autorest.Response, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByClosing())
+	result.Response = resp
+	return
+}
+
+// Resume resumes a data warehouse.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the data
 // warehouse to resume.
-func (client DatabasesClient) Resume(resourceGroupName string, serverName string, databaseName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ResumePreparer(resourceGroupName, serverName, databaseName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Resume", nil, "Failure preparing request")
-			return
-		}
+func (client DatabasesClient) Resume(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (result DatabasesResumeFuture, err error) {
+	req, err := client.ResumePreparer(ctx, resourceGroupName, serverName, databaseName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Resume", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ResumeSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Resume", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ResumeSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Resume", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ResumeResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Resume", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ResumePreparer prepares the Resume request.
-func (client DatabasesClient) ResumePreparer(resourceGroupName string, serverName string, databaseName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) ResumePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1211,16 +1179,22 @@ func (client DatabasesClient) ResumePreparer(resourceGroupName string, serverNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/resume", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResumeSender sends the Resume request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) ResumeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) ResumeSender(req *http.Request) (future DatabasesResumeFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ResumeResponder handles the response to the Resume request. The method always
@@ -1229,55 +1203,35 @@ func (client DatabasesClient) ResumeResponder(resp *http.Response) (result autor
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusAccepted, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
 		autorest.ByClosing())
 	result.Response = resp
 	return
 }
 
-// Update updates an existing database. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Update updates an existing database.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database to be updated. parameters is the required parameters for updating a database.
-func (client DatabasesClient) Update(resourceGroupName string, serverName string, databaseName string, parameters DatabaseUpdate, cancel <-chan struct{}) (<-chan Database, <-chan error) {
-	resultChan := make(chan Database, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Database
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, serverName, databaseName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Update", nil, "Failure preparing request")
-			return
-		}
+func (client DatabasesClient) Update(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters DatabaseUpdate) (result DatabasesUpdateFuture, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serverName, databaseName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.DatabasesClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client DatabasesClient) UpdatePreparer(resourceGroupName string, serverName string, databaseName string, parameters DatabaseUpdate, cancel <-chan struct{}) (*http.Request, error) {
+func (client DatabasesClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters DatabaseUpdate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"databaseName":      autorest.Encode("path", databaseName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -1297,16 +1251,22 @@ func (client DatabasesClient) UpdatePreparer(resourceGroupName string, serverNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client DatabasesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DatabasesClient) UpdateSender(req *http.Request) (future DatabasesUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

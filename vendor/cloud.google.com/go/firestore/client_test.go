@@ -17,13 +17,10 @@ package firestore
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-
-	"cloud.google.com/go/internal/pretty"
-	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
-
-	"golang.org/x/net/context"
 )
 
 var testClient = &Client{
@@ -156,10 +153,8 @@ func TestGetAll(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if !testEqual(got, want) {
-			got.c = nil
-			want.c = nil
-			t.Errorf("#%d: got %+v, want %+v", i, pretty.Value(got), pretty.Value(want))
+		if diff := testDiff(got, want); diff != "" {
+			t.Errorf("#%d: got=--, want==++\n%s", i, diff)
 		}
 	}
 }

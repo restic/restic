@@ -42,11 +42,16 @@ import (
 	"github.com/marstr/collection"
 )
 
+const (
+	defaultGenVer = "@microsoft.azure/autorest.go@v2.1.62"
+)
+
 var (
 	targetFiles    collection.Enumerable
 	packageVersion string
 	outputBase     string
 	logDirBase     string
+	autorestVer    string
 	errLog         *log.Logger
 	statusLog      *log.Logger
 	dryRun         bool
@@ -138,7 +143,7 @@ func main() {
 				fmt.Sprintf("--go-sdk-folder='%s'", outputBase),
 				"--verbose",
 				"--tag=" + tuple.packageName,
-				"--use=@microsoft.azure/autorest.go@v2.0.41",
+				"--use=" + autorestVer,
 			}
 
 			if packageVersion != "" {
@@ -245,6 +250,7 @@ func init() {
 	flag.BoolVar(&dryRun, "p", false, "Preview which packages would be generated instead of actaully calling autorest.")
 	flag.StringVar(&packageVersion, "version", "", "The version that should be stamped on this SDK. This should be a semver.")
 	flag.StringVar(&logDirBase, "l", getDefaultOutputBase(), logDirUsage)
+	flag.StringVar(&autorestVer, "a", defaultGenVer, "The version of the AutoRest Go code generator to use, defaults to `"+defaultGenVer+"`.")
 
 	// Override the default usage message, printing to stderr as the default one would.
 	flag.Usage = func() {

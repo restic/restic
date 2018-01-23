@@ -18,18 +18,21 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/satori/go.uuid"
+	"net/http"
 )
 
 // AuthenticationType enumerates the values for authentication type.
 type AuthenticationType string
 
 const (
-	// ADPassword specifies the ad password state for authentication type.
+	// ADPassword ...
 	ADPassword AuthenticationType = "ADPassword"
-	// SQL specifies the sql state for authentication type.
+	// SQL ...
 	SQL AuthenticationType = "SQL"
 )
 
@@ -37,9 +40,9 @@ const (
 type CheckNameAvailabilityReason string
 
 const (
-	// AlreadyExists specifies the already exists state for check name availability reason.
+	// AlreadyExists ...
 	AlreadyExists CheckNameAvailabilityReason = "AlreadyExists"
-	// Invalid specifies the invalid state for check name availability reason.
+	// Invalid ...
 	Invalid CheckNameAvailabilityReason = "Invalid"
 )
 
@@ -47,21 +50,21 @@ const (
 type CreateMode string
 
 const (
-	// Copy specifies the copy state for create mode.
+	// Copy ...
 	Copy CreateMode = "Copy"
-	// Default specifies the default state for create mode.
+	// Default ...
 	Default CreateMode = "Default"
-	// NonReadableSecondary specifies the non readable secondary state for create mode.
+	// NonReadableSecondary ...
 	NonReadableSecondary CreateMode = "NonReadableSecondary"
-	// OnlineSecondary specifies the online secondary state for create mode.
+	// OnlineSecondary ...
 	OnlineSecondary CreateMode = "OnlineSecondary"
-	// PointInTimeRestore specifies the point in time restore state for create mode.
+	// PointInTimeRestore ...
 	PointInTimeRestore CreateMode = "PointInTimeRestore"
-	// Recovery specifies the recovery state for create mode.
+	// Recovery ...
 	Recovery CreateMode = "Recovery"
-	// Restore specifies the restore state for create mode.
+	// Restore ...
 	Restore CreateMode = "Restore"
-	// RestoreLongTermRetentionBackup specifies the restore long term retention backup state for create mode.
+	// RestoreLongTermRetentionBackup ...
 	RestoreLongTermRetentionBackup CreateMode = "RestoreLongTermRetentionBackup"
 )
 
@@ -69,25 +72,27 @@ const (
 type DatabaseEdition string
 
 const (
-	// Basic specifies the basic state for database edition.
+	// Basic ...
 	Basic DatabaseEdition = "Basic"
-	// Business specifies the business state for database edition.
+	// Business ...
 	Business DatabaseEdition = "Business"
-	// DataWarehouse specifies the data warehouse state for database edition.
+	// DataWarehouse ...
 	DataWarehouse DatabaseEdition = "DataWarehouse"
-	// Free specifies the free state for database edition.
+	// Free ...
 	Free DatabaseEdition = "Free"
-	// Premium specifies the premium state for database edition.
+	// Premium ...
 	Premium DatabaseEdition = "Premium"
-	// Standard specifies the standard state for database edition.
+	// PremiumRS ...
+	PremiumRS DatabaseEdition = "PremiumRS"
+	// Standard ...
 	Standard DatabaseEdition = "Standard"
-	// Stretch specifies the stretch state for database edition.
+	// Stretch ...
 	Stretch DatabaseEdition = "Stretch"
-	// System specifies the system state for database edition.
+	// System ...
 	System DatabaseEdition = "System"
-	// System2 specifies the system 2 state for database edition.
+	// System2 ...
 	System2 DatabaseEdition = "System2"
-	// Web specifies the web state for database edition.
+	// Web ...
 	Web DatabaseEdition = "Web"
 )
 
@@ -95,11 +100,11 @@ const (
 type ElasticPoolEdition string
 
 const (
-	// ElasticPoolEditionBasic specifies the elastic pool edition basic state for elastic pool edition.
+	// ElasticPoolEditionBasic ...
 	ElasticPoolEditionBasic ElasticPoolEdition = "Basic"
-	// ElasticPoolEditionPremium specifies the elastic pool edition premium state for elastic pool edition.
+	// ElasticPoolEditionPremium ...
 	ElasticPoolEditionPremium ElasticPoolEdition = "Premium"
-	// ElasticPoolEditionStandard specifies the elastic pool edition standard state for elastic pool edition.
+	// ElasticPoolEditionStandard ...
 	ElasticPoolEditionStandard ElasticPoolEdition = "Standard"
 )
 
@@ -107,11 +112,11 @@ const (
 type ElasticPoolState string
 
 const (
-	// Creating specifies the creating state for elastic pool state.
+	// Creating ...
 	Creating ElasticPoolState = "Creating"
-	// Disabled specifies the disabled state for elastic pool state.
+	// Disabled ...
 	Disabled ElasticPoolState = "Disabled"
-	// Ready specifies the ready state for elastic pool state.
+	// Ready ...
 	Ready ElasticPoolState = "Ready"
 )
 
@@ -119,9 +124,9 @@ const (
 type ReadScale string
 
 const (
-	// ReadScaleDisabled specifies the read scale disabled state for read scale.
+	// ReadScaleDisabled ...
 	ReadScaleDisabled ReadScale = "Disabled"
-	// ReadScaleEnabled specifies the read scale enabled state for read scale.
+	// ReadScaleEnabled ...
 	ReadScaleEnabled ReadScale = "Enabled"
 )
 
@@ -129,11 +134,11 @@ const (
 type RecommendedIndexAction string
 
 const (
-	// Create specifies the create state for recommended index action.
+	// Create ...
 	Create RecommendedIndexAction = "Create"
-	// Drop specifies the drop state for recommended index action.
+	// Drop ...
 	Drop RecommendedIndexAction = "Drop"
-	// Rebuild specifies the rebuild state for recommended index action.
+	// Rebuild ...
 	Rebuild RecommendedIndexAction = "Rebuild"
 )
 
@@ -141,27 +146,27 @@ const (
 type RecommendedIndexState string
 
 const (
-	// Active specifies the active state for recommended index state.
+	// Active ...
 	Active RecommendedIndexState = "Active"
-	// Blocked specifies the blocked state for recommended index state.
+	// Blocked ...
 	Blocked RecommendedIndexState = "Blocked"
-	// Executing specifies the executing state for recommended index state.
+	// Executing ...
 	Executing RecommendedIndexState = "Executing"
-	// Expired specifies the expired state for recommended index state.
+	// Expired ...
 	Expired RecommendedIndexState = "Expired"
-	// Ignored specifies the ignored state for recommended index state.
+	// Ignored ...
 	Ignored RecommendedIndexState = "Ignored"
-	// Pending specifies the pending state for recommended index state.
+	// Pending ...
 	Pending RecommendedIndexState = "Pending"
-	// PendingRevert specifies the pending revert state for recommended index state.
+	// PendingRevert ...
 	PendingRevert RecommendedIndexState = "Pending Revert"
-	// Reverted specifies the reverted state for recommended index state.
+	// Reverted ...
 	Reverted RecommendedIndexState = "Reverted"
-	// Reverting specifies the reverting state for recommended index state.
+	// Reverting ...
 	Reverting RecommendedIndexState = "Reverting"
-	// Success specifies the success state for recommended index state.
+	// Success ...
 	Success RecommendedIndexState = "Success"
-	// Verifying specifies the verifying state for recommended index state.
+	// Verifying ...
 	Verifying RecommendedIndexState = "Verifying"
 )
 
@@ -169,13 +174,13 @@ const (
 type RecommendedIndexType string
 
 const (
-	// CLUSTERED specifies the clustered state for recommended index type.
+	// CLUSTERED ...
 	CLUSTERED RecommendedIndexType = "CLUSTERED"
-	// CLUSTEREDCOLUMNSTORE specifies the clusteredcolumnstore state for recommended index type.
+	// CLUSTEREDCOLUMNSTORE ...
 	CLUSTEREDCOLUMNSTORE RecommendedIndexType = "CLUSTERED COLUMNSTORE"
-	// COLUMNSTORE specifies the columnstore state for recommended index type.
+	// COLUMNSTORE ...
 	COLUMNSTORE RecommendedIndexType = "COLUMNSTORE"
-	// NONCLUSTERED specifies the nonclustered state for recommended index type.
+	// NONCLUSTERED ...
 	NONCLUSTERED RecommendedIndexType = "NONCLUSTERED"
 )
 
@@ -183,16 +188,15 @@ const (
 type ReplicationRole string
 
 const (
-	// ReplicationRoleCopy specifies the replication role copy state for replication role.
+	// ReplicationRoleCopy ...
 	ReplicationRoleCopy ReplicationRole = "Copy"
-	// ReplicationRoleNonReadableSecondary specifies the replication role non readable secondary state for replication
-	// role.
+	// ReplicationRoleNonReadableSecondary ...
 	ReplicationRoleNonReadableSecondary ReplicationRole = "NonReadableSecondary"
-	// ReplicationRolePrimary specifies the replication role primary state for replication role.
+	// ReplicationRolePrimary ...
 	ReplicationRolePrimary ReplicationRole = "Primary"
-	// ReplicationRoleSecondary specifies the replication role secondary state for replication role.
+	// ReplicationRoleSecondary ...
 	ReplicationRoleSecondary ReplicationRole = "Secondary"
-	// ReplicationRoleSource specifies the replication role source state for replication role.
+	// ReplicationRoleSource ...
 	ReplicationRoleSource ReplicationRole = "Source"
 )
 
@@ -200,13 +204,13 @@ const (
 type ReplicationState string
 
 const (
-	// CATCHUP specifies the catchup state for replication state.
+	// CATCHUP ...
 	CATCHUP ReplicationState = "CATCH_UP"
-	// PENDING specifies the pending state for replication state.
+	// PENDING ...
 	PENDING ReplicationState = "PENDING"
-	// SEEDING specifies the seeding state for replication state.
+	// SEEDING ...
 	SEEDING ReplicationState = "SEEDING"
-	// SUSPENDED specifies the suspended state for replication state.
+	// SUSPENDED ...
 	SUSPENDED ReplicationState = "SUSPENDED"
 )
 
@@ -214,7 +218,7 @@ const (
 type SampleName string
 
 const (
-	// AdventureWorksLT specifies the adventure works lt state for sample name.
+	// AdventureWorksLT ...
 	AdventureWorksLT SampleName = "AdventureWorksLT"
 )
 
@@ -222,11 +226,9 @@ const (
 type SecurityAlertPolicyEmailAccountAdmins string
 
 const (
-	// SecurityAlertPolicyEmailAccountAdminsDisabled specifies the security alert policy email account admins disabled
-	// state for security alert policy email account admins.
+	// SecurityAlertPolicyEmailAccountAdminsDisabled ...
 	SecurityAlertPolicyEmailAccountAdminsDisabled SecurityAlertPolicyEmailAccountAdmins = "Disabled"
-	// SecurityAlertPolicyEmailAccountAdminsEnabled specifies the security alert policy email account admins enabled state
-	// for security alert policy email account admins.
+	// SecurityAlertPolicyEmailAccountAdminsEnabled ...
 	SecurityAlertPolicyEmailAccountAdminsEnabled SecurityAlertPolicyEmailAccountAdmins = "Enabled"
 )
 
@@ -234,13 +236,11 @@ const (
 type SecurityAlertPolicyState string
 
 const (
-	// SecurityAlertPolicyStateDisabled specifies the security alert policy state disabled state for security alert policy
-	// state.
+	// SecurityAlertPolicyStateDisabled ...
 	SecurityAlertPolicyStateDisabled SecurityAlertPolicyState = "Disabled"
-	// SecurityAlertPolicyStateEnabled specifies the security alert policy state enabled state for security alert policy
-	// state.
+	// SecurityAlertPolicyStateEnabled ...
 	SecurityAlertPolicyStateEnabled SecurityAlertPolicyState = "Enabled"
-	// SecurityAlertPolicyStateNew specifies the security alert policy state new state for security alert policy state.
+	// SecurityAlertPolicyStateNew ...
 	SecurityAlertPolicyStateNew SecurityAlertPolicyState = "New"
 )
 
@@ -248,11 +248,9 @@ const (
 type SecurityAlertPolicyUseServerDefault string
 
 const (
-	// SecurityAlertPolicyUseServerDefaultDisabled specifies the security alert policy use server default disabled state
-	// for security alert policy use server default.
+	// SecurityAlertPolicyUseServerDefaultDisabled ...
 	SecurityAlertPolicyUseServerDefaultDisabled SecurityAlertPolicyUseServerDefault = "Disabled"
-	// SecurityAlertPolicyUseServerDefaultEnabled specifies the security alert policy use server default enabled state for
-	// security alert policy use server default.
+	// SecurityAlertPolicyUseServerDefaultEnabled ...
 	SecurityAlertPolicyUseServerDefaultEnabled SecurityAlertPolicyUseServerDefault = "Enabled"
 )
 
@@ -260,45 +258,145 @@ const (
 type ServiceObjectiveName string
 
 const (
-	// ServiceObjectiveNameBasic specifies the service objective name basic state for service objective name.
+	// ServiceObjectiveNameBasic ...
 	ServiceObjectiveNameBasic ServiceObjectiveName = "Basic"
-	// ServiceObjectiveNameElasticPool specifies the service objective name elastic pool state for service objective name.
+	// ServiceObjectiveNameDS100 ...
+	ServiceObjectiveNameDS100 ServiceObjectiveName = "DS100"
+	// ServiceObjectiveNameDS1000 ...
+	ServiceObjectiveNameDS1000 ServiceObjectiveName = "DS1000"
+	// ServiceObjectiveNameDS1200 ...
+	ServiceObjectiveNameDS1200 ServiceObjectiveName = "DS1200"
+	// ServiceObjectiveNameDS1500 ...
+	ServiceObjectiveNameDS1500 ServiceObjectiveName = "DS1500"
+	// ServiceObjectiveNameDS200 ...
+	ServiceObjectiveNameDS200 ServiceObjectiveName = "DS200"
+	// ServiceObjectiveNameDS2000 ...
+	ServiceObjectiveNameDS2000 ServiceObjectiveName = "DS2000"
+	// ServiceObjectiveNameDS300 ...
+	ServiceObjectiveNameDS300 ServiceObjectiveName = "DS300"
+	// ServiceObjectiveNameDS400 ...
+	ServiceObjectiveNameDS400 ServiceObjectiveName = "DS400"
+	// ServiceObjectiveNameDS500 ...
+	ServiceObjectiveNameDS500 ServiceObjectiveName = "DS500"
+	// ServiceObjectiveNameDS600 ...
+	ServiceObjectiveNameDS600 ServiceObjectiveName = "DS600"
+	// ServiceObjectiveNameDW100 ...
+	ServiceObjectiveNameDW100 ServiceObjectiveName = "DW100"
+	// ServiceObjectiveNameDW1000 ...
+	ServiceObjectiveNameDW1000 ServiceObjectiveName = "DW1000"
+	// ServiceObjectiveNameDW10000c ...
+	ServiceObjectiveNameDW10000c ServiceObjectiveName = "DW10000c"
+	// ServiceObjectiveNameDW1000c ...
+	ServiceObjectiveNameDW1000c ServiceObjectiveName = "DW1000c"
+	// ServiceObjectiveNameDW1200 ...
+	ServiceObjectiveNameDW1200 ServiceObjectiveName = "DW1200"
+	// ServiceObjectiveNameDW1500 ...
+	ServiceObjectiveNameDW1500 ServiceObjectiveName = "DW1500"
+	// ServiceObjectiveNameDW15000c ...
+	ServiceObjectiveNameDW15000c ServiceObjectiveName = "DW15000c"
+	// ServiceObjectiveNameDW1500c ...
+	ServiceObjectiveNameDW1500c ServiceObjectiveName = "DW1500c"
+	// ServiceObjectiveNameDW200 ...
+	ServiceObjectiveNameDW200 ServiceObjectiveName = "DW200"
+	// ServiceObjectiveNameDW2000 ...
+	ServiceObjectiveNameDW2000 ServiceObjectiveName = "DW2000"
+	// ServiceObjectiveNameDW2000c ...
+	ServiceObjectiveNameDW2000c ServiceObjectiveName = "DW2000c"
+	// ServiceObjectiveNameDW2500c ...
+	ServiceObjectiveNameDW2500c ServiceObjectiveName = "DW2500c"
+	// ServiceObjectiveNameDW300 ...
+	ServiceObjectiveNameDW300 ServiceObjectiveName = "DW300"
+	// ServiceObjectiveNameDW3000 ...
+	ServiceObjectiveNameDW3000 ServiceObjectiveName = "DW3000"
+	// ServiceObjectiveNameDW30000c ...
+	ServiceObjectiveNameDW30000c ServiceObjectiveName = "DW30000c"
+	// ServiceObjectiveNameDW3000c ...
+	ServiceObjectiveNameDW3000c ServiceObjectiveName = "DW3000c"
+	// ServiceObjectiveNameDW400 ...
+	ServiceObjectiveNameDW400 ServiceObjectiveName = "DW400"
+	// ServiceObjectiveNameDW500 ...
+	ServiceObjectiveNameDW500 ServiceObjectiveName = "DW500"
+	// ServiceObjectiveNameDW5000c ...
+	ServiceObjectiveNameDW5000c ServiceObjectiveName = "DW5000c"
+	// ServiceObjectiveNameDW600 ...
+	ServiceObjectiveNameDW600 ServiceObjectiveName = "DW600"
+	// ServiceObjectiveNameDW6000 ...
+	ServiceObjectiveNameDW6000 ServiceObjectiveName = "DW6000"
+	// ServiceObjectiveNameDW6000c ...
+	ServiceObjectiveNameDW6000c ServiceObjectiveName = "DW6000c"
+	// ServiceObjectiveNameDW7500c ...
+	ServiceObjectiveNameDW7500c ServiceObjectiveName = "DW7500c"
+	// ServiceObjectiveNameElasticPool ...
 	ServiceObjectiveNameElasticPool ServiceObjectiveName = "ElasticPool"
-	// ServiceObjectiveNameP1 specifies the service objective name p1 state for service objective name.
+	// ServiceObjectiveNameFree ...
+	ServiceObjectiveNameFree ServiceObjectiveName = "Free"
+	// ServiceObjectiveNameP1 ...
 	ServiceObjectiveNameP1 ServiceObjectiveName = "P1"
-	// ServiceObjectiveNameP11 specifies the service objective name p11 state for service objective name.
+	// ServiceObjectiveNameP11 ...
 	ServiceObjectiveNameP11 ServiceObjectiveName = "P11"
-	// ServiceObjectiveNameP15 specifies the service objective name p15 state for service objective name.
+	// ServiceObjectiveNameP15 ...
 	ServiceObjectiveNameP15 ServiceObjectiveName = "P15"
-	// ServiceObjectiveNameP2 specifies the service objective name p2 state for service objective name.
+	// ServiceObjectiveNameP2 ...
 	ServiceObjectiveNameP2 ServiceObjectiveName = "P2"
-	// ServiceObjectiveNameP3 specifies the service objective name p3 state for service objective name.
+	// ServiceObjectiveNameP3 ...
 	ServiceObjectiveNameP3 ServiceObjectiveName = "P3"
-	// ServiceObjectiveNameP4 specifies the service objective name p4 state for service objective name.
+	// ServiceObjectiveNameP4 ...
 	ServiceObjectiveNameP4 ServiceObjectiveName = "P4"
-	// ServiceObjectiveNameP6 specifies the service objective name p6 state for service objective name.
+	// ServiceObjectiveNameP6 ...
 	ServiceObjectiveNameP6 ServiceObjectiveName = "P6"
-	// ServiceObjectiveNameS0 specifies the service objective name s0 state for service objective name.
+	// ServiceObjectiveNamePRS1 ...
+	ServiceObjectiveNamePRS1 ServiceObjectiveName = "PRS1"
+	// ServiceObjectiveNamePRS2 ...
+	ServiceObjectiveNamePRS2 ServiceObjectiveName = "PRS2"
+	// ServiceObjectiveNamePRS4 ...
+	ServiceObjectiveNamePRS4 ServiceObjectiveName = "PRS4"
+	// ServiceObjectiveNamePRS6 ...
+	ServiceObjectiveNamePRS6 ServiceObjectiveName = "PRS6"
+	// ServiceObjectiveNameS0 ...
 	ServiceObjectiveNameS0 ServiceObjectiveName = "S0"
-	// ServiceObjectiveNameS1 specifies the service objective name s1 state for service objective name.
+	// ServiceObjectiveNameS1 ...
 	ServiceObjectiveNameS1 ServiceObjectiveName = "S1"
-	// ServiceObjectiveNameS2 specifies the service objective name s2 state for service objective name.
+	// ServiceObjectiveNameS12 ...
+	ServiceObjectiveNameS12 ServiceObjectiveName = "S12"
+	// ServiceObjectiveNameS2 ...
 	ServiceObjectiveNameS2 ServiceObjectiveName = "S2"
-	// ServiceObjectiveNameS3 specifies the service objective name s3 state for service objective name.
+	// ServiceObjectiveNameS3 ...
 	ServiceObjectiveNameS3 ServiceObjectiveName = "S3"
-	// ServiceObjectiveNameSystem specifies the service objective name system state for service objective name.
+	// ServiceObjectiveNameS4 ...
+	ServiceObjectiveNameS4 ServiceObjectiveName = "S4"
+	// ServiceObjectiveNameS6 ...
+	ServiceObjectiveNameS6 ServiceObjectiveName = "S6"
+	// ServiceObjectiveNameS7 ...
+	ServiceObjectiveNameS7 ServiceObjectiveName = "S7"
+	// ServiceObjectiveNameS9 ...
+	ServiceObjectiveNameS9 ServiceObjectiveName = "S9"
+	// ServiceObjectiveNameSystem ...
 	ServiceObjectiveNameSystem ServiceObjectiveName = "System"
-	// ServiceObjectiveNameSystem2 specifies the service objective name system 2 state for service objective name.
+	// ServiceObjectiveNameSystem0 ...
+	ServiceObjectiveNameSystem0 ServiceObjectiveName = "System0"
+	// ServiceObjectiveNameSystem1 ...
+	ServiceObjectiveNameSystem1 ServiceObjectiveName = "System1"
+	// ServiceObjectiveNameSystem2 ...
 	ServiceObjectiveNameSystem2 ServiceObjectiveName = "System2"
+	// ServiceObjectiveNameSystem2L ...
+	ServiceObjectiveNameSystem2L ServiceObjectiveName = "System2L"
+	// ServiceObjectiveNameSystem3 ...
+	ServiceObjectiveNameSystem3 ServiceObjectiveName = "System3"
+	// ServiceObjectiveNameSystem3L ...
+	ServiceObjectiveNameSystem3L ServiceObjectiveName = "System3L"
+	// ServiceObjectiveNameSystem4 ...
+	ServiceObjectiveNameSystem4 ServiceObjectiveName = "System4"
+	// ServiceObjectiveNameSystem4L ...
+	ServiceObjectiveNameSystem4L ServiceObjectiveName = "System4L"
 )
 
 // StorageKeyType enumerates the values for storage key type.
 type StorageKeyType string
 
 const (
-	// SharedAccessKey specifies the shared access key state for storage key type.
+	// SharedAccessKey ...
 	SharedAccessKey StorageKeyType = "SharedAccessKey"
-	// StorageAccessKey specifies the storage access key state for storage key type.
+	// StorageAccessKey ...
 	StorageAccessKey StorageKeyType = "StorageAccessKey"
 )
 
@@ -306,9 +404,9 @@ const (
 type TransparentDataEncryptionActivityStatus string
 
 const (
-	// Decrypting specifies the decrypting state for transparent data encryption activity status.
+	// Decrypting ...
 	Decrypting TransparentDataEncryptionActivityStatus = "Decrypting"
-	// Encrypting specifies the encrypting state for transparent data encryption activity status.
+	// Encrypting ...
 	Encrypting TransparentDataEncryptionActivityStatus = "Encrypting"
 )
 
@@ -316,516 +414,2140 @@ const (
 type TransparentDataEncryptionStatus string
 
 const (
-	// TransparentDataEncryptionStatusDisabled specifies the transparent data encryption status disabled state for
-	// transparent data encryption status.
+	// TransparentDataEncryptionStatusDisabled ...
 	TransparentDataEncryptionStatusDisabled TransparentDataEncryptionStatus = "Disabled"
-	// TransparentDataEncryptionStatusEnabled specifies the transparent data encryption status enabled state for
-	// transparent data encryption status.
+	// TransparentDataEncryptionStatusEnabled ...
 	TransparentDataEncryptionStatusEnabled TransparentDataEncryptionStatus = "Enabled"
 )
 
-// CheckNameAvailabilityRequest is a request to check whether the specified name for a resource is available.
+// CheckNameAvailabilityRequest a request to check whether the specified name for a resource is available.
 type CheckNameAvailabilityRequest struct {
+	// Name - The name whose availability is to be checked.
 	Name *string `json:"name,omitempty"`
+	// Type - The type of resource that is used as the scope of the availability check.
 	Type *string `json:"type,omitempty"`
 }
 
-// CheckNameAvailabilityResponse is a response indicating whether the specified name for a resource is available.
+// CheckNameAvailabilityResponse a response indicating whether the specified name for a resource is available.
 type CheckNameAvailabilityResponse struct {
 	autorest.Response `json:"-"`
-	Available         *bool                       `json:"available,omitempty"`
-	Message           *string                     `json:"message,omitempty"`
-	Name              *string                     `json:"name,omitempty"`
-	Reason            CheckNameAvailabilityReason `json:"reason,omitempty"`
+	// Available - True if the name is available, otherwise false.
+	Available *bool `json:"available,omitempty"`
+	// Message - A message explaining why the name is unavailable. Will be null if the name is available.
+	Message *string `json:"message,omitempty"`
+	// Name - The name whose availability was checked.
+	Name *string `json:"name,omitempty"`
+	// Reason - The reason code explaining why the name is unavailable. Will be null if the name is available. Possible values include: 'Invalid', 'AlreadyExists'
+	Reason CheckNameAvailabilityReason `json:"reason,omitempty"`
 }
 
-// Database is represents a database.
+// Database represents a database.
 type Database struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Kind                *string             `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Kind - Kind of database.  This is metadata used for the Azure portal experience.
+	Kind *string `json:"kind,omitempty"`
+	// DatabaseProperties - The properties representing the resource.
 	*DatabaseProperties `json:"properties,omitempty"`
 }
 
-// DatabaseListResult is represents the response to a list database request.
+// UnmarshalJSON is the custom unmarshaler for Database struct.
+func (d *Database) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		d.Kind = &kind
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties DatabaseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		d.DatabaseProperties = &properties
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		d.Tags = &tags
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		d.Location = &location
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		d.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		d.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		d.Type = &typeVar
+	}
+
+	return nil
+}
+
+// DatabaseListResult represents the response to a list database request.
 type DatabaseListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Database `json:"value,omitempty"`
+	// Value - The list of databases housed in the server.
+	Value *[]Database `json:"value,omitempty"`
 }
 
-// DatabaseProperties is represents the properties of a database.
+// DatabaseProperties represents the properties of a database.
 type DatabaseProperties struct {
-	Collation                               *string                      `json:"collation,omitempty"`
-	CreationDate                            *date.Time                   `json:"creationDate,omitempty"`
-	ContainmentState                        *int64                       `json:"containmentState,omitempty"`
-	CurrentServiceObjectiveID               *uuid.UUID                   `json:"currentServiceObjectiveId,omitempty"`
-	DatabaseID                              *uuid.UUID                   `json:"databaseId,omitempty"`
-	EarliestRestoreDate                     *date.Time                   `json:"earliestRestoreDate,omitempty"`
-	CreateMode                              CreateMode                   `json:"createMode,omitempty"`
-	SourceDatabaseID                        *string                      `json:"sourceDatabaseId,omitempty"`
-	SourceDatabaseDeletionDate              *date.Time                   `json:"sourceDatabaseDeletionDate,omitempty"`
-	RestorePointInTime                      *date.Time                   `json:"restorePointInTime,omitempty"`
-	RecoveryServicesRecoveryPointResourceID *string                      `json:"recoveryServicesRecoveryPointResourceId,omitempty"`
-	Edition                                 DatabaseEdition              `json:"edition,omitempty"`
-	MaxSizeBytes                            *string                      `json:"maxSizeBytes,omitempty"`
-	RequestedServiceObjectiveID             *uuid.UUID                   `json:"requestedServiceObjectiveId,omitempty"`
-	RequestedServiceObjectiveName           ServiceObjectiveName         `json:"requestedServiceObjectiveName,omitempty"`
-	ServiceLevelObjective                   ServiceObjectiveName         `json:"serviceLevelObjective,omitempty"`
-	Status                                  *string                      `json:"status,omitempty"`
-	ElasticPoolName                         *string                      `json:"elasticPoolName,omitempty"`
-	DefaultSecondaryLocation                *string                      `json:"defaultSecondaryLocation,omitempty"`
-	ServiceTierAdvisors                     *[]ServiceTierAdvisor        `json:"serviceTierAdvisors,omitempty"`
-	TransparentDataEncryption               *[]TransparentDataEncryption `json:"transparentDataEncryption,omitempty"`
-	RecommendedIndex                        *[]RecommendedIndex          `json:"recommendedIndex,omitempty"`
-	FailoverGroupID                         *string                      `json:"failoverGroupId,omitempty"`
-	ReadScale                               ReadScale                    `json:"readScale,omitempty"`
-	SampleName                              SampleName                   `json:"sampleName,omitempty"`
-	ZoneRedundant                           *bool                        `json:"zoneRedundant,omitempty"`
+	// Collation - The collation of the database. If createMode is not Default, this value is ignored.
+	Collation *string `json:"collation,omitempty"`
+	// CreationDate - The creation date of the database (ISO8601 format).
+	CreationDate *date.Time `json:"creationDate,omitempty"`
+	// ContainmentState - The containment state of the database.
+	ContainmentState *int64 `json:"containmentState,omitempty"`
+	// CurrentServiceObjectiveID - The current service level objective ID of the database. This is the ID of the service level objective that is currently active.
+	CurrentServiceObjectiveID *uuid.UUID `json:"currentServiceObjectiveId,omitempty"`
+	// DatabaseID - The ID of the database.
+	DatabaseID *uuid.UUID `json:"databaseId,omitempty"`
+	// EarliestRestoreDate - This records the earliest start date and time that restore is available for this database (ISO8601 format).
+	EarliestRestoreDate *date.Time `json:"earliestRestoreDate,omitempty"`
+	// CreateMode - Specifies the mode of database creation.
+	// Default: regular database creation.
+	// Copy: creates a database as a copy of an existing database. sourceDatabaseId must be specified as the resource ID of the source database.
+	// OnlineSecondary/NonReadableSecondary: creates a database as a (readable or nonreadable) secondary replica of an existing database. sourceDatabaseId must be specified as the resource ID of the existing primary database.
+	// PointInTimeRestore: Creates a database by restoring a point in time backup of an existing database. sourceDatabaseId must be specified as the resource ID of the existing database, and restorePointInTime must be specified.
+	// Recovery: Creates a database by restoring a geo-replicated backup. sourceDatabaseId must be specified as the recoverable database resource ID to restore.
+	// Restore: Creates a database by restoring a backup of a deleted database. sourceDatabaseId must be specified. If sourceDatabaseId is the database's original resource ID, then sourceDatabaseDeletionDate must be specified. Otherwise sourceDatabaseId must be the restorable dropped database resource ID and sourceDatabaseDeletionDate is ignored. restorePointInTime may also be specified to restore from an earlier point in time.
+	// RestoreLongTermRetentionBackup: Creates a database by restoring from a long term retention vault. recoveryServicesRecoveryPointResourceId must be specified as the recovery point resource ID.
+	// Copy, NonReadableSecondary, OnlineSecondary and RestoreLongTermRetentionBackup are not supported for DataWarehouse edition. Possible values include: 'Copy', 'Default', 'NonReadableSecondary', 'OnlineSecondary', 'PointInTimeRestore', 'Recovery', 'Restore', 'RestoreLongTermRetentionBackup'
+	CreateMode CreateMode `json:"createMode,omitempty"`
+	// SourceDatabaseID - Conditional. If createMode is Copy, NonReadableSecondary, OnlineSecondary, PointInTimeRestore, Recovery, or Restore, then this value is required. Specifies the resource ID of the source database. If createMode is NonReadableSecondary or OnlineSecondary, the name of the source database must be the same as the new database being created.
+	SourceDatabaseID *string `json:"sourceDatabaseId,omitempty"`
+	// SourceDatabaseDeletionDate - Conditional. If createMode is Restore and sourceDatabaseId is the deleted database's original resource id when it existed (as opposed to its current restorable dropped database id), then this value is required. Specifies the time that the database was deleted.
+	SourceDatabaseDeletionDate *date.Time `json:"sourceDatabaseDeletionDate,omitempty"`
+	// RestorePointInTime - Conditional. If createMode is PointInTimeRestore, this value is required. If createMode is Restore, this value is optional. Specifies the point in time (ISO8601 format) of the source database that will be restored to create the new database. Must be greater than or equal to the source database's earliestRestoreDate value.
+	RestorePointInTime *date.Time `json:"restorePointInTime,omitempty"`
+	// RecoveryServicesRecoveryPointResourceID - Conditional. If createMode is RestoreLongTermRetentionBackup, then this value is required. Specifies the resource ID of the recovery point to restore from.
+	RecoveryServicesRecoveryPointResourceID *string `json:"recoveryServicesRecoveryPointResourceId,omitempty"`
+	// Edition - The edition of the database. The DatabaseEditions enumeration contains all the valid editions. If createMode is NonReadableSecondary or OnlineSecondary, this value is ignored. To see possible values, query the capabilities API (/subscriptions/{subscriptionId}/providers/Microsoft.Sql/locations/{locationID}/capabilities) referred to by operationId: "Capabilities_ListByLocation." or use the Azure CLI command `az sql db list-editions -l westus --query [].name`. Possible values include: 'Web', 'Business', 'Basic', 'Standard', 'Premium', 'PremiumRS', 'Free', 'Stretch', 'DataWarehouse', 'System', 'System2'
+	Edition DatabaseEdition `json:"edition,omitempty"`
+	// MaxSizeBytes - The max size of the database expressed in bytes. If createMode is not Default, this value is ignored. To see possible values, query the capabilities API (/subscriptions/{subscriptionId}/providers/Microsoft.Sql/locations/{locationID}/capabilities) referred to by operationId: "Capabilities_ListByLocation."
+	MaxSizeBytes *string `json:"maxSizeBytes,omitempty"`
+	// RequestedServiceObjectiveID - The configured service level objective ID of the database. This is the service level objective that is in the process of being applied to the database. Once successfully updated, it will match the value of currentServiceObjectiveId property. If requestedServiceObjectiveId and requestedServiceObjectiveName are both updated, the value of requestedServiceObjectiveId overrides the value of requestedServiceObjectiveName. To see possible values, query the capabilities API (/subscriptions/{subscriptionId}/providers/Microsoft.Sql/locations/{locationID}/capabilities) referred to by operationId: "Capabilities_ListByLocation." or use the Azure CLI command `az sql db list-editions --location <location> --query [].supportedServiceLevelObjectives[].name` .
+	RequestedServiceObjectiveID *uuid.UUID `json:"requestedServiceObjectiveId,omitempty"`
+	// RequestedServiceObjectiveName - The name of the configured service level objective of the database. This is the service level objective that is in the process of being applied to the database. Once successfully updated, it will match the value of serviceLevelObjective property. To see possible values, query the capabilities API (/subscriptions/{subscriptionId}/providers/Microsoft.Sql/locations/{locationID}/capabilities) referred to by operationId: "Capabilities_ListByLocation." or use the Azure CLI command `az sql db list-editions --location <location> --query [].supportedServiceLevelObjectives[].name`. Possible values include: 'ServiceObjectiveNameSystem', 'ServiceObjectiveNameSystem0', 'ServiceObjectiveNameSystem1', 'ServiceObjectiveNameSystem2', 'ServiceObjectiveNameSystem3', 'ServiceObjectiveNameSystem4', 'ServiceObjectiveNameSystem2L', 'ServiceObjectiveNameSystem3L', 'ServiceObjectiveNameSystem4L', 'ServiceObjectiveNameFree', 'ServiceObjectiveNameBasic', 'ServiceObjectiveNameS0', 'ServiceObjectiveNameS1', 'ServiceObjectiveNameS2', 'ServiceObjectiveNameS3', 'ServiceObjectiveNameS4', 'ServiceObjectiveNameS6', 'ServiceObjectiveNameS7', 'ServiceObjectiveNameS9', 'ServiceObjectiveNameS12', 'ServiceObjectiveNameP1', 'ServiceObjectiveNameP2', 'ServiceObjectiveNameP3', 'ServiceObjectiveNameP4', 'ServiceObjectiveNameP6', 'ServiceObjectiveNameP11', 'ServiceObjectiveNameP15', 'ServiceObjectiveNamePRS1', 'ServiceObjectiveNamePRS2', 'ServiceObjectiveNamePRS4', 'ServiceObjectiveNamePRS6', 'ServiceObjectiveNameDW100', 'ServiceObjectiveNameDW200', 'ServiceObjectiveNameDW300', 'ServiceObjectiveNameDW400', 'ServiceObjectiveNameDW500', 'ServiceObjectiveNameDW600', 'ServiceObjectiveNameDW1000', 'ServiceObjectiveNameDW1200', 'ServiceObjectiveNameDW1000c', 'ServiceObjectiveNameDW1500', 'ServiceObjectiveNameDW1500c', 'ServiceObjectiveNameDW2000', 'ServiceObjectiveNameDW2000c', 'ServiceObjectiveNameDW3000', 'ServiceObjectiveNameDW2500c', 'ServiceObjectiveNameDW3000c', 'ServiceObjectiveNameDW6000', 'ServiceObjectiveNameDW5000c', 'ServiceObjectiveNameDW6000c', 'ServiceObjectiveNameDW7500c', 'ServiceObjectiveNameDW10000c', 'ServiceObjectiveNameDW15000c', 'ServiceObjectiveNameDW30000c', 'ServiceObjectiveNameDS100', 'ServiceObjectiveNameDS200', 'ServiceObjectiveNameDS300', 'ServiceObjectiveNameDS400', 'ServiceObjectiveNameDS500', 'ServiceObjectiveNameDS600', 'ServiceObjectiveNameDS1000', 'ServiceObjectiveNameDS1200', 'ServiceObjectiveNameDS1500', 'ServiceObjectiveNameDS2000', 'ServiceObjectiveNameElasticPool'
+	RequestedServiceObjectiveName ServiceObjectiveName `json:"requestedServiceObjectiveName,omitempty"`
+	// ServiceLevelObjective - The current service level objective of the database. Possible values include: 'ServiceObjectiveNameSystem', 'ServiceObjectiveNameSystem0', 'ServiceObjectiveNameSystem1', 'ServiceObjectiveNameSystem2', 'ServiceObjectiveNameSystem3', 'ServiceObjectiveNameSystem4', 'ServiceObjectiveNameSystem2L', 'ServiceObjectiveNameSystem3L', 'ServiceObjectiveNameSystem4L', 'ServiceObjectiveNameFree', 'ServiceObjectiveNameBasic', 'ServiceObjectiveNameS0', 'ServiceObjectiveNameS1', 'ServiceObjectiveNameS2', 'ServiceObjectiveNameS3', 'ServiceObjectiveNameS4', 'ServiceObjectiveNameS6', 'ServiceObjectiveNameS7', 'ServiceObjectiveNameS9', 'ServiceObjectiveNameS12', 'ServiceObjectiveNameP1', 'ServiceObjectiveNameP2', 'ServiceObjectiveNameP3', 'ServiceObjectiveNameP4', 'ServiceObjectiveNameP6', 'ServiceObjectiveNameP11', 'ServiceObjectiveNameP15', 'ServiceObjectiveNamePRS1', 'ServiceObjectiveNamePRS2', 'ServiceObjectiveNamePRS4', 'ServiceObjectiveNamePRS6', 'ServiceObjectiveNameDW100', 'ServiceObjectiveNameDW200', 'ServiceObjectiveNameDW300', 'ServiceObjectiveNameDW400', 'ServiceObjectiveNameDW500', 'ServiceObjectiveNameDW600', 'ServiceObjectiveNameDW1000', 'ServiceObjectiveNameDW1200', 'ServiceObjectiveNameDW1000c', 'ServiceObjectiveNameDW1500', 'ServiceObjectiveNameDW1500c', 'ServiceObjectiveNameDW2000', 'ServiceObjectiveNameDW2000c', 'ServiceObjectiveNameDW3000', 'ServiceObjectiveNameDW2500c', 'ServiceObjectiveNameDW3000c', 'ServiceObjectiveNameDW6000', 'ServiceObjectiveNameDW5000c', 'ServiceObjectiveNameDW6000c', 'ServiceObjectiveNameDW7500c', 'ServiceObjectiveNameDW10000c', 'ServiceObjectiveNameDW15000c', 'ServiceObjectiveNameDW30000c', 'ServiceObjectiveNameDS100', 'ServiceObjectiveNameDS200', 'ServiceObjectiveNameDS300', 'ServiceObjectiveNameDS400', 'ServiceObjectiveNameDS500', 'ServiceObjectiveNameDS600', 'ServiceObjectiveNameDS1000', 'ServiceObjectiveNameDS1200', 'ServiceObjectiveNameDS1500', 'ServiceObjectiveNameDS2000', 'ServiceObjectiveNameElasticPool'
+	ServiceLevelObjective ServiceObjectiveName `json:"serviceLevelObjective,omitempty"`
+	// Status - The status of the database.
+	Status *string `json:"status,omitempty"`
+	// ElasticPoolName - The name of the elastic pool the database is in. If elasticPoolName and requestedServiceObjectiveName are both updated, the value of requestedServiceObjectiveName is ignored. Not supported for DataWarehouse edition.
+	ElasticPoolName *string `json:"elasticPoolName,omitempty"`
+	// DefaultSecondaryLocation - The default secondary region for this database.
+	DefaultSecondaryLocation *string `json:"defaultSecondaryLocation,omitempty"`
+	// ServiceTierAdvisors - The list of service tier advisors for this database. Expanded property
+	ServiceTierAdvisors *[]ServiceTierAdvisor `json:"serviceTierAdvisors,omitempty"`
+	// TransparentDataEncryption - The transparent data encryption info for this database.
+	TransparentDataEncryption *[]TransparentDataEncryption `json:"transparentDataEncryption,omitempty"`
+	// RecommendedIndex - The recommended indices for this database.
+	RecommendedIndex *[]RecommendedIndex `json:"recommendedIndex,omitempty"`
+	// FailoverGroupID - The resource identifier of the failover group containing this database.
+	FailoverGroupID *string `json:"failoverGroupId,omitempty"`
+	// ReadScale - Conditional. If the database is a geo-secondary, readScale indicates whether read-only connections are allowed to this database or not. Not supported for DataWarehouse edition. Possible values include: 'ReadScaleEnabled', 'ReadScaleDisabled'
+	ReadScale ReadScale `json:"readScale,omitempty"`
+	// SampleName - Indicates the name of the sample schema to apply when creating this database. If createMode is not Default, this value is ignored. Not supported for DataWarehouse edition. Possible values include: 'AdventureWorksLT'
+	SampleName SampleName `json:"sampleName,omitempty"`
+	// ZoneRedundant - Whether or not this database is zone redundant, which means the replicas of this database will be spread across multiple availability zones.
+	ZoneRedundant *bool `json:"zoneRedundant,omitempty"`
 }
 
-// DatabaseSecurityAlertPolicy is contains information about a database Threat Detection policy.
+// DatabasesCreateImportOperationFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type DatabasesCreateImportOperationFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesCreateImportOperationFuture) Result(client DatabasesClient) (ier ImportExportResponse, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ier, autorest.NewError("sql.DatabasesCreateImportOperationFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ier, err = client.CreateImportOperationResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ier, err = client.CreateImportOperationResponder(resp)
+	return
+}
+
+// DatabasesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesCreateOrUpdateFuture) Result(client DatabasesClient) (d Database, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return d, autorest.NewError("sql.DatabasesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		d, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	d, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// DatabaseSecurityAlertPolicy contains information about a database Threat Detection policy.
 type DatabaseSecurityAlertPolicy struct {
-	autorest.Response                      `json:"-"`
-	ID                                     *string `json:"id,omitempty"`
-	Name                                   *string `json:"name,omitempty"`
-	Type                                   *string `json:"type,omitempty"`
-	Location                               *string `json:"location,omitempty"`
-	Kind                                   *string `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+	// Kind - Resource kind.
+	Kind *string `json:"kind,omitempty"`
+	// DatabaseSecurityAlertPolicyProperties - Properties of the security alert policy.
 	*DatabaseSecurityAlertPolicyProperties `json:"properties,omitempty"`
 }
 
-// DatabaseSecurityAlertPolicyProperties is properties for a database Threat Detection policy.
-type DatabaseSecurityAlertPolicyProperties struct {
-	State                   SecurityAlertPolicyState              `json:"state,omitempty"`
-	DisabledAlerts          *string                               `json:"disabledAlerts,omitempty"`
-	EmailAddresses          *string                               `json:"emailAddresses,omitempty"`
-	EmailAccountAdmins      SecurityAlertPolicyEmailAccountAdmins `json:"emailAccountAdmins,omitempty"`
-	StorageEndpoint         *string                               `json:"storageEndpoint,omitempty"`
-	StorageAccountAccessKey *string                               `json:"storageAccountAccessKey,omitempty"`
-	RetentionDays           *int32                                `json:"retentionDays,omitempty"`
-	UseServerDefault        SecurityAlertPolicyUseServerDefault   `json:"useServerDefault,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DatabaseSecurityAlertPolicy struct.
+func (dsap *DatabaseSecurityAlertPolicy) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		dsap.Location = &location
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		dsap.Kind = &kind
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties DatabaseSecurityAlertPolicyProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dsap.DatabaseSecurityAlertPolicyProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dsap.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dsap.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dsap.Type = &typeVar
+	}
+
+	return nil
 }
 
-// DatabaseUpdate is represents a database update.
+// DatabaseSecurityAlertPolicyProperties properties for a database Threat Detection policy.
+type DatabaseSecurityAlertPolicyProperties struct {
+	// State - Specifies the state of the policy. If state is Enabled, storageEndpoint and storageAccountAccessKey are required. Possible values include: 'SecurityAlertPolicyStateNew', 'SecurityAlertPolicyStateEnabled', 'SecurityAlertPolicyStateDisabled'
+	State SecurityAlertPolicyState `json:"state,omitempty"`
+	// DisabledAlerts - Specifies the semicolon-separated list of alerts that are disabled, or empty string to disable no alerts. Possible values: Sql_Injection; Sql_Injection_Vulnerability; Access_Anomaly; Usage_Anomaly.
+	DisabledAlerts *string `json:"disabledAlerts,omitempty"`
+	// EmailAddresses - Specifies the semicolon-separated list of e-mail addresses to which the alert is sent.
+	EmailAddresses *string `json:"emailAddresses,omitempty"`
+	// EmailAccountAdmins - Specifies that the alert is sent to the account administrators. Possible values include: 'SecurityAlertPolicyEmailAccountAdminsEnabled', 'SecurityAlertPolicyEmailAccountAdminsDisabled'
+	EmailAccountAdmins SecurityAlertPolicyEmailAccountAdmins `json:"emailAccountAdmins,omitempty"`
+	// StorageEndpoint - Specifies the blob storage endpoint (e.g. https://MyAccount.blob.core.windows.net). This blob storage will hold all Threat Detection audit logs. If state is Enabled, storageEndpoint is required.
+	StorageEndpoint *string `json:"storageEndpoint,omitempty"`
+	// StorageAccountAccessKey - Specifies the identifier key of the Threat Detection audit storage account. If state is Enabled, storageAccountAccessKey is required.
+	StorageAccountAccessKey *string `json:"storageAccountAccessKey,omitempty"`
+	// RetentionDays - Specifies the number of days to keep in the Threat Detection audit logs.
+	RetentionDays *int32 `json:"retentionDays,omitempty"`
+	// UseServerDefault - Specifies whether to use the default server policy. Possible values include: 'SecurityAlertPolicyUseServerDefaultEnabled', 'SecurityAlertPolicyUseServerDefaultDisabled'
+	UseServerDefault SecurityAlertPolicyUseServerDefault `json:"useServerDefault,omitempty"`
+}
+
+// DatabasesExportFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesExportFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesExportFuture) Result(client DatabasesClient) (ier ImportExportResponse, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ier, autorest.NewError("sql.DatabasesExportFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ier, err = client.ExportResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ier, err = client.ExportResponder(resp)
+	return
+}
+
+// DatabasesImportFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesImportFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesImportFuture) Result(client DatabasesClient) (ier ImportExportResponse, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ier, autorest.NewError("sql.DatabasesImportFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ier, err = client.ImportResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ier, err = client.ImportResponder(resp)
+	return
+}
+
+// DatabasesPauseFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesPauseFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesPauseFuture) Result(client DatabasesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("sql.DatabasesPauseFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.PauseResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.PauseResponder(resp)
+	return
+}
+
+// DatabasesResumeFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesResumeFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesResumeFuture) Result(client DatabasesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("sql.DatabasesResumeFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ResumeResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ResumeResponder(resp)
+	return
+}
+
+// DatabasesUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type DatabasesUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future DatabasesUpdateFuture) Result(client DatabasesClient) (d Database, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return d, autorest.NewError("sql.DatabasesUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		d, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	d, err = client.UpdateResponder(resp)
+	return
+}
+
+// DatabaseUpdate represents a database update.
 type DatabaseUpdate struct {
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// DatabaseProperties - The properties representing the resource.
 	*DatabaseProperties `json:"properties,omitempty"`
 }
 
-// ElasticPool is represents a database elastic pool.
-type ElasticPool struct {
-	autorest.Response      `json:"-"`
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
-	Location               *string             `json:"location,omitempty"`
-	*ElasticPoolProperties `json:"properties,omitempty"`
-	Kind                   *string `json:"kind,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DatabaseUpdate struct.
+func (du *DatabaseUpdate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		du.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties DatabaseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		du.DatabaseProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		du.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		du.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		du.Type = &typeVar
+	}
+
+	return nil
 }
 
-// ElasticPoolActivity is represents the activity on an elastic pool.
+// ElasticPool represents a database elastic pool.
+type ElasticPool struct {
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// ElasticPoolProperties - The properties representing the resource.
+	*ElasticPoolProperties `json:"properties,omitempty"`
+	// Kind - Kind of elastic pool.  This is metadata used for the Azure portal experience.
+	Kind *string `json:"kind,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for ElasticPool struct.
+func (ep *ElasticPool) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ElasticPoolProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ep.ElasticPoolProperties = &properties
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		ep.Kind = &kind
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ep.Tags = &tags
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ep.Location = &location
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ep.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ep.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ep.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ElasticPoolActivity represents the activity on an elastic pool.
 type ElasticPoolActivity struct {
-	ID                             *string `json:"id,omitempty"`
-	Name                           *string `json:"name,omitempty"`
-	Type                           *string `json:"type,omitempty"`
-	Location                       *string `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+	// ElasticPoolActivityProperties - The properties representing the resource.
 	*ElasticPoolActivityProperties `json:"properties,omitempty"`
 }
 
-// ElasticPoolActivityListResult is represents the response to a list elastic pool activity request.
+// UnmarshalJSON is the custom unmarshaler for ElasticPoolActivity struct.
+func (epa *ElasticPoolActivity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		epa.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ElasticPoolActivityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		epa.ElasticPoolActivityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		epa.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		epa.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		epa.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ElasticPoolActivityListResult represents the response to a list elastic pool activity request.
 type ElasticPoolActivityListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ElasticPoolActivity `json:"value,omitempty"`
+	// Value - The list of elastic pool activities.
+	Value *[]ElasticPoolActivity `json:"value,omitempty"`
 }
 
-// ElasticPoolActivityProperties is represents the properties of an elastic pool.
+// ElasticPoolActivityProperties represents the properties of an elastic pool.
 type ElasticPoolActivityProperties struct {
-	EndTime                       *date.Time `json:"endTime,omitempty"`
-	ErrorCode                     *int32     `json:"errorCode,omitempty"`
-	ErrorMessage                  *string    `json:"errorMessage,omitempty"`
-	ErrorSeverity                 *int32     `json:"errorSeverity,omitempty"`
-	Operation                     *string    `json:"operation,omitempty"`
-	OperationID                   *uuid.UUID `json:"operationId,omitempty"`
-	PercentComplete               *int32     `json:"percentComplete,omitempty"`
-	RequestedDatabaseDtuMax       *int32     `json:"requestedDatabaseDtuMax,omitempty"`
-	RequestedDatabaseDtuMin       *int32     `json:"requestedDatabaseDtuMin,omitempty"`
-	RequestedDtu                  *int32     `json:"requestedDtu,omitempty"`
-	RequestedElasticPoolName      *string    `json:"requestedElasticPoolName,omitempty"`
-	RequestedStorageLimitInGB     *int64     `json:"requestedStorageLimitInGB,omitempty"`
-	ElasticPoolName               *string    `json:"elasticPoolName,omitempty"`
-	ServerName                    *string    `json:"serverName,omitempty"`
-	StartTime                     *date.Time `json:"startTime,omitempty"`
-	State                         *string    `json:"state,omitempty"`
-	RequestedStorageLimitInMB     *int32     `json:"requestedStorageLimitInMB,omitempty"`
-	RequestedDatabaseDtuGuarantee *int32     `json:"requestedDatabaseDtuGuarantee,omitempty"`
-	RequestedDatabaseDtuCap       *int32     `json:"requestedDatabaseDtuCap,omitempty"`
-	RequestedDtuGuarantee         *int32     `json:"requestedDtuGuarantee,omitempty"`
+	// EndTime - The time the operation finished (ISO8601 format).
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// ErrorCode - The error code if available.
+	ErrorCode *int32 `json:"errorCode,omitempty"`
+	// ErrorMessage - The error message if available.
+	ErrorMessage *string `json:"errorMessage,omitempty"`
+	// ErrorSeverity - The error severity if available.
+	ErrorSeverity *int32 `json:"errorSeverity,omitempty"`
+	// Operation - The operation name.
+	Operation *string `json:"operation,omitempty"`
+	// OperationID - The unique operation ID.
+	OperationID *uuid.UUID `json:"operationId,omitempty"`
+	// PercentComplete - The percentage complete if available.
+	PercentComplete *int32 `json:"percentComplete,omitempty"`
+	// RequestedDatabaseDtuMax - The requested max DTU per database if available.
+	RequestedDatabaseDtuMax *int32 `json:"requestedDatabaseDtuMax,omitempty"`
+	// RequestedDatabaseDtuMin - The requested min DTU per database if available.
+	RequestedDatabaseDtuMin *int32 `json:"requestedDatabaseDtuMin,omitempty"`
+	// RequestedDtu - The requested DTU for the pool if available.
+	RequestedDtu *int32 `json:"requestedDtu,omitempty"`
+	// RequestedElasticPoolName - The requested name for the elastic pool if available.
+	RequestedElasticPoolName *string `json:"requestedElasticPoolName,omitempty"`
+	// RequestedStorageLimitInGB - The requested storage limit for the pool in GB if available.
+	RequestedStorageLimitInGB *int64 `json:"requestedStorageLimitInGB,omitempty"`
+	// ElasticPoolName - The name of the elastic pool.
+	ElasticPoolName *string `json:"elasticPoolName,omitempty"`
+	// ServerName - The name of the server the elastic pool is in.
+	ServerName *string `json:"serverName,omitempty"`
+	// StartTime - The time the operation started (ISO8601 format).
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// State - The current state of the operation.
+	State *string `json:"state,omitempty"`
+	// RequestedStorageLimitInMB - The requested storage limit in MB.
+	RequestedStorageLimitInMB *int32 `json:"requestedStorageLimitInMB,omitempty"`
+	// RequestedDatabaseDtuGuarantee - The requested per database DTU guarantee.
+	RequestedDatabaseDtuGuarantee *int32 `json:"requestedDatabaseDtuGuarantee,omitempty"`
+	// RequestedDatabaseDtuCap - The requested per database DTU cap.
+	RequestedDatabaseDtuCap *int32 `json:"requestedDatabaseDtuCap,omitempty"`
+	// RequestedDtuGuarantee - The requested DTU guarantee.
+	RequestedDtuGuarantee *int32 `json:"requestedDtuGuarantee,omitempty"`
 }
 
-// ElasticPoolDatabaseActivity is represents the activity on an elastic pool.
+// ElasticPoolDatabaseActivity represents the activity on an elastic pool.
 type ElasticPoolDatabaseActivity struct {
-	ID                                     *string `json:"id,omitempty"`
-	Name                                   *string `json:"name,omitempty"`
-	Type                                   *string `json:"type,omitempty"`
-	Location                               *string `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+	// ElasticPoolDatabaseActivityProperties - The properties representing the resource.
 	*ElasticPoolDatabaseActivityProperties `json:"properties,omitempty"`
 }
 
-// ElasticPoolDatabaseActivityListResult is represents the response to a list elastic pool database activity request.
+// UnmarshalJSON is the custom unmarshaler for ElasticPoolDatabaseActivity struct.
+func (epda *ElasticPoolDatabaseActivity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		epda.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ElasticPoolDatabaseActivityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		epda.ElasticPoolDatabaseActivityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		epda.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		epda.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		epda.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ElasticPoolDatabaseActivityListResult represents the response to a list elastic pool database activity request.
 type ElasticPoolDatabaseActivityListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ElasticPoolDatabaseActivity `json:"value,omitempty"`
+	// Value - The list of elastic pool database activities.
+	Value *[]ElasticPoolDatabaseActivity `json:"value,omitempty"`
 }
 
-// ElasticPoolDatabaseActivityProperties is represents the properties of an elastic pool database activity.
+// ElasticPoolDatabaseActivityProperties represents the properties of an elastic pool database activity.
 type ElasticPoolDatabaseActivityProperties struct {
-	DatabaseName              *string    `json:"databaseName,omitempty"`
-	EndTime                   *date.Time `json:"endTime,omitempty"`
-	ErrorCode                 *int32     `json:"errorCode,omitempty"`
-	ErrorMessage              *string    `json:"errorMessage,omitempty"`
-	ErrorSeverity             *int32     `json:"errorSeverity,omitempty"`
-	Operation                 *string    `json:"operation,omitempty"`
-	OperationID               *uuid.UUID `json:"operationId,omitempty"`
-	PercentComplete           *int32     `json:"percentComplete,omitempty"`
-	RequestedElasticPoolName  *string    `json:"requestedElasticPoolName,omitempty"`
-	CurrentElasticPoolName    *string    `json:"currentElasticPoolName,omitempty"`
-	CurrentServiceObjective   *string    `json:"currentServiceObjective,omitempty"`
-	RequestedServiceObjective *string    `json:"requestedServiceObjective,omitempty"`
-	ServerName                *string    `json:"serverName,omitempty"`
-	StartTime                 *date.Time `json:"startTime,omitempty"`
-	State                     *string    `json:"state,omitempty"`
+	// DatabaseName - The database name.
+	DatabaseName *string `json:"databaseName,omitempty"`
+	// EndTime - The time the operation finished (ISO8601 format).
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// ErrorCode - The error code if available.
+	ErrorCode *int32 `json:"errorCode,omitempty"`
+	// ErrorMessage - The error message if available.
+	ErrorMessage *string `json:"errorMessage,omitempty"`
+	// ErrorSeverity - The error severity if available.
+	ErrorSeverity *int32 `json:"errorSeverity,omitempty"`
+	// Operation - The operation name.
+	Operation *string `json:"operation,omitempty"`
+	// OperationID - The unique operation ID.
+	OperationID *uuid.UUID `json:"operationId,omitempty"`
+	// PercentComplete - The percentage complete if available.
+	PercentComplete *int32 `json:"percentComplete,omitempty"`
+	// RequestedElasticPoolName - The name for the elastic pool the database is moving into if available.
+	RequestedElasticPoolName *string `json:"requestedElasticPoolName,omitempty"`
+	// CurrentElasticPoolName - The name of the current elastic pool the database is in if available.
+	CurrentElasticPoolName *string `json:"currentElasticPoolName,omitempty"`
+	// CurrentServiceObjective - The name of the current service objective if available.
+	CurrentServiceObjective *string `json:"currentServiceObjective,omitempty"`
+	// RequestedServiceObjective - The name of the requested service objective if available.
+	RequestedServiceObjective *string `json:"requestedServiceObjective,omitempty"`
+	// ServerName - The name of the server the elastic pool is in.
+	ServerName *string `json:"serverName,omitempty"`
+	// StartTime - The time the operation started (ISO8601 format).
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// State - The current state of the operation.
+	State *string `json:"state,omitempty"`
 }
 
-// ElasticPoolListResult is represents the response to a list elastic pool request.
+// ElasticPoolListResult represents the response to a list elastic pool request.
 type ElasticPoolListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ElasticPool `json:"value,omitempty"`
+	// Value - The list of elastic pools hosted in the server.
+	Value *[]ElasticPool `json:"value,omitempty"`
 }
 
-// ElasticPoolProperties is represents the properties of an elastic pool.
+// ElasticPoolProperties represents the properties of an elastic pool.
 type ElasticPoolProperties struct {
-	CreationDate   *date.Time         `json:"creationDate,omitempty"`
-	State          ElasticPoolState   `json:"state,omitempty"`
-	Edition        ElasticPoolEdition `json:"edition,omitempty"`
-	Dtu            *int32             `json:"dtu,omitempty"`
-	DatabaseDtuMax *int32             `json:"databaseDtuMax,omitempty"`
-	DatabaseDtuMin *int32             `json:"databaseDtuMin,omitempty"`
-	StorageMB      *int32             `json:"storageMB,omitempty"`
-	ZoneRedundant  *bool              `json:"zoneRedundant,omitempty"`
+	// CreationDate - The creation date of the elastic pool (ISO8601 format).
+	CreationDate *date.Time `json:"creationDate,omitempty"`
+	// State - The state of the elastic pool. Possible values include: 'Creating', 'Ready', 'Disabled'
+	State ElasticPoolState `json:"state,omitempty"`
+	// Edition - The edition of the elastic pool. Possible values include: 'ElasticPoolEditionBasic', 'ElasticPoolEditionStandard', 'ElasticPoolEditionPremium'
+	Edition ElasticPoolEdition `json:"edition,omitempty"`
+	// Dtu - The total shared DTU for the database elastic pool.
+	Dtu *int32 `json:"dtu,omitempty"`
+	// DatabaseDtuMax - The maximum DTU any one database can consume.
+	DatabaseDtuMax *int32 `json:"databaseDtuMax,omitempty"`
+	// DatabaseDtuMin - The minimum DTU all databases are guaranteed.
+	DatabaseDtuMin *int32 `json:"databaseDtuMin,omitempty"`
+	// StorageMB - Gets storage limit for the database elastic pool in MB.
+	StorageMB *int32 `json:"storageMB,omitempty"`
+	// ZoneRedundant - Whether or not this database elastic pool is zone redundant, which means the replicas of this database will be spread across multiple availability zones.
+	ZoneRedundant *bool `json:"zoneRedundant,omitempty"`
 }
 
-// ElasticPoolUpdate is represents an elastic pool update.
+// ElasticPoolsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type ElasticPoolsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ElasticPoolsCreateOrUpdateFuture) Result(client ElasticPoolsClient) (ep ElasticPool, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ep, autorest.NewError("sql.ElasticPoolsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ep, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ep, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// ElasticPoolsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ElasticPoolsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ElasticPoolsUpdateFuture) Result(client ElasticPoolsClient) (ep ElasticPool, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ep, autorest.NewError("sql.ElasticPoolsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ep, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ep, err = client.UpdateResponder(resp)
+	return
+}
+
+// ElasticPoolUpdate represents an elastic pool update.
 type ElasticPoolUpdate struct {
-	ID                     *string             `json:"id,omitempty"`
-	Name                   *string             `json:"name,omitempty"`
-	Type                   *string             `json:"type,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ElasticPoolProperties - The properties representing the resource.
 	*ElasticPoolProperties `json:"properties,omitempty"`
 }
 
-// ExportRequest is export database parameters.
-type ExportRequest struct {
-	StorageKeyType             StorageKeyType     `json:"storageKeyType,omitempty"`
-	StorageKey                 *string            `json:"storageKey,omitempty"`
-	StorageURI                 *string            `json:"storageUri,omitempty"`
-	AdministratorLogin         *string            `json:"administratorLogin,omitempty"`
-	AdministratorLoginPassword *string            `json:"administratorLoginPassword,omitempty"`
-	AuthenticationType         AuthenticationType `json:"authenticationType,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ElasticPoolUpdate struct.
+func (epu *ElasticPoolUpdate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		epu.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ElasticPoolProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		epu.ElasticPoolProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		epu.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		epu.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		epu.Type = &typeVar
+	}
+
+	return nil
 }
 
-// FirewallRule is represents a server firewall rule.
+// ExportRequest export database parameters.
+type ExportRequest struct {
+	// StorageKeyType - The type of the storage key to use. Possible values include: 'StorageAccessKey', 'SharedAccessKey'
+	StorageKeyType StorageKeyType `json:"storageKeyType,omitempty"`
+	// StorageKey - The storage key to use.  If storage key type is SharedAccessKey, it must be preceded with a "?."
+	StorageKey *string `json:"storageKey,omitempty"`
+	// StorageURI - The storage uri to use.
+	StorageURI *string `json:"storageUri,omitempty"`
+	// AdministratorLogin - The name of the SQL administrator.
+	AdministratorLogin *string `json:"administratorLogin,omitempty"`
+	// AdministratorLoginPassword - The password of the SQL administrator.
+	AdministratorLoginPassword *string `json:"administratorLoginPassword,omitempty"`
+	// AuthenticationType - The authentication type. Possible values include: 'SQL', 'ADPassword'
+	AuthenticationType AuthenticationType `json:"authenticationType,omitempty"`
+}
+
+// FirewallRule represents a server firewall rule.
 type FirewallRule struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
-	Kind                    *string `json:"kind,omitempty"`
-	Location                *string `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Kind - Kind of server that contains this firewall rule.
+	Kind *string `json:"kind,omitempty"`
+	// Location - Location of the server that contains this firewall rule.
+	Location *string `json:"location,omitempty"`
+	// FirewallRuleProperties - The properties representing the resource.
 	*FirewallRuleProperties `json:"properties,omitempty"`
 }
 
-// FirewallRuleListResult is represents the response to a List Firewall Rules request.
+// UnmarshalJSON is the custom unmarshaler for FirewallRule struct.
+func (fr *FirewallRule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["kind"]
+	if v != nil {
+		var kind string
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		fr.Kind = &kind
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		fr.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties FirewallRuleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		fr.FirewallRuleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		fr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		fr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		fr.Type = &typeVar
+	}
+
+	return nil
+}
+
+// FirewallRuleListResult represents the response to a List Firewall Rules request.
 type FirewallRuleListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]FirewallRule `json:"value,omitempty"`
+	// Value - The list of server firewall rules.
+	Value *[]FirewallRule `json:"value,omitempty"`
 }
 
-// FirewallRuleProperties is represents the properties of a server firewall rule.
+// FirewallRuleProperties represents the properties of a server firewall rule.
 type FirewallRuleProperties struct {
+	// StartIPAddress - The start IP address of the firewall rule. Must be IPv4 format. Use value '0.0.0.0' to represent all Azure-internal IP addresses.
 	StartIPAddress *string `json:"startIpAddress,omitempty"`
-	EndIPAddress   *string `json:"endIpAddress,omitempty"`
+	// EndIPAddress - The end IP address of the firewall rule. Must be IPv4 format. Must be greater than or equal to startIpAddress. Use value '0.0.0.0' to represent all Azure-internal IP addresses.
+	EndIPAddress *string `json:"endIpAddress,omitempty"`
 }
 
-// ImportExportResponse is response for Import/Export Get operation.
+// ImportExportResponse response for Import/Export Get operation.
 type ImportExportResponse struct {
-	autorest.Response               `json:"-"`
-	ID                              *string `json:"id,omitempty"`
-	Name                            *string `json:"name,omitempty"`
-	Type                            *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// ImportExportResponseProperties - The import/export operation properties.
 	*ImportExportResponseProperties `json:"properties,omitempty"`
 }
 
-// ImportExportResponseProperties is response for Import/Export Status operation.
+// UnmarshalJSON is the custom unmarshaler for ImportExportResponse struct.
+func (ier *ImportExportResponse) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ImportExportResponseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ier.ImportExportResponseProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ier.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ier.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ier.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ImportExportResponseProperties response for Import/Export Status operation.
 type ImportExportResponseProperties struct {
-	RequestType      *string    `json:"requestType,omitempty"`
-	RequestID        *uuid.UUID `json:"requestId,omitempty"`
-	ServerName       *string    `json:"serverName,omitempty"`
-	DatabaseName     *string    `json:"databaseName,omitempty"`
-	Status           *string    `json:"status,omitempty"`
-	LastModifiedTime *string    `json:"lastModifiedTime,omitempty"`
-	QueuedTime       *string    `json:"queuedTime,omitempty"`
-	BlobURI          *string    `json:"blobUri,omitempty"`
-	ErrorMessage     *string    `json:"errorMessage,omitempty"`
+	// RequestType - The request type of the operation.
+	RequestType *string `json:"requestType,omitempty"`
+	// RequestID - The request type of the operation.
+	RequestID *uuid.UUID `json:"requestId,omitempty"`
+	// ServerName - The name of the server.
+	ServerName *string `json:"serverName,omitempty"`
+	// DatabaseName - The name of the database.
+	DatabaseName *string `json:"databaseName,omitempty"`
+	// Status - The status message returned from the server.
+	Status *string `json:"status,omitempty"`
+	// LastModifiedTime - The operation status last modified time.
+	LastModifiedTime *string `json:"lastModifiedTime,omitempty"`
+	// QueuedTime - The operation queued time.
+	QueuedTime *string `json:"queuedTime,omitempty"`
+	// BlobURI - The blob uri.
+	BlobURI *string `json:"blobUri,omitempty"`
+	// ErrorMessage - The error message returned from the server.
+	ErrorMessage *string `json:"errorMessage,omitempty"`
 }
 
-// ImportExtensionProperties is represents the properties for an import operation
+// ImportExtensionProperties represents the properties for an import operation
 type ImportExtensionProperties struct {
-	StorageKeyType             StorageKeyType     `json:"storageKeyType,omitempty"`
-	StorageKey                 *string            `json:"storageKey,omitempty"`
-	StorageURI                 *string            `json:"storageUri,omitempty"`
-	AdministratorLogin         *string            `json:"administratorLogin,omitempty"`
-	AdministratorLoginPassword *string            `json:"administratorLoginPassword,omitempty"`
-	AuthenticationType         AuthenticationType `json:"authenticationType,omitempty"`
-	OperationMode              *string            `json:"operationMode,omitempty"`
+	// StorageKeyType - The type of the storage key to use. Possible values include: 'StorageAccessKey', 'SharedAccessKey'
+	StorageKeyType StorageKeyType `json:"storageKeyType,omitempty"`
+	// StorageKey - The storage key to use.  If storage key type is SharedAccessKey, it must be preceded with a "?."
+	StorageKey *string `json:"storageKey,omitempty"`
+	// StorageURI - The storage uri to use.
+	StorageURI *string `json:"storageUri,omitempty"`
+	// AdministratorLogin - The name of the SQL administrator.
+	AdministratorLogin *string `json:"administratorLogin,omitempty"`
+	// AdministratorLoginPassword - The password of the SQL administrator.
+	AdministratorLoginPassword *string `json:"administratorLoginPassword,omitempty"`
+	// AuthenticationType - The authentication type. Possible values include: 'SQL', 'ADPassword'
+	AuthenticationType AuthenticationType `json:"authenticationType,omitempty"`
+	// OperationMode - The type of import operation being performed. This is always Import.
+	OperationMode *string `json:"operationMode,omitempty"`
 }
 
-// ImportExtensionRequest is import database parameters.
+// ImportExtensionRequest import database parameters.
 type ImportExtensionRequest struct {
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
+	// Name - The name of the extension.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the extension.
+	Type *string `json:"type,omitempty"`
+	// ImportExtensionProperties - Represents the properties of the resource.
 	*ImportExtensionProperties `json:"properties,omitempty"`
 }
 
-// ImportRequest is import database parameters.
-type ImportRequest struct {
-	StorageKeyType             StorageKeyType       `json:"storageKeyType,omitempty"`
-	StorageKey                 *string              `json:"storageKey,omitempty"`
-	StorageURI                 *string              `json:"storageUri,omitempty"`
-	AdministratorLogin         *string              `json:"administratorLogin,omitempty"`
-	AdministratorLoginPassword *string              `json:"administratorLoginPassword,omitempty"`
-	AuthenticationType         AuthenticationType   `json:"authenticationType,omitempty"`
-	DatabaseName               *string              `json:"databaseName,omitempty"`
-	Edition                    DatabaseEdition      `json:"edition,omitempty"`
-	ServiceObjectiveName       ServiceObjectiveName `json:"serviceObjectiveName,omitempty"`
-	MaxSizeBytes               *string              `json:"maxSizeBytes,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ImportExtensionRequest struct.
+func (ier *ImportExtensionRequest) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ier.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ier.Type = &typeVar
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ImportExtensionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ier.ImportExtensionProperties = &properties
+	}
+
+	return nil
 }
 
-// OperationImpact is the impact of an operation, both in absolute and relative terms.
+// ImportRequest import database parameters.
+type ImportRequest struct {
+	// StorageKeyType - The type of the storage key to use. Possible values include: 'StorageAccessKey', 'SharedAccessKey'
+	StorageKeyType StorageKeyType `json:"storageKeyType,omitempty"`
+	// StorageKey - The storage key to use.  If storage key type is SharedAccessKey, it must be preceded with a "?."
+	StorageKey *string `json:"storageKey,omitempty"`
+	// StorageURI - The storage uri to use.
+	StorageURI *string `json:"storageUri,omitempty"`
+	// AdministratorLogin - The name of the SQL administrator.
+	AdministratorLogin *string `json:"administratorLogin,omitempty"`
+	// AdministratorLoginPassword - The password of the SQL administrator.
+	AdministratorLoginPassword *string `json:"administratorLoginPassword,omitempty"`
+	// AuthenticationType - The authentication type. Possible values include: 'SQL', 'ADPassword'
+	AuthenticationType AuthenticationType `json:"authenticationType,omitempty"`
+	// DatabaseName - The name of the database to import.
+	DatabaseName *string `json:"databaseName,omitempty"`
+	// Edition - The edition for the database being created. Possible values include: 'Web', 'Business', 'Basic', 'Standard', 'Premium', 'PremiumRS', 'Free', 'Stretch', 'DataWarehouse', 'System', 'System2'
+	Edition DatabaseEdition `json:"edition,omitempty"`
+	// ServiceObjectiveName - The name of the service objective to assign to the database. Possible values include: 'ServiceObjectiveNameSystem', 'ServiceObjectiveNameSystem0', 'ServiceObjectiveNameSystem1', 'ServiceObjectiveNameSystem2', 'ServiceObjectiveNameSystem3', 'ServiceObjectiveNameSystem4', 'ServiceObjectiveNameSystem2L', 'ServiceObjectiveNameSystem3L', 'ServiceObjectiveNameSystem4L', 'ServiceObjectiveNameFree', 'ServiceObjectiveNameBasic', 'ServiceObjectiveNameS0', 'ServiceObjectiveNameS1', 'ServiceObjectiveNameS2', 'ServiceObjectiveNameS3', 'ServiceObjectiveNameS4', 'ServiceObjectiveNameS6', 'ServiceObjectiveNameS7', 'ServiceObjectiveNameS9', 'ServiceObjectiveNameS12', 'ServiceObjectiveNameP1', 'ServiceObjectiveNameP2', 'ServiceObjectiveNameP3', 'ServiceObjectiveNameP4', 'ServiceObjectiveNameP6', 'ServiceObjectiveNameP11', 'ServiceObjectiveNameP15', 'ServiceObjectiveNamePRS1', 'ServiceObjectiveNamePRS2', 'ServiceObjectiveNamePRS4', 'ServiceObjectiveNamePRS6', 'ServiceObjectiveNameDW100', 'ServiceObjectiveNameDW200', 'ServiceObjectiveNameDW300', 'ServiceObjectiveNameDW400', 'ServiceObjectiveNameDW500', 'ServiceObjectiveNameDW600', 'ServiceObjectiveNameDW1000', 'ServiceObjectiveNameDW1200', 'ServiceObjectiveNameDW1000c', 'ServiceObjectiveNameDW1500', 'ServiceObjectiveNameDW1500c', 'ServiceObjectiveNameDW2000', 'ServiceObjectiveNameDW2000c', 'ServiceObjectiveNameDW3000', 'ServiceObjectiveNameDW2500c', 'ServiceObjectiveNameDW3000c', 'ServiceObjectiveNameDW6000', 'ServiceObjectiveNameDW5000c', 'ServiceObjectiveNameDW6000c', 'ServiceObjectiveNameDW7500c', 'ServiceObjectiveNameDW10000c', 'ServiceObjectiveNameDW15000c', 'ServiceObjectiveNameDW30000c', 'ServiceObjectiveNameDS100', 'ServiceObjectiveNameDS200', 'ServiceObjectiveNameDS300', 'ServiceObjectiveNameDS400', 'ServiceObjectiveNameDS500', 'ServiceObjectiveNameDS600', 'ServiceObjectiveNameDS1000', 'ServiceObjectiveNameDS1200', 'ServiceObjectiveNameDS1500', 'ServiceObjectiveNameDS2000', 'ServiceObjectiveNameElasticPool'
+	ServiceObjectiveName ServiceObjectiveName `json:"serviceObjectiveName,omitempty"`
+	// MaxSizeBytes - The maximum size for the newly imported database.
+	MaxSizeBytes *string `json:"maxSizeBytes,omitempty"`
+}
+
+// OperationImpact the impact of an operation, both in absolute and relative terms.
 type OperationImpact struct {
-	Name                *string  `json:"name,omitempty"`
-	Unit                *string  `json:"unit,omitempty"`
+	// Name - The name of the impact dimension.
+	Name *string `json:"name,omitempty"`
+	// Unit - The unit in which estimated impact to dimension is measured.
+	Unit *string `json:"unit,omitempty"`
+	// ChangeValueAbsolute - The absolute impact to dimension.
 	ChangeValueAbsolute *float64 `json:"changeValueAbsolute,omitempty"`
+	// ChangeValueRelative - The relative impact to dimension (null if not applicable)
 	ChangeValueRelative *float64 `json:"changeValueRelative,omitempty"`
 }
 
-// ProxyResource is ARM proxy resource.
+// ProxyResource ARM proxy resource.
 type ProxyResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// RecommendedElasticPool is represents a recommented elastic pool.
+// RecommendedElasticPool represents a recommented elastic pool.
 type RecommendedElasticPool struct {
-	autorest.Response                 `json:"-"`
-	ID                                *string `json:"id,omitempty"`
-	Name                              *string `json:"name,omitempty"`
-	Type                              *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// RecommendedElasticPoolProperties - The properites representing the resource.
 	*RecommendedElasticPoolProperties `json:"properties,omitempty"`
 }
 
-// RecommendedElasticPoolListMetricsResult is represents the response to a list recommended elastic pool metrics
-// request.
+// UnmarshalJSON is the custom unmarshaler for RecommendedElasticPool struct.
+func (rep *RecommendedElasticPool) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RecommendedElasticPoolProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rep.RecommendedElasticPoolProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rep.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rep.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rep.Type = &typeVar
+	}
+
+	return nil
+}
+
+// RecommendedElasticPoolListMetricsResult represents the response to a list recommended elastic pool metrics request.
 type RecommendedElasticPoolListMetricsResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RecommendedElasticPoolMetric `json:"value,omitempty"`
+	// Value - The list of recommended elastic pools metrics.
+	Value *[]RecommendedElasticPoolMetric `json:"value,omitempty"`
 }
 
-// RecommendedElasticPoolListResult is represents the response to a list recommended elastic pool request.
+// RecommendedElasticPoolListResult represents the response to a list recommended elastic pool request.
 type RecommendedElasticPoolListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RecommendedElasticPool `json:"value,omitempty"`
+	// Value - The list of recommended elastic pools hosted in the server.
+	Value *[]RecommendedElasticPool `json:"value,omitempty"`
 }
 
-// RecommendedElasticPoolMetric is represents recommended elastic pool metric.
+// RecommendedElasticPoolMetric represents recommended elastic pool metric.
 type RecommendedElasticPoolMetric struct {
+	// DateTime - The time of metric (ISO8601 format).
 	DateTime *date.Time `json:"dateTime,omitempty"`
-	Dtu      *float64   `json:"dtu,omitempty"`
-	SizeGB   *float64   `json:"sizeGB,omitempty"`
+	// Dtu - Gets or sets the DTUs (Database Transaction Units). See https://azure.microsoft.com/documentation/articles/sql-database-what-is-a-dtu/
+	Dtu *float64 `json:"dtu,omitempty"`
+	// SizeGB - Gets or sets size in gigabytes.
+	SizeGB *float64 `json:"sizeGB,omitempty"`
 }
 
-// RecommendedElasticPoolProperties is represents the properties of a recommented elastic pool.
+// RecommendedElasticPoolProperties represents the properties of a recommented elastic pool.
 type RecommendedElasticPoolProperties struct {
-	DatabaseEdition        ElasticPoolEdition              `json:"databaseEdition,omitempty"`
-	Dtu                    *float64                        `json:"dtu,omitempty"`
-	DatabaseDtuMin         *float64                        `json:"databaseDtuMin,omitempty"`
-	DatabaseDtuMax         *float64                        `json:"databaseDtuMax,omitempty"`
-	StorageMB              *float64                        `json:"storageMB,omitempty"`
-	ObservationPeriodStart *date.Time                      `json:"observationPeriodStart,omitempty"`
-	ObservationPeriodEnd   *date.Time                      `json:"observationPeriodEnd,omitempty"`
-	MaxObservedDtu         *float64                        `json:"maxObservedDtu,omitempty"`
-	MaxObservedStorageMB   *float64                        `json:"maxObservedStorageMB,omitempty"`
-	Databases              *[]Database                     `json:"databases,omitempty"`
-	Metrics                *[]RecommendedElasticPoolMetric `json:"metrics,omitempty"`
+	// DatabaseEdition - The edition of the recommended elastic pool. The ElasticPoolEdition enumeration contains all the valid editions. Possible values include: 'ElasticPoolEditionBasic', 'ElasticPoolEditionStandard', 'ElasticPoolEditionPremium'
+	DatabaseEdition ElasticPoolEdition `json:"databaseEdition,omitempty"`
+	// Dtu - The DTU for the recommended elastic pool.
+	Dtu *float64 `json:"dtu,omitempty"`
+	// DatabaseDtuMin - The minimum DTU for the database.
+	DatabaseDtuMin *float64 `json:"databaseDtuMin,omitempty"`
+	// DatabaseDtuMax - The maximum DTU for the database.
+	DatabaseDtuMax *float64 `json:"databaseDtuMax,omitempty"`
+	// StorageMB - Gets storage size in megabytes.
+	StorageMB *float64 `json:"storageMB,omitempty"`
+	// ObservationPeriodStart - The observation period start (ISO8601 format).
+	ObservationPeriodStart *date.Time `json:"observationPeriodStart,omitempty"`
+	// ObservationPeriodEnd - The observation period start (ISO8601 format).
+	ObservationPeriodEnd *date.Time `json:"observationPeriodEnd,omitempty"`
+	// MaxObservedDtu - Gets maximum observed DTU.
+	MaxObservedDtu *float64 `json:"maxObservedDtu,omitempty"`
+	// MaxObservedStorageMB - Gets maximum observed storage in megabytes.
+	MaxObservedStorageMB *float64 `json:"maxObservedStorageMB,omitempty"`
+	// Databases - The list of databases in this pool. Expanded property
+	Databases *[]Database `json:"databases,omitempty"`
+	// Metrics - The list of databases housed in the server. Expanded property
+	Metrics *[]RecommendedElasticPoolMetric `json:"metrics,omitempty"`
 }
 
-// RecommendedIndex is represents a database recommended index.
+// RecommendedIndex represents a database recommended index.
 type RecommendedIndex struct {
-	ID                          *string `json:"id,omitempty"`
-	Name                        *string `json:"name,omitempty"`
-	Type                        *string `json:"type,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// RecommendedIndexProperties - The properties representing the resource.
 	*RecommendedIndexProperties `json:"properties,omitempty"`
 }
 
-// RecommendedIndexProperties is represents the properties of a database recommended index.
-type RecommendedIndexProperties struct {
-	Action          RecommendedIndexAction `json:"action,omitempty"`
-	State           RecommendedIndexState  `json:"state,omitempty"`
-	Created         *date.Time             `json:"created,omitempty"`
-	LastModified    *date.Time             `json:"lastModified,omitempty"`
-	IndexType       RecommendedIndexType   `json:"indexType,omitempty"`
-	Schema          *string                `json:"schema,omitempty"`
-	Table           *string                `json:"table,omitempty"`
-	Columns         *[]string              `json:"columns,omitempty"`
-	IncludedColumns *[]string              `json:"includedColumns,omitempty"`
-	IndexScript     *string                `json:"indexScript,omitempty"`
-	EstimatedImpact *[]OperationImpact     `json:"estimatedImpact,omitempty"`
-	ReportedImpact  *[]OperationImpact     `json:"reportedImpact,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RecommendedIndex struct.
+func (ri *RecommendedIndex) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RecommendedIndexProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ri.RecommendedIndexProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ri.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ri.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ri.Type = &typeVar
+	}
+
+	return nil
 }
 
-// ReplicationLink is represents a database replication link.
+// RecommendedIndexProperties represents the properties of a database recommended index.
+type RecommendedIndexProperties struct {
+	// Action - The proposed index action. You can create a missing index, drop an unused index, or rebuild an existing index to improve its performance. Possible values include: 'Create', 'Drop', 'Rebuild'
+	Action RecommendedIndexAction `json:"action,omitempty"`
+	// State - The current recommendation state. Possible values include: 'Active', 'Pending', 'Executing', 'Verifying', 'PendingRevert', 'Reverting', 'Reverted', 'Ignored', 'Expired', 'Blocked', 'Success'
+	State RecommendedIndexState `json:"state,omitempty"`
+	// Created - The UTC datetime showing when this resource was created (ISO8601 format).
+	Created *date.Time `json:"created,omitempty"`
+	// LastModified - The UTC datetime of when was this resource last changed (ISO8601 format).
+	LastModified *date.Time `json:"lastModified,omitempty"`
+	// IndexType - The type of index (CLUSTERED, NONCLUSTERED, COLUMNSTORE, CLUSTERED COLUMNSTORE). Possible values include: 'CLUSTERED', 'NONCLUSTERED', 'COLUMNSTORE', 'CLUSTEREDCOLUMNSTORE'
+	IndexType RecommendedIndexType `json:"indexType,omitempty"`
+	// Schema - The schema where table to build index over resides
+	Schema *string `json:"schema,omitempty"`
+	// Table - The table on which to build index.
+	Table *string `json:"table,omitempty"`
+	// Columns - Columns over which to build index
+	Columns *[]string `json:"columns,omitempty"`
+	// IncludedColumns - The list of column names to be included in the index
+	IncludedColumns *[]string `json:"includedColumns,omitempty"`
+	// IndexScript - The full build index script
+	IndexScript *string `json:"indexScript,omitempty"`
+	// EstimatedImpact - The estimated impact of doing recommended index action.
+	EstimatedImpact *[]OperationImpact `json:"estimatedImpact,omitempty"`
+	// ReportedImpact - The values reported after index action is complete.
+	ReportedImpact *[]OperationImpact `json:"reportedImpact,omitempty"`
+}
+
+// ReplicationLink represents a database replication link.
 type ReplicationLink struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
-	Location                   *string `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Location of the server that contains this firewall rule.
+	Location *string `json:"location,omitempty"`
+	// ReplicationLinkProperties - The properties representing the resource.
 	*ReplicationLinkProperties `json:"properties,omitempty"`
 }
 
-// ReplicationLinkListResult is represents the response to a List database replication link request.
+// UnmarshalJSON is the custom unmarshaler for ReplicationLink struct.
+func (rl *ReplicationLink) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rl.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ReplicationLinkProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rl.ReplicationLinkProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rl.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rl.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rl.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ReplicationLinkListResult represents the response to a List database replication link request.
 type ReplicationLinkListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ReplicationLink `json:"value,omitempty"`
+	// Value - The list of database replication links housed in the database.
+	Value *[]ReplicationLink `json:"value,omitempty"`
 }
 
-// ReplicationLinkProperties is represents the properties of a database replication link.
+// ReplicationLinkProperties represents the properties of a database replication link.
 type ReplicationLinkProperties struct {
-	IsTerminationAllowed *bool            `json:"isTerminationAllowed,omitempty"`
-	ReplicationMode      *string          `json:"replicationMode,omitempty"`
-	PartnerServer        *string          `json:"partnerServer,omitempty"`
-	PartnerDatabase      *string          `json:"partnerDatabase,omitempty"`
-	PartnerLocation      *string          `json:"partnerLocation,omitempty"`
-	Role                 ReplicationRole  `json:"role,omitempty"`
-	PartnerRole          ReplicationRole  `json:"partnerRole,omitempty"`
-	StartTime            *date.Time       `json:"startTime,omitempty"`
-	PercentComplete      *int32           `json:"percentComplete,omitempty"`
-	ReplicationState     ReplicationState `json:"replicationState,omitempty"`
+	// IsTerminationAllowed - Legacy value indicating whether termination is allowed.  Currently always returns true.
+	IsTerminationAllowed *bool `json:"isTerminationAllowed,omitempty"`
+	// ReplicationMode - Replication mode of this replication link.
+	ReplicationMode *string `json:"replicationMode,omitempty"`
+	// PartnerServer - The name of the server hosting the partner database.
+	PartnerServer *string `json:"partnerServer,omitempty"`
+	// PartnerDatabase - The name of the partner database.
+	PartnerDatabase *string `json:"partnerDatabase,omitempty"`
+	// PartnerLocation - The Azure Region of the partner database.
+	PartnerLocation *string `json:"partnerLocation,omitempty"`
+	// Role - The role of the database in the replication link. Possible values include: 'ReplicationRolePrimary', 'ReplicationRoleSecondary', 'ReplicationRoleNonReadableSecondary', 'ReplicationRoleSource', 'ReplicationRoleCopy'
+	Role ReplicationRole `json:"role,omitempty"`
+	// PartnerRole - The role of the partner database in the replication link. Possible values include: 'ReplicationRolePrimary', 'ReplicationRoleSecondary', 'ReplicationRoleNonReadableSecondary', 'ReplicationRoleSource', 'ReplicationRoleCopy'
+	PartnerRole ReplicationRole `json:"partnerRole,omitempty"`
+	// StartTime - The start time for the replication link.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// PercentComplete - The percentage of seeding complete for the replication link.
+	PercentComplete *int32 `json:"percentComplete,omitempty"`
+	// ReplicationState - The replication state for the replication link. Possible values include: 'PENDING', 'SEEDING', 'CATCHUP', 'SUSPENDED'
+	ReplicationState ReplicationState `json:"replicationState,omitempty"`
 }
 
-// Resource is ARM resource.
+// ReplicationLinksFailoverAllowDataLossFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
+type ReplicationLinksFailoverAllowDataLossFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ReplicationLinksFailoverAllowDataLossFuture) Result(client ReplicationLinksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("sql.ReplicationLinksFailoverAllowDataLossFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.FailoverAllowDataLossResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.FailoverAllowDataLossResponder(resp)
+	return
+}
+
+// ReplicationLinksFailoverFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ReplicationLinksFailoverFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ReplicationLinksFailoverFuture) Result(client ReplicationLinksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("sql.ReplicationLinksFailoverFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.FailoverResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.FailoverResponder(resp)
+	return
+}
+
+// Resource ARM resource.
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// ServiceTierAdvisor is represents a Service Tier Advisor.
+// ServiceTierAdvisor represents a Service Tier Advisor.
 type ServiceTierAdvisor struct {
-	autorest.Response             `json:"-"`
-	ID                            *string `json:"id,omitempty"`
-	Name                          *string `json:"name,omitempty"`
-	Type                          *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// ServiceTierAdvisorProperties - The properites representing the resource.
 	*ServiceTierAdvisorProperties `json:"properties,omitempty"`
 }
 
-// ServiceTierAdvisorListResult is represents the response to a list service tier advisor request.
+// UnmarshalJSON is the custom unmarshaler for ServiceTierAdvisor struct.
+func (sta *ServiceTierAdvisor) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ServiceTierAdvisorProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sta.ServiceTierAdvisorProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sta.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sta.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sta.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ServiceTierAdvisorListResult represents the response to a list service tier advisor request.
 type ServiceTierAdvisorListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ServiceTierAdvisor `json:"value,omitempty"`
+	// Value - The list of service tier advisors for specified database.
+	Value *[]ServiceTierAdvisor `json:"value,omitempty"`
 }
 
-// ServiceTierAdvisorProperties is represents the properties of a Service Tier Advisor.
+// ServiceTierAdvisorProperties represents the properties of a Service Tier Advisor.
 type ServiceTierAdvisorProperties struct {
-	ObservationPeriodStart                                 *date.Time        `json:"observationPeriodStart,omitempty"`
-	ObservationPeriodEnd                                   *date.Time        `json:"observationPeriodEnd,omitempty"`
-	ActiveTimeRatio                                        *float64          `json:"activeTimeRatio,omitempty"`
-	MinDtu                                                 *float64          `json:"minDtu,omitempty"`
-	AvgDtu                                                 *float64          `json:"avgDtu,omitempty"`
-	MaxDtu                                                 *float64          `json:"maxDtu,omitempty"`
-	MaxSizeInGB                                            *float64          `json:"maxSizeInGB,omitempty"`
-	ServiceLevelObjectiveUsageMetrics                      *[]SloUsageMetric `json:"serviceLevelObjectiveUsageMetrics,omitempty"`
-	CurrentServiceLevelObjective                           *string           `json:"currentServiceLevelObjective,omitempty"`
-	CurrentServiceLevelObjectiveID                         *uuid.UUID        `json:"currentServiceLevelObjectiveId,omitempty"`
-	UsageBasedRecommendationServiceLevelObjective          *string           `json:"usageBasedRecommendationServiceLevelObjective,omitempty"`
-	UsageBasedRecommendationServiceLevelObjectiveID        *uuid.UUID        `json:"usageBasedRecommendationServiceLevelObjectiveId,omitempty"`
-	DatabaseSizeBasedRecommendationServiceLevelObjective   *string           `json:"databaseSizeBasedRecommendationServiceLevelObjective,omitempty"`
-	DatabaseSizeBasedRecommendationServiceLevelObjectiveID *uuid.UUID        `json:"databaseSizeBasedRecommendationServiceLevelObjectiveId,omitempty"`
-	DisasterPlanBasedRecommendationServiceLevelObjective   *string           `json:"disasterPlanBasedRecommendationServiceLevelObjective,omitempty"`
-	DisasterPlanBasedRecommendationServiceLevelObjectiveID *uuid.UUID        `json:"disasterPlanBasedRecommendationServiceLevelObjectiveId,omitempty"`
-	OverallRecommendationServiceLevelObjective             *string           `json:"overallRecommendationServiceLevelObjective,omitempty"`
-	OverallRecommendationServiceLevelObjectiveID           *uuid.UUID        `json:"overallRecommendationServiceLevelObjectiveId,omitempty"`
-	Confidence                                             *float64          `json:"confidence,omitempty"`
+	// ObservationPeriodStart - The observation period start (ISO8601 format).
+	ObservationPeriodStart *date.Time `json:"observationPeriodStart,omitempty"`
+	// ObservationPeriodEnd - The observation period start (ISO8601 format).
+	ObservationPeriodEnd *date.Time `json:"observationPeriodEnd,omitempty"`
+	// ActiveTimeRatio - The activeTimeRatio for service tier advisor.
+	ActiveTimeRatio *float64 `json:"activeTimeRatio,omitempty"`
+	// MinDtu - Gets or sets minDtu for service tier advisor.
+	MinDtu *float64 `json:"minDtu,omitempty"`
+	// AvgDtu - Gets or sets avgDtu for service tier advisor.
+	AvgDtu *float64 `json:"avgDtu,omitempty"`
+	// MaxDtu - Gets or sets maxDtu for service tier advisor.
+	MaxDtu *float64 `json:"maxDtu,omitempty"`
+	// MaxSizeInGB - Gets or sets maxSizeInGB for service tier advisor.
+	MaxSizeInGB *float64 `json:"maxSizeInGB,omitempty"`
+	// ServiceLevelObjectiveUsageMetrics - Gets or sets serviceLevelObjectiveUsageMetrics for the service tier advisor.
+	ServiceLevelObjectiveUsageMetrics *[]SloUsageMetric `json:"serviceLevelObjectiveUsageMetrics,omitempty"`
+	// CurrentServiceLevelObjective - Gets or sets currentServiceLevelObjective for service tier advisor.
+	CurrentServiceLevelObjective *string `json:"currentServiceLevelObjective,omitempty"`
+	// CurrentServiceLevelObjectiveID - Gets or sets currentServiceLevelObjectiveId for service tier advisor.
+	CurrentServiceLevelObjectiveID *uuid.UUID `json:"currentServiceLevelObjectiveId,omitempty"`
+	// UsageBasedRecommendationServiceLevelObjective - Gets or sets usageBasedRecommendationServiceLevelObjective for service tier advisor.
+	UsageBasedRecommendationServiceLevelObjective *string `json:"usageBasedRecommendationServiceLevelObjective,omitempty"`
+	// UsageBasedRecommendationServiceLevelObjectiveID - Gets or sets usageBasedRecommendationServiceLevelObjectiveId for service tier advisor.
+	UsageBasedRecommendationServiceLevelObjectiveID *uuid.UUID `json:"usageBasedRecommendationServiceLevelObjectiveId,omitempty"`
+	// DatabaseSizeBasedRecommendationServiceLevelObjective - Gets or sets databaseSizeBasedRecommendationServiceLevelObjective for service tier advisor.
+	DatabaseSizeBasedRecommendationServiceLevelObjective *string `json:"databaseSizeBasedRecommendationServiceLevelObjective,omitempty"`
+	// DatabaseSizeBasedRecommendationServiceLevelObjectiveID - Gets or sets databaseSizeBasedRecommendationServiceLevelObjectiveId for service tier advisor.
+	DatabaseSizeBasedRecommendationServiceLevelObjectiveID *uuid.UUID `json:"databaseSizeBasedRecommendationServiceLevelObjectiveId,omitempty"`
+	// DisasterPlanBasedRecommendationServiceLevelObjective - Gets or sets disasterPlanBasedRecommendationServiceLevelObjective for service tier advisor.
+	DisasterPlanBasedRecommendationServiceLevelObjective *string `json:"disasterPlanBasedRecommendationServiceLevelObjective,omitempty"`
+	// DisasterPlanBasedRecommendationServiceLevelObjectiveID - Gets or sets disasterPlanBasedRecommendationServiceLevelObjectiveId for service tier advisor.
+	DisasterPlanBasedRecommendationServiceLevelObjectiveID *uuid.UUID `json:"disasterPlanBasedRecommendationServiceLevelObjectiveId,omitempty"`
+	// OverallRecommendationServiceLevelObjective - Gets or sets overallRecommendationServiceLevelObjective for service tier advisor.
+	OverallRecommendationServiceLevelObjective *string `json:"overallRecommendationServiceLevelObjective,omitempty"`
+	// OverallRecommendationServiceLevelObjectiveID - Gets or sets overallRecommendationServiceLevelObjectiveId for service tier advisor.
+	OverallRecommendationServiceLevelObjectiveID *uuid.UUID `json:"overallRecommendationServiceLevelObjectiveId,omitempty"`
+	// Confidence - Gets or sets confidence for service tier advisor.
+	Confidence *float64 `json:"confidence,omitempty"`
 }
 
-// SloUsageMetric is a Slo Usage Metric.
+// SloUsageMetric a Slo Usage Metric.
 type SloUsageMetric struct {
-	ServiceLevelObjective   ServiceObjectiveName `json:"serviceLevelObjective,omitempty"`
-	ServiceLevelObjectiveID *uuid.UUID           `json:"serviceLevelObjectiveId,omitempty"`
-	InRangeTimeRatio        *float64             `json:"inRangeTimeRatio,omitempty"`
+	// ServiceLevelObjective - The serviceLevelObjective for SLO usage metric. Possible values include: 'ServiceObjectiveNameSystem', 'ServiceObjectiveNameSystem0', 'ServiceObjectiveNameSystem1', 'ServiceObjectiveNameSystem2', 'ServiceObjectiveNameSystem3', 'ServiceObjectiveNameSystem4', 'ServiceObjectiveNameSystem2L', 'ServiceObjectiveNameSystem3L', 'ServiceObjectiveNameSystem4L', 'ServiceObjectiveNameFree', 'ServiceObjectiveNameBasic', 'ServiceObjectiveNameS0', 'ServiceObjectiveNameS1', 'ServiceObjectiveNameS2', 'ServiceObjectiveNameS3', 'ServiceObjectiveNameS4', 'ServiceObjectiveNameS6', 'ServiceObjectiveNameS7', 'ServiceObjectiveNameS9', 'ServiceObjectiveNameS12', 'ServiceObjectiveNameP1', 'ServiceObjectiveNameP2', 'ServiceObjectiveNameP3', 'ServiceObjectiveNameP4', 'ServiceObjectiveNameP6', 'ServiceObjectiveNameP11', 'ServiceObjectiveNameP15', 'ServiceObjectiveNamePRS1', 'ServiceObjectiveNamePRS2', 'ServiceObjectiveNamePRS4', 'ServiceObjectiveNamePRS6', 'ServiceObjectiveNameDW100', 'ServiceObjectiveNameDW200', 'ServiceObjectiveNameDW300', 'ServiceObjectiveNameDW400', 'ServiceObjectiveNameDW500', 'ServiceObjectiveNameDW600', 'ServiceObjectiveNameDW1000', 'ServiceObjectiveNameDW1200', 'ServiceObjectiveNameDW1000c', 'ServiceObjectiveNameDW1500', 'ServiceObjectiveNameDW1500c', 'ServiceObjectiveNameDW2000', 'ServiceObjectiveNameDW2000c', 'ServiceObjectiveNameDW3000', 'ServiceObjectiveNameDW2500c', 'ServiceObjectiveNameDW3000c', 'ServiceObjectiveNameDW6000', 'ServiceObjectiveNameDW5000c', 'ServiceObjectiveNameDW6000c', 'ServiceObjectiveNameDW7500c', 'ServiceObjectiveNameDW10000c', 'ServiceObjectiveNameDW15000c', 'ServiceObjectiveNameDW30000c', 'ServiceObjectiveNameDS100', 'ServiceObjectiveNameDS200', 'ServiceObjectiveNameDS300', 'ServiceObjectiveNameDS400', 'ServiceObjectiveNameDS500', 'ServiceObjectiveNameDS600', 'ServiceObjectiveNameDS1000', 'ServiceObjectiveNameDS1200', 'ServiceObjectiveNameDS1500', 'ServiceObjectiveNameDS2000', 'ServiceObjectiveNameElasticPool'
+	ServiceLevelObjective ServiceObjectiveName `json:"serviceLevelObjective,omitempty"`
+	// ServiceLevelObjectiveID - The serviceLevelObjectiveId for SLO usage metric.
+	ServiceLevelObjectiveID *uuid.UUID `json:"serviceLevelObjectiveId,omitempty"`
+	// InRangeTimeRatio - Gets or sets inRangeTimeRatio for SLO usage metric.
+	InRangeTimeRatio *float64 `json:"inRangeTimeRatio,omitempty"`
 }
 
-// TrackedResource is ARM tracked top level resource.
+// TrackedResource ARM tracked top level resource.
 type TrackedResource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	Location *string             `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
 }
 
-// TransparentDataEncryption is represents a database transparent data encryption configuration.
+// TransparentDataEncryption represents a database transparent data encryption configuration.
 type TransparentDataEncryption struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string `json:"id,omitempty"`
-	Name                                 *string `json:"name,omitempty"`
-	Type                                 *string `json:"type,omitempty"`
-	Location                             *string `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// TransparentDataEncryptionProperties - Represents the properties of the resource.
 	*TransparentDataEncryptionProperties `json:"properties,omitempty"`
 }
 
-// TransparentDataEncryptionActivity is represents a database transparent data encryption Scan.
+// UnmarshalJSON is the custom unmarshaler for TransparentDataEncryption struct.
+func (tde *TransparentDataEncryption) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		tde.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties TransparentDataEncryptionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		tde.TransparentDataEncryptionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		tde.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		tde.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		tde.Type = &typeVar
+	}
+
+	return nil
+}
+
+// TransparentDataEncryptionActivity represents a database transparent data encryption Scan.
 type TransparentDataEncryptionActivity struct {
-	ID                                           *string `json:"id,omitempty"`
-	Name                                         *string `json:"name,omitempty"`
-	Type                                         *string `json:"type,omitempty"`
-	Location                                     *string `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// TransparentDataEncryptionActivityProperties - Represents the properties of the resource.
 	*TransparentDataEncryptionActivityProperties `json:"properties,omitempty"`
 }
 
-// TransparentDataEncryptionActivityListResult is represents the response to a list database transparent data
-// encryption activity request.
+// UnmarshalJSON is the custom unmarshaler for TransparentDataEncryptionActivity struct.
+func (tdea *TransparentDataEncryptionActivity) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		tdea.Location = &location
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties TransparentDataEncryptionActivityProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		tdea.TransparentDataEncryptionActivityProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		tdea.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		tdea.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		tdea.Type = &typeVar
+	}
+
+	return nil
+}
+
+// TransparentDataEncryptionActivityListResult represents the response to a list database transparent data encryption
+// activity request.
 type TransparentDataEncryptionActivityListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]TransparentDataEncryptionActivity `json:"value,omitempty"`
+	// Value - The list of database transparent data encryption activities.
+	Value *[]TransparentDataEncryptionActivity `json:"value,omitempty"`
 }
 
-// TransparentDataEncryptionActivityProperties is represents the properties of a database transparent data encryption
+// TransparentDataEncryptionActivityProperties represents the properties of a database transparent data encryption
 // Scan.
 type TransparentDataEncryptionActivityProperties struct {
-	Status          TransparentDataEncryptionActivityStatus `json:"status,omitempty"`
-	PercentComplete *float64                                `json:"percentComplete,omitempty"`
+	// Status - The status of the database. Possible values include: 'Encrypting', 'Decrypting'
+	Status TransparentDataEncryptionActivityStatus `json:"status,omitempty"`
+	// PercentComplete - The percent complete of the transparent data encryption scan for a database.
+	PercentComplete *float64 `json:"percentComplete,omitempty"`
 }
 
-// TransparentDataEncryptionProperties is represents the properties of a database transparent data encryption.
+// TransparentDataEncryptionProperties represents the properties of a database transparent data encryption.
 type TransparentDataEncryptionProperties struct {
+	// Status - The status of the database transparent data encryption. Possible values include: 'TransparentDataEncryptionStatusEnabled', 'TransparentDataEncryptionStatusDisabled'
 	Status TransparentDataEncryptionStatus `json:"status,omitempty"`
 }

@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualNetworkPeeringsClient is the network Client
 type VirtualNetworkPeeringsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualNetworkPeeringsClient creates an instance of the VirtualNetworkPeeringsClient client.
@@ -39,49 +40,28 @@ func NewVirtualNetworkPeeringsClientWithBaseURI(baseURI string, subscriptionID s
 }
 
 // CreateOrUpdate the Put virtual network peering operation creates/updates a peering in the specified virtual network
-// This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel
-// will be used to cancel polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
 // virtualNetworkPeeringName is the name of the peering. virtualNetworkPeeringParameters is parameters supplied to the
 // create/update virtual network peering operation
-func (client VirtualNetworkPeeringsClient) CreateOrUpdate(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering, cancel <-chan struct{}) (<-chan VirtualNetworkPeering, <-chan error) {
-	resultChan := make(chan VirtualNetworkPeering, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result VirtualNetworkPeering
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, virtualNetworkName, virtualNetworkPeeringName, virtualNetworkPeeringParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualNetworkPeeringsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering) (result VirtualNetworkPeeringsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, virtualNetworkName, virtualNetworkPeeringName, virtualNetworkPeeringParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client VirtualNetworkPeeringsClient) CreateOrUpdatePreparer(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualNetworkPeeringsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":         autorest.Encode("path", resourceGroupName),
 		"subscriptionId":            autorest.Encode("path", client.SubscriptionID),
@@ -101,16 +81,22 @@ func (client VirtualNetworkPeeringsClient) CreateOrUpdatePreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings/{virtualNetworkPeeringName}", pathParameters),
 		autorest.WithJSON(virtualNetworkPeeringParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualNetworkPeeringsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualNetworkPeeringsClient) CreateOrUpdateSender(req *http.Request) (future VirtualNetworkPeeringsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -126,49 +112,28 @@ func (client VirtualNetworkPeeringsClient) CreateOrUpdateResponder(resp *http.Re
 	return
 }
 
-// Delete the delete virtual network peering operation deletes the specified peering. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// Delete the delete virtual network peering operation deletes the specified peering.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
 // virtualNetworkPeeringName is the name of the virtual network peering.
-func (client VirtualNetworkPeeringsClient) Delete(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, virtualNetworkName, virtualNetworkPeeringName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualNetworkPeeringsClient) Delete(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (result VirtualNetworkPeeringsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, virtualNetworkName, virtualNetworkPeeringName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VirtualNetworkPeeringsClient) DeletePreparer(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualNetworkPeeringsClient) DeletePreparer(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":         autorest.Encode("path", resourceGroupName),
 		"subscriptionId":            autorest.Encode("path", client.SubscriptionID),
@@ -186,16 +151,22 @@ func (client VirtualNetworkPeeringsClient) DeletePreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings/{virtualNetworkPeeringName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualNetworkPeeringsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualNetworkPeeringsClient) DeleteSender(req *http.Request) (future VirtualNetworkPeeringsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -204,7 +175,7 @@ func (client VirtualNetworkPeeringsClient) DeleteResponder(resp *http.Response) 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -214,8 +185,8 @@ func (client VirtualNetworkPeeringsClient) DeleteResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
 // virtualNetworkPeeringName is the name of the virtual network peering.
-func (client VirtualNetworkPeeringsClient) Get(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (result VirtualNetworkPeering, err error) {
-	req, err := client.GetPreparer(resourceGroupName, virtualNetworkName, virtualNetworkPeeringName)
+func (client VirtualNetworkPeeringsClient) Get(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (result VirtualNetworkPeering, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, virtualNetworkName, virtualNetworkPeeringName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "Get", nil, "Failure preparing request")
 		return
@@ -237,7 +208,7 @@ func (client VirtualNetworkPeeringsClient) Get(resourceGroupName string, virtual
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualNetworkPeeringsClient) GetPreparer(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (*http.Request, error) {
+func (client VirtualNetworkPeeringsClient) GetPreparer(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":         autorest.Encode("path", resourceGroupName),
 		"subscriptionId":            autorest.Encode("path", client.SubscriptionID),
@@ -255,14 +226,13 @@ func (client VirtualNetworkPeeringsClient) GetPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings/{virtualNetworkPeeringName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualNetworkPeeringsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -282,8 +252,9 @@ func (client VirtualNetworkPeeringsClient) GetResponder(resp *http.Response) (re
 // List the List virtual network peerings operation retrieves all the peerings in a virtual network.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
-func (client VirtualNetworkPeeringsClient) List(resourceGroupName string, virtualNetworkName string) (result VirtualNetworkPeeringListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, virtualNetworkName)
+func (client VirtualNetworkPeeringsClient) List(ctx context.Context, resourceGroupName string, virtualNetworkName string) (result VirtualNetworkPeeringListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, virtualNetworkName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", nil, "Failure preparing request")
 		return
@@ -291,12 +262,12 @@ func (client VirtualNetworkPeeringsClient) List(resourceGroupName string, virtua
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vnplr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.vnplr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure responding to request")
 	}
@@ -305,7 +276,7 @@ func (client VirtualNetworkPeeringsClient) List(resourceGroupName string, virtua
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualNetworkPeeringsClient) ListPreparer(resourceGroupName string, virtualNetworkName string) (*http.Request, error) {
+func (client VirtualNetworkPeeringsClient) ListPreparer(ctx context.Context, resourceGroupName string, virtualNetworkName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
 		"subscriptionId":     autorest.Encode("path", client.SubscriptionID),
@@ -322,14 +293,13 @@ func (client VirtualNetworkPeeringsClient) ListPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualNetworkPeeringsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -346,71 +316,29 @@ func (client VirtualNetworkPeeringsClient) ListResponder(resp *http.Response) (r
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualNetworkPeeringsClient) ListNextResults(lastResults VirtualNetworkPeeringListResult) (result VirtualNetworkPeeringListResult, err error) {
-	req, err := lastResults.VirtualNetworkPeeringListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualNetworkPeeringsClient) listNextResults(lastResults VirtualNetworkPeeringListResult) (result VirtualNetworkPeeringListResult, err error) {
+	req, err := lastResults.virtualNetworkPeeringListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualNetworkPeeringsClient) ListComplete(resourceGroupName string, virtualNetworkName string, cancel <-chan struct{}) (<-chan VirtualNetworkPeering, <-chan error) {
-	resultChan := make(chan VirtualNetworkPeering)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, virtualNetworkName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualNetworkPeeringsClient) ListComplete(ctx context.Context, resourceGroupName string, virtualNetworkName string) (result VirtualNetworkPeeringListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, virtualNetworkName)
+	return
 }

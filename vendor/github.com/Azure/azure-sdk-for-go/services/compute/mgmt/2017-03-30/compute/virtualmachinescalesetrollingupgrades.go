@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualMachineScaleSetRollingUpgradesClient is the compute Client
 type VirtualMachineScaleSetRollingUpgradesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineScaleSetRollingUpgradesClient creates an instance of the
@@ -40,48 +41,27 @@ func NewVirtualMachineScaleSetRollingUpgradesClientWithBaseURI(baseURI string, s
 	return VirtualMachineScaleSetRollingUpgradesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Cancel cancels the current virtual machine scale set rolling upgrade. This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Cancel cancels the current virtual machine scale set rolling upgrade.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set.
-func (client VirtualMachineScaleSetRollingUpgradesClient) Cancel(resourceGroupName string, VMScaleSetName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CancelPreparer(resourceGroupName, VMScaleSetName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "Cancel", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetRollingUpgradesClient) Cancel(ctx context.Context, resourceGroupName string, VMScaleSetName string) (result VirtualMachineScaleSetRollingUpgradesCancelFuture, err error) {
+	req, err := client.CancelPreparer(ctx, resourceGroupName, VMScaleSetName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "Cancel", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CancelSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "Cancel", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CancelSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "Cancel", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CancelResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "Cancel", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CancelPreparer prepares the Cancel request.
-func (client VirtualMachineScaleSetRollingUpgradesClient) CancelPreparer(resourceGroupName string, VMScaleSetName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetRollingUpgradesClient) CancelPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -98,16 +78,22 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) CancelPreparer(resourc
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/rollingUpgrades/cancel", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CancelSender sends the Cancel request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetRollingUpgradesClient) CancelSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetRollingUpgradesClient) CancelSender(req *http.Request) (future VirtualMachineScaleSetRollingUpgradesCancelFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CancelResponder handles the response to the Cancel request. The method always
@@ -126,8 +112,8 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) CancelResponder(resp *
 // GetLatest gets the status of the latest virtual machine scale set rolling upgrade.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set.
-func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatest(resourceGroupName string, VMScaleSetName string) (result RollingUpgradeStatusInfo, err error) {
-	req, err := client.GetLatestPreparer(resourceGroupName, VMScaleSetName)
+func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatest(ctx context.Context, resourceGroupName string, VMScaleSetName string) (result RollingUpgradeStatusInfo, err error) {
+	req, err := client.GetLatestPreparer(ctx, resourceGroupName, VMScaleSetName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "GetLatest", nil, "Failure preparing request")
 		return
@@ -149,7 +135,7 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatest(resourceGrou
 }
 
 // GetLatestPreparer prepares the GetLatest request.
-func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatestPreparer(resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
+func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatestPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -166,14 +152,13 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatestPreparer(reso
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/rollingUpgrades/latest", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetLatestSender sends the GetLatest request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatestSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -192,47 +177,26 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) GetLatestResponder(res
 
 // StartOSUpgrade starts a rolling upgrade to move all virtual machine scale set instances to the latest available
 // Platform Image OS version. Instances which are already running the latest available OS version are not affected.
-// This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel
-// will be used to cancel polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set.
-func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgrade(resourceGroupName string, VMScaleSetName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartOSUpgradePreparer(resourceGroupName, VMScaleSetName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "StartOSUpgrade", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgrade(ctx context.Context, resourceGroupName string, VMScaleSetName string) (result VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture, err error) {
+	req, err := client.StartOSUpgradePreparer(ctx, resourceGroupName, VMScaleSetName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "StartOSUpgrade", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StartOSUpgradeSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "StartOSUpgrade", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StartOSUpgradeSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "StartOSUpgrade", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StartOSUpgradeResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesClient", "StartOSUpgrade", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StartOSUpgradePreparer prepares the StartOSUpgrade request.
-func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgradePreparer(resourceGroupName string, VMScaleSetName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgradePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -249,16 +213,22 @@ func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgradePreparer
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/osRollingUpgrade", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartOSUpgradeSender sends the StartOSUpgrade request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgradeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetRollingUpgradesClient) StartOSUpgradeSender(req *http.Request) (future VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StartOSUpgradeResponder handles the response to the StartOSUpgrade request. The method always

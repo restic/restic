@@ -118,16 +118,10 @@ document or creates a new one.
 		Population: 39.14,
 	})
 
-To update some fields of an existing document, use UpdateMap, UpdateStruct or
-UpdatePaths. For UpdateMap, the keys of the map specify which fields to change. The
-others are untouched.
+To update some fields of an existing document, use Update. It takes a list of
+paths to update and their corresponding values.
 
-	_, err = ca.UpdateMap(ctx, map[string]interface{}{"pop": 39.2})
-
-For UpdateStruct, you must explicitly provide the fields to update. The field names
-must match exactly.
-
-	_, err = ca.UpdateStruct(ctx, []string{"pop"}, State{Population: 39.2})
+	_, err = ca.Update(ctx, []firestore.Update{{Path: "capital", Value: "Sacramento"}})
 
 Use DocumentRef.Delete to delete a document.
 
@@ -143,7 +137,8 @@ write happen atomically with a single RPC.
 	if err != nil {
 		// TODO: Handle error.
 	}
-	_, err = ca.UpdateStruct(ctx, []string{"capital"}, State{Capital: "Sacramento"},
+	_, err = ca.Update(ctx,
+		[]firestore.Update{{Path: "capital", Value: "Sacramento"}},
 		firestore.LastUpdateTime(docsnap.UpdateTime))
 
 Here we update a doc only if it hasn't changed since we read it.
@@ -157,7 +152,7 @@ atomically.
 
 	writeResults, err := client.Batch().
 		Create(ny, State{Capital: "Albany"}).
-		UpdateStruct(ca, []string{"capital"}, State{Capital: "Sacramento"}).
+		Update(ca, []firestore.Update{{Path: "capital", Value: "Sacramento"}}).
 		Delete(client.Doc("States/WestDakota")).
 		Commit(ctx)
 
@@ -205,8 +200,7 @@ read and write methods of the Transaction passed to it.
 		if err != nil {
 			return err
 		}
-		return tx.UpdateStruct(ny, []string{"pop"},
-			State{Population: pop.(float64) + 0.2})
+		return tx.Update(ny, []firestore.Update{{Path: "pop", Value: pop.(float64) + 0.2}})
 	})
 	if err != nil {
 		// TODO: Handle error.

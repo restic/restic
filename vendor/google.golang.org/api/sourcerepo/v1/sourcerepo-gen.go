@@ -451,7 +451,7 @@ func (s *ListReposResponse) MarshalJSON() ([]byte, error) {
 
 // MirrorConfig: Configuration to automatically mirror a repository from
 // another
-// hosting service, for example GitHub or BitBucket.
+// hosting service, for example GitHub or Bitbucket.
 type MirrorConfig struct {
 	// DeployKeyId: ID of the SSH deploy key at the other hosting
 	// service.

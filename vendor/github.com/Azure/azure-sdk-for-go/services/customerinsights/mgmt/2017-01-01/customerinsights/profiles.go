@@ -18,6 +18,7 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // interact with Azure Customer Insights service to manage your resources. The API has entities that capture the
 // relationship between an end user and the Azure Customer Insights service.
 type ProfilesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewProfilesClient creates an instance of the ProfilesClient client.
@@ -41,60 +42,36 @@ func NewProfilesClientWithBaseURI(baseURI string, subscriptionID string) Profile
 	return ProfilesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a profile within a Hub, or updates an existing profile. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdate creates a profile within a Hub, or updates an existing profile.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. profileName is the name of the
 // profile. parameters is parameters supplied to the create/delete Profile type operation
-func (client ProfilesClient) CreateOrUpdate(resourceGroupName string, hubName string, profileName string, parameters ProfileResourceFormat, cancel <-chan struct{}) (<-chan ProfileResourceFormat, <-chan error) {
-	resultChan := make(chan ProfileResourceFormat, 1)
-	errChan := make(chan error, 1)
+func (client ProfilesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, hubName string, profileName string, parameters ProfileResourceFormat) (result ProfilesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: profileName,
 			Constraints: []validation.Constraint{{Target: "profileName", Name: validation.MaxLength, Rule: 128, Chain: nil},
 				{Target: "profileName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "profileName", Name: validation.Pattern, Rule: `^[a-zA-Z][a-zA-Z0-9_]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "customerinsights.ProfilesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "customerinsights.ProfilesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result ProfileResourceFormat
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, hubName, profileName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, hubName, profileName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ProfilesClient) CreateOrUpdatePreparer(resourceGroupName string, hubName string, profileName string, parameters ProfileResourceFormat, cancel <-chan struct{}) (*http.Request, error) {
+func (client ProfilesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, hubName string, profileName string, parameters ProfileResourceFormat) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"profileName":       autorest.Encode("path", profileName),
@@ -114,16 +91,22 @@ func (client ProfilesClient) CreateOrUpdatePreparer(resourceGroupName string, hu
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/profiles/{profileName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ProfilesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ProfilesClient) CreateOrUpdateSender(req *http.Request) (future ProfilesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -139,48 +122,28 @@ func (client ProfilesClient) CreateOrUpdateResponder(resp *http.Response) (resul
 	return
 }
 
-// Delete deletes a profile within a hub This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a profile within a hub
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. profileName is the name of the
 // profile. localeCode is locale of profile to retrieve, default is en-us.
-func (client ProfilesClient) Delete(resourceGroupName string, hubName string, profileName string, localeCode string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, hubName, profileName, localeCode, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ProfilesClient) Delete(ctx context.Context, resourceGroupName string, hubName string, profileName string, localeCode string) (result ProfilesDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, hubName, profileName, localeCode)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ProfilesClient) DeletePreparer(resourceGroupName string, hubName string, profileName string, localeCode string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ProfilesClient) DeletePreparer(ctx context.Context, resourceGroupName string, hubName string, profileName string, localeCode string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"profileName":       autorest.Encode("path", profileName),
@@ -201,16 +164,22 @@ func (client ProfilesClient) DeletePreparer(resourceGroupName string, hubName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/profiles/{profileName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ProfilesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ProfilesClient) DeleteSender(req *http.Request) (future ProfilesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -229,8 +198,8 @@ func (client ProfilesClient) DeleteResponder(resp *http.Response) (result autore
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. profileName is the name of the
 // profile. localeCode is locale of profile to retrieve, default is en-us.
-func (client ProfilesClient) Get(resourceGroupName string, hubName string, profileName string, localeCode string) (result ProfileResourceFormat, err error) {
-	req, err := client.GetPreparer(resourceGroupName, hubName, profileName, localeCode)
+func (client ProfilesClient) Get(ctx context.Context, resourceGroupName string, hubName string, profileName string, localeCode string) (result ProfileResourceFormat, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, hubName, profileName, localeCode)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "Get", nil, "Failure preparing request")
 		return
@@ -252,7 +221,7 @@ func (client ProfilesClient) Get(resourceGroupName string, hubName string, profi
 }
 
 // GetPreparer prepares the Get request.
-func (client ProfilesClient) GetPreparer(resourceGroupName string, hubName string, profileName string, localeCode string) (*http.Request, error) {
+func (client ProfilesClient) GetPreparer(ctx context.Context, resourceGroupName string, hubName string, profileName string, localeCode string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"profileName":       autorest.Encode("path", profileName),
@@ -273,14 +242,13 @@ func (client ProfilesClient) GetPreparer(resourceGroupName string, hubName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/profiles/{profileName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProfilesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -302,8 +270,8 @@ func (client ProfilesClient) GetResponder(resp *http.Response) (result ProfileRe
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. profileName is the name of the
 // profile.
-func (client ProfilesClient) GetEnrichingKpis(resourceGroupName string, hubName string, profileName string) (result ListKpiDefinition, err error) {
-	req, err := client.GetEnrichingKpisPreparer(resourceGroupName, hubName, profileName)
+func (client ProfilesClient) GetEnrichingKpis(ctx context.Context, resourceGroupName string, hubName string, profileName string) (result ListKpiDefinition, err error) {
+	req, err := client.GetEnrichingKpisPreparer(ctx, resourceGroupName, hubName, profileName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "GetEnrichingKpis", nil, "Failure preparing request")
 		return
@@ -325,7 +293,7 @@ func (client ProfilesClient) GetEnrichingKpis(resourceGroupName string, hubName 
 }
 
 // GetEnrichingKpisPreparer prepares the GetEnrichingKpis request.
-func (client ProfilesClient) GetEnrichingKpisPreparer(resourceGroupName string, hubName string, profileName string) (*http.Request, error) {
+func (client ProfilesClient) GetEnrichingKpisPreparer(ctx context.Context, resourceGroupName string, hubName string, profileName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"profileName":       autorest.Encode("path", profileName),
@@ -343,14 +311,13 @@ func (client ProfilesClient) GetEnrichingKpisPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/profiles/{profileName}/getEnrichingKpis", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetEnrichingKpisSender sends the GetEnrichingKpis request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProfilesClient) GetEnrichingKpisSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -371,8 +338,9 @@ func (client ProfilesClient) GetEnrichingKpisResponder(resp *http.Response) (res
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. localeCode is locale of profile
 // to retrieve, default is en-us.
-func (client ProfilesClient) ListByHub(resourceGroupName string, hubName string, localeCode string) (result ProfileListResult, err error) {
-	req, err := client.ListByHubPreparer(resourceGroupName, hubName, localeCode)
+func (client ProfilesClient) ListByHub(ctx context.Context, resourceGroupName string, hubName string, localeCode string) (result ProfileListResultPage, err error) {
+	result.fn = client.listByHubNextResults
+	req, err := client.ListByHubPreparer(ctx, resourceGroupName, hubName, localeCode)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", nil, "Failure preparing request")
 		return
@@ -380,12 +348,12 @@ func (client ProfilesClient) ListByHub(resourceGroupName string, hubName string,
 
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.plr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByHubResponder(resp)
+	result.plr, err = client.ListByHubResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", resp, "Failure responding to request")
 	}
@@ -394,7 +362,7 @@ func (client ProfilesClient) ListByHub(resourceGroupName string, hubName string,
 }
 
 // ListByHubPreparer prepares the ListByHub request.
-func (client ProfilesClient) ListByHubPreparer(resourceGroupName string, hubName string, localeCode string) (*http.Request, error) {
+func (client ProfilesClient) ListByHubPreparer(ctx context.Context, resourceGroupName string, hubName string, localeCode string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -414,14 +382,13 @@ func (client ProfilesClient) ListByHubPreparer(resourceGroupName string, hubName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/profiles", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByHubSender sends the ListByHub request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProfilesClient) ListByHubSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -438,71 +405,29 @@ func (client ProfilesClient) ListByHubResponder(resp *http.Response) (result Pro
 	return
 }
 
-// ListByHubNextResults retrieves the next set of results, if any.
-func (client ProfilesClient) ListByHubNextResults(lastResults ProfileListResult) (result ProfileListResult, err error) {
-	req, err := lastResults.ProfileListResultPreparer()
+// listByHubNextResults retrieves the next set of results, if any.
+func (client ProfilesClient) listByHubNextResults(lastResults ProfileListResult) (result ProfileListResult, err error) {
+	req, err := lastResults.profileListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "listByHubNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "listByHubNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByHubResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "ListByHub", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "customerinsights.ProfilesClient", "listByHubNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByHubComplete gets all elements from the list without paging.
-func (client ProfilesClient) ListByHubComplete(resourceGroupName string, hubName string, localeCode string, cancel <-chan struct{}) (<-chan ProfileResourceFormat, <-chan error) {
-	resultChan := make(chan ProfileResourceFormat)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByHub(resourceGroupName, hubName, localeCode)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByHubNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByHubComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProfilesClient) ListByHubComplete(ctx context.Context, resourceGroupName string, hubName string, localeCode string) (result ProfileListResultIterator, err error) {
+	result.page, err = client.ListByHub(ctx, resourceGroupName, hubName, localeCode)
+	return
 }

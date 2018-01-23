@@ -635,15 +635,15 @@ func profileeWork() {
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
 	if _, err := gz.Write(data); err != nil {
-		log.Printf("failed to write to gzip stream", err)
+		log.Println("failed to write to gzip stream", err)
 		return
 	}
 	if err := gz.Flush(); err != nil {
-		log.Printf("failed to flush to gzip stream", err)
+		log.Println("failed to flush to gzip stream", err)
 		return
 	}
 	if err := gz.Close(); err != nil {
-		log.Printf("failed to close gzip stream", err)
+		log.Println("failed to close gzip stream", err)
 	}
 }
 

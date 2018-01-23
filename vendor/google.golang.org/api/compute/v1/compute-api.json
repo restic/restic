@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/HqQuvNGps38O7DKua7SJgoho9d8\"",
+ "etag": "\"-iA1DTNe4s-I6JZXPt1t1Ypy8IU/yYKGGymxCOlXess_DWUNkE4vOp4\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20171107",
+ "revision": "20171228",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -103,14 +103,14 @@
     },
     "acceleratorType": {
      "type": "string",
-     "description": "Full or partial URL of the accelerator type resource to expose to this instance."
+     "description": "Full or partial URL of the accelerator type resource to attach to this instance. If you are creating an instance template, specify only the accelerator name."
     }
    }
   },
   "AcceleratorType": {
    "id": "AcceleratorType",
    "type": "object",
-   "description": "An Accelerator Type resource.",
+   "description": "An Accelerator Type resource. (== resource_for beta.acceleratorTypes ==) (== resource_for v1.acceleratorTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -506,7 +506,7 @@
   "Address": {
    "id": "Address",
    "type": "object",
-   "description": "A reserved address resource.",
+   "description": "A reserved address resource. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)",
    "properties": {
     "address": {
      "type": "string",
@@ -590,7 +590,7 @@
     },
     "subnetwork": {
      "type": "string",
-     "description": "For external addresses, this field should not be used.\n\nThe URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range."
+     "description": "The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with GCE_ENDPOINT/DNS_RESOLVER purposes."
     },
     "users": {
      "type": "array",
@@ -1036,6 +1036,13 @@
      "type": "string",
      "description": "Specifies the disk type to use to create the instance. If not specified, the default is pd-standard, specified using the full URL. For example:\n\nhttps://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard \n\nOther values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:  \n- https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType \n- projects/project/zones/zone/diskTypes/diskType \n- zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL."
     },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.",
+     "additionalProperties": {
+      "type": "string"
+     }
+    },
     "sourceImage": {
      "type": "string",
      "description": "The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required except for local SSD.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a custom image that you created, specify the image name in the following format:\n\nglobal/images/my-custom-image \n\nYou can also specify a custom image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-image-family \n\nIf the source image is deleted later, this field will not be set."
@@ -1049,7 +1056,7 @@
   "Autoscaler": {
    "id": "Autoscaler",
    "type": "object",
-   "description": "Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.",
+   "description": "Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances. (== resource_for beta.autoscalers ==) (== resource_for v1.autoscalers ==) (== resource_for beta.regionAutoscalers ==) (== resource_for v1.regionAutoscalers ==)",
    "properties": {
     "autoscalingPolicy": {
      "$ref": "AutoscalingPolicy",
@@ -1797,7 +1804,7 @@
   "BackendService": {
    "id": "BackendService",
    "type": "object",
-   "description": "A BackendService resource. This resource defines a group of backend virtual machines and their serving capacity.",
+   "description": "A BackendService resource. This resource defines a group of backend virtual machines and their serving capacity. (== resource_for v1.backendService ==) (== resource_for beta.backendService ==)",
    "properties": {
     "affinityCookieTtlSec": {
      "type": "integer",
@@ -2350,7 +2357,7 @@
   "Commitment": {
    "id": "Commitment",
    "type": "object",
-   "description": "Represents a Commitment resource. Creating a Commitment resource means that you are purchasing a committed use contract with an explicit start and end time. You can create commitments based on vCPUs and memory usage and receive discounted rates. For full details, read Signing Up for Committed Use Discounts.\n\nCommitted use discounts are subject to Google Cloud Platform's Service Specific Terms. By purchasing a committed use discount, you agree to these terms. Committed use discounts will not renew, so you must purchase a new commitment to continue receiving discounts.",
+   "description": "Represents a Commitment resource. Creating a Commitment resource means that you are purchasing a committed use contract with an explicit start and end time. You can create commitments based on vCPUs and memory usage and receive discounted rates. For full details, read Signing Up for Committed Use Discounts.\n\nCommitted use discounts are subject to Google Cloud Platform's Service Specific Terms. By purchasing a committed use discount, you agree to these terms. Committed use discounts will not renew, so you must purchase a new commitment to continue receiving discounts. (== resource_for beta.commitments ==) (== resource_for v1.commitments ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -2833,7 +2840,7 @@
   "Disk": {
    "id": "Disk",
    "type": "object",
-   "description": "A Disk resource.",
+   "description": "A Disk resource. (== resource_for beta.disks ==) (== resource_for v1.disks ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -3205,7 +3212,7 @@
   "DiskType": {
    "id": "DiskType",
    "type": "object",
-   "description": "A DiskType resource.",
+   "description": "A DiskType resource. (== resource_for beta.diskTypes ==) (== resource_for v1.diskTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -3934,7 +3941,7 @@
   "ForwardingRule": {
    "id": "ForwardingRule",
    "type": "object",
-   "description": "A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.",
+   "description": "A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)",
    "properties": {
     "IPAddress": {
      "type": "string",
@@ -4391,13 +4398,15 @@
    "properties": {
     "type": {
      "type": "string",
-     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
+     "description": "The ID of a supported feature. Read  Enabling guest operating system features to see a list of available options.",
      "enum": [
       "FEATURE_TYPE_UNSPECIFIED",
+      "MULTI_IP_SUBNET",
       "VIRTIO_SCSI_MULTIQUEUE",
       "WINDOWS"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       ""
@@ -5095,7 +5104,7 @@
   "Image": {
    "id": "Image",
    "type": "object",
-   "description": "An Image resource.",
+   "description": "An Image resource. (== resource_for beta.images ==) (== resource_for v1.images ==)",
    "properties": {
     "archiveSizeBytes": {
      "type": "string",
@@ -5125,7 +5134,7 @@
     },
     "guestOsFeatures": {
      "type": "array",
-     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
+     "description": "A list of features to enable on the guest operating system. Applicable only for bootable images. Read  Enabling guest operating system features to see a list of available options.",
      "items": {
       "$ref": "GuestOsFeature"
      }
@@ -5373,7 +5382,7 @@
   "Instance": {
    "id": "Instance",
    "type": "object",
-   "description": "An Instance resource.",
+   "description": "An Instance resource. (== resource_for beta.instances ==) (== resource_for v1.instances ==)",
    "properties": {
     "canIpForward": {
      "type": "boolean",
@@ -5637,6 +5646,7 @@
   "InstanceGroup": {
    "id": "InstanceGroup",
    "type": "object",
+   "description": "InstanceGroups (== resource_for beta.instanceGroups ==) (== resource_for v1.instanceGroups ==) (== resource_for beta.regionInstanceGroups ==) (== resource_for v1.regionInstanceGroups ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -5932,7 +5942,7 @@
   "InstanceGroupManager": {
    "id": "InstanceGroupManager",
    "type": "object",
-   "description": "An Instance Group Manager resource.",
+   "description": "An Instance Group Manager resource. (== resource_for beta.instanceGroupManagers ==) (== resource_for v1.instanceGroupManagers ==) (== resource_for beta.regionInstanceGroupManagers ==) (== resource_for v1.regionInstanceGroupManagers ==)",
    "properties": {
     "baseInstanceName": {
      "type": "string",
@@ -6954,7 +6964,7 @@
   "InstanceTemplate": {
    "id": "InstanceTemplate",
    "type": "object",
-   "description": "An Instance Template resource.",
+   "description": "An Instance Template resource. (== resource_for beta.instanceTemplates ==) (== resource_for v1.instanceTemplates ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -7324,7 +7334,7 @@
   "Interconnect": {
    "id": "Interconnect",
    "type": "object",
-   "description": "Represents an Interconnects resource. The Interconnects resource is a dedicated connection between Google's network and your on-premises network. For more information, see the  Dedicated overview page.",
+   "description": "Represents an Interconnects resource. The Interconnects resource is a dedicated connection between Google's network and your on-premises network. For more information, see the  Dedicated overview page. (== resource_for v1.interconnects ==) (== resource_for beta.interconnects ==)",
    "properties": {
     "adminEnabled": {
      "type": "boolean",
@@ -7456,7 +7466,7 @@
   "InterconnectAttachment": {
    "id": "InterconnectAttachment",
    "type": "object",
-   "description": "Represents an InterconnectAttachment (VLAN attachment) resource. For more information, see  Creating VLAN Attachments.",
+   "description": "Represents an InterconnectAttachment (VLAN attachment) resource. For more information, see  Creating VLAN Attachments. (== resource_for beta.interconnectAttachments ==) (== resource_for v1.interconnectAttachments ==)",
    "properties": {
     "cloudRouterIpAddress": {
      "type": "string",
@@ -8333,7 +8343,7 @@
   "MachineType": {
    "id": "MachineType",
    "type": "object",
-   "description": "A Machine Type resource.",
+   "description": "A Machine Type resource. (== resource_for v1.machineTypes ==) (== resource_for beta.machineTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -8899,7 +8909,7 @@
   "Network": {
    "id": "Network",
    "type": "object",
-   "description": "Represents a Network resource. Read Networks and Firewalls for more information.",
+   "description": "Represents a Network resource. Read Networks and Firewalls for more information. (== resource_for v1.networks ==) (== resource_for beta.networks ==)",
    "properties": {
     "IPv4Range": {
      "type": "string",
@@ -9185,7 +9195,12 @@
     },
     "name": {
      "type": "string",
-     "description": "Name of the peering, which should conform to RFC1035."
+     "description": "Name of the peering, which should conform to RFC1035.",
+     "annotations": {
+      "required": [
+       "compute.networks.addPeering"
+      ]
+     }
     },
     "peerNetwork": {
      "type": "string",
@@ -9206,7 +9221,7 @@
   "Operation": {
    "id": "Operation",
    "type": "object",
-   "description": "An Operation resource, used to manage asynchronous API requests.",
+   "description": "An Operation resource, used to manage asynchronous API requests. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)",
    "properties": {
     "clientOperationId": {
      "type": "string",
@@ -9785,7 +9800,7 @@
   "Project": {
    "id": "Project",
    "type": "object",
-   "description": "A Project resource. Projects can only be created in the Google Cloud Platform Console. Unless marked otherwise, values can only be modified in the console.",
+   "description": "A Project resource. For an overview of projects, see  Cloud Platform Resource Hierarchy. (== resource_for v1.projects ==) (== resource_for beta.projects ==)",
    "properties": {
     "commonInstanceMetadata": {
      "$ref": "Metadata",
@@ -10025,7 +10040,7 @@
   "Region": {
    "id": "Region",
    "type": "object",
-   "description": "Region resource.",
+   "description": "Region resource. (== resource_for beta.regions ==) (== resource_for v1.regions ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -10804,7 +10819,7 @@
   "Route": {
    "id": "Route",
    "type": "object",
-   "description": "Represents a Route resource. A route specifies how certain packets should be handled by the network. Routes are associated with instances by tags and the set of routes for a particular instance is called its routing table.\n\nFor each packet leaving an instance, the system searches that instance's routing table for a single best matching route. Routes match packets by destination IP address, preferring smaller or more specific ranges over larger ones. If there is a tie, the system selects the route with the smallest priority value. If there is still a tie, it uses the layer three and four packet headers to select just one of the remaining matching routes. The packet is then forwarded as specified by the nextHop field of the winning route - either to another instance destination, an instance gateway, or a Google Compute Engine-operated gateway.\n\nPackets that do not match any route in the sending instance's routing table are dropped.",
+   "description": "Represents a Route resource. A route specifies how certain packets should be handled by the network. Routes are associated with instances by tags and the set of routes for a particular instance is called its routing table.\n\nFor each packet leaving an instance, the system searches that instance's routing table for a single best matching route. Routes match packets by destination IP address, preferring smaller or more specific ranges over larger ones. If there is a tie, the system selects the route with the smallest priority value. If there is still a tie, it uses the layer three and four packet headers to select just one of the remaining matching routes. The packet is then forwarded as specified by the nextHop field of the winning route - either to another instance destination, an instance gateway, or a Google Compute Engine-operated gateway.\n\nPackets that do not match any route in the sending instance's routing table are dropped. (== resource_for beta.routes ==) (== resource_for v1.routes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -11783,7 +11798,7 @@
   "Snapshot": {
    "id": "Snapshot",
    "type": "object",
-   "description": "A persistent disk snapshot resource.",
+   "description": "A persistent disk snapshot resource. (== resource_for beta.snapshots ==) (== resource_for v1.snapshots ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -12004,7 +12019,7 @@
   "SslCertificate": {
    "id": "SslCertificate",
    "type": "object",
-   "description": "An SslCertificate resource. This resource provides a mechanism to upload an SSL key and certificate to the load balancer to serve secure connections from the user.",
+   "description": "An SslCertificate resource. This resource provides a mechanism to upload an SSL key and certificate to the load balancer to serve secure connections from the user. (== resource_for beta.sslCertificates ==) (== resource_for v1.sslCertificates ==)",
    "properties": {
     "certificate": {
      "type": "string",
@@ -12158,7 +12173,7 @@
   "Subnetwork": {
    "id": "Subnetwork",
    "type": "object",
-   "description": "A Subnetwork resource.",
+   "description": "A Subnetwork resource. (== resource_for beta.subnetworks ==) (== resource_for v1.subnetworks ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -12625,7 +12640,7 @@
   "TargetHttpProxy": {
    "id": "TargetHttpProxy",
    "type": "object",
-   "description": "A TargetHttpProxy resource. This resource defines an HTTP proxy.",
+   "description": "A TargetHttpProxy resource. This resource defines an HTTP proxy. (== resource_for beta.targetHttpProxies ==) (== resource_for v1.targetHttpProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -12788,7 +12803,7 @@
   "TargetHttpsProxy": {
    "id": "TargetHttpsProxy",
    "type": "object",
-   "description": "A TargetHttpsProxy resource. This resource defines an HTTPS proxy.",
+   "description": "A TargetHttpsProxy resource. This resource defines an HTTPS proxy. (== resource_for beta.targetHttpsProxies ==) (== resource_for v1.targetHttpsProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -12945,7 +12960,7 @@
   "TargetInstance": {
    "id": "TargetInstance",
    "type": "object",
-   "description": "A TargetInstance resource. This resource defines an endpoint instance that terminates traffic of certain protocols.",
+   "description": "A TargetInstance resource. This resource defines an endpoint instance that terminates traffic of certain protocols. (== resource_for beta.targetInstances ==) (== resource_for v1.targetInstances ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -13315,7 +13330,7 @@
   "TargetPool": {
    "id": "TargetPool",
    "type": "object",
-   "description": "A TargetPool resource. This resource defines a pool of instances, an associated HttpHealthCheck resource, and the fallback target pool.",
+   "description": "A TargetPool resource. This resource defines a pool of instances, an associated HttpHealthCheck resource, and the fallback target pool. (== resource_for beta.targetPools ==) (== resource_for v1.targetPools ==)",
    "properties": {
     "backupPool": {
      "type": "string",
@@ -13831,7 +13846,7 @@
   "TargetSslProxy": {
    "id": "TargetSslProxy",
    "type": "object",
-   "description": "A TargetSslProxy resource. This resource defines an SSL proxy.",
+   "description": "A TargetSslProxy resource. This resource defines an SSL proxy. (== resource_for beta.targetSslProxies ==) (== resource_for v1.targetSslProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14028,7 +14043,7 @@
   "TargetTcpProxy": {
    "id": "TargetTcpProxy",
    "type": "object",
-   "description": "A TargetTcpProxy resource. This resource defines a TCP proxy.",
+   "description": "A TargetTcpProxy resource. This resource defines a TCP proxy. (== resource_for beta.targetTcpProxies ==) (== resource_for v1.targetTcpProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14190,7 +14205,7 @@
   "TargetVpnGateway": {
    "id": "TargetVpnGateway",
    "type": "object",
-   "description": "Represents a Target VPN gateway resource.",
+   "description": "Represents a Target VPN gateway resource. (== resource_for beta.targetVpnGateways ==) (== resource_for v1.targetVpnGateways ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14877,6 +14892,7 @@
   "VpnTunnel": {
    "id": "VpnTunnel",
    "type": "object",
+   "description": "VPN tunnel resource. (== resource_for beta.vpnTunnels ==) (== resource_for v1.vpnTunnels ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -15451,7 +15467,7 @@
   "Zone": {
    "id": "Zone",
    "type": "object",
-   "description": "A Zone resource.",
+   "description": "A Zone resource. (== resource_for beta.zones ==) (== resource_for v1.zones ==)",
    "properties": {
     "availableCpuPlatforms": {
      "type": "array",
@@ -17379,7 +17395,7 @@
      "id": "compute.disks.resize",
      "path": "{project}/zones/{zone}/disks/{disk}/resize",
      "httpMethod": "POST",
-     "description": "Resizes the specified persistent disk.",
+     "description": "Resizes the specified persistent disk. You can only increase the size of the disk.",
      "parameters": {
       "disk": {
        "type": "string",
@@ -20548,7 +20564,7 @@
      "id": "compute.instanceTemplates.delete",
      "path": "{project}/global/instanceTemplates/{instanceTemplate}",
      "httpMethod": "DELETE",
-     "description": "Deletes the specified instance template. If you delete an instance template that is being referenced from another instance group, the instance group will not be able to create or recreate virtual machine instances. Deleting an instance template is permanent and cannot be undone.",
+     "description": "Deletes the specified instance template. Deleting an instance template is permanent and cannot be undone. It's not possible to delete templates which are in use by an instance group.",
      "parameters": {
       "instanceTemplate": {
        "type": "string",
@@ -22822,7 +22838,7 @@
      "id": "compute.networks.patch",
      "path": "{project}/global/networks/{network}",
      "httpMethod": "PATCH",
-     "description": "Patches the specified network with the data included in the request.",
+     "description": "Patches the specified network with the data included in the request. Only the following fields can be modified: routingConfig.routingMode.",
      "parameters": {
       "network": {
        "type": "string",

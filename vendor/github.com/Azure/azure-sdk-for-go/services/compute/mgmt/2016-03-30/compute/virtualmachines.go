@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // VirtualMachinesClient is the compute Client
 type VirtualMachinesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachinesClient creates an instance of the VirtualMachinesClient client.
@@ -40,59 +41,36 @@ func NewVirtualMachinesClientWithBaseURI(baseURI string, subscriptionID string) 
 }
 
 // Capture captures the VM by copying virtual hard disks of the VM and outputs a template that can be used to create
-// similar VMs. This method may poll for completion. Polling can be canceled by passing the cancel channel argument.
-// The channel will be used to cancel polling and any outstanding HTTP requests.
+// similar VMs.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine. parameters is
 // parameters supplied to the Capture Virtual Machine operation.
-func (client VirtualMachinesClient) Capture(resourceGroupName string, VMName string, parameters VirtualMachineCaptureParameters, cancel <-chan struct{}) (<-chan VirtualMachineCaptureResult, <-chan error) {
-	resultChan := make(chan VirtualMachineCaptureResult, 1)
-	errChan := make(chan error, 1)
+func (client VirtualMachinesClient) Capture(ctx context.Context, resourceGroupName string, VMName string, parameters VirtualMachineCaptureParameters) (result VirtualMachinesCaptureFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.VhdPrefix", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.DestinationContainerName", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.OverwriteVhds", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "Capture")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "Capture")
 	}
 
-	go func() {
-		var err error
-		var result VirtualMachineCaptureResult
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CapturePreparer(resourceGroupName, VMName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CapturePreparer(ctx, resourceGroupName, VMName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CaptureSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CaptureSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CaptureResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CapturePreparer prepares the Capture request.
-func (client VirtualMachinesClient) CapturePreparer(resourceGroupName string, VMName string, parameters VirtualMachineCaptureParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) CapturePreparer(ctx context.Context, resourceGroupName string, VMName string, parameters VirtualMachineCaptureParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -111,16 +89,22 @@ func (client VirtualMachinesClient) CapturePreparer(resourceGroupName string, VM
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/capture", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CaptureSender sends the Capture request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) CaptureSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) CaptureSender(req *http.Request) (future VirtualMachinesCaptureFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CaptureResponder handles the response to the Capture request. The method always
@@ -136,15 +120,11 @@ func (client VirtualMachinesClient) CaptureResponder(resp *http.Response) (resul
 	return
 }
 
-// CreateOrUpdate the operation to create or update a virtual machine. This method may poll for completion. Polling can
-// be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// CreateOrUpdate the operation to create or update a virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine. parameters is
 // parameters supplied to the Create Virtual Machine operation.
-func (client VirtualMachinesClient) CreateOrUpdate(resourceGroupName string, VMName string, parameters VirtualMachine, cancel <-chan struct{}) (<-chan VirtualMachine, <-chan error) {
-	resultChan := make(chan VirtualMachine, 1)
-	errChan := make(chan error, 1)
+func (client VirtualMachinesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, VMName string, parameters VirtualMachine) (result VirtualMachinesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.VirtualMachineProperties", Name: validation.Null, Rule: false,
@@ -165,46 +145,26 @@ func (client VirtualMachinesClient) CreateOrUpdate(resourceGroupName string, VMN
 						}},
 					}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result VirtualMachine
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, VMName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, VMName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client VirtualMachinesClient) CreateOrUpdatePreparer(resourceGroupName string, VMName string, parameters VirtualMachine, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, VMName string, parameters VirtualMachine) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -223,16 +183,22 @@ func (client VirtualMachinesClient) CreateOrUpdatePreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) CreateOrUpdateSender(req *http.Request) (future VirtualMachinesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -249,47 +215,27 @@ func (client VirtualMachinesClient) CreateOrUpdateResponder(resp *http.Response)
 }
 
 // Deallocate shuts down the virtual machine and releases the compute resources. You are not billed for the compute
-// resources that this virtual machine uses. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// resources that this virtual machine uses.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Deallocate(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeallocatePreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Deallocate", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) Deallocate(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesDeallocateFuture, err error) {
+	req, err := client.DeallocatePreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Deallocate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeallocateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Deallocate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeallocateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Deallocate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeallocateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Deallocate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeallocatePreparer prepares the Deallocate request.
-func (client VirtualMachinesClient) DeallocatePreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) DeallocatePreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -306,16 +252,22 @@ func (client VirtualMachinesClient) DeallocatePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/deallocate", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeallocateSender sends the Deallocate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) DeallocateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) DeallocateSender(req *http.Request) (future VirtualMachinesDeallocateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DeallocateResponder handles the response to the Deallocate request. The method always
@@ -331,47 +283,27 @@ func (client VirtualMachinesClient) DeallocateResponder(resp *http.Response) (re
 	return
 }
 
-// Delete the operation to delete a virtual machine. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete the operation to delete a virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Delete(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) Delete(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VirtualMachinesClient) DeletePreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) DeletePreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -388,16 +320,22 @@ func (client VirtualMachinesClient) DeletePreparer(resourceGroupName string, VMN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) DeleteSender(req *http.Request) (future VirtualMachinesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -416,8 +354,8 @@ func (client VirtualMachinesClient) DeleteResponder(resp *http.Response) (result
 // Generalize sets the state of the virtual machine to generalized.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Generalize(resourceGroupName string, VMName string) (result OperationStatusResponse, err error) {
-	req, err := client.GeneralizePreparer(resourceGroupName, VMName)
+func (client VirtualMachinesClient) Generalize(ctx context.Context, resourceGroupName string, VMName string) (result OperationStatusResponse, err error) {
+	req, err := client.GeneralizePreparer(ctx, resourceGroupName, VMName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Generalize", nil, "Failure preparing request")
 		return
@@ -439,7 +377,7 @@ func (client VirtualMachinesClient) Generalize(resourceGroupName string, VMName 
 }
 
 // GeneralizePreparer prepares the Generalize request.
-func (client VirtualMachinesClient) GeneralizePreparer(resourceGroupName string, VMName string) (*http.Request, error) {
+func (client VirtualMachinesClient) GeneralizePreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -456,14 +394,13 @@ func (client VirtualMachinesClient) GeneralizePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/generalize", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GeneralizeSender sends the Generalize request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachinesClient) GeneralizeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -484,8 +421,8 @@ func (client VirtualMachinesClient) GeneralizeResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine. expand is the expand
 // expression to apply on the operation.
-func (client VirtualMachinesClient) Get(resourceGroupName string, VMName string, expand InstanceViewTypes) (result VirtualMachine, err error) {
-	req, err := client.GetPreparer(resourceGroupName, VMName, expand)
+func (client VirtualMachinesClient) Get(ctx context.Context, resourceGroupName string, VMName string, expand InstanceViewTypes) (result VirtualMachine, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, VMName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Get", nil, "Failure preparing request")
 		return
@@ -507,7 +444,7 @@ func (client VirtualMachinesClient) Get(resourceGroupName string, VMName string,
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualMachinesClient) GetPreparer(resourceGroupName string, VMName string, expand InstanceViewTypes) (*http.Request, error) {
+func (client VirtualMachinesClient) GetPreparer(ctx context.Context, resourceGroupName string, VMName string, expand InstanceViewTypes) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -527,14 +464,13 @@ func (client VirtualMachinesClient) GetPreparer(resourceGroupName string, VMName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachinesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -555,8 +491,9 @@ func (client VirtualMachinesClient) GetResponder(resp *http.Response) (result Vi
 // get the next page of virtual machines.
 //
 // resourceGroupName is the name of the resource group.
-func (client VirtualMachinesClient) List(resourceGroupName string) (result VirtualMachineListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName)
+func (client VirtualMachinesClient) List(ctx context.Context, resourceGroupName string) (result VirtualMachineListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", nil, "Failure preparing request")
 		return
@@ -564,12 +501,12 @@ func (client VirtualMachinesClient) List(resourceGroupName string) (result Virtu
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vmlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.vmlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure responding to request")
 	}
@@ -578,7 +515,7 @@ func (client VirtualMachinesClient) List(resourceGroupName string) (result Virtu
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualMachinesClient) ListPreparer(resourceGroupName string) (*http.Request, error) {
+func (client VirtualMachinesClient) ListPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -594,14 +531,13 @@ func (client VirtualMachinesClient) ListPreparer(resourceGroupName string) (*htt
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachinesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -618,79 +554,38 @@ func (client VirtualMachinesClient) ListResponder(resp *http.Response) (result V
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualMachinesClient) ListNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
-	req, err := lastResults.VirtualMachineListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualMachinesClient) listNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
+	req, err := lastResults.virtualMachineListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualMachinesClient) ListComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan VirtualMachine, <-chan error) {
-	resultChan := make(chan VirtualMachine)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualMachinesClient) ListComplete(ctx context.Context, resourceGroupName string) (result VirtualMachineListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName)
+	return
 }
 
 // ListAll lists all of the virtual machines in the specified subscription. Use the nextLink property in the response
 // to get the next page of virtual machines.
-func (client VirtualMachinesClient) ListAll() (result VirtualMachineListResult, err error) {
-	req, err := client.ListAllPreparer()
+func (client VirtualMachinesClient) ListAll(ctx context.Context) (result VirtualMachineListResultPage, err error) {
+	result.fn = client.listAllNextResults
+	req, err := client.ListAllPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", nil, "Failure preparing request")
 		return
@@ -698,12 +593,12 @@ func (client VirtualMachinesClient) ListAll() (result VirtualMachineListResult, 
 
 	resp, err := client.ListAllSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vmlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListAllResponder(resp)
+	result.vmlr, err = client.ListAllResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure responding to request")
 	}
@@ -712,7 +607,7 @@ func (client VirtualMachinesClient) ListAll() (result VirtualMachineListResult, 
 }
 
 // ListAllPreparer prepares the ListAll request.
-func (client VirtualMachinesClient) ListAllPreparer() (*http.Request, error) {
+func (client VirtualMachinesClient) ListAllPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -727,14 +622,13 @@ func (client VirtualMachinesClient) ListAllPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAllSender sends the ListAll request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachinesClient) ListAllSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -751,80 +645,38 @@ func (client VirtualMachinesClient) ListAllResponder(resp *http.Response) (resul
 	return
 }
 
-// ListAllNextResults retrieves the next set of results, if any.
-func (client VirtualMachinesClient) ListAllNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
-	req, err := lastResults.VirtualMachineListResultPreparer()
+// listAllNextResults retrieves the next set of results, if any.
+func (client VirtualMachinesClient) listAllNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
+	req, err := lastResults.virtualMachineListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listAllNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListAllSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listAllNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListAllResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "listAllNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListAllComplete gets all elements from the list without paging.
-func (client VirtualMachinesClient) ListAllComplete(cancel <-chan struct{}) (<-chan VirtualMachine, <-chan error) {
-	resultChan := make(chan VirtualMachine)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListAll()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListAllNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAllComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualMachinesClient) ListAllComplete(ctx context.Context) (result VirtualMachineListResultIterator, err error) {
+	result.page, err = client.ListAll(ctx)
+	return
 }
 
 // ListAvailableSizes lists all available virtual machine sizes to which the specified virtual machine can be resized.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) ListAvailableSizes(resourceGroupName string, VMName string) (result VirtualMachineSizeListResult, err error) {
-	req, err := client.ListAvailableSizesPreparer(resourceGroupName, VMName)
+func (client VirtualMachinesClient) ListAvailableSizes(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachineSizeListResult, err error) {
+	req, err := client.ListAvailableSizesPreparer(ctx, resourceGroupName, VMName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAvailableSizes", nil, "Failure preparing request")
 		return
@@ -846,7 +698,7 @@ func (client VirtualMachinesClient) ListAvailableSizes(resourceGroupName string,
 }
 
 // ListAvailableSizesPreparer prepares the ListAvailableSizes request.
-func (client VirtualMachinesClient) ListAvailableSizesPreparer(resourceGroupName string, VMName string) (*http.Request, error) {
+func (client VirtualMachinesClient) ListAvailableSizesPreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -863,14 +715,13 @@ func (client VirtualMachinesClient) ListAvailableSizesPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/vmSizes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAvailableSizesSender sends the ListAvailableSizes request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachinesClient) ListAvailableSizesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -888,48 +739,27 @@ func (client VirtualMachinesClient) ListAvailableSizesResponder(resp *http.Respo
 }
 
 // PowerOff the operation to power off (stop) a virtual machine. The virtual machine can be restarted with the same
-// provisioned resources. You are still charged for this virtual machine. This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// provisioned resources. You are still charged for this virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) PowerOff(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.PowerOffPreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "PowerOff", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) PowerOff(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesPowerOffFuture, err error) {
+	req, err := client.PowerOffPreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "PowerOff", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.PowerOffSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "PowerOff", resp, "Failure sending request")
-			return
-		}
+	result, err = client.PowerOffSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "PowerOff", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.PowerOffResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "PowerOff", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // PowerOffPreparer prepares the PowerOff request.
-func (client VirtualMachinesClient) PowerOffPreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) PowerOffPreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -946,16 +776,22 @@ func (client VirtualMachinesClient) PowerOffPreparer(resourceGroupName string, V
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/powerOff", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PowerOffSender sends the PowerOff request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) PowerOffSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) PowerOffSender(req *http.Request) (future VirtualMachinesPowerOffFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PowerOffResponder handles the response to the PowerOff request. The method always
@@ -971,48 +807,27 @@ func (client VirtualMachinesClient) PowerOffResponder(resp *http.Response) (resu
 	return
 }
 
-// Redeploy the operation to redeploy a virtual machine. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Redeploy the operation to redeploy a virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Redeploy(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RedeployPreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Redeploy", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) Redeploy(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesRedeployFuture, err error) {
+	req, err := client.RedeployPreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Redeploy", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RedeploySender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Redeploy", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RedeploySender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Redeploy", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RedeployResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Redeploy", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RedeployPreparer prepares the Redeploy request.
-func (client VirtualMachinesClient) RedeployPreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) RedeployPreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -1029,16 +844,22 @@ func (client VirtualMachinesClient) RedeployPreparer(resourceGroupName string, V
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/redeploy", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RedeploySender sends the Redeploy request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) RedeploySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) RedeploySender(req *http.Request) (future VirtualMachinesRedeployFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RedeployResponder handles the response to the Redeploy request. The method always
@@ -1054,47 +875,27 @@ func (client VirtualMachinesClient) RedeployResponder(resp *http.Response) (resu
 	return
 }
 
-// Restart the operation to restart a virtual machine. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Restart the operation to restart a virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Restart(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RestartPreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Restart", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) Restart(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesRestartFuture, err error) {
+	req, err := client.RestartPreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Restart", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.RestartSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Restart", resp, "Failure sending request")
-			return
-		}
+	result, err = client.RestartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Restart", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.RestartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Restart", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // RestartPreparer prepares the Restart request.
-func (client VirtualMachinesClient) RestartPreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) RestartPreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -1111,16 +912,22 @@ func (client VirtualMachinesClient) RestartPreparer(resourceGroupName string, VM
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/restart", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestartSender sends the Restart request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) RestartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) RestartSender(req *http.Request) (future VirtualMachinesRestartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RestartResponder handles the response to the Restart request. The method always
@@ -1136,47 +943,27 @@ func (client VirtualMachinesClient) RestartResponder(resp *http.Response) (resul
 	return
 }
 
-// Start the operation to start a virtual machine. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Start the operation to start a virtual machine.
 //
 // resourceGroupName is the name of the resource group. VMName is the name of the virtual machine.
-func (client VirtualMachinesClient) Start(resourceGroupName string, VMName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartPreparer(resourceGroupName, VMName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Start", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachinesClient) Start(ctx context.Context, resourceGroupName string, VMName string) (result VirtualMachinesStartFuture, err error) {
+	req, err := client.StartPreparer(ctx, resourceGroupName, VMName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Start", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StartSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Start", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Start", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Start", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StartPreparer prepares the Start request.
-func (client VirtualMachinesClient) StartPreparer(resourceGroupName string, VMName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachinesClient) StartPreparer(ctx context.Context, resourceGroupName string, VMName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -1193,16 +980,22 @@ func (client VirtualMachinesClient) StartPreparer(resourceGroupName string, VMNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachinesClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachinesClient) StartSender(req *http.Request) (future VirtualMachinesStartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StartResponder handles the response to the Start request. The method always

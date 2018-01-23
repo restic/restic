@@ -110,33 +110,56 @@ func setReflectFromProtoValue(v reflect.Value, vproto *pb.Value, c *Client) erro
 		v.SetString(x.StringValue)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		x, ok := val.(*pb.Value_IntegerValue)
-		if !ok {
+		var i int64
+		switch x := val.(type) {
+		case *pb.Value_IntegerValue:
+			i = x.IntegerValue
+		case *pb.Value_DoubleValue:
+			f := x.DoubleValue
+			i = int64(f)
+			if float64(i) != f {
+				return fmt.Errorf("firestore: float %f does not fit into %s", f, v.Type())
+			}
+		default:
 			return typeErr()
 		}
-		i := x.IntegerValue
 		if v.OverflowInt(i) {
 			return overflowErr(v, i)
 		}
 		v.SetInt(i)
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32:
-		x, ok := val.(*pb.Value_IntegerValue)
-		if !ok {
+		var u uint64
+		switch x := val.(type) {
+		case *pb.Value_IntegerValue:
+			u = uint64(x.IntegerValue)
+		case *pb.Value_DoubleValue:
+			f := x.DoubleValue
+			u = uint64(f)
+			if float64(u) != f {
+				return fmt.Errorf("firestore: float %f does not fit into %s", f, v.Type())
+			}
+		default:
 			return typeErr()
 		}
-		u := uint64(x.IntegerValue)
 		if v.OverflowUint(u) {
 			return overflowErr(v, u)
 		}
 		v.SetUint(u)
 
 	case reflect.Float32, reflect.Float64:
-		x, ok := val.(*pb.Value_DoubleValue)
-		if !ok {
+		var f float64
+		switch x := val.(type) {
+		case *pb.Value_DoubleValue:
+			f = x.DoubleValue
+		case *pb.Value_IntegerValue:
+			f = float64(x.IntegerValue)
+			if int64(f) != x.IntegerValue {
+				return overflowErr(v, x.IntegerValue)
+			}
+		default:
 			return typeErr()
 		}
-		f := x.DoubleValue
 		if v.OverflowFloat(f) {
 			return overflowErr(v, f)
 		}

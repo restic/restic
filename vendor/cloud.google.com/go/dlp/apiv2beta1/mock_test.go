@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -186,156 +186,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestDlpServiceDeidentifyContent(t *testing.T) {
-	var expectedResponse *dlppb.DeidentifyContentResponse = &dlppb.DeidentifyContentResponse{}
-
-	mockDlp.err = nil
-	mockDlp.reqs = nil
-
-	mockDlp.resps = append(mockDlp.resps[:0], expectedResponse)
-
-	var deidentifyConfig *dlppb.DeidentifyConfig = &dlppb.DeidentifyConfig{}
-	var inspectConfig *dlppb.InspectConfig = &dlppb.InspectConfig{}
-	var items []*dlppb.ContentItem = nil
-	var request = &dlppb.DeidentifyContentRequest{
-		DeidentifyConfig: deidentifyConfig,
-		InspectConfig:    inspectConfig,
-		Items:            items,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resp, err := c.DeidentifyContent(context.Background(), request)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := request, mockDlp.reqs[0]; !proto.Equal(want, got) {
-		t.Errorf("wrong request %q, want %q", got, want)
-	}
-
-	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
-		t.Errorf("wrong response %q, want %q)", got, want)
-	}
-}
-
-func TestDlpServiceDeidentifyContentError(t *testing.T) {
-	errCode := codes.PermissionDenied
-	mockDlp.err = gstatus.Error(errCode, "test error")
-
-	var deidentifyConfig *dlppb.DeidentifyConfig = &dlppb.DeidentifyConfig{}
-	var inspectConfig *dlppb.InspectConfig = &dlppb.InspectConfig{}
-	var items []*dlppb.ContentItem = nil
-	var request = &dlppb.DeidentifyContentRequest{
-		DeidentifyConfig: deidentifyConfig,
-		InspectConfig:    inspectConfig,
-		Items:            items,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resp, err := c.DeidentifyContent(context.Background(), request)
-
-	if st, ok := gstatus.FromError(err); !ok {
-		t.Errorf("got error %v, expected grpc error", err)
-	} else if c := st.Code(); c != errCode {
-		t.Errorf("got error code %q, want %q", c, errCode)
-	}
-	_ = resp
-}
-func TestDlpServiceAnalyzeDataSourceRisk(t *testing.T) {
-	var expectedResponse *dlppb.RiskAnalysisOperationResult = &dlppb.RiskAnalysisOperationResult{}
-
-	mockDlp.err = nil
-	mockDlp.reqs = nil
-
-	any, err := ptypes.MarshalAny(expectedResponse)
-	if err != nil {
-		t.Fatal(err)
-	}
-	mockDlp.resps = append(mockDlp.resps[:0], &longrunningpb.Operation{
-		Name:   "longrunning-test",
-		Done:   true,
-		Result: &longrunningpb.Operation_Response{Response: any},
-	})
-
-	var privacyMetric *dlppb.PrivacyMetric = &dlppb.PrivacyMetric{}
-	var sourceTable *dlppb.BigQueryTable = &dlppb.BigQueryTable{}
-	var request = &dlppb.AnalyzeDataSourceRiskRequest{
-		PrivacyMetric: privacyMetric,
-		SourceTable:   sourceTable,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	respLRO, err := c.AnalyzeDataSourceRisk(context.Background(), request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := respLRO.Wait(context.Background())
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := request, mockDlp.reqs[0]; !proto.Equal(want, got) {
-		t.Errorf("wrong request %q, want %q", got, want)
-	}
-
-	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
-		t.Errorf("wrong response %q, want %q)", got, want)
-	}
-}
-
-func TestDlpServiceAnalyzeDataSourceRiskError(t *testing.T) {
-	errCode := codes.PermissionDenied
-	mockDlp.err = nil
-	mockDlp.resps = append(mockDlp.resps[:0], &longrunningpb.Operation{
-		Name: "longrunning-test",
-		Done: true,
-		Result: &longrunningpb.Operation_Error{
-			Error: &status.Status{
-				Code:    int32(errCode),
-				Message: "test error",
-			},
-		},
-	})
-
-	var privacyMetric *dlppb.PrivacyMetric = &dlppb.PrivacyMetric{}
-	var sourceTable *dlppb.BigQueryTable = &dlppb.BigQueryTable{}
-	var request = &dlppb.AnalyzeDataSourceRiskRequest{
-		PrivacyMetric: privacyMetric,
-		SourceTable:   sourceTable,
-	}
-
-	c, err := NewClient(context.Background(), clientOpt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	respLRO, err := c.AnalyzeDataSourceRisk(context.Background(), request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := respLRO.Wait(context.Background())
-
-	if st, ok := gstatus.FromError(err); !ok {
-		t.Errorf("got error %v, expected grpc error", err)
-	} else if c := st.Code(); c != errCode {
-		t.Errorf("got error code %q, want %q", c, errCode)
-	}
-	_ = resp
-}
 func TestDlpServiceInspectContent(t *testing.T) {
 	var expectedResponse *dlppb.InspectContentResponse = &dlppb.InspectContentResponse{}
 
@@ -538,6 +388,156 @@ func TestDlpServiceRedactContentError(t *testing.T) {
 	}
 	_ = resp
 }
+func TestDlpServiceDeidentifyContent(t *testing.T) {
+	var expectedResponse *dlppb.DeidentifyContentResponse = &dlppb.DeidentifyContentResponse{}
+
+	mockDlp.err = nil
+	mockDlp.reqs = nil
+
+	mockDlp.resps = append(mockDlp.resps[:0], expectedResponse)
+
+	var deidentifyConfig *dlppb.DeidentifyConfig = &dlppb.DeidentifyConfig{}
+	var inspectConfig *dlppb.InspectConfig = &dlppb.InspectConfig{}
+	var items []*dlppb.ContentItem = nil
+	var request = &dlppb.DeidentifyContentRequest{
+		DeidentifyConfig: deidentifyConfig,
+		InspectConfig:    inspectConfig,
+		Items:            items,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := c.DeidentifyContent(context.Background(), request)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := request, mockDlp.reqs[0]; !proto.Equal(want, got) {
+		t.Errorf("wrong request %q, want %q", got, want)
+	}
+
+	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
+		t.Errorf("wrong response %q, want %q)", got, want)
+	}
+}
+
+func TestDlpServiceDeidentifyContentError(t *testing.T) {
+	errCode := codes.PermissionDenied
+	mockDlp.err = gstatus.Error(errCode, "test error")
+
+	var deidentifyConfig *dlppb.DeidentifyConfig = &dlppb.DeidentifyConfig{}
+	var inspectConfig *dlppb.InspectConfig = &dlppb.InspectConfig{}
+	var items []*dlppb.ContentItem = nil
+	var request = &dlppb.DeidentifyContentRequest{
+		DeidentifyConfig: deidentifyConfig,
+		InspectConfig:    inspectConfig,
+		Items:            items,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := c.DeidentifyContent(context.Background(), request)
+
+	if st, ok := gstatus.FromError(err); !ok {
+		t.Errorf("got error %v, expected grpc error", err)
+	} else if c := st.Code(); c != errCode {
+		t.Errorf("got error code %q, want %q", c, errCode)
+	}
+	_ = resp
+}
+func TestDlpServiceAnalyzeDataSourceRisk(t *testing.T) {
+	var expectedResponse *dlppb.RiskAnalysisOperationResult = &dlppb.RiskAnalysisOperationResult{}
+
+	mockDlp.err = nil
+	mockDlp.reqs = nil
+
+	any, err := ptypes.MarshalAny(expectedResponse)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mockDlp.resps = append(mockDlp.resps[:0], &longrunningpb.Operation{
+		Name:   "longrunning-test",
+		Done:   true,
+		Result: &longrunningpb.Operation_Response{Response: any},
+	})
+
+	var privacyMetric *dlppb.PrivacyMetric = &dlppb.PrivacyMetric{}
+	var sourceTable *dlppb.BigQueryTable = &dlppb.BigQueryTable{}
+	var request = &dlppb.AnalyzeDataSourceRiskRequest{
+		PrivacyMetric: privacyMetric,
+		SourceTable:   sourceTable,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	respLRO, err := c.AnalyzeDataSourceRisk(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := respLRO.Wait(context.Background())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := request, mockDlp.reqs[0]; !proto.Equal(want, got) {
+		t.Errorf("wrong request %q, want %q", got, want)
+	}
+
+	if want, got := expectedResponse, resp; !proto.Equal(want, got) {
+		t.Errorf("wrong response %q, want %q)", got, want)
+	}
+}
+
+func TestDlpServiceAnalyzeDataSourceRiskError(t *testing.T) {
+	errCode := codes.PermissionDenied
+	mockDlp.err = nil
+	mockDlp.resps = append(mockDlp.resps[:0], &longrunningpb.Operation{
+		Name: "longrunning-test",
+		Done: true,
+		Result: &longrunningpb.Operation_Error{
+			Error: &status.Status{
+				Code:    int32(errCode),
+				Message: "test error",
+			},
+		},
+	})
+
+	var privacyMetric *dlppb.PrivacyMetric = &dlppb.PrivacyMetric{}
+	var sourceTable *dlppb.BigQueryTable = &dlppb.BigQueryTable{}
+	var request = &dlppb.AnalyzeDataSourceRiskRequest{
+		PrivacyMetric: privacyMetric,
+		SourceTable:   sourceTable,
+	}
+
+	c, err := NewClient(context.Background(), clientOpt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	respLRO, err := c.AnalyzeDataSourceRisk(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := respLRO.Wait(context.Background())
+
+	if st, ok := gstatus.FromError(err); !ok {
+		t.Errorf("got error %v, expected grpc error", err)
+	} else if c := st.Code(); c != errCode {
+		t.Errorf("got error code %q, want %q", c, errCode)
+	}
+	_ = resp
+}
 func TestDlpServiceCreateInspectOperation(t *testing.T) {
 	var name2 string = "name2-1052831874"
 	var expectedResponse = &dlppb.InspectOperationResult{
@@ -678,7 +678,7 @@ func TestDlpServiceListInspectFindings(t *testing.T) {
 
 	mockDlp.resps = append(mockDlp.resps[:0], expectedResponse)
 
-	var formattedName string = ResultPath("[RESULT]")
+	var formattedName string = fmt.Sprintf("inspect/results/%s", "[RESULT]")
 	var request = &dlppb.ListInspectFindingsRequest{
 		Name: formattedName,
 	}
@@ -707,7 +707,7 @@ func TestDlpServiceListInspectFindingsError(t *testing.T) {
 	errCode := codes.PermissionDenied
 	mockDlp.err = gstatus.Error(errCode, "test error")
 
-	var formattedName string = ResultPath("[RESULT]")
+	var formattedName string = fmt.Sprintf("inspect/results/%s", "[RESULT]")
 	var request = &dlppb.ListInspectFindingsRequest{
 		Name: formattedName,
 	}

@@ -209,7 +209,7 @@ func (c *Client) Batch() *WriteBatch {
 }
 
 // commit calls the Commit RPC outside of a transaction.
-func (c *Client) commit(ctx context.Context, ws []*pb.Write) (*WriteResult, error) {
+func (c *Client) commit(ctx context.Context, ws []*pb.Write) ([]*WriteResult, error) {
 	if err := checkTransaction(ctx); err != nil {
 		return nil, err
 	}
@@ -224,7 +224,23 @@ func (c *Client) commit(ctx context.Context, ws []*pb.Write) (*WriteResult, erro
 	if len(res.WriteResults) == 0 {
 		return nil, errors.New("firestore: missing WriteResult")
 	}
-	return writeResultFromProto(res.WriteResults[0])
+	var wrs []*WriteResult
+	for _, pwr := range res.WriteResults {
+		wr, err := writeResultFromProto(pwr)
+		if err != nil {
+			return nil, err
+		}
+		wrs = append(wrs, wr)
+	}
+	return wrs, nil
+}
+
+func (c *Client) commit1(ctx context.Context, ws []*pb.Write) (*WriteResult, error) {
+	wrs, err := c.commit(ctx, ws)
+	if err != nil {
+		return nil, err
+	}
+	return wrs[0], nil
 }
 
 // A WriteResult is returned by methods that write documents.

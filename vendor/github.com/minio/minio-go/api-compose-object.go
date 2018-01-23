@@ -249,7 +249,7 @@ func (s *SourceInfo) getProps(c Client) (size int64, etag string, userMeta map[s
 	for k, v := range s.decryptKey.getSSEHeaders(false) {
 		opts.Set(k, v)
 	}
-	objInfo, err = c.statObject(s.bucket, s.object, opts)
+	objInfo, err = c.statObject(context.Background(), s.bucket, s.object, opts)
 	if err != nil {
 		err = ErrInvalidArgument(fmt.Sprintf("Could not stat object - %s/%s: %v", s.bucket, s.object, err))
 	} else {
@@ -310,6 +310,56 @@ func (c Client) copyObjectDo(ctx context.Context, srcBucket, srcObject, destBuck
 		LastModified: cpObjRes.LastModified,
 	}
 	return objInfo, nil
+}
+
+func (c Client) copyObjectPartDo(ctx context.Context, srcBucket, srcObject, destBucket, destObject string, uploadID string,
+	partID int, startOffset int64, length int64, metadata map[string]string) (p CompletePart, err error) {
+
+	headers := make(http.Header)
+
+	// Set source
+	headers.Set("x-amz-copy-source", s3utils.EncodePath(srcBucket+"/"+srcObject))
+
+	if startOffset < 0 {
+		return p, ErrInvalidArgument("startOffset must be non-negative")
+	}
+
+	if length >= 0 {
+		headers.Set("x-amz-copy-source-range", fmt.Sprintf("bytes=%d-%d", startOffset, startOffset+length-1))
+	}
+
+	for k, v := range metadata {
+		headers.Set(k, v)
+	}
+
+	queryValues := make(url.Values)
+	queryValues.Set("partNumber", strconv.Itoa(partID))
+	queryValues.Set("uploadId", uploadID)
+
+	resp, err := c.executeMethod(ctx, "PUT", requestMetadata{
+		bucketName:   destBucket,
+		objectName:   destObject,
+		customHeader: headers,
+		queryValues:  queryValues,
+	})
+	defer closeResponse(resp)
+	if err != nil {
+		return
+	}
+
+	// Check if we got an error response.
+	if resp.StatusCode != http.StatusOK {
+		return p, httpRespToErrorResponse(resp, destBucket, destObject)
+	}
+
+	// Decode copy-part response on success.
+	cpObjRes := copyObjectResult{}
+	err = xmlDecoder(resp.Body, &cpObjRes)
+	if err != nil {
+		return p, err
+	}
+	p.PartNumber, p.ETag = partID, cpObjRes.ETag
+	return p, nil
 }
 
 // uploadPartCopy - helper function to create a part in a multipart

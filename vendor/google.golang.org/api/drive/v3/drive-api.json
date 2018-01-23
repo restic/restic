@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/NcNt6tU3NPIOe9jtDodtXgKGgPI\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/JMDtpjXV6K9GRXGmSFN5aHZlstg\"",
  "discoveryVersion": "v1",
  "id": "drive:v3",
  "name": "drive",
  "version": "v3",
- "revision": "20171020",
+ "revision": "20180105",
  "title": "Drive API",
  "description": "Manages files in Drive including uploading, downloading, searching, detecting changes, and updating sharing permissions.",
  "ownerDomain": "google.com",
@@ -754,7 +754,7 @@
     },
     "parents": {
      "type": "array",
-     "description": "The IDs of the parent folders which contain the file.\nIf not specified as part of a create request, the file will be placed directly in the My Drive folder. Update requests must use the addParents and removeParents parameters to modify the values.",
+     "description": "The IDs of the parent folders which contain the file.\nIf not specified as part of a create request, the file will be placed directly in the user's My Drive folder. If not specified as part of a copy request, the file will inherit any discoverable parents of the source file. Update requests must use the addParents and removeParents parameters to modify the parents list.",
      "items": {
       "type": "string"
      }
@@ -2317,7 +2317,7 @@
      "parameters": {
       "emailMessage": {
        "type": "string",
-       "description": "A custom message to include in the notification email.",
+       "description": "A plain text custom message to include in the notification email.",
        "location": "query"
       },
       "fileId": {

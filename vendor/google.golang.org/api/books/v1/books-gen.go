@@ -59,6 +59,7 @@ func New(client *http.Client) (*Service, error) {
 	s.Bookshelves = NewBookshelvesService(s)
 	s.Cloudloading = NewCloudloadingService(s)
 	s.Dictionary = NewDictionaryService(s)
+	s.Familysharing = NewFamilysharingService(s)
 	s.Layers = NewLayersService(s)
 	s.Myconfig = NewMyconfigService(s)
 	s.Mylibrary = NewMylibraryService(s)
@@ -81,6 +82,8 @@ type Service struct {
 	Cloudloading *CloudloadingService
 
 	Dictionary *DictionaryService
+
+	Familysharing *FamilysharingService
 
 	Layers *LayersService
 
@@ -144,6 +147,15 @@ func NewDictionaryService(s *Service) *DictionaryService {
 }
 
 type DictionaryService struct {
+	s *Service
+}
+
+func NewFamilysharingService(s *Service) *FamilysharingService {
+	rs := &FamilysharingService{s: s}
+	return rs
+}
+
+type FamilysharingService struct {
 	s *Service
 }
 
@@ -1843,6 +1855,82 @@ func (s *DownloadAccesses) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type FamilyInfo struct {
+	// Kind: Resource type.
+	Kind string `json:"kind,omitempty"`
+
+	// Membership: Family membership info of the user that made the request.
+	Membership *FamilyInfoMembership `json:"membership,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FamilyInfo) MarshalJSON() ([]byte, error) {
+	type NoMethod FamilyInfo
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// FamilyInfoMembership: Family membership info of the user that made
+// the request.
+type FamilyInfoMembership struct {
+	// AcquirePermission: Restrictions on user buying and acquiring content.
+	AcquirePermission string `json:"acquirePermission,omitempty"`
+
+	// AgeGroup: The age group of the user.
+	AgeGroup string `json:"ageGroup,omitempty"`
+
+	// AllowedMaturityRating: The maximum allowed maturity rating for the
+	// user.
+	AllowedMaturityRating string `json:"allowedMaturityRating,omitempty"`
+
+	IsInFamily bool `json:"isInFamily,omitempty"`
+
+	// Role: The role of the user in the family.
+	Role string `json:"role,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AcquirePermission")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AcquirePermission") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FamilyInfoMembership) MarshalJSON() ([]byte, error) {
+	type NoMethod FamilyInfoMembership
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 type Geolayerdata struct {
 	Common *GeolayerdataCommon `json:"common,omitempty"`
 
@@ -2850,13 +2938,17 @@ func (s *UsersettingsNotesExport) MarshalJSON() ([]byte, error) {
 }
 
 type UsersettingsNotification struct {
+	MatchMyInterests *UsersettingsNotificationMatchMyInterests `json:"matchMyInterests,omitempty"`
+
 	MoreFromAuthors *UsersettingsNotificationMoreFromAuthors `json:"moreFromAuthors,omitempty"`
 
 	MoreFromSeries *UsersettingsNotificationMoreFromSeries `json:"moreFromSeries,omitempty"`
 
+	PriceDrop *UsersettingsNotificationPriceDrop `json:"priceDrop,omitempty"`
+
 	RewardExpirations *UsersettingsNotificationRewardExpirations `json:"rewardExpirations,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "MoreFromAuthors") to
+	// ForceSendFields is a list of field names (e.g. "MatchMyInterests") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -2864,7 +2956,7 @@ type UsersettingsNotification struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "MoreFromAuthors") to
+	// NullFields is a list of field names (e.g. "MatchMyInterests") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -2876,6 +2968,32 @@ type UsersettingsNotification struct {
 
 func (s *UsersettingsNotification) MarshalJSON() ([]byte, error) {
 	type NoMethod UsersettingsNotification
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type UsersettingsNotificationMatchMyInterests struct {
+	OptedState string `json:"opted_state,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "OptedState") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "OptedState") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UsersettingsNotificationMatchMyInterests) MarshalJSON() ([]byte, error) {
+	type NoMethod UsersettingsNotificationMatchMyInterests
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2928,6 +3046,32 @@ type UsersettingsNotificationMoreFromSeries struct {
 
 func (s *UsersettingsNotificationMoreFromSeries) MarshalJSON() ([]byte, error) {
 	type NoMethod UsersettingsNotificationMoreFromSeries
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type UsersettingsNotificationPriceDrop struct {
+	OptedState string `json:"opted_state,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "OptedState") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "OptedState") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UsersettingsNotificationPriceDrop) MarshalJSON() ([]byte, error) {
+	type NoMethod UsersettingsNotificationPriceDrop
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -5488,6 +5632,375 @@ func (c *DictionaryListOfflineMetadataCall) Do(opts ...googleapi.CallOption) (*M
 	//   "response": {
 	//     "$ref": "Metadata"
 	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/books"
+	//   ]
+	// }
+
+}
+
+// method id "books.familysharing.getFamilyInfo":
+
+type FamilysharingGetFamilyInfoCall struct {
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetFamilyInfo: Gets information regarding the family that the user is
+// part of.
+func (r *FamilysharingService) GetFamilyInfo() *FamilysharingGetFamilyInfoCall {
+	c := &FamilysharingGetFamilyInfoCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	return c
+}
+
+// Source sets the optional parameter "source": String to identify the
+// originator of this request.
+func (c *FamilysharingGetFamilyInfoCall) Source(source string) *FamilysharingGetFamilyInfoCall {
+	c.urlParams_.Set("source", source)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *FamilysharingGetFamilyInfoCall) Fields(s ...googleapi.Field) *FamilysharingGetFamilyInfoCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *FamilysharingGetFamilyInfoCall) IfNoneMatch(entityTag string) *FamilysharingGetFamilyInfoCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FamilysharingGetFamilyInfoCall) Context(ctx context.Context) *FamilysharingGetFamilyInfoCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *FamilysharingGetFamilyInfoCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *FamilysharingGetFamilyInfoCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "familysharing/getFamilyInfo")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "books.familysharing.getFamilyInfo" call.
+// Exactly one of *FamilyInfo or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *FamilyInfo.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *FamilysharingGetFamilyInfoCall) Do(opts ...googleapi.CallOption) (*FamilyInfo, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &FamilyInfo{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets information regarding the family that the user is part of.",
+	//   "httpMethod": "GET",
+	//   "id": "books.familysharing.getFamilyInfo",
+	//   "parameters": {
+	//     "source": {
+	//       "description": "String to identify the originator of this request.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "familysharing/getFamilyInfo",
+	//   "response": {
+	//     "$ref": "FamilyInfo"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/books"
+	//   ]
+	// }
+
+}
+
+// method id "books.familysharing.share":
+
+type FamilysharingShareCall struct {
+	s          *Service
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Share: Initiates sharing of the content with the user's family. Empty
+// response indicates success.
+func (r *FamilysharingService) Share() *FamilysharingShareCall {
+	c := &FamilysharingShareCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	return c
+}
+
+// DocId sets the optional parameter "docId": The docid to share.
+func (c *FamilysharingShareCall) DocId(docId string) *FamilysharingShareCall {
+	c.urlParams_.Set("docId", docId)
+	return c
+}
+
+// Source sets the optional parameter "source": String to identify the
+// originator of this request.
+func (c *FamilysharingShareCall) Source(source string) *FamilysharingShareCall {
+	c.urlParams_.Set("source", source)
+	return c
+}
+
+// VolumeId sets the optional parameter "volumeId": The volume to share.
+func (c *FamilysharingShareCall) VolumeId(volumeId string) *FamilysharingShareCall {
+	c.urlParams_.Set("volumeId", volumeId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *FamilysharingShareCall) Fields(s ...googleapi.Field) *FamilysharingShareCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FamilysharingShareCall) Context(ctx context.Context) *FamilysharingShareCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *FamilysharingShareCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *FamilysharingShareCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "familysharing/share")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "books.familysharing.share" call.
+func (c *FamilysharingShareCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Initiates sharing of the content with the user's family. Empty response indicates success.",
+	//   "httpMethod": "POST",
+	//   "id": "books.familysharing.share",
+	//   "parameters": {
+	//     "docId": {
+	//       "description": "The docid to share.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "source": {
+	//       "description": "String to identify the originator of this request.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "volumeId": {
+	//       "description": "The volume to share.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "familysharing/share",
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/books"
+	//   ]
+	// }
+
+}
+
+// method id "books.familysharing.unshare":
+
+type FamilysharingUnshareCall struct {
+	s          *Service
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Unshare: Initiates revoking content that has already been shared with
+// the user's family. Empty response indicates success.
+func (r *FamilysharingService) Unshare() *FamilysharingUnshareCall {
+	c := &FamilysharingUnshareCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	return c
+}
+
+// DocId sets the optional parameter "docId": The docid to unshare.
+func (c *FamilysharingUnshareCall) DocId(docId string) *FamilysharingUnshareCall {
+	c.urlParams_.Set("docId", docId)
+	return c
+}
+
+// Source sets the optional parameter "source": String to identify the
+// originator of this request.
+func (c *FamilysharingUnshareCall) Source(source string) *FamilysharingUnshareCall {
+	c.urlParams_.Set("source", source)
+	return c
+}
+
+// VolumeId sets the optional parameter "volumeId": The volume to
+// unshare.
+func (c *FamilysharingUnshareCall) VolumeId(volumeId string) *FamilysharingUnshareCall {
+	c.urlParams_.Set("volumeId", volumeId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *FamilysharingUnshareCall) Fields(s ...googleapi.Field) *FamilysharingUnshareCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *FamilysharingUnshareCall) Context(ctx context.Context) *FamilysharingUnshareCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *FamilysharingUnshareCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *FamilysharingUnshareCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "familysharing/unshare")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "books.familysharing.unshare" call.
+func (c *FamilysharingUnshareCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Initiates revoking content that has already been shared with the user's family. Empty response indicates success.",
+	//   "httpMethod": "POST",
+	//   "id": "books.familysharing.unshare",
+	//   "parameters": {
+	//     "docId": {
+	//       "description": "The docid to unshare.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "source": {
+	//       "description": "String to identify the originator of this request.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "volumeId": {
+	//       "description": "The volume to unshare.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "familysharing/unshare",
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/books"
 	//   ]

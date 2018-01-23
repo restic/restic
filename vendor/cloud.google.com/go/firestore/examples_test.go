@@ -262,13 +262,13 @@ func ExampleDocumentRef_Set_merge() {
 	// To do a merging Set with struct data, specify the exact fields to overwrite.
 	// MergeAll is disallowed here, because it would probably be a mistake: the "capital"
 	// field would be overwritten with the empty string.
-	_, err = client.Doc("States/Alabama").Set(ctx, State{Population: 5.2}, firestore.Merge("pop"))
+	_, err = client.Doc("States/Alabama").Set(ctx, State{Population: 5.2}, firestore.Merge([]string{"pop"}))
 	if err != nil {
 		// TODO: Handle error.
 	}
 }
 
-func ExampleDocumentRef_UpdateMap() {
+func ExampleDocumentRef_Update() {
 	ctx := context.Background()
 	client, err := firestore.NewClient(ctx, "project-id")
 	if err != nil {
@@ -277,50 +277,9 @@ func ExampleDocumentRef_UpdateMap() {
 	defer client.Close()
 
 	tenn := client.Doc("States/Tennessee")
-	wr, err := tenn.UpdateMap(ctx, map[string]interface{}{"pop": 6.6})
-	if err != nil {
-		// TODO: Handle error.
-	}
-	fmt.Println(wr.UpdateTime)
-}
-
-func ExampleDocumentRef_UpdateStruct() {
-	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, "project-id")
-	if err != nil {
-		// TODO: Handle error.
-	}
-	defer client.Close()
-
-	type State struct {
-		Capital    string  `firestore:"capital"`
-		Population float64 `firestore:"pop"` // in millions
-	}
-
-	tenn := client.Doc("States/Tennessee")
-	wr, err := tenn.UpdateStruct(ctx, []string{"pop"}, State{
-		Capital:    "does not matter",
-		Population: 6.6,
-	})
-	if err != nil {
-		// TODO: Handle error.
-	}
-	fmt.Println(wr.UpdateTime)
-}
-
-func ExampleDocumentRef_UpdatePaths() {
-	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, "project-id")
-	if err != nil {
-		// TODO: Handle error.
-	}
-	defer client.Close()
-
-	tenn := client.Doc("States/Tennessee")
-	wr, err := tenn.UpdatePaths(ctx, []firestore.FieldPathUpdate{
-		{Path: []string{"pop"}, Value: 6.6},
-		// This odd field path cannot be expressed using the dot-separated form:
-		{Path: []string{".", "*", "/"}, Value: "odd"},
+	wr, err := tenn.Update(ctx, []firestore.Update{
+		{Path: "pop", Value: 6.6},
+		{FieldPath: []string{".", "*", "/"}, Value: "odd"},
 	})
 	if err != nil {
 		// TODO: Handle error.
@@ -542,9 +501,7 @@ func ExampleClient_RunTransaction() {
 		if err != nil {
 			return err
 		}
-		return tx.UpdateMap(nm, map[string]interface{}{
-			"pop": pop.(float64) + 0.2,
-		})
+		return tx.Update(nm, []firestore.Update{{Path: "pop", Value: pop.(float64) + 0.2}})
 	})
 	if err != nil {
 		// TODO: Handle error.

@@ -18,6 +18,7 @@ package operationalinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DataSourcesClient is the operational Insights Client
 type DataSourcesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDataSourcesClient creates an instance of the DataSourcesClient client.
@@ -44,7 +45,7 @@ func NewDataSourcesClientWithBaseURI(baseURI string, subscriptionID string) Data
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is name of
 // the Log Analytics Workspace that will contain the datasource dataSourceName is the name of the datasource resource.
 // parameters is the parameters required to create or update a datasource.
-func (client DataSourcesClient) CreateOrUpdate(resourceGroupName string, workspaceName string, dataSourceName string, parameters DataSource) (result DataSource, err error) {
+func (client DataSourcesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string, parameters DataSource) (result DataSource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -55,7 +56,7 @@ func (client DataSourcesClient) CreateOrUpdate(resourceGroupName string, workspa
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.DataSourcesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, workspaceName, dataSourceName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, workspaceName, dataSourceName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -77,7 +78,7 @@ func (client DataSourcesClient) CreateOrUpdate(resourceGroupName string, workspa
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DataSourcesClient) CreateOrUpdatePreparer(resourceGroupName string, workspaceName string, dataSourceName string, parameters DataSource) (*http.Request, error) {
+func (client DataSourcesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string, parameters DataSource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dataSourceName":    autorest.Encode("path", dataSourceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -97,14 +98,13 @@ func (client DataSourcesClient) CreateOrUpdatePreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/dataSources/{dataSourceName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataSourcesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -125,7 +125,7 @@ func (client DataSourcesClient) CreateOrUpdateResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is name of
 // the Log Analytics Workspace that contains the datasource. dataSourceName is name of the datasource.
-func (client DataSourcesClient) Delete(resourceGroupName string, workspaceName string, dataSourceName string) (result autorest.Response, err error) {
+func (client DataSourcesClient) Delete(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -134,7 +134,7 @@ func (client DataSourcesClient) Delete(resourceGroupName string, workspaceName s
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.DataSourcesClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, workspaceName, dataSourceName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, workspaceName, dataSourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -156,7 +156,7 @@ func (client DataSourcesClient) Delete(resourceGroupName string, workspaceName s
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DataSourcesClient) DeletePreparer(resourceGroupName string, workspaceName string, dataSourceName string) (*http.Request, error) {
+func (client DataSourcesClient) DeletePreparer(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dataSourceName":    autorest.Encode("path", dataSourceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -174,14 +174,13 @@ func (client DataSourcesClient) DeletePreparer(resourceGroupName string, workspa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/dataSources/{dataSourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataSourcesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -201,7 +200,7 @@ func (client DataSourcesClient) DeleteResponder(resp *http.Response) (result aut
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is name of
 // the Log Analytics Workspace that contains the datasource. dataSourceName is name of the datasource
-func (client DataSourcesClient) Get(resourceGroupName string, workspaceName string, dataSourceName string) (result DataSource, err error) {
+func (client DataSourcesClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string) (result DataSource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -210,7 +209,7 @@ func (client DataSourcesClient) Get(resourceGroupName string, workspaceName stri
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.DataSourcesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, workspaceName, dataSourceName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, dataSourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "Get", nil, "Failure preparing request")
 		return
@@ -232,7 +231,7 @@ func (client DataSourcesClient) Get(resourceGroupName string, workspaceName stri
 }
 
 // GetPreparer prepares the Get request.
-func (client DataSourcesClient) GetPreparer(resourceGroupName string, workspaceName string, dataSourceName string) (*http.Request, error) {
+func (client DataSourcesClient) GetPreparer(ctx context.Context, resourceGroupName string, workspaceName string, dataSourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"dataSourceName":    autorest.Encode("path", dataSourceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -250,14 +249,13 @@ func (client DataSourcesClient) GetPreparer(resourceGroupName string, workspaceN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/dataSources/{dataSourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataSourcesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -279,7 +277,7 @@ func (client DataSourcesClient) GetResponder(resp *http.Response) (result DataSo
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is the
 // workspace that contains the data sources. filter is the filter to apply on the operation. skiptoken is starting
 // point of the collection of data source instances.
-func (client DataSourcesClient) ListByWorkspace(resourceGroupName string, workspaceName string, filter string, skiptoken string) (result DataSourceListResult, err error) {
+func (client DataSourcesClient) ListByWorkspace(ctx context.Context, resourceGroupName string, workspaceName string, filter string, skiptoken string) (result DataSourceListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -288,7 +286,8 @@ func (client DataSourcesClient) ListByWorkspace(resourceGroupName string, worksp
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace")
 	}
 
-	req, err := client.ListByWorkspacePreparer(resourceGroupName, workspaceName, filter, skiptoken)
+	result.fn = client.listByWorkspaceNextResults
+	req, err := client.ListByWorkspacePreparer(ctx, resourceGroupName, workspaceName, filter, skiptoken)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", nil, "Failure preparing request")
 		return
@@ -296,12 +295,12 @@ func (client DataSourcesClient) ListByWorkspace(resourceGroupName string, worksp
 
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByWorkspaceResponder(resp)
+	result.dslr, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", resp, "Failure responding to request")
 	}
@@ -310,7 +309,7 @@ func (client DataSourcesClient) ListByWorkspace(resourceGroupName string, worksp
 }
 
 // ListByWorkspacePreparer prepares the ListByWorkspace request.
-func (client DataSourcesClient) ListByWorkspacePreparer(resourceGroupName string, workspaceName string, filter string, skiptoken string) (*http.Request, error) {
+func (client DataSourcesClient) ListByWorkspacePreparer(ctx context.Context, resourceGroupName string, workspaceName string, filter string, skiptoken string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -331,14 +330,13 @@ func (client DataSourcesClient) ListByWorkspacePreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/dataSources", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByWorkspaceSender sends the ListByWorkspace request. The method will close the
 // http.Response Body if it receives an error.
 func (client DataSourcesClient) ListByWorkspaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -355,71 +353,29 @@ func (client DataSourcesClient) ListByWorkspaceResponder(resp *http.Response) (r
 	return
 }
 
-// ListByWorkspaceNextResults retrieves the next set of results, if any.
-func (client DataSourcesClient) ListByWorkspaceNextResults(lastResults DataSourceListResult) (result DataSourceListResult, err error) {
-	req, err := lastResults.DataSourceListResultPreparer()
+// listByWorkspaceNextResults retrieves the next set of results, if any.
+func (client DataSourcesClient) listByWorkspaceNextResults(lastResults DataSourceListResult) (result DataSourceListResult, err error) {
+	req, err := lastResults.dataSourceListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "listByWorkspaceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "listByWorkspaceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "ListByWorkspace", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "operationalinsights.DataSourcesClient", "listByWorkspaceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByWorkspaceComplete gets all elements from the list without paging.
-func (client DataSourcesClient) ListByWorkspaceComplete(resourceGroupName string, workspaceName string, filter string, skiptoken string, cancel <-chan struct{}) (<-chan DataSource, <-chan error) {
-	resultChan := make(chan DataSource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByWorkspace(resourceGroupName, workspaceName, filter, skiptoken)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByWorkspaceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByWorkspaceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DataSourcesClient) ListByWorkspaceComplete(ctx context.Context, resourceGroupName string, workspaceName string, filter string, skiptoken string) (result DataSourceListResultIterator, err error) {
+	result.page, err = client.ListByWorkspace(ctx, resourceGroupName, workspaceName, filter, skiptoken)
+	return
 }

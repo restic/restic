@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // LoadBalancerNetworkInterfacesClient is the network Client
 type LoadBalancerNetworkInterfacesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLoadBalancerNetworkInterfacesClient creates an instance of the LoadBalancerNetworkInterfacesClient client.
@@ -42,8 +43,9 @@ func NewLoadBalancerNetworkInterfacesClientWithBaseURI(baseURI string, subscript
 // List gets associated load balancer network interfaces.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is the name of the load balancer.
-func (client LoadBalancerNetworkInterfacesClient) List(resourceGroupName string, loadBalancerName string) (result InterfaceListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, loadBalancerName)
+func (client LoadBalancerNetworkInterfacesClient) List(ctx context.Context, resourceGroupName string, loadBalancerName string) (result InterfaceListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, loadBalancerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", nil, "Failure preparing request")
 		return
@@ -51,12 +53,12 @@ func (client LoadBalancerNetworkInterfacesClient) List(resourceGroupName string,
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ilr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ilr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", resp, "Failure responding to request")
 	}
@@ -65,7 +67,7 @@ func (client LoadBalancerNetworkInterfacesClient) List(resourceGroupName string,
 }
 
 // ListPreparer prepares the List request.
-func (client LoadBalancerNetworkInterfacesClient) ListPreparer(resourceGroupName string, loadBalancerName string) (*http.Request, error) {
+func (client LoadBalancerNetworkInterfacesClient) ListPreparer(ctx context.Context, resourceGroupName string, loadBalancerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loadBalancerName":  autorest.Encode("path", loadBalancerName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -82,14 +84,13 @@ func (client LoadBalancerNetworkInterfacesClient) ListPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/networkInterfaces", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoadBalancerNetworkInterfacesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -106,71 +107,29 @@ func (client LoadBalancerNetworkInterfacesClient) ListResponder(resp *http.Respo
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client LoadBalancerNetworkInterfacesClient) ListNextResults(lastResults InterfaceListResult) (result InterfaceListResult, err error) {
-	req, err := lastResults.InterfaceListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client LoadBalancerNetworkInterfacesClient) listNextResults(lastResults InterfaceListResult) (result InterfaceListResult, err error) {
+	req, err := lastResults.interfaceListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LoadBalancerNetworkInterfacesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client LoadBalancerNetworkInterfacesClient) ListComplete(resourceGroupName string, loadBalancerName string, cancel <-chan struct{}) (<-chan Interface, <-chan error) {
-	resultChan := make(chan Interface)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, loadBalancerName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LoadBalancerNetworkInterfacesClient) ListComplete(ctx context.Context, resourceGroupName string, loadBalancerName string) (result InterfaceListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, loadBalancerName)
+	return
 }

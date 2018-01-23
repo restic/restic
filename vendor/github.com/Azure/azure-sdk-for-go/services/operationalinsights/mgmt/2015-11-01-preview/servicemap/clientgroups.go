@@ -18,6 +18,7 @@ package servicemap
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -27,7 +28,7 @@ import (
 
 // ClientGroupsClient is the service Map API Reference
 type ClientGroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClientGroupsClient creates an instance of the ClientGroupsClient client.
@@ -46,7 +47,7 @@ func NewClientGroupsClientWithBaseURI(baseURI string, subscriptionID string) Cli
 // containing the resources of interest. clientGroupName is client Group resource name. startTime is UTC date and time
 // specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
 // date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
-func (client ClientGroupsClient) Get(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (result ClientGroup, err error) {
+func (client ClientGroupsClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (result ClientGroup, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -62,7 +63,7 @@ func (client ClientGroupsClient) Get(resourceGroupName string, workspaceName str
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ClientGroupsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, workspaceName, clientGroupName, startTime, endTime)
+	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, clientGroupName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -84,7 +85,7 @@ func (client ClientGroupsClient) Get(resourceGroupName string, workspaceName str
 }
 
 // GetPreparer prepares the Get request.
-func (client ClientGroupsClient) GetPreparer(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
+func (client ClientGroupsClient) GetPreparer(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clientGroupName":   autorest.Encode("path", clientGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -108,14 +109,13 @@ func (client ClientGroupsClient) GetPreparer(resourceGroupName string, workspace
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/clientGroups/{clientGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClientGroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -138,7 +138,7 @@ func (client ClientGroupsClient) GetResponder(resp *http.Response) (result Clien
 // containing the resources of interest. clientGroupName is client Group resource name. startTime is UTC date and time
 // specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
 // date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
-func (client ClientGroupsClient) GetMembersCount(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (result ClientGroupMembersCount, err error) {
+func (client ClientGroupsClient) GetMembersCount(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (result ClientGroupMembersCount, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -154,7 +154,7 @@ func (client ClientGroupsClient) GetMembersCount(resourceGroupName string, works
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ClientGroupsClient", "GetMembersCount")
 	}
 
-	req, err := client.GetMembersCountPreparer(resourceGroupName, workspaceName, clientGroupName, startTime, endTime)
+	req, err := client.GetMembersCountPreparer(ctx, resourceGroupName, workspaceName, clientGroupName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "GetMembersCount", nil, "Failure preparing request")
 		return
@@ -176,7 +176,7 @@ func (client ClientGroupsClient) GetMembersCount(resourceGroupName string, works
 }
 
 // GetMembersCountPreparer prepares the GetMembersCount request.
-func (client ClientGroupsClient) GetMembersCountPreparer(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
+func (client ClientGroupsClient) GetMembersCountPreparer(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clientGroupName":   autorest.Encode("path", clientGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -200,14 +200,13 @@ func (client ClientGroupsClient) GetMembersCountPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/clientGroups/{clientGroupName}/membersCount", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetMembersCountSender sends the GetMembersCount request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClientGroupsClient) GetMembersCountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -231,7 +230,7 @@ func (client ClientGroupsClient) GetMembersCountResponder(resp *http.Response) (
 // specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
 // date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow top is
 // page size to use. When not specified, the default page size is 100 records.
-func (client ClientGroupsClient) ListMembers(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32) (result ClientGroupMembersCollection, err error) {
+func (client ClientGroupsClient) ListMembers(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32) (result ClientGroupMembersCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -252,7 +251,8 @@ func (client ClientGroupsClient) ListMembers(resourceGroupName string, workspace
 		return result, validation.NewErrorWithValidationError(err, "servicemap.ClientGroupsClient", "ListMembers")
 	}
 
-	req, err := client.ListMembersPreparer(resourceGroupName, workspaceName, clientGroupName, startTime, endTime, top)
+	result.fn = client.listMembersNextResults
+	req, err := client.ListMembersPreparer(ctx, resourceGroupName, workspaceName, clientGroupName, startTime, endTime, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", nil, "Failure preparing request")
 		return
@@ -260,12 +260,12 @@ func (client ClientGroupsClient) ListMembers(resourceGroupName string, workspace
 
 	resp, err := client.ListMembersSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.cgmc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListMembersResponder(resp)
+	result.cgmc, err = client.ListMembersResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", resp, "Failure responding to request")
 	}
@@ -274,7 +274,7 @@ func (client ClientGroupsClient) ListMembers(resourceGroupName string, workspace
 }
 
 // ListMembersPreparer prepares the ListMembers request.
-func (client ClientGroupsClient) ListMembersPreparer(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32) (*http.Request, error) {
+func (client ClientGroupsClient) ListMembersPreparer(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clientGroupName":   autorest.Encode("path", clientGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -301,14 +301,13 @@ func (client ClientGroupsClient) ListMembersPreparer(resourceGroupName string, w
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/clientGroups/{clientGroupName}/members", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListMembersSender sends the ListMembers request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClientGroupsClient) ListMembersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -325,71 +324,29 @@ func (client ClientGroupsClient) ListMembersResponder(resp *http.Response) (resu
 	return
 }
 
-// ListMembersNextResults retrieves the next set of results, if any.
-func (client ClientGroupsClient) ListMembersNextResults(lastResults ClientGroupMembersCollection) (result ClientGroupMembersCollection, err error) {
-	req, err := lastResults.ClientGroupMembersCollectionPreparer()
+// listMembersNextResults retrieves the next set of results, if any.
+func (client ClientGroupsClient) listMembersNextResults(lastResults ClientGroupMembersCollection) (result ClientGroupMembersCollection, err error) {
+	req, err := lastResults.clientGroupMembersCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "listMembersNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListMembersSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "listMembersNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListMembersResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "ListMembers", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicemap.ClientGroupsClient", "listMembersNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListMembersComplete gets all elements from the list without paging.
-func (client ClientGroupsClient) ListMembersComplete(resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32, cancel <-chan struct{}) (<-chan ClientGroupMember, <-chan error) {
-	resultChan := make(chan ClientGroupMember)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListMembers(resourceGroupName, workspaceName, clientGroupName, startTime, endTime, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListMembersNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListMembersComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ClientGroupsClient) ListMembersComplete(ctx context.Context, resourceGroupName string, workspaceName string, clientGroupName string, startTime *date.Time, endTime *date.Time, top *int32) (result ClientGroupMembersCollectionIterator, err error) {
+	result.page, err = client.ListMembers(ctx, resourceGroupName, workspaceName, clientGroupName, startTime, endTime, top)
+	return
 }

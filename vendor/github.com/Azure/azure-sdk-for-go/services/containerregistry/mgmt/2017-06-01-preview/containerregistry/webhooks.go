@@ -18,6 +18,7 @@ package containerregistry
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // WebhooksClient is the client for the Webhooks methods of the Containerregistry service.
 type WebhooksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewWebhooksClient creates an instance of the WebhooksClient client.
@@ -39,16 +40,12 @@ func NewWebhooksClientWithBaseURI(baseURI string, subscriptionID string) Webhook
 	return WebhooksClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create creates a webhook for a container registry with the specified parameters. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// Create creates a webhook for a container registry with the specified parameters.
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook. webhookCreateParameters is the parameters
 // for creating a webhook.
-func (client WebhooksClient) Create(resourceGroupName string, registryName string, webhookName string, webhookCreateParameters WebhookCreateParameters, cancel <-chan struct{}) (<-chan Webhook, <-chan error) {
-	resultChan := make(chan Webhook, 1)
-	errChan := make(chan error, 1)
+func (client WebhooksClient) Create(ctx context.Context, resourceGroupName string, registryName string, webhookName string, webhookCreateParameters WebhookCreateParameters) (result WebhooksCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -64,46 +61,26 @@ func (client WebhooksClient) Create(resourceGroupName string, registryName strin
 					Chain: []validation.Constraint{{Target: "webhookCreateParameters.WebhookPropertiesCreateParameters.ServiceURI", Name: validation.Null, Rule: true, Chain: nil},
 						{Target: "webhookCreateParameters.WebhookPropertiesCreateParameters.Actions", Name: validation.Null, Rule: true, Chain: nil},
 					}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Webhook
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, registryName, webhookName, webhookCreateParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, registryName, webhookName, webhookCreateParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client WebhooksClient) CreatePreparer(resourceGroupName string, registryName string, webhookName string, webhookCreateParameters WebhookCreateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client WebhooksClient) CreatePreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string, webhookCreateParameters WebhookCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -123,16 +100,22 @@ func (client WebhooksClient) CreatePreparer(resourceGroupName string, registryNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}", pathParameters),
 		autorest.WithJSON(webhookCreateParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client WebhooksClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client WebhooksClient) CreateSender(req *http.Request) (future WebhooksCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -148,14 +131,11 @@ func (client WebhooksClient) CreateResponder(resp *http.Response) (result Webhoo
 	return
 }
 
-// Delete deletes a webhook from a container registry. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a webhook from a container registry.
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook.
-func (client WebhooksClient) Delete(resourceGroupName string, registryName string, webhookName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client WebhooksClient) Delete(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result WebhooksDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -165,46 +145,26 @@ func (client WebhooksClient) Delete(resourceGroupName string, registryName strin
 			Constraints: []validation.Constraint{{Target: "webhookName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "webhookName", Name: validation.MinLength, Rule: 5, Chain: nil},
 				{Target: "webhookName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, registryName, webhookName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, registryName, webhookName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client WebhooksClient) DeletePreparer(resourceGroupName string, registryName string, webhookName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client WebhooksClient) DeletePreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -222,16 +182,22 @@ func (client WebhooksClient) DeletePreparer(resourceGroupName string, registryNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client WebhooksClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client WebhooksClient) DeleteSender(req *http.Request) (future WebhooksDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -250,7 +216,7 @@ func (client WebhooksClient) DeleteResponder(resp *http.Response) (result autore
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook.
-func (client WebhooksClient) Get(resourceGroupName string, registryName string, webhookName string) (result Webhook, err error) {
+func (client WebhooksClient) Get(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result Webhook, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -263,7 +229,7 @@ func (client WebhooksClient) Get(resourceGroupName string, registryName string, 
 		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, registryName, webhookName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, registryName, webhookName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Get", nil, "Failure preparing request")
 		return
@@ -285,7 +251,7 @@ func (client WebhooksClient) Get(resourceGroupName string, registryName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client WebhooksClient) GetPreparer(resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
+func (client WebhooksClient) GetPreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -303,14 +269,13 @@ func (client WebhooksClient) GetPreparer(resourceGroupName string, registryName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebhooksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -331,7 +296,7 @@ func (client WebhooksClient) GetResponder(resp *http.Response) (result Webhook, 
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook.
-func (client WebhooksClient) GetCallbackConfig(resourceGroupName string, registryName string, webhookName string) (result CallbackConfig, err error) {
+func (client WebhooksClient) GetCallbackConfig(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result CallbackConfig, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -344,7 +309,7 @@ func (client WebhooksClient) GetCallbackConfig(resourceGroupName string, registr
 		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "GetCallbackConfig")
 	}
 
-	req, err := client.GetCallbackConfigPreparer(resourceGroupName, registryName, webhookName)
+	req, err := client.GetCallbackConfigPreparer(ctx, resourceGroupName, registryName, webhookName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "GetCallbackConfig", nil, "Failure preparing request")
 		return
@@ -366,7 +331,7 @@ func (client WebhooksClient) GetCallbackConfig(resourceGroupName string, registr
 }
 
 // GetCallbackConfigPreparer prepares the GetCallbackConfig request.
-func (client WebhooksClient) GetCallbackConfigPreparer(resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
+func (client WebhooksClient) GetCallbackConfigPreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -384,14 +349,13 @@ func (client WebhooksClient) GetCallbackConfigPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}/getCallbackConfig", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCallbackConfigSender sends the GetCallbackConfig request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebhooksClient) GetCallbackConfigSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -412,7 +376,7 @@ func (client WebhooksClient) GetCallbackConfigResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry.
-func (client WebhooksClient) List(resourceGroupName string, registryName string) (result WebhookListResult, err error) {
+func (client WebhooksClient) List(ctx context.Context, resourceGroupName string, registryName string) (result WebhookListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -421,7 +385,8 @@ func (client WebhooksClient) List(resourceGroupName string, registryName string)
 		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, registryName)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, registryName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", nil, "Failure preparing request")
 		return
@@ -429,12 +394,12 @@ func (client WebhooksClient) List(resourceGroupName string, registryName string)
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.wlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.wlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", resp, "Failure responding to request")
 	}
@@ -443,7 +408,7 @@ func (client WebhooksClient) List(resourceGroupName string, registryName string)
 }
 
 // ListPreparer prepares the List request.
-func (client WebhooksClient) ListPreparer(resourceGroupName string, registryName string) (*http.Request, error) {
+func (client WebhooksClient) ListPreparer(ctx context.Context, resourceGroupName string, registryName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -460,14 +425,13 @@ func (client WebhooksClient) ListPreparer(resourceGroupName string, registryName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebhooksClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -484,80 +448,38 @@ func (client WebhooksClient) ListResponder(resp *http.Response) (result WebhookL
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client WebhooksClient) ListNextResults(lastResults WebhookListResult) (result WebhookListResult, err error) {
-	req, err := lastResults.WebhookListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client WebhooksClient) listNextResults(lastResults WebhookListResult) (result WebhookListResult, err error) {
+	req, err := lastResults.webhookListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client WebhooksClient) ListComplete(resourceGroupName string, registryName string, cancel <-chan struct{}) (<-chan Webhook, <-chan error) {
-	resultChan := make(chan Webhook)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, registryName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WebhooksClient) ListComplete(ctx context.Context, resourceGroupName string, registryName string) (result WebhookListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, registryName)
+	return
 }
 
 // ListEvents lists recent events for the specified webhook.
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook.
-func (client WebhooksClient) ListEvents(resourceGroupName string, registryName string, webhookName string) (result EventListResult, err error) {
+func (client WebhooksClient) ListEvents(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result EventListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -570,7 +492,8 @@ func (client WebhooksClient) ListEvents(resourceGroupName string, registryName s
 		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "ListEvents")
 	}
 
-	req, err := client.ListEventsPreparer(resourceGroupName, registryName, webhookName)
+	result.fn = client.listEventsNextResults
+	req, err := client.ListEventsPreparer(ctx, resourceGroupName, registryName, webhookName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", nil, "Failure preparing request")
 		return
@@ -578,12 +501,12 @@ func (client WebhooksClient) ListEvents(resourceGroupName string, registryName s
 
 	resp, err := client.ListEventsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.elr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListEventsResponder(resp)
+	result.elr, err = client.ListEventsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", resp, "Failure responding to request")
 	}
@@ -592,7 +515,7 @@ func (client WebhooksClient) ListEvents(resourceGroupName string, registryName s
 }
 
 // ListEventsPreparer prepares the ListEvents request.
-func (client WebhooksClient) ListEventsPreparer(resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
+func (client WebhooksClient) ListEventsPreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -610,14 +533,13 @@ func (client WebhooksClient) ListEventsPreparer(resourceGroupName string, regist
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}/listEvents", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListEventsSender sends the ListEvents request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebhooksClient) ListEventsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -634,80 +556,38 @@ func (client WebhooksClient) ListEventsResponder(resp *http.Response) (result Ev
 	return
 }
 
-// ListEventsNextResults retrieves the next set of results, if any.
-func (client WebhooksClient) ListEventsNextResults(lastResults EventListResult) (result EventListResult, err error) {
-	req, err := lastResults.EventListResultPreparer()
+// listEventsNextResults retrieves the next set of results, if any.
+func (client WebhooksClient) listEventsNextResults(lastResults EventListResult) (result EventListResult, err error) {
+	req, err := lastResults.eventListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listEventsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListEventsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listEventsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListEventsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "ListEvents", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "listEventsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListEventsComplete gets all elements from the list without paging.
-func (client WebhooksClient) ListEventsComplete(resourceGroupName string, registryName string, webhookName string, cancel <-chan struct{}) (<-chan Event, <-chan error) {
-	resultChan := make(chan Event)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListEvents(resourceGroupName, registryName, webhookName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListEventsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListEventsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WebhooksClient) ListEventsComplete(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result EventListResultIterator, err error) {
+	result.page, err = client.ListEvents(ctx, resourceGroupName, registryName, webhookName)
+	return
 }
 
 // Ping triggers a ping event to be sent to the webhook.
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook.
-func (client WebhooksClient) Ping(resourceGroupName string, registryName string, webhookName string) (result EventInfo, err error) {
+func (client WebhooksClient) Ping(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (result EventInfo, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -720,7 +600,7 @@ func (client WebhooksClient) Ping(resourceGroupName string, registryName string,
 		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Ping")
 	}
 
-	req, err := client.PingPreparer(resourceGroupName, registryName, webhookName)
+	req, err := client.PingPreparer(ctx, resourceGroupName, registryName, webhookName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Ping", nil, "Failure preparing request")
 		return
@@ -742,7 +622,7 @@ func (client WebhooksClient) Ping(resourceGroupName string, registryName string,
 }
 
 // PingPreparer prepares the Ping request.
-func (client WebhooksClient) PingPreparer(resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
+func (client WebhooksClient) PingPreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -760,14 +640,13 @@ func (client WebhooksClient) PingPreparer(resourceGroupName string, registryName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}/ping", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PingSender sends the Ping request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebhooksClient) PingSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -784,16 +663,12 @@ func (client WebhooksClient) PingResponder(resp *http.Response) (result EventInf
 	return
 }
 
-// Update updates a webhook with the specified parameters. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Update updates a webhook with the specified parameters.
 //
 // resourceGroupName is the name of the resource group to which the container registry belongs. registryName is the
 // name of the container registry. webhookName is the name of the webhook. webhookUpdateParameters is the parameters
 // for updating a webhook.
-func (client WebhooksClient) Update(resourceGroupName string, registryName string, webhookName string, webhookUpdateParameters WebhookUpdateParameters, cancel <-chan struct{}) (<-chan Webhook, <-chan error) {
-	resultChan := make(chan Webhook, 1)
-	errChan := make(chan error, 1)
+func (client WebhooksClient) Update(ctx context.Context, resourceGroupName string, registryName string, webhookName string, webhookUpdateParameters WebhookUpdateParameters) (result WebhooksUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: registryName,
 			Constraints: []validation.Constraint{{Target: "registryName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -803,46 +678,26 @@ func (client WebhooksClient) Update(resourceGroupName string, registryName strin
 			Constraints: []validation.Constraint{{Target: "webhookName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "webhookName", Name: validation.MinLength, Rule: 5, Chain: nil},
 				{Target: "webhookName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Update")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "containerregistry.WebhooksClient", "Update")
 	}
 
-	go func() {
-		var err error
-		var result Webhook
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, registryName, webhookName, webhookUpdateParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Update", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, registryName, webhookName, webhookUpdateParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "containerregistry.WebhooksClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client WebhooksClient) UpdatePreparer(resourceGroupName string, registryName string, webhookName string, webhookUpdateParameters WebhookUpdateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client WebhooksClient) UpdatePreparer(ctx context.Context, resourceGroupName string, registryName string, webhookName string, webhookUpdateParameters WebhookUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"registryName":      autorest.Encode("path", registryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -862,16 +717,22 @@ func (client WebhooksClient) UpdatePreparer(resourceGroupName string, registryNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerRegistry/registries/{registryName}/webhooks/{webhookName}", pathParameters),
 		autorest.WithJSON(webhookUpdateParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client WebhooksClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client WebhooksClient) UpdateSender(req *http.Request) (future WebhooksUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

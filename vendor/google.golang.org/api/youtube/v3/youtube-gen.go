@@ -7986,10 +7986,6 @@ type TokenPagination struct {
 
 // Video: A video resource represents a YouTube video.
 type Video struct {
-	// AccessToken: The access token to uniquely identify a revocable
-	// unlisted video.
-	AccessToken string `json:"accessToken,omitempty"`
-
 	// AgeGating: Age restriction details related to a video. This data can
 	// only be retrieved by the video owner.
 	AgeGating *VideoAgeGating `json:"ageGating,omitempty"`
@@ -8081,7 +8077,7 @@ type Video struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "AccessToken") to
+	// ForceSendFields is a list of field names (e.g. "AgeGating") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -8089,10 +8085,10 @@ type Video struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "AccessToken") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "AgeGating") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`

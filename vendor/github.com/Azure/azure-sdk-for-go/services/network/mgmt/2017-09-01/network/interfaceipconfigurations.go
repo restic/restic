@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // InterfaceIPConfigurationsClient is the network Client
 type InterfaceIPConfigurationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewInterfaceIPConfigurationsClient creates an instance of the InterfaceIPConfigurationsClient client.
@@ -42,8 +43,8 @@ func NewInterfaceIPConfigurationsClientWithBaseURI(baseURI string, subscriptionI
 //
 // resourceGroupName is the name of the resource group. networkInterfaceName is the name of the network interface.
 // IPConfigurationName is the name of the ip configuration name.
-func (client InterfaceIPConfigurationsClient) Get(resourceGroupName string, networkInterfaceName string, IPConfigurationName string) (result InterfaceIPConfiguration, err error) {
-	req, err := client.GetPreparer(resourceGroupName, networkInterfaceName, IPConfigurationName)
+func (client InterfaceIPConfigurationsClient) Get(ctx context.Context, resourceGroupName string, networkInterfaceName string, IPConfigurationName string) (result InterfaceIPConfiguration, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, networkInterfaceName, IPConfigurationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client InterfaceIPConfigurationsClient) Get(resourceGroupName string, netw
 }
 
 // GetPreparer prepares the Get request.
-func (client InterfaceIPConfigurationsClient) GetPreparer(resourceGroupName string, networkInterfaceName string, IPConfigurationName string) (*http.Request, error) {
+func (client InterfaceIPConfigurationsClient) GetPreparer(ctx context.Context, resourceGroupName string, networkInterfaceName string, IPConfigurationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"ipConfigurationName":  autorest.Encode("path", IPConfigurationName),
 		"networkInterfaceName": autorest.Encode("path", networkInterfaceName),
@@ -83,14 +84,13 @@ func (client InterfaceIPConfigurationsClient) GetPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkInterfaces/{networkInterfaceName}/ipConfigurations/{ipConfigurationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client InterfaceIPConfigurationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -110,8 +110,9 @@ func (client InterfaceIPConfigurationsClient) GetResponder(resp *http.Response) 
 // List get all ip configurations in a network interface
 //
 // resourceGroupName is the name of the resource group. networkInterfaceName is the name of the network interface.
-func (client InterfaceIPConfigurationsClient) List(resourceGroupName string, networkInterfaceName string) (result InterfaceIPConfigurationListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, networkInterfaceName)
+func (client InterfaceIPConfigurationsClient) List(ctx context.Context, resourceGroupName string, networkInterfaceName string) (result InterfaceIPConfigurationListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, networkInterfaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", nil, "Failure preparing request")
 		return
@@ -119,12 +120,12 @@ func (client InterfaceIPConfigurationsClient) List(resourceGroupName string, net
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.iiclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.iiclr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", resp, "Failure responding to request")
 	}
@@ -133,7 +134,7 @@ func (client InterfaceIPConfigurationsClient) List(resourceGroupName string, net
 }
 
 // ListPreparer prepares the List request.
-func (client InterfaceIPConfigurationsClient) ListPreparer(resourceGroupName string, networkInterfaceName string) (*http.Request, error) {
+func (client InterfaceIPConfigurationsClient) ListPreparer(ctx context.Context, resourceGroupName string, networkInterfaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkInterfaceName": autorest.Encode("path", networkInterfaceName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -150,14 +151,13 @@ func (client InterfaceIPConfigurationsClient) ListPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkInterfaces/{networkInterfaceName}/ipConfigurations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client InterfaceIPConfigurationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -174,71 +174,29 @@ func (client InterfaceIPConfigurationsClient) ListResponder(resp *http.Response)
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client InterfaceIPConfigurationsClient) ListNextResults(lastResults InterfaceIPConfigurationListResult) (result InterfaceIPConfigurationListResult, err error) {
-	req, err := lastResults.InterfaceIPConfigurationListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client InterfaceIPConfigurationsClient) listNextResults(lastResults InterfaceIPConfigurationListResult) (result InterfaceIPConfigurationListResult, err error) {
+	req, err := lastResults.interfaceIPConfigurationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.InterfaceIPConfigurationsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client InterfaceIPConfigurationsClient) ListComplete(resourceGroupName string, networkInterfaceName string, cancel <-chan struct{}) (<-chan InterfaceIPConfiguration, <-chan error) {
-	resultChan := make(chan InterfaceIPConfiguration)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, networkInterfaceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client InterfaceIPConfigurationsClient) ListComplete(ctx context.Context, resourceGroupName string, networkInterfaceName string) (result InterfaceIPConfigurationListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, networkInterfaceName)
+	return
 }

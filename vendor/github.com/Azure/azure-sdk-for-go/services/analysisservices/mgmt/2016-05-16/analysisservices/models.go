@@ -18,36 +18,39 @@ package analysisservices
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"net/http"
 )
 
 // ProvisioningState enumerates the values for provisioning state.
 type ProvisioningState string
 
 const (
-	// Deleting specifies the deleting state for provisioning state.
+	// Deleting ...
 	Deleting ProvisioningState = "Deleting"
-	// Failed specifies the failed state for provisioning state.
+	// Failed ...
 	Failed ProvisioningState = "Failed"
-	// Paused specifies the paused state for provisioning state.
+	// Paused ...
 	Paused ProvisioningState = "Paused"
-	// Pausing specifies the pausing state for provisioning state.
+	// Pausing ...
 	Pausing ProvisioningState = "Pausing"
-	// Preparing specifies the preparing state for provisioning state.
+	// Preparing ...
 	Preparing ProvisioningState = "Preparing"
-	// Provisioning specifies the provisioning state for provisioning state.
+	// Provisioning ...
 	Provisioning ProvisioningState = "Provisioning"
-	// Resuming specifies the resuming state for provisioning state.
+	// Resuming ...
 	Resuming ProvisioningState = "Resuming"
-	// Scaling specifies the scaling state for provisioning state.
+	// Scaling ...
 	Scaling ProvisioningState = "Scaling"
-	// Succeeded specifies the succeeded state for provisioning state.
+	// Succeeded ...
 	Succeeded ProvisioningState = "Succeeded"
-	// Suspended specifies the suspended state for provisioning state.
+	// Suspended ...
 	Suspended ProvisioningState = "Suspended"
-	// Suspending specifies the suspending state for provisioning state.
+	// Suspending ...
 	Suspending ProvisioningState = "Suspending"
-	// Updating specifies the updating state for provisioning state.
+	// Updating ...
 	Updating ProvisioningState = "Updating"
 )
 
@@ -55,11 +58,11 @@ const (
 type SkuTier string
 
 const (
-	// Basic specifies the basic state for sku tier.
+	// Basic ...
 	Basic SkuTier = "Basic"
-	// Development specifies the development state for sku tier.
+	// Development ...
 	Development SkuTier = "Development"
-	// Standard specifies the standard state for sku tier.
+	// Standard ...
 	Standard SkuTier = "Standard"
 )
 
@@ -67,106 +70,459 @@ const (
 type State string
 
 const (
-	// StateDeleting specifies the state deleting state for state.
+	// StateDeleting ...
 	StateDeleting State = "Deleting"
-	// StateFailed specifies the state failed state for state.
+	// StateFailed ...
 	StateFailed State = "Failed"
-	// StatePaused specifies the state paused state for state.
+	// StatePaused ...
 	StatePaused State = "Paused"
-	// StatePausing specifies the state pausing state for state.
+	// StatePausing ...
 	StatePausing State = "Pausing"
-	// StatePreparing specifies the state preparing state for state.
+	// StatePreparing ...
 	StatePreparing State = "Preparing"
-	// StateProvisioning specifies the state provisioning state for state.
+	// StateProvisioning ...
 	StateProvisioning State = "Provisioning"
-	// StateResuming specifies the state resuming state for state.
+	// StateResuming ...
 	StateResuming State = "Resuming"
-	// StateScaling specifies the state scaling state for state.
+	// StateScaling ...
 	StateScaling State = "Scaling"
-	// StateSucceeded specifies the state succeeded state for state.
+	// StateSucceeded ...
 	StateSucceeded State = "Succeeded"
-	// StateSuspended specifies the state suspended state for state.
+	// StateSuspended ...
 	StateSuspended State = "Suspended"
-	// StateSuspending specifies the state suspending state for state.
+	// StateSuspending ...
 	StateSuspending State = "Suspending"
-	// StateUpdating specifies the state updating state for state.
+	// StateUpdating ...
 	StateUpdating State = "Updating"
 )
 
-// Resource is represents an instance of an Analysis Services resource.
-type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Sku      *ResourceSku        `json:"sku,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+// CheckServerNameAvailabilityParameters details of server name request body.
+type CheckServerNameAvailabilityParameters struct {
+	// Name - Name for checking availability.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type of azure analysis services.
+	Type *string `json:"type,omitempty"`
 }
 
-// ResourceSku is represents the SKU name and Azure pricing tier for Analysis Services resource.
-type ResourceSku struct {
+// CheckServerNameAvailabilityResult the checking result of server name availibility.
+type CheckServerNameAvailabilityResult struct {
+	autorest.Response `json:"-"`
+	// NameAvailable - Indicator of available of the server name.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - The reason of unavailability.
+	Reason *string `json:"reason,omitempty"`
+	// Message - The detailed message of the request unavailability.
+	Message *string `json:"message,omitempty"`
+}
+
+// ErrorResponse describes the format of Error response.
+type ErrorResponse struct {
+	// Code - Error code
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
+	Message *string `json:"message,omitempty"`
+}
+
+// OperationStatus the status of operation.
+type OperationStatus struct {
+	autorest.Response `json:"-"`
+	// ID - The operation Id.
+	ID *string `json:"id,omitempty"`
+	// Name - The operation name.
 	Name *string `json:"name,omitempty"`
+	// StartTime - The start time of the operation.
+	StartTime *string `json:"startTime,omitempty"`
+	// EndTime - The end time of the operation.
+	EndTime *string `json:"endTime,omitempty"`
+	// Status - The status of the operation.
+	Status *string `json:"status,omitempty"`
+	// Error - The error detail of the operation if any.
+	Error *ErrorResponse `json:"error,omitempty"`
+}
+
+// Resource represents an instance of an Analysis Services resource.
+type Resource struct {
+	// ID - An identifier that represents the Analysis Services resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the Analysis Services resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the Analysis Services resource.
+	Type *string `json:"type,omitempty"`
+	// Location - Location of the Analysis Services resource.
+	Location *string `json:"location,omitempty"`
+	// Sku - The SKU of the Analysis Services resource.
+	Sku *ResourceSku `json:"sku,omitempty"`
+	// Tags - Key-value pairs of additional resource provisioning properties.
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// ResourceSku represents the SKU name and Azure pricing tier for Analysis Services resource.
+type ResourceSku struct {
+	// Name - Name of the SKU level.
+	Name *string `json:"name,omitempty"`
+	// Tier - The name of the Azure pricing tier to which the SKU applies. Possible values include: 'Development', 'Basic', 'Standard'
 	Tier SkuTier `json:"tier,omitempty"`
 }
 
-// Server is represents an instance of an Analysis Services resource.
+// Server represents an instance of an Analysis Services resource.
 type Server struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Sku               *ResourceSku        `json:"sku,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// ID - An identifier that represents the Analysis Services resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the Analysis Services resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the Analysis Services resource.
+	Type *string `json:"type,omitempty"`
+	// Location - Location of the Analysis Services resource.
+	Location *string `json:"location,omitempty"`
+	// Sku - The SKU of the Analysis Services resource.
+	Sku *ResourceSku `json:"sku,omitempty"`
+	// Tags - Key-value pairs of additional resource provisioning properties.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ServerProperties - Properties of the provision operation request.
 	*ServerProperties `json:"properties,omitempty"`
 }
 
-// ServerAdministrators is an array of administrator user identities
+// UnmarshalJSON is the custom unmarshaler for Server struct.
+func (s *Server) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ServerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		s.ServerProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		s.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		s.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		s.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		s.Location = &location
+	}
+
+	v = m["sku"]
+	if v != nil {
+		var sku ResourceSku
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		s.Sku = &sku
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		s.Tags = &tags
+	}
+
+	return nil
+}
+
+// ServerAdministrators an array of administrator user identities
 type ServerAdministrators struct {
+	// Members - An array of administrator user identities.
 	Members *[]string `json:"members,omitempty"`
 }
 
-// ServerMutableProperties is an object that represents a set of mutable Analysis Services resource properties.
+// ServerMutableProperties an object that represents a set of mutable Analysis Services resource properties.
 type ServerMutableProperties struct {
-	AsAdministrators       *ServerAdministrators `json:"asAdministrators,omitempty"`
-	BackupBlobContainerURI *string               `json:"backupBlobContainerUri,omitempty"`
+	// AsAdministrators - A collection of AS server administrators
+	AsAdministrators *ServerAdministrators `json:"asAdministrators,omitempty"`
+	// BackupBlobContainerURI - The container URI of backup blob.
+	BackupBlobContainerURI *string `json:"backupBlobContainerUri,omitempty"`
 }
 
-// ServerProperties is properties of Analysis Services resource.
+// ServerProperties properties of Analysis Services resource.
 type ServerProperties struct {
-	AsAdministrators       *ServerAdministrators `json:"asAdministrators,omitempty"`
-	BackupBlobContainerURI *string               `json:"backupBlobContainerUri,omitempty"`
-	State                  State                 `json:"state,omitempty"`
-	ProvisioningState      ProvisioningState     `json:"provisioningState,omitempty"`
-	ServerFullName         *string               `json:"serverFullName,omitempty"`
+	// AsAdministrators - A collection of AS server administrators
+	AsAdministrators *ServerAdministrators `json:"asAdministrators,omitempty"`
+	// BackupBlobContainerURI - The container URI of backup blob.
+	BackupBlobContainerURI *string `json:"backupBlobContainerUri,omitempty"`
+	// State - The current state of Analysis Services resource. The state is to indicate more states outside of resource provisioning. Possible values include: 'StateDeleting', 'StateSucceeded', 'StateFailed', 'StatePaused', 'StateSuspended', 'StateProvisioning', 'StateUpdating', 'StateSuspending', 'StatePausing', 'StateResuming', 'StatePreparing', 'StateScaling'
+	State State `json:"state,omitempty"`
+	// ProvisioningState - The current deployment state of Analysis Services resource. The provisioningState is to indicate states for resource provisioning. Possible values include: 'Deleting', 'Succeeded', 'Failed', 'Paused', 'Suspended', 'Provisioning', 'Updating', 'Suspending', 'Pausing', 'Resuming', 'Preparing', 'Scaling'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// ServerFullName - The full name of the Analysis Services resource.
+	ServerFullName *string `json:"serverFullName,omitempty"`
 }
 
-// Servers is an array of Analysis Services resources.
+// Servers an array of Analysis Services resources.
 type Servers struct {
 	autorest.Response `json:"-"`
-	Value             *[]Server `json:"value,omitempty"`
+	// Value - An array of Analysis Services resources.
+	Value *[]Server `json:"value,omitempty"`
 }
 
-// ServerUpdateParameters is provision request specification
+// ServersCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ServersCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServersCreateFuture) Result(client ServersClient) (s Server, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("analysisservices.ServersCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.CreateResponder(resp)
+	return
+}
+
+// ServersDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ServersDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServersDeleteFuture) Result(client ServersClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("analysisservices.ServersDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// ServersResumeFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ServersResumeFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServersResumeFuture) Result(client ServersClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("analysisservices.ServersResumeFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ResumeResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ResumeResponder(resp)
+	return
+}
+
+// ServersSuspendFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ServersSuspendFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServersSuspendFuture) Result(client ServersClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("analysisservices.ServersSuspendFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.SuspendResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.SuspendResponder(resp)
+	return
+}
+
+// ServersUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ServersUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ServersUpdateFuture) Result(client ServersClient) (s Server, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return s, autorest.NewError("analysisservices.ServersUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		s, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	s, err = client.UpdateResponder(resp)
+	return
+}
+
+// ServerUpdateParameters provision request specification
 type ServerUpdateParameters struct {
-	Sku                      *ResourceSku        `json:"sku,omitempty"`
-	Tags                     *map[string]*string `json:"tags,omitempty"`
+	// Sku - The SKU of the Analysis Services resource.
+	Sku *ResourceSku `json:"sku,omitempty"`
+	// Tags - Key-value pairs of additional provisioning properties.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ServerMutableProperties - Properties of the provision operation request.
 	*ServerMutableProperties `json:"properties,omitempty"`
 }
 
-// SkuDetailsForExistingResource is an object that represents SKU details for existing resources
+// UnmarshalJSON is the custom unmarshaler for ServerUpdateParameters struct.
+func (sup *ServerUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["sku"]
+	if v != nil {
+		var sku ResourceSku
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		sup.Sku = &sku
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ServerMutableProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sup.ServerMutableProperties = &properties
+	}
+
+	return nil
+}
+
+// SkuDetailsForExistingResource an object that represents SKU details for existing resources
 type SkuDetailsForExistingResource struct {
+	// Sku - The SKU in SKU details for existing resources.
 	Sku *ResourceSku `json:"sku,omitempty"`
 }
 
-// SkuEnumerationForExistingResourceResult is an object that represents enumerating SKUs for existing resources
+// SkuEnumerationForExistingResourceResult an object that represents enumerating SKUs for existing resources
 type SkuEnumerationForExistingResourceResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]SkuDetailsForExistingResource `json:"value,omitempty"`
+	// Value - The collection of available SKUs for existing resources
+	Value *[]SkuDetailsForExistingResource `json:"value,omitempty"`
 }
 
-// SkuEnumerationForNewResourceResult is an object that represents enumerating SKUs for new resources
+// SkuEnumerationForNewResourceResult an object that represents enumerating SKUs for new resources
 type SkuEnumerationForNewResourceResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ResourceSku `json:"value,omitempty"`
+	// Value - The collection of available SKUs for new resources
+	Value *[]ResourceSku `json:"value,omitempty"`
 }

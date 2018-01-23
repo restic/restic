@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // AlertsClient is the client for the Alerts methods of the Storsimple service.
 type AlertsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAlertsClient creates an instance of the AlertsClient client.
@@ -42,7 +43,7 @@ func NewAlertsClientWithBaseURI(baseURI string, subscriptionID string) AlertsCli
 // Clear clear the alerts.
 //
 // parameters is the clear alert request. resourceGroupName is the resource group name managerName is the manager name
-func (client AlertsClient) Clear(parameters ClearAlertRequest, resourceGroupName string, managerName string) (result autorest.Response, err error) {
+func (client AlertsClient) Clear(ctx context.Context, parameters ClearAlertRequest, resourceGroupName string, managerName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Alerts", Name: validation.Null, Rule: true, Chain: nil}}},
@@ -52,7 +53,7 @@ func (client AlertsClient) Clear(parameters ClearAlertRequest, resourceGroupName
 		return result, validation.NewErrorWithValidationError(err, "storsimple.AlertsClient", "Clear")
 	}
 
-	req, err := client.ClearPreparer(parameters, resourceGroupName, managerName)
+	req, err := client.ClearPreparer(ctx, parameters, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "Clear", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client AlertsClient) Clear(parameters ClearAlertRequest, resourceGroupName
 }
 
 // ClearPreparer prepares the Clear request.
-func (client AlertsClient) ClearPreparer(parameters ClearAlertRequest, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client AlertsClient) ClearPreparer(ctx context.Context, parameters ClearAlertRequest, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -93,14 +94,13 @@ func (client AlertsClient) ClearPreparer(parameters ClearAlertRequest, resourceG
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/clearAlerts", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ClearSender sends the Clear request. The method will close the
 // http.Response Body if it receives an error.
 func (client AlertsClient) ClearSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -119,7 +119,7 @@ func (client AlertsClient) ClearResponder(resp *http.Response) (result autorest.
 // ListByManager retrieves all the alerts in a manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name filter is oData Filter options
-func (client AlertsClient) ListByManager(resourceGroupName string, managerName string, filter string) (result AlertList, err error) {
+func (client AlertsClient) ListByManager(ctx context.Context, resourceGroupName string, managerName string, filter string) (result AlertListPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -127,7 +127,8 @@ func (client AlertsClient) ListByManager(resourceGroupName string, managerName s
 		return result, validation.NewErrorWithValidationError(err, "storsimple.AlertsClient", "ListByManager")
 	}
 
-	req, err := client.ListByManagerPreparer(resourceGroupName, managerName, filter)
+	result.fn = client.listByManagerNextResults
+	req, err := client.ListByManagerPreparer(ctx, resourceGroupName, managerName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", nil, "Failure preparing request")
 		return
@@ -135,12 +136,12 @@ func (client AlertsClient) ListByManager(resourceGroupName string, managerName s
 
 	resp, err := client.ListByManagerSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.al.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByManagerResponder(resp)
+	result.al, err = client.ListByManagerResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", resp, "Failure responding to request")
 	}
@@ -149,7 +150,7 @@ func (client AlertsClient) ListByManager(resourceGroupName string, managerName s
 }
 
 // ListByManagerPreparer prepares the ListByManager request.
-func (client AlertsClient) ListByManagerPreparer(resourceGroupName string, managerName string, filter string) (*http.Request, error) {
+func (client AlertsClient) ListByManagerPreparer(ctx context.Context, resourceGroupName string, managerName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -169,14 +170,13 @@ func (client AlertsClient) ListByManagerPreparer(resourceGroupName string, manag
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/alerts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByManagerSender sends the ListByManager request. The method will close the
 // http.Response Body if it receives an error.
 func (client AlertsClient) ListByManagerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -193,80 +193,38 @@ func (client AlertsClient) ListByManagerResponder(resp *http.Response) (result A
 	return
 }
 
-// ListByManagerNextResults retrieves the next set of results, if any.
-func (client AlertsClient) ListByManagerNextResults(lastResults AlertList) (result AlertList, err error) {
-	req, err := lastResults.AlertListPreparer()
+// listByManagerNextResults retrieves the next set of results, if any.
+func (client AlertsClient) listByManagerNextResults(lastResults AlertList) (result AlertList, err error) {
+	req, err := lastResults.alertListPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.AlertsClient", "listByManagerNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByManagerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storsimple.AlertsClient", "listByManagerNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByManagerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "ListByManager", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "listByManagerNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByManagerComplete gets all elements from the list without paging.
-func (client AlertsClient) ListByManagerComplete(resourceGroupName string, managerName string, filter string, cancel <-chan struct{}) (<-chan Alert, <-chan error) {
-	resultChan := make(chan Alert)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByManager(resourceGroupName, managerName, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByManagerNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByManagerComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AlertsClient) ListByManagerComplete(ctx context.Context, resourceGroupName string, managerName string, filter string) (result AlertListIterator, err error) {
+	result.page, err = client.ListByManager(ctx, resourceGroupName, managerName, filter)
+	return
 }
 
 // SendTestEmail sends a test alert email.
 //
 // deviceName is the device name parameters is the send test alert email request. resourceGroupName is the resource
 // group name managerName is the manager name
-func (client AlertsClient) SendTestEmail(deviceName string, parameters SendTestAlertEmailRequest, resourceGroupName string, managerName string) (result autorest.Response, err error) {
+func (client AlertsClient) SendTestEmail(ctx context.Context, deviceName string, parameters SendTestAlertEmailRequest, resourceGroupName string, managerName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.EmailList", Name: validation.Null, Rule: true, Chain: nil}}},
@@ -276,7 +234,7 @@ func (client AlertsClient) SendTestEmail(deviceName string, parameters SendTestA
 		return result, validation.NewErrorWithValidationError(err, "storsimple.AlertsClient", "SendTestEmail")
 	}
 
-	req, err := client.SendTestEmailPreparer(deviceName, parameters, resourceGroupName, managerName)
+	req, err := client.SendTestEmailPreparer(ctx, deviceName, parameters, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AlertsClient", "SendTestEmail", nil, "Failure preparing request")
 		return
@@ -298,7 +256,7 @@ func (client AlertsClient) SendTestEmail(deviceName string, parameters SendTestA
 }
 
 // SendTestEmailPreparer prepares the SendTestEmail request.
-func (client AlertsClient) SendTestEmailPreparer(deviceName string, parameters SendTestAlertEmailRequest, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client AlertsClient) SendTestEmailPreparer(ctx context.Context, deviceName string, parameters SendTestAlertEmailRequest, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":        deviceName,
 		"managerName":       managerName,
@@ -318,14 +276,13 @@ func (client AlertsClient) SendTestEmailPreparer(deviceName string, parameters S
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/sendTestAlertEmail", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SendTestEmailSender sends the SendTestEmail request. The method will close the
 // http.Response Body if it receives an error.
 func (client AlertsClient) SendTestEmailSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

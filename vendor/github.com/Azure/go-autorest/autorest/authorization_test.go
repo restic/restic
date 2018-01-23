@@ -186,3 +186,45 @@ func TestBearerAuthorizerCallback(t *testing.T) {
 		t.Fatal("azure: BearerAuthorizerCallback#WithAuthorization failed to return an error when refresh fails")
 	}
 }
+
+func TestApiKeyAuthorization(t *testing.T) {
+
+	headers := make(map[string]interface{})
+	queryParameters := make(map[string]interface{})
+
+	dummyAuthHeader := "dummyAuthHeader"
+	dummyAuthHeaderValue := "dummyAuthHeaderValue"
+
+	dummyAuthQueryParameter := "dummyAuthQueryParameter"
+	dummyAuthQueryParameterValue := "dummyAuthQueryParameterValue"
+
+	headers[dummyAuthHeader] = dummyAuthHeaderValue
+	queryParameters[dummyAuthQueryParameter] = dummyAuthQueryParameterValue
+
+	aka := NewAPIKeyAuthorizer(headers, queryParameters)
+
+	req, err := Prepare(mocks.NewRequest(), aka.WithAuthorization())
+
+	if err != nil {
+		t.Fatalf("azure: APIKeyAuthorizer#WithAuthorization returned an error (%v)", err)
+	} else if req.Header.Get(http.CanonicalHeaderKey(dummyAuthHeader)) != dummyAuthHeaderValue {
+		t.Fatalf("azure: APIKeyAuthorizer#WithAuthorization failed to set %s header", dummyAuthHeader)
+
+	} else if req.URL.Query().Get(dummyAuthQueryParameter) != dummyAuthQueryParameterValue {
+		t.Fatalf("azure: APIKeyAuthorizer#WithAuthorization failed to set %s query parameter", dummyAuthQueryParameterValue)
+	}
+}
+
+func TestCognitivesServicesAuthorization(t *testing.T) {
+	subscriptionKey := "dummyKey"
+	csa := NewCognitiveServicesAuthorizer(subscriptionKey)
+	req, err := Prepare(mocks.NewRequest(), csa.WithAuthorization())
+
+	if err != nil {
+		t.Fatalf("azure: CognitiveServicesAuthorizer#WithAuthorization returned an error (%v)", err)
+	} else if req.Header.Get(http.CanonicalHeaderKey(bingAPISdkHeader)) != golangBingAPISdkHeaderValue {
+		t.Fatalf("azure: CognitiveServicesAuthorizer#WithAuthorization failed to set %s header", bingAPISdkHeader)
+	} else if req.Header.Get(http.CanonicalHeaderKey(apiKeyAuthorizerHeader)) != subscriptionKey {
+		t.Fatalf("azure: CognitiveServicesAuthorizer#WithAuthorization failed to set %s header", apiKeyAuthorizerHeader)
+	}
+}

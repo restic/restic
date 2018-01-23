@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // NodeLoadInformationsClient is the client for the NodeLoadInformations methods of the Servicefabric service.
 type NodeLoadInformationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewNodeLoadInformationsClient creates an instance of the NodeLoadInformationsClient client.
@@ -41,8 +42,8 @@ func NewNodeLoadInformationsClientWithBaseURI(baseURI string, timeout *int32) No
 // Get get node load informations
 //
 // nodeName is the name of the node
-func (client NodeLoadInformationsClient) Get(nodeName string) (result NodeLoadInformation, err error) {
-	req, err := client.GetPreparer(nodeName)
+func (client NodeLoadInformationsClient) Get(ctx context.Context, nodeName string) (result NodeLoadInformation, err error) {
+	req, err := client.GetPreparer(ctx, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodeLoadInformationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client NodeLoadInformationsClient) Get(nodeName string) (result NodeLoadIn
 }
 
 // GetPreparer prepares the Get request.
-func (client NodeLoadInformationsClient) GetPreparer(nodeName string) (*http.Request, error) {
+func (client NodeLoadInformationsClient) GetPreparer(ctx context.Context, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -82,14 +83,13 @@ func (client NodeLoadInformationsClient) GetPreparer(nodeName string) (*http.Req
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetLoadInformation", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeLoadInformationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

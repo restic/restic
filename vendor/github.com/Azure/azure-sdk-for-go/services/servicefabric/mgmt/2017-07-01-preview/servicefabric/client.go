@@ -29,23 +29,21 @@ const (
 	DefaultBaseURI = "https://management.azure.com"
 )
 
-// ManagementClient is the base client for Servicefabric.
-type ManagementClient struct {
+// BaseClient is the base client for Servicefabric.
+type BaseClient struct {
 	autorest.Client
-	BaseURI        string
-	SubscriptionID string
+	BaseURI string
 }
 
-// New creates an instance of the ManagementClient client.
-func New(subscriptionID string) ManagementClient {
-	return NewWithBaseURI(DefaultBaseURI, subscriptionID)
+// New creates an instance of the BaseClient client.
+func New() BaseClient {
+	return NewWithBaseURI(DefaultBaseURI)
 }
 
-// NewWithBaseURI creates an instance of the ManagementClient client.
-func NewWithBaseURI(baseURI string, subscriptionID string) ManagementClient {
-	return ManagementClient{
-		Client:         autorest.NewClientWithUserAgent(UserAgent()),
-		BaseURI:        baseURI,
-		SubscriptionID: subscriptionID,
+// NewWithBaseURI creates an instance of the BaseClient client.
+func NewWithBaseURI(baseURI string) BaseClient {
+	return BaseClient{
+		Client:  autorest.NewClientWithUserAgent(UserAgent()),
+		BaseURI: baseURI,
 	}
 }

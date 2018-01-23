@@ -18,7 +18,9 @@ package batch
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,9 +30,9 @@ import (
 type AccountKeyType string
 
 const (
-	// Primary specifies the primary state for account key type.
+	// Primary ...
 	Primary AccountKeyType = "Primary"
-	// Secondary specifies the secondary state for account key type.
+	// Secondary ...
 	Secondary AccountKeyType = "Secondary"
 )
 
@@ -38,11 +40,11 @@ const (
 type AllocationState string
 
 const (
-	// Resizing specifies the resizing state for allocation state.
+	// Resizing ...
 	Resizing AllocationState = "Resizing"
-	// Steady specifies the steady state for allocation state.
+	// Steady ...
 	Steady AllocationState = "Steady"
-	// Stopping specifies the stopping state for allocation state.
+	// Stopping ...
 	Stopping AllocationState = "Stopping"
 )
 
@@ -50,9 +52,9 @@ const (
 type AutoUserScope string
 
 const (
-	// AutoUserScopePool specifies the auto user scope pool state for auto user scope.
+	// AutoUserScopePool ...
 	AutoUserScopePool AutoUserScope = "Pool"
-	// AutoUserScopeTask specifies the auto user scope task state for auto user scope.
+	// AutoUserScopeTask ...
 	AutoUserScopeTask AutoUserScope = "Task"
 )
 
@@ -60,11 +62,11 @@ const (
 type CachingType string
 
 const (
-	// None specifies the none state for caching type.
+	// None ...
 	None CachingType = "None"
-	// ReadOnly specifies the read only state for caching type.
+	// ReadOnly ...
 	ReadOnly CachingType = "ReadOnly"
-	// ReadWrite specifies the read write state for caching type.
+	// ReadWrite ...
 	ReadWrite CachingType = "ReadWrite"
 )
 
@@ -72,9 +74,9 @@ const (
 type CertificateFormat string
 
 const (
-	// Cer specifies the cer state for certificate format.
+	// Cer ...
 	Cer CertificateFormat = "Cer"
-	// Pfx specifies the pfx state for certificate format.
+	// Pfx ...
 	Pfx CertificateFormat = "Pfx"
 )
 
@@ -82,11 +84,11 @@ const (
 type CertificateProvisioningState string
 
 const (
-	// Deleting specifies the deleting state for certificate provisioning state.
+	// Deleting ...
 	Deleting CertificateProvisioningState = "Deleting"
-	// Failed specifies the failed state for certificate provisioning state.
+	// Failed ...
 	Failed CertificateProvisioningState = "Failed"
-	// Succeeded specifies the succeeded state for certificate provisioning state.
+	// Succeeded ...
 	Succeeded CertificateProvisioningState = "Succeeded"
 )
 
@@ -94,9 +96,9 @@ const (
 type CertificateStoreLocation string
 
 const (
-	// CurrentUser specifies the current user state for certificate store location.
+	// CurrentUser ...
 	CurrentUser CertificateStoreLocation = "CurrentUser"
-	// LocalMachine specifies the local machine state for certificate store location.
+	// LocalMachine ...
 	LocalMachine CertificateStoreLocation = "LocalMachine"
 )
 
@@ -104,11 +106,11 @@ const (
 type CertificateVisibility string
 
 const (
-	// CertificateVisibilityRemoteUser specifies the certificate visibility remote user state for certificate visibility.
+	// CertificateVisibilityRemoteUser ...
 	CertificateVisibilityRemoteUser CertificateVisibility = "RemoteUser"
-	// CertificateVisibilityStartTask specifies the certificate visibility start task state for certificate visibility.
+	// CertificateVisibilityStartTask ...
 	CertificateVisibilityStartTask CertificateVisibility = "StartTask"
-	// CertificateVisibilityTask specifies the certificate visibility task state for certificate visibility.
+	// CertificateVisibilityTask ...
 	CertificateVisibilityTask CertificateVisibility = "Task"
 )
 
@@ -116,13 +118,13 @@ const (
 type ComputeNodeDeallocationOption string
 
 const (
-	// Requeue specifies the requeue state for compute node deallocation option.
+	// Requeue ...
 	Requeue ComputeNodeDeallocationOption = "Requeue"
-	// RetainedData specifies the retained data state for compute node deallocation option.
+	// RetainedData ...
 	RetainedData ComputeNodeDeallocationOption = "RetainedData"
-	// TaskCompletion specifies the task completion state for compute node deallocation option.
+	// TaskCompletion ...
 	TaskCompletion ComputeNodeDeallocationOption = "TaskCompletion"
-	// Terminate specifies the terminate state for compute node deallocation option.
+	// Terminate ...
 	Terminate ComputeNodeDeallocationOption = "Terminate"
 )
 
@@ -130,9 +132,9 @@ const (
 type ComputeNodeFillType string
 
 const (
-	// Pack specifies the pack state for compute node fill type.
+	// Pack ...
 	Pack ComputeNodeFillType = "Pack"
-	// Spread specifies the spread state for compute node fill type.
+	// Spread ...
 	Spread ComputeNodeFillType = "Spread"
 )
 
@@ -140,9 +142,9 @@ const (
 type ElevationLevel string
 
 const (
-	// Admin specifies the admin state for elevation level.
+	// Admin ...
 	Admin ElevationLevel = "Admin"
-	// NonAdmin specifies the non admin state for elevation level.
+	// NonAdmin ...
 	NonAdmin ElevationLevel = "NonAdmin"
 )
 
@@ -150,9 +152,9 @@ const (
 type InboundEndpointProtocol string
 
 const (
-	// TCP specifies the tcp state for inbound endpoint protocol.
+	// TCP ...
 	TCP InboundEndpointProtocol = "TCP"
-	// UDP specifies the udp state for inbound endpoint protocol.
+	// UDP ...
 	UDP InboundEndpointProtocol = "UDP"
 )
 
@@ -160,9 +162,9 @@ const (
 type InterNodeCommunicationState string
 
 const (
-	// Disabled specifies the disabled state for inter node communication state.
+	// Disabled ...
 	Disabled InterNodeCommunicationState = "Disabled"
-	// Enabled specifies the enabled state for inter node communication state.
+	// Enabled ...
 	Enabled InterNodeCommunicationState = "Enabled"
 )
 
@@ -170,9 +172,9 @@ const (
 type NameAvailabilityReason string
 
 const (
-	// AlreadyExists specifies the already exists state for name availability reason.
+	// AlreadyExists ...
 	AlreadyExists NameAvailabilityReason = "AlreadyExists"
-	// Invalid specifies the invalid state for name availability reason.
+	// Invalid ...
 	Invalid NameAvailabilityReason = "Invalid"
 )
 
@@ -180,9 +182,9 @@ const (
 type NetworkSecurityGroupRuleAccess string
 
 const (
-	// Allow specifies the allow state for network security group rule access.
+	// Allow ...
 	Allow NetworkSecurityGroupRuleAccess = "Allow"
-	// Deny specifies the deny state for network security group rule access.
+	// Deny ...
 	Deny NetworkSecurityGroupRuleAccess = "Deny"
 )
 
@@ -190,11 +192,11 @@ const (
 type PackageState string
 
 const (
-	// Active specifies the active state for package state.
+	// Active ...
 	Active PackageState = "Active"
-	// Pending specifies the pending state for package state.
+	// Pending ...
 	Pending PackageState = "Pending"
-	// Unmapped specifies the unmapped state for package state.
+	// Unmapped ...
 	Unmapped PackageState = "Unmapped"
 )
 
@@ -202,9 +204,9 @@ const (
 type PoolAllocationMode string
 
 const (
-	// BatchService specifies the batch service state for pool allocation mode.
+	// BatchService ...
 	BatchService PoolAllocationMode = "BatchService"
-	// UserSubscription specifies the user subscription state for pool allocation mode.
+	// UserSubscription ...
 	UserSubscription PoolAllocationMode = "UserSubscription"
 )
 
@@ -212,9 +214,9 @@ const (
 type PoolProvisioningState string
 
 const (
-	// PoolProvisioningStateDeleting specifies the pool provisioning state deleting state for pool provisioning state.
+	// PoolProvisioningStateDeleting ...
 	PoolProvisioningStateDeleting PoolProvisioningState = "Deleting"
-	// PoolProvisioningStateSucceeded specifies the pool provisioning state succeeded state for pool provisioning state.
+	// PoolProvisioningStateSucceeded ...
 	PoolProvisioningStateSucceeded PoolProvisioningState = "Succeeded"
 )
 
@@ -222,17 +224,17 @@ const (
 type ProvisioningState string
 
 const (
-	// ProvisioningStateCancelled specifies the provisioning state cancelled state for provisioning state.
+	// ProvisioningStateCancelled ...
 	ProvisioningStateCancelled ProvisioningState = "Cancelled"
-	// ProvisioningStateCreating specifies the provisioning state creating state for provisioning state.
+	// ProvisioningStateCreating ...
 	ProvisioningStateCreating ProvisioningState = "Creating"
-	// ProvisioningStateDeleting specifies the provisioning state deleting state for provisioning state.
+	// ProvisioningStateDeleting ...
 	ProvisioningStateDeleting ProvisioningState = "Deleting"
-	// ProvisioningStateFailed specifies the provisioning state failed state for provisioning state.
+	// ProvisioningStateFailed ...
 	ProvisioningStateFailed ProvisioningState = "Failed"
-	// ProvisioningStateInvalid specifies the provisioning state invalid state for provisioning state.
+	// ProvisioningStateInvalid ...
 	ProvisioningStateInvalid ProvisioningState = "Invalid"
-	// ProvisioningStateSucceeded specifies the provisioning state succeeded state for provisioning state.
+	// ProvisioningStateSucceeded ...
 	ProvisioningStateSucceeded ProvisioningState = "Succeeded"
 )
 
@@ -240,68 +242,345 @@ const (
 type StorageAccountType string
 
 const (
-	// PremiumLRS specifies the premium lrs state for storage account type.
+	// PremiumLRS ...
 	PremiumLRS StorageAccountType = "Premium_LRS"
-	// StandardLRS specifies the standard lrs state for storage account type.
+	// StandardLRS ...
 	StandardLRS StorageAccountType = "Standard_LRS"
 )
 
-// Account is contains information about an Azure Batch account.
+// Account contains information about an Azure Batch account.
 type Account struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountProperties - The properties associated with the account.
 	*AccountProperties `json:"properties,omitempty"`
 }
 
-// AccountCreateParameters is parameters supplied to the Create operation.
+// UnmarshalJSON is the custom unmarshaler for Account struct.
+func (a *Account) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.AccountProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		a.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		a.Tags = &tags
+	}
+
+	return nil
+}
+
+// AccountCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountCreateFuture) Result(client AccountClient) (a Account, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return a, autorest.NewError("batch.AccountCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		a, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	a, err = client.CreateResponder(resp)
+	return
+}
+
+// AccountCreateParameters parameters supplied to the Create operation.
 type AccountCreateParameters struct {
-	Location                 *string             `json:"location,omitempty"`
-	Tags                     *map[string]*string `json:"tags,omitempty"`
+	// Location - The region in which to create the account.
+	Location *string `json:"location,omitempty"`
+	// Tags - The user-specified tags associated with the account.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountCreateProperties - The properties of the Batch account.
 	*AccountCreateProperties `json:"properties,omitempty"`
 }
 
-// AccountCreateProperties is the properties of a Batch account.
-type AccountCreateProperties struct {
-	AutoStorage        *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
-	PoolAllocationMode PoolAllocationMode         `json:"poolAllocationMode,omitempty"`
-	KeyVaultReference  *KeyVaultReference         `json:"keyVaultReference,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for AccountCreateParameters struct.
+func (acp *AccountCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		acp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		acp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountCreateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		acp.AccountCreateProperties = &properties
+	}
+
+	return nil
 }
 
-// AccountKeys is a set of Azure Batch account keys.
+// AccountCreateProperties the properties of a Batch account.
+type AccountCreateProperties struct {
+	// AutoStorage - The properties related to the auto-storage account.
+	AutoStorage *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
+	// PoolAllocationMode - The pool allocation mode also affects how clients may authenticate to the Batch Service API. If the mode is BatchService, clients may authenticate using access keys or Azure Active Directory. If the mode is UserSubscription, clients must use Azure Active Directory. The default is BatchService. Possible values include: 'BatchService', 'UserSubscription'
+	PoolAllocationMode PoolAllocationMode `json:"poolAllocationMode,omitempty"`
+	// KeyVaultReference - A reference to the Azure key vault associated with the Batch account.
+	KeyVaultReference *KeyVaultReference `json:"keyVaultReference,omitempty"`
+}
+
+// AccountDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountDeleteFuture) Result(client AccountClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("batch.AccountDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// AccountKeys a set of Azure Batch account keys.
 type AccountKeys struct {
 	autorest.Response `json:"-"`
-	AccountName       *string `json:"accountName,omitempty"`
-	Primary           *string `json:"primary,omitempty"`
-	Secondary         *string `json:"secondary,omitempty"`
+	// AccountName - The Batch account name.
+	AccountName *string `json:"accountName,omitempty"`
+	// Primary - The primary key associated with the account.
+	Primary *string `json:"primary,omitempty"`
+	// Secondary - The secondary key associated with the account.
+	Secondary *string `json:"secondary,omitempty"`
 }
 
-// AccountListResult is values returned by the List operation.
+// AccountListResult values returned by the List operation.
 type AccountListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Account `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - The collection of Batch accounts returned by the listing operation.
+	Value *[]Account `json:"value,omitempty"`
+	// NextLink - The continuation token.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AccountListResult) AccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AccountListResultIterator provides access to a complete listing of Account values.
+type AccountListResultIterator struct {
+	i    int
+	page AccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AccountListResultIterator) Response() AccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AccountListResultIterator) Value() Account {
+	if !iter.page.NotDone() {
+		return Account{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (alr AccountListResult) IsEmpty() bool {
+	return alr.Value == nil || len(*alr.Value) == 0
+}
+
+// accountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (alr AccountListResult) accountListResultPreparer() (*http.Request, error) {
+	if alr.NextLink == nil || len(to.String(alr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(alr.NextLink)))
 }
 
-// AccountProperties is account specific properties.
+// AccountListResultPage contains a page of Account values.
+type AccountListResultPage struct {
+	fn  func(AccountListResult) (AccountListResult, error)
+	alr AccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AccountListResultPage) Next() error {
+	next, err := page.fn(page.alr)
+	if err != nil {
+		return err
+	}
+	page.alr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AccountListResultPage) NotDone() bool {
+	return !page.alr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AccountListResultPage) Response() AccountListResult {
+	return page.alr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AccountListResultPage) Values() []Account {
+	if page.alr.IsEmpty() {
+		return nil
+	}
+	return *page.alr.Value
+}
+
+// AccountProperties account specific properties.
 type AccountProperties struct {
-	AccountEndpoint              *string                `json:"accountEndpoint,omitempty"`
-	ProvisioningState            ProvisioningState      `json:"provisioningState,omitempty"`
+	// AccountEndpoint - The account endpoint used to interact with the Batch service.
+	AccountEndpoint *string `json:"accountEndpoint,omitempty"`
+	// ProvisioningState - The provisioned state of the resource. Possible values include: 'ProvisioningStateInvalid', 'ProvisioningStateCreating', 'ProvisioningStateDeleting', 'ProvisioningStateSucceeded', 'ProvisioningStateFailed', 'ProvisioningStateCancelled'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// PoolAllocationMode - Possible values include: 'BatchService', 'UserSubscription'
 	PoolAllocationMode           PoolAllocationMode     `json:"poolAllocationMode,omitempty"`
 	KeyVaultReference            *KeyVaultReference     `json:"keyVaultReference,omitempty"`
 	AutoStorage                  *AutoStorageProperties `json:"autoStorage,omitempty"`
@@ -311,519 +590,1371 @@ type AccountProperties struct {
 	ActiveJobAndJobScheduleQuota *int32                 `json:"activeJobAndJobScheduleQuota,omitempty"`
 }
 
-// AccountRegenerateKeyParameters is parameters supplied to the RegenerateKey operation.
+// AccountRegenerateKeyParameters parameters supplied to the RegenerateKey operation.
 type AccountRegenerateKeyParameters struct {
+	// KeyName - The type of account key to regenerate. Possible values include: 'Primary', 'Secondary'
 	KeyName AccountKeyType `json:"keyName,omitempty"`
 }
 
-// AccountUpdateParameters is parameters for updating an Azure Batch account.
+// AccountUpdateParameters parameters for updating an Azure Batch account.
 type AccountUpdateParameters struct {
-	Tags                     *map[string]*string `json:"tags,omitempty"`
+	// Tags - The user-specified tags associated with the account.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountUpdateProperties - The properties of the account.
 	*AccountUpdateProperties `json:"properties,omitempty"`
 }
 
-// AccountUpdateProperties is the properties of a Batch account.
+// UnmarshalJSON is the custom unmarshaler for AccountUpdateParameters struct.
+func (aup *AccountUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		aup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountUpdateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		aup.AccountUpdateProperties = &properties
+	}
+
+	return nil
+}
+
+// AccountUpdateProperties the properties of a Batch account.
 type AccountUpdateProperties struct {
+	// AutoStorage - The properties related to the auto-storage account.
 	AutoStorage *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
 }
 
-// ActivateApplicationPackageParameters is parameters for an activating an application package.
+// ActivateApplicationPackageParameters parameters for an activating an application package.
 type ActivateApplicationPackageParameters struct {
+	// Format - The format of the application package binary file.
 	Format *string `json:"format,omitempty"`
 }
 
-// Application is contains information about an application in a Batch account.
+// Application contains information about an application in a Batch account.
 type Application struct {
 	autorest.Response `json:"-"`
-	ID                *string               `json:"id,omitempty"`
-	DisplayName       *string               `json:"displayName,omitempty"`
-	Packages          *[]ApplicationPackage `json:"packages,omitempty"`
-	AllowUpdates      *bool                 `json:"allowUpdates,omitempty"`
-	DefaultVersion    *string               `json:"defaultVersion,omitempty"`
+	// ID - A string that uniquely identifies the application within the account.
+	ID *string `json:"id,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Packages - The list of packages under this application.
+	Packages *[]ApplicationPackage `json:"packages,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DefaultVersion - The package to use if a client requests the application but does not specify a version.
+	DefaultVersion *string `json:"defaultVersion,omitempty"`
 }
 
-// ApplicationCreateParameters is parameters for adding an Application.
+// ApplicationCreateParameters parameters for adding an Application.
 type ApplicationCreateParameters struct {
-	AllowUpdates *bool   `json:"allowUpdates,omitempty"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// ApplicationPackage is an application package which represents a particular version of an application.
+// ApplicationPackage an application package which represents a particular version of an application.
 type ApplicationPackage struct {
-	autorest.Response  `json:"-"`
-	ID                 *string      `json:"id,omitempty"`
-	Version            *string      `json:"version,omitempty"`
-	State              PackageState `json:"state,omitempty"`
-	Format             *string      `json:"format,omitempty"`
-	StorageURL         *string      `json:"storageUrl,omitempty"`
-	StorageURLExpiry   *date.Time   `json:"storageUrlExpiry,omitempty"`
-	LastActivationTime *date.Time   `json:"lastActivationTime,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the application.
+	ID *string `json:"id,omitempty"`
+	// Version - The version of the application package.
+	Version *string `json:"version,omitempty"`
+	// State - The current state of the application package. Possible values include: 'Pending', 'Active', 'Unmapped'
+	State PackageState `json:"state,omitempty"`
+	// Format - The format of the application package, if the package is active.
+	Format *string `json:"format,omitempty"`
+	// StorageURL - The URL for the application package in Azure Storage.
+	StorageURL *string `json:"storageUrl,omitempty"`
+	// StorageURLExpiry - The UTC time at which the Azure Storage URL will expire.
+	StorageURLExpiry *date.Time `json:"storageUrlExpiry,omitempty"`
+	// LastActivationTime - The time at which the package was last activated, if the package is active.
+	LastActivationTime *date.Time `json:"lastActivationTime,omitempty"`
 }
 
-// ApplicationPackageReference is
+// ApplicationPackageReference ...
 type ApplicationPackageReference struct {
-	ID      *string `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
+	// Version - If this is omitted, and no default version is specified for this application, the request fails with the error code InvalidApplicationPackageReferences. If you are calling the REST API directly, the HTTP status code is 409.
 	Version *string `json:"version,omitempty"`
 }
 
-// ApplicationUpdateParameters is parameters for an update application request.
+// ApplicationUpdateParameters parameters for an update application request.
 type ApplicationUpdateParameters struct {
-	AllowUpdates   *bool   `json:"allowUpdates,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DefaultVersion - The package to use if a client requests the application but does not specify a version.
 	DefaultVersion *string `json:"defaultVersion,omitempty"`
-	DisplayName    *string `json:"displayName,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// AutoScaleRun is
+// AutoScaleRun ...
 type AutoScaleRun struct {
-	EvaluationTime *date.Time         `json:"evaluationTime,omitempty"`
-	Results        *string            `json:"results,omitempty"`
-	Error          *AutoScaleRunError `json:"error,omitempty"`
+	EvaluationTime *date.Time `json:"evaluationTime,omitempty"`
+	// Results - Each variable value is returned in the form $variable=value, and variables are separated by semicolons.
+	Results *string            `json:"results,omitempty"`
+	Error   *AutoScaleRunError `json:"error,omitempty"`
 }
 
-// AutoScaleRunError is
+// AutoScaleRunError ...
 type AutoScaleRunError struct {
-	Code    *string              `json:"code,omitempty"`
+	// Code - An identifier for the error. Codes are invariant and are intended to be consumed programmatically.
+	Code *string `json:"code,omitempty"`
+	// Message - A message describing the error, intended to be suitable for display in a user interface.
 	Message *string              `json:"message,omitempty"`
 	Details *[]AutoScaleRunError `json:"details,omitempty"`
 }
 
-// AutoScaleSettings is
+// AutoScaleSettings ...
 type AutoScaleSettings struct {
-	Formula            *string `json:"formula,omitempty"`
+	Formula *string `json:"formula,omitempty"`
+	// EvaluationInterval - If omitted, the default value is 15 minutes (PT15M).
 	EvaluationInterval *string `json:"evaluationInterval,omitempty"`
 }
 
-// AutoStorageBaseProperties is the properties related to the auto-storage account.
+// AutoStorageBaseProperties the properties related to the auto-storage account.
 type AutoStorageBaseProperties struct {
+	// StorageAccountID - The resource ID of the storage account to be used for auto-storage account.
 	StorageAccountID *string `json:"storageAccountId,omitempty"`
 }
 
-// AutoStorageProperties is contains information about the auto-storage account associated with a Batch account.
+// AutoStorageProperties contains information about the auto-storage account associated with a Batch account.
 type AutoStorageProperties struct {
-	StorageAccountID *string    `json:"storageAccountId,omitempty"`
-	LastKeySync      *date.Time `json:"lastKeySync,omitempty"`
+	// StorageAccountID - The resource ID of the storage account to be used for auto-storage account.
+	StorageAccountID *string `json:"storageAccountId,omitempty"`
+	// LastKeySync - The UTC time at which storage keys were last synchronized with the Batch account.
+	LastKeySync *date.Time `json:"lastKeySync,omitempty"`
 }
 
-// AutoUserSpecification is
+// AutoUserSpecification ...
 type AutoUserSpecification struct {
-	Scope          AutoUserScope  `json:"scope,omitempty"`
+	// Scope - pool - specifies that the task runs as the common auto user account which is created on every node in a pool. task - specifies that the service should create a new user for the task. The default value is task. Possible values include: 'AutoUserScopeTask', 'AutoUserScopePool'
+	Scope AutoUserScope `json:"scope,omitempty"`
+	// ElevationLevel - nonAdmin - The auto user is a standard user without elevated access. admin - The auto user is a user with elevated access and operates with full Administrator permissions. The default value is nonAdmin. Possible values include: 'NonAdmin', 'Admin'
 	ElevationLevel ElevationLevel `json:"elevationLevel,omitempty"`
 }
 
-// Certificate is contains information about a certificate.
+// Certificate contains information about a certificate.
 type Certificate struct {
-	autorest.Response      `json:"-"`
-	ID                     *string `json:"id,omitempty"`
-	Name                   *string `json:"name,omitempty"`
-	Type                   *string `json:"type,omitempty"`
-	Etag                   *string `json:"etag,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Etag - The ETag of the resource, used for concurrency statements.
+	Etag *string `json:"etag,omitempty"`
+	// CertificateProperties - The properties associated with the certificate.
 	*CertificateProperties `json:"properties,omitempty"`
 }
 
-// CertificateBaseProperties is
-type CertificateBaseProperties struct {
-	ThumbprintAlgorithm *string           `json:"thumbprintAlgorithm,omitempty"`
-	Thumbprint          *string           `json:"thumbprint,omitempty"`
-	Format              CertificateFormat `json:"format,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Certificate struct.
+func (c *Certificate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.CertificateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		c.Etag = &etag
+	}
+
+	return nil
 }
 
-// CertificateCreateOrUpdateParameters is contains information about a certificate.
+// CertificateBaseProperties ...
+type CertificateBaseProperties struct {
+	// ThumbprintAlgorithm - This must match the first portion of the certificate name. Currently required to be 'SHA1'.
+	ThumbprintAlgorithm *string `json:"thumbprintAlgorithm,omitempty"`
+	// Thumbprint - This must match the thumbprint from the name.
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// Format - The format of the certificate - either Pfx or Cer. If omitted, the default is Pfx. Possible values include: 'Pfx', 'Cer'
+	Format CertificateFormat `json:"format,omitempty"`
+}
+
+// CertificateCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CertificateCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CertificateCreateFuture) Result(client CertificateClient) (c Certificate, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return c, autorest.NewError("batch.CertificateCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		c, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	c, err = client.CreateResponder(resp)
+	return
+}
+
+// CertificateCreateOrUpdateParameters contains information about a certificate.
 type CertificateCreateOrUpdateParameters struct {
-	ID                                   *string `json:"id,omitempty"`
-	Name                                 *string `json:"name,omitempty"`
-	Type                                 *string `json:"type,omitempty"`
-	Etag                                 *string `json:"etag,omitempty"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Etag - The ETag of the resource, used for concurrency statements.
+	Etag *string `json:"etag,omitempty"`
+	// CertificateCreateOrUpdateProperties - The properties associated with the certificate.
 	*CertificateCreateOrUpdateProperties `json:"properties,omitempty"`
 }
 
-// CertificateCreateOrUpdateProperties is certificate properties for create operations
-type CertificateCreateOrUpdateProperties struct {
-	ThumbprintAlgorithm *string           `json:"thumbprintAlgorithm,omitempty"`
-	Thumbprint          *string           `json:"thumbprint,omitempty"`
-	Format              CertificateFormat `json:"format,omitempty"`
-	Data                *string           `json:"data,omitempty"`
-	Password            *string           `json:"password,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CertificateCreateOrUpdateParameters struct.
+func (ccoup *CertificateCreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CertificateCreateOrUpdateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ccoup.CertificateCreateOrUpdateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ccoup.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ccoup.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ccoup.Type = &typeVar
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		ccoup.Etag = &etag
+	}
+
+	return nil
 }
 
-// CertificateProperties is certificate properties.
+// CertificateCreateOrUpdateProperties certificate properties for create operations
+type CertificateCreateOrUpdateProperties struct {
+	// ThumbprintAlgorithm - This must match the first portion of the certificate name. Currently required to be 'SHA1'.
+	ThumbprintAlgorithm *string `json:"thumbprintAlgorithm,omitempty"`
+	// Thumbprint - This must match the thumbprint from the name.
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// Format - The format of the certificate - either Pfx or Cer. If omitted, the default is Pfx. Possible values include: 'Pfx', 'Cer'
+	Format CertificateFormat `json:"format,omitempty"`
+	// Data - The maximum size is 10KB.
+	Data *string `json:"data,omitempty"`
+	// Password - This is required if the certificate format is pfx and must be omitted if the certificate format is cer.
+	Password *string `json:"password,omitempty"`
+}
+
+// CertificateDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CertificateDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CertificateDeleteFuture) Result(client CertificateClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("batch.CertificateDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// CertificateProperties certificate properties.
 type CertificateProperties struct {
-	ThumbprintAlgorithm                     *string                      `json:"thumbprintAlgorithm,omitempty"`
-	Thumbprint                              *string                      `json:"thumbprint,omitempty"`
-	Format                                  CertificateFormat            `json:"format,omitempty"`
-	ProvisioningState                       CertificateProvisioningState `json:"provisioningState,omitempty"`
-	ProvisioningStateTransitionTime         *date.Time                   `json:"provisioningStateTransitionTime,omitempty"`
+	// ThumbprintAlgorithm - This must match the first portion of the certificate name. Currently required to be 'SHA1'.
+	ThumbprintAlgorithm *string `json:"thumbprintAlgorithm,omitempty"`
+	// Thumbprint - This must match the thumbprint from the name.
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// Format - The format of the certificate - either Pfx or Cer. If omitted, the default is Pfx. Possible values include: 'Pfx', 'Cer'
+	Format CertificateFormat `json:"format,omitempty"`
+	// ProvisioningState - Values are:
+	//  Succeeded - The certificate is available for use in pools.
+	//  Deleting - The user has requested that the certificate be deleted, but the delete operation has not yet completed. You may not reference the certificate when creating or updating pools.
+	//  Failed - The user requested that the certificate be deleted, but there are pools that still have references to the certificate, or it is still installed on one or more compute nodes. (The latter can occur if the certificate has been removed from the pool, but the node has not yet restarted. Nodes refresh their certificates only when they restart.) You may use the cancel certificate delete operation to cancel the delete, or the delete certificate operation to retry the delete. Possible values include: 'Succeeded', 'Deleting', 'Failed'
+	ProvisioningState               CertificateProvisioningState `json:"provisioningState,omitempty"`
+	ProvisioningStateTransitionTime *date.Time                   `json:"provisioningStateTransitionTime,omitempty"`
+	// PreviousProvisioningState - The previous provisioned state of the resource. Possible values include: 'Succeeded', 'Deleting', 'Failed'
 	PreviousProvisioningState               CertificateProvisioningState `json:"previousProvisioningState,omitempty"`
 	PreviousProvisioningStateTransitionTime *date.Time                   `json:"previousProvisioningStateTransitionTime,omitempty"`
-	PublicData                              *string                      `json:"publicData,omitempty"`
-	DeleteCertificateError                  *DeleteCertificateError      `json:"deleteCertificateError,omitempty"`
+	// PublicData - The public key of the certificate.
+	PublicData *string `json:"publicData,omitempty"`
+	// DeleteCertificateError - This is only returned when the certificate provisioningState is 'Failed'.
+	DeleteCertificateError *DeleteCertificateError `json:"deleteCertificateError,omitempty"`
 }
 
-// CertificateReference is
+// CertificateReference ...
 type CertificateReference struct {
-	ID            *string                  `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
+	// StoreLocation - The default value is currentUser. This property is applicable only for pools configured with Windows nodes (that is, created with cloudServiceConfiguration, or with virtualMachineConfiguration using a Windows image reference). For Linux compute nodes, the certificates are stored in a directory inside the task working directory and an environment variable AZ_BATCH_CERTIFICATES_DIR is supplied to the task to query for this location. For certificates with visibility of 'remoteUser', a 'certs' directory is created in the user's home directory (e.g., /home/{user-name}/certs) and certificates are placed in that directory. Possible values include: 'CurrentUser', 'LocalMachine'
 	StoreLocation CertificateStoreLocation `json:"storeLocation,omitempty"`
-	StoreName     *string                  `json:"storeName,omitempty"`
-	Visibility    *[]CertificateVisibility `json:"visibility,omitempty"`
+	// StoreName - This property is applicable only for pools configured with Windows nodes (that is, created with cloudServiceConfiguration, or with virtualMachineConfiguration using a Windows image reference). Common store names include: My, Root, CA, Trust, Disallowed, TrustedPeople, TrustedPublisher, AuthRoot, AddressBook, but any custom store name can also be used. The default value is My.
+	StoreName *string `json:"storeName,omitempty"`
+	// Visibility - Values are:
+	//  starttask - The user account under which the start task is run.
+	//  task - The accounts under which job tasks are run.
+	//  remoteuser - The accounts under which users remotely access the node.
+	//  You can specify more than one visibility in this collection. The default is all accounts.
+	Visibility *[]CertificateVisibility `json:"visibility,omitempty"`
 }
 
-// CheckNameAvailabilityParameters is parameters for a check name availability request.
+// CheckNameAvailabilityParameters parameters for a check name availability request.
 type CheckNameAvailabilityParameters struct {
+	// Name - The name to check for availability
 	Name *string `json:"name,omitempty"`
+	// Type - The resource type. Must be set to Microsoft.Batch/batchAccounts
 	Type *string `json:"type,omitempty"`
 }
 
-// CheckNameAvailabilityResult is the CheckNameAvailability operation response.
+// CheckNameAvailabilityResult the CheckNameAvailability operation response.
 type CheckNameAvailabilityResult struct {
 	autorest.Response `json:"-"`
-	NameAvailable     *bool                  `json:"nameAvailable,omitempty"`
-	Reason            NameAvailabilityReason `json:"reason,omitempty"`
-	Message           *string                `json:"message,omitempty"`
+	// NameAvailable - Gets a boolean value that indicates whether the name is available for you to use. If true, the name is available. If false, the name has already been taken or invalid and cannot be used.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - Gets the reason that a Batch account name could not be used. The Reason element is only returned if NameAvailable is false. Possible values include: 'Invalid', 'AlreadyExists'
+	Reason NameAvailabilityReason `json:"reason,omitempty"`
+	// Message - Gets an error message explaining the Reason value in more detail.
+	Message *string `json:"message,omitempty"`
 }
 
-// CloudError is an error response from the Batch service.
+// CloudError an error response from the Batch service.
 type CloudError struct {
 	Error *CloudErrorBody `json:"error,omitempty"`
 }
 
-// CloudErrorBody is an error response from the Batch service.
+// CloudErrorBody an error response from the Batch service.
 type CloudErrorBody struct {
-	Code    *string           `json:"code,omitempty"`
-	Message *string           `json:"message,omitempty"`
-	Target  *string           `json:"target,omitempty"`
+	// Code - An identifier for the error. Codes are invariant and are intended to be consumed programmatically.
+	Code *string `json:"code,omitempty"`
+	// Message - A message describing the error, intended to be suitable for display in a user interface.
+	Message *string `json:"message,omitempty"`
+	// Target - The target of the particular error. For example, the name of the property in error.
+	Target *string `json:"target,omitempty"`
+	// Details - A list of additional details about the error.
 	Details *[]CloudErrorBody `json:"details,omitempty"`
 }
 
-// CloudServiceConfiguration is
+// CloudServiceConfiguration ...
 type CloudServiceConfiguration struct {
-	OsFamily         *string `json:"osFamily,omitempty"`
-	TargetOSVersion  *string `json:"targetOSVersion,omitempty"`
+	// OsFamily - Possible values are: 2 - OS Family 2, equivalent to Windows Server 2008 R2 SP1. 3 - OS Family 3, equivalent to Windows Server 2012. 4 - OS Family 4, equivalent to Windows Server 2012 R2. 5 - OS Family 5, equivalent to Windows Server 2016. For more information, see Azure Guest OS Releases (https://azure.microsoft.com/documentation/articles/cloud-services-guestos-update-matrix/#releases).
+	OsFamily *string `json:"osFamily,omitempty"`
+	// TargetOSVersion - The default value is * which specifies the latest operating system version for the specified OS family.
+	TargetOSVersion *string `json:"targetOSVersion,omitempty"`
+	// CurrentOSVersion - This may differ from targetOSVersion if the pool state is Upgrading. In this case some virtual machines may be on the targetOSVersion and some may be on the currentOSVersion during the upgrade process. Once all virtual machines have upgraded, currentOSVersion is updated to be the same as targetOSVersion.
 	CurrentOSVersion *string `json:"currentOSVersion,omitempty"`
 }
 
-// DataDisk is data Disk settings which will be used by the data disks associated to Compute Nodes in the pool.
+// DataDisk data Disk settings which will be used by the data disks associated to Compute Nodes in the pool.
 type DataDisk struct {
-	Lun                *int32             `json:"lun,omitempty"`
-	Caching            CachingType        `json:"caching,omitempty"`
-	DiskSizeGB         *int32             `json:"diskSizeGB,omitempty"`
+	// Lun - The lun is used to uniquely identify each data disk. If attaching multiple disks, each should have a distinct lun.
+	Lun *int32 `json:"lun,omitempty"`
+	// Caching - Values are:
+	//  none - The caching mode for the disk is not enabled.
+	//  readOnly - The caching mode for the disk is read only.
+	//  readWrite - The caching mode for the disk is read and write.
+	//  The default value for caching is none. For information about the caching options see: https://blogs.msdn.microsoft.com/windowsazurestorage/2012/06/27/exploring-windows-azure-drives-disks-and-images/. Possible values include: 'None', 'ReadOnly', 'ReadWrite'
+	Caching    CachingType `json:"caching,omitempty"`
+	DiskSizeGB *int32      `json:"diskSizeGB,omitempty"`
+	// StorageAccountType - If omitted, the default is "Standard_LRS". Values are:
+	//  Standard_LRS - The data disk should use standard locally redundant storage.
+	//  Premium_LRS - The data disk should use premium locally redundant storage. Possible values include: 'StandardLRS', 'PremiumLRS'
 	StorageAccountType StorageAccountType `json:"storageAccountType,omitempty"`
 }
 
-// DeleteCertificateError is an error response from the Batch service.
+// DeleteCertificateError an error response from the Batch service.
 type DeleteCertificateError struct {
-	Code    *string                   `json:"code,omitempty"`
-	Message *string                   `json:"message,omitempty"`
-	Target  *string                   `json:"target,omitempty"`
+	// Code - An identifier for the error. Codes are invariant and are intended to be consumed programmatically.
+	Code *string `json:"code,omitempty"`
+	// Message - A message describing the error, intended to be suitable for display in a user interface.
+	Message *string `json:"message,omitempty"`
+	// Target - The target of the particular error. For example, the name of the property in error.
+	Target *string `json:"target,omitempty"`
+	// Details - A list of additional details about the error.
 	Details *[]DeleteCertificateError `json:"details,omitempty"`
 }
 
-// DeploymentConfiguration is
+// DeploymentConfiguration ...
 type DeploymentConfiguration struct {
-	CloudServiceConfiguration   *CloudServiceConfiguration   `json:"cloudServiceConfiguration,omitempty"`
+	// CloudServiceConfiguration - This property and virtualMachineConfiguration are mutually exclusive and one of the properties must be specified. This property cannot be specified if the Batch account was created with its poolAllocationMode property set to 'UserSubscription'.
+	CloudServiceConfiguration *CloudServiceConfiguration `json:"cloudServiceConfiguration,omitempty"`
+	// VirtualMachineConfiguration - This property and cloudServiceConfiguration are mutually exclusive and one of the properties must be specified.
 	VirtualMachineConfiguration *VirtualMachineConfiguration `json:"virtualMachineConfiguration,omitempty"`
 }
 
-// EnvironmentSetting is
+// EnvironmentSetting ...
 type EnvironmentSetting struct {
 	Name  *string `json:"name,omitempty"`
 	Value *string `json:"value,omitempty"`
 }
 
-// FixedScaleSettings is
+// FixedScaleSettings ...
 type FixedScaleSettings struct {
-	ResizeTimeout          *string                       `json:"resizeTimeout,omitempty"`
-	TargetDedicatedNodes   *int32                        `json:"targetDedicatedNodes,omitempty"`
-	TargetLowPriorityNodes *int32                        `json:"targetLowPriorityNodes,omitempty"`
+	// ResizeTimeout - The default value is 15 minutes. Timeout values use ISO 8601 format. For example, use PT10M for 10 minutes. The minimum value is 5 minutes. If you specify a value less than 5 minutes, the Batch service rejects the request with an error; if you are calling the REST API directly, the HTTP status code is 400 (Bad Request).
+	ResizeTimeout *string `json:"resizeTimeout,omitempty"`
+	// TargetDedicatedNodes - At least one of targetDedicatedNodes, targetLowPriority nodes must be set.
+	TargetDedicatedNodes *int32 `json:"targetDedicatedNodes,omitempty"`
+	// TargetLowPriorityNodes - At least one of targetDedicatedNodes, targetLowPriority nodes must be set.
+	TargetLowPriorityNodes *int32 `json:"targetLowPriorityNodes,omitempty"`
+	// NodeDeallocationOption - If omitted, the default value is Requeue. Possible values include: 'Requeue', 'Terminate', 'TaskCompletion', 'RetainedData'
 	NodeDeallocationOption ComputeNodeDeallocationOption `json:"nodeDeallocationOption,omitempty"`
 }
 
-// ImageReference is
+// ImageReference ...
 type ImageReference struct {
+	// Publisher - For example, Canonical or MicrosoftWindowsServer.
 	Publisher *string `json:"publisher,omitempty"`
-	Offer     *string `json:"offer,omitempty"`
-	Sku       *string `json:"sku,omitempty"`
-	Version   *string `json:"version,omitempty"`
-	ID        *string `json:"id,omitempty"`
+	// Offer - For example, UbuntuServer or WindowsServer.
+	Offer *string `json:"offer,omitempty"`
+	// Sku - For example, 14.04.0-LTS or 2012-R2-Datacenter.
+	Sku *string `json:"sku,omitempty"`
+	// Version - A value of 'latest' can be specified to select the latest version of an image. If omitted, the default is 'latest'.
+	Version *string `json:"version,omitempty"`
+	// ID - This property is mutually exclusive with other properties. The virtual machine image must be in the same region and subscription as the Azure Batch account. For information about the firewall settings for Batch node agent to communicate with Batch service see https://docs.microsoft.com/en-us/azure/batch/batch-api-basics#virtual-network-vnet-and-firewall-configuration .
+	ID *string `json:"id,omitempty"`
 }
 
-// InboundNatPool is
+// InboundNatPool ...
 type InboundNatPool struct {
-	Name                      *string                     `json:"name,omitempty"`
-	Protocol                  InboundEndpointProtocol     `json:"protocol,omitempty"`
-	BackendPort               *int32                      `json:"backendPort,omitempty"`
-	FrontendPortRangeStart    *int32                      `json:"frontendPortRangeStart,omitempty"`
-	FrontendPortRangeEnd      *int32                      `json:"frontendPortRangeEnd,omitempty"`
+	// Name - The name must be unique within a Batch pool, can contain letters, numbers, underscores, periods, and hyphens. Names must start with a letter or number, must end with a letter, number, or underscore, and cannot exceed 77 characters.  If any invalid values are provided the request fails with HTTP status code 400.
+	Name *string `json:"name,omitempty"`
+	// Protocol - Possible values include: 'TCP', 'UDP'
+	Protocol InboundEndpointProtocol `json:"protocol,omitempty"`
+	// BackendPort - This must be unique within a Batch pool. Acceptable values are between 1 and 65535 except for 22, 3389, 29876 and 29877 as these are reserved. If any reserved values are provided the request fails with HTTP status code 400.
+	BackendPort *int32 `json:"backendPort,omitempty"`
+	// FrontendPortRangeStart - Acceptable values range between 1 and 65534 except ports from 50000 to 55000 which are reserved. All ranges within a pool must be distinct and cannot overlap. If any reserved or overlapping values are provided the request fails with HTTP status code 400.
+	FrontendPortRangeStart *int32 `json:"frontendPortRangeStart,omitempty"`
+	// FrontendPortRangeEnd - Acceptable values range between 1 and 65534 except ports from 50000 to 55000 which are reserved by the Batch service. All ranges within a pool must be distinct and cannot overlap. If any reserved or overlapping values are provided the request fails with HTTP status code 400.
+	FrontendPortRangeEnd *int32 `json:"frontendPortRangeEnd,omitempty"`
+	// NetworkSecurityGroupRules - The maximum number of rules that can be specified across all the endpoints on a Batch pool is 25. If no network security group rules are specified, a default rule will be created to allow inbound access to the specified backendPort. If the maximum number of network security group rules is exceeded the request fails with HTTP status code 400.
 	NetworkSecurityGroupRules *[]NetworkSecurityGroupRule `json:"networkSecurityGroupRules,omitempty"`
 }
 
-// KeyVaultReference is identifies the Azure key vault associated with a Batch account.
+// KeyVaultReference identifies the Azure key vault associated with a Batch account.
 type KeyVaultReference struct {
-	ID  *string `json:"id,omitempty"`
+	// ID - The resource ID of the Azure key vault associated with the Batch account.
+	ID *string `json:"id,omitempty"`
+	// URL - The URL of the Azure key vault associated with the Batch account.
 	URL *string `json:"url,omitempty"`
 }
 
-// LinuxUserConfiguration is
+// LinuxUserConfiguration ...
 type LinuxUserConfiguration struct {
-	UID           *int32  `json:"uid,omitempty"`
-	Gid           *int32  `json:"gid,omitempty"`
+	// UID - The uid and gid properties must be specified together or not at all. If not specified the underlying operating system picks the uid.
+	UID *int32 `json:"uid,omitempty"`
+	// Gid - The uid and gid properties must be specified together or not at all. If not specified the underlying operating system picks the gid.
+	Gid *int32 `json:"gid,omitempty"`
+	// SSHPrivateKey - The private key must not be password protected. The private key is used to automatically configure asymmetric-key based authentication for SSH between nodes in a Linux pool when the pool's enableInterNodeCommunication property is true (it is ignored if enableInterNodeCommunication is false). It does this by placing the key pair into the user's .ssh directory. If not specified, password-less SSH is not configured between nodes (no modification of the user's .ssh directory is done).
 	SSHPrivateKey *string `json:"sshPrivateKey,omitempty"`
 }
 
-// ListApplicationsResult is the result of performing list applications.
+// ListApplicationsResult the result of performing list applications.
 type ListApplicationsResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Application `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - The list of applications.
+	Value *[]Application `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListApplicationsResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListApplicationsResult) ListApplicationsResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListApplicationsResultIterator provides access to a complete listing of Application values.
+type ListApplicationsResultIterator struct {
+	i    int
+	page ListApplicationsResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListApplicationsResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListApplicationsResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListApplicationsResultIterator) Response() ListApplicationsResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListApplicationsResultIterator) Value() Application {
+	if !iter.page.NotDone() {
+		return Application{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lar ListApplicationsResult) IsEmpty() bool {
+	return lar.Value == nil || len(*lar.Value) == 0
+}
+
+// listApplicationsResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lar ListApplicationsResult) listApplicationsResultPreparer() (*http.Request, error) {
+	if lar.NextLink == nil || len(to.String(lar.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lar.NextLink)))
 }
 
-// ListCertificatesResult is values returned by the List operation.
+// ListApplicationsResultPage contains a page of Application values.
+type ListApplicationsResultPage struct {
+	fn  func(ListApplicationsResult) (ListApplicationsResult, error)
+	lar ListApplicationsResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListApplicationsResultPage) Next() error {
+	next, err := page.fn(page.lar)
+	if err != nil {
+		return err
+	}
+	page.lar = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListApplicationsResultPage) NotDone() bool {
+	return !page.lar.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListApplicationsResultPage) Response() ListApplicationsResult {
+	return page.lar
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListApplicationsResultPage) Values() []Application {
+	if page.lar.IsEmpty() {
+		return nil
+	}
+	return *page.lar.Value
+}
+
+// ListCertificatesResult values returned by the List operation.
 type ListCertificatesResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Certificate `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - The collection of returned certificates.
+	Value *[]Certificate `json:"value,omitempty"`
+	// NextLink - The continuation token.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListCertificatesResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListCertificatesResult) ListCertificatesResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListCertificatesResultIterator provides access to a complete listing of Certificate values.
+type ListCertificatesResultIterator struct {
+	i    int
+	page ListCertificatesResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListCertificatesResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListCertificatesResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListCertificatesResultIterator) Response() ListCertificatesResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListCertificatesResultIterator) Value() Certificate {
+	if !iter.page.NotDone() {
+		return Certificate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lcr ListCertificatesResult) IsEmpty() bool {
+	return lcr.Value == nil || len(*lcr.Value) == 0
+}
+
+// listCertificatesResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lcr ListCertificatesResult) listCertificatesResultPreparer() (*http.Request, error) {
+	if lcr.NextLink == nil || len(to.String(lcr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lcr.NextLink)))
 }
 
-// ListPoolsResult is values returned by the List operation.
+// ListCertificatesResultPage contains a page of Certificate values.
+type ListCertificatesResultPage struct {
+	fn  func(ListCertificatesResult) (ListCertificatesResult, error)
+	lcr ListCertificatesResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListCertificatesResultPage) Next() error {
+	next, err := page.fn(page.lcr)
+	if err != nil {
+		return err
+	}
+	page.lcr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListCertificatesResultPage) NotDone() bool {
+	return !page.lcr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListCertificatesResultPage) Response() ListCertificatesResult {
+	return page.lcr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListCertificatesResultPage) Values() []Certificate {
+	if page.lcr.IsEmpty() {
+		return nil
+	}
+	return *page.lcr.Value
+}
+
+// ListPoolsResult values returned by the List operation.
 type ListPoolsResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Pool `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - The collection of returned pools.
+	Value *[]Pool `json:"value,omitempty"`
+	// NextLink - The continuation token.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListPoolsResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListPoolsResult) ListPoolsResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListPoolsResultIterator provides access to a complete listing of Pool values.
+type ListPoolsResultIterator struct {
+	i    int
+	page ListPoolsResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListPoolsResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListPoolsResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListPoolsResultIterator) Response() ListPoolsResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListPoolsResultIterator) Value() Pool {
+	if !iter.page.NotDone() {
+		return Pool{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lpr ListPoolsResult) IsEmpty() bool {
+	return lpr.Value == nil || len(*lpr.Value) == 0
+}
+
+// listPoolsResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lpr ListPoolsResult) listPoolsResultPreparer() (*http.Request, error) {
+	if lpr.NextLink == nil || len(to.String(lpr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lpr.NextLink)))
 }
 
-// LocationQuota is quotas associated with a Batch region for a particular subscription.
+// ListPoolsResultPage contains a page of Pool values.
+type ListPoolsResultPage struct {
+	fn  func(ListPoolsResult) (ListPoolsResult, error)
+	lpr ListPoolsResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListPoolsResultPage) Next() error {
+	next, err := page.fn(page.lpr)
+	if err != nil {
+		return err
+	}
+	page.lpr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListPoolsResultPage) NotDone() bool {
+	return !page.lpr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListPoolsResultPage) Response() ListPoolsResult {
+	return page.lpr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListPoolsResultPage) Values() []Pool {
+	if page.lpr.IsEmpty() {
+		return nil
+	}
+	return *page.lpr.Value
+}
+
+// LocationQuota quotas associated with a Batch region for a particular subscription.
 type LocationQuota struct {
 	autorest.Response `json:"-"`
-	AccountQuota      *int32 `json:"accountQuota,omitempty"`
+	// AccountQuota - The number of Batch accounts that may be created under the subscription in the specified region.
+	AccountQuota *int32 `json:"accountQuota,omitempty"`
 }
 
-// MetadataItem is the Batch service does not assign any meaning to this metadata; it is solely for the use of user
-// code.
+// MetadataItem the Batch service does not assign any meaning to this metadata; it is solely for the use of user code.
 type MetadataItem struct {
 	Name  *string `json:"name,omitempty"`
 	Value *string `json:"value,omitempty"`
 }
 
-// NetworkConfiguration is the network configuration for a pool.
+// NetworkConfiguration the network configuration for a pool.
 type NetworkConfiguration struct {
-	SubnetID              *string                    `json:"subnetId,omitempty"`
+	// SubnetID - The virtual network must be in the same region and subscription as the Azure Batch account. The specified subnet should have enough free IP addresses to accommodate the number of nodes in the pool. If the subnet doesn't have enough free IP addresses, the pool will partially allocate compute nodes, and a resize error will occur. The 'MicrosoftAzureBatch' service principal must have the 'Classic Virtual Machine Contributor' Role-Based Access Control (RBAC) role for the specified VNet. The specified subnet must allow communication from the Azure Batch service to be able to schedule tasks on the compute nodes. This can be verified by checking if the specified VNet has any associated Network Security Groups (NSG). If communication to the compute nodes in the specified subnet is denied by an NSG, then the Batch service will set the state of the compute nodes to unusable. For pools created via virtualMachineConfiguration the Batch account must have poolAllocationMode userSubscription in order to use a VNet. If the specified VNet has any associated Network Security Groups (NSG), then a few reserved system ports must be enabled for inbound communication. For pools created with a virtual machine configuration, enable ports 29876 and 29877, as well as port 22 for Linux and port 3389 for Windows. For pools created with a cloud service configuration, enable ports 10100, 20100, and 30100. Also enable outbound connections to Azure Storage on port 443. For more details see: https://docs.microsoft.com/en-us/azure/batch/batch-api-basics#virtual-network-vnet-and-firewall-configuration
+	SubnetID *string `json:"subnetId,omitempty"`
+	// EndpointConfiguration - Pool endpoint configuration is only supported on pools with the virtualMachineConfiguration property.
 	EndpointConfiguration *PoolEndpointConfiguration `json:"endpointConfiguration,omitempty"`
 }
 
-// NetworkSecurityGroupRule is
+// NetworkSecurityGroupRule ...
 type NetworkSecurityGroupRule struct {
-	Priority            *int32                         `json:"priority,omitempty"`
-	Access              NetworkSecurityGroupRuleAccess `json:"access,omitempty"`
-	SourceAddressPrefix *string                        `json:"sourceAddressPrefix,omitempty"`
+	// Priority - Priorities within a pool must be unique and are evaluated in order of priority. The lower the number the higher the priority. For example, rules could be specified with order numbers of 150, 250, and 350. The rule with the order number of 150 takes precedence over the rule that has an order of 250. Allowed priorities are 150 to 3500. If any reserved or duplicate values are provided the request fails with HTTP status code 400.
+	Priority *int32 `json:"priority,omitempty"`
+	// Access - Possible values include: 'Allow', 'Deny'
+	Access NetworkSecurityGroupRuleAccess `json:"access,omitempty"`
+	// SourceAddressPrefix - Valid values are a single IP address (i.e. 10.10.10.10), IP subnet (i.e. 192.168.1.0/24), default tag, or * (for all addresses).  If any other values are provided the request fails with HTTP status code 400.
+	SourceAddressPrefix *string `json:"sourceAddressPrefix,omitempty"`
 }
 
-// Operation is
+// Operation ...
 type Operation struct {
+	// Name - This is of the format {provider}/{resource}/{operation}
 	Name       *string                 `json:"name,omitempty"`
 	Display    *OperationDisplay       `json:"display,omitempty"`
 	Origin     *string                 `json:"origin,omitempty"`
 	Properties *map[string]interface{} `json:"properties,omitempty"`
 }
 
-// OperationDisplay is
+// OperationDisplay ...
 type OperationDisplay struct {
-	Provider    *string `json:"provider,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	// Operation - For example: read, write, delete, or listKeys/action
 	Operation   *string `json:"operation,omitempty"`
 	Resource    *string `json:"resource,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 
-// OperationListResult is
+// OperationListResult ...
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	Value             *[]Operation `json:"value,omitempty"`
 	NextLink          *string      `json:"nextLink,omitempty"`
 }
 
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// OSDisk is
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// OSDisk ...
 type OSDisk struct {
+	// Caching - Default value is none. Possible values include: 'None', 'ReadOnly', 'ReadWrite'
 	Caching CachingType `json:"caching,omitempty"`
 }
 
-// Pool is contains information about a pool.
+// Pool contains information about a pool.
 type Pool struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	Etag              *string `json:"etag,omitempty"`
-	*PoolProperties   `json:"properties,omitempty"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Etag - The ETag of the resource, used for concurrency statements.
+	Etag *string `json:"etag,omitempty"`
+	// PoolProperties - The properties associated with the pool.
+	*PoolProperties `json:"properties,omitempty"`
 }
 
-// PoolEndpointConfiguration is
+// UnmarshalJSON is the custom unmarshaler for Pool struct.
+func (p *Pool) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PoolProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.PoolProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		p.Etag = &etag
+	}
+
+	return nil
+}
+
+// PoolCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PoolCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PoolCreateFuture) Result(client PoolClient) (p Pool, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return p, autorest.NewError("batch.PoolCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		p, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	p, err = client.CreateResponder(resp)
+	return
+}
+
+// PoolDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PoolDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PoolDeleteFuture) Result(client PoolClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("batch.PoolDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// PoolEndpointConfiguration ...
 type PoolEndpointConfiguration struct {
+	// InboundNatPools - The maximum number of inbound NAT pools per Batch pool is 5. If the maximum number of inbound NAT pools is exceeded the request fails with HTTP status code 400.
 	InboundNatPools *[]InboundNatPool `json:"inboundNatPools,omitempty"`
 }
 
-// PoolProperties is pool properties.
+// PoolProperties pool properties.
 type PoolProperties struct {
-	DisplayName                     *string                        `json:"displayName,omitempty"`
-	LastModified                    *date.Time                     `json:"lastModified,omitempty"`
-	CreationTime                    *date.Time                     `json:"creationTime,omitempty"`
-	ProvisioningState               PoolProvisioningState          `json:"provisioningState,omitempty"`
-	ProvisioningStateTransitionTime *date.Time                     `json:"provisioningStateTransitionTime,omitempty"`
-	AllocationState                 AllocationState                `json:"allocationState,omitempty"`
-	AllocationStateTransitionTime   *date.Time                     `json:"allocationStateTransitionTime,omitempty"`
-	VMSize                          *string                        `json:"vmSize,omitempty"`
-	DeploymentConfiguration         *DeploymentConfiguration       `json:"deploymentConfiguration,omitempty"`
-	CurrentDedicatedNodes           *int32                         `json:"currentDedicatedNodes,omitempty"`
-	CurrentLowPriorityNodes         *int32                         `json:"currentLowPriorityNodes,omitempty"`
-	ScaleSettings                   *ScaleSettings                 `json:"scaleSettings,omitempty"`
-	AutoScaleRun                    *AutoScaleRun                  `json:"autoScaleRun,omitempty"`
-	InterNodeCommunication          InterNodeCommunicationState    `json:"interNodeCommunication,omitempty"`
-	NetworkConfiguration            *NetworkConfiguration          `json:"networkConfiguration,omitempty"`
-	MaxTasksPerNode                 *int32                         `json:"maxTasksPerNode,omitempty"`
-	TaskSchedulingPolicy            *TaskSchedulingPolicy          `json:"taskSchedulingPolicy,omitempty"`
-	UserAccounts                    *[]UserAccount                 `json:"userAccounts,omitempty"`
-	Metadata                        *[]MetadataItem                `json:"metadata,omitempty"`
-	StartTask                       *StartTask                     `json:"startTask,omitempty"`
-	Certificates                    *[]CertificateReference        `json:"certificates,omitempty"`
-	ApplicationPackages             *[]ApplicationPackageReference `json:"applicationPackages,omitempty"`
-	ApplicationLicenses             *[]string                      `json:"applicationLicenses,omitempty"`
-	ResizeOperationStatus           *ResizeOperationStatus         `json:"resizeOperationStatus,omitempty"`
+	// DisplayName - The display name need not be unique and can contain any Unicode characters up to a maximum length of 1024.
+	DisplayName *string `json:"displayName,omitempty"`
+	// LastModified - This is the last time at which the pool level data, such as the targetDedicatedNodes or autoScaleSettings, changed. It does not factor in node-level changes such as a compute node changing state.
+	LastModified *date.Time `json:"lastModified,omitempty"`
+	CreationTime *date.Time `json:"creationTime,omitempty"`
+	// ProvisioningState - Values are:
+	//  Succeeded - The pool is available to run tasks subject to the availability of compute nodes.
+	//  Deleting - The user has requested that the pool be deleted, but the delete operation has not yet completed. Possible values include: 'PoolProvisioningStateSucceeded', 'PoolProvisioningStateDeleting'
+	ProvisioningState               PoolProvisioningState `json:"provisioningState,omitempty"`
+	ProvisioningStateTransitionTime *date.Time            `json:"provisioningStateTransitionTime,omitempty"`
+	// AllocationState - Values are:
+	//  Steady - The pool is not resizing. There are no changes to the number of nodes in the pool in progress. A pool enters this state when it is created and when no operations are being performed on the pool to change the number of dedicated nodes.
+	//  Resizing - The pool is resizing; that is, compute nodes are being added to or removed from the pool.
+	//  Stopping - The pool was resizing, but the user has requested that the resize be stopped, but the stop request has not yet been completed. Possible values include: 'Steady', 'Resizing', 'Stopping'
+	AllocationState               AllocationState `json:"allocationState,omitempty"`
+	AllocationStateTransitionTime *date.Time      `json:"allocationStateTransitionTime,omitempty"`
+	// VMSize - For information about available sizes of virtual machines for Cloud Services pools (pools created with cloudServiceConfiguration), see Sizes for Cloud Services (http://azure.microsoft.com/documentation/articles/cloud-services-sizes-specs/). Batch supports all Cloud Services VM sizes except ExtraSmall. For information about available VM sizes for pools using images from the Virtual Machines Marketplace (pools created with virtualMachineConfiguration) see Sizes for Virtual Machines (Linux) (https://azure.microsoft.com/documentation/articles/virtual-machines-linux-sizes/) or Sizes for Virtual Machines (Windows) (https://azure.microsoft.com/documentation/articles/virtual-machines-windows-sizes/). Batch supports all Azure VM sizes except STANDARD_A0 and those with premium storage (STANDARD_GS, STANDARD_DS, and STANDARD_DSV2 series).
+	VMSize *string `json:"vmSize,omitempty"`
+	// DeploymentConfiguration - Using CloudServiceConfiguration specifies that the nodes should be creating using Azure Cloud Services (PaaS), while VirtualMachineConfiguration uses Azure Virtual Machines (IaaS).
+	DeploymentConfiguration *DeploymentConfiguration `json:"deploymentConfiguration,omitempty"`
+	CurrentDedicatedNodes   *int32                   `json:"currentDedicatedNodes,omitempty"`
+	CurrentLowPriorityNodes *int32                   `json:"currentLowPriorityNodes,omitempty"`
+	ScaleSettings           *ScaleSettings           `json:"scaleSettings,omitempty"`
+	// AutoScaleRun - This property is set only if the pool automatically scales, i.e. autoScaleSettings are used.
+	AutoScaleRun *AutoScaleRun `json:"autoScaleRun,omitempty"`
+	// InterNodeCommunication - This imposes restrictions on which nodes can be assigned to the pool. Enabling this value can reduce the chance of the requested number of nodes to be allocated in the pool. If not specified, this value defaults to 'Disabled'. Possible values include: 'Enabled', 'Disabled'
+	InterNodeCommunication InterNodeCommunicationState `json:"interNodeCommunication,omitempty"`
+	NetworkConfiguration   *NetworkConfiguration       `json:"networkConfiguration,omitempty"`
+	MaxTasksPerNode        *int32                      `json:"maxTasksPerNode,omitempty"`
+	TaskSchedulingPolicy   *TaskSchedulingPolicy       `json:"taskSchedulingPolicy,omitempty"`
+	UserAccounts           *[]UserAccount              `json:"userAccounts,omitempty"`
+	// Metadata - The Batch service does not assign any meaning to metadata; it is solely for the use of user code.
+	Metadata *[]MetadataItem `json:"metadata,omitempty"`
+	// StartTask - In an PATCH (update) operation, this property can be set to an empty object to remove the start task from the pool.
+	StartTask *StartTask `json:"startTask,omitempty"`
+	// Certificates - For Windows compute nodes, the Batch service installs the certificates to the specified certificate store and location. For Linux compute nodes, the certificates are stored in a directory inside the task working directory and an environment variable AZ_BATCH_CERTIFICATES_DIR is supplied to the task to query for this location. For certificates with visibility of 'remoteUser', a 'certs' directory is created in the user's home directory (e.g., /home/{user-name}/certs) and certificates are placed in that directory.
+	Certificates *[]CertificateReference `json:"certificates,omitempty"`
+	// ApplicationPackages - Changes to application packages affect all new compute nodes joining the pool, but do not affect compute nodes that are already in the pool until they are rebooted or reimaged.
+	ApplicationPackages *[]ApplicationPackageReference `json:"applicationPackages,omitempty"`
+	// ApplicationLicenses - The list of application licenses must be a subset of available Batch service application licenses. If a license is requested which is not supported, pool creation will fail.
+	ApplicationLicenses   *[]string              `json:"applicationLicenses,omitempty"`
+	ResizeOperationStatus *ResizeOperationStatus `json:"resizeOperationStatus,omitempty"`
 }
 
-// ProxyResource is a definition of an Azure resource.
+// ProxyResource a definition of an Azure resource.
 type ProxyResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
 	Type *string `json:"type,omitempty"`
+	// Etag - The ETag of the resource, used for concurrency statements.
 	Etag *string `json:"etag,omitempty"`
 }
 
-// ResizeError is
+// ResizeError ...
 type ResizeError struct {
-	Code    *string        `json:"code,omitempty"`
+	// Code - An identifier for the error. Codes are invariant and are intended to be consumed programmatically.
+	Code *string `json:"code,omitempty"`
+	// Message - A message describing the error, intended to be suitable for display in a user interface.
 	Message *string        `json:"message,omitempty"`
 	Details *[]ResizeError `json:"details,omitempty"`
 }
 
-// ResizeOperationStatus is describes either the current operation (if the pool AllocationState is Resizing) or the
+// ResizeOperationStatus describes either the current operation (if the pool AllocationState is Resizing) or the
 // previously completed operation (if the AllocationState is Steady).
 type ResizeOperationStatus struct {
-	TargetDedicatedNodes   *int32                        `json:"targetDedicatedNodes,omitempty"`
-	TargetLowPriorityNodes *int32                        `json:"targetLowPriorityNodes,omitempty"`
-	ResizeTimeout          *string                       `json:"resizeTimeout,omitempty"`
+	TargetDedicatedNodes   *int32 `json:"targetDedicatedNodes,omitempty"`
+	TargetLowPriorityNodes *int32 `json:"targetLowPriorityNodes,omitempty"`
+	// ResizeTimeout - The default value is 15 minutes. The minimum value is 5 minutes. If you specify a value less than 5 minutes, the Batch service returns an error; if you are calling the REST API directly, the HTTP status code is 400 (Bad Request).
+	ResizeTimeout *string `json:"resizeTimeout,omitempty"`
+	// NodeDeallocationOption - The default value is requeue. Possible values include: 'Requeue', 'Terminate', 'TaskCompletion', 'RetainedData'
 	NodeDeallocationOption ComputeNodeDeallocationOption `json:"nodeDeallocationOption,omitempty"`
 	StartTime              *date.Time                    `json:"startTime,omitempty"`
-	Errors                 *[]ResizeError                `json:"errors,omitempty"`
+	// Errors - This property is set only if an error occurred during the last pool resize, and only when the pool allocationState is Steady.
+	Errors *[]ResizeError `json:"errors,omitempty"`
 }
 
-// Resource is a definition of an Azure resource.
+// Resource a definition of an Azure resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The ID of the resource.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResourceFile is
+// ResourceFile ...
 type ResourceFile struct {
+	// BlobSource - This URL must be readable using anonymous access; that is, the Batch service does not present any credentials when downloading the blob. There are two ways to get such a URL for a blob in Azure storage: include a Shared Access Signature (SAS) granting read permissions on the blob, or set the ACL for the blob or its container to allow public access.
 	BlobSource *string `json:"blobSource,omitempty"`
 	FilePath   *string `json:"filePath,omitempty"`
-	FileMode   *string `json:"fileMode,omitempty"`
+	// FileMode - This property applies only to files being downloaded to Linux compute nodes. It will be ignored if it is specified for a resourceFile which will be downloaded to a Windows node. If this property is not specified for a Linux node, then a default value of 0770 is applied to the file.
+	FileMode *string `json:"fileMode,omitempty"`
 }
 
-// ScaleSettings is defines the desired size of the pool. This can either be 'fixedScale' where the requested
+// ScaleSettings defines the desired size of the pool. This can either be 'fixedScale' where the requested
 // targetDedicatedNodes is specified, or 'autoScale' which defines a formula which is periodically reevaluated. If this
 // property is not specified, the pool will have a fixed scale with 0 targetDedicatedNodes.
 type ScaleSettings struct {
+	// FixedScale - This property and autoScale are mutually exclusive and one of the properties must be specified.
 	FixedScale *FixedScaleSettings `json:"fixedScale,omitempty"`
-	AutoScale  *AutoScaleSettings  `json:"autoScale,omitempty"`
+	// AutoScale - This property and fixedScale are mutually exclusive and one of the properties must be specified.
+	AutoScale *AutoScaleSettings `json:"autoScale,omitempty"`
 }
 
-// StartTask is
+// StartTask ...
 type StartTask struct {
+	// CommandLine - The command line does not run under a shell, and therefore cannot take advantage of shell features such as environment variable expansion. If you want to take advantage of such features, you should invoke the shell in the command line, for example using "cmd /c MyCommand" in Windows or "/bin/sh -c MyCommand" in Linux. Required if any other properties of the startTask are specified.
 	CommandLine         *string               `json:"commandLine,omitempty"`
 	ResourceFiles       *[]ResourceFile       `json:"resourceFiles,omitempty"`
 	EnvironmentSettings *[]EnvironmentSetting `json:"environmentSettings,omitempty"`
-	UserIdentity        *UserIdentity         `json:"userIdentity,omitempty"`
-	MaxTaskRetryCount   *int32                `json:"maxTaskRetryCount,omitempty"`
-	WaitForSuccess      *bool                 `json:"waitForSuccess,omitempty"`
+	// UserIdentity - If omitted, the task runs as a non-administrative user unique to the task.
+	UserIdentity *UserIdentity `json:"userIdentity,omitempty"`
+	// MaxTaskRetryCount - The Batch service retries a task if its exit code is nonzero. Note that this value specifically controls the number of retries. The Batch service will try the task once, and may then retry up to this limit. For example, if the maximum retry count is 3, Batch tries the task up to 4 times (one initial try and 3 retries). If the maximum retry count is 0, the Batch service does not retry the task. If the maximum retry count is -1, the Batch service retries the task without limit.
+	MaxTaskRetryCount *int32 `json:"maxTaskRetryCount,omitempty"`
+	// WaitForSuccess - If true and the start task fails on a compute node, the Batch service retries the start task up to its maximum retry count (maxTaskRetryCount). If the task has still not completed successfully after all retries, then the Batch service marks the compute node unusable, and will not schedule tasks to it. This condition can be detected via the node state and scheduling error detail. If false, the Batch service will not wait for the start task to complete. In this case, other tasks can start executing on the compute node while the start task is still running; and even if the start task fails, new tasks will continue to be scheduled on the node. The default is false.
+	WaitForSuccess *bool `json:"waitForSuccess,omitempty"`
 }
 
-// TaskSchedulingPolicy is
+// TaskSchedulingPolicy ...
 type TaskSchedulingPolicy struct {
+	// NodeFillType - Possible values include: 'Spread', 'Pack'
 	NodeFillType ComputeNodeFillType `json:"nodeFillType,omitempty"`
 }
 
-// UserAccount is
+// UserAccount ...
 type UserAccount struct {
-	Name                   *string                 `json:"name,omitempty"`
-	Password               *string                 `json:"password,omitempty"`
-	ElevationLevel         ElevationLevel          `json:"elevationLevel,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	Password *string `json:"password,omitempty"`
+	// ElevationLevel - nonAdmin - The auto user is a standard user without elevated access. admin - The auto user is a user with elevated access and operates with full Administrator permissions. The default value is nonAdmin. Possible values include: 'NonAdmin', 'Admin'
+	ElevationLevel ElevationLevel `json:"elevationLevel,omitempty"`
+	// LinuxUserConfiguration - This property is ignored if specified on a Windows pool. If not specified, the user is created with the default options.
 	LinuxUserConfiguration *LinuxUserConfiguration `json:"linuxUserConfiguration,omitempty"`
 }
 
-// UserIdentity is specify either the userName or autoUser property, but not both.
+// UserIdentity specify either the userName or autoUser property, but not both.
 type UserIdentity struct {
-	UserName *string                `json:"userName,omitempty"`
+	// UserName - The userName and autoUser properties are mutually exclusive; you must specify one but not both.
+	UserName *string `json:"userName,omitempty"`
+	// AutoUser - The userName and autoUser properties are mutually exclusive; you must specify one but not both.
 	AutoUser *AutoUserSpecification `json:"autoUser,omitempty"`
 }
 
-// VirtualMachineConfiguration is
+// VirtualMachineConfiguration ...
 type VirtualMachineConfiguration struct {
-	ImageReference       *ImageReference       `json:"imageReference,omitempty"`
-	OsDisk               *OSDisk               `json:"osDisk,omitempty"`
-	NodeAgentSkuID       *string               `json:"nodeAgentSkuId,omitempty"`
+	ImageReference *ImageReference `json:"imageReference,omitempty"`
+	OsDisk         *OSDisk         `json:"osDisk,omitempty"`
+	// NodeAgentSkuID - The Batch node agent is a program that runs on each node in the pool, and provides the command-and-control interface between the node and the Batch service. There are different implementations of the node agent, known as SKUs, for different operating systems. You must specify a node agent SKU which matches the selected image reference. To get the list of supported node agent SKUs along with their list of verified image references, see the 'List supported node agent SKUs' operation.
+	NodeAgentSkuID *string `json:"nodeAgentSkuId,omitempty"`
+	// WindowsConfiguration - This property must not be specified if the imageReference specifies a Linux OS image.
 	WindowsConfiguration *WindowsConfiguration `json:"windowsConfiguration,omitempty"`
-	DataDisks            *[]DataDisk           `json:"dataDisks,omitempty"`
-	LicenseType          *string               `json:"licenseType,omitempty"`
+	// DataDisks - This property must be specified if the compute nodes in the pool need to have empty data disks attached to them.
+	DataDisks *[]DataDisk `json:"dataDisks,omitempty"`
+	// LicenseType - This only applies to images that contain the Windows operating system, and should only be used when you hold valid on-premises licenses for the nodes which will be deployed. If omitted, no on-premises licensing discount is applied. Values are:
+	//  Windows_Server - The on-premises license is for Windows Server.
+	//  Windows_Client - The on-premises license is for Windows Client.
+	LicenseType *string `json:"licenseType,omitempty"`
 }
 
-// WindowsConfiguration is
+// WindowsConfiguration ...
 type WindowsConfiguration struct {
+	// EnableAutomaticUpdates - If omitted, the default value is true.
 	EnableAutomaticUpdates *bool `json:"enableAutomaticUpdates,omitempty"`
 }

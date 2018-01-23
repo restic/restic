@@ -22,7 +22,6 @@ import (
 
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 )
 
@@ -45,17 +44,6 @@ type DocumentSnapshot struct {
 
 	c     *Client
 	proto *pb.Document
-}
-
-func (d1 *DocumentSnapshot) equal(d2 *DocumentSnapshot) bool {
-	if d1 == nil || d2 == nil {
-		return d1 == d2
-	}
-	return d1.Ref.equal(d2.Ref) &&
-		d1.CreateTime.Equal(d2.CreateTime) &&
-		d1.UpdateTime.Equal(d2.UpdateTime) &&
-		d1.c == d2.c &&
-		proto.Equal(d1.proto, d2.proto)
 }
 
 // Data returns the DocumentSnapshot's fields as a map.
@@ -103,15 +91,15 @@ func (d *DocumentSnapshot) DataTo(p interface{}) error {
 	return setFromProtoValue(p, &pb.Value{&pb.Value_MapValue{&pb.MapValue{d.proto.Fields}}}, d.c)
 }
 
-// DataAt returns the data value denoted by fieldPath.
+// DataAt returns the data value denoted by path.
 //
-// The fieldPath argument can be a single field or a dot-separated sequence of
+// The path argument can be a single field or a dot-separated sequence of
 // fields, and must not contain any of the runes "˜*/[]". Use DataAtPath instead for
 // such a path.
 //
 // See DocumentSnapshot.DataTo for how Firestore values are converted to Go values.
-func (d *DocumentSnapshot) DataAt(fieldPath string) (interface{}, error) {
-	fp, err := parseDotSeparatedString(fieldPath)
+func (d *DocumentSnapshot) DataAt(path string) (interface{}, error) {
+	fp, err := parseDotSeparatedString(path)
 	if err != nil {
 		return nil, err
 	}
