@@ -170,28 +170,13 @@ func (p *Packer) String() string {
 	return fmt.Sprintf("<Packer %d blobs, %d bytes>", len(p.blobs), p.bytes)
 }
 
-// readHeaderLength returns the header length read from the end of the file
-// encoded in little endian.
-func readHeaderLength(rd io.ReaderAt, size int64) (uint32, error) {
-	off := size - int64(binary.Size(uint32(0)))
-
-	buf := make([]byte, binary.Size(uint32(0)))
-	n, err := rd.ReadAt(buf, off)
-	if err != nil {
-		return 0, errors.Wrap(err, "ReadAt")
-	}
-
-	if n != len(buf) {
-		return 0, errors.New("not enough bytes read")
-	}
-
-	return binary.LittleEndian.Uint32(buf), nil
-}
-
 const maxHeaderSize = 16 * 1024 * 1024
 
 // we require at least one entry in the header, and one blob for a pack file
 var minFileSize = entrySize + crypto.Extension
+
+// number of header enries to download as part of header-length request
+var eagerEntries = uint(15)
 
 // readHeader reads the header at the end of rd. size is the length of the
 // whole data accessible in rd.
@@ -207,11 +192,25 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
-	hl, err := readHeaderLength(rd, size)
+	// assuming extra request is significantly slower than extra bytes download,
+	// eagerly download eagerEntries header entries as part of header-length request.
+	// only make second request if actual number of entries is greater than eagerEntries
+
+	eagerHl := uint32((eagerEntries * entrySize) + crypto.Extension)
+	if int64(eagerHl) > size {
+		eagerHl = uint32(size) - uint32(binary.Size(uint32(0)))
+	}
+	eagerBuf := make([]byte, eagerHl+uint32(binary.Size(uint32(0))))
+
+	n, err := rd.ReadAt(eagerBuf, size-int64(len(eagerBuf)))
 	if err != nil {
 		return nil, err
 	}
+	if n != len(eagerBuf) {
+		return nil, errors.New("not enough bytes read")
+	}
 
+	hl := binary.LittleEndian.Uint32(eagerBuf[eagerHl:])
 	debug.Log("header length: %v", size)
 
 	if hl == 0 {
@@ -239,14 +238,24 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
-	buf := make([]byte, int(hl))
-	n, err := rd.ReadAt(buf, size-int64(hl)-int64(binary.Size(hl)))
-	if err != nil {
-		return nil, errors.Wrap(err, "ReadAt")
-	}
+	eagerBuf = eagerBuf[:eagerHl]
 
-	if n != len(buf) {
-		return nil, errors.New("not enough bytes read")
+	var buf []byte
+	if hl <= eagerHl {
+		// already have all header bytes. yay.
+		buf = eagerBuf[eagerHl-hl:]
+	} else {
+		// need more header bytes
+		buf = make([]byte, hl)
+		missingHl := hl - eagerHl
+		n, err := rd.ReadAt(buf[:missingHl], size-int64(hl)-int64(binary.Size(hl)))
+		if err != nil {
+			return nil, errors.Wrap(err, "ReadAt")
+		}
+		if uint32(n) != missingHl {
+			return nil, errors.New("not enough bytes read")
+		}
+		copy(buf[hl-eagerHl:], eagerBuf)
 	}
 
 	return buf, nil
