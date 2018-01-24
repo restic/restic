@@ -88,3 +88,38 @@ func TestBackendSaveRetry(t *testing.T) {
 		t.Errorf("wrong data written to backend")
 	}
 }
+
+func TestBackendListRetry(t *testing.T) {
+	const (
+		ID1 = "id1"
+		ID2 = "id2"
+	)
+
+	retry := 0
+	be := &mock.Backend{
+		ListFn: func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+			// fail during first retry, succeed during second
+			retry++
+			if retry == 1 {
+				fn(restic.FileInfo{Name: ID1})
+				return errors.New("test list error")
+			}
+			fn(restic.FileInfo{Name: ID1})
+			fn(restic.FileInfo{Name: ID2})
+			return nil
+		},
+	}
+
+	retryBackend := RetryBackend{
+		Backend: be,
+	}
+
+	var listed []string
+	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+		listed = append(listed, fi.Name)
+		return nil
+	})
+	test.OK(t, err)                            // assert overall success
+	test.Equals(t, 2, retry)                   // assert retried once
+	test.Equals(t, []string{ID1, ID2}, listed) // assert no duplicate files
+}
