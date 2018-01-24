@@ -1,7 +1,0 @@
-Enhancement: Reduce number of remote requests reading pack header
-
-This change eliminates extra remote repository calls for most pack
-files and improves repository reindex and purge time.
-
-https://github.com/restic/restic/issues/1567
-https://github.com/restic/restic/pull/1574

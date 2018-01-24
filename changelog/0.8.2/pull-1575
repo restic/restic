@@ -1,7 +1,0 @@
-Enhancement: Reduce number of remote requests during Repository.ListPack()
-
-This change eliminates redundant remote repository calls and improves 
-repository reindex and purge time.
-
-https://github.com/restic/restic/issues/1567
-https://github.com/restic/restic/pull/1575

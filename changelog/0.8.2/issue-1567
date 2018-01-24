@@ -1,0 +1,9 @@
+Enhancement: Reduce number of backend requests for rebuild-index and prune
+
+We've found a way to reduce then number of backend requests for the
+`rebuild-index` and `prune` operations. This significantly speeds up the
+operations for high-latency backends.
+
+https://github.com/restic/restic/issues/1567
+https://github.com/restic/restic/pull/1574
+https://github.com/restic/restic/pull/1575
