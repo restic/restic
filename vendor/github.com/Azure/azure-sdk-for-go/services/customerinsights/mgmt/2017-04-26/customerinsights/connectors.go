@@ -18,6 +18,7 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // interact with Azure Customer Insights service to manage your resources. The API has entities that capture the
 // relationship between an end user and the Azure Customer Insights service.
 type ConnectorsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewConnectorsClient creates an instance of the ConnectorsClient client.
@@ -41,15 +42,11 @@ func NewConnectorsClientWithBaseURI(baseURI string, subscriptionID string) Conne
 	return ConnectorsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a connector or updates an existing connector in the hub. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdate creates a connector or updates an existing connector in the hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. connectorName is the name of
 // the connector. parameters is parameters supplied to the CreateOrUpdate Connector operation.
-func (client ConnectorsClient) CreateOrUpdate(resourceGroupName string, hubName string, connectorName string, parameters ConnectorResourceFormat, cancel <-chan struct{}) (<-chan ConnectorResourceFormat, <-chan error) {
-	resultChan := make(chan ConnectorResourceFormat, 1)
-	errChan := make(chan error, 1)
+func (client ConnectorsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, hubName string, connectorName string, parameters ConnectorResourceFormat) (result ConnectorsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: connectorName,
 			Constraints: []validation.Constraint{{Target: "connectorName", Name: validation.MaxLength, Rule: 128, Chain: nil},
@@ -58,46 +55,26 @@ func (client ConnectorsClient) CreateOrUpdate(resourceGroupName string, hubName 
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Connector", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.Connector.ConnectorProperties", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result ConnectorResourceFormat
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, hubName, connectorName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, hubName, connectorName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ConnectorsClient) CreateOrUpdatePreparer(resourceGroupName string, hubName string, connectorName string, parameters ConnectorResourceFormat, cancel <-chan struct{}) (*http.Request, error) {
+func (client ConnectorsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, hubName string, connectorName string, parameters ConnectorResourceFormat) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"connectorName":     autorest.Encode("path", connectorName),
 		"hubName":           autorest.Encode("path", hubName),
@@ -117,16 +94,22 @@ func (client ConnectorsClient) CreateOrUpdatePreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/connectors/{connectorName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ConnectorsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ConnectorsClient) CreateOrUpdateSender(req *http.Request) (future ConnectorsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -142,48 +125,28 @@ func (client ConnectorsClient) CreateOrUpdateResponder(resp *http.Response) (res
 	return
 }
 
-// Delete deletes a connector in the hub. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a connector in the hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. connectorName is the name of
 // the connector.
-func (client ConnectorsClient) Delete(resourceGroupName string, hubName string, connectorName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, hubName, connectorName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ConnectorsClient) Delete(ctx context.Context, resourceGroupName string, hubName string, connectorName string) (result ConnectorsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, hubName, connectorName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ConnectorsClient) DeletePreparer(resourceGroupName string, hubName string, connectorName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ConnectorsClient) DeletePreparer(ctx context.Context, resourceGroupName string, hubName string, connectorName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"connectorName":     autorest.Encode("path", connectorName),
 		"hubName":           autorest.Encode("path", hubName),
@@ -201,16 +164,22 @@ func (client ConnectorsClient) DeletePreparer(resourceGroupName string, hubName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/connectors/{connectorName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ConnectorsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ConnectorsClient) DeleteSender(req *http.Request) (future ConnectorsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -229,8 +198,8 @@ func (client ConnectorsClient) DeleteResponder(resp *http.Response) (result auto
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. connectorName is the name of
 // the connector.
-func (client ConnectorsClient) Get(resourceGroupName string, hubName string, connectorName string) (result ConnectorResourceFormat, err error) {
-	req, err := client.GetPreparer(resourceGroupName, hubName, connectorName)
+func (client ConnectorsClient) Get(ctx context.Context, resourceGroupName string, hubName string, connectorName string) (result ConnectorResourceFormat, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, hubName, connectorName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "Get", nil, "Failure preparing request")
 		return
@@ -252,7 +221,7 @@ func (client ConnectorsClient) Get(resourceGroupName string, hubName string, con
 }
 
 // GetPreparer prepares the Get request.
-func (client ConnectorsClient) GetPreparer(resourceGroupName string, hubName string, connectorName string) (*http.Request, error) {
+func (client ConnectorsClient) GetPreparer(ctx context.Context, resourceGroupName string, hubName string, connectorName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"connectorName":     autorest.Encode("path", connectorName),
 		"hubName":           autorest.Encode("path", hubName),
@@ -270,14 +239,13 @@ func (client ConnectorsClient) GetPreparer(resourceGroupName string, hubName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/connectors/{connectorName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ConnectorsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -297,8 +265,9 @@ func (client ConnectorsClient) GetResponder(resp *http.Response) (result Connect
 // ListByHub gets all the connectors in the specified hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub.
-func (client ConnectorsClient) ListByHub(resourceGroupName string, hubName string) (result ConnectorListResult, err error) {
-	req, err := client.ListByHubPreparer(resourceGroupName, hubName)
+func (client ConnectorsClient) ListByHub(ctx context.Context, resourceGroupName string, hubName string) (result ConnectorListResultPage, err error) {
+	result.fn = client.listByHubNextResults
+	req, err := client.ListByHubPreparer(ctx, resourceGroupName, hubName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", nil, "Failure preparing request")
 		return
@@ -306,12 +275,12 @@ func (client ConnectorsClient) ListByHub(resourceGroupName string, hubName strin
 
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.clr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByHubResponder(resp)
+	result.clr, err = client.ListByHubResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", resp, "Failure responding to request")
 	}
@@ -320,7 +289,7 @@ func (client ConnectorsClient) ListByHub(resourceGroupName string, hubName strin
 }
 
 // ListByHubPreparer prepares the ListByHub request.
-func (client ConnectorsClient) ListByHubPreparer(resourceGroupName string, hubName string) (*http.Request, error) {
+func (client ConnectorsClient) ListByHubPreparer(ctx context.Context, resourceGroupName string, hubName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -337,14 +306,13 @@ func (client ConnectorsClient) ListByHubPreparer(resourceGroupName string, hubNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/connectors", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByHubSender sends the ListByHub request. The method will close the
 // http.Response Body if it receives an error.
 func (client ConnectorsClient) ListByHubSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -361,71 +329,29 @@ func (client ConnectorsClient) ListByHubResponder(resp *http.Response) (result C
 	return
 }
 
-// ListByHubNextResults retrieves the next set of results, if any.
-func (client ConnectorsClient) ListByHubNextResults(lastResults ConnectorListResult) (result ConnectorListResult, err error) {
-	req, err := lastResults.ConnectorListResultPreparer()
+// listByHubNextResults retrieves the next set of results, if any.
+func (client ConnectorsClient) listByHubNextResults(lastResults ConnectorListResult) (result ConnectorListResult, err error) {
+	req, err := lastResults.connectorListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "listByHubNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "listByHubNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByHubResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "ListByHub", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "customerinsights.ConnectorsClient", "listByHubNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByHubComplete gets all elements from the list without paging.
-func (client ConnectorsClient) ListByHubComplete(resourceGroupName string, hubName string, cancel <-chan struct{}) (<-chan ConnectorResourceFormat, <-chan error) {
-	resultChan := make(chan ConnectorResourceFormat)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByHub(resourceGroupName, hubName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByHubNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByHubComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ConnectorsClient) ListByHubComplete(ctx context.Context, resourceGroupName string, hubName string) (result ConnectorListResultIterator, err error) {
+	result.page, err = client.ListByHub(ctx, resourceGroupName, hubName)
+	return
 }

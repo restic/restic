@@ -19,7 +19,6 @@ package filesystem
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Azure/go-autorest/autorest"
 	"io"
 )
@@ -28,7 +27,7 @@ import (
 type AppendModeType string
 
 const (
-	// Autocreate specifies the autocreate state for append mode type.
+	// Autocreate ...
 	Autocreate AppendModeType = "autocreate"
 )
 
@@ -36,25 +35,27 @@ const (
 type Exception string
 
 const (
-	// ExceptionAccessControlException specifies the exception access control exception state for exception.
+	// ExceptionAccessControlException ...
 	ExceptionAccessControlException Exception = "AccessControlException"
-	// ExceptionBadOffsetException specifies the exception bad offset exception state for exception.
+	// ExceptionAdlsRemoteException ...
+	ExceptionAdlsRemoteException Exception = "AdlsRemoteException"
+	// ExceptionBadOffsetException ...
 	ExceptionBadOffsetException Exception = "BadOffsetException"
-	// ExceptionFileAlreadyExistsException specifies the exception file already exists exception state for exception.
+	// ExceptionFileAlreadyExistsException ...
 	ExceptionFileAlreadyExistsException Exception = "FileAlreadyExistsException"
-	// ExceptionFileNotFoundException specifies the exception file not found exception state for exception.
+	// ExceptionFileNotFoundException ...
 	ExceptionFileNotFoundException Exception = "FileNotFoundException"
-	// ExceptionIllegalArgumentException specifies the exception illegal argument exception state for exception.
+	// ExceptionIllegalArgumentException ...
 	ExceptionIllegalArgumentException Exception = "IllegalArgumentException"
-	// ExceptionIOException specifies the exception io exception state for exception.
+	// ExceptionIOException ...
 	ExceptionIOException Exception = "IOException"
-	// ExceptionRuntimeException specifies the exception runtime exception state for exception.
+	// ExceptionRuntimeException ...
 	ExceptionRuntimeException Exception = "RuntimeException"
-	// ExceptionSecurityException specifies the exception security exception state for exception.
+	// ExceptionSecurityException ...
 	ExceptionSecurityException Exception = "SecurityException"
-	// ExceptionThrottledException specifies the exception throttled exception state for exception.
+	// ExceptionThrottledException ...
 	ExceptionThrottledException Exception = "ThrottledException"
-	// ExceptionUnsupportedOperationException specifies the exception unsupported operation exception state for exception.
+	// ExceptionUnsupportedOperationException ...
 	ExceptionUnsupportedOperationException Exception = "UnsupportedOperationException"
 )
 
@@ -62,13 +63,13 @@ const (
 type ExpiryOptionType string
 
 const (
-	// Absolute specifies the absolute state for expiry option type.
+	// Absolute ...
 	Absolute ExpiryOptionType = "Absolute"
-	// NeverExpire specifies the never expire state for expiry option type.
+	// NeverExpire ...
 	NeverExpire ExpiryOptionType = "NeverExpire"
-	// RelativeToCreationDate specifies the relative to creation date state for expiry option type.
+	// RelativeToCreationDate ...
 	RelativeToCreationDate ExpiryOptionType = "RelativeToCreationDate"
-	// RelativeToNow specifies the relative to now state for expiry option type.
+	// RelativeToNow ...
 	RelativeToNow ExpiryOptionType = "RelativeToNow"
 )
 
@@ -76,9 +77,9 @@ const (
 type FileType string
 
 const (
-	// DIRECTORY specifies the directory state for file type.
+	// DIRECTORY ...
 	DIRECTORY FileType = "DIRECTORY"
-	// FILE specifies the file state for file type.
+	// FILE ...
 	FILE FileType = "FILE"
 )
 
@@ -86,35 +87,44 @@ const (
 type SyncFlag string
 
 const (
-	// CLOSE specifies the close state for sync flag.
+	// CLOSE ...
 	CLOSE SyncFlag = "CLOSE"
-	// DATA specifies the data state for sync flag.
+	// DATA ...
 	DATA SyncFlag = "DATA"
-	// METADATA specifies the metadata state for sync flag.
+	// METADATA ...
 	METADATA SyncFlag = "METADATA"
 )
 
-// ACLStatus is data Lake Store file or directory Access Control List information.
+// ACLStatus data Lake Store file or directory Access Control List information.
 type ACLStatus struct {
-	Entries    *[]string `json:"entries,omitempty"`
-	Group      *string   `json:"group,omitempty"`
-	Owner      *string   `json:"owner,omitempty"`
-	Permission *int32    `json:"permission,omitempty"`
-	StickyBit  *bool     `json:"stickyBit,omitempty"`
+	// Entries - the list of ACLSpec entries on a file or directory.
+	Entries *[]string `json:"entries,omitempty"`
+	// Group - the group owner, an AAD Object ID.
+	Group *string `json:"group,omitempty"`
+	// Owner - the user owner, an AAD Object ID.
+	Owner *string `json:"owner,omitempty"`
+	// Permission - The octal representation of the unnamed user, mask and other permissions.
+	Permission *int32 `json:"permission,omitempty"`
+	// StickyBit - the indicator of whether the sticky bit is on or off.
+	StickyBit *bool `json:"stickyBit,omitempty"`
 }
 
-// ACLStatusResult is data Lake Store file or directory Access Control List information.
+// ACLStatusResult data Lake Store file or directory Access Control List information.
 type ACLStatusResult struct {
 	autorest.Response `json:"-"`
-	ACLStatus         *ACLStatus `json:"AclStatus,omitempty"`
+	// ACLStatus - the AclStatus object for a given file or directory.
+	ACLStatus *ACLStatus `json:"AclStatus,omitempty"`
 }
 
-// AdlsAccessControlException is a WebHDFS exception thrown indicating that access is denied due to insufficient
+// AdlsAccessControlException a WebHDFS exception thrown indicating that access is denied due to insufficient
 // permissions. Thrown when a 403 error response code is returned (forbidden).
 type AdlsAccessControlException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsAccessControlException.
@@ -128,62 +138,75 @@ func (aace AdlsAccessControlException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return &aace, true
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsAccessControlException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
 func (aace AdlsAccessControlException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsBadOffsetException is a WebHDFS exception thrown indicating the append or read is from a bad offset. Thrown when
-// a 400 error response code is returned for append and open operations (Bad request).
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
+func (aace AdlsAccessControlException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsAccessControlException.
+func (aace AdlsAccessControlException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &aace, true
+}
+
+// AdlsBadOffsetException a WebHDFS exception thrown indicating the append or read is from a bad offset. Thrown when a
+// 400 error response code is returned for append and open operations (Bad request).
 type AdlsBadOffsetException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsBadOffsetException.
@@ -197,59 +220,70 @@ func (aboe AdlsBadOffsetException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return &aboe, true
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsBadOffsetException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
 func (aboe AdlsBadOffsetException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsError is data Lake Store filesystem error containing a specific WebHDFS exception.
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
+func (aboe AdlsBadOffsetException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsBadOffsetException.
+func (aboe AdlsBadOffsetException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &aboe, true
+}
+
+// AdlsError data Lake Store filesystem error containing a specific WebHDFS exception.
 type AdlsError struct {
-	RemoteException AdlsRemoteException `json:"RemoteException,omitempty"`
+	// RemoteException - the object representing the actual WebHDFS exception being returned.
+	RemoteException BasicAdlsRemoteException `json:"RemoteException,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for AdlsError struct.
@@ -263,7 +297,7 @@ func (ae *AdlsError) UnmarshalJSON(body []byte) error {
 
 	v = m["RemoteException"]
 	if v != nil {
-		remoteException, err := unmarshalAdlsRemoteException(*m["RemoteException"])
+		remoteException, err := unmarshalBasicAdlsRemoteException(*m["RemoteException"])
 		if err != nil {
 			return err
 		}
@@ -273,12 +307,15 @@ func (ae *AdlsError) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// AdlsFileAlreadyExistsException is a WebHDFS exception thrown indicating the file or folder already exists. Thrown
-// when a 403 error response code is returned (forbidden).
+// AdlsFileAlreadyExistsException a WebHDFS exception thrown indicating the file or folder already exists. Thrown when
+// a 403 error response code is returned (forbidden).
 type AdlsFileAlreadyExistsException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsFileAlreadyExistsException.
@@ -292,62 +329,75 @@ func (afaee AdlsFileAlreadyExistsException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return &afaee, true
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
 func (afaee AdlsFileAlreadyExistsException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsFileNotFoundException is a WebHDFS exception thrown indicating the file or folder could not be found. Thrown
-// when a 404 error response code is returned (not found).
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+func (afaee AdlsFileAlreadyExistsException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsFileAlreadyExistsException.
+func (afaee AdlsFileAlreadyExistsException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &afaee, true
+}
+
+// AdlsFileNotFoundException a WebHDFS exception thrown indicating the file or folder could not be found. Thrown when a
+// 404 error response code is returned (not found).
 type AdlsFileNotFoundException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsFileNotFoundException.
@@ -361,62 +411,75 @@ func (afnfe AdlsFileNotFoundException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return &afnfe, true
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsFileNotFoundException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
 func (afnfe AdlsFileNotFoundException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsIllegalArgumentException is a WebHDFS exception thrown indicating that one more arguments is incorrect. Thrown
-// when a 400 error response code is returned (bad request).
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
+func (afnfe AdlsFileNotFoundException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsFileNotFoundException.
+func (afnfe AdlsFileNotFoundException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &afnfe, true
+}
+
+// AdlsIllegalArgumentException a WebHDFS exception thrown indicating that one more arguments is incorrect. Thrown when
+// a 400 error response code is returned (bad request).
 type AdlsIllegalArgumentException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsIllegalArgumentException.
@@ -430,62 +493,75 @@ func (aiae AdlsIllegalArgumentException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return &aiae, true
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsIllegalArgumentException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
 func (aiae AdlsIllegalArgumentException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsIOException is a WebHDFS exception thrown indicating there was an IO (read or write) error. Thrown when a 403
-// error response code is returned (forbidden).
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
+func (aiae AdlsIllegalArgumentException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsIllegalArgumentException.
+func (aiae AdlsIllegalArgumentException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &aiae, true
+}
+
+// AdlsIOException a WebHDFS exception thrown indicating there was an IO (read or write) error. Thrown when a 403 error
+// response code is returned (forbidden).
 type AdlsIOException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsIOException.
@@ -499,59 +575,69 @@ func (aie AdlsIOException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return &aie, true
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsIOException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsIOException.
 func (aie AdlsIOException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsRemoteException is data Lake Store filesystem exception based on the WebHDFS definition for RemoteExceptions.
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsIOException.
+func (aie AdlsIOException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsIOException.
+func (aie AdlsIOException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &aie, true
+}
+
+// BasicAdlsRemoteException data Lake Store filesystem exception based on the WebHDFS definition for RemoteExceptions.
 // This is a WebHDFS 'catch all' exception
-type AdlsRemoteException interface {
+type BasicAdlsRemoteException interface {
 	AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool)
 	AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool)
 	AsAdlsSecurityException() (*AdlsSecurityException, bool)
@@ -562,9 +648,21 @@ type AdlsRemoteException interface {
 	AsAdlsRuntimeException() (*AdlsRuntimeException, bool)
 	AsAdlsAccessControlException() (*AdlsAccessControlException, bool)
 	AsAdlsThrottledException() (*AdlsThrottledException, bool)
+	AsAdlsRemoteException() (*AdlsRemoteException, bool)
 }
 
-func unmarshalAdlsRemoteException(body []byte) (AdlsRemoteException, error) {
+// AdlsRemoteException data Lake Store filesystem exception based on the WebHDFS definition for RemoteExceptions. This
+// is a WebHDFS 'catch all' exception
+type AdlsRemoteException struct {
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
+}
+
+func unmarshalBasicAdlsRemoteException(body []byte) (BasicAdlsRemoteException, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -613,20 +711,22 @@ func unmarshalAdlsRemoteException(body []byte) (AdlsRemoteException, error) {
 		err := json.Unmarshal(body, &ate)
 		return ate, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var are AdlsRemoteException
+		err := json.Unmarshal(body, &are)
+		return are, err
 	}
 }
-func unmarshalAdlsRemoteExceptionArray(body []byte) ([]AdlsRemoteException, error) {
+func unmarshalBasicAdlsRemoteExceptionArray(body []byte) ([]BasicAdlsRemoteException, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	areArray := make([]AdlsRemoteException, len(rawMessages))
+	areArray := make([]BasicAdlsRemoteException, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		are, err := unmarshalAdlsRemoteException(*rawMessage)
+		are, err := unmarshalBasicAdlsRemoteException(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -635,12 +735,86 @@ func unmarshalAdlsRemoteExceptionArray(body []byte) ([]AdlsRemoteException, erro
 	return areArray, nil
 }
 
-// AdlsRuntimeException is a WebHDFS exception thrown when an unexpected error occurs during an operation. Thrown when
-// a 500 error response code is returned (Internal server error).
+// MarshalJSON is the custom marshaler for AdlsRemoteException.
+func (are AdlsRemoteException) MarshalJSON() ([]byte, error) {
+	are.Exception = ExceptionAdlsRemoteException
+	type Alias AdlsRemoteException
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(are),
+	})
+}
+
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
+	return nil, false
+}
+
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
+	return nil, false
+}
+
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
+	return nil, false
+}
+
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsIOException() (*AdlsIOException, bool) {
+	return nil, false
+}
+
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
+	return nil, false
+}
+
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
+	return nil, false
+}
+
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
+	return nil, false
+}
+
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
+	return nil, false
+}
+
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
+	return nil, false
+}
+
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
+	return nil, false
+}
+
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return &are, true
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsRemoteException.
+func (are AdlsRemoteException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &are, true
+}
+
+// AdlsRuntimeException a WebHDFS exception thrown when an unexpected error occurs during an operation. Thrown when a
+// 500 error response code is returned (Internal server error).
 type AdlsRuntimeException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsRuntimeException.
@@ -654,62 +828,75 @@ func (are AdlsRuntimeException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return &are, true
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsRuntimeException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
 func (are AdlsRuntimeException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsSecurityException is a WebHDFS exception thrown indicating that access is denied. Thrown when a 401 error
-// response code is returned (Unauthorized).
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
+func (are AdlsRuntimeException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsRuntimeException.
+func (are AdlsRuntimeException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &are, true
+}
+
+// AdlsSecurityException a WebHDFS exception thrown indicating that access is denied. Thrown when a 401 error response
+// code is returned (Unauthorized).
 type AdlsSecurityException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsSecurityException.
@@ -723,62 +910,75 @@ func (ase AdlsSecurityException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return &ase, true
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsSecurityException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
 func (ase AdlsSecurityException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// AdlsThrottledException is a WebHDFS exception thrown indicating that the request is being throttled. Reducing the
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
+func (ase AdlsSecurityException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsSecurityException.
+func (ase AdlsSecurityException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &ase, true
+}
+
+// AdlsThrottledException a WebHDFS exception thrown indicating that the request is being throttled. Reducing the
 // number of requests or request size helps to mitigate this error.
 type AdlsThrottledException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsThrottledException.
@@ -792,62 +992,75 @@ func (ate AdlsThrottledException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return nil, false
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsThrottledException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
 func (ate AdlsThrottledException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return &ate, true
 }
 
-// AdlsUnsupportedOperationException is a WebHDFS exception thrown indicating that the requested operation is not
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
+func (ate AdlsThrottledException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
+}
+
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsThrottledException.
+func (ate AdlsThrottledException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &ate, true
+}
+
+// AdlsUnsupportedOperationException a WebHDFS exception thrown indicating that the requested operation is not
 // supported. Thrown when a 400 error response code is returned (bad request).
 type AdlsUnsupportedOperationException struct {
-	JavaClassName *string   `json:"javaClassName,omitempty"`
-	Message       *string   `json:"message,omitempty"`
-	Exception     Exception `json:"exception,omitempty"`
+	// JavaClassName - the full class package name for the exception thrown, such as 'java.lang.IllegalArgumentException'.
+	JavaClassName *string `json:"javaClassName,omitempty"`
+	// Message - the message associated with the exception that was thrown, such as 'Invalid value for webhdfs parameter "permission":...'.
+	Message *string `json:"message,omitempty"`
+	// Exception - Possible values include: 'ExceptionAdlsRemoteException', 'ExceptionIllegalArgumentException', 'ExceptionUnsupportedOperationException', 'ExceptionSecurityException', 'ExceptionIOException', 'ExceptionFileNotFoundException', 'ExceptionFileAlreadyExistsException', 'ExceptionBadOffsetException', 'ExceptionRuntimeException', 'ExceptionAccessControlException', 'ExceptionThrottledException'
+	Exception Exception `json:"exception,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AdlsUnsupportedOperationException.
@@ -861,110 +1074,141 @@ func (auoe AdlsUnsupportedOperationException) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsAdlsIllegalArgumentException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsIllegalArgumentException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsIllegalArgumentException() (*AdlsIllegalArgumentException, bool) {
 	return nil, false
 }
 
-// AsAdlsUnsupportedOperationException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsUnsupportedOperationException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsUnsupportedOperationException() (*AdlsUnsupportedOperationException, bool) {
 	return &auoe, true
 }
 
-// AsAdlsSecurityException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsSecurityException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsSecurityException() (*AdlsSecurityException, bool) {
 	return nil, false
 }
 
-// AsAdlsIOException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsIOException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsIOException() (*AdlsIOException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileNotFoundException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsFileNotFoundException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsFileNotFoundException() (*AdlsFileNotFoundException, bool) {
 	return nil, false
 }
 
-// AsAdlsFileAlreadyExistsException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsFileAlreadyExistsException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsFileAlreadyExistsException() (*AdlsFileAlreadyExistsException, bool) {
 	return nil, false
 }
 
-// AsAdlsBadOffsetException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsBadOffsetException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsBadOffsetException() (*AdlsBadOffsetException, bool) {
 	return nil, false
 }
 
-// AsAdlsRuntimeException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsRuntimeException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsRuntimeException() (*AdlsRuntimeException, bool) {
 	return nil, false
 }
 
-// AsAdlsAccessControlException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsAccessControlException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsAccessControlException() (*AdlsAccessControlException, bool) {
 	return nil, false
 }
 
-// AsAdlsThrottledException is the AdlsRemoteException implementation for AdlsUnsupportedOperationException.
+// AsAdlsThrottledException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
 func (auoe AdlsUnsupportedOperationException) AsAdlsThrottledException() (*AdlsThrottledException, bool) {
 	return nil, false
 }
 
-// ContentSummary is data Lake Store content summary information
-type ContentSummary struct {
-	DirectoryCount *int64 `json:"directoryCount,omitempty"`
-	FileCount      *int64 `json:"fileCount,omitempty"`
-	Length         *int64 `json:"length,omitempty"`
-	SpaceConsumed  *int64 `json:"spaceConsumed,omitempty"`
+// AsAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
+func (auoe AdlsUnsupportedOperationException) AsAdlsRemoteException() (*AdlsRemoteException, bool) {
+	return nil, false
 }
 
-// ContentSummaryResult is data Lake Store filesystem content summary information response.
+// AsBasicAdlsRemoteException is the BasicAdlsRemoteException implementation for AdlsUnsupportedOperationException.
+func (auoe AdlsUnsupportedOperationException) AsBasicAdlsRemoteException() (BasicAdlsRemoteException, bool) {
+	return &auoe, true
+}
+
+// ContentSummary data Lake Store content summary information
+type ContentSummary struct {
+	// DirectoryCount - the number of directories.
+	DirectoryCount *int64 `json:"directoryCount,omitempty"`
+	// FileCount - the number of files.
+	FileCount *int64 `json:"fileCount,omitempty"`
+	// Length - the number of bytes used by the content.
+	Length *int64 `json:"length,omitempty"`
+	// SpaceConsumed - the disk space consumed by the content.
+	SpaceConsumed *int64 `json:"spaceConsumed,omitempty"`
+}
+
+// ContentSummaryResult data Lake Store filesystem content summary information response.
 type ContentSummaryResult struct {
 	autorest.Response `json:"-"`
-	ContentSummary    *ContentSummary `json:"ContentSummary,omitempty"`
+	// ContentSummary - the content summary for the specified path
+	ContentSummary *ContentSummary `json:"ContentSummary,omitempty"`
 }
 
-// FileOperationResult is the result of the request or operation.
+// FileOperationResult the result of the request or operation.
 type FileOperationResult struct {
 	autorest.Response `json:"-"`
-	OperationResult   *bool `json:"boolean,omitempty"`
+	// OperationResult - the result of the operation or request.
+	OperationResult *bool `json:"boolean,omitempty"`
 }
 
-// FileStatuses is data Lake Store file status list information.
+// FileStatuses data Lake Store file status list information.
 type FileStatuses struct {
+	// FileStatus - the object containing the list of properties of the files.
 	FileStatus *[]FileStatusProperties `json:"FileStatus,omitempty"`
 }
 
-// FileStatusesResult is data Lake Store filesystem file status list information response.
+// FileStatusesResult data Lake Store filesystem file status list information response.
 type FileStatusesResult struct {
 	autorest.Response `json:"-"`
-	FileStatuses      *FileStatuses `json:"FileStatuses,omitempty"`
+	// FileStatuses - the object representing the list of file statuses.
+	FileStatuses *FileStatuses `json:"FileStatuses,omitempty"`
 }
 
-// FileStatusProperties is data Lake Store file or directory information.
+// FileStatusProperties data Lake Store file or directory information.
 type FileStatusProperties struct {
-	AccessTime       *int64   `json:"accessTime,omitempty"`
-	BlockSize        *int64   `json:"blockSize,omitempty"`
-	ChildrenNum      *int64   `json:"childrenNum,omitempty"`
-	ExpirationTime   *int64   `json:"msExpirationTime,omitempty"`
-	Group            *string  `json:"group,omitempty"`
-	Length           *int64   `json:"length,omitempty"`
-	ModificationTime *int64   `json:"modificationTime,omitempty"`
-	Owner            *string  `json:"owner,omitempty"`
-	PathSuffix       *string  `json:"pathSuffix,omitempty"`
-	Permission       *string  `json:"permission,omitempty"`
-	Type             FileType `json:"type,omitempty"`
-	ACLBit           *bool    `json:"aclBit,omitempty"`
+	// AccessTime - the last access time as ticks since the epoch.
+	AccessTime *int64 `json:"accessTime,omitempty"`
+	// BlockSize - the block size for the file.
+	BlockSize *int64 `json:"blockSize,omitempty"`
+	// ChildrenNum - the number of children in the directory.
+	ChildrenNum *int64 `json:"childrenNum,omitempty"`
+	// ExpirationTime - Gets the expiration time, if any, as ticks since the epoch. If the value is 0 or DateTime.MaxValue there is no expiration.
+	ExpirationTime *int64 `json:"msExpirationTime,omitempty"`
+	// Group - the group owner.
+	Group *string `json:"group,omitempty"`
+	// Length - the number of bytes in a file.
+	Length *int64 `json:"length,omitempty"`
+	// ModificationTime - the modification time as ticks since the epoch.
+	ModificationTime *int64 `json:"modificationTime,omitempty"`
+	// Owner - the user who is the owner.
+	Owner *string `json:"owner,omitempty"`
+	// PathSuffix - the path suffix.
+	PathSuffix *string `json:"pathSuffix,omitempty"`
+	// Permission - the permission represented as an string.
+	Permission *string `json:"permission,omitempty"`
+	// Type - the type of the path object. Possible values include: 'FILE', 'DIRECTORY'
+	Type FileType `json:"type,omitempty"`
+	// ACLBit - flag to indicate if extended acls are enabled
+	ACLBit *bool `json:"aclBit,omitempty"`
 }
 
-// FileStatusResult is data Lake Store filesystem file status information response.
+// FileStatusResult data Lake Store filesystem file status information response.
 type FileStatusResult struct {
 	autorest.Response `json:"-"`
-	FileStatus        *FileStatusProperties `json:"FileStatus,omitempty"`
+	// FileStatus - the file status object associated with the specified path.
+	FileStatus *FileStatusProperties `json:"FileStatus,omitempty"`
 }
 
-// ReadCloser is
+// ReadCloser ...
 type ReadCloser struct {
 	autorest.Response `json:"-"`
 	Value             *io.ReadCloser `json:"value,omitempty"`

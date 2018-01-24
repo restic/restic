@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // CloudAppliancesClient is the client for the CloudAppliances methods of the Storsimple service.
 type CloudAppliancesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCloudAppliancesClient creates an instance of the CloudAppliancesClient client.
@@ -42,7 +43,7 @@ func NewCloudAppliancesClientWithBaseURI(baseURI string, subscriptionID string) 
 // ListSupportedConfigurations lists supported cloud appliance models and supported configurations.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client CloudAppliancesClient) ListSupportedConfigurations(resourceGroupName string, managerName string) (result CloudApplianceConfigurationList, err error) {
+func (client CloudAppliancesClient) ListSupportedConfigurations(ctx context.Context, resourceGroupName string, managerName string) (result CloudApplianceConfigurationList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -50,7 +51,7 @@ func (client CloudAppliancesClient) ListSupportedConfigurations(resourceGroupNam
 		return result, validation.NewErrorWithValidationError(err, "storsimple.CloudAppliancesClient", "ListSupportedConfigurations")
 	}
 
-	req, err := client.ListSupportedConfigurationsPreparer(resourceGroupName, managerName)
+	req, err := client.ListSupportedConfigurationsPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "ListSupportedConfigurations", nil, "Failure preparing request")
 		return
@@ -72,7 +73,7 @@ func (client CloudAppliancesClient) ListSupportedConfigurations(resourceGroupNam
 }
 
 // ListSupportedConfigurationsPreparer prepares the ListSupportedConfigurations request.
-func (client CloudAppliancesClient) ListSupportedConfigurationsPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client CloudAppliancesClient) ListSupportedConfigurationsPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -89,14 +90,13 @@ func (client CloudAppliancesClient) ListSupportedConfigurationsPreparer(resource
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/cloudApplianceConfigurations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSupportedConfigurationsSender sends the ListSupportedConfigurations request. The method will close the
 // http.Response Body if it receives an error.
 func (client CloudAppliancesClient) ListSupportedConfigurationsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,13 +113,10 @@ func (client CloudAppliancesClient) ListSupportedConfigurationsResponder(resp *h
 	return
 }
 
-// Provision provisions cloud appliance. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Provision provisions cloud appliance.
 //
 // parameters is the cloud appliance resourceGroupName is the resource group name managerName is the manager name
-func (client CloudAppliancesClient) Provision(parameters CloudAppliance, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client CloudAppliancesClient) Provision(ctx context.Context, parameters CloudAppliance, resourceGroupName string, managerName string) (result CloudAppliancesProvisionFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Name", Name: validation.Null, Rule: true, Chain: nil},
@@ -127,46 +124,26 @@ func (client CloudAppliancesClient) Provision(parameters CloudAppliance, resourc
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.CloudAppliancesClient", "Provision")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.CloudAppliancesClient", "Provision")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ProvisionPreparer(parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "Provision", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.ProvisionPreparer(ctx, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "Provision", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ProvisionSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "Provision", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ProvisionSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "Provision", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ProvisionResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesClient", "Provision", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ProvisionPreparer prepares the Provision request.
-func (client CloudAppliancesClient) ProvisionPreparer(parameters CloudAppliance, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client CloudAppliancesClient) ProvisionPreparer(ctx context.Context, parameters CloudAppliance, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -185,16 +162,22 @@ func (client CloudAppliancesClient) ProvisionPreparer(parameters CloudAppliance,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/provisionCloudAppliance", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ProvisionSender sends the Provision request. The method will close the
 // http.Response Body if it receives an error.
-func (client CloudAppliancesClient) ProvisionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client CloudAppliancesClient) ProvisionSender(req *http.Request) (future CloudAppliancesProvisionFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ProvisionResponder handles the response to the Provision request. The method always

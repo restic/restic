@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // BackupPoliciesClient is the client for the BackupPolicies methods of the Storsimple service.
 type BackupPoliciesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewBackupPoliciesClient creates an instance of the BackupPoliciesClient client.
@@ -39,58 +40,35 @@ func NewBackupPoliciesClientWithBaseURI(baseURI string, subscriptionID string) B
 	return BackupPoliciesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// BackupNow backup the backup policy now. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// BackupNow backup the backup policy now.
 //
 // deviceName is the device name backupPolicyName is the backup policy name. backupType is the backup Type. This can be
 // cloudSnapshot or localSnapshot. resourceGroupName is the resource group name managerName is the manager name
-func (client BackupPoliciesClient) BackupNow(deviceName string, backupPolicyName string, backupType string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client BackupPoliciesClient) BackupNow(ctx context.Context, deviceName string, backupPolicyName string, backupType string, resourceGroupName string, managerName string) (result BackupPoliciesBackupNowFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "BackupNow")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "BackupNow")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.BackupNowPreparer(deviceName, backupPolicyName, backupType, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "BackupNow", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.BackupNowPreparer(ctx, deviceName, backupPolicyName, backupType, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "BackupNow", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.BackupNowSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "BackupNow", resp, "Failure sending request")
-			return
-		}
+	result, err = client.BackupNowSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "BackupNow", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.BackupNowResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "BackupNow", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // BackupNowPreparer prepares the BackupNow request.
-func (client BackupPoliciesClient) BackupNowPreparer(deviceName string, backupPolicyName string, backupType string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupPoliciesClient) BackupNowPreparer(ctx context.Context, deviceName string, backupPolicyName string, backupType string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupPolicyName":  backupPolicyName,
 		"deviceName":        deviceName,
@@ -110,16 +88,22 @@ func (client BackupPoliciesClient) BackupNowPreparer(deviceName string, backupPo
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backupPolicies/{backupPolicyName}/backup", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // BackupNowSender sends the BackupNow request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupPoliciesClient) BackupNowSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupPoliciesClient) BackupNowSender(req *http.Request) (future BackupPoliciesBackupNowFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // BackupNowResponder handles the response to the BackupNow request. The method always
@@ -134,14 +118,11 @@ func (client BackupPoliciesClient) BackupNowResponder(resp *http.Response) (resu
 	return
 }
 
-// CreateOrUpdate creates or updates the backup policy. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates or updates the backup policy.
 //
 // deviceName is the device name backupPolicyName is the name of the backup policy to be created/updated. parameters is
 // the backup policy. resourceGroupName is the resource group name managerName is the manager name
-func (client BackupPoliciesClient) CreateOrUpdate(deviceName string, backupPolicyName string, parameters BackupPolicy, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan BackupPolicy, <-chan error) {
-	resultChan := make(chan BackupPolicy, 1)
-	errChan := make(chan error, 1)
+func (client BackupPoliciesClient) CreateOrUpdate(ctx context.Context, deviceName string, backupPolicyName string, parameters BackupPolicy, resourceGroupName string, managerName string) (result BackupPoliciesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.BackupPolicyProperties", Name: validation.Null, Rule: true,
@@ -149,46 +130,26 @@ func (client BackupPoliciesClient) CreateOrUpdate(deviceName string, backupPolic
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result BackupPolicy
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(deviceName, backupPolicyName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, deviceName, backupPolicyName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client BackupPoliciesClient) CreateOrUpdatePreparer(deviceName string, backupPolicyName string, parameters BackupPolicy, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupPoliciesClient) CreateOrUpdatePreparer(ctx context.Context, deviceName string, backupPolicyName string, parameters BackupPolicy, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupPolicyName":  backupPolicyName,
 		"deviceName":        deviceName,
@@ -209,16 +170,22 @@ func (client BackupPoliciesClient) CreateOrUpdatePreparer(deviceName string, bac
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backupPolicies/{backupPolicyName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupPoliciesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupPoliciesClient) CreateOrUpdateSender(req *http.Request) (future BackupPoliciesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -234,58 +201,35 @@ func (client BackupPoliciesClient) CreateOrUpdateResponder(resp *http.Response) 
 	return
 }
 
-// Delete deletes the backup policy. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the backup policy.
 //
 // deviceName is the device name backupPolicyName is the name of the backup policy. resourceGroupName is the resource
 // group name managerName is the manager name
-func (client BackupPoliciesClient) Delete(deviceName string, backupPolicyName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client BackupPoliciesClient) Delete(ctx context.Context, deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (result BackupPoliciesDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(deviceName, backupPolicyName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, deviceName, backupPolicyName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client BackupPoliciesClient) DeletePreparer(deviceName string, backupPolicyName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BackupPoliciesClient) DeletePreparer(ctx context.Context, deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupPolicyName":  backupPolicyName,
 		"deviceName":        deviceName,
@@ -304,16 +248,22 @@ func (client BackupPoliciesClient) DeletePreparer(deviceName string, backupPolic
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backupPolicies/{backupPolicyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client BackupPoliciesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BackupPoliciesClient) DeleteSender(req *http.Request) (future BackupPoliciesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -332,7 +282,7 @@ func (client BackupPoliciesClient) DeleteResponder(resp *http.Response) (result 
 //
 // deviceName is the device name backupPolicyName is the name of backup policy to be fetched. resourceGroupName is the
 // resource group name managerName is the manager name
-func (client BackupPoliciesClient) Get(deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (result BackupPolicy, err error) {
+func (client BackupPoliciesClient) Get(ctx context.Context, deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (result BackupPolicy, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -340,7 +290,7 @@ func (client BackupPoliciesClient) Get(deviceName string, backupPolicyName strin
 		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(deviceName, backupPolicyName, resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, deviceName, backupPolicyName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "Get", nil, "Failure preparing request")
 		return
@@ -362,7 +312,7 @@ func (client BackupPoliciesClient) Get(deviceName string, backupPolicyName strin
 }
 
 // GetPreparer prepares the Get request.
-func (client BackupPoliciesClient) GetPreparer(deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client BackupPoliciesClient) GetPreparer(ctx context.Context, deviceName string, backupPolicyName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backupPolicyName":  backupPolicyName,
 		"deviceName":        deviceName,
@@ -381,14 +331,13 @@ func (client BackupPoliciesClient) GetPreparer(deviceName string, backupPolicyNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backupPolicies/{backupPolicyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client BackupPoliciesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -408,7 +357,7 @@ func (client BackupPoliciesClient) GetResponder(resp *http.Response) (result Bac
 // ListByDevice gets all the backup policies in a device.
 //
 // deviceName is the device name resourceGroupName is the resource group name managerName is the manager name
-func (client BackupPoliciesClient) ListByDevice(deviceName string, resourceGroupName string, managerName string) (result BackupPolicyList, err error) {
+func (client BackupPoliciesClient) ListByDevice(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (result BackupPolicyList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -416,7 +365,7 @@ func (client BackupPoliciesClient) ListByDevice(deviceName string, resourceGroup
 		return result, validation.NewErrorWithValidationError(err, "storsimple.BackupPoliciesClient", "ListByDevice")
 	}
 
-	req, err := client.ListByDevicePreparer(deviceName, resourceGroupName, managerName)
+	req, err := client.ListByDevicePreparer(ctx, deviceName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesClient", "ListByDevice", nil, "Failure preparing request")
 		return
@@ -438,7 +387,7 @@ func (client BackupPoliciesClient) ListByDevice(deviceName string, resourceGroup
 }
 
 // ListByDevicePreparer prepares the ListByDevice request.
-func (client BackupPoliciesClient) ListByDevicePreparer(deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client BackupPoliciesClient) ListByDevicePreparer(ctx context.Context, deviceName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deviceName":        deviceName,
 		"managerName":       managerName,
@@ -456,14 +405,13 @@ func (client BackupPoliciesClient) ListByDevicePreparer(deviceName string, resou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/devices/{deviceName}/backupPolicies", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByDeviceSender sends the ListByDevice request. The method will close the
 // http.Response Body if it receives an error.
 func (client BackupPoliciesClient) ListByDeviceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

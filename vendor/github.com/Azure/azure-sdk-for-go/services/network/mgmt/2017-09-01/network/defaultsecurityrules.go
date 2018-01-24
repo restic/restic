@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // DefaultSecurityRulesClient is the network Client
 type DefaultSecurityRulesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDefaultSecurityRulesClient creates an instance of the DefaultSecurityRulesClient client.
@@ -42,8 +43,8 @@ func NewDefaultSecurityRulesClientWithBaseURI(baseURI string, subscriptionID str
 //
 // resourceGroupName is the name of the resource group. networkSecurityGroupName is the name of the network security
 // group. defaultSecurityRuleName is the name of the default security rule.
-func (client DefaultSecurityRulesClient) Get(resourceGroupName string, networkSecurityGroupName string, defaultSecurityRuleName string) (result SecurityRule, err error) {
-	req, err := client.GetPreparer(resourceGroupName, networkSecurityGroupName, defaultSecurityRuleName)
+func (client DefaultSecurityRulesClient) Get(ctx context.Context, resourceGroupName string, networkSecurityGroupName string, defaultSecurityRuleName string) (result SecurityRule, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, networkSecurityGroupName, defaultSecurityRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client DefaultSecurityRulesClient) Get(resourceGroupName string, networkSe
 }
 
 // GetPreparer prepares the Get request.
-func (client DefaultSecurityRulesClient) GetPreparer(resourceGroupName string, networkSecurityGroupName string, defaultSecurityRuleName string) (*http.Request, error) {
+func (client DefaultSecurityRulesClient) GetPreparer(ctx context.Context, resourceGroupName string, networkSecurityGroupName string, defaultSecurityRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"defaultSecurityRuleName":  autorest.Encode("path", defaultSecurityRuleName),
 		"networkSecurityGroupName": autorest.Encode("path", networkSecurityGroupName),
@@ -83,14 +84,13 @@ func (client DefaultSecurityRulesClient) GetPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkSecurityGroups/{networkSecurityGroupName}/defaultSecurityRules/{defaultSecurityRuleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DefaultSecurityRulesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,9 @@ func (client DefaultSecurityRulesClient) GetResponder(resp *http.Response) (resu
 //
 // resourceGroupName is the name of the resource group. networkSecurityGroupName is the name of the network security
 // group.
-func (client DefaultSecurityRulesClient) List(resourceGroupName string, networkSecurityGroupName string) (result SecurityRuleListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, networkSecurityGroupName)
+func (client DefaultSecurityRulesClient) List(ctx context.Context, resourceGroupName string, networkSecurityGroupName string) (result SecurityRuleListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, networkSecurityGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", nil, "Failure preparing request")
 		return
@@ -120,12 +121,12 @@ func (client DefaultSecurityRulesClient) List(resourceGroupName string, networkS
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.srlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.srlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", resp, "Failure responding to request")
 	}
@@ -134,7 +135,7 @@ func (client DefaultSecurityRulesClient) List(resourceGroupName string, networkS
 }
 
 // ListPreparer prepares the List request.
-func (client DefaultSecurityRulesClient) ListPreparer(resourceGroupName string, networkSecurityGroupName string) (*http.Request, error) {
+func (client DefaultSecurityRulesClient) ListPreparer(ctx context.Context, resourceGroupName string, networkSecurityGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkSecurityGroupName": autorest.Encode("path", networkSecurityGroupName),
 		"resourceGroupName":        autorest.Encode("path", resourceGroupName),
@@ -151,14 +152,13 @@ func (client DefaultSecurityRulesClient) ListPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkSecurityGroups/{networkSecurityGroupName}/defaultSecurityRules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DefaultSecurityRulesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -175,71 +175,29 @@ func (client DefaultSecurityRulesClient) ListResponder(resp *http.Response) (res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DefaultSecurityRulesClient) ListNextResults(lastResults SecurityRuleListResult) (result SecurityRuleListResult, err error) {
-	req, err := lastResults.SecurityRuleListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DefaultSecurityRulesClient) listNextResults(lastResults SecurityRuleListResult) (result SecurityRuleListResult, err error) {
+	req, err := lastResults.securityRuleListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.DefaultSecurityRulesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DefaultSecurityRulesClient) ListComplete(resourceGroupName string, networkSecurityGroupName string, cancel <-chan struct{}) (<-chan SecurityRule, <-chan error) {
-	resultChan := make(chan SecurityRule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, networkSecurityGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DefaultSecurityRulesClient) ListComplete(ctx context.Context, resourceGroupName string, networkSecurityGroupName string) (result SecurityRuleListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, networkSecurityGroupName)
+	return
 }

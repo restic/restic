@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ReplicaLoadInformationsClient is the client for the ReplicaLoadInformations methods of the Servicefabric service.
 type ReplicaLoadInformationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewReplicaLoadInformationsClient creates an instance of the ReplicaLoadInformationsClient client.
@@ -41,8 +42,8 @@ func NewReplicaLoadInformationsClientWithBaseURI(baseURI string, timeout *int32)
 // Get get replica load informations
 //
 // partitionID is the id of the partition replicaID is the id of the replica
-func (client ReplicaLoadInformationsClient) Get(partitionID string, replicaID string) (result ReplicaLoadInformation, err error) {
-	req, err := client.GetPreparer(partitionID, replicaID)
+func (client ReplicaLoadInformationsClient) Get(ctx context.Context, partitionID string, replicaID string) (result ReplicaLoadInformation, err error) {
+	req, err := client.GetPreparer(ctx, partitionID, replicaID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ReplicaLoadInformationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ReplicaLoadInformationsClient) Get(partitionID string, replicaID st
 }
 
 // GetPreparer prepares the Get request.
-func (client ReplicaLoadInformationsClient) GetPreparer(partitionID string, replicaID string) (*http.Request, error) {
+func (client ReplicaLoadInformationsClient) GetPreparer(ctx context.Context, partitionID string, replicaID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"partitionId": autorest.Encode("path", partitionID),
 		"replicaId":   autorest.Encode("path", replicaID),
@@ -83,14 +84,13 @@ func (client ReplicaLoadInformationsClient) GetPreparer(partitionID string, repl
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Partitions/{partitionId}/$/GetReplicas/{replicaId}/$/GetLoadInformation", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ReplicaLoadInformationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

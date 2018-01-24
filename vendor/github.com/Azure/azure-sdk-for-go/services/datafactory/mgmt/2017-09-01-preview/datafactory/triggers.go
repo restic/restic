@@ -18,6 +18,7 @@ package datafactory
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -28,7 +29,7 @@ import (
 // TriggersClient is the the Azure Data Factory V2 management API provides a RESTful set of web services that interact
 // with Azure Data Factory V2 services.
 type TriggersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewTriggersClient creates an instance of the TriggersClient client.
@@ -46,7 +47,7 @@ func NewTriggersClientWithBaseURI(baseURI string, subscriptionID string) Trigger
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
 // trigger is trigger resource definition. ifMatch is eTag of the trigger entity.  Should only be specified for update,
 // for which it should match existing entity or can be * for unconditional update.
-func (client TriggersClient) CreateOrUpdate(resourceGroupName string, factoryName string, triggerName string, trigger TriggerResource, ifMatch string) (result TriggerResource, err error) {
+func (client TriggersClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, factoryName string, triggerName string, trigger TriggerResource, ifMatch string) (result TriggerResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -65,7 +66,7 @@ func (client TriggersClient) CreateOrUpdate(resourceGroupName string, factoryNam
 		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, factoryName, triggerName, trigger, ifMatch)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, factoryName, triggerName, trigger, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -87,7 +88,7 @@ func (client TriggersClient) CreateOrUpdate(resourceGroupName string, factoryNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client TriggersClient) CreateOrUpdatePreparer(resourceGroupName string, factoryName string, triggerName string, trigger TriggerResource, ifMatch string) (*http.Request, error) {
+func (client TriggersClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string, trigger TriggerResource, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -111,14 +112,13 @@ func (client TriggersClient) CreateOrUpdatePreparer(resourceGroupName string, fa
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client TriggersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -138,7 +138,7 @@ func (client TriggersClient) CreateOrUpdateResponder(resp *http.Response) (resul
 // Delete deletes a trigger.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
-func (client TriggersClient) Delete(resourceGroupName string, factoryName string, triggerName string) (result autorest.Response, err error) {
+func (client TriggersClient) Delete(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -155,7 +155,7 @@ func (client TriggersClient) Delete(resourceGroupName string, factoryName string
 		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, factoryName, triggerName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, factoryName, triggerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -177,7 +177,7 @@ func (client TriggersClient) Delete(resourceGroupName string, factoryName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client TriggersClient) DeletePreparer(resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
+func (client TriggersClient) DeletePreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -195,14 +195,13 @@ func (client TriggersClient) DeletePreparer(resourceGroupName string, factoryNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers/{triggerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client TriggersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -221,7 +220,7 @@ func (client TriggersClient) DeleteResponder(resp *http.Response) (result autore
 // Get gets a trigger.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
-func (client TriggersClient) Get(resourceGroupName string, factoryName string, triggerName string) (result TriggerResource, err error) {
+func (client TriggersClient) Get(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (result TriggerResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -238,7 +237,7 @@ func (client TriggersClient) Get(resourceGroupName string, factoryName string, t
 		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, factoryName, triggerName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, factoryName, triggerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Get", nil, "Failure preparing request")
 		return
@@ -260,7 +259,7 @@ func (client TriggersClient) Get(resourceGroupName string, factoryName string, t
 }
 
 // GetPreparer prepares the Get request.
-func (client TriggersClient) GetPreparer(resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
+func (client TriggersClient) GetPreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -278,14 +277,13 @@ func (client TriggersClient) GetPreparer(resourceGroupName string, factoryName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers/{triggerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client TriggersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -305,7 +303,7 @@ func (client TriggersClient) GetResponder(resp *http.Response) (result TriggerRe
 // ListByFactory lists triggers.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name.
-func (client TriggersClient) ListByFactory(resourceGroupName string, factoryName string) (result TriggerListResponse, err error) {
+func (client TriggersClient) ListByFactory(ctx context.Context, resourceGroupName string, factoryName string) (result TriggerListResponsePage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -318,7 +316,8 @@ func (client TriggersClient) ListByFactory(resourceGroupName string, factoryName
 		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "ListByFactory")
 	}
 
-	req, err := client.ListByFactoryPreparer(resourceGroupName, factoryName)
+	result.fn = client.listByFactoryNextResults
+	req, err := client.ListByFactoryPreparer(ctx, resourceGroupName, factoryName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", nil, "Failure preparing request")
 		return
@@ -326,12 +325,12 @@ func (client TriggersClient) ListByFactory(resourceGroupName string, factoryName
 
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.tlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByFactoryResponder(resp)
+	result.tlr, err = client.ListByFactoryResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", resp, "Failure responding to request")
 	}
@@ -340,7 +339,7 @@ func (client TriggersClient) ListByFactory(resourceGroupName string, factoryName
 }
 
 // ListByFactoryPreparer prepares the ListByFactory request.
-func (client TriggersClient) ListByFactoryPreparer(resourceGroupName string, factoryName string) (*http.Request, error) {
+func (client TriggersClient) ListByFactoryPreparer(ctx context.Context, resourceGroupName string, factoryName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -357,14 +356,13 @@ func (client TriggersClient) ListByFactoryPreparer(resourceGroupName string, fac
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByFactorySender sends the ListByFactory request. The method will close the
 // http.Response Body if it receives an error.
 func (client TriggersClient) ListByFactorySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -381,80 +379,38 @@ func (client TriggersClient) ListByFactoryResponder(resp *http.Response) (result
 	return
 }
 
-// ListByFactoryNextResults retrieves the next set of results, if any.
-func (client TriggersClient) ListByFactoryNextResults(lastResults TriggerListResponse) (result TriggerListResponse, err error) {
-	req, err := lastResults.TriggerListResponsePreparer()
+// listByFactoryNextResults retrieves the next set of results, if any.
+func (client TriggersClient) listByFactoryNextResults(lastResults TriggerListResponse) (result TriggerListResponse, err error) {
+	req, err := lastResults.triggerListResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listByFactoryNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listByFactoryNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByFactoryResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListByFactory", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listByFactoryNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByFactoryComplete gets all elements from the list without paging.
-func (client TriggersClient) ListByFactoryComplete(resourceGroupName string, factoryName string, cancel <-chan struct{}) (<-chan TriggerResource, <-chan error) {
-	resultChan := make(chan TriggerResource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByFactory(resourceGroupName, factoryName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByFactoryNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByFactoryComplete enumerates all values, automatically crossing page boundaries as required.
+func (client TriggersClient) ListByFactoryComplete(ctx context.Context, resourceGroupName string, factoryName string) (result TriggerListResponseIterator, err error) {
+	result.page, err = client.ListByFactory(ctx, resourceGroupName, factoryName)
+	return
 }
 
 // ListRuns list trigger runs.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
 // startTime is start time for trigger runs. endTime is end time for trigger runs.
-func (client TriggersClient) ListRuns(resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time) (result TriggerRunListResponse, err error) {
+func (client TriggersClient) ListRuns(ctx context.Context, resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time) (result TriggerRunListResponsePage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -471,7 +427,8 @@ func (client TriggersClient) ListRuns(resourceGroupName string, factoryName stri
 		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "ListRuns")
 	}
 
-	req, err := client.ListRunsPreparer(resourceGroupName, factoryName, triggerName, startTime, endTime)
+	result.fn = client.listRunsNextResults
+	req, err := client.ListRunsPreparer(ctx, resourceGroupName, factoryName, triggerName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", nil, "Failure preparing request")
 		return
@@ -479,12 +436,12 @@ func (client TriggersClient) ListRuns(resourceGroupName string, factoryName stri
 
 	resp, err := client.ListRunsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.trlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListRunsResponder(resp)
+	result.trlr, err = client.ListRunsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", resp, "Failure responding to request")
 	}
@@ -493,7 +450,7 @@ func (client TriggersClient) ListRuns(resourceGroupName string, factoryName stri
 }
 
 // ListRunsPreparer prepares the ListRuns request.
-func (client TriggersClient) ListRunsPreparer(resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time) (*http.Request, error) {
+func (client TriggersClient) ListRunsPreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -513,14 +470,13 @@ func (client TriggersClient) ListRunsPreparer(resourceGroupName string, factoryN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers/{triggerName}/triggerruns", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListRunsSender sends the ListRuns request. The method will close the
 // http.Response Body if it receives an error.
 func (client TriggersClient) ListRunsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -537,82 +493,37 @@ func (client TriggersClient) ListRunsResponder(resp *http.Response) (result Trig
 	return
 }
 
-// ListRunsNextResults retrieves the next set of results, if any.
-func (client TriggersClient) ListRunsNextResults(lastResults TriggerRunListResponse) (result TriggerRunListResponse, err error) {
-	req, err := lastResults.TriggerRunListResponsePreparer()
+// listRunsNextResults retrieves the next set of results, if any.
+func (client TriggersClient) listRunsNextResults(lastResults TriggerRunListResponse) (result TriggerRunListResponse, err error) {
+	req, err := lastResults.triggerRunListResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listRunsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListRunsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listRunsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListRunsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "ListRuns", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "listRunsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListRunsComplete gets all elements from the list without paging.
-func (client TriggersClient) ListRunsComplete(resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time, cancel <-chan struct{}) (<-chan TriggerRun, <-chan error) {
-	resultChan := make(chan TriggerRun)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListRuns(resourceGroupName, factoryName, triggerName, startTime, endTime)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListRunsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListRunsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client TriggersClient) ListRunsComplete(ctx context.Context, resourceGroupName string, factoryName string, triggerName string, startTime date.Time, endTime date.Time) (result TriggerRunListResponseIterator, err error) {
+	result.page, err = client.ListRuns(ctx, resourceGroupName, factoryName, triggerName, startTime, endTime)
+	return
 }
 
-// Start starts a trigger. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Start starts a trigger.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
-func (client TriggersClient) Start(resourceGroupName string, factoryName string, triggerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client TriggersClient) Start(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (result TriggersStartFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -626,46 +537,26 @@ func (client TriggersClient) Start(resourceGroupName string, factoryName string,
 			Constraints: []validation.Constraint{{Target: "triggerName", Name: validation.MaxLength, Rule: 260, Chain: nil},
 				{Target: "triggerName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "triggerName", Name: validation.Pattern, Rule: `^[A-Za-z0-9_][^<>*#.%&:\\+?/]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Start")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Start")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartPreparer(resourceGroupName, factoryName, triggerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Start", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.StartPreparer(ctx, resourceGroupName, factoryName, triggerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Start", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StartSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Start", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Start", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Start", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StartPreparer prepares the Start request.
-func (client TriggersClient) StartPreparer(resourceGroupName string, factoryName string, triggerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client TriggersClient) StartPreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -683,16 +574,22 @@ func (client TriggersClient) StartPreparer(resourceGroupName string, factoryName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers/{triggerName}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
-func (client TriggersClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client TriggersClient) StartSender(req *http.Request) (future TriggersStartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // StartResponder handles the response to the Start request. The method always
@@ -707,13 +604,10 @@ func (client TriggersClient) StartResponder(resp *http.Response) (result autores
 	return
 }
 
-// Stop stops a trigger. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Stop stops a trigger.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. triggerName is the trigger name.
-func (client TriggersClient) Stop(resourceGroupName string, factoryName string, triggerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client TriggersClient) Stop(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (result TriggersStopFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -727,46 +621,26 @@ func (client TriggersClient) Stop(resourceGroupName string, factoryName string, 
 			Constraints: []validation.Constraint{{Target: "triggerName", Name: validation.MaxLength, Rule: 260, Chain: nil},
 				{Target: "triggerName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "triggerName", Name: validation.Pattern, Rule: `^[A-Za-z0-9_][^<>*#.%&:\\+?/]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Stop")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "datafactory.TriggersClient", "Stop")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StopPreparer(resourceGroupName, factoryName, triggerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Stop", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.StopPreparer(ctx, resourceGroupName, factoryName, triggerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Stop", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StopSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Stop", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StopSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Stop", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StopResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.TriggersClient", "Stop", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StopPreparer prepares the Stop request.
-func (client TriggersClient) StopPreparer(resourceGroupName string, factoryName string, triggerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client TriggersClient) StopPreparer(ctx context.Context, resourceGroupName string, factoryName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -784,16 +658,22 @@ func (client TriggersClient) StopPreparer(resourceGroupName string, factoryName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/triggers/{triggerName}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSender sends the Stop request. The method will close the
 // http.Response Body if it receives an error.
-func (client TriggersClient) StopSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client TriggersClient) StopSender(req *http.Request) (future TriggersStopFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // StopResponder handles the response to the Stop request. The method always

@@ -209,14 +209,11 @@ func getDefaultLocation(u url.URL, regionOverride string) (location string) {
 	if regionOverride != "" {
 		return regionOverride
 	}
-	if s3utils.IsAmazonChinaEndpoint(u) {
-		return "cn-north-1"
+	region := s3utils.GetRegionFromURL(u)
+	if region == "" {
+		region = "us-east-1"
 	}
-	if s3utils.IsAmazonGovCloudEndpoint(u) {
-		return "us-gov-west-1"
-	}
-	// Default to location to 'us-east-1'.
-	return "us-east-1"
+	return region
 }
 
 var supportedHeaders = []string{
@@ -232,6 +229,11 @@ var cseHeaders = []string{
 	"X-Amz-Iv",
 	"X-Amz-Key",
 	"X-Amz-Matdesc",
+}
+
+// isStorageClassHeader returns true if the header is a supported storage class header
+func isStorageClassHeader(headerKey string) bool {
+	return strings.ToLower(amzStorageClass) == strings.ToLower(headerKey)
 }
 
 // isStandardHeader returns true if header is a supported header and not a custom header

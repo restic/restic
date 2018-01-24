@@ -28,9 +28,9 @@ import (
 type ActionType string
 
 const (
-	// AutoRenew specifies the auto renew state for action type.
+	// AutoRenew ...
 	AutoRenew ActionType = "AutoRenew"
-	// EmailContacts specifies the email contacts state for action type.
+	// EmailContacts ...
 	EmailContacts ActionType = "EmailContacts"
 )
 
@@ -38,11 +38,11 @@ const (
 type JSONWebKeyEncryptionAlgorithm string
 
 const (
-	// RSA15 specifies the rsa15 state for json web key encryption algorithm.
+	// RSA15 ...
 	RSA15 JSONWebKeyEncryptionAlgorithm = "RSA1_5"
-	// RSAOAEP specifies the rsaoaep state for json web key encryption algorithm.
+	// RSAOAEP ...
 	RSAOAEP JSONWebKeyEncryptionAlgorithm = "RSA-OAEP"
-	// RSAOAEP256 specifies the rsaoaep256 state for json web key encryption algorithm.
+	// RSAOAEP256 ...
 	RSAOAEP256 JSONWebKeyEncryptionAlgorithm = "RSA-OAEP-256"
 )
 
@@ -50,17 +50,17 @@ const (
 type JSONWebKeyOperation string
 
 const (
-	// Decrypt specifies the decrypt state for json web key operation.
+	// Decrypt ...
 	Decrypt JSONWebKeyOperation = "decrypt"
-	// Encrypt specifies the encrypt state for json web key operation.
+	// Encrypt ...
 	Encrypt JSONWebKeyOperation = "encrypt"
-	// Sign specifies the sign state for json web key operation.
+	// Sign ...
 	Sign JSONWebKeyOperation = "sign"
-	// UnwrapKey specifies the unwrap key state for json web key operation.
+	// UnwrapKey ...
 	UnwrapKey JSONWebKeyOperation = "unwrapKey"
-	// Verify specifies the verify state for json web key operation.
+	// Verify ...
 	Verify JSONWebKeyOperation = "verify"
-	// WrapKey specifies the wrap key state for json web key operation.
+	// WrapKey ...
 	WrapKey JSONWebKeyOperation = "wrapKey"
 )
 
@@ -68,19 +68,19 @@ const (
 type JSONWebKeySignatureAlgorithm string
 
 const (
-	// PS256 specifies the ps256 state for json web key signature algorithm.
+	// PS256 ...
 	PS256 JSONWebKeySignatureAlgorithm = "PS256"
-	// PS384 specifies the ps384 state for json web key signature algorithm.
+	// PS384 ...
 	PS384 JSONWebKeySignatureAlgorithm = "PS384"
-	// PS512 specifies the ps512 state for json web key signature algorithm.
+	// PS512 ...
 	PS512 JSONWebKeySignatureAlgorithm = "PS512"
-	// RS256 specifies the rs256 state for json web key signature algorithm.
+	// RS256 ...
 	RS256 JSONWebKeySignatureAlgorithm = "RS256"
-	// RS384 specifies the rs384 state for json web key signature algorithm.
+	// RS384 ...
 	RS384 JSONWebKeySignatureAlgorithm = "RS384"
-	// RS512 specifies the rs512 state for json web key signature algorithm.
+	// RS512 ...
 	RS512 JSONWebKeySignatureAlgorithm = "RS512"
-	// RSNULL specifies the rsnull state for json web key signature algorithm.
+	// RSNULL ...
 	RSNULL JSONWebKeySignatureAlgorithm = "RSNULL"
 )
 
@@ -88,13 +88,13 @@ const (
 type JSONWebKeyType string
 
 const (
-	// EC specifies the ec state for json web key type.
+	// EC ...
 	EC JSONWebKeyType = "EC"
-	// Oct specifies the oct state for json web key type.
+	// Oct ...
 	Oct JSONWebKeyType = "oct"
-	// RSA specifies the rsa state for json web key type.
+	// RSA ...
 	RSA JSONWebKeyType = "RSA"
-	// RSAHSM specifies the rsahsm state for json web key type.
+	// RSAHSM ...
 	RSAHSM JSONWebKeyType = "RSA-HSM"
 )
 
@@ -102,495 +102,1002 @@ const (
 type KeyUsageType string
 
 const (
-	// CRLSign specifies the crl sign state for key usage type.
+	// CRLSign ...
 	CRLSign KeyUsageType = "cRLSign"
-	// DataEncipherment specifies the data encipherment state for key usage type.
+	// DataEncipherment ...
 	DataEncipherment KeyUsageType = "dataEncipherment"
-	// DecipherOnly specifies the decipher only state for key usage type.
+	// DecipherOnly ...
 	DecipherOnly KeyUsageType = "decipherOnly"
-	// DigitalSignature specifies the digital signature state for key usage type.
+	// DigitalSignature ...
 	DigitalSignature KeyUsageType = "digitalSignature"
-	// EncipherOnly specifies the encipher only state for key usage type.
+	// EncipherOnly ...
 	EncipherOnly KeyUsageType = "encipherOnly"
-	// KeyAgreement specifies the key agreement state for key usage type.
+	// KeyAgreement ...
 	KeyAgreement KeyUsageType = "keyAgreement"
-	// KeyCertSign specifies the key cert sign state for key usage type.
+	// KeyCertSign ...
 	KeyCertSign KeyUsageType = "keyCertSign"
-	// KeyEncipherment specifies the key encipherment state for key usage type.
+	// KeyEncipherment ...
 	KeyEncipherment KeyUsageType = "keyEncipherment"
-	// NonRepudiation specifies the non repudiation state for key usage type.
+	// NonRepudiation ...
 	NonRepudiation KeyUsageType = "nonRepudiation"
 )
 
-// Action is the action that will be executed.
+// Action the action that will be executed.
 type Action struct {
+	// ActionType - The type of the action. Possible values include: 'EmailContacts', 'AutoRenew'
 	ActionType ActionType `json:"action_type,omitempty"`
 }
 
-// AdministratorDetails is details of the organization administrator of the certificate issuer
+// AdministratorDetails details of the organization administrator of the certificate issuer
 type AdministratorDetails struct {
-	FirstName    *string `json:"first_name,omitempty"`
-	LastName     *string `json:"last_name,omitempty"`
+	// FirstName - First name.
+	FirstName *string `json:"first_name,omitempty"`
+	// LastName - Last name.
+	LastName *string `json:"last_name,omitempty"`
+	// EmailAddress - Email addresss.
 	EmailAddress *string `json:"email,omitempty"`
-	Phone        *string `json:"phone,omitempty"`
+	// Phone - Phone number.
+	Phone *string `json:"phone,omitempty"`
 }
 
-// Attributes is the object attributes managed by the KeyVault service
+// Attributes the object attributes managed by the KeyVault service
 type Attributes struct {
-	Enabled   *bool          `json:"enabled,omitempty"`
+	// Enabled - Determines whether the object is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// NotBefore - Not before date in UTC
 	NotBefore *date.UnixTime `json:"nbf,omitempty"`
-	Expires   *date.UnixTime `json:"exp,omitempty"`
-	Created   *date.UnixTime `json:"created,omitempty"`
-	Updated   *date.UnixTime `json:"updated,omitempty"`
+	// Expires - Expiry date in UTC
+	Expires *date.UnixTime `json:"exp,omitempty"`
+	// Created - Creation time in UTC
+	Created *date.UnixTime `json:"created,omitempty"`
+	// Updated - Last updated time in UTC
+	Updated *date.UnixTime `json:"updated,omitempty"`
 }
 
-// BackupKeyResult is the backup key result, containing the backup blob
+// BackupKeyResult the backup key result, containing the backup blob
 type BackupKeyResult struct {
 	autorest.Response `json:"-"`
-	Value             *string `json:"value,omitempty"`
+	// Value - The backup blob containing the backed up key
+	Value *string `json:"value,omitempty"`
 }
 
-// CertificateAttributes is the certificate management attributes
+// CertificateAttributes the certificate management attributes
 type CertificateAttributes struct {
-	Enabled   *bool          `json:"enabled,omitempty"`
+	// Enabled - Determines whether the object is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// NotBefore - Not before date in UTC
 	NotBefore *date.UnixTime `json:"nbf,omitempty"`
-	Expires   *date.UnixTime `json:"exp,omitempty"`
-	Created   *date.UnixTime `json:"created,omitempty"`
-	Updated   *date.UnixTime `json:"updated,omitempty"`
+	// Expires - Expiry date in UTC
+	Expires *date.UnixTime `json:"exp,omitempty"`
+	// Created - Creation time in UTC
+	Created *date.UnixTime `json:"created,omitempty"`
+	// Updated - Last updated time in UTC
+	Updated *date.UnixTime `json:"updated,omitempty"`
 }
 
-// CertificateBundle is a certificate bundle consists of a certificate (X509) plus its attributes.
+// CertificateBundle a certificate bundle consists of a certificate (X509) plus its attributes.
 type CertificateBundle struct {
 	autorest.Response `json:"-"`
-	ID                *string                `json:"id,omitempty"`
-	Kid               *string                `json:"kid,omitempty"`
-	Sid               *string                `json:"sid,omitempty"`
-	X509Thumbprint    *string                `json:"x5t,omitempty"`
-	Policy            *CertificatePolicy     `json:"policy,omitempty"`
-	Cer               *[]byte                `json:"cer,omitempty"`
-	ContentType       *string                `json:"contentType,omitempty"`
-	Attributes        *CertificateAttributes `json:"attributes,omitempty"`
-	Tags              *map[string]*string    `json:"tags,omitempty"`
+	// ID - The certificate id
+	ID *string `json:"id,omitempty"`
+	// Kid - The key id
+	Kid *string `json:"kid,omitempty"`
+	// Sid - The secret id
+	Sid *string `json:"sid,omitempty"`
+	// X509Thumbprint - Thumbprint of the certificate.
+	X509Thumbprint *string `json:"x5t,omitempty"`
+	// Policy - The management policy.
+	Policy *CertificatePolicy `json:"policy,omitempty"`
+	// Cer - CER contents of x509 certificate.
+	Cer *[]byte `json:"cer,omitempty"`
+	// ContentType - The content type of the secret
+	ContentType *string `json:"contentType,omitempty"`
+	// Attributes - The certificate attributes.
+	Attributes *CertificateAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// CertificateCreateParameters is the certificate create parameters
+// CertificateCreateParameters the certificate create parameters
 type CertificateCreateParameters struct {
-	CertificatePolicy     *CertificatePolicy     `json:"policy,omitempty"`
+	// CertificatePolicy - The management policy for the certificate
+	CertificatePolicy *CertificatePolicy `json:"policy,omitempty"`
+	// CertificateAttributes - The attributes of the certificate (optional)
 	CertificateAttributes *CertificateAttributes `json:"attributes,omitempty"`
-	Tags                  *map[string]*string    `json:"tags,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// CertificateImportParameters is the certificate import parameters
+// CertificateImportParameters the certificate import parameters
 type CertificateImportParameters struct {
-	Base64EncodedCertificate *string                `json:"value,omitempty"`
-	Password                 *string                `json:"pwd,omitempty"`
-	CertificatePolicy        *CertificatePolicy     `json:"policy,omitempty"`
-	CertificateAttributes    *CertificateAttributes `json:"attributes,omitempty"`
-	Tags                     *map[string]*string    `json:"tags,omitempty"`
+	// Base64EncodedCertificate - Base64 encoded representation of the certificate object to import. This certificate needs to contain the private key.
+	Base64EncodedCertificate *string `json:"value,omitempty"`
+	// Password - If the private key in base64EncodedCertificate is encrypted, the password used for encryption
+	Password *string `json:"pwd,omitempty"`
+	// CertificatePolicy - The management policy for the certificate
+	CertificatePolicy *CertificatePolicy `json:"policy,omitempty"`
+	// CertificateAttributes - The attributes of the certificate (optional)
+	CertificateAttributes *CertificateAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// CertificateIssuerItem is the certificate issuer item containing certificate issuer metadata
+// CertificateIssuerItem the certificate issuer item containing certificate issuer metadata
 type CertificateIssuerItem struct {
-	ID       *string `json:"id,omitempty"`
+	// ID - Certificate Identifier
+	ID *string `json:"id,omitempty"`
+	// Provider - The issuer provider.
 	Provider *string `json:"provider,omitempty"`
 }
 
-// CertificateIssuerListResult is the certificate issuer list result
+// CertificateIssuerListResult the certificate issuer list result
 type CertificateIssuerListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]CertificateIssuerItem `json:"value,omitempty"`
-	NextLink          *string                  `json:"nextLink,omitempty"`
+	// Value - A response message containing a list of certificate issuers in the vault along with a link to the next page of certificate issuers
+	Value *[]CertificateIssuerItem `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of certificate issuers.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CertificateIssuerListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CertificateIssuerListResult) CertificateIssuerListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CertificateIssuerListResultIterator provides access to a complete listing of CertificateIssuerItem values.
+type CertificateIssuerListResultIterator struct {
+	i    int
+	page CertificateIssuerListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CertificateIssuerListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CertificateIssuerListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CertificateIssuerListResultIterator) Response() CertificateIssuerListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CertificateIssuerListResultIterator) Value() CertificateIssuerItem {
+	if !iter.page.NotDone() {
+		return CertificateIssuerItem{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cilr CertificateIssuerListResult) IsEmpty() bool {
+	return cilr.Value == nil || len(*cilr.Value) == 0
+}
+
+// certificateIssuerListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cilr CertificateIssuerListResult) certificateIssuerListResultPreparer() (*http.Request, error) {
+	if cilr.NextLink == nil || len(to.String(cilr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cilr.NextLink)))
 }
 
-// CertificateIssuerSetParameters is the certificate issuer set parameters.
+// CertificateIssuerListResultPage contains a page of CertificateIssuerItem values.
+type CertificateIssuerListResultPage struct {
+	fn   func(CertificateIssuerListResult) (CertificateIssuerListResult, error)
+	cilr CertificateIssuerListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CertificateIssuerListResultPage) Next() error {
+	next, err := page.fn(page.cilr)
+	if err != nil {
+		return err
+	}
+	page.cilr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CertificateIssuerListResultPage) NotDone() bool {
+	return !page.cilr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CertificateIssuerListResultPage) Response() CertificateIssuerListResult {
+	return page.cilr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CertificateIssuerListResultPage) Values() []CertificateIssuerItem {
+	if page.cilr.IsEmpty() {
+		return nil
+	}
+	return *page.cilr.Value
+}
+
+// CertificateIssuerSetParameters the certificate issuer set parameters.
 type CertificateIssuerSetParameters struct {
-	Provider            *string              `json:"provider,omitempty"`
-	Credentials         *IssuerCredentials   `json:"credentials,omitempty"`
+	// Provider - The issuer provider.
+	Provider *string `json:"provider,omitempty"`
+	// Credentials - The credentials to be used for the issuer.
+	Credentials *IssuerCredentials `json:"credentials,omitempty"`
+	// OrganizationDetails - Details of the organization as provided to the issuer.
 	OrganizationDetails *OrganizationDetails `json:"org_details,omitempty"`
-	Attributes          *IssuerAttributes    `json:"attributes,omitempty"`
+	// Attributes - Attributes of the issuer object.
+	Attributes *IssuerAttributes `json:"attributes,omitempty"`
 }
 
-// CertificateIssuerUpdateParameters is the certificate issuer update parameters.
+// CertificateIssuerUpdateParameters the certificate issuer update parameters.
 type CertificateIssuerUpdateParameters struct {
-	Provider            *string              `json:"provider,omitempty"`
-	Credentials         *IssuerCredentials   `json:"credentials,omitempty"`
+	// Provider - The issuer provider.
+	Provider *string `json:"provider,omitempty"`
+	// Credentials - The credentials to be used for the issuer.
+	Credentials *IssuerCredentials `json:"credentials,omitempty"`
+	// OrganizationDetails - Details of the organization as provided to the issuer.
 	OrganizationDetails *OrganizationDetails `json:"org_details,omitempty"`
-	Attributes          *IssuerAttributes    `json:"attributes,omitempty"`
+	// Attributes - Attributes of the issuer object.
+	Attributes *IssuerAttributes `json:"attributes,omitempty"`
 }
 
-// CertificateItem is the certificate item containing certificate metadata
+// CertificateItem the certificate item containing certificate metadata
 type CertificateItem struct {
-	ID             *string                `json:"id,omitempty"`
-	Attributes     *CertificateAttributes `json:"attributes,omitempty"`
-	Tags           *map[string]*string    `json:"tags,omitempty"`
-	X509Thumbprint *string                `json:"x5t,omitempty"`
+	// ID - Certificate Identifier
+	ID *string `json:"id,omitempty"`
+	// Attributes - The certificate management attributes
+	Attributes *CertificateAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// X509Thumbprint - Thumbprint of the certificate.
+	X509Thumbprint *string `json:"x5t,omitempty"`
 }
 
-// CertificateListResult is the certificate list result
+// CertificateListResult the certificate list result
 type CertificateListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]CertificateItem `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+	// Value - A response message containing a list of certificates in the vault along with a link to the next page of certificates
+	Value *[]CertificateItem `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of certificates.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// CertificateListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client CertificateListResult) CertificateListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// CertificateListResultIterator provides access to a complete listing of CertificateItem values.
+type CertificateListResultIterator struct {
+	i    int
+	page CertificateListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *CertificateListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter CertificateListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter CertificateListResultIterator) Response() CertificateListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter CertificateListResultIterator) Value() CertificateItem {
+	if !iter.page.NotDone() {
+		return CertificateItem{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (clr CertificateListResult) IsEmpty() bool {
+	return clr.Value == nil || len(*clr.Value) == 0
+}
+
+// certificateListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (clr CertificateListResult) certificateListResultPreparer() (*http.Request, error) {
+	if clr.NextLink == nil || len(to.String(clr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(clr.NextLink)))
 }
 
-// CertificateMergeParameters is the certificate merge parameters
+// CertificateListResultPage contains a page of CertificateItem values.
+type CertificateListResultPage struct {
+	fn  func(CertificateListResult) (CertificateListResult, error)
+	clr CertificateListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *CertificateListResultPage) Next() error {
+	next, err := page.fn(page.clr)
+	if err != nil {
+		return err
+	}
+	page.clr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page CertificateListResultPage) NotDone() bool {
+	return !page.clr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page CertificateListResultPage) Response() CertificateListResult {
+	return page.clr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page CertificateListResultPage) Values() []CertificateItem {
+	if page.clr.IsEmpty() {
+		return nil
+	}
+	return *page.clr.Value
+}
+
+// CertificateMergeParameters the certificate merge parameters
 type CertificateMergeParameters struct {
-	X509Certificates      *[][]byte              `json:"x5c,omitempty"`
+	// X509Certificates - The certificate or the certificate chain to merge
+	X509Certificates *[][]byte `json:"x5c,omitempty"`
+	// CertificateAttributes - The attributes of the certificate (optional)
 	CertificateAttributes *CertificateAttributes `json:"attributes,omitempty"`
-	Tags                  *map[string]*string    `json:"tags,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// CertificateOperation is a certificate operation is returned in case of async requests.
+// CertificateOperation a certificate operation is returned in case of async requests.
 type CertificateOperation struct {
-	autorest.Response     `json:"-"`
-	ID                    *string           `json:"id,omitempty"`
-	IssuerParameters      *IssuerParameters `json:"issuer,omitempty"`
-	Csr                   *[]byte           `json:"csr,omitempty"`
-	CancellationRequested *bool             `json:"cancellation_requested,omitempty"`
-	Status                *string           `json:"status,omitempty"`
-	StatusDetails         *string           `json:"status_details,omitempty"`
-	Error                 *Error            `json:"error,omitempty"`
-	Target                *string           `json:"target,omitempty"`
-	RequestID             *string           `json:"request_id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The certificate id
+	ID *string `json:"id,omitempty"`
+	// IssuerParameters - Parameters for the issuer of the X509 component of a certificate.
+	IssuerParameters *IssuerParameters `json:"issuer,omitempty"`
+	// Csr - The Certificate Signing Request (CSR) that is being used in the certificate operation.
+	Csr *[]byte `json:"csr,omitempty"`
+	// CancellationRequested - Indicates if cancellation was requested on the certificate operation.
+	CancellationRequested *bool `json:"cancellation_requested,omitempty"`
+	// Status - Status of the certificate operation.
+	Status *string `json:"status,omitempty"`
+	// StatusDetails - The status details of the certificate operation.
+	StatusDetails *string `json:"status_details,omitempty"`
+	// Error - Error encountered, if any, during the certificate operation.
+	Error *Error `json:"error,omitempty"`
+	// Target - Location which contains the result of the certificate operation.
+	Target *string `json:"target,omitempty"`
+	// RequestID - Identifier for the certificate operation.
+	RequestID *string `json:"request_id,omitempty"`
 }
 
-// CertificateOperationUpdateParameter is the certificate operation update parameters.
+// CertificateOperationUpdateParameter the certificate operation update parameters.
 type CertificateOperationUpdateParameter struct {
+	// CancellationRequested - Indicates if cancellation was requested on the certificate operation.
 	CancellationRequested *bool `json:"cancellation_requested,omitempty"`
 }
 
-// CertificatePolicy is management policy for a certificate.
+// CertificatePolicy management policy for a certificate.
 type CertificatePolicy struct {
-	autorest.Response         `json:"-"`
-	ID                        *string                    `json:"id,omitempty"`
-	KeyProperties             *KeyProperties             `json:"key_props,omitempty"`
-	SecretProperties          *SecretProperties          `json:"secret_props,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The certificate id
+	ID *string `json:"id,omitempty"`
+	// KeyProperties - Properties of the key backing a certificate.
+	KeyProperties *KeyProperties `json:"key_props,omitempty"`
+	// SecretProperties - Properties of the secret backing a certificate.
+	SecretProperties *SecretProperties `json:"secret_props,omitempty"`
+	// X509CertificateProperties - Properties of the X509 component of a certificate.
 	X509CertificateProperties *X509CertificateProperties `json:"x509_props,omitempty"`
-	LifetimeActions           *[]LifetimeAction          `json:"lifetime_actions,omitempty"`
-	IssuerParameters          *IssuerParameters          `json:"issuer,omitempty"`
-	Attributes                *CertificateAttributes     `json:"attributes,omitempty"`
+	// LifetimeActions - Actions that will be performed by Key Vault over the lifetime of a certificate.
+	LifetimeActions *[]LifetimeAction `json:"lifetime_actions,omitempty"`
+	// IssuerParameters - Parameters for the issuer of the X509 component of a certificate.
+	IssuerParameters *IssuerParameters `json:"issuer,omitempty"`
+	// Attributes - The certificate attributes.
+	Attributes *CertificateAttributes `json:"attributes,omitempty"`
 }
 
-// CertificateUpdateParameters is the certificate update parameters
+// CertificateUpdateParameters the certificate update parameters
 type CertificateUpdateParameters struct {
-	CertificatePolicy     *CertificatePolicy     `json:"policy,omitempty"`
+	// CertificatePolicy - The management policy for the certificate
+	CertificatePolicy *CertificatePolicy `json:"policy,omitempty"`
+	// CertificateAttributes - The attributes of the certificate (optional)
 	CertificateAttributes *CertificateAttributes `json:"attributes,omitempty"`
-	Tags                  *map[string]*string    `json:"tags,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// Contact is the contact information for the vault certificates.
+// Contact the contact information for the vault certificates.
 type Contact struct {
+	// EmailAddress - Email addresss.
 	EmailAddress *string `json:"email,omitempty"`
-	Name         *string `json:"name,omitempty"`
-	Phone        *string `json:"phone,omitempty"`
+	// Name - Name.
+	Name *string `json:"name,omitempty"`
+	// Phone - Phone number.
+	Phone *string `json:"phone,omitempty"`
 }
 
-// Contacts is the contacts for the vault certificates.
+// Contacts the contacts for the vault certificates.
 type Contacts struct {
 	autorest.Response `json:"-"`
-	ID                *string    `json:"id,omitempty"`
-	ContactList       *[]Contact `json:"contacts,omitempty"`
+	// ID - Identifier for the contacts collection.
+	ID *string `json:"id,omitempty"`
+	// ContactList - The contact list for the vault certificates.
+	ContactList *[]Contact `json:"contacts,omitempty"`
 }
 
-// Error is the key vault server error
+// Error the key vault server error
 type Error struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - The error code.
+	Code *string `json:"code,omitempty"`
+	// Message - The error message.
 	Message *string `json:"message,omitempty"`
 }
 
-// ErrorType is the key vault error exception
+// ErrorType the key vault error exception
 type ErrorType struct {
 	Error *Error `json:"error,omitempty"`
 }
 
-// IssuerAttributes is the attributes of an issuer managed by the KeyVault service
+// IssuerAttributes the attributes of an issuer managed by the KeyVault service
 type IssuerAttributes struct {
-	Enabled *bool          `json:"enabled,omitempty"`
+	// Enabled - Determines whether the issuer is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// Created - Creation time in UTC
 	Created *date.UnixTime `json:"created,omitempty"`
+	// Updated - Last updated time in UTC
 	Updated *date.UnixTime `json:"updated,omitempty"`
 }
 
-// IssuerBundle is the issuer for Key Vault certificate
+// IssuerBundle the issuer for Key Vault certificate
 type IssuerBundle struct {
-	autorest.Response   `json:"-"`
-	ID                  *string              `json:"id,omitempty"`
-	Provider            *string              `json:"provider,omitempty"`
-	Credentials         *IssuerCredentials   `json:"credentials,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Identifier for the issuer object.
+	ID *string `json:"id,omitempty"`
+	// Provider - The issuer provider.
+	Provider *string `json:"provider,omitempty"`
+	// Credentials - The credentials to be used for the issuer.
+	Credentials *IssuerCredentials `json:"credentials,omitempty"`
+	// OrganizationDetails - Details of the organization as provided to the issuer.
 	OrganizationDetails *OrganizationDetails `json:"org_details,omitempty"`
-	Attributes          *IssuerAttributes    `json:"attributes,omitempty"`
+	// Attributes - Attributes of the issuer object.
+	Attributes *IssuerAttributes `json:"attributes,omitempty"`
 }
 
-// IssuerCredentials is the credentials to be used for the certificate issuer.
+// IssuerCredentials the credentials to be used for the certificate issuer.
 type IssuerCredentials struct {
+	// AccountID - The user name/account name/account id.
 	AccountID *string `json:"account_id,omitempty"`
-	Password  *string `json:"pwd,omitempty"`
+	// Password - The password/secret/account key.
+	Password *string `json:"pwd,omitempty"`
 }
 
-// IssuerParameters is parameters for the issuer of the X509 component of a certificate.
+// IssuerParameters parameters for the issuer of the X509 component of a certificate.
 type IssuerParameters struct {
-	Name            *string `json:"name,omitempty"`
+	// Name - Name of the referenced issuer object or reserved names e.g. 'Self', 'Unknown'.
+	Name *string `json:"name,omitempty"`
+	// CertificateType - Type of certificate to be requested from the issuer provider.
 	CertificateType *string `json:"cty,omitempty"`
 }
 
-// JSONWebKey is as of http://tools.ietf.org/html/draft-ietf-jose-json-web-key-18
+// JSONWebKey as of http://tools.ietf.org/html/draft-ietf-jose-json-web-key-18
 type JSONWebKey struct {
-	Kid    *string        `json:"kid,omitempty"`
+	// Kid - Key Identifier
+	Kid *string `json:"kid,omitempty"`
+	// Kty - Supported JsonWebKey key types (kty) for Elliptic Curve, RSA, HSM, Octet, usually RSA. Possible values include: 'EC', 'RSA', 'RSAHSM', 'Oct'
 	Kty    JSONWebKeyType `json:"kty,omitempty"`
 	KeyOps *[]string      `json:"key_ops,omitempty"`
-	N      *string        `json:"n,omitempty"`
-	E      *string        `json:"e,omitempty"`
-	D      *string        `json:"d,omitempty"`
-	DP     *string        `json:"dp,omitempty"`
-	DQ     *string        `json:"dq,omitempty"`
-	QI     *string        `json:"qi,omitempty"`
-	P      *string        `json:"p,omitempty"`
-	Q      *string        `json:"q,omitempty"`
-	K      *string        `json:"k,omitempty"`
-	T      *string        `json:"key_hsm,omitempty"`
+	// N - RSA modulus
+	N *string `json:"n,omitempty"`
+	// E - RSA public exponent
+	E *string `json:"e,omitempty"`
+	// D - RSA private exponent
+	D *string `json:"d,omitempty"`
+	// DP - RSA Private Key Parameter
+	DP *string `json:"dp,omitempty"`
+	// DQ - RSA Private Key Parameter
+	DQ *string `json:"dq,omitempty"`
+	// QI - RSA Private Key Parameter
+	QI *string `json:"qi,omitempty"`
+	// P - RSA secret prime
+	P *string `json:"p,omitempty"`
+	// Q - RSA secret prime, with p < q
+	Q *string `json:"q,omitempty"`
+	// K - Symmetric key
+	K *string `json:"k,omitempty"`
+	// T - HSM Token, used with Bring Your Own Key
+	T *string `json:"key_hsm,omitempty"`
 }
 
-// KeyAttributes is the attributes of a key managed by the KeyVault service
+// KeyAttributes the attributes of a key managed by the KeyVault service
 type KeyAttributes struct {
-	Enabled   *bool          `json:"enabled,omitempty"`
+	// Enabled - Determines whether the object is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// NotBefore - Not before date in UTC
 	NotBefore *date.UnixTime `json:"nbf,omitempty"`
-	Expires   *date.UnixTime `json:"exp,omitempty"`
-	Created   *date.UnixTime `json:"created,omitempty"`
-	Updated   *date.UnixTime `json:"updated,omitempty"`
+	// Expires - Expiry date in UTC
+	Expires *date.UnixTime `json:"exp,omitempty"`
+	// Created - Creation time in UTC
+	Created *date.UnixTime `json:"created,omitempty"`
+	// Updated - Last updated time in UTC
+	Updated *date.UnixTime `json:"updated,omitempty"`
 }
 
-// KeyBundle is a KeyBundle consisting of a WebKey plus its Attributes
+// KeyBundle a KeyBundle consisting of a WebKey plus its Attributes
 type KeyBundle struct {
 	autorest.Response `json:"-"`
-	Key               *JSONWebKey         `json:"key,omitempty"`
-	Attributes        *KeyAttributes      `json:"attributes,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Managed           *bool               `json:"managed,omitempty"`
+	// Key - The Json web key
+	Key *JSONWebKey `json:"key,omitempty"`
+	// Attributes - The key management attributes
+	Attributes *KeyAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Managed - True if the key's lifetime is managed by key vault i.e. if this is a key backing a certificate, then managed will be true.
+	Managed *bool `json:"managed,omitempty"`
 }
 
-// KeyCreateParameters is the key create parameters
+// KeyCreateParameters the key create parameters
 type KeyCreateParameters struct {
-	Kty           JSONWebKeyType         `json:"kty,omitempty"`
+	// Kty - The type of key to create. Valid key types, see JsonWebKeyType. Supported JsonWebKey key types (kty) for Elliptic Curve, RSA, HSM, Octet. Possible values include: 'EC', 'RSA', 'RSAHSM', 'Oct'
+	Kty JSONWebKeyType `json:"kty,omitempty"`
+	// KeySize - The key size in bytes. e.g. 1024 or 2048.
 	KeySize       *int32                 `json:"key_size,omitempty"`
 	KeyOps        *[]JSONWebKeyOperation `json:"key_ops,omitempty"`
 	KeyAttributes *KeyAttributes         `json:"attributes,omitempty"`
-	Tags          *map[string]*string    `json:"tags,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// KeyImportParameters is the key import parameters
+// KeyImportParameters the key import parameters
 type KeyImportParameters struct {
-	Hsm           *bool               `json:"Hsm,omitempty"`
-	Key           *JSONWebKey         `json:"key,omitempty"`
-	KeyAttributes *KeyAttributes      `json:"attributes,omitempty"`
-	Tags          *map[string]*string `json:"tags,omitempty"`
+	// Hsm - Whether to import as a hardware key (HSM) or software key
+	Hsm *bool `json:"Hsm,omitempty"`
+	// Key - The Json web key
+	Key *JSONWebKey `json:"key,omitempty"`
+	// KeyAttributes - The key management attributes
+	KeyAttributes *KeyAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// KeyItem is the key item containing key metadata
+// KeyItem the key item containing key metadata
 type KeyItem struct {
-	Kid        *string             `json:"kid,omitempty"`
-	Attributes *KeyAttributes      `json:"attributes,omitempty"`
-	Tags       *map[string]*string `json:"tags,omitempty"`
-	Managed    *bool               `json:"managed,omitempty"`
+	// Kid - Key Identifier
+	Kid *string `json:"kid,omitempty"`
+	// Attributes - The key management attributes
+	Attributes *KeyAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Managed - True if the key's lifetime is managed by key vault i.e. if this is a key backing a certificate, then managed will be true.
+	Managed *bool `json:"managed,omitempty"`
 }
 
-// KeyListResult is the key list result
+// KeyListResult the key list result
 type KeyListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]KeyItem `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - A response message containing a list of keys in the vault along with a link to the next page of keys
+	Value *[]KeyItem `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of keys.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// KeyListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client KeyListResult) KeyListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// KeyListResultIterator provides access to a complete listing of KeyItem values.
+type KeyListResultIterator struct {
+	i    int
+	page KeyListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *KeyListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter KeyListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter KeyListResultIterator) Response() KeyListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter KeyListResultIterator) Value() KeyItem {
+	if !iter.page.NotDone() {
+		return KeyItem{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (klr KeyListResult) IsEmpty() bool {
+	return klr.Value == nil || len(*klr.Value) == 0
+}
+
+// keyListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (klr KeyListResult) keyListResultPreparer() (*http.Request, error) {
+	if klr.NextLink == nil || len(to.String(klr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(klr.NextLink)))
 }
 
-// KeyOperationResult is the key operation result
+// KeyListResultPage contains a page of KeyItem values.
+type KeyListResultPage struct {
+	fn  func(KeyListResult) (KeyListResult, error)
+	klr KeyListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *KeyListResultPage) Next() error {
+	next, err := page.fn(page.klr)
+	if err != nil {
+		return err
+	}
+	page.klr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page KeyListResultPage) NotDone() bool {
+	return !page.klr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page KeyListResultPage) Response() KeyListResult {
+	return page.klr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page KeyListResultPage) Values() []KeyItem {
+	if page.klr.IsEmpty() {
+		return nil
+	}
+	return *page.klr.Value
+}
+
+// KeyOperationResult the key operation result
 type KeyOperationResult struct {
 	autorest.Response `json:"-"`
-	Kid               *string `json:"kid,omitempty"`
-	Result            *string `json:"value,omitempty"`
+	// Kid - Key identifier
+	Kid    *string `json:"kid,omitempty"`
+	Result *string `json:"value,omitempty"`
 }
 
-// KeyOperationsParameters is the key operations parameters
+// KeyOperationsParameters the key operations parameters
 type KeyOperationsParameters struct {
+	// Algorithm - algorithm identifier. Possible values include: 'RSAOAEP', 'RSAOAEP256', 'RSA15'
 	Algorithm JSONWebKeyEncryptionAlgorithm `json:"alg,omitempty"`
 	Value     *string                       `json:"value,omitempty"`
 }
 
-// KeyProperties is properties of the key pair backing a certificate.
+// KeyProperties properties of the key pair backing a certificate.
 type KeyProperties struct {
-	Exportable *bool   `json:"exportable,omitempty"`
-	KeyType    *string `json:"kty,omitempty"`
-	KeySize    *int32  `json:"key_size,omitempty"`
-	ReuseKey   *bool   `json:"reuse_key,omitempty"`
+	// Exportable - Indicates if the private key can be exported.
+	Exportable *bool `json:"exportable,omitempty"`
+	// KeyType - The key type.
+	KeyType *string `json:"kty,omitempty"`
+	// KeySize - The key size in bytes. e.g. 2048.
+	KeySize *int32 `json:"key_size,omitempty"`
+	// ReuseKey - Indicates if the same key pair will be used on certificate renewal.
+	ReuseKey *bool `json:"reuse_key,omitempty"`
 }
 
-// KeyRestoreParameters is the key restore parameters
+// KeyRestoreParameters the key restore parameters
 type KeyRestoreParameters struct {
+	// KeyBundleBackup - the backup blob associated with a key bundle
 	KeyBundleBackup *string `json:"value,omitempty"`
 }
 
-// KeySignParameters is the key operations parameters
+// KeySignParameters the key operations parameters
 type KeySignParameters struct {
+	// Algorithm - The signing/verification algorithm identifier. For more information on possible algorithm types, see JsonWebKeySignatureAlgorithm. Possible values include: 'PS256', 'PS384', 'PS512', 'RS256', 'RS384', 'RS512', 'RSNULL'
 	Algorithm JSONWebKeySignatureAlgorithm `json:"alg,omitempty"`
 	Value     *string                      `json:"value,omitempty"`
 }
 
-// KeyUpdateParameters is the key update parameters
+// KeyUpdateParameters the key update parameters
 type KeyUpdateParameters struct {
+	// KeyOps - Json web key operations. For more information on possible key operations, see JsonWebKeyOperation.
 	KeyOps        *[]JSONWebKeyOperation `json:"key_ops,omitempty"`
 	KeyAttributes *KeyAttributes         `json:"attributes,omitempty"`
-	Tags          *map[string]*string    `json:"tags,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// KeyVerifyParameters is the key verify parameters
+// KeyVerifyParameters the key verify parameters
 type KeyVerifyParameters struct {
+	// Algorithm - The signing/verification algorithm. For more information on possible algorithm types, see JsonWebKeySignatureAlgorithm. Possible values include: 'PS256', 'PS384', 'PS512', 'RS256', 'RS384', 'RS512', 'RSNULL'
 	Algorithm JSONWebKeySignatureAlgorithm `json:"alg,omitempty"`
-	Digest    *string                      `json:"digest,omitempty"`
-	Signature *string                      `json:"value,omitempty"`
+	// Digest - The digest used for signing
+	Digest *string `json:"digest,omitempty"`
+	// Signature - The signature to be verified
+	Signature *string `json:"value,omitempty"`
 }
 
-// KeyVerifyResult is the key verify result
+// KeyVerifyResult the key verify result
 type KeyVerifyResult struct {
 	autorest.Response `json:"-"`
-	Value             *bool `json:"value,omitempty"`
+	// Value - true if the signature is verified, false otherwise.
+	Value *bool `json:"value,omitempty"`
 }
 
-// LifetimeAction is action and its trigger that will be performed by Key Vault over the lifetime of a certificate.
+// LifetimeAction action and its trigger that will be performed by Key Vault over the lifetime of a certificate.
 type LifetimeAction struct {
+	// Trigger - The condition that will execute the action.
 	Trigger *Trigger `json:"trigger,omitempty"`
-	Action  *Action  `json:"action,omitempty"`
+	// Action - The action that will be executed.
+	Action *Action `json:"action,omitempty"`
 }
 
-// OrganizationDetails is details of the organization of the certificate issuer.
+// OrganizationDetails details of the organization of the certificate issuer.
 type OrganizationDetails struct {
-	ID           *string                 `json:"id,omitempty"`
+	// ID - Id of the organization.
+	ID *string `json:"id,omitempty"`
+	// AdminDetails - Details of the organization administrator.
 	AdminDetails *[]AdministratorDetails `json:"admin_details,omitempty"`
 }
 
-// PendingCertificateSigningRequestResult is the pending certificate signing request result
+// PendingCertificateSigningRequestResult the pending certificate signing request result
 type PendingCertificateSigningRequestResult struct {
+	// Value - The pending certificate signing request as Base64 encoded string.
 	Value *string `json:"value,omitempty"`
 }
 
-// SecretAttributes is the secret management attributes
+// SecretAttributes the secret management attributes
 type SecretAttributes struct {
-	Enabled   *bool          `json:"enabled,omitempty"`
+	// Enabled - Determines whether the object is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// NotBefore - Not before date in UTC
 	NotBefore *date.UnixTime `json:"nbf,omitempty"`
-	Expires   *date.UnixTime `json:"exp,omitempty"`
-	Created   *date.UnixTime `json:"created,omitempty"`
-	Updated   *date.UnixTime `json:"updated,omitempty"`
+	// Expires - Expiry date in UTC
+	Expires *date.UnixTime `json:"exp,omitempty"`
+	// Created - Creation time in UTC
+	Created *date.UnixTime `json:"created,omitempty"`
+	// Updated - Last updated time in UTC
+	Updated *date.UnixTime `json:"updated,omitempty"`
 }
 
-// SecretBundle is a Secret consisting of a value, id and its attributes.
+// SecretBundle a Secret consisting of a value, id and its attributes.
 type SecretBundle struct {
 	autorest.Response `json:"-"`
-	Value             *string             `json:"value,omitempty"`
-	ID                *string             `json:"id,omitempty"`
-	ContentType       *string             `json:"contentType,omitempty"`
-	Attributes        *SecretAttributes   `json:"attributes,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Kid               *string             `json:"kid,omitempty"`
-	Managed           *bool               `json:"managed,omitempty"`
+	// Value - The secret value
+	Value *string `json:"value,omitempty"`
+	// ID - The secret id
+	ID *string `json:"id,omitempty"`
+	// ContentType - The content type of the secret
+	ContentType *string `json:"contentType,omitempty"`
+	// Attributes - The secret management attributes
+	Attributes *SecretAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Kid - If this is a secret backing a KV certificate, then this field specifies the corresponding key backing the KV certificate.
+	Kid *string `json:"kid,omitempty"`
+	// Managed - True if the secret's lifetime is managed by key vault i.e. if this is a secret backing a certificate, then managed will be true.
+	Managed *bool `json:"managed,omitempty"`
 }
 
-// SecretItem is the secret item containing secret metadata
+// SecretItem the secret item containing secret metadata
 type SecretItem struct {
-	ID          *string             `json:"id,omitempty"`
-	Attributes  *SecretAttributes   `json:"attributes,omitempty"`
-	Tags        *map[string]*string `json:"tags,omitempty"`
-	ContentType *string             `json:"contentType,omitempty"`
-	Managed     *bool               `json:"managed,omitempty"`
+	// ID - Secret Identifier
+	ID *string `json:"id,omitempty"`
+	// Attributes - The secret management attributes
+	Attributes *SecretAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ContentType - Type of the secret value such as a password
+	ContentType *string `json:"contentType,omitempty"`
+	// Managed - True if the secret's lifetime is managed by key vault i.e. if this is a key backing a certificate, then managed will be true.
+	Managed *bool `json:"managed,omitempty"`
 }
 
-// SecretListResult is the secret list result
+// SecretListResult the secret list result
 type SecretListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]SecretItem `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+	// Value - A response message containing a list of secrets in the vault along with a link to the next page of secrets
+	Value *[]SecretItem `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of secrets.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// SecretListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client SecretListResult) SecretListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// SecretListResultIterator provides access to a complete listing of SecretItem values.
+type SecretListResultIterator struct {
+	i    int
+	page SecretListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *SecretListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter SecretListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter SecretListResultIterator) Response() SecretListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter SecretListResultIterator) Value() SecretItem {
+	if !iter.page.NotDone() {
+		return SecretItem{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (slr SecretListResult) IsEmpty() bool {
+	return slr.Value == nil || len(*slr.Value) == 0
+}
+
+// secretListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (slr SecretListResult) secretListResultPreparer() (*http.Request, error) {
+	if slr.NextLink == nil || len(to.String(slr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(slr.NextLink)))
 }
 
-// SecretProperties is properties of the key backing a certificate.
+// SecretListResultPage contains a page of SecretItem values.
+type SecretListResultPage struct {
+	fn  func(SecretListResult) (SecretListResult, error)
+	slr SecretListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *SecretListResultPage) Next() error {
+	next, err := page.fn(page.slr)
+	if err != nil {
+		return err
+	}
+	page.slr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page SecretListResultPage) NotDone() bool {
+	return !page.slr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page SecretListResultPage) Response() SecretListResult {
+	return page.slr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page SecretListResultPage) Values() []SecretItem {
+	if page.slr.IsEmpty() {
+		return nil
+	}
+	return *page.slr.Value
+}
+
+// SecretProperties properties of the key backing a certificate.
 type SecretProperties struct {
+	// ContentType - The media type (MIME type).
 	ContentType *string `json:"contentType,omitempty"`
 }
 
-// SecretSetParameters is the secret set parameters
+// SecretSetParameters the secret set parameters
 type SecretSetParameters struct {
-	Value            *string             `json:"value,omitempty"`
-	Tags             *map[string]*string `json:"tags,omitempty"`
-	ContentType      *string             `json:"contentType,omitempty"`
-	SecretAttributes *SecretAttributes   `json:"attributes,omitempty"`
+	// Value - The value of the secret
+	Value *string `json:"value,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ContentType - Type of the secret value such as a password
+	ContentType *string `json:"contentType,omitempty"`
+	// SecretAttributes - The secret management attributes
+	SecretAttributes *SecretAttributes `json:"attributes,omitempty"`
 }
 
-// SecretUpdateParameters is the secret update parameters
+// SecretUpdateParameters the secret update parameters
 type SecretUpdateParameters struct {
-	ContentType      *string             `json:"contentType,omitempty"`
-	SecretAttributes *SecretAttributes   `json:"attributes,omitempty"`
-	Tags             *map[string]*string `json:"tags,omitempty"`
+	// ContentType - Type of the secret value such as a password
+	ContentType *string `json:"contentType,omitempty"`
+	// SecretAttributes - The secret management attributes
+	SecretAttributes *SecretAttributes `json:"attributes,omitempty"`
+	// Tags - Application-specific metadata in the form of key-value pairs
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// SubjectAlternativeNames is the subject alternate names of a X509 object.
+// SubjectAlternativeNames the subject alternate names of a X509 object.
 type SubjectAlternativeNames struct {
-	Emails   *[]string `json:"emails,omitempty"`
+	// Emails - Email addresses.
+	Emails *[]string `json:"emails,omitempty"`
+	// DNSNames - Domain names.
 	DNSNames *[]string `json:"dns_names,omitempty"`
-	Upns     *[]string `json:"upns,omitempty"`
+	// Upns - User principal names.
+	Upns *[]string `json:"upns,omitempty"`
 }
 
-// Trigger is a condition to be satisfied for an action to be executed.
+// Trigger a condition to be satisfied for an action to be executed.
 type Trigger struct {
+	// LifetimePercentage - Percentage of lifetime as which to trigger. Value should be between 1 and 99.
 	LifetimePercentage *int32 `json:"lifetime_percentage,omitempty"`
-	DaysBeforeExpiry   *int32 `json:"days_before_expiry,omitempty"`
+	// DaysBeforeExpiry - Days before expiry.
+	DaysBeforeExpiry *int32 `json:"days_before_expiry,omitempty"`
 }
 
-// X509CertificateProperties is properties of the X509 component of a certificate.
+// X509CertificateProperties properties of the X509 component of a certificate.
 type X509CertificateProperties struct {
-	Subject                 *string                  `json:"subject,omitempty"`
-	Ekus                    *[]string                `json:"ekus,omitempty"`
+	// Subject - The subject name. Should be a valid X509 Distinguished Name.
+	Subject *string `json:"subject,omitempty"`
+	// Ekus - The enhanced key usage.
+	Ekus *[]string `json:"ekus,omitempty"`
+	// SubjectAlternativeNames - The subject alternative names.
 	SubjectAlternativeNames *SubjectAlternativeNames `json:"sans,omitempty"`
-	KeyUsage                *[]KeyUsageType          `json:"key_usage,omitempty"`
-	ValidityInMonths        *int32                   `json:"validity_months,omitempty"`
+	// KeyUsage - List of key usages.
+	KeyUsage *[]KeyUsageType `json:"key_usage,omitempty"`
+	// ValidityInMonths - The duration that the ceritifcate is valid in months.
+	ValidityInMonths *int32 `json:"validity_months,omitempty"`
 }

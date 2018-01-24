@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // AccessControlRecordsClient is the client for the AccessControlRecords methods of the Storsimple service.
 type AccessControlRecordsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAccessControlRecordsClient creates an instance of the AccessControlRecordsClient client.
@@ -39,15 +40,11 @@ func NewAccessControlRecordsClientWithBaseURI(baseURI string, subscriptionID str
 	return AccessControlRecordsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or Updates an access control record. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate creates or Updates an access control record.
 //
 // accessControlRecordName is the name of the access control record. parameters is the access control record to be
 // added or updated. resourceGroupName is the resource group name managerName is the manager name
-func (client AccessControlRecordsClient) CreateOrUpdate(accessControlRecordName string, parameters AccessControlRecord, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan AccessControlRecord, <-chan error) {
-	resultChan := make(chan AccessControlRecord, 1)
-	errChan := make(chan error, 1)
+func (client AccessControlRecordsClient) CreateOrUpdate(ctx context.Context, accessControlRecordName string, parameters AccessControlRecord, resourceGroupName string, managerName string) (result AccessControlRecordsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.AccessControlRecordProperties", Name: validation.Null, Rule: true,
@@ -55,46 +52,26 @@ func (client AccessControlRecordsClient) CreateOrUpdate(accessControlRecordName 
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result AccessControlRecord
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(accessControlRecordName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, accessControlRecordName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client AccessControlRecordsClient) CreateOrUpdatePreparer(accessControlRecordName string, parameters AccessControlRecord, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client AccessControlRecordsClient) CreateOrUpdatePreparer(ctx context.Context, accessControlRecordName string, parameters AccessControlRecord, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessControlRecordName": accessControlRecordName,
 		"managerName":             managerName,
@@ -114,16 +91,22 @@ func (client AccessControlRecordsClient) CreateOrUpdatePreparer(accessControlRec
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/accessControlRecords/{accessControlRecordName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client AccessControlRecordsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AccessControlRecordsClient) CreateOrUpdateSender(req *http.Request) (future AccessControlRecordsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -139,58 +122,35 @@ func (client AccessControlRecordsClient) CreateOrUpdateResponder(resp *http.Resp
 	return
 }
 
-// Delete deletes the access control record. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the access control record.
 //
 // accessControlRecordName is the name of the access control record to delete. resourceGroupName is the resource group
 // name managerName is the manager name
-func (client AccessControlRecordsClient) Delete(accessControlRecordName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client AccessControlRecordsClient) Delete(ctx context.Context, accessControlRecordName string, resourceGroupName string, managerName string) (result AccessControlRecordsDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(accessControlRecordName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, accessControlRecordName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client AccessControlRecordsClient) DeletePreparer(accessControlRecordName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client AccessControlRecordsClient) DeletePreparer(ctx context.Context, accessControlRecordName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessControlRecordName": accessControlRecordName,
 		"managerName":             managerName,
@@ -208,16 +168,22 @@ func (client AccessControlRecordsClient) DeletePreparer(accessControlRecordName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/accessControlRecords/{accessControlRecordName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client AccessControlRecordsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AccessControlRecordsClient) DeleteSender(req *http.Request) (future AccessControlRecordsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -236,7 +202,7 @@ func (client AccessControlRecordsClient) DeleteResponder(resp *http.Response) (r
 //
 // accessControlRecordName is name of access control record to be fetched. resourceGroupName is the resource group name
 // managerName is the manager name
-func (client AccessControlRecordsClient) Get(accessControlRecordName string, resourceGroupName string, managerName string) (result AccessControlRecord, err error) {
+func (client AccessControlRecordsClient) Get(ctx context.Context, accessControlRecordName string, resourceGroupName string, managerName string) (result AccessControlRecord, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -244,7 +210,7 @@ func (client AccessControlRecordsClient) Get(accessControlRecordName string, res
 		return result, validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(accessControlRecordName, resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, accessControlRecordName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "Get", nil, "Failure preparing request")
 		return
@@ -266,7 +232,7 @@ func (client AccessControlRecordsClient) Get(accessControlRecordName string, res
 }
 
 // GetPreparer prepares the Get request.
-func (client AccessControlRecordsClient) GetPreparer(accessControlRecordName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client AccessControlRecordsClient) GetPreparer(ctx context.Context, accessControlRecordName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessControlRecordName": accessControlRecordName,
 		"managerName":             managerName,
@@ -284,14 +250,13 @@ func (client AccessControlRecordsClient) GetPreparer(accessControlRecordName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/accessControlRecords/{accessControlRecordName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccessControlRecordsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -311,7 +276,7 @@ func (client AccessControlRecordsClient) GetResponder(resp *http.Response) (resu
 // ListByManager retrieves all the access control records in a manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client AccessControlRecordsClient) ListByManager(resourceGroupName string, managerName string) (result AccessControlRecordList, err error) {
+func (client AccessControlRecordsClient) ListByManager(ctx context.Context, resourceGroupName string, managerName string) (result AccessControlRecordList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -319,7 +284,7 @@ func (client AccessControlRecordsClient) ListByManager(resourceGroupName string,
 		return result, validation.NewErrorWithValidationError(err, "storsimple.AccessControlRecordsClient", "ListByManager")
 	}
 
-	req, err := client.ListByManagerPreparer(resourceGroupName, managerName)
+	req, err := client.ListByManagerPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsClient", "ListByManager", nil, "Failure preparing request")
 		return
@@ -341,7 +306,7 @@ func (client AccessControlRecordsClient) ListByManager(resourceGroupName string,
 }
 
 // ListByManagerPreparer prepares the ListByManager request.
-func (client AccessControlRecordsClient) ListByManagerPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client AccessControlRecordsClient) ListByManagerPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -358,14 +323,13 @@ func (client AccessControlRecordsClient) ListByManagerPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/accessControlRecords", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByManagerSender sends the ListByManager request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccessControlRecordsClient) ListByManagerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

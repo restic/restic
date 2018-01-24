@@ -18,6 +18,7 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // WorkflowTriggersClient is the REST API for Azure Logic Apps.
 type WorkflowTriggersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewWorkflowTriggersClient creates an instance of the WorkflowTriggersClient client.
@@ -42,8 +43,8 @@ func NewWorkflowTriggersClientWithBaseURI(baseURI string, subscriptionID string)
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. triggerName is the workflow trigger
 // name.
-func (client WorkflowTriggersClient) Get(resourceGroupName string, workflowName string, triggerName string) (result WorkflowTrigger, err error) {
-	req, err := client.GetPreparer(resourceGroupName, workflowName, triggerName)
+func (client WorkflowTriggersClient) Get(ctx context.Context, resourceGroupName string, workflowName string, triggerName string) (result WorkflowTrigger, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, workflowName, triggerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client WorkflowTriggersClient) Get(resourceGroupName string, workflowName 
 }
 
 // GetPreparer prepares the Get request.
-func (client WorkflowTriggersClient) GetPreparer(resourceGroupName string, workflowName string, triggerName string) (*http.Request, error) {
+func (client WorkflowTriggersClient) GetPreparer(ctx context.Context, resourceGroupName string, workflowName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -83,14 +84,13 @@ func (client WorkflowTriggersClient) GetPreparer(resourceGroupName string, workf
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/triggers/{triggerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowTriggersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,9 @@ func (client WorkflowTriggersClient) GetResponder(resp *http.Response) (result W
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to be
 // included in the result. filter is the filter to apply on the operation.
-func (client WorkflowTriggersClient) List(resourceGroupName string, workflowName string, top *int32, filter string) (result WorkflowTriggerListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, workflowName, top, filter)
+func (client WorkflowTriggersClient) List(ctx context.Context, resourceGroupName string, workflowName string, top *int32, filter string) (result WorkflowTriggerListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, workflowName, top, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", nil, "Failure preparing request")
 		return
@@ -120,12 +121,12 @@ func (client WorkflowTriggersClient) List(resourceGroupName string, workflowName
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.wtlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.wtlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", resp, "Failure responding to request")
 	}
@@ -134,7 +135,7 @@ func (client WorkflowTriggersClient) List(resourceGroupName string, workflowName
 }
 
 // ListPreparer prepares the List request.
-func (client WorkflowTriggersClient) ListPreparer(resourceGroupName string, workflowName string, top *int32, filter string) (*http.Request, error) {
+func (client WorkflowTriggersClient) ListPreparer(ctx context.Context, resourceGroupName string, workflowName string, top *int32, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -157,14 +158,13 @@ func (client WorkflowTriggersClient) ListPreparer(resourceGroupName string, work
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/triggers/", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowTriggersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,81 +181,39 @@ func (client WorkflowTriggersClient) ListResponder(resp *http.Response) (result 
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client WorkflowTriggersClient) ListNextResults(lastResults WorkflowTriggerListResult) (result WorkflowTriggerListResult, err error) {
-	req, err := lastResults.WorkflowTriggerListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client WorkflowTriggersClient) listNextResults(lastResults WorkflowTriggerListResult) (result WorkflowTriggerListResult, err error) {
+	req, err := lastResults.workflowTriggerListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client WorkflowTriggersClient) ListComplete(resourceGroupName string, workflowName string, top *int32, filter string, cancel <-chan struct{}) (<-chan WorkflowTrigger, <-chan error) {
-	resultChan := make(chan WorkflowTrigger)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, workflowName, top, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WorkflowTriggersClient) ListComplete(ctx context.Context, resourceGroupName string, workflowName string, top *int32, filter string) (result WorkflowTriggerListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, workflowName, top, filter)
+	return
 }
 
 // Run runs a workflow trigger.
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. triggerName is the workflow trigger
 // name.
-func (client WorkflowTriggersClient) Run(resourceGroupName string, workflowName string, triggerName string) (result autorest.Response, err error) {
-	req, err := client.RunPreparer(resourceGroupName, workflowName, triggerName)
+func (client WorkflowTriggersClient) Run(ctx context.Context, resourceGroupName string, workflowName string, triggerName string) (result autorest.Response, err error) {
+	req, err := client.RunPreparer(ctx, resourceGroupName, workflowName, triggerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowTriggersClient", "Run", nil, "Failure preparing request")
 		return
@@ -277,7 +235,7 @@ func (client WorkflowTriggersClient) Run(resourceGroupName string, workflowName 
 }
 
 // RunPreparer prepares the Run request.
-func (client WorkflowTriggersClient) RunPreparer(resourceGroupName string, workflowName string, triggerName string) (*http.Request, error) {
+func (client WorkflowTriggersClient) RunPreparer(ctx context.Context, resourceGroupName string, workflowName string, triggerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -295,14 +253,13 @@ func (client WorkflowTriggersClient) RunPreparer(resourceGroupName string, workf
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/triggers/{triggerName}/run", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RunSender sends the Run request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowTriggersClient) RunSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

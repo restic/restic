@@ -50,6 +50,10 @@ const (
 	// View and manage the files in your Google Drive
 	DriveScope = "https://www.googleapis.com/auth/drive"
 
+	// View and manage Google Drive files and folders that you have opened
+	// or created with this app
+	DriveFileScope = "https://www.googleapis.com/auth/drive.file"
+
 	// View the files in your Google Drive
 	DriveReadonlyScope = "https://www.googleapis.com/auth/drive.readonly"
 
@@ -443,6 +447,16 @@ type CreateImageRequest struct {
 	// to maintain aspect ratio. The provided transform is applied after
 	// this
 	// operation.
+	//
+	// The PageElementProperties.size property is
+	// optional. If you don't specify the size, the default size of the
+	// image is
+	// used.
+	//
+	// The PageElementProperties.transform property is
+	// optional. If you don't specify a transform, the image will be placed
+	// at the
+	// top left corner of the page.
 	ElementProperties *PageElementProperties `json:"elementProperties,omitempty"`
 
 	// ObjectId: A user-supplied object ID.
@@ -1404,6 +1418,17 @@ func (s *CreateTableResponse) MarshalJSON() ([]byte, error) {
 // CreateVideoRequest: Creates a video.
 type CreateVideoRequest struct {
 	// ElementProperties: The element properties for the video.
+	//
+	// The PageElementProperties.size property is
+	// optional. If you don't specify a size, a default size is chosen by
+	// the
+	// server.
+	//
+	// The PageElementProperties.transform property is
+	// optional. The transform must not have shear components.
+	// If you don't specify a transform, the video will be placed at the top
+	// left
+	// corner of the page.
 	ElementProperties *PageElementProperties `json:"elementProperties,omitempty"`
 
 	// Id: The video source's unique identifier for this video.
@@ -4371,6 +4396,11 @@ type Request struct {
 	// UpdateLineProperties: Updates the properties of a Line.
 	UpdateLineProperties *UpdateLinePropertiesRequest `json:"updateLineProperties,omitempty"`
 
+	// UpdatePageElementAltText: Updates the alt text title and/or
+	// description of a
+	// page element.
+	UpdatePageElementAltText *UpdatePageElementAltTextRequest `json:"updatePageElementAltText,omitempty"`
+
 	// UpdatePageElementTransform: Updates the transform of a page element.
 	UpdatePageElementTransform *UpdatePageElementTransformRequest `json:"updatePageElementTransform,omitempty"`
 
@@ -6666,6 +6696,55 @@ func (s *UpdateLinePropertiesRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// UpdatePageElementAltTextRequest: Updates the alt text title and/or
+// description of a
+// page element.
+type UpdatePageElementAltTextRequest struct {
+	// Description: The updated alt text description of the page element. If
+	// unset the existing
+	// value will be maintained. The description is exposed to screen
+	// readers
+	// and other accessibility interfaces. Only use human readable values
+	// related
+	// to the content of the page element.
+	Description string `json:"description,omitempty"`
+
+	// ObjectId: The object ID of the page element the updates are applied
+	// to.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// Title: The updated alt text title of the page element. If unset
+	// the
+	// existing value will be maintained. The title is exposed to screen
+	// readers
+	// and other accessibility interfaces. Only use human readable values
+	// related
+	// to the content of the page element.
+	Title string `json:"title,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Description") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Description") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdatePageElementAltTextRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod UpdatePageElementAltTextRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // UpdatePageElementTransformRequest: Updates the transform of a page
 // element.
 //
@@ -7625,6 +7704,7 @@ func (c *PresentationsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*BatchU
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/presentations",
 	//     "https://www.googleapis.com/auth/spreadsheets",
@@ -7752,6 +7832,7 @@ func (c *PresentationsCreateCall) Do(opts ...googleapi.CallOption) (*Presentatio
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/presentations"
 	//   ]
 	// }
@@ -7892,6 +7973,7 @@ func (c *PresentationsGetCall) Do(opts ...googleapi.CallOption) (*Presentation, 
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/presentations",
 	//     "https://www.googleapis.com/auth/presentations.readonly"
@@ -8044,6 +8126,7 @@ func (c *PresentationsPagesGetCall) Do(opts ...googleapi.CallOption) (*Page, err
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/presentations",
 	//     "https://www.googleapis.com/auth/presentations.readonly"
@@ -8244,6 +8327,7 @@ func (c *PresentationsPagesGetThumbnailCall) Do(opts ...googleapi.CallOption) (*
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/presentations",
 	//     "https://www.googleapis.com/auth/presentations.readonly"

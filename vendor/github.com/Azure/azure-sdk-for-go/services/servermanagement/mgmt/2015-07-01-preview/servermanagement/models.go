@@ -18,7 +18,9 @@ package servermanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,9 +30,9 @@ import (
 type AutoUpgrade string
 
 const (
-	// Off specifies the off state for auto upgrade.
+	// Off ...
 	Off AutoUpgrade = "Off"
-	// On specifies the on state for auto upgrade.
+	// On ...
 	On AutoUpgrade = "On"
 )
 
@@ -38,7 +40,7 @@ const (
 type GatewayExpandOption string
 
 const (
-	// Status specifies the status state for gateway expand option.
+	// Status ...
 	Status GatewayExpandOption = "status"
 )
 
@@ -46,7 +48,7 @@ const (
 type PowerShellExpandOption string
 
 const (
-	// Output specifies the output state for power shell expand option.
+	// Output ...
 	Output PowerShellExpandOption = "output"
 )
 
@@ -54,185 +56,932 @@ const (
 type PromptFieldType string
 
 const (
-	// Credential specifies the credential state for prompt field type.
+	// Credential ...
 	Credential PromptFieldType = "Credential"
-	// SecureString specifies the secure string state for prompt field type.
+	// SecureString ...
 	SecureString PromptFieldType = "SecureString"
-	// String specifies the string state for prompt field type.
+	// String ...
 	String PromptFieldType = "String"
 )
 
-// Error is error message.
+// Error error message.
 type Error struct {
 	Code    *int32  `json:"code,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Fields  *string `json:"fields,omitempty"`
 }
 
-// GatewayParameters is
+// GatewayCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GatewayCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GatewayCreateFuture) Result(client GatewayClient) (gr GatewayResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return gr, autorest.NewError("servermanagement.GatewayCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		gr, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	gr, err = client.CreateResponder(resp)
+	return
+}
+
+// GatewayGetProfileFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GatewayGetProfileFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GatewayGetProfileFuture) Result(client GatewayClient) (gp GatewayProfile, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return gp, autorest.NewError("servermanagement.GatewayGetProfileFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		gp, err = client.GetProfileResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	gp, err = client.GetProfileResponder(resp)
+	return
+}
+
+// GatewayParameters ...
 type GatewayParameters struct {
-	Location                     *string                 `json:"location,omitempty"`
+	// Location - Location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags                         *map[string]interface{} `json:"tags,omitempty"`
 	*GatewayParametersProperties `json:"properties,omitempty"`
 }
 
-// GatewayParametersProperties is
+// UnmarshalJSON is the custom unmarshaler for GatewayParameters struct.
+func (gp *GatewayParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		gp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]interface{}
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		gp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties GatewayParametersProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		gp.GatewayParametersProperties = &properties
+	}
+
+	return nil
+}
+
+// GatewayParametersProperties ...
 type GatewayParametersProperties struct {
+	// AutoUpgrade - The autoUpgrade property gives the flexibility to gateway to auto upgrade itself. If properties value not specified, then we assume autoUpgrade = Off. Possible values include: 'On', 'Off'
 	AutoUpgrade AutoUpgrade `json:"autoUpgrade,omitempty"`
 }
 
-// GatewayProfile is JSON properties that the gateway service uses know how to communicate with the resource.
+// GatewayProfile JSON properties that the gateway service uses know how to communicate with the resource.
 type GatewayProfile struct {
-	autorest.Response           `json:"-"`
+	autorest.Response `json:"-"`
+	// DataPlaneServiceBaseAddress - The Dataplane connection URL.
 	DataPlaneServiceBaseAddress *string `json:"dataPlaneServiceBaseAddress,omitempty"`
-	GatewayID                   *string `json:"gatewayId,omitempty"`
-	Environment                 *string `json:"environment,omitempty"`
-	UpgradeManifestURL          *string `json:"upgradeManifestUrl,omitempty"`
-	MessagingNamespace          *string `json:"messagingNamespace,omitempty"`
-	MessagingAccount            *string `json:"messagingAccount,omitempty"`
-	MessagingKey                *string `json:"messagingKey,omitempty"`
-	RequestQueue                *string `json:"requestQueue,omitempty"`
-	ResponseTopic               *string `json:"responseTopic,omitempty"`
-	StatusBlobSignature         *string `json:"statusBlobSignature,omitempty"`
+	// GatewayID - The ID of the gateway.
+	GatewayID *string `json:"gatewayId,omitempty"`
+	// Environment - The environment for the gateway (DEV, DogFood, or Production).
+	Environment *string `json:"environment,omitempty"`
+	// UpgradeManifestURL - Gateway upgrade manifest URL.
+	UpgradeManifestURL *string `json:"upgradeManifestUrl,omitempty"`
+	// MessagingNamespace - Messaging namespace.
+	MessagingNamespace *string `json:"messagingNamespace,omitempty"`
+	// MessagingAccount - Messaging Account.
+	MessagingAccount *string `json:"messagingAccount,omitempty"`
+	// MessagingKey - Messaging Key.
+	MessagingKey *string `json:"messagingKey,omitempty"`
+	// RequestQueue - Request queue name.
+	RequestQueue *string `json:"requestQueue,omitempty"`
+	// ResponseTopic - Response topic name.
+	ResponseTopic *string `json:"responseTopic,omitempty"`
+	// StatusBlobSignature - The gateway status blob SAS URL.
+	StatusBlobSignature *string `json:"statusBlobSignature,omitempty"`
 }
 
-// GatewayResource is
+// GatewayRegenerateProfileFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GatewayRegenerateProfileFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GatewayRegenerateProfileFuture) Result(client GatewayClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("servermanagement.GatewayRegenerateProfileFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.RegenerateProfileResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.RegenerateProfileResponder(resp)
+	return
+}
+
+// GatewayResource ...
 type GatewayResource struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	Etag                       *string             `json:"etag,omitempty"`
 	*GatewayResourceProperties `json:"properties,omitempty"`
 }
 
-// GatewayResourceProperties is
-type GatewayResourceProperties struct {
-	Created                   *date.Time       `json:"created,omitempty"`
-	Updated                   *date.Time       `json:"updated,omitempty"`
-	AutoUpgrade               AutoUpgrade      `json:"autoUpgrade,omitempty"`
-	DesiredVersion            *string          `json:"desiredVersion,omitempty"`
-	Instances                 *[]GatewayStatus `json:"instances,omitempty"`
-	ActiveMessageCount        *int32           `json:"activeMessageCount,omitempty"`
-	LatestPublishedMsiVersion *string          `json:"latestPublishedMsiVersion,omitempty"`
-	PublishedTimeUtc          *date.Time       `json:"publishedTimeUtc,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for GatewayResource struct.
+func (gr *GatewayResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties GatewayResourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		gr.GatewayResourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		gr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		gr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		gr.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		gr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		gr.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		gr.Etag = &etag
+	}
+
+	return nil
 }
 
-// GatewayResources is collection of Gateway Resources.
+// GatewayResourceProperties ...
+type GatewayResourceProperties struct {
+	// Created - UTC date and time when gateway was first added to management service.
+	Created *date.Time `json:"created,omitempty"`
+	// Updated - UTC date and time when node was last updated.
+	Updated *date.Time `json:"updated,omitempty"`
+	// AutoUpgrade - Setting of the autoupgrade. Possible values include: 'On', 'Off'
+	AutoUpgrade AutoUpgrade `json:"autoUpgrade,omitempty"`
+	// DesiredVersion - Latest available MSI version.
+	DesiredVersion *string `json:"desiredVersion,omitempty"`
+	// Instances - Names of the nodes in the gateway.
+	Instances *[]GatewayStatus `json:"instances,omitempty"`
+	// ActiveMessageCount - number of active messages
+	ActiveMessageCount *int32 `json:"activeMessageCount,omitempty"`
+	// LatestPublishedMsiVersion - Last published MSI version.
+	LatestPublishedMsiVersion *string `json:"latestPublishedMsiVersion,omitempty"`
+	// PublishedTimeUtc - The date/time of the last published gateway.
+	PublishedTimeUtc *date.Time `json:"publishedTimeUtc,omitempty"`
+}
+
+// GatewayResources collection of Gateway Resources.
 type GatewayResources struct {
 	autorest.Response `json:"-"`
-	Value             *[]GatewayResource `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+	// Value - Collection of Gateway Resources.
+	Value *[]GatewayResource `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// GatewayResourcesPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client GatewayResources) GatewayResourcesPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// GatewayResourcesIterator provides access to a complete listing of GatewayResource values.
+type GatewayResourcesIterator struct {
+	i    int
+	page GatewayResourcesPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *GatewayResourcesIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter GatewayResourcesIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter GatewayResourcesIterator) Response() GatewayResources {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter GatewayResourcesIterator) Value() GatewayResource {
+	if !iter.page.NotDone() {
+		return GatewayResource{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (gr GatewayResources) IsEmpty() bool {
+	return gr.Value == nil || len(*gr.Value) == 0
+}
+
+// gatewayResourcesPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (gr GatewayResources) gatewayResourcesPreparer() (*http.Request, error) {
+	if gr.NextLink == nil || len(to.String(gr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(gr.NextLink)))
 }
 
-// GatewayStatus is expanded gateway status information.
+// GatewayResourcesPage contains a page of GatewayResource values.
+type GatewayResourcesPage struct {
+	fn func(GatewayResources) (GatewayResources, error)
+	gr GatewayResources
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *GatewayResourcesPage) Next() error {
+	next, err := page.fn(page.gr)
+	if err != nil {
+		return err
+	}
+	page.gr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page GatewayResourcesPage) NotDone() bool {
+	return !page.gr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page GatewayResourcesPage) Response() GatewayResources {
+	return page.gr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page GatewayResourcesPage) Values() []GatewayResource {
+	if page.gr.IsEmpty() {
+		return nil
+	}
+	return *page.gr.Value
+}
+
+// GatewayStatus expanded gateway status information.
 type GatewayStatus struct {
-	AvailableMemoryMByte         *float64   `json:"availableMemoryMByte,omitempty"`
-	GatewayCPUUtilizationPercent *float64   `json:"gatewayCpuUtilizationPercent,omitempty"`
-	TotalCPUUtilizationPercent   *float64   `json:"totalCpuUtilizationPercent,omitempty"`
-	GatewayVersion               *string    `json:"gatewayVersion,omitempty"`
-	FriendlyOsName               *string    `json:"friendlyOsName,omitempty"`
-	InstalledDate                *date.Time `json:"installedDate,omitempty"`
-	LogicalProcessorCount        *int32     `json:"logicalProcessorCount,omitempty"`
-	Name                         *string    `json:"name,omitempty"`
-	GatewayID                    *string    `json:"gatewayId,omitempty"`
-	GatewayWorkingSetMByte       *float64   `json:"gatewayWorkingSetMByte,omitempty"`
-	StatusUpdated                *date.Time `json:"statusUpdated,omitempty"`
+	// AvailableMemoryMByte - The available memory on the gateway host machine in megabytes.
+	AvailableMemoryMByte *float64 `json:"availableMemoryMByte,omitempty"`
+	// GatewayCPUUtilizationPercent - The CPU utilization of the gateway process (numeric value between 0 and 100).
+	GatewayCPUUtilizationPercent *float64 `json:"gatewayCpuUtilizationPercent,omitempty"`
+	// TotalCPUUtilizationPercent - CPU Utilization of the whole system.
+	TotalCPUUtilizationPercent *float64 `json:"totalCpuUtilizationPercent,omitempty"`
+	// GatewayVersion - The version of the gateway that is installed on the system.
+	GatewayVersion *string `json:"gatewayVersion,omitempty"`
+	// FriendlyOsName - The Plaintext description of the OS on the gateway.
+	FriendlyOsName *string `json:"friendlyOsName,omitempty"`
+	// InstalledDate - The date the gateway was installed.
+	InstalledDate *date.Time `json:"installedDate,omitempty"`
+	// LogicalProcessorCount - Number of logical processors in the gateway system.
+	LogicalProcessorCount *int32 `json:"logicalProcessorCount,omitempty"`
+	// Name - The computer name of the gateway system.
+	Name *string `json:"name,omitempty"`
+	// GatewayID - The gateway resource ID.
+	GatewayID *string `json:"gatewayId,omitempty"`
+	// GatewayWorkingSetMByte - The working set size of the gateway process in megabytes.
+	GatewayWorkingSetMByte *float64 `json:"gatewayWorkingSetMByte,omitempty"`
+	// StatusUpdated - UTC date and time when gateway status was last updated.
+	StatusUpdated *date.Time `json:"statusUpdated,omitempty"`
 }
 
-// NodeParameters is
+// GatewayUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GatewayUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GatewayUpdateFuture) Result(client GatewayClient) (gr GatewayResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return gr, autorest.NewError("servermanagement.GatewayUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		gr, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	gr, err = client.UpdateResponder(resp)
+	return
+}
+
+// GatewayUpgradeFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type GatewayUpgradeFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future GatewayUpgradeFuture) Result(client GatewayClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("servermanagement.GatewayUpgradeFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.UpgradeResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.UpgradeResponder(resp)
+	return
+}
+
+// NodeCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type NodeCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future NodeCreateFuture) Result(client NodeClient) (nr NodeResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return nr, autorest.NewError("servermanagement.NodeCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		nr, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	nr, err = client.CreateResponder(resp)
+	return
+}
+
+// NodeParameters ...
 type NodeParameters struct {
-	Location                  *string                 `json:"location,omitempty"`
+	// Location - Location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags                      *map[string]interface{} `json:"tags,omitempty"`
 	*NodeParametersProperties `json:"properties,omitempty"`
 }
 
-// NodeParametersProperties is
-type NodeParametersProperties struct {
-	GatewayID      *string `json:"gatewayId,omitempty"`
-	ConnectionName *string `json:"connectionName,omitempty"`
-	UserName       *string `json:"userName,omitempty"`
-	Password       *string `json:"password,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for NodeParameters struct.
+func (np *NodeParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		np.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]interface{}
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		np.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties NodeParametersProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		np.NodeParametersProperties = &properties
+	}
+
+	return nil
 }
 
-// NodeResource is a Node Resource.
+// NodeParametersProperties ...
+type NodeParametersProperties struct {
+	// GatewayID - Gateway ID which will manage this node.
+	GatewayID *string `json:"gatewayId,omitempty"`
+	// ConnectionName - myhost.domain.com
+	ConnectionName *string `json:"connectionName,omitempty"`
+	// UserName - User name to be used to connect to node.
+	UserName *string `json:"userName,omitempty"`
+	// Password - Password associated with user name.
+	Password *string `json:"password,omitempty"`
+}
+
+// NodeResource a Node Resource.
 type NodeResource struct {
-	autorest.Response       `json:"-"`
-	ID                      *string             `json:"id,omitempty"`
-	Type                    *string             `json:"type,omitempty"`
-	Name                    *string             `json:"name,omitempty"`
-	Location                *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
 	Tags                    *map[string]*string `json:"tags,omitempty"`
 	Etag                    *string             `json:"etag,omitempty"`
 	*NodeResourceProperties `json:"properties,omitempty"`
 }
 
-// NodeResourceProperties is
-type NodeResourceProperties struct {
-	GatewayID      *string    `json:"gatewayId,omitempty"`
-	ConnectionName *string    `json:"connectionName,omitempty"`
-	Created        *date.Time `json:"created,omitempty"`
-	Updated        *date.Time `json:"updated,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for NodeResource struct.
+func (nr *NodeResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties NodeResourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		nr.NodeResourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		nr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		nr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		nr.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		nr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		nr.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		nr.Etag = &etag
+	}
+
+	return nil
 }
 
-// NodeResources is a collection of node resource objects.
+// NodeResourceProperties ...
+type NodeResourceProperties struct {
+	// GatewayID - ID of the gateway.
+	GatewayID *string `json:"gatewayId,omitempty"`
+	// ConnectionName - myhost.domain.com
+	ConnectionName *string `json:"connectionName,omitempty"`
+	// Created - UTC date and time when node was first added to management service.
+	Created *date.Time `json:"created,omitempty"`
+	// Updated - UTC date and time when node was last updated.
+	Updated *date.Time `json:"updated,omitempty"`
+}
+
+// NodeResources a collection of node resource objects.
 type NodeResources struct {
 	autorest.Response `json:"-"`
-	Value             *[]NodeResource `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+	// Value - Collection of Node Resources.
+	Value *[]NodeResource `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// NodeResourcesPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client NodeResources) NodeResourcesPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// NodeResourcesIterator provides access to a complete listing of NodeResource values.
+type NodeResourcesIterator struct {
+	i    int
+	page NodeResourcesPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *NodeResourcesIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter NodeResourcesIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter NodeResourcesIterator) Response() NodeResources {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter NodeResourcesIterator) Value() NodeResource {
+	if !iter.page.NotDone() {
+		return NodeResource{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (nr NodeResources) IsEmpty() bool {
+	return nr.Value == nil || len(*nr.Value) == 0
+}
+
+// nodeResourcesPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (nr NodeResources) nodeResourcesPreparer() (*http.Request, error) {
+	if nr.NextLink == nil || len(to.String(nr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(nr.NextLink)))
 }
 
-// PowerShellCommandParameters is the parameters to a PowerShell script execution command.
+// NodeResourcesPage contains a page of NodeResource values.
+type NodeResourcesPage struct {
+	fn func(NodeResources) (NodeResources, error)
+	nr NodeResources
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *NodeResourcesPage) Next() error {
+	next, err := page.fn(page.nr)
+	if err != nil {
+		return err
+	}
+	page.nr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page NodeResourcesPage) NotDone() bool {
+	return !page.nr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page NodeResourcesPage) Response() NodeResources {
+	return page.nr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page NodeResourcesPage) Values() []NodeResource {
+	if page.nr.IsEmpty() {
+		return nil
+	}
+	return *page.nr.Value
+}
+
+// NodeUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type NodeUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future NodeUpdateFuture) Result(client NodeClient) (nr NodeResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return nr, autorest.NewError("servermanagement.NodeUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		nr, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	nr, err = client.UpdateResponder(resp)
+	return
+}
+
+// PowerShellCancelCommandFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PowerShellCancelCommandFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PowerShellCancelCommandFuture) Result(client PowerShellClient) (pscr PowerShellCommandResults, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return pscr, autorest.NewError("servermanagement.PowerShellCancelCommandFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		pscr, err = client.CancelCommandResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	pscr, err = client.CancelCommandResponder(resp)
+	return
+}
+
+// PowerShellCommandParameters the parameters to a PowerShell script execution command.
 type PowerShellCommandParameters struct {
 	*PowerShellCommandParametersProperties `json:"properties,omitempty"`
 }
 
-// PowerShellCommandParametersProperties is
+// UnmarshalJSON is the custom unmarshaler for PowerShellCommandParameters struct.
+func (pscp *PowerShellCommandParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PowerShellCommandParametersProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pscp.PowerShellCommandParametersProperties = &properties
+	}
+
+	return nil
+}
+
+// PowerShellCommandParametersProperties ...
 type PowerShellCommandParametersProperties struct {
+	// Command - Script to execute.
 	Command *string `json:"command,omitempty"`
 }
 
-// PowerShellCommandResult is
+// PowerShellCommandResult ...
 type PowerShellCommandResult struct {
-	MessageType     *int32                    `json:"messageType,omitempty"`
-	ForegroundColor *string                   `json:"foregroundColor,omitempty"`
-	BackgroundColor *string                   `json:"backgroundColor,omitempty"`
-	Value           *string                   `json:"value,omitempty"`
-	Prompt          *string                   `json:"prompt,omitempty"`
-	ExitCode        *int32                    `json:"exitCode,omitempty"`
-	ID              *int32                    `json:"id,omitempty"`
-	Caption         *string                   `json:"caption,omitempty"`
-	Message         *string                   `json:"message,omitempty"`
-	Descriptions    *[]PromptFieldDescription `json:"descriptions,omitempty"`
+	// MessageType - The type of message.
+	MessageType *int32 `json:"messageType,omitempty"`
+	// ForegroundColor - The HTML color string representing the foreground color.
+	ForegroundColor *string `json:"foregroundColor,omitempty"`
+	// BackgroundColor - The HTML color string representing the background color.
+	BackgroundColor *string `json:"backgroundColor,omitempty"`
+	// Value - Actual result text from the PowerShell Command.
+	Value *string `json:"value,omitempty"`
+	// Prompt - The interactive prompt message.
+	Prompt *string `json:"prompt,omitempty"`
+	// ExitCode - The exit code from a executable that was called from PowerShell.
+	ExitCode *int32 `json:"exitCode,omitempty"`
+	// ID - ID of the prompt message.
+	ID *int32 `json:"id,omitempty"`
+	// Caption - Text that precedes the prompt.
+	Caption *string `json:"caption,omitempty"`
+	// Message - Text of the prompt.
+	Message *string `json:"message,omitempty"`
+	// Descriptions - Collection of PromptFieldDescription objects that contains the user input
+	Descriptions *[]PromptFieldDescription `json:"descriptions,omitempty"`
 }
 
-// PowerShellCommandResults is a collection of results from a PowerShell command.
+// PowerShellCommandResults a collection of results from a PowerShell command.
 type PowerShellCommandResults struct {
 	autorest.Response `json:"-"`
 	Results           *[]PowerShellCommandResult `json:"results,omitempty"`
@@ -241,120 +990,557 @@ type PowerShellCommandResults struct {
 	Completed         *bool                      `json:"completed,omitempty"`
 }
 
-// PowerShellCommandStatus is
+// PowerShellCommandStatus ...
 type PowerShellCommandStatus struct {
-	autorest.Response         `json:"-"`
-	ID                        *string             `json:"id,omitempty"`
-	Type                      *string             `json:"type,omitempty"`
-	Name                      *string             `json:"name,omitempty"`
-	Location                  *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
 	Tags                      *map[string]*string `json:"tags,omitempty"`
 	Etag                      *string             `json:"etag,omitempty"`
 	*PowerShellCommandResults `json:"properties,omitempty"`
 }
 
-// PowerShellSessionResource is a PowerShell session resource (practically equivalent to a runspace instance).
+// UnmarshalJSON is the custom unmarshaler for PowerShellCommandStatus struct.
+func (pscs *PowerShellCommandStatus) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PowerShellCommandResults
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pscs.PowerShellCommandResults = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pscs.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pscs.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pscs.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		pscs.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		pscs.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		pscs.Etag = &etag
+	}
+
+	return nil
+}
+
+// PowerShellCreateSessionFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PowerShellCreateSessionFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PowerShellCreateSessionFuture) Result(client PowerShellClient) (pssr PowerShellSessionResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return pssr, autorest.NewError("servermanagement.PowerShellCreateSessionFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		pssr, err = client.CreateSessionResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	pssr, err = client.CreateSessionResponder(resp)
+	return
+}
+
+// PowerShellInvokeCommandFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PowerShellInvokeCommandFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PowerShellInvokeCommandFuture) Result(client PowerShellClient) (pscr PowerShellCommandResults, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return pscr, autorest.NewError("servermanagement.PowerShellInvokeCommandFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		pscr, err = client.InvokeCommandResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	pscr, err = client.InvokeCommandResponder(resp)
+	return
+}
+
+// PowerShellSessionResource a PowerShell session resource (practically equivalent to a runspace instance).
 type PowerShellSessionResource struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string             `json:"id,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
 	Tags                                 *map[string]*string `json:"tags,omitempty"`
 	Etag                                 *string             `json:"etag,omitempty"`
 	*PowerShellSessionResourceProperties `json:"properties,omitempty"`
 }
 
-// PowerShellSessionResourceProperties is
-type PowerShellSessionResourceProperties struct {
-	SessionID            *string                  `json:"sessionId,omitempty"`
-	State                *string                  `json:"state,omitempty"`
-	RunspaceAvailability *string                  `json:"runspaceAvailability,omitempty"`
-	DisconnectedOn       *date.Time               `json:"disconnectedOn,omitempty"`
-	ExpiresOn            *date.Time               `json:"expiresOn,omitempty"`
-	Version              *VersionServermanagement `json:"version,omitempty"`
-	Name                 *string                  `json:"name,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for PowerShellSessionResource struct.
+func (pssr *PowerShellSessionResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PowerShellSessionResourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pssr.PowerShellSessionResourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pssr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pssr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pssr.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		pssr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		pssr.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		pssr.Etag = &etag
+	}
+
+	return nil
 }
 
-// PowerShellSessionResources is a collection of PowerShell session resources.
+// PowerShellSessionResourceProperties ...
+type PowerShellSessionResourceProperties struct {
+	// SessionID - The PowerShell Session ID.
+	SessionID *string `json:"sessionId,omitempty"`
+	// State - The runspace state.
+	State *string `json:"state,omitempty"`
+	// RunspaceAvailability - The availability of the runspace.
+	RunspaceAvailability *string `json:"runspaceAvailability,omitempty"`
+	// DisconnectedOn - Timestamp of last time the service disconnected from the runspace.
+	DisconnectedOn *date.Time `json:"disconnectedOn,omitempty"`
+	// ExpiresOn - Timestamp when the runspace expires.
+	ExpiresOn *date.Time               `json:"expiresOn,omitempty"`
+	Version   *VersionServermanagement `json:"version,omitempty"`
+	// Name - Name of the runspace.
+	Name *string `json:"name,omitempty"`
+}
+
+// PowerShellSessionResources a collection of PowerShell session resources.
 type PowerShellSessionResources struct {
 	autorest.Response `json:"-"`
-	Value             *[]PowerShellSessionResource `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
+	// Value - Collection of PowerShell session resources.
+	Value *[]PowerShellSessionResource `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// PowerShellTabCompletionParameters is
+// PowerShellTabCompletionParameters ...
 type PowerShellTabCompletionParameters struct {
+	// Command - Command to get tab completion for.
 	Command *string `json:"command,omitempty"`
 }
 
-// PowerShellTabCompletionResults is an array of strings representing the different values that can be selected
-// through.
+// PowerShellTabCompletionResults an array of strings representing the different values that can be selected through.
 type PowerShellTabCompletionResults struct {
 	autorest.Response `json:"-"`
 	Results           *[]string `json:"results,omitempty"`
 }
 
-// PromptFieldDescription is field description for the implementation of PSHostUserInterface.Prompt.
-type PromptFieldDescription struct {
-	Name                  *string         `json:"name,omitempty"`
-	Label                 *string         `json:"label,omitempty"`
-	HelpMessage           *string         `json:"helpMessage,omitempty"`
-	PromptFieldTypeIsList *bool           `json:"promptFieldTypeIsList,omitempty"`
-	PromptFieldType       PromptFieldType `json:"promptFieldType,omitempty"`
+// PowerShellUpdateCommandFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PowerShellUpdateCommandFuture struct {
+	azure.Future
+	req *http.Request
 }
 
-// PromptMessageResponse is the response to a prompt message.
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PowerShellUpdateCommandFuture) Result(client PowerShellClient) (pscr PowerShellCommandResults, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return pscr, autorest.NewError("servermanagement.PowerShellUpdateCommandFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		pscr, err = client.UpdateCommandResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	pscr, err = client.UpdateCommandResponder(resp)
+	return
+}
+
+// PromptFieldDescription field description for the implementation of PSHostUserInterface.Prompt.
+type PromptFieldDescription struct {
+	// Name - The name of the prompt.
+	Name *string `json:"name,omitempty"`
+	// Label - The label text of the prompt.
+	Label *string `json:"label,omitempty"`
+	// HelpMessage - The help message of the prompt.
+	HelpMessage *string `json:"helpMessage,omitempty"`
+	// PromptFieldTypeIsList - When set to 'true' the prompt field type is a list of values.
+	PromptFieldTypeIsList *bool `json:"promptFieldTypeIsList,omitempty"`
+	// PromptFieldType - Possible values include: 'String', 'SecureString', 'Credential'
+	PromptFieldType PromptFieldType `json:"promptFieldType,omitempty"`
+}
+
+// PromptMessageResponse the response to a prompt message.
 type PromptMessageResponse struct {
+	// Response - The list of responses a cmdlet expects.
 	Response *[]string `json:"response,omitempty"`
 }
 
-// Resource is resource Manager Resource Information.
+// Resource resource Manager Resource Information.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	Etag     *string             `json:"etag,omitempty"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	Etag *string             `json:"etag,omitempty"`
 }
 
-// SessionParameters is
+// SessionCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type SessionCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future SessionCreateFuture) Result(client SessionClient) (sr SessionResource, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return sr, autorest.NewError("servermanagement.SessionCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		sr, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	sr, err = client.CreateResponder(resp)
+	return
+}
+
+// SessionParameters ...
 type SessionParameters struct {
 	*SessionParametersProperties `json:"properties,omitempty"`
 }
 
-// SessionParametersProperties is
+// UnmarshalJSON is the custom unmarshaler for SessionParameters struct.
+func (sp *SessionParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SessionParametersProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sp.SessionParametersProperties = &properties
+	}
+
+	return nil
+}
+
+// SessionParametersProperties ...
 type SessionParametersProperties struct {
+	// UserName - User name to be used to connect to node.
 	UserName *string `json:"userName,omitempty"`
+	// Password - Password associated with user name.
 	Password *string `json:"password,omitempty"`
 }
 
-// SessionResource is the session object.
+// SessionResource the session object.
 type SessionResource struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource Manager Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource Manager Resource Type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource Manager Resource Name.
+	Name *string `json:"name,omitempty"`
+	// Location - Resource Manager Resource Location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource Manager Resource Tags.
 	Tags                       *map[string]*string `json:"tags,omitempty"`
 	Etag                       *string             `json:"etag,omitempty"`
 	*SessionResourceProperties `json:"properties,omitempty"`
 }
 
-// SessionResourceProperties is
-type SessionResourceProperties struct {
-	UserName *string    `json:"userName,omitempty"`
-	Created  *date.Time `json:"created,omitempty"`
-	Updated  *date.Time `json:"updated,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for SessionResource struct.
+func (sr *SessionResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties SessionResourceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		sr.SessionResourceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		sr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		sr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		sr.Name = &name
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		sr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		sr.Tags = &tags
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		sr.Etag = &etag
+	}
+
+	return nil
 }
 
-// VersionServermanagement is a multipart-numeric version number.
+// SessionResourceProperties ...
+type SessionResourceProperties struct {
+	// UserName - The username connecting to the session.
+	UserName *string `json:"userName,omitempty"`
+	// Created - UTC date and time when node was first added to management service.
+	Created *date.Time `json:"created,omitempty"`
+	// Updated - UTC date and time when node was last updated.
+	Updated *date.Time `json:"updated,omitempty"`
+}
+
+// VersionServermanagement a multipart-numeric version number.
 type VersionServermanagement struct {
-	Major         *int32 `json:"major,omitempty"`
-	Minor         *int32 `json:"minor,omitempty"`
-	Build         *int32 `json:"build,omitempty"`
-	Revision      *int32 `json:"revision,omitempty"`
+	// Major - The leftmost number of the version.
+	Major *int32 `json:"major,omitempty"`
+	// Minor - The second leftmost number of the version.
+	Minor *int32 `json:"minor,omitempty"`
+	// Build - The third number of the version.
+	Build *int32 `json:"build,omitempty"`
+	// Revision - The fourth number of the version.
+	Revision *int32 `json:"revision,omitempty"`
+	// MajorRevision - The MSW of the fourth part.
 	MajorRevision *int32 `json:"majorRevision,omitempty"`
+	// MinorRevision - The LSW of the fourth part.
 	MinorRevision *int32 `json:"minorRevision,omitempty"`
 }

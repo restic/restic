@@ -18,18 +18,21 @@ package cdn
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"net/http"
 )
 
 // CustomDomainResourceState enumerates the values for custom domain resource state.
 type CustomDomainResourceState string
 
 const (
-	// Active specifies the active state for custom domain resource state.
+	// Active ...
 	Active CustomDomainResourceState = "Active"
-	// Creating specifies the creating state for custom domain resource state.
+	// Creating ...
 	Creating CustomDomainResourceState = "Creating"
-	// Deleting specifies the deleting state for custom domain resource state.
+	// Deleting ...
 	Deleting CustomDomainResourceState = "Deleting"
 )
 
@@ -37,17 +40,17 @@ const (
 type EndpointResourceState string
 
 const (
-	// EndpointResourceStateCreating specifies the endpoint resource state creating state for endpoint resource state.
+	// EndpointResourceStateCreating ...
 	EndpointResourceStateCreating EndpointResourceState = "Creating"
-	// EndpointResourceStateDeleting specifies the endpoint resource state deleting state for endpoint resource state.
+	// EndpointResourceStateDeleting ...
 	EndpointResourceStateDeleting EndpointResourceState = "Deleting"
-	// EndpointResourceStateRunning specifies the endpoint resource state running state for endpoint resource state.
+	// EndpointResourceStateRunning ...
 	EndpointResourceStateRunning EndpointResourceState = "Running"
-	// EndpointResourceStateStarting specifies the endpoint resource state starting state for endpoint resource state.
+	// EndpointResourceStateStarting ...
 	EndpointResourceStateStarting EndpointResourceState = "Starting"
-	// EndpointResourceStateStopped specifies the endpoint resource state stopped state for endpoint resource state.
+	// EndpointResourceStateStopped ...
 	EndpointResourceStateStopped EndpointResourceState = "Stopped"
-	// EndpointResourceStateStopping specifies the endpoint resource state stopping state for endpoint resource state.
+	// EndpointResourceStateStopping ...
 	EndpointResourceStateStopping EndpointResourceState = "Stopping"
 )
 
@@ -55,11 +58,11 @@ const (
 type OriginResourceState string
 
 const (
-	// OriginResourceStateActive specifies the origin resource state active state for origin resource state.
+	// OriginResourceStateActive ...
 	OriginResourceStateActive OriginResourceState = "Active"
-	// OriginResourceStateCreating specifies the origin resource state creating state for origin resource state.
+	// OriginResourceStateCreating ...
 	OriginResourceStateCreating OriginResourceState = "Creating"
-	// OriginResourceStateDeleting specifies the origin resource state deleting state for origin resource state.
+	// OriginResourceStateDeleting ...
 	OriginResourceStateDeleting OriginResourceState = "Deleting"
 )
 
@@ -67,13 +70,13 @@ const (
 type ProfileResourceState string
 
 const (
-	// ProfileResourceStateActive specifies the profile resource state active state for profile resource state.
+	// ProfileResourceStateActive ...
 	ProfileResourceStateActive ProfileResourceState = "Active"
-	// ProfileResourceStateCreating specifies the profile resource state creating state for profile resource state.
+	// ProfileResourceStateCreating ...
 	ProfileResourceStateCreating ProfileResourceState = "Creating"
-	// ProfileResourceStateDeleting specifies the profile resource state deleting state for profile resource state.
+	// ProfileResourceStateDeleting ...
 	ProfileResourceStateDeleting ProfileResourceState = "Deleting"
-	// ProfileResourceStateDisabled specifies the profile resource state disabled state for profile resource state.
+	// ProfileResourceStateDisabled ...
 	ProfileResourceStateDisabled ProfileResourceState = "Disabled"
 )
 
@@ -81,11 +84,11 @@ const (
 type ProvisioningState string
 
 const (
-	// ProvisioningStateCreating specifies the provisioning state creating state for provisioning state.
+	// ProvisioningStateCreating ...
 	ProvisioningStateCreating ProvisioningState = "Creating"
-	// ProvisioningStateFailed specifies the provisioning state failed state for provisioning state.
+	// ProvisioningStateFailed ...
 	ProvisioningStateFailed ProvisioningState = "Failed"
-	// ProvisioningStateSucceeded specifies the provisioning state succeeded state for provisioning state.
+	// ProvisioningStateSucceeded ...
 	ProvisioningStateSucceeded ProvisioningState = "Succeeded"
 )
 
@@ -93,13 +96,13 @@ const (
 type QueryStringCachingBehavior string
 
 const (
-	// BypassCaching specifies the bypass caching state for query string caching behavior.
+	// BypassCaching ...
 	BypassCaching QueryStringCachingBehavior = "BypassCaching"
-	// IgnoreQueryString specifies the ignore query string state for query string caching behavior.
+	// IgnoreQueryString ...
 	IgnoreQueryString QueryStringCachingBehavior = "IgnoreQueryString"
-	// NotSet specifies the not set state for query string caching behavior.
+	// NotSet ...
 	NotSet QueryStringCachingBehavior = "NotSet"
-	// UseQueryString specifies the use query string state for query string caching behavior.
+	// UseQueryString ...
 	UseQueryString QueryStringCachingBehavior = "UseQueryString"
 )
 
@@ -107,7 +110,7 @@ const (
 type ResourceType string
 
 const (
-	// MicrosoftCdnProfilesEndpoints specifies the microsoft cdn profiles endpoints state for resource type.
+	// MicrosoftCdnProfilesEndpoints ...
 	MicrosoftCdnProfilesEndpoints ResourceType = "Microsoft.Cdn/Profiles/Endpoints"
 )
 
@@ -115,294 +118,1268 @@ const (
 type SkuName string
 
 const (
-	// CustomVerizon specifies the custom verizon state for sku name.
+	// CustomVerizon ...
 	CustomVerizon SkuName = "Custom_Verizon"
-	// PremiumVerizon specifies the premium verizon state for sku name.
+	// PremiumVerizon ...
 	PremiumVerizon SkuName = "Premium_Verizon"
-	// StandardAkamai specifies the standard akamai state for sku name.
+	// StandardAkamai ...
 	StandardAkamai SkuName = "Standard_Akamai"
-	// StandardVerizon specifies the standard verizon state for sku name.
+	// StandardVerizon ...
 	StandardVerizon SkuName = "Standard_Verizon"
 )
 
-// CheckNameAvailabilityInput is input of CheckNameAvailability API.
+// CheckNameAvailabilityInput input of CheckNameAvailability API.
 type CheckNameAvailabilityInput struct {
+	// Name - The resource name to validate.
 	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource whose name is to be validated.
 	Type *string `json:"type,omitempty"`
 }
 
-// CheckNameAvailabilityOutput is output of check name availability API.
+// CheckNameAvailabilityOutput output of check name availability API.
 type CheckNameAvailabilityOutput struct {
 	autorest.Response `json:"-"`
-	NameAvailable     *bool   `json:"NameAvailable,omitempty"`
-	Reason            *string `json:"Reason,omitempty"`
-	Message           *string `json:"Message,omitempty"`
+	// NameAvailable - Indicates whether the name is available.
+	NameAvailable *bool `json:"NameAvailable,omitempty"`
+	// Reason - The reason why the name is not available.
+	Reason *string `json:"Reason,omitempty"`
+	// Message - The detailed error message describing why the name is not available.
+	Message *string `json:"Message,omitempty"`
 }
 
-// CustomDomain is CDN CustomDomain represents a mapping between a user specified domain name and a CDN endpoint. This
-// is to use custom domain names to represent the URLs for branding purposes.
+// CustomDomain CDN CustomDomain represents a mapping between a user specified domain name and a CDN endpoint. This is
+// to use custom domain names to represent the URLs for branding purposes.
 type CustomDomain struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
 	Type                    *string `json:"type,omitempty"`
 	*CustomDomainProperties `json:"properties,omitempty"`
 }
 
-// CustomDomainListResult is
-type CustomDomainListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]CustomDomain `json:"value,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CustomDomain struct.
+func (cd *CustomDomain) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomDomainProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cd.CustomDomainProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cd.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cd.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cd.Type = &typeVar
+	}
+
+	return nil
 }
 
-// CustomDomainParameters is customDomain properties required for custom domain creation or update.
+// CustomDomainListResult ...
+type CustomDomainListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of CDN CustomDomains within an endpoint.
+	Value *[]CustomDomain `json:"value,omitempty"`
+}
+
+// CustomDomainParameters customDomain properties required for custom domain creation or update.
 type CustomDomainParameters struct {
 	*CustomDomainPropertiesParameters `json:"properties,omitempty"`
 }
 
-// CustomDomainProperties is
-type CustomDomainProperties struct {
-	HostName          *string                   `json:"hostName,omitempty"`
-	ResourceState     CustomDomainResourceState `json:"resourceState,omitempty"`
-	ProvisioningState ProvisioningState         `json:"provisioningState,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for CustomDomainParameters struct.
+func (cdp *CustomDomainParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CustomDomainPropertiesParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cdp.CustomDomainPropertiesParameters = &properties
+	}
+
+	return nil
 }
 
-// CustomDomainPropertiesParameters is
+// CustomDomainProperties ...
+type CustomDomainProperties struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
+	HostName *string `json:"hostName,omitempty"`
+	// ResourceState - Resource status of the custom domain. Possible values include: 'Creating', 'Active', 'Deleting'
+	ResourceState CustomDomainResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the custom domain. Possible values include: 'ProvisioningStateCreating', 'ProvisioningStateSucceeded', 'ProvisioningStateFailed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+}
+
+// CustomDomainPropertiesParameters ...
 type CustomDomainPropertiesParameters struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
 	HostName *string `json:"hostName,omitempty"`
 }
 
-// DeepCreatedOrigin is deep created origins within a CDN endpoint.
+// CustomDomainsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type CustomDomainsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomDomainsCreateFuture) Result(client CustomDomainsClient) (cd CustomDomain, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return cd, autorest.NewError("cdn.CustomDomainsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		cd, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	cd, err = client.CreateResponder(resp)
+	return
+}
+
+// CustomDomainsDeleteIfExistsFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type CustomDomainsDeleteIfExistsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future CustomDomainsDeleteIfExistsFuture) Result(client CustomDomainsClient) (cd CustomDomain, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return cd, autorest.NewError("cdn.CustomDomainsDeleteIfExistsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		cd, err = client.DeleteIfExistsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	cd, err = client.DeleteIfExistsResponder(resp)
+	return
+}
+
+// DeepCreatedOrigin deep created origins within a CDN endpoint.
 type DeepCreatedOrigin struct {
+	// Name - Origin name
 	Name                         *string `json:"name,omitempty"`
 	*DeepCreatedOriginProperties `json:"properties,omitempty"`
 }
 
-// DeepCreatedOriginProperties is properties of deep created origin on a CDN endpoint.
-type DeepCreatedOriginProperties struct {
-	HostName  *string `json:"hostName,omitempty"`
-	HTTPPort  *int32  `json:"httpPort,omitempty"`
-	HTTPSPort *int32  `json:"httpsPort,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DeepCreatedOrigin struct.
+func (dco *DeepCreatedOrigin) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dco.Name = &name
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties DeepCreatedOriginProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dco.DeepCreatedOriginProperties = &properties
+	}
+
+	return nil
 }
 
-// Endpoint is CDN endpoint is the entity within a CDN profile containing configuration information regarding caching
+// DeepCreatedOriginProperties properties of deep created origin on a CDN endpoint.
+type DeepCreatedOriginProperties struct {
+	// HostName - The address of the origin. Domain names, IPv4 addresses, and IPv6 addresses are supported.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the HTTPS port. Must be between 1 and 65535
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
+}
+
+// Endpoint CDN endpoint is the entity within a CDN profile containing configuration information regarding caching
 // behaviors and origins. The CDN endpoint is exposed using the URL format <endpointname>.azureedge.net by default, but
 // custom domains can also be created.
 type Endpoint struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
 	Tags                *map[string]*string `json:"tags,omitempty"`
 	*EndpointProperties `json:"properties,omitempty"`
 }
 
-// EndpointCreateParameters is endpoint properties required for new endpoint creation.
+// UnmarshalJSON is the custom unmarshaler for Endpoint struct.
+func (e *Endpoint) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EndpointProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		e.EndpointProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		e.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		e.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		e.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		e.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		e.Type = &typeVar
+	}
+
+	return nil
+}
+
+// EndpointCreateParameters endpoint properties required for new endpoint creation.
 type EndpointCreateParameters struct {
-	Location                            *string             `json:"location,omitempty"`
+	// Location - Endpoint location
+	Location *string `json:"location,omitempty"`
+	// Tags - Endpoint tags
 	Tags                                *map[string]*string `json:"tags,omitempty"`
 	*EndpointPropertiesCreateParameters `json:"properties,omitempty"`
 }
 
-// EndpointListResult is
+// UnmarshalJSON is the custom unmarshaler for EndpointCreateParameters struct.
+func (ecp *EndpointCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ecp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ecp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties EndpointPropertiesCreateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ecp.EndpointPropertiesCreateParameters = &properties
+	}
+
+	return nil
+}
+
+// EndpointListResult ...
 type EndpointListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Endpoint `json:"value,omitempty"`
+	// Value - List of CDN endpoints within a profile
+	Value *[]Endpoint `json:"value,omitempty"`
 }
 
-// EndpointProperties is
+// EndpointProperties ...
 type EndpointProperties struct {
-	HostName                   *string                    `json:"hostName,omitempty"`
-	OriginHostHeader           *string                    `json:"originHostHeader,omitempty"`
-	OriginPath                 *string                    `json:"originPath,omitempty"`
-	ContentTypesToCompress     *[]string                  `json:"contentTypesToCompress,omitempty"`
-	IsCompressionEnabled       *bool                      `json:"isCompressionEnabled,omitempty"`
-	IsHTTPAllowed              *bool                      `json:"isHttpAllowed,omitempty"`
-	IsHTTPSAllowed             *bool                      `json:"isHttpsAllowed,omitempty"`
+	// HostName - The host name of the endpoint {endpointName}.{DNSZone}
+	HostName *string `json:"hostName,omitempty"`
+	// OriginHostHeader - The host header the CDN provider will send along with content requests to origins. The default value is the host name of the origin.
+	OriginHostHeader *string `json:"originHostHeader,omitempty"`
+	// OriginPath - The path used for origin requests.
+	OriginPath *string `json:"originPath,omitempty"`
+	// ContentTypesToCompress - List of content types on which compression will be applied. The value for the elements should be a valid MIME type.
+	ContentTypesToCompress *[]string `json:"contentTypesToCompress,omitempty"`
+	// IsCompressionEnabled - Indicates whether the compression is enabled. Default value is false. If compression is enabled, the content transferred from cdn endpoint to end user will be compressed. The requested content must be larger than 1 byte and smaller than 1 MB.
+	IsCompressionEnabled *bool `json:"isCompressionEnabled,omitempty"`
+	// IsHTTPAllowed - Indicates whether HTTP traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPAllowed *bool `json:"isHttpAllowed,omitempty"`
+	// IsHTTPSAllowed - Indicates whether https traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPSAllowed *bool `json:"isHttpsAllowed,omitempty"`
+	// QueryStringCachingBehavior - Defines the query string caching behavior. Possible values include: 'IgnoreQueryString', 'BypassCaching', 'UseQueryString', 'NotSet'
 	QueryStringCachingBehavior QueryStringCachingBehavior `json:"queryStringCachingBehavior,omitempty"`
-	Origins                    *[]DeepCreatedOrigin       `json:"origins,omitempty"`
-	ResourceState              EndpointResourceState      `json:"resourceState,omitempty"`
-	ProvisioningState          ProvisioningState          `json:"provisioningState,omitempty"`
+	// Origins - The set of origins for the CDN endpoint. When multiple origins exist, the first origin will be used as primary and rest will be used as failover options.
+	Origins *[]DeepCreatedOrigin `json:"origins,omitempty"`
+	// ResourceState - Resource status of the endpoint. Possible values include: 'EndpointResourceStateCreating', 'EndpointResourceStateDeleting', 'EndpointResourceStateRunning', 'EndpointResourceStateStarting', 'EndpointResourceStateStopped', 'EndpointResourceStateStopping'
+	ResourceState EndpointResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the endpoint. Possible values include: 'ProvisioningStateCreating', 'ProvisioningStateSucceeded', 'ProvisioningStateFailed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
 }
 
-// EndpointPropertiesCreateParameters is
+// EndpointPropertiesCreateParameters ...
 type EndpointPropertiesCreateParameters struct {
-	OriginHostHeader           *string                    `json:"originHostHeader,omitempty"`
-	OriginPath                 *string                    `json:"originPath,omitempty"`
-	ContentTypesToCompress     *[]string                  `json:"contentTypesToCompress,omitempty"`
-	IsCompressionEnabled       *bool                      `json:"isCompressionEnabled,omitempty"`
-	IsHTTPAllowed              *bool                      `json:"isHttpAllowed,omitempty"`
-	IsHTTPSAllowed             *bool                      `json:"isHttpsAllowed,omitempty"`
+	// OriginHostHeader - The host header CDN provider will send along with content requests to origins. The default value is the host name of the origin.
+	OriginHostHeader *string `json:"originHostHeader,omitempty"`
+	// OriginPath - The path used for origin requests.
+	OriginPath *string `json:"originPath,omitempty"`
+	// ContentTypesToCompress - List of content types on which compression will be applied. The value for the elements should be a valid MIME type.
+	ContentTypesToCompress *[]string `json:"contentTypesToCompress,omitempty"`
+	// IsCompressionEnabled - Indicates whether content compression is enabled. Default value is false. If compression is enabled, the content transferred from the CDN endpoint to the end user will be compressed. The requested content must be larger than 1 byte and smaller than 1 MB.
+	IsCompressionEnabled *bool `json:"isCompressionEnabled,omitempty"`
+	// IsHTTPAllowed - Indicates whether HTTP traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPAllowed *bool `json:"isHttpAllowed,omitempty"`
+	// IsHTTPSAllowed - Indicates whether https traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPSAllowed *bool `json:"isHttpsAllowed,omitempty"`
+	// QueryStringCachingBehavior - Defines the query string caching behavior. Possible values include: 'IgnoreQueryString', 'BypassCaching', 'UseQueryString', 'NotSet'
 	QueryStringCachingBehavior QueryStringCachingBehavior `json:"queryStringCachingBehavior,omitempty"`
-	Origins                    *[]DeepCreatedOrigin       `json:"origins,omitempty"`
+	// Origins - The set of origins for the CDN endpoint. When multiple origins exist, the first origin will be used as primary and rest will be used as failover options.
+	Origins *[]DeepCreatedOrigin `json:"origins,omitempty"`
 }
 
-// EndpointPropertiesUpdateParameters is
+// EndpointPropertiesUpdateParameters ...
 type EndpointPropertiesUpdateParameters struct {
-	OriginHostHeader           *string                    `json:"originHostHeader,omitempty"`
-	OriginPath                 *string                    `json:"originPath,omitempty"`
-	ContentTypesToCompress     *[]string                  `json:"contentTypesToCompress,omitempty"`
-	IsCompressionEnabled       *bool                      `json:"isCompressionEnabled,omitempty"`
-	IsHTTPAllowed              *bool                      `json:"isHttpAllowed,omitempty"`
-	IsHTTPSAllowed             *bool                      `json:"isHttpsAllowed,omitempty"`
+	// OriginHostHeader - The host header the CDN provider will send along with content requests to origins. The default value is the host name of the origin.
+	OriginHostHeader *string `json:"originHostHeader,omitempty"`
+	// OriginPath - The path used for origin requests.
+	OriginPath *string `json:"originPath,omitempty"`
+	// ContentTypesToCompress - List of content types on which compression will be applied. The value for the elements should be a valid MIME type.
+	ContentTypesToCompress *[]string `json:"contentTypesToCompress,omitempty"`
+	// IsCompressionEnabled - Indicates whether content compression is enabled. Default value is false. If compression is enabled, the content transferred from the CDN endpoint to the end user will be compressed. The requested content must be larger than 1 byte and smaller than 1 MB.
+	IsCompressionEnabled *bool `json:"isCompressionEnabled,omitempty"`
+	// IsHTTPAllowed - Indicates whether HTTP traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPAllowed *bool `json:"isHttpAllowed,omitempty"`
+	// IsHTTPSAllowed - Indicates whether HTTPS traffic is allowed on the endpoint. Default value is true. At least one protocol (HTTP or HTTPS) must be allowed.
+	IsHTTPSAllowed *bool `json:"isHttpsAllowed,omitempty"`
+	// QueryStringCachingBehavior - Defines the query string caching behavior. Possible values include: 'IgnoreQueryString', 'BypassCaching', 'UseQueryString', 'NotSet'
 	QueryStringCachingBehavior QueryStringCachingBehavior `json:"queryStringCachingBehavior,omitempty"`
 }
 
-// EndpointUpdateParameters is endpoint properties required for new endpoint creation.
+// EndpointsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsCreateFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.CreateResponder(resp)
+	return
+}
+
+// EndpointsDeleteIfExistsFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsDeleteIfExistsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsDeleteIfExistsFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsDeleteIfExistsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteIfExistsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteIfExistsResponder(resp)
+	return
+}
+
+// EndpointsLoadContentFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsLoadContentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsLoadContentFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsLoadContentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.LoadContentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.LoadContentResponder(resp)
+	return
+}
+
+// EndpointsPurgeContentFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsPurgeContentFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsPurgeContentFuture) Result(client EndpointsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.EndpointsPurgeContentFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.PurgeContentResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.PurgeContentResponder(resp)
+	return
+}
+
+// EndpointsStartFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsStartFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsStartFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsStartFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.StartResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.StartResponder(resp)
+	return
+}
+
+// EndpointsStopFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsStopFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsStopFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsStopFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.StopResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.StopResponder(resp)
+	return
+}
+
+// EndpointsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EndpointsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EndpointsUpdateFuture) Result(client EndpointsClient) (e Endpoint, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return e, autorest.NewError("cdn.EndpointsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		e, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	e, err = client.UpdateResponder(resp)
+	return
+}
+
+// EndpointUpdateParameters endpoint properties required for new endpoint creation.
 type EndpointUpdateParameters struct {
+	// Tags - Endpoint tags
 	Tags                                *map[string]*string `json:"tags,omitempty"`
 	*EndpointPropertiesUpdateParameters `json:"properties,omitempty"`
 }
 
-// ErrorResponse is
-type ErrorResponse struct {
-	autorest.Response `json:"-"`
-	Code              *string `json:"code,omitempty"`
-	Message           *string `json:"message,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for EndpointUpdateParameters struct.
+func (eup *EndpointUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		eup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties EndpointPropertiesUpdateParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		eup.EndpointPropertiesUpdateParameters = &properties
+	}
+
+	return nil
 }
 
-// LoadParameters is parameters required for endpoint load.
+// ErrorResponse ...
+type ErrorResponse struct {
+	autorest.Response `json:"-"`
+	// Code - Error code
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
+	Message *string `json:"message,omitempty"`
+}
+
+// LoadParameters parameters required for endpoint load.
 type LoadParameters struct {
+	// ContentPaths - The path to the content to be loaded. Should describe a file path.
 	ContentPaths *[]string `json:"contentPaths,omitempty"`
 }
 
-// Operation is CDN REST API operation
+// Operation CDN REST API operation
 type Operation struct {
+	// Name - Operation name: {provider}/{resource}/{operation}
 	Name    *string           `json:"name,omitempty"`
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is
+// OperationDisplay ...
 type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
+	// Provider - Service provider: Microsoft.Cdn
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: Profile, endpoint, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Read, write, delete, etc.
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult is
+// OperationListResult ...
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
+	// Value - List of CDN operations supported by the CDN resource provider.
+	Value *[]Operation `json:"value,omitempty"`
 }
 
-// Origin is CDN origin is the source of the content being delivered via CDN. When the edge nodes represented by an
+// Origin CDN origin is the source of the content being delivered via CDN. When the edge nodes represented by an
 // endpoint do not have the requested content cached, they attempt to fetch it from one or more of the configured
 // origins.
 type Origin struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
 	Type              *string `json:"type,omitempty"`
 	*OriginProperties `json:"properties,omitempty"`
 }
 
-// OriginListResult is
-type OriginListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]Origin `json:"value,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Origin struct.
+func (o *Origin) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties OriginProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		o.OriginProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		o.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		o.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		o.Type = &typeVar
+	}
+
+	return nil
 }
 
-// OriginParameters is origin properties needed for origin creation or update.
+// OriginListResult ...
+type OriginListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of CDN origins within an endpoint
+	Value *[]Origin `json:"value,omitempty"`
+}
+
+// OriginParameters origin properties needed for origin creation or update.
 type OriginParameters struct {
 	*OriginPropertiesParameters `json:"properties,omitempty"`
 }
 
-// OriginProperties is
+// UnmarshalJSON is the custom unmarshaler for OriginParameters struct.
+func (op *OriginParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties OriginPropertiesParameters
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		op.OriginPropertiesParameters = &properties
+	}
+
+	return nil
+}
+
+// OriginProperties ...
 type OriginProperties struct {
-	HostName          *string             `json:"hostName,omitempty"`
-	HTTPPort          *int32              `json:"httpPort,omitempty"`
-	HTTPSPort         *int32              `json:"httpsPort,omitempty"`
-	ResourceState     OriginResourceState `json:"resourceState,omitempty"`
-	ProvisioningState ProvisioningState   `json:"provisioningState,omitempty"`
+	// HostName - The address of the origin. Domain names, IPv4 addresses, and IPv6 addresses are supported.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535.
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the https port. Must be between 1 and 65535.
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
+	// ResourceState - Resource status of the origin. Possible values include: 'OriginResourceStateCreating', 'OriginResourceStateActive', 'OriginResourceStateDeleting'
+	ResourceState OriginResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the origin. Possible values include: 'ProvisioningStateCreating', 'ProvisioningStateSucceeded', 'ProvisioningStateFailed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
 }
 
-// OriginPropertiesParameters is
+// OriginPropertiesParameters ...
 type OriginPropertiesParameters struct {
-	HostName  *string `json:"hostName,omitempty"`
-	HTTPPort  *int32  `json:"httpPort,omitempty"`
-	HTTPSPort *int32  `json:"httpsPort,omitempty"`
+	// HostName - The address of the origin. Domain names, IPv4 addresses, and IPv6 addresses are supported.
+	HostName *string `json:"hostName,omitempty"`
+	// HTTPPort - The value of the HTTP port. Must be between 1 and 65535.
+	HTTPPort *int32 `json:"httpPort,omitempty"`
+	// HTTPSPort - The value of the HTTPS port. Must be between 1 and 65535.
+	HTTPSPort *int32 `json:"httpsPort,omitempty"`
 }
 
-// Profile is CDN profile represents the top level resource and the entry point into the CDN API. This allows users to
-// set up a logical grouping of endpoints in addition to creating shared configuration settings and selecting pricing
-// tiers and providers.
+// OriginsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type OriginsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future OriginsCreateFuture) Result(client OriginsClient) (o Origin, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return o, autorest.NewError("cdn.OriginsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		o, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	o, err = client.CreateResponder(resp)
+	return
+}
+
+// OriginsDeleteIfExistsFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type OriginsDeleteIfExistsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future OriginsDeleteIfExistsFuture) Result(client OriginsClient) (o Origin, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return o, autorest.NewError("cdn.OriginsDeleteIfExistsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		o, err = client.DeleteIfExistsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	o, err = client.DeleteIfExistsResponder(resp)
+	return
+}
+
+// OriginsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type OriginsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future OriginsUpdateFuture) Result(client OriginsClient) (o Origin, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return o, autorest.NewError("cdn.OriginsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		o, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	o, err = client.UpdateResponder(resp)
+	return
+}
+
+// Profile CDN profile represents the top level resource and the entry point into the CDN API. This allows users to set
+// up a logical grouping of endpoints in addition to creating shared configuration settings and selecting pricing tiers
+// and providers.
 type Profile struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
-	Sku                *Sku                `json:"sku,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Sku - The SKU (pricing tier) of the CDN profile.
+	Sku                *Sku `json:"sku,omitempty"`
 	*ProfileProperties `json:"properties,omitempty"`
 }
 
-// ProfileCreateParameters is profile properties required for profile creation.
-type ProfileCreateParameters struct {
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	Sku      *Sku                `json:"sku,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Profile struct.
+func (p *Profile) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["sku"]
+	if v != nil {
+		var sku Sku
+		err = json.Unmarshal(*m["sku"], &sku)
+		if err != nil {
+			return err
+		}
+		p.Sku = &sku
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ProfileProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.ProfileProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		p.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		p.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	return nil
 }
 
-// ProfileListResult is
+// ProfileCreateParameters profile properties required for profile creation.
+type ProfileCreateParameters struct {
+	// Location - Profile location
+	Location *string `json:"location,omitempty"`
+	// Tags - Profile tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Sku - The SKU (pricing tier) of the CDN profile.
+	Sku *Sku `json:"sku,omitempty"`
+}
+
+// ProfileListResult ...
 type ProfileListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Profile `json:"value,omitempty"`
+	// Value - List of CDN profiles within a resource group.
+	Value *[]Profile `json:"value,omitempty"`
 }
 
-// ProfileProperties is
+// ProfileProperties ...
 type ProfileProperties struct {
-	ResourceState     ProfileResourceState `json:"resourceState,omitempty"`
-	ProvisioningState ProvisioningState    `json:"provisioningState,omitempty"`
+	// ResourceState - Resource status of the profile. Possible values include: 'ProfileResourceStateCreating', 'ProfileResourceStateActive', 'ProfileResourceStateDeleting', 'ProfileResourceStateDisabled'
+	ResourceState ProfileResourceState `json:"resourceState,omitempty"`
+	// ProvisioningState - Provisioning status of the profile. Possible values include: 'ProvisioningStateCreating', 'ProvisioningStateSucceeded', 'ProvisioningStateFailed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
 }
 
-// ProfileUpdateParameters is profile properties required for profile update.
+// ProfilesCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesCreateFuture) Result(client ProfilesClient) (p Profile, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return p, autorest.NewError("cdn.ProfilesCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		p, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	p, err = client.CreateResponder(resp)
+	return
+}
+
+// ProfilesDeleteIfExistsFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesDeleteIfExistsFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesDeleteIfExistsFuture) Result(client ProfilesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("cdn.ProfilesDeleteIfExistsFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteIfExistsResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteIfExistsResponder(resp)
+	return
+}
+
+// ProfilesUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesUpdateFuture) Result(client ProfilesClient) (p Profile, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return p, autorest.NewError("cdn.ProfilesUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		p, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	p, err = client.UpdateResponder(resp)
+	return
+}
+
+// ProfileUpdateParameters profile properties required for profile update.
 type ProfileUpdateParameters struct {
+	// Tags - Profile tags
 	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// PurgeParameters is parameters required for endpoint purge.
+// PurgeParameters parameters required for endpoint purge.
 type PurgeParameters struct {
+	// ContentPaths - The path to the content to be purged. Can describe a file path or a wild card directory.
 	ContentPaths *[]string `json:"contentPaths,omitempty"`
 }
 
-// Resource is
+// Resource ...
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type
 	Type *string `json:"type,omitempty"`
 }
 
-// Sku is the SKU (pricing tier) of the CDN profile.
+// Sku the SKU (pricing tier) of the CDN profile.
 type Sku struct {
+	// Name - Name of the pricing tier. Possible values include: 'StandardVerizon', 'PremiumVerizon', 'CustomVerizon', 'StandardAkamai'
 	Name SkuName `json:"name,omitempty"`
 }
 
-// SsoURI is SSO URI required to login to third party web portal.
+// SsoURI SSO URI required to login to third party web portal.
 type SsoURI struct {
 	autorest.Response `json:"-"`
-	SsoURIValue       *string `json:"ssoUriValue,omitempty"`
+	// SsoURIValue - The URI used to login to third party web portal.
+	SsoURIValue *string `json:"ssoUriValue,omitempty"`
 }
 
-// TrackedResource is ARM tracked resource
+// TrackedResource ARM tracked resource
 type TrackedResource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ValidateCustomDomainInput is input of the custom domain to be validated.
+// ValidateCustomDomainInput input of the custom domain to be validated.
 type ValidateCustomDomainInput struct {
+	// HostName - The host name of the custom domain. Must be a domain name.
 	HostName *string `json:"hostName,omitempty"`
 }
 
-// ValidateCustomDomainOutput is output of custom domain validation.
+// ValidateCustomDomainOutput output of custom domain validation.
 type ValidateCustomDomainOutput struct {
-	autorest.Response     `json:"-"`
-	CustomDomainValidated *bool   `json:"customDomainValidated,omitempty"`
-	Reason                *string `json:"reason,omitempty"`
-	Message               *string `json:"message,omitempty"`
+	autorest.Response `json:"-"`
+	// CustomDomainValidated - Indicates whether the custom domain is validated or not.
+	CustomDomainValidated *bool `json:"customDomainValidated,omitempty"`
+	// Reason - The reason why the custom domain is not valid.
+	Reason *string `json:"reason,omitempty"`
+	// Message - The message describing why the custom domain is not valid.
+	Message *string `json:"message,omitempty"`
 }

@@ -111,6 +111,7 @@ func New(client *http.Client) (*Service, error) {
 	s.SecurityPolicies = NewSecurityPoliciesService(s)
 	s.Snapshots = NewSnapshotsService(s)
 	s.SslCertificates = NewSslCertificatesService(s)
+	s.SslPolicies = NewSslPoliciesService(s)
 	s.Subnetworks = NewSubnetworksService(s)
 	s.TargetHttpProxies = NewTargetHttpProxiesService(s)
 	s.TargetHttpsProxies = NewTargetHttpsProxiesService(s)
@@ -210,6 +211,8 @@ type Service struct {
 	Snapshots *SnapshotsService
 
 	SslCertificates *SslCertificatesService
+
+	SslPolicies *SslPoliciesService
 
 	Subnetworks *SubnetworksService
 
@@ -603,6 +606,15 @@ type SslCertificatesService struct {
 	s *Service
 }
 
+func NewSslPoliciesService(s *Service) *SslPoliciesService {
+	rs := &SslPoliciesService{s: s}
+	return rs
+}
+
+type SslPoliciesService struct {
+	s *Service
+}
+
 func NewSubnetworksService(s *Service) *SubnetworksService {
 	rs := &SubnetworksService{s: s}
 	return rs
@@ -719,7 +731,8 @@ type AcceleratorConfig struct {
 	AcceleratorCount int64 `json:"acceleratorCount,omitempty"`
 
 	// AcceleratorType: Full or partial URL of the accelerator type resource
-	// to expose to this instance.
+	// to attach to this instance. If you are creating an instance template,
+	// specify only the accelerator name.
 	AcceleratorType string `json:"acceleratorType,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AcceleratorCount") to
@@ -746,7 +759,8 @@ func (s *AcceleratorConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AcceleratorType: An Accelerator Type resource.
+// AcceleratorType: An Accelerator Type resource. (== resource_for
+// beta.acceleratorTypes ==) (== resource_for v1.acceleratorTypes ==)
 type AcceleratorType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -1316,7 +1330,9 @@ func (s *AccessConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Address: A reserved address resource.
+// Address: A reserved address resource. (== resource_for beta.addresses
+// ==) (== resource_for v1.addresses ==) (== resource_for
+// beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
 type Address struct {
 	// Address: The static IP address represented by this resource.
 	Address string `json:"address,omitempty"`
@@ -1399,11 +1415,10 @@ type Address struct {
 	//   "RESERVED"
 	Status string `json:"status,omitempty"`
 
-	// Subnetwork: For external addresses, this field should not be
-	// used.
-	//
-	// The URL of the subnetwork in which to reserve the address. If an IP
-	// address is specified, it must be within the subnetwork's IP range.
+	// Subnetwork: The URL of the subnetwork in which to reserve the
+	// address. If an IP address is specified, it must be within the
+	// subnetwork's IP range. This field can only be used with INTERNAL type
+	// with GCE_ENDPOINT/DNS_RESOLVER purposes.
 	Subnetwork string `json:"subnetwork,omitempty"`
 
 	// Users: [Output Only] The URLs of the resources that are using this
@@ -1965,6 +1980,11 @@ type AttachedDisk struct {
 	// group.
 	DiskEncryptionKey *CustomerEncryptionKey `json:"diskEncryptionKey,omitempty"`
 
+	// GuestOsFeatures: A list of features to enable on the guest operating
+	// system. Applicable only for bootable images. Read  Enabling guest
+	// operating system features to see a list of available options.
+	GuestOsFeatures []*GuestOsFeature `json:"guestOsFeatures,omitempty"`
+
 	// Index: [Output Only] A zero-based index to this disk, where 0 is
 	// reserved for the boot disk. If you have many disks attached to an
 	// instance, each disk would have a unique index number.
@@ -2090,6 +2110,11 @@ type AttachedDiskInitializeParams struct {
 	// - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this
 	// is the name of the disk type, not URL.
 	DiskType string `json:"diskType,omitempty"`
+
+	// Labels: Labels to apply to this disk. These can be later modified by
+	// the disks.setLabels method. This field is only applicable for
+	// persistent disks.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// SourceImage: The source image to create this disk. When creating a
 	// new instance, one of initializeParams.sourceImage or disks.source is
@@ -2301,7 +2326,10 @@ func (s *AuthorizationLoggingOptions) MarshalJSON() ([]byte, error) {
 // Autoscaler: Represents an Autoscaler resource. Autoscalers allow you
 // to automatically scale virtual machine instances in managed instance
 // groups according to an autoscaling policy that you define. For more
-// information, read Autoscaling Groups of Instances.
+// information, read Autoscaling Groups of Instances. (== resource_for
+// beta.autoscalers ==) (== resource_for v1.autoscalers ==) (==
+// resource_for beta.regionAutoscalers ==) (== resource_for
+// v1.regionAutoscalers ==)
 type Autoscaler struct {
 	// AutoscalingPolicy: The configuration parameters for the autoscaling
 	// algorithm. You can define one or more of the policies for an
@@ -3303,6 +3331,9 @@ type BackendBucket struct {
 	// BucketName: Cloud Storage bucket name.
 	BucketName string `json:"bucketName,omitempty"`
 
+	// CdnPolicy: Cloud CDN Coniguration for this BackendBucket.
+	CdnPolicy *BackendBucketCdnPolicy `json:"cdnPolicy,omitempty"`
+
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
 	CreationTimestamp string `json:"creationTimestamp,omitempty"`
@@ -3356,6 +3387,48 @@ type BackendBucket struct {
 
 func (s *BackendBucket) MarshalJSON() ([]byte, error) {
 	type NoMethod BackendBucket
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BackendBucketCdnPolicy: Message containing Cloud CDN configuration
+// for a backend bucket.
+type BackendBucketCdnPolicy struct {
+	// SignedUrlCacheMaxAgeSec: Number of seconds up to which the response
+	// to a signed URL request will be cached in the CDN. After this time
+	// period, the Signed URL will be revalidated before being served.
+	// Defaults to 1hr (3600s). If this field is set, Cloud CDN will
+	// internally act as though all responses from this bucket had a
+	// ?Cache-Control: public, max-age=[TTL]? header, regardless of any
+	// existing Cache-Control header. The actual headers served in responses
+	// will not be altered.
+	SignedUrlCacheMaxAgeSec int64 `json:"signedUrlCacheMaxAgeSec,omitempty,string"`
+
+	// SignedUrlKeyNames: [Output Only] Names of the keys currently
+	// configured for Cloud CDN Signed URL on this backend bucket.
+	SignedUrlKeyNames []string `json:"signedUrlKeyNames,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "SignedUrlCacheMaxAgeSec") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SignedUrlCacheMaxAgeSec")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BackendBucketCdnPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod BackendBucketCdnPolicy
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -3516,7 +3589,9 @@ func (s *BackendBucketListWarningData) MarshalJSON() ([]byte, error) {
 }
 
 // BackendService: A BackendService resource. This resource defines a
-// group of backend virtual machines and their serving capacity.
+// group of backend virtual machines and their serving capacity. (==
+// resource_for v1.backendService ==) (== resource_for
+// beta.backendService ==)
 type BackendService struct {
 	// AffinityCookieTtlSec: Lifetime of cookies in seconds if
 	// session_affinity is GENERATED_COOKIE. If set to 0, the cookie is
@@ -3849,6 +3924,20 @@ func (s *BackendServiceAggregatedListWarningData) MarshalJSON() ([]byte, error) 
 type BackendServiceCdnPolicy struct {
 	// CacheKeyPolicy: The CacheKeyPolicy for this CdnPolicy.
 	CacheKeyPolicy *CacheKeyPolicy `json:"cacheKeyPolicy,omitempty"`
+
+	// SignedUrlCacheMaxAgeSec: Number of seconds up to which the response
+	// to a signed URL request will be cached in the CDN. After this time
+	// period, the Signed URL will be revalidated before being served.
+	// Defaults to 1hr (3600s). If this field is set, Cloud CDN will
+	// internally act as though all responses from this backend had a
+	// ?Cache-Control: public, max-age=[TTL]? header, regardless of any
+	// existing Cache-Control header. The actual headers served in responses
+	// will not be altered.
+	SignedUrlCacheMaxAgeSec int64 `json:"signedUrlCacheMaxAgeSec,omitempty,string"`
+
+	// SignedUrlKeyNames: [Output Only] Names of the keys currently
+	// configured for Cloud CDN Signed URL on this backend service.
+	SignedUrlKeyNames []string `json:"signedUrlKeyNames,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "CacheKeyPolicy") to
 	// unconditionally include in API requests. By default, fields with
@@ -4389,7 +4478,8 @@ func (s *CacheKeyPolicy) MarshalJSON() ([]byte, error) {
 // Committed use discounts are subject to Google Cloud Platform's
 // Service Specific Terms. By purchasing a committed use discount, you
 // agree to these terms. Committed use discounts will not renew, so you
-// must purchase a new commitment to continue receiving discounts.
+// must purchase a new commitment to continue receiving discounts. (==
+// resource_for beta.commitments ==) (== resource_for v1.commitments ==)
 type Commitment struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -5174,7 +5264,8 @@ func (s *DeprecationStatus) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Disk: A Disk resource.
+// Disk: A Disk resource. (== resource_for beta.disks ==) (==
+// resource_for v1.disks ==)
 type Disk struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -5199,6 +5290,11 @@ type Disk struct {
 	// the disk will be encrypted using an automatically generated key and
 	// you do not need to provide a key to use the disk later.
 	DiskEncryptionKey *CustomerEncryptionKey `json:"diskEncryptionKey,omitempty"`
+
+	// GuestOsFeatures: A list of features to enable on the guest operating
+	// system. Applicable only for bootable images. Read  Enabling guest
+	// operating system features to see a list of available options.
+	GuestOsFeatures []*GuestOsFeature `json:"guestOsFeatures,omitempty"`
 
 	// Id: [Output Only] The unique identifier for the resource. This
 	// identifier is defined by the server.
@@ -5538,6 +5634,59 @@ func (s *DiskAggregatedListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DiskInstantiationConfig: A specification of the desired way to
+// instantiate a disk in the instance template when its created from a
+// source instance.
+type DiskInstantiationConfig struct {
+	// AutoDelete: Specifies whether the disk will be auto-deleted when the
+	// instance is deleted (but not when the disk is detached from the
+	// instance).
+	AutoDelete bool `json:"autoDelete,omitempty"`
+
+	// CustomImage: The custom source image to be used to restore this disk
+	// when instantiating this instance template.
+	CustomImage string `json:"customImage,omitempty"`
+
+	// DeviceName: Specifies the device name of the disk to which the
+	// configurations apply to.
+	DeviceName string `json:"deviceName,omitempty"`
+
+	// InstantiateFrom: Specifies whether to include the disk and what image
+	// to use.
+	//
+	// Possible values:
+	//   "ATTACH_READ_ONLY"
+	//   "BLANK"
+	//   "CUSTOM_IMAGE"
+	//   "DEFAULT"
+	//   "DO_NOT_INCLUDE"
+	//   "SOURCE_IMAGE"
+	//   "SOURCE_IMAGE_FAMILY"
+	InstantiateFrom string `json:"instantiateFrom,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AutoDelete") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AutoDelete") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DiskInstantiationConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod DiskInstantiationConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DiskList: A list of Disk resources.
 type DiskList struct {
 	// Id: [Output Only] Unique identifier for the resource; defined by the
@@ -5736,7 +5885,8 @@ func (s *DiskMoveRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// DiskType: A DiskType resource.
+// DiskType: A DiskType resource. (== resource_for beta.diskTypes ==)
+// (== resource_for v1.diskTypes ==)
 type DiskType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -6947,7 +7097,12 @@ func (s *FixedOrPercent) MarshalJSON() ([]byte, error) {
 
 // ForwardingRule: A ForwardingRule resource. A ForwardingRule resource
 // specifies which pool of target virtual machines to forward a packet
-// to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+// to if it matches the given [IPAddress, IPProtocol, ports] tuple. (==
+// resource_for beta.forwardingRules ==) (== resource_for
+// v1.forwardingRules ==) (== resource_for beta.globalForwardingRules
+// ==) (== resource_for v1.globalForwardingRules ==) (== resource_for
+// beta.regionForwardingRules ==) (== resource_for
+// v1.regionForwardingRules ==)
 type ForwardingRule struct {
 	// IPAddress: The IP address that this forwarding rule is serving on
 	// behalf of.
@@ -7671,10 +7826,8 @@ func (s *GlobalSetLabelsRequest) MarshalJSON() ([]byte, error) {
 
 // GuestOsFeature: Guest OS features.
 type GuestOsFeature struct {
-	// Type: The type of supported feature. Currently only
-	// VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the
-	// server might also populate this property with the value WINDOWS to
-	// indicate that this is a Windows image.
+	// Type: The ID of a supported feature. Read  Enabling guest operating
+	// system features to see a list of available options.
 	//
 	// Possible values:
 	//   "FEATURE_TYPE_UNSPECIFIED"
@@ -8676,7 +8829,8 @@ func (s *HttpsHealthCheckListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Image: An Image resource.
+// Image: An Image resource. (== resource_for beta.images ==) (==
+// resource_for v1.images ==)
 type Image struct {
 	// ArchiveSizeBytes: Size of the image tar.gz archive stored in Google
 	// Cloud Storage (in bytes).
@@ -8704,17 +8858,9 @@ type Image struct {
 	// RFC1035.
 	Family string `json:"family,omitempty"`
 
-	// GuestOsFeatures: A list of features to enable on the guest OS.
-	// Applicable for bootable images only. Currently, only one feature can
-	// be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to
-	// have its own queue. For Windows images, you can only enable
-	// VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or
-	// higher. Linux images with kernel versions 3.17 and higher will
-	// support VIRTIO_SCSI_MULTIQUEUE.
-	//
-	// For newer Windows images, the server might also populate this
-	// property with the value WINDOWS to indicate that this is a Windows
-	// image.
+	// GuestOsFeatures: A list of features to enable on the guest operating
+	// system. Applicable only for bootable images. Read  Enabling guest
+	// operating system features to see a list of available options.
 	GuestOsFeatures []*GuestOsFeature `json:"guestOsFeatures,omitempty"`
 
 	// Id: [Output Only] The unique identifier for the resource. This
@@ -8814,6 +8960,26 @@ type Image struct {
 	// this image. This value may be used to determine whether the image was
 	// taken from the current or a previous instance of a given image name.
 	SourceImageId string `json:"sourceImageId,omitempty"`
+
+	// SourceSnapshot: URL of the source snapshot used to create this image.
+	// This can be a full or valid partial URL. You must provide exactly one
+	// of:
+	// - this property, or
+	// - the sourceImage property, or
+	// - the rawDisk.source property, or
+	// - the sourceDisk property   in order to create an image.
+	SourceSnapshot string `json:"sourceSnapshot,omitempty"`
+
+	// SourceSnapshotEncryptionKey: The customer-supplied encryption key of
+	// the source snapshot. Required if the source snapshot is protected by
+	// a customer-supplied encryption key.
+	SourceSnapshotEncryptionKey *CustomerEncryptionKey `json:"sourceSnapshotEncryptionKey,omitempty"`
+
+	// SourceSnapshotId: [Output Only] The ID value of the snapshot used to
+	// create this image. This value may be used to determine whether the
+	// snapshot was taken from the current or a previous instance of a given
+	// snapshot name.
+	SourceSnapshotId string `json:"sourceSnapshotId,omitempty"`
 
 	// SourceType: The type of the image used to create this disk. The
 	// default and only value is RAW
@@ -9058,7 +9224,8 @@ func (s *ImageListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Instance: An Instance resource.
+// Instance: An Instance resource. (== resource_for beta.instances ==)
+// (== resource_for v1.instances ==)
 type Instance struct {
 	// CanIpForward: Allows this instance to send and receive packets with
 	// non-matching destination or source IPs. This is required if you plan
@@ -9392,6 +9559,10 @@ func (s *InstanceAggregatedListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// InstanceGroup: InstanceGroups (== resource_for beta.instanceGroups
+// ==) (== resource_for v1.instanceGroups ==) (== resource_for
+// beta.regionInstanceGroups ==) (== resource_for
+// v1.regionInstanceGroups ==)
 type InstanceGroup struct {
 	// CreationTimestamp: [Output Only] The creation timestamp for this
 	// instance group in RFC3339 text format.
@@ -9793,7 +9964,11 @@ func (s *InstanceGroupListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// InstanceGroupManager: An Instance Group Manager resource.
+// InstanceGroupManager: An Instance Group Manager resource. (==
+// resource_for beta.instanceGroupManagers ==) (== resource_for
+// v1.instanceGroupManagers ==) (== resource_for
+// beta.regionInstanceGroupManagers ==) (== resource_for
+// v1.regionInstanceGroupManagers ==)
 type InstanceGroupManager struct {
 	// AutoHealingPolicies: The autohealing policy for this managed instance
 	// group. You can specify only one value.
@@ -10423,7 +10598,7 @@ type InstanceGroupManagerUpdatePolicy struct {
 	//
 	//
 	// - The instance's status is RUNNING.
-	// - If there is a health check on the instance grourp, the instance's
+	// - If there is a health check on the instance group, the instance's
 	// liveness health check result must be HEALTHY at least once. If there
 	// is no health check on the group, then the instance only needs to have
 	// a status of RUNNING to be considered available.  By default, a fixed
@@ -11823,7 +11998,8 @@ func (s *InstanceReference) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// InstanceTemplate: An Instance Template resource.
+// InstanceTemplate: An Instance Template resource. (== resource_for
+// beta.instanceTemplates ==) (== resource_for v1.instanceTemplates ==)
 type InstanceTemplate struct {
 	// CreationTimestamp: [Output Only] The creation timestamp for this
 	// instance template in RFC3339 text format.
@@ -11856,6 +12032,18 @@ type InstanceTemplate struct {
 	// SelfLink: [Output Only] The URL for this instance template. The
 	// server defines this URL.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// SourceInstance: The source instance used to create the template. You
+	// can provide this as a partial or full URL to the resource. For
+	// example, the following are valid values:
+	// -
+	// https://www.googleapis.com/compute/v1/projects/project/zones/zone/instances/instance
+	// - projects/project/zones/zone/instances/instance
+	SourceInstance string `json:"sourceInstance,omitempty"`
+
+	// SourceInstanceParams: The source instance params to use to create
+	// this instance template.
+	SourceInstanceParams *SourceInstanceParams `json:"sourceInstanceParams,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -12405,7 +12593,8 @@ func (s *InstancesStartWithEncryptionKeyRequest) MarshalJSON() ([]byte, error) {
 // Interconnect: Represents an Interconnects resource. The Interconnects
 // resource is a dedicated connection between Google's network and your
 // on-premises network. For more information, see the  Dedicated
-// overview page.
+// overview page. (== resource_for v1.interconnects ==) (== resource_for
+// beta.interconnects ==)
 type Interconnect struct {
 	// AdminEnabled: Administrative status of the interconnect. When this is
 	// set to true, the Interconnect is functional and can carry traffic.
@@ -12462,6 +12651,22 @@ type Interconnect struct {
 	// Kind: [Output Only] Type of the resource. Always compute#interconnect
 	// for interconnects.
 	Kind string `json:"kind,omitempty"`
+
+	// LabelFingerprint: A fingerprint for the labels being applied to this
+	// Interconnect, which is essentially a hash of the labels set used for
+	// optimistic locking. The fingerprint is initially generated by Compute
+	// Engine and changes after every request to modify or update labels.
+	// You must always provide an up-to-date fingerprint hash in order to
+	// update or change labels.
+	//
+	// To see the latest fingerprint, make a get() request to retrieve an
+	// Interconnect.
+	LabelFingerprint string `json:"labelFingerprint,omitempty"`
+
+	// Labels: Labels to apply to this Interconnect resource. These can be
+	// later modified by the setLabels method. Each label key/value must
+	// comply with RFC1035. Label values may be empty.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// LinkType: Type of link requested. This field indicates speed of each
 	// of the links in the bundle, not the entire bundle. Only 10G per link
@@ -12545,7 +12750,8 @@ func (s *Interconnect) MarshalJSON() ([]byte, error) {
 
 // InterconnectAttachment: Represents an InterconnectAttachment (VLAN
 // attachment) resource. For more information, see  Creating VLAN
-// Attachments.
+// Attachments. (== resource_for beta.interconnectAttachments ==) (==
+// resource_for v1.interconnectAttachments ==)
 type InterconnectAttachment struct {
 	// CloudRouterIpAddress: [Output Only] IPv4 address + prefix length to
 	// be configured on Cloud Router Interface for this interconnect
@@ -12580,6 +12786,22 @@ type InterconnectAttachment struct {
 	// Kind: [Output Only] Type of the resource. Always
 	// compute#interconnectAttachment for interconnect attachments.
 	Kind string `json:"kind,omitempty"`
+
+	// LabelFingerprint: A fingerprint for the labels being applied to this
+	// InterconnectAttachment, which is essentially a hash of the labels set
+	// used for optimistic locking. The fingerprint is initially generated
+	// by Compute Engine and changes after every request to modify or update
+	// labels. You must always provide an up-to-date fingerprint hash in
+	// order to update or change labels.
+	//
+	// To see the latest fingerprint, make a get() request to retrieve an
+	// InterconnectAttachment.
+	LabelFingerprint string `json:"labelFingerprint,omitempty"`
+
+	// Labels: Labels to apply to this InterconnectAttachment resource.
+	// These can be later modified by the setLabels method. Each label
+	// key/value must comply with RFC1035. Label values may be empty.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Name: Name of the resource. Provided by the client when the resource
 	// is created. The name must be 1-63 characters long, and comply with
@@ -14207,7 +14429,8 @@ func (s *LogConfigDataAccessOptions) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// MachineType: A Machine Type resource.
+// MachineType: A Machine Type resource. (== resource_for
+// v1.machineTypes ==) (== resource_for beta.machineTypes ==)
 type MachineType struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -15058,7 +15281,8 @@ func (s *NamedPort) MarshalJSON() ([]byte, error) {
 }
 
 // Network: Represents a Network resource. Read Networks and Firewalls
-// for more information.
+// for more information. (== resource_for v1.networks ==) (==
+// resource_for beta.networks ==)
 type Network struct {
 	// IPv4Range: The range of internal addresses that are legal on this
 	// network. This range is a CIDR specification, for example:
@@ -15554,7 +15778,10 @@ func (s *NetworksRemovePeeringRequest) MarshalJSON() ([]byte, error) {
 }
 
 // Operation: An Operation resource, used to manage asynchronous API
-// requests.
+// requests. (== resource_for v1.globalOperations ==) (== resource_for
+// beta.globalOperations ==) (== resource_for v1.regionOperations ==)
+// (== resource_for beta.regionOperations ==) (== resource_for
+// v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
 type Operation struct {
 	// ClientOperationId: [Output Only] Reserved for future use.
 	ClientOperationId string `json:"clientOperationId,omitempty"`
@@ -16460,9 +16687,9 @@ func (s *Policy) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Project: A Project resource. Projects can only be created in the
-// Google Cloud Platform Console. Unless marked otherwise, values can
-// only be modified in the console.
+// Project: A Project resource. For an overview of projects, see  Cloud
+// Platform Resource Hierarchy. (== resource_for v1.projects ==) (==
+// resource_for beta.projects ==)
 type Project struct {
 	// CommonInstanceMetadata: Metadata key/value pairs available to all
 	// instances contained in this project. See Custom metadata for more
@@ -16809,7 +17036,8 @@ func (s *Reference) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Region: Region resource.
+// Region: Region resource. (== resource_for beta.regions ==) (==
+// resource_for v1.regions ==)
 type Region struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -18067,7 +18295,8 @@ func (s *ResourceGroupReference) MarshalJSON() ([]byte, error) {
 // Compute Engine-operated gateway.
 //
 // Packets that do not match any route in the sending instance's routing
-// table are dropped.
+// table are dropped. (== resource_for beta.routes ==) (== resource_for
+// v1.routes ==)
 type Route struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -18507,6 +18736,39 @@ func (s *Router) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// RouterAdvertisedIpRange: Description-tagged IP ranges for the router
+// to advertise.
+type RouterAdvertisedIpRange struct {
+	// Description: User-specified description for the IP range.
+	Description string `json:"description,omitempty"`
+
+	// Range: The IP range to advertise. The value must be a CIDR-formatted
+	// string.
+	Range string `json:"range,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Description") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Description") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RouterAdvertisedIpRange) MarshalJSON() ([]byte, error) {
+	type NoMethod RouterAdvertisedIpRange
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // RouterAggregatedList: Contains a list of routers.
 type RouterAggregatedList struct {
 	// Id: [Output Only] Unique identifier for the resource; defined by the
@@ -18663,13 +18925,39 @@ func (s *RouterAggregatedListWarningData) MarshalJSON() ([]byte, error) {
 }
 
 type RouterBgp struct {
+	// AdvertiseMode: User-specified flag to indicate which mode to use for
+	// advertisement.
+	//
+	// Possible values:
+	//   "CUSTOM"
+	//   "DEFAULT"
+	AdvertiseMode string `json:"advertiseMode,omitempty"`
+
+	// AdvertisedGroups: User-specified list of prefix groups to advertise
+	// in custom mode. This field can only be populated if advertise_mode is
+	// CUSTOM and is advertised to all peers of the router. These groups
+	// will be advertised in addition to any specified prefixes. Leave this
+	// field blank to advertise no custom groups.
+	//
+	// Possible values:
+	//   "ALL_SUBNETS"
+	AdvertisedGroups []string `json:"advertisedGroups,omitempty"`
+
+	// AdvertisedIpRanges: User-specified list of individual IP ranges to
+	// advertise in custom mode. This field can only be populated if
+	// advertise_mode is CUSTOM and is advertised to all peers of the
+	// router. These IP ranges will be advertised in addition to any
+	// specified groups. Leave this field blank to advertise no custom IP
+	// ranges.
+	AdvertisedIpRanges []*RouterAdvertisedIpRange `json:"advertisedIpRanges,omitempty"`
+
 	// Asn: Local BGP Autonomous System Number (ASN). Must be an RFC6996
 	// private ASN, either 16-bit or 32-bit. The value will be fixed for
 	// this router resource. All VPN tunnels that link to this router will
 	// have the same local ASN.
 	Asn int64 `json:"asn,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Asn") to
+	// ForceSendFields is a list of field names (e.g. "AdvertiseMode") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -18677,10 +18965,10 @@ type RouterBgp struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Asn") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "AdvertiseMode") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
@@ -18693,6 +18981,33 @@ func (s *RouterBgp) MarshalJSON() ([]byte, error) {
 }
 
 type RouterBgpPeer struct {
+	// AdvertiseMode: User-specified flag to indicate which mode to use for
+	// advertisement.
+	//
+	// Possible values:
+	//   "CUSTOM"
+	//   "DEFAULT"
+	AdvertiseMode string `json:"advertiseMode,omitempty"`
+
+	// AdvertisedGroups: User-specified list of prefix groups to advertise
+	// in custom mode. This field can only be populated if advertise_mode is
+	// CUSTOM and overrides the list defined for the router (in Bgp
+	// message). These groups will be advertised in addition to any
+	// specified prefixes. Leave this field blank to advertise no custom
+	// groups.
+	//
+	// Possible values:
+	//   "ALL_SUBNETS"
+	AdvertisedGroups []string `json:"advertisedGroups,omitempty"`
+
+	// AdvertisedIpRanges: User-specified list of individual IP ranges to
+	// advertise in custom mode. This field can only be populated if
+	// advertise_mode is CUSTOM and overrides the list defined for the
+	// router (in Bgp message). These IP ranges will be advertised in
+	// addition to any specified groups. Leave this field blank to advertise
+	// no custom IP ranges.
+	AdvertisedIpRanges []*RouterAdvertisedIpRange `json:"advertisedIpRanges,omitempty"`
+
 	// AdvertisedRoutePriority: The priority of routes advertised to this
 	// BGP peer. In the case where there is more than one matching route of
 	// maximum length, the routes with lowest priority value win.
@@ -18717,22 +19032,20 @@ type RouterBgpPeer struct {
 	// Only IPv4 is supported.
 	PeerIpAddress string `json:"peerIpAddress,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g.
-	// "AdvertisedRoutePriority") to unconditionally include in API
-	// requests. By default, fields with empty values are omitted from API
-	// requests. However, any non-pointer, non-interface field appearing in
-	// ForceSendFields will be sent to the server regardless of whether the
-	// field is empty or not. This may be used to include empty fields in
-	// Patch requests.
+	// ForceSendFields is a list of field names (e.g. "AdvertiseMode") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "AdvertisedRoutePriority")
-	// to include in API requests with the JSON null value. By default,
-	// fields with empty values are omitted from API requests. However, any
-	// field with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "AdvertiseMode") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -19686,6 +19999,10 @@ type SecurityPolicyRule struct {
 	// are evaluated in the increasing order of priority.
 	Priority int64 `json:"priority,omitempty"`
 
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
 	// ForceSendFields is a list of field names (e.g. "Action") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -19712,6 +20029,48 @@ func (s *SecurityPolicyRule) MarshalJSON() ([]byte, error) {
 // SecurityPolicyRuleMatcher: Represents a match condition that incoming
 // traffic is evaluated against. Exactly one field must be specified.
 type SecurityPolicyRuleMatcher struct {
+	// Config: The configuration options available when specifying
+	// versioned_expr. This field must be specified if versioned_expr is
+	// specified and cannot be specified if versioned_expr is not specified.
+	Config *SecurityPolicyRuleMatcherConfig `json:"config,omitempty"`
+
+	// SrcIpRanges: CIDR IP address range. Only IPv4 is supported.
+	SrcIpRanges []string `json:"srcIpRanges,omitempty"`
+
+	// VersionedExpr: Preconfigured versioned expression. If this field is
+	// specified, config must also be specified. Available preconfigured
+	// expressions along with their requirements are: SRC_IPS_V1 - must
+	// specify the corresponding src_ip_range field in config.
+	//
+	// Possible values:
+	//   "SRC_IPS_V1"
+	//   "VERSIONED_EXPR_UNSPECIFIED"
+	VersionedExpr string `json:"versionedExpr,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Config") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Config") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SecurityPolicyRuleMatcher) MarshalJSON() ([]byte, error) {
+	type NoMethod SecurityPolicyRuleMatcher
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SecurityPolicyRuleMatcherConfig struct {
 	// SrcIpRanges: CIDR IP address range. Only IPv4 is supported.
 	SrcIpRanges []string `json:"srcIpRanges,omitempty"`
 
@@ -19732,8 +20091,8 @@ type SecurityPolicyRuleMatcher struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *SecurityPolicyRuleMatcher) MarshalJSON() ([]byte, error) {
-	type NoMethod SecurityPolicyRuleMatcher
+func (s *SecurityPolicyRuleMatcherConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod SecurityPolicyRuleMatcherConfig
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -19821,7 +20180,46 @@ func (s *ServiceAccount) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Snapshot: A persistent disk snapshot resource.
+// SignedUrlKey: Represents a customer-supplied Signing Key used by
+// Cloud CDN Signed URLs
+type SignedUrlKey struct {
+	// KeyName: Name of the key. The name must be 1-63 characters long, and
+	// comply with RFC1035. Specifically, the name must be 1-63 characters
+	// long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])?
+	// which means the first character must be a lowercase letter, and all
+	// following characters must be a dash, lowercase letter, or digit,
+	// except the last character, which cannot be a dash.
+	KeyName string `json:"keyName,omitempty"`
+
+	// KeyValue: 128-bit key value used for signing the URL. The key value
+	// must be a valid RFC 4648 Section 5 base64url encoded string.
+	KeyValue string `json:"keyValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "KeyName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "KeyName") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SignedUrlKey) MarshalJSON() ([]byte, error) {
+	type NoMethod SignedUrlKey
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Snapshot: A persistent disk snapshot resource. (== resource_for
+// beta.snapshots ==) (== resource_for v1.snapshots ==)
 type Snapshot struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -20118,9 +20516,43 @@ func (s *SnapshotListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SourceInstanceParams: A specification of the parameters to use when
+// creating the instance template from a source instance.
+type SourceInstanceParams struct {
+	// DiskConfigs: Attached disks configuration. If not provided, defaults
+	// are applied: For boot disk and any other R/W disks, new custom images
+	// will be created from each disk. For read-only disks, they will be
+	// attached in read-only mode. Local SSD disks will be created as blank
+	// volumes.
+	DiskConfigs []*DiskInstantiationConfig `json:"diskConfigs,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DiskConfigs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DiskConfigs") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SourceInstanceParams) MarshalJSON() ([]byte, error) {
+	type NoMethod SourceInstanceParams
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // SslCertificate: An SslCertificate resource. This resource provides a
 // mechanism to upload an SSL key and certificate to the load balancer
-// to serve secure connections from the user.
+// to serve secure connections from the user. (== resource_for
+// beta.sslCertificates ==) (== resource_for v1.sslCertificates ==)
 type SslCertificate struct {
 	// Certificate: A local certificate file. The certificate must be in PEM
 	// format. The certificate chain must be no greater than 5 certs long.
@@ -20341,7 +20773,428 @@ func (s *SslCertificateListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Subnetwork: A Subnetwork resource.
+type SslPoliciesList struct {
+	// Id: [Output Only] Unique identifier for the resource; defined by the
+	// server.
+	Id string `json:"id,omitempty"`
+
+	// Items: A list of SslPolicy resources.
+	Items []*SslPolicy `json:"items,omitempty"`
+
+	// Kind: [Output Only] Type of the resource. Always
+	// compute#sslPoliciesList for lists of sslPolicies.
+	Kind string `json:"kind,omitempty"`
+
+	// NextPageToken: [Output Only] This token allows you to get the next
+	// page of results for list requests. If the number of results is larger
+	// than maxResults, use the nextPageToken as a value for the query
+	// parameter pageToken in the next list request. Subsequent list
+	// requests will have their own nextPageToken to continue paging through
+	// the results.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// SelfLink: [Output Only] Server-defined URL for this resource.
+	SelfLink string `json:"selfLink,omitempty"`
+
+	// Warning: [Output Only] Informational warning message.
+	Warning *SslPoliciesListWarning `json:"warning,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Id") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Id") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPoliciesList) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPoliciesList
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SslPoliciesListWarning: [Output Only] Informational warning message.
+type SslPoliciesListWarning struct {
+	// Code: [Output Only] A warning code, if applicable. For example,
+	// Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in
+	// the response.
+	//
+	// Possible values:
+	//   "CLEANUP_FAILED"
+	//   "DEPRECATED_RESOURCE_USED"
+	//   "DEPRECATED_TYPE_USED"
+	//   "DISK_SIZE_LARGER_THAN_IMAGE_SIZE"
+	//   "EXPERIMENTAL_TYPE_USED"
+	//   "EXTERNAL_API_WARNING"
+	//   "FIELD_VALUE_OVERRIDEN"
+	//   "INJECTED_KERNELS_DEPRECATED"
+	//   "MISSING_TYPE_DEPENDENCY"
+	//   "NEXT_HOP_ADDRESS_NOT_ASSIGNED"
+	//   "NEXT_HOP_CANNOT_IP_FORWARD"
+	//   "NEXT_HOP_INSTANCE_NOT_FOUND"
+	//   "NEXT_HOP_INSTANCE_NOT_ON_NETWORK"
+	//   "NEXT_HOP_NOT_RUNNING"
+	//   "NOT_CRITICAL_ERROR"
+	//   "NO_RESULTS_ON_PAGE"
+	//   "REQUIRED_TOS_AGREEMENT"
+	//   "RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING"
+	//   "RESOURCE_NOT_DELETED"
+	//   "SCHEMA_VALIDATION_IGNORED"
+	//   "SINGLE_INSTANCE_PROPERTY_TEMPLATE"
+	//   "UNDECLARED_PROPERTIES"
+	//   "UNREACHABLE"
+	Code string `json:"code,omitempty"`
+
+	// Data: [Output Only] Metadata about this warning in key: value format.
+	// For example:
+	// "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+	Data []*SslPoliciesListWarningData `json:"data,omitempty"`
+
+	// Message: [Output Only] A human-readable description of the warning
+	// code.
+	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Code") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPoliciesListWarning) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPoliciesListWarning
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SslPoliciesListWarningData struct {
+	// Key: [Output Only] A key that provides more detail on the warning
+	// being returned. For example, for warnings where there are no results
+	// in a list request for a particular zone, this key might be scope and
+	// the key value might be the zone name. Other examples might be a key
+	// indicating a deprecated resource and a suggested replacement, or a
+	// warning about invalid network settings (for example, if an instance
+	// attempts to perform IP forwarding but is not enabled for IP
+	// forwarding).
+	Key string `json:"key,omitempty"`
+
+	// Value: [Output Only] A warning data value corresponding to the key.
+	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Key") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPoliciesListWarningData) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPoliciesListWarningData
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SslPoliciesListAvailableFeaturesResponse struct {
+	Features []string `json:"features,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Features") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Features") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPoliciesListAvailableFeaturesResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPoliciesListAvailableFeaturesResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SslPolicy: A SSL policy specifies the server-side support for SSL
+// features. This can be attached to a TargetHttpsProxy or a
+// TargetSslProxy. This affects connections between clients and the
+// HTTPS or SSL proxy load balancer. They do not affect the connection
+// between the load balancers and the backends.
+type SslPolicy struct {
+	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
+	// format.
+	CreationTimestamp string `json:"creationTimestamp,omitempty"`
+
+	// CustomFeatures: List of features enabled when the selected profile is
+	// CUSTOM. The
+	// - method returns the set of features that can be specified in this
+	// list. This field must be empty if the profile is not CUSTOM.
+	CustomFeatures []string `json:"customFeatures,omitempty"`
+
+	// Description: An optional description of this resource. Provide this
+	// property when you create the resource.
+	Description string `json:"description,omitempty"`
+
+	// EnabledFeatures: [Output Only] The list of features enabled in the
+	// SSL policy.
+	EnabledFeatures []string `json:"enabledFeatures,omitempty"`
+
+	// Fingerprint: Fingerprint of this resource. A hash of the contents
+	// stored in this object. This field is used in optimistic locking. This
+	// field will be ignored when inserting a SslPolicy. An up-to-date
+	// fingerprint must be provided in order to update the SslPolicy.
+	Fingerprint string `json:"fingerprint,omitempty"`
+
+	// Id: [Output Only] The unique identifier for the resource. This
+	// identifier is defined by the server.
+	Id uint64 `json:"id,omitempty,string"`
+
+	// Kind: [Output only] Type of the resource. Always compute#sslPolicyfor
+	// SSL policies.
+	Kind string `json:"kind,omitempty"`
+
+	// MinTlsVersion: The minimum version of SSL protocol that can be used
+	// by the clients to establish a connection with the load balancer. This
+	// can be one of TLS_1_0, TLS_1_1, TLS_1_2, TLS_1_3.
+	//
+	// Possible values:
+	//   "TLS_1_0"
+	//   "TLS_1_1"
+	//   "TLS_1_2"
+	//   "TLS_1_3"
+	MinTlsVersion string `json:"minTlsVersion,omitempty"`
+
+	// Name: Name of the resource. The name must be 1-63 characters long,
+	// and comply with RFC1035. Specifically, the name must be 1-63
+	// characters long and match the regular expression
+	// [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a
+	// lowercase letter, and all following characters must be a dash,
+	// lowercase letter, or digit, except the last character, which cannot
+	// be a dash.
+	Name string `json:"name,omitempty"`
+
+	// Profile: Profile specifies the set of SSL features that can be used
+	// by the load balancer when negotiating SSL with clients. This can be
+	// one of COMPATIBLE, MODERN, RESTRICTED, or CUSTOM. If using CUSTOM,
+	// the set of SSL features to enable must be specified in the
+	// customFeatures field.
+	//
+	// Possible values:
+	//   "COMPATIBLE"
+	//   "CUSTOM"
+	//   "MODERN"
+	//   "RESTRICTED"
+	Profile string `json:"profile,omitempty"`
+
+	// SelfLink: [Output Only] Server-defined URL for the resource.
+	SelfLink string `json:"selfLink,omitempty"`
+
+	// Warnings: [Output Only] If potential misconfigurations are detected
+	// for this SSL policy, this field will be populated with warning
+	// messages.
+	Warnings []*SslPolicyWarnings `json:"warnings,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "CreationTimestamp")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CreationTimestamp") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPolicy
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SslPolicyWarnings struct {
+	// Code: [Output Only] A warning code, if applicable. For example,
+	// Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in
+	// the response.
+	//
+	// Possible values:
+	//   "CLEANUP_FAILED"
+	//   "DEPRECATED_RESOURCE_USED"
+	//   "DEPRECATED_TYPE_USED"
+	//   "DISK_SIZE_LARGER_THAN_IMAGE_SIZE"
+	//   "EXPERIMENTAL_TYPE_USED"
+	//   "EXTERNAL_API_WARNING"
+	//   "FIELD_VALUE_OVERRIDEN"
+	//   "INJECTED_KERNELS_DEPRECATED"
+	//   "MISSING_TYPE_DEPENDENCY"
+	//   "NEXT_HOP_ADDRESS_NOT_ASSIGNED"
+	//   "NEXT_HOP_CANNOT_IP_FORWARD"
+	//   "NEXT_HOP_INSTANCE_NOT_FOUND"
+	//   "NEXT_HOP_INSTANCE_NOT_ON_NETWORK"
+	//   "NEXT_HOP_NOT_RUNNING"
+	//   "NOT_CRITICAL_ERROR"
+	//   "NO_RESULTS_ON_PAGE"
+	//   "REQUIRED_TOS_AGREEMENT"
+	//   "RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING"
+	//   "RESOURCE_NOT_DELETED"
+	//   "SCHEMA_VALIDATION_IGNORED"
+	//   "SINGLE_INSTANCE_PROPERTY_TEMPLATE"
+	//   "UNDECLARED_PROPERTIES"
+	//   "UNREACHABLE"
+	Code string `json:"code,omitempty"`
+
+	// Data: [Output Only] Metadata about this warning in key: value format.
+	// For example:
+	// "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+	Data []*SslPolicyWarningsData `json:"data,omitempty"`
+
+	// Message: [Output Only] A human-readable description of the warning
+	// code.
+	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Code") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPolicyWarnings) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPolicyWarnings
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SslPolicyWarningsData struct {
+	// Key: [Output Only] A key that provides more detail on the warning
+	// being returned. For example, for warnings where there are no results
+	// in a list request for a particular zone, this key might be scope and
+	// the key value might be the zone name. Other examples might be a key
+	// indicating a deprecated resource and a suggested replacement, or a
+	// warning about invalid network settings (for example, if an instance
+	// attempts to perform IP forwarding but is not enabled for IP
+	// forwarding).
+	Key string `json:"key,omitempty"`
+
+	// Value: [Output Only] A warning data value corresponding to the key.
+	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Key") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPolicyWarningsData) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPolicyWarningsData
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type SslPolicyReference struct {
+	// SslPolicy: URL of the SSL policy resource. Set this to empty string
+	// to clear any existing SSL policy associated with the target proxy
+	// resource.
+	SslPolicy string `json:"sslPolicy,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "SslPolicy") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SslPolicy") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SslPolicyReference) MarshalJSON() ([]byte, error) {
+	type NoMethod SslPolicyReference
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Subnetwork: A Subnetwork resource. (== resource_for beta.subnetworks
+// ==) (== resource_for v1.subnetworks ==)
 type Subnetwork struct {
 	// AllowSubnetCidrRoutesOverlap: Whether this subnetwork can conflict
 	// with static routes. Setting this to true allows this subnetwork's
@@ -21091,7 +21944,8 @@ func (s *Tags) MarshalJSON() ([]byte, error) {
 }
 
 // TargetHttpProxy: A TargetHttpProxy resource. This resource defines an
-// HTTP proxy.
+// HTTP proxy. (== resource_for beta.targetHttpProxies ==) (==
+// resource_for v1.targetHttpProxies ==)
 type TargetHttpProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -21309,6 +22163,38 @@ func (s *TargetHttpProxyListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type TargetHttpsProxiesSetQuicOverrideRequest struct {
+	// QuicOverride: QUIC policy for the TargetHttpsProxy resource.
+	//
+	// Possible values:
+	//   "DISABLE"
+	//   "ENABLE"
+	//   "NONE"
+	QuicOverride string `json:"quicOverride,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "QuicOverride") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "QuicOverride") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TargetHttpsProxiesSetQuicOverrideRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod TargetHttpsProxiesSetQuicOverrideRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 type TargetHttpsProxiesSetSslCertificatesRequest struct {
 	// SslCertificates: New set of SslCertificate resources to associate
 	// with this TargetHttpsProxy resource. Currently exactly one
@@ -21340,7 +22226,8 @@ func (s *TargetHttpsProxiesSetSslCertificatesRequest) MarshalJSON() ([]byte, err
 }
 
 // TargetHttpsProxy: A TargetHttpsProxy resource. This resource defines
-// an HTTPS proxy.
+// an HTTPS proxy. (== resource_for beta.targetHttpsProxies ==) (==
+// resource_for v1.targetHttpsProxies ==)
 type TargetHttpsProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -21367,6 +22254,21 @@ type TargetHttpsProxy struct {
 	// last character, which cannot be a dash.
 	Name string `json:"name,omitempty"`
 
+	// QuicOverride: Specifies the QUIC override policy for this
+	// TargetHttpsProxy resource. This determines whether the load balancer
+	// will attempt to negotiate QUIC with clients or not. Can specify one
+	// of NONE, ENABLE, or DISABLE. Specify ENABLE to always enable QUIC,
+	// Enables QUIC when set to ENABLE, and disables QUIC when set to
+	// DISABLE. If NONE is specified, uses the QUIC policy with no user
+	// overrides, which is equivalent to DISABLE. Not specifying this field
+	// is equivalent to specifying NONE.
+	//
+	// Possible values:
+	//   "DISABLE"
+	//   "ENABLE"
+	//   "NONE"
+	QuicOverride string `json:"quicOverride,omitempty"`
+
 	// SelfLink: [Output Only] Server-defined URL for the resource.
 	SelfLink string `json:"selfLink,omitempty"`
 
@@ -21374,6 +22276,11 @@ type TargetHttpsProxy struct {
 	// authenticate connections between users and the load balancer.
 	// Currently, exactly one SSL certificate must be specified.
 	SslCertificates []string `json:"sslCertificates,omitempty"`
+
+	// SslPolicy: URL of SslPolicy resource that will be associated with the
+	// TargetHttpsProxy resource. If not set, the TargetHttpsProxy resource
+	// will not have any SSL policy configured.
+	SslPolicy string `json:"sslPolicy,omitempty"`
 
 	// UrlMap: A fully-qualified or valid partial URL to the UrlMap resource
 	// that defines the mapping from URL to the BackendService. For example,
@@ -21569,7 +22476,9 @@ func (s *TargetHttpsProxyListWarningData) MarshalJSON() ([]byte, error) {
 }
 
 // TargetInstance: A TargetInstance resource. This resource defines an
-// endpoint instance that terminates traffic of certain protocols.
+// endpoint instance that terminates traffic of certain protocols. (==
+// resource_for beta.targetInstances ==) (== resource_for
+// v1.targetInstances ==)
 type TargetInstance struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -22093,7 +23002,8 @@ func (s *TargetInstancesScopedListWarningData) MarshalJSON() ([]byte, error) {
 
 // TargetPool: A TargetPool resource. This resource defines a pool of
 // instances, an associated HttpHealthCheck resource, and the fallback
-// target pool.
+// target pool. (== resource_for beta.targetPools ==) (== resource_for
+// v1.targetPools ==)
 type TargetPool struct {
 	// BackupPool: This field is applicable only when the containing target
 	// pool is serving a forwarding rule as the primary pool, and its
@@ -22949,7 +23859,8 @@ func (s *TargetSslProxiesSetSslCertificatesRequest) MarshalJSON() ([]byte, error
 }
 
 // TargetSslProxy: A TargetSslProxy resource. This resource defines an
-// SSL proxy.
+// SSL proxy. (== resource_for beta.targetSslProxies ==) (==
+// resource_for v1.targetSslProxies ==)
 type TargetSslProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -22995,6 +23906,11 @@ type TargetSslProxy struct {
 	// authenticate connections to Backends. Currently exactly one SSL
 	// certificate must be specified.
 	SslCertificates []string `json:"sslCertificates,omitempty"`
+
+	// SslPolicy: URL of SslPolicy resource that will be associated with the
+	// TargetSslProxy resource. If not set, the TargetSslProxy resource will
+	// not have any SSL policy configured.
+	SslPolicy string `json:"sslPolicy,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -23240,7 +24156,8 @@ func (s *TargetTcpProxiesSetProxyHeaderRequest) MarshalJSON() ([]byte, error) {
 }
 
 // TargetTcpProxy: A TargetTcpProxy resource. This resource defines a
-// TCP proxy.
+// TCP proxy. (== resource_for beta.targetTcpProxies ==) (==
+// resource_for v1.targetTcpProxies ==)
 type TargetTcpProxy struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -23465,7 +24382,9 @@ func (s *TargetTcpProxyListWarningData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// TargetVpnGateway: Represents a Target VPN gateway resource.
+// TargetVpnGateway: Represents a Target VPN gateway resource. (==
+// resource_for beta.targetVpnGateways ==) (== resource_for
+// v1.targetVpnGateways ==)
 type TargetVpnGateway struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -23487,6 +24406,22 @@ type TargetVpnGateway struct {
 	// Kind: [Output Only] Type of resource. Always compute#targetVpnGateway
 	// for target VPN gateways.
 	Kind string `json:"kind,omitempty"`
+
+	// LabelFingerprint: A fingerprint for the labels being applied to this
+	// TargetVpnGateway, which is essentially a hash of the labels set used
+	// for optimistic locking. The fingerprint is initially generated by
+	// Compute Engine and changes after every request to modify or update
+	// labels. You must always provide an up-to-date fingerprint hash in
+	// order to update or change labels.
+	//
+	// To see the latest fingerprint, make a get() request to retrieve an
+	// TargetVpnGateway.
+	LabelFingerprint string `json:"labelFingerprint,omitempty"`
+
+	// Labels: Labels to apply to this TargetVpnGateway resource. These can
+	// be later modified by the setLabels method. Each label key/value must
+	// comply with RFC1035. Label values may be empty.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Name: Name of the resource. Provided by the client when the resource
 	// is created. The name must be 1-63 characters long, and comply with
@@ -24567,6 +25502,8 @@ func (s *UsageExportLocation) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// VpnTunnel: VPN tunnel resource. (== resource_for beta.vpnTunnels ==)
+// (== resource_for v1.vpnTunnels ==)
 type VpnTunnel struct {
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
 	// format.
@@ -24592,6 +25529,22 @@ type VpnTunnel struct {
 	// Kind: [Output Only] Type of resource. Always compute#vpnTunnel for
 	// VPN tunnels.
 	Kind string `json:"kind,omitempty"`
+
+	// LabelFingerprint: A fingerprint for the labels being applied to this
+	// VpnTunnel, which is essentially a hash of the labels set used for
+	// optimistic locking. The fingerprint is initially generated by Compute
+	// Engine and changes after every request to modify or update labels.
+	// You must always provide an up-to-date fingerprint hash in order to
+	// update or change labels.
+	//
+	// To see the latest fingerprint, make a get() request to retrieve a
+	// VpnTunnel.
+	LabelFingerprint string `json:"labelFingerprint,omitempty"`
+
+	// Labels: Labels to apply to this VpnTunnel. These can be later
+	// modified by the setLabels method. Each label key/value pair must
+	// comply with RFC1035. Label values may be empty.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// LocalTrafficSelector: Local traffic selector to use when establishing
 	// the VPN tunnel with peer VPN gateway. The value should be a CIDR
@@ -25316,7 +26269,8 @@ func (s *XpnResourceId) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Zone: A Zone resource.
+// Zone: A Zone resource. (== resource_for beta.zones ==) (==
+// resource_for v1.zones ==)
 type Zone struct {
 	// AvailableCpuPlatforms: [Output Only] Available cpu/platform
 	// selections for the zone.
@@ -29165,6 +30119,175 @@ func (c *AutoscalersUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, er
 
 }
 
+// method id "compute.backendBuckets.addSignedUrlKey":
+
+type BackendBucketsAddSignedUrlKeyCall struct {
+	s             *Service
+	project       string
+	backendBucket string
+	signedurlkey  *SignedUrlKey
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// AddSignedUrlKey: Adds the given Signed URL Key to the backend bucket.
+func (r *BackendBucketsService) AddSignedUrlKey(project string, backendBucket string, signedurlkey *SignedUrlKey) *BackendBucketsAddSignedUrlKeyCall {
+	c := &BackendBucketsAddSignedUrlKeyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.backendBucket = backendBucket
+	c.signedurlkey = signedurlkey
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *BackendBucketsAddSignedUrlKeyCall) RequestId(requestId string) *BackendBucketsAddSignedUrlKeyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *BackendBucketsAddSignedUrlKeyCall) Fields(s ...googleapi.Field) *BackendBucketsAddSignedUrlKeyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BackendBucketsAddSignedUrlKeyCall) Context(ctx context.Context) *BackendBucketsAddSignedUrlKeyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *BackendBucketsAddSignedUrlKeyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *BackendBucketsAddSignedUrlKeyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.signedurlkey)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/backendBuckets/{backendBucket}/addSignedUrlKey")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":       c.project,
+		"backendBucket": c.backendBucket,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.backendBuckets.addSignedUrlKey" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *BackendBucketsAddSignedUrlKeyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Adds the given Signed URL Key to the backend bucket.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.backendBuckets.addSignedUrlKey",
+	//   "parameterOrder": [
+	//     "project",
+	//     "backendBucket"
+	//   ],
+	//   "parameters": {
+	//     "backendBucket": {
+	//       "description": "Name of the BackendBucket resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/backendBuckets/{backendBucket}/addSignedUrlKey",
+	//   "request": {
+	//     "$ref": "SignedUrlKey"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.backendBuckets.delete":
 
 type BackendBucketsDeleteCall struct {
@@ -29314,6 +30437,174 @@ func (c *BackendBucketsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation,
 	//     }
 	//   },
 	//   "path": "{project}/global/backendBuckets/{backendBucket}",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.backendBuckets.deleteSignedUrlKey":
+
+type BackendBucketsDeleteSignedUrlKeyCall struct {
+	s             *Service
+	project       string
+	backendBucket string
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// DeleteSignedUrlKey: Deletes the given Signed URL Key from the backend
+// bucket.
+func (r *BackendBucketsService) DeleteSignedUrlKey(project string, backendBucket string, keyName string) *BackendBucketsDeleteSignedUrlKeyCall {
+	c := &BackendBucketsDeleteSignedUrlKeyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.backendBucket = backendBucket
+	c.urlParams_.Set("keyName", keyName)
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *BackendBucketsDeleteSignedUrlKeyCall) RequestId(requestId string) *BackendBucketsDeleteSignedUrlKeyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *BackendBucketsDeleteSignedUrlKeyCall) Fields(s ...googleapi.Field) *BackendBucketsDeleteSignedUrlKeyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BackendBucketsDeleteSignedUrlKeyCall) Context(ctx context.Context) *BackendBucketsDeleteSignedUrlKeyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *BackendBucketsDeleteSignedUrlKeyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *BackendBucketsDeleteSignedUrlKeyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/backendBuckets/{backendBucket}/deleteSignedUrlKey")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":       c.project,
+		"backendBucket": c.backendBucket,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.backendBuckets.deleteSignedUrlKey" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *BackendBucketsDeleteSignedUrlKeyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes the given Signed URL Key from the backend bucket.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.backendBuckets.deleteSignedUrlKey",
+	//   "parameterOrder": [
+	//     "project",
+	//     "backendBucket",
+	//     "keyName"
+	//   ],
+	//   "parameters": {
+	//     "backendBucket": {
+	//       "description": "Name of the BackendBucket resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "keyName": {
+	//       "description": "The name of the Signed URL Key to delete.",
+	//       "location": "query",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/backendBuckets/{backendBucket}/deleteSignedUrlKey",
 	//   "response": {
 	//     "$ref": "Operation"
 	//   },
@@ -30232,6 +31523,176 @@ func (c *BackendBucketsUpdateCall) Do(opts ...googleapi.CallOption) (*Operation,
 
 }
 
+// method id "compute.backendServices.addSignedUrlKey":
+
+type BackendServicesAddSignedUrlKeyCall struct {
+	s              *Service
+	project        string
+	backendService string
+	signedurlkey   *SignedUrlKey
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// AddSignedUrlKey: Adds the given Signed URL Key to the specified
+// backend service.
+func (r *BackendServicesService) AddSignedUrlKey(project string, backendService string, signedurlkey *SignedUrlKey) *BackendServicesAddSignedUrlKeyCall {
+	c := &BackendServicesAddSignedUrlKeyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.backendService = backendService
+	c.signedurlkey = signedurlkey
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *BackendServicesAddSignedUrlKeyCall) RequestId(requestId string) *BackendServicesAddSignedUrlKeyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *BackendServicesAddSignedUrlKeyCall) Fields(s ...googleapi.Field) *BackendServicesAddSignedUrlKeyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BackendServicesAddSignedUrlKeyCall) Context(ctx context.Context) *BackendServicesAddSignedUrlKeyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *BackendServicesAddSignedUrlKeyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *BackendServicesAddSignedUrlKeyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.signedurlkey)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/backendServices/{backendService}/addSignedUrlKey")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"backendService": c.backendService,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.backendServices.addSignedUrlKey" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *BackendServicesAddSignedUrlKeyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Adds the given Signed URL Key to the specified backend service.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.backendServices.addSignedUrlKey",
+	//   "parameterOrder": [
+	//     "project",
+	//     "backendService"
+	//   ],
+	//   "parameters": {
+	//     "backendService": {
+	//       "description": "Name of the BackendService resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/backendServices/{backendService}/addSignedUrlKey",
+	//   "request": {
+	//     "$ref": "SignedUrlKey"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.backendServices.aggregatedList":
 
 type BackendServicesAggregatedListCall struct {
@@ -30634,6 +32095,174 @@ func (c *BackendServicesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation
 	//     }
 	//   },
 	//   "path": "{project}/global/backendServices/{backendService}",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.backendServices.deleteSignedUrlKey":
+
+type BackendServicesDeleteSignedUrlKeyCall struct {
+	s              *Service
+	project        string
+	backendService string
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// DeleteSignedUrlKey: Deletes the given Signed URL Key from the
+// specified backend service.
+func (r *BackendServicesService) DeleteSignedUrlKey(project string, backendService string, keyName string) *BackendServicesDeleteSignedUrlKeyCall {
+	c := &BackendServicesDeleteSignedUrlKeyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.backendService = backendService
+	c.urlParams_.Set("keyName", keyName)
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *BackendServicesDeleteSignedUrlKeyCall) RequestId(requestId string) *BackendServicesDeleteSignedUrlKeyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *BackendServicesDeleteSignedUrlKeyCall) Fields(s ...googleapi.Field) *BackendServicesDeleteSignedUrlKeyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *BackendServicesDeleteSignedUrlKeyCall) Context(ctx context.Context) *BackendServicesDeleteSignedUrlKeyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *BackendServicesDeleteSignedUrlKeyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *BackendServicesDeleteSignedUrlKeyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/backendServices/{backendService}/deleteSignedUrlKey")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"backendService": c.backendService,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.backendServices.deleteSignedUrlKey" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *BackendServicesDeleteSignedUrlKeyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes the given Signed URL Key from the specified backend service.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.backendServices.deleteSignedUrlKey",
+	//   "parameterOrder": [
+	//     "project",
+	//     "backendService",
+	//     "keyName"
+	//   ],
+	//   "parameters": {
+	//     "backendService": {
+	//       "description": "Name of the BackendService resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "keyName": {
+	//       "description": "The name of the Signed URL Key to delete.",
+	//       "location": "query",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/backendServices/{backendService}/deleteSignedUrlKey",
 	//   "response": {
 	//     "$ref": "Operation"
 	//   },
@@ -33956,7 +35585,8 @@ type DisksResizeCall struct {
 	header_            http.Header
 }
 
-// Resize: Resizes the specified persistent disk.
+// Resize: Resizes the specified persistent disk. You can only increase
+// the size of the disk.
 func (r *DisksService) Resize(project string, zone string, disk string, disksresizerequest *DisksResizeRequest) *DisksResizeCall {
 	c := &DisksResizeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
@@ -34073,7 +35703,7 @@ func (c *DisksResizeCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Resizes the specified persistent disk.",
+	//   "description": "Resizes the specified persistent disk. You can only increase the size of the disk.",
 	//   "httpMethod": "POST",
 	//   "id": "compute.disks.resize",
 	//   "parameterOrder": [
@@ -50515,11 +52145,9 @@ type InstanceTemplatesDeleteCall struct {
 	header_          http.Header
 }
 
-// Delete: Deletes the specified instance template. If you delete an
-// instance template that is being referenced from another instance
-// group, the instance group will not be able to create or recreate
-// virtual machine instances. Deleting an instance template is permanent
-// and cannot be undone.
+// Delete: Deletes the specified instance template. Deleting an instance
+// template is permanent and cannot be undone. It's not possible to
+// delete templates which are in use by an instance group.
 // For details, see https://cloud.google.com/compute/docs/reference/latest/instanceTemplates/delete
 func (r *InstanceTemplatesService) Delete(project string, instanceTemplate string) *InstanceTemplatesDeleteCall {
 	c := &InstanceTemplatesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -50629,7 +52257,7 @@ func (c *InstanceTemplatesDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified instance template. If you delete an instance template that is being referenced from another instance group, the instance group will not be able to create or recreate virtual machine instances. Deleting an instance template is permanent and cannot be undone.",
+	//   "description": "Deletes the specified instance template. Deleting an instance template is permanent and cannot be undone. It's not possible to delete templates which are in use by an instance group.",
 	//   "httpMethod": "DELETE",
 	//   "id": "compute.instanceTemplates.delete",
 	//   "parameterOrder": [
@@ -57752,6 +59380,188 @@ func (c *InterconnectAttachmentsListCall) Pages(ctx context.Context, f func(*Int
 	}
 }
 
+// method id "compute.interconnectAttachments.setLabels":
+
+type InterconnectAttachmentsSetLabelsCall struct {
+	s                      *Service
+	project                string
+	region                 string
+	resource               string
+	regionsetlabelsrequest *RegionSetLabelsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetLabels: Sets the labels on an InterconnectAttachment. To learn
+// more about labels, read the Labeling Resources documentation.
+func (r *InterconnectAttachmentsService) SetLabels(project string, region string, resource string, regionsetlabelsrequest *RegionSetLabelsRequest) *InterconnectAttachmentsSetLabelsCall {
+	c := &InterconnectAttachmentsSetLabelsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.resource = resource
+	c.regionsetlabelsrequest = regionsetlabelsrequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *InterconnectAttachmentsSetLabelsCall) RequestId(requestId string) *InterconnectAttachmentsSetLabelsCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InterconnectAttachmentsSetLabelsCall) Fields(s ...googleapi.Field) *InterconnectAttachmentsSetLabelsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InterconnectAttachmentsSetLabelsCall) Context(ctx context.Context) *InterconnectAttachmentsSetLabelsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *InterconnectAttachmentsSetLabelsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *InterconnectAttachmentsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/regions/{region}/interconnectAttachments/{resource}/setLabels")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"region":   c.region,
+		"resource": c.resource,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.interconnectAttachments.setLabels" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InterconnectAttachmentsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the labels on an InterconnectAttachment. To learn more about labels, read the Labeling Resources documentation.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.interconnectAttachments.setLabels",
+	//   "parameterOrder": [
+	//     "project",
+	//     "region",
+	//     "resource"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "region": {
+	//       "description": "The region for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "resource": {
+	//       "description": "Name of the resource for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/regions/{region}/interconnectAttachments/{resource}/setLabels",
+	//   "request": {
+	//     "$ref": "RegionSetLabelsRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.interconnectAttachments.testIamPermissions":
 
 type InterconnectAttachmentsTestIamPermissionsCall struct {
@@ -59200,6 +61010,153 @@ func (c *InterconnectsPatchCall) Do(opts ...googleapi.CallOption) (*Operation, e
 	//   "path": "{project}/global/interconnects/{interconnect}",
 	//   "request": {
 	//     "$ref": "Interconnect"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.interconnects.setLabels":
+
+type InterconnectsSetLabelsCall struct {
+	s                      *Service
+	project                string
+	resource               string
+	globalsetlabelsrequest *GlobalSetLabelsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetLabels: Sets the labels on an Interconnect. To learn more about
+// labels, read the Labeling Resources documentation.
+func (r *InterconnectsService) SetLabels(project string, resource string, globalsetlabelsrequest *GlobalSetLabelsRequest) *InterconnectsSetLabelsCall {
+	c := &InterconnectsSetLabelsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.resource = resource
+	c.globalsetlabelsrequest = globalsetlabelsrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *InterconnectsSetLabelsCall) Fields(s ...googleapi.Field) *InterconnectsSetLabelsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *InterconnectsSetLabelsCall) Context(ctx context.Context) *InterconnectsSetLabelsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *InterconnectsSetLabelsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *InterconnectsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.globalsetlabelsrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/interconnects/{resource}/setLabels")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"resource": c.resource,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.interconnects.setLabels" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *InterconnectsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the labels on an Interconnect. To learn more about labels, read the Labeling Resources documentation.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.interconnects.setLabels",
+	//   "parameterOrder": [
+	//     "project",
+	//     "resource"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "resource": {
+	//       "description": "Name of the resource for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/interconnects/{resource}/setLabels",
+	//   "request": {
+	//     "$ref": "GlobalSetLabelsRequest"
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
@@ -61833,7 +63790,8 @@ type NetworksPatchCall struct {
 }
 
 // Patch: Patches the specified network with the data included in the
-// request.
+// request. Only the following fields can be modified:
+// routingConfig.routingMode.
 func (r *NetworksService) Patch(project string, network string, network2 *Network) *NetworksPatchCall {
 	c := &NetworksPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.project = project
@@ -61948,7 +63906,7 @@ func (c *NetworksPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 	}
 	return ret, nil
 	// {
-	//   "description": "Patches the specified network with the data included in the request.",
+	//   "description": "Patches the specified network with the data included in the request. Only the following fields can be modified: routingConfig.routingMode.",
 	//   "httpMethod": "PATCH",
 	//   "id": "compute.networks.patch",
 	//   "parameterOrder": [
@@ -75573,6 +77531,152 @@ func (c *RoutesTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*TestPe
 
 }
 
+// method id "compute.securityPolicies.addRule":
+
+type SecurityPoliciesAddRuleCall struct {
+	s                  *Service
+	project            string
+	securityPolicy     string
+	securitypolicyrule *SecurityPolicyRule
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
+	header_            http.Header
+}
+
+// AddRule: Inserts a rule into a security policy.
+func (r *SecurityPoliciesService) AddRule(project string, securityPolicy string, securitypolicyrule *SecurityPolicyRule) *SecurityPoliciesAddRuleCall {
+	c := &SecurityPoliciesAddRuleCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.securityPolicy = securityPolicy
+	c.securitypolicyrule = securitypolicyrule
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SecurityPoliciesAddRuleCall) Fields(s ...googleapi.Field) *SecurityPoliciesAddRuleCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SecurityPoliciesAddRuleCall) Context(ctx context.Context) *SecurityPoliciesAddRuleCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SecurityPoliciesAddRuleCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SecurityPoliciesAddRuleCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/securityPolicies/{securityPolicy}/addRule")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"securityPolicy": c.securityPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.securityPolicies.addRule" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SecurityPoliciesAddRuleCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Inserts a rule into a security policy.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.securityPolicies.addRule",
+	//   "parameterOrder": [
+	//     "project",
+	//     "securityPolicy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "securityPolicy": {
+	//       "description": "Name of the security policy to update.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/securityPolicies/{securityPolicy}/addRule",
+	//   "request": {
+	//     "$ref": "SecurityPolicyRule"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.securityPolicies.delete":
 
 type SecurityPoliciesDeleteCall struct {
@@ -75875,6 +77979,170 @@ func (c *SecurityPoliciesGetCall) Do(opts ...googleapi.CallOption) (*SecurityPol
 	//   "path": "{project}/global/securityPolicies/{securityPolicy}",
 	//   "response": {
 	//     "$ref": "SecurityPolicy"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "compute.securityPolicies.getRule":
+
+type SecurityPoliciesGetRuleCall struct {
+	s              *Service
+	project        string
+	securityPolicy string
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// GetRule: Gets a rule at the specified priority.
+func (r *SecurityPoliciesService) GetRule(project string, securityPolicy string) *SecurityPoliciesGetRuleCall {
+	c := &SecurityPoliciesGetRuleCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.securityPolicy = securityPolicy
+	return c
+}
+
+// Priority sets the optional parameter "priority": The priority of the
+// rule to get from the security policy.
+func (c *SecurityPoliciesGetRuleCall) Priority(priority int64) *SecurityPoliciesGetRuleCall {
+	c.urlParams_.Set("priority", fmt.Sprint(priority))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SecurityPoliciesGetRuleCall) Fields(s ...googleapi.Field) *SecurityPoliciesGetRuleCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SecurityPoliciesGetRuleCall) IfNoneMatch(entityTag string) *SecurityPoliciesGetRuleCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SecurityPoliciesGetRuleCall) Context(ctx context.Context) *SecurityPoliciesGetRuleCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SecurityPoliciesGetRuleCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SecurityPoliciesGetRuleCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/securityPolicies/{securityPolicy}/getRule")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"securityPolicy": c.securityPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.securityPolicies.getRule" call.
+// Exactly one of *SecurityPolicyRule or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *SecurityPolicyRule.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SecurityPoliciesGetRuleCall) Do(opts ...googleapi.CallOption) (*SecurityPolicyRule, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &SecurityPolicyRule{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets a rule at the specified priority.",
+	//   "httpMethod": "GET",
+	//   "id": "compute.securityPolicies.getRule",
+	//   "parameterOrder": [
+	//     "project",
+	//     "securityPolicy"
+	//   ],
+	//   "parameters": {
+	//     "priority": {
+	//       "description": "The priority of the rule to get from the security policy.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "securityPolicy": {
+	//       "description": "Name of the security policy to which the queried rule belongs.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/securityPolicies/{securityPolicy}/getRule",
+	//   "response": {
+	//     "$ref": "SecurityPolicyRule"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
@@ -76457,6 +78725,314 @@ func (c *SecurityPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operation
 	//   "request": {
 	//     "$ref": "SecurityPolicy"
 	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.securityPolicies.patchRule":
+
+type SecurityPoliciesPatchRuleCall struct {
+	s                  *Service
+	project            string
+	securityPolicy     string
+	securitypolicyrule *SecurityPolicyRule
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
+	header_            http.Header
+}
+
+// PatchRule: Patches a rule at the specified priority.
+func (r *SecurityPoliciesService) PatchRule(project string, securityPolicy string, securitypolicyrule *SecurityPolicyRule) *SecurityPoliciesPatchRuleCall {
+	c := &SecurityPoliciesPatchRuleCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.securityPolicy = securityPolicy
+	c.securitypolicyrule = securitypolicyrule
+	return c
+}
+
+// Priority sets the optional parameter "priority": The priority of the
+// rule to patch.
+func (c *SecurityPoliciesPatchRuleCall) Priority(priority int64) *SecurityPoliciesPatchRuleCall {
+	c.urlParams_.Set("priority", fmt.Sprint(priority))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SecurityPoliciesPatchRuleCall) Fields(s ...googleapi.Field) *SecurityPoliciesPatchRuleCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SecurityPoliciesPatchRuleCall) Context(ctx context.Context) *SecurityPoliciesPatchRuleCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SecurityPoliciesPatchRuleCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SecurityPoliciesPatchRuleCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/securityPolicies/{securityPolicy}/patchRule")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"securityPolicy": c.securityPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.securityPolicies.patchRule" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SecurityPoliciesPatchRuleCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Patches a rule at the specified priority.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.securityPolicies.patchRule",
+	//   "parameterOrder": [
+	//     "project",
+	//     "securityPolicy"
+	//   ],
+	//   "parameters": {
+	//     "priority": {
+	//       "description": "The priority of the rule to patch.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "securityPolicy": {
+	//       "description": "Name of the security policy to update.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/securityPolicies/{securityPolicy}/patchRule",
+	//   "request": {
+	//     "$ref": "SecurityPolicyRule"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.securityPolicies.removeRule":
+
+type SecurityPoliciesRemoveRuleCall struct {
+	s              *Service
+	project        string
+	securityPolicy string
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// RemoveRule: Deletes a rule at the specified priority.
+func (r *SecurityPoliciesService) RemoveRule(project string, securityPolicy string) *SecurityPoliciesRemoveRuleCall {
+	c := &SecurityPoliciesRemoveRuleCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.securityPolicy = securityPolicy
+	return c
+}
+
+// Priority sets the optional parameter "priority": The priority of the
+// rule to remove from the security policy.
+func (c *SecurityPoliciesRemoveRuleCall) Priority(priority int64) *SecurityPoliciesRemoveRuleCall {
+	c.urlParams_.Set("priority", fmt.Sprint(priority))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SecurityPoliciesRemoveRuleCall) Fields(s ...googleapi.Field) *SecurityPoliciesRemoveRuleCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SecurityPoliciesRemoveRuleCall) Context(ctx context.Context) *SecurityPoliciesRemoveRuleCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SecurityPoliciesRemoveRuleCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SecurityPoliciesRemoveRuleCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/securityPolicies/{securityPolicy}/removeRule")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"securityPolicy": c.securityPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.securityPolicies.removeRule" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SecurityPoliciesRemoveRuleCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes a rule at the specified priority.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.securityPolicies.removeRule",
+	//   "parameterOrder": [
+	//     "project",
+	//     "securityPolicy"
+	//   ],
+	//   "parameters": {
+	//     "priority": {
+	//       "description": "The priority of the rule to remove from the security policy.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "securityPolicy": {
+	//       "description": "Name of the security policy to update.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/securityPolicies/{securityPolicy}/removeRule",
 	//   "response": {
 	//     "$ref": "Operation"
 	//   },
@@ -78341,6 +80917,1281 @@ func (c *SslCertificatesTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 	//     }
 	//   },
 	//   "path": "{project}/global/sslCertificates/{resource}/testIamPermissions",
+	//   "request": {
+	//     "$ref": "TestPermissionsRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "TestPermissionsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.delete":
+
+type SslPoliciesDeleteCall struct {
+	s          *Service
+	project    string
+	sslPolicy  string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: Deletes the specified SSL policy. The SSL policy resource can
+// be deleted only if it is not in use by any TargetHttpsProxy or
+// TargetSslProxy resources.
+func (r *SslPoliciesService) Delete(project string, sslPolicy string) *SslPoliciesDeleteCall {
+	c := &SslPoliciesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.sslPolicy = sslPolicy
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *SslPoliciesDeleteCall) RequestId(requestId string) *SslPoliciesDeleteCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesDeleteCall) Fields(s ...googleapi.Field) *SslPoliciesDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesDeleteCall) Context(ctx context.Context) *SslPoliciesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies/{sslPolicy}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":   c.project,
+		"sslPolicy": c.sslPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.delete" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SslPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes the specified SSL policy. The SSL policy resource can be deleted only if it is not in use by any TargetHttpsProxy or TargetSslProxy resources.",
+	//   "httpMethod": "DELETE",
+	//   "id": "compute.sslPolicies.delete",
+	//   "parameterOrder": [
+	//     "project",
+	//     "sslPolicy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "sslPolicy": {
+	//       "description": "Name of the SSL policy to delete. The name must be 1-63 characters long, and comply with RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies/{sslPolicy}",
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.get":
+
+type SslPoliciesGetCall struct {
+	s            *Service
+	project      string
+	sslPolicy    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: List all of the ordered rules present in a single specified
+// policy.
+func (r *SslPoliciesService) Get(project string, sslPolicy string) *SslPoliciesGetCall {
+	c := &SslPoliciesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.sslPolicy = sslPolicy
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesGetCall) Fields(s ...googleapi.Field) *SslPoliciesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SslPoliciesGetCall) IfNoneMatch(entityTag string) *SslPoliciesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesGetCall) Context(ctx context.Context) *SslPoliciesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies/{sslPolicy}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":   c.project,
+		"sslPolicy": c.sslPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.get" call.
+// Exactly one of *SslPolicy or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *SslPolicy.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SslPoliciesGetCall) Do(opts ...googleapi.CallOption) (*SslPolicy, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &SslPolicy{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "List all of the ordered rules present in a single specified policy.",
+	//   "httpMethod": "GET",
+	//   "id": "compute.sslPolicies.get",
+	//   "parameterOrder": [
+	//     "project",
+	//     "sslPolicy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "sslPolicy": {
+	//       "description": "Name of the SSL policy to update. The name must be 1-63 characters long, and comply with RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies/{sslPolicy}",
+	//   "response": {
+	//     "$ref": "SslPolicy"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.insert":
+
+type SslPoliciesInsertCall struct {
+	s          *Service
+	project    string
+	sslpolicy  *SslPolicy
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Insert: Returns the specified SSL policy resource. Get a list of
+// available SSL policies by making a list() request.
+func (r *SslPoliciesService) Insert(project string, sslpolicy *SslPolicy) *SslPoliciesInsertCall {
+	c := &SslPoliciesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.sslpolicy = sslpolicy
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *SslPoliciesInsertCall) RequestId(requestId string) *SslPoliciesInsertCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesInsertCall) Fields(s ...googleapi.Field) *SslPoliciesInsertCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesInsertCall) Context(ctx context.Context) *SslPoliciesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesInsertCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project": c.project,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.insert" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SslPoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns the specified SSL policy resource. Get a list of available SSL policies by making a list() request.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.sslPolicies.insert",
+	//   "parameterOrder": [
+	//     "project"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies",
+	//   "request": {
+	//     "$ref": "SslPolicy"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.list":
+
+type SslPoliciesListCall struct {
+	s            *Service
+	project      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: List all the SSL policies that have been configured for the
+// specified project.
+func (r *SslPoliciesService) List(project string) *SslPoliciesListCall {
+	c := &SslPoliciesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	return c
+}
+
+// Filter sets the optional parameter "filter": Sets a filter
+// {expression} for filtering listed resources. Your {expression} must
+// be in the format: field_name comparison_string literal_string.
+//
+// The field_name is the name of the field you want to compare. Only
+// atomic field types are supported (string, number, boolean). The
+// comparison_string must be either eq (equals) or ne (not equals). The
+// literal_string is the string value to filter to. The literal value
+// must be valid for the type of field you are filtering by (string,
+// number, boolean). For string fields, the literal value is interpreted
+// as a regular expression using RE2 syntax. The literal value must
+// match the entire field.
+//
+// For example, to filter for instances that do not have a name of
+// example-instance, you would use name ne example-instance.
+//
+// You can filter on nested fields. For example, you could filter on
+// instances that have set the scheduling.automaticRestart field to
+// true. Use filtering on nested fields to take advantage of labels to
+// organize and search for results based on label values.
+//
+// To filter on multiple expressions, provide each separate expression
+// within parentheses. For example, (scheduling.automaticRestart eq
+// true) (zone eq us-central1-f). Multiple expressions are treated as
+// AND expressions, meaning that resources must match all expressions to
+// pass the filters.
+func (c *SslPoliciesListCall) Filter(filter string) *SslPoliciesListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// MaxResults sets the optional parameter "maxResults": The maximum
+// number of results per page that should be returned. If the number of
+// available results is larger than maxResults, Compute Engine returns a
+// nextPageToken that can be used to get the next page of results in
+// subsequent list requests. Acceptable values are 0 to 500, inclusive.
+// (Default: 500)
+func (c *SslPoliciesListCall) MaxResults(maxResults int64) *SslPoliciesListCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// OrderBy sets the optional parameter "orderBy": Sorts list results by
+// a certain order. By default, results are returned in alphanumerical
+// order based on the resource name.
+//
+// You can also sort results in descending order based on the creation
+// timestamp using orderBy="creationTimestamp desc". This sorts results
+// based on the creationTimestamp field in reverse chronological order
+// (newest result first). Use this to sort resources like operations so
+// that the newest operation is returned first.
+//
+// Currently, only sorting by name or creationTimestamp desc is
+// supported.
+func (c *SslPoliciesListCall) OrderBy(orderBy string) *SslPoliciesListCall {
+	c.urlParams_.Set("orderBy", orderBy)
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Specifies a page
+// token to use. Set pageToken to the nextPageToken returned by a
+// previous list request to get the next page of results.
+func (c *SslPoliciesListCall) PageToken(pageToken string) *SslPoliciesListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesListCall) Fields(s ...googleapi.Field) *SslPoliciesListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SslPoliciesListCall) IfNoneMatch(entityTag string) *SslPoliciesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesListCall) Context(ctx context.Context) *SslPoliciesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project": c.project,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.list" call.
+// Exactly one of *SslPoliciesList or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *SslPoliciesList.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SslPoliciesListCall) Do(opts ...googleapi.CallOption) (*SslPoliciesList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &SslPoliciesList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "List all the SSL policies that have been configured for the specified project.",
+	//   "httpMethod": "GET",
+	//   "id": "compute.sslPolicies.list",
+	//   "parameterOrder": [
+	//     "project"
+	//   ],
+	//   "parameters": {
+	//     "filter": {
+	//       "description": "Sets a filter {expression} for filtering listed resources. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use name ne example-instance.\n\nYou can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nTo filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "maxResults": {
+	//       "default": "500",
+	//       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+	//       "format": "uint32",
+	//       "location": "query",
+	//       "minimum": "0",
+	//       "type": "integer"
+	//     },
+	//     "orderBy": {
+	//       "description": "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.\n\nYou can also sort results in descending order based on the creation timestamp using orderBy=\"creationTimestamp desc\". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.\n\nCurrently, only sorting by name or creationTimestamp desc is supported.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageToken": {
+	//       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies",
+	//   "response": {
+	//     "$ref": "SslPoliciesList"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *SslPoliciesListCall) Pages(ctx context.Context, f func(*SslPoliciesList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "compute.sslPolicies.listAvailableFeatures":
+
+type SslPoliciesListAvailableFeaturesCall struct {
+	s            *Service
+	project      string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// ListAvailableFeatures: Lists all features that can be specified in
+// the SSL policy when using custom profile.
+func (r *SslPoliciesService) ListAvailableFeatures(project string) *SslPoliciesListAvailableFeaturesCall {
+	c := &SslPoliciesListAvailableFeaturesCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	return c
+}
+
+// Filter sets the optional parameter "filter": Sets a filter
+// {expression} for filtering listed resources. Your {expression} must
+// be in the format: field_name comparison_string literal_string.
+//
+// The field_name is the name of the field you want to compare. Only
+// atomic field types are supported (string, number, boolean). The
+// comparison_string must be either eq (equals) or ne (not equals). The
+// literal_string is the string value to filter to. The literal value
+// must be valid for the type of field you are filtering by (string,
+// number, boolean). For string fields, the literal value is interpreted
+// as a regular expression using RE2 syntax. The literal value must
+// match the entire field.
+//
+// For example, to filter for instances that do not have a name of
+// example-instance, you would use name ne example-instance.
+//
+// You can filter on nested fields. For example, you could filter on
+// instances that have set the scheduling.automaticRestart field to
+// true. Use filtering on nested fields to take advantage of labels to
+// organize and search for results based on label values.
+//
+// To filter on multiple expressions, provide each separate expression
+// within parentheses. For example, (scheduling.automaticRestart eq
+// true) (zone eq us-central1-f). Multiple expressions are treated as
+// AND expressions, meaning that resources must match all expressions to
+// pass the filters.
+func (c *SslPoliciesListAvailableFeaturesCall) Filter(filter string) *SslPoliciesListAvailableFeaturesCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// MaxResults sets the optional parameter "maxResults": The maximum
+// number of results per page that should be returned. If the number of
+// available results is larger than maxResults, Compute Engine returns a
+// nextPageToken that can be used to get the next page of results in
+// subsequent list requests. Acceptable values are 0 to 500, inclusive.
+// (Default: 500)
+func (c *SslPoliciesListAvailableFeaturesCall) MaxResults(maxResults int64) *SslPoliciesListAvailableFeaturesCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// OrderBy sets the optional parameter "orderBy": Sorts list results by
+// a certain order. By default, results are returned in alphanumerical
+// order based on the resource name.
+//
+// You can also sort results in descending order based on the creation
+// timestamp using orderBy="creationTimestamp desc". This sorts results
+// based on the creationTimestamp field in reverse chronological order
+// (newest result first). Use this to sort resources like operations so
+// that the newest operation is returned first.
+//
+// Currently, only sorting by name or creationTimestamp desc is
+// supported.
+func (c *SslPoliciesListAvailableFeaturesCall) OrderBy(orderBy string) *SslPoliciesListAvailableFeaturesCall {
+	c.urlParams_.Set("orderBy", orderBy)
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Specifies a page
+// token to use. Set pageToken to the nextPageToken returned by a
+// previous list request to get the next page of results.
+func (c *SslPoliciesListAvailableFeaturesCall) PageToken(pageToken string) *SslPoliciesListAvailableFeaturesCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesListAvailableFeaturesCall) Fields(s ...googleapi.Field) *SslPoliciesListAvailableFeaturesCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SslPoliciesListAvailableFeaturesCall) IfNoneMatch(entityTag string) *SslPoliciesListAvailableFeaturesCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesListAvailableFeaturesCall) Context(ctx context.Context) *SslPoliciesListAvailableFeaturesCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesListAvailableFeaturesCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesListAvailableFeaturesCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies/listAvailableFeatures")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project": c.project,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.listAvailableFeatures" call.
+// Exactly one of *SslPoliciesListAvailableFeaturesResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *SslPoliciesListAvailableFeaturesResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *SslPoliciesListAvailableFeaturesCall) Do(opts ...googleapi.CallOption) (*SslPoliciesListAvailableFeaturesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &SslPoliciesListAvailableFeaturesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists all features that can be specified in the SSL policy when using custom profile.",
+	//   "httpMethod": "GET",
+	//   "id": "compute.sslPolicies.listAvailableFeatures",
+	//   "parameterOrder": [
+	//     "project"
+	//   ],
+	//   "parameters": {
+	//     "filter": {
+	//       "description": "Sets a filter {expression} for filtering listed resources. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use name ne example-instance.\n\nYou can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nTo filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "maxResults": {
+	//       "default": "500",
+	//       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+	//       "format": "uint32",
+	//       "location": "query",
+	//       "minimum": "0",
+	//       "type": "integer"
+	//     },
+	//     "orderBy": {
+	//       "description": "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.\n\nYou can also sort results in descending order based on the creation timestamp using orderBy=\"creationTimestamp desc\". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.\n\nCurrently, only sorting by name or creationTimestamp desc is supported.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageToken": {
+	//       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies/listAvailableFeatures",
+	//   "response": {
+	//     "$ref": "SslPoliciesListAvailableFeaturesResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.patch":
+
+type SslPoliciesPatchCall struct {
+	s          *Service
+	project    string
+	sslPolicy  string
+	sslpolicy  *SslPolicy
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Patch: Patches the specified SSL policy with the data included in the
+// request.
+func (r *SslPoliciesService) Patch(project string, sslPolicy string, sslpolicy *SslPolicy) *SslPoliciesPatchCall {
+	c := &SslPoliciesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.sslPolicy = sslPolicy
+	c.sslpolicy = sslpolicy
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *SslPoliciesPatchCall) RequestId(requestId string) *SslPoliciesPatchCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesPatchCall) Fields(s ...googleapi.Field) *SslPoliciesPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesPatchCall) Context(ctx context.Context) *SslPoliciesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies/{sslPolicy}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":   c.project,
+		"sslPolicy": c.sslPolicy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.patch" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SslPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Patches the specified SSL policy with the data included in the request.",
+	//   "httpMethod": "PATCH",
+	//   "id": "compute.sslPolicies.patch",
+	//   "parameterOrder": [
+	//     "project",
+	//     "sslPolicy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "sslPolicy": {
+	//       "description": "Name of the SSL policy to update. The name must be 1-63 characters long, and comply with RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies/{sslPolicy}",
+	//   "request": {
+	//     "$ref": "SslPolicy"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.sslPolicies.testIamPermissions":
+
+type SslPoliciesTestIamPermissionsCall struct {
+	s                      *Service
+	project                string
+	resource               string
+	testpermissionsrequest *TestPermissionsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// TestIamPermissions: Returns permissions that a caller has on the
+// specified resource.
+func (r *SslPoliciesService) TestIamPermissions(project string, resource string, testpermissionsrequest *TestPermissionsRequest) *SslPoliciesTestIamPermissionsCall {
+	c := &SslPoliciesTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.resource = resource
+	c.testpermissionsrequest = testpermissionsrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SslPoliciesTestIamPermissionsCall) Fields(s ...googleapi.Field) *SslPoliciesTestIamPermissionsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SslPoliciesTestIamPermissionsCall) Context(ctx context.Context) *SslPoliciesTestIamPermissionsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SslPoliciesTestIamPermissionsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SslPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/sslPolicies/{resource}/testIamPermissions")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"resource": c.resource,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.sslPolicies.testIamPermissions" call.
+// Exactly one of *TestPermissionsResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *TestPermissionsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SslPoliciesTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*TestPermissionsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &TestPermissionsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns permissions that a caller has on the specified resource.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.sslPolicies.testIamPermissions",
+	//   "parameterOrder": [
+	//     "project",
+	//     "resource"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "resource": {
+	//       "description": "Name of the resource for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:[-a-z0-9_]{0,62}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/sslPolicies/{resource}/testIamPermissions",
 	//   "request": {
 	//     "$ref": "TestPermissionsRequest"
 	//   },
@@ -82176,6 +86027,175 @@ func (c *TargetHttpsProxiesListCall) Pages(ctx context.Context, f func(*TargetHt
 	}
 }
 
+// method id "compute.targetHttpsProxies.setQuicOverride":
+
+type TargetHttpsProxiesSetQuicOverrideCall struct {
+	s                                        *Service
+	project                                  string
+	targetHttpsProxy                         string
+	targethttpsproxiessetquicoverriderequest *TargetHttpsProxiesSetQuicOverrideRequest
+	urlParams_                               gensupport.URLParams
+	ctx_                                     context.Context
+	header_                                  http.Header
+}
+
+// SetQuicOverride: Sets the QUIC override policy for TargetHttpsProxy.
+func (r *TargetHttpsProxiesService) SetQuicOverride(project string, targetHttpsProxy string, targethttpsproxiessetquicoverriderequest *TargetHttpsProxiesSetQuicOverrideRequest) *TargetHttpsProxiesSetQuicOverrideCall {
+	c := &TargetHttpsProxiesSetQuicOverrideCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.targetHttpsProxy = targetHttpsProxy
+	c.targethttpsproxiessetquicoverriderequest = targethttpsproxiessetquicoverriderequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *TargetHttpsProxiesSetQuicOverrideCall) RequestId(requestId string) *TargetHttpsProxiesSetQuicOverrideCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *TargetHttpsProxiesSetQuicOverrideCall) Fields(s ...googleapi.Field) *TargetHttpsProxiesSetQuicOverrideCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TargetHttpsProxiesSetQuicOverrideCall) Context(ctx context.Context) *TargetHttpsProxiesSetQuicOverrideCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *TargetHttpsProxiesSetQuicOverrideCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *TargetHttpsProxiesSetQuicOverrideCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxiessetquicoverriderequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setQuicOverride")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"targetHttpsProxy": c.targetHttpsProxy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.targetHttpsProxies.setQuicOverride" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *TargetHttpsProxiesSetQuicOverrideCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the QUIC override policy for TargetHttpsProxy.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.targetHttpsProxies.setQuicOverride",
+	//   "parameterOrder": [
+	//     "project",
+	//     "targetHttpsProxy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "targetHttpsProxy": {
+	//       "description": "Name of the TargetHttpsProxy resource to set the QUIC override policy for. The name should conform to RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setQuicOverride",
+	//   "request": {
+	//     "$ref": "TargetHttpsProxiesSetQuicOverrideRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.targetHttpsProxies.setSslCertificates":
 
 type TargetHttpsProxiesSetSslCertificatesCall struct {
@@ -82334,6 +86354,179 @@ func (c *TargetHttpsProxiesSetSslCertificatesCall) Do(opts ...googleapi.CallOpti
 	//   "path": "{project}/targetHttpsProxies/{targetHttpsProxy}/setSslCertificates",
 	//   "request": {
 	//     "$ref": "TargetHttpsProxiesSetSslCertificatesRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
+// method id "compute.targetHttpsProxies.setSslPolicy":
+
+type TargetHttpsProxiesSetSslPolicyCall struct {
+	s                  *Service
+	project            string
+	targetHttpsProxy   string
+	sslpolicyreference *SslPolicyReference
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
+	header_            http.Header
+}
+
+// SetSslPolicy: Sets the SSL policy for TargetHttpsProxy. The SSL
+// policy specifies the server-side support for SSL features. This
+// affects connections between clients and the HTTPS proxy load
+// balancer. They do not affect the connection between the load balancer
+// and the backends.
+func (r *TargetHttpsProxiesService) SetSslPolicy(project string, targetHttpsProxy string, sslpolicyreference *SslPolicyReference) *TargetHttpsProxiesSetSslPolicyCall {
+	c := &TargetHttpsProxiesSetSslPolicyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.targetHttpsProxy = targetHttpsProxy
+	c.sslpolicyreference = sslpolicyreference
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *TargetHttpsProxiesSetSslPolicyCall) RequestId(requestId string) *TargetHttpsProxiesSetSslPolicyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *TargetHttpsProxiesSetSslPolicyCall) Fields(s ...googleapi.Field) *TargetHttpsProxiesSetSslPolicyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TargetHttpsProxiesSetSslPolicyCall) Context(ctx context.Context) *TargetHttpsProxiesSetSslPolicyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *TargetHttpsProxiesSetSslPolicyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *TargetHttpsProxiesSetSslPolicyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicyreference)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setSslPolicy")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"targetHttpsProxy": c.targetHttpsProxy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.targetHttpsProxies.setSslPolicy" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *TargetHttpsProxiesSetSslPolicyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the SSL policy for TargetHttpsProxy. The SSL policy specifies the server-side support for SSL features. This affects connections between clients and the HTTPS proxy load balancer. They do not affect the connection between the load balancer and the backends.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.targetHttpsProxies.setSslPolicy",
+	//   "parameterOrder": [
+	//     "project",
+	//     "targetHttpsProxy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "targetHttpsProxy": {
+	//       "description": "Name of the TargetHttpsProxy resource whose SSL policy is to be set. The name must be 1-63 characters long, and comply with RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setSslPolicy",
+	//   "request": {
+	//     "$ref": "SslPolicyReference"
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
@@ -87347,6 +91540,178 @@ func (c *TargetSslProxiesSetSslCertificatesCall) Do(opts ...googleapi.CallOption
 
 }
 
+// method id "compute.targetSslProxies.setSslPolicy":
+
+type TargetSslProxiesSetSslPolicyCall struct {
+	s                  *Service
+	project            string
+	targetSslProxy     string
+	sslpolicyreference *SslPolicyReference
+	urlParams_         gensupport.URLParams
+	ctx_               context.Context
+	header_            http.Header
+}
+
+// SetSslPolicy: Sets the SSL policy for TargetSslProxy. The SSL policy
+// specifies the server-side support for SSL features. This affects
+// connections between clients and the SSL proxy load balancer. They do
+// not affect the connection between the load balancer and the backends.
+func (r *TargetSslProxiesService) SetSslPolicy(project string, targetSslProxy string, sslpolicyreference *SslPolicyReference) *TargetSslProxiesSetSslPolicyCall {
+	c := &TargetSslProxiesSetSslPolicyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.targetSslProxy = targetSslProxy
+	c.sslpolicyreference = sslpolicyreference
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *TargetSslProxiesSetSslPolicyCall) RequestId(requestId string) *TargetSslProxiesSetSslPolicyCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *TargetSslProxiesSetSslPolicyCall) Fields(s ...googleapi.Field) *TargetSslProxiesSetSslPolicyCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TargetSslProxiesSetSslPolicyCall) Context(ctx context.Context) *TargetSslProxiesSetSslPolicyCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *TargetSslProxiesSetSslPolicyCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *TargetSslProxiesSetSslPolicyCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicyreference)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/global/targetSslProxies/{targetSslProxy}/setSslPolicy")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":        c.project,
+		"targetSslProxy": c.targetSslProxy,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.targetSslProxies.setSslPolicy" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *TargetSslProxiesSetSslPolicyCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the SSL policy for TargetSslProxy. The SSL policy specifies the server-side support for SSL features. This affects connections between clients and the SSL proxy load balancer. They do not affect the connection between the load balancer and the backends.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.targetSslProxies.setSslPolicy",
+	//   "parameterOrder": [
+	//     "project",
+	//     "targetSslProxy"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "targetSslProxy": {
+	//       "description": "Name of the TargetSslProxy resource whose SSL policy is to be set. The name must be 1-63 characters long, and comply with RFC1035.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/global/targetSslProxies/{targetSslProxy}/setSslPolicy",
+	//   "request": {
+	//     "$ref": "SslPolicyReference"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
+}
+
 // method id "compute.targetSslProxies.testIamPermissions":
 
 type TargetSslProxiesTestIamPermissionsCall struct {
@@ -89576,6 +93941,188 @@ func (c *TargetVpnGatewaysListCall) Pages(ctx context.Context, f func(*TargetVpn
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+// method id "compute.targetVpnGateways.setLabels":
+
+type TargetVpnGatewaysSetLabelsCall struct {
+	s                      *Service
+	project                string
+	region                 string
+	resource               string
+	regionsetlabelsrequest *RegionSetLabelsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetLabels: Sets the labels on a TargetVpnGateway. To learn more about
+// labels, read the Labeling Resources documentation.
+func (r *TargetVpnGatewaysService) SetLabels(project string, region string, resource string, regionsetlabelsrequest *RegionSetLabelsRequest) *TargetVpnGatewaysSetLabelsCall {
+	c := &TargetVpnGatewaysSetLabelsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.resource = resource
+	c.regionsetlabelsrequest = regionsetlabelsrequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *TargetVpnGatewaysSetLabelsCall) RequestId(requestId string) *TargetVpnGatewaysSetLabelsCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *TargetVpnGatewaysSetLabelsCall) Fields(s ...googleapi.Field) *TargetVpnGatewaysSetLabelsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *TargetVpnGatewaysSetLabelsCall) Context(ctx context.Context) *TargetVpnGatewaysSetLabelsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *TargetVpnGatewaysSetLabelsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *TargetVpnGatewaysSetLabelsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/regions/{region}/targetVpnGateways/{resource}/setLabels")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"region":   c.region,
+		"resource": c.resource,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.targetVpnGateways.setLabels" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *TargetVpnGatewaysSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the labels on a TargetVpnGateway. To learn more about labels, read the Labeling Resources documentation.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.targetVpnGateways.setLabels",
+	//   "parameterOrder": [
+	//     "project",
+	//     "region",
+	//     "resource"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "region": {
+	//       "description": "The region for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "resource": {
+	//       "description": "Name of the resource for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/regions/{region}/targetVpnGateways/{resource}/setLabels",
+	//   "request": {
+	//     "$ref": "RegionSetLabelsRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
 }
 
 // method id "compute.targetVpnGateways.testIamPermissions":
@@ -92295,6 +96842,188 @@ func (c *VpnTunnelsListCall) Pages(ctx context.Context, f func(*VpnTunnelList) e
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+// method id "compute.vpnTunnels.setLabels":
+
+type VpnTunnelsSetLabelsCall struct {
+	s                      *Service
+	project                string
+	region                 string
+	resource               string
+	regionsetlabelsrequest *RegionSetLabelsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetLabels: Sets the labels on a VpnTunnel. To learn more about
+// labels, read the Labeling Resources documentation.
+func (r *VpnTunnelsService) SetLabels(project string, region string, resource string, regionsetlabelsrequest *RegionSetLabelsRequest) *VpnTunnelsSetLabelsCall {
+	c := &VpnTunnelsSetLabelsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.resource = resource
+	c.regionsetlabelsrequest = regionsetlabelsrequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional
+// request ID to identify requests. Specify a unique request ID so that
+// if you must retry your request, the server will know to ignore the
+// request if it has already been completed.
+//
+// For example, consider a situation where you make an initial request
+// and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the
+// same request ID was received, and if so, will ignore the second
+// request. This prevents clients from accidentally creating duplicate
+// commitments.
+//
+// The request ID must be a valid UUID with the exception that zero UUID
+// is not supported (00000000-0000-0000-0000-000000000000).
+func (c *VpnTunnelsSetLabelsCall) RequestId(requestId string) *VpnTunnelsSetLabelsCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *VpnTunnelsSetLabelsCall) Fields(s ...googleapi.Field) *VpnTunnelsSetLabelsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *VpnTunnelsSetLabelsCall) Context(ctx context.Context) *VpnTunnelsSetLabelsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *VpnTunnelsSetLabelsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *VpnTunnelsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/regions/{region}/vpnTunnels/{resource}/setLabels")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"region":   c.region,
+		"resource": c.resource,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.vpnTunnels.setLabels" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *VpnTunnelsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the labels on a VpnTunnel. To learn more about labels, read the Labeling Resources documentation.",
+	//   "httpMethod": "POST",
+	//   "id": "compute.vpnTunnels.setLabels",
+	//   "parameterOrder": [
+	//     "project",
+	//     "region",
+	//     "resource"
+	//   ],
+	//   "parameters": {
+	//     "project": {
+	//       "description": "Project ID for this request.",
+	//       "location": "path",
+	//       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "region": {
+	//       "description": "The region for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "requestId": {
+	//       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "resource": {
+	//       "description": "Name of the resource for this request.",
+	//       "location": "path",
+	//       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "{project}/regions/{region}/vpnTunnels/{resource}/setLabels",
+	//   "request": {
+	//     "$ref": "RegionSetLabelsRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
+	//   ]
+	// }
+
 }
 
 // method id "compute.vpnTunnels.testIamPermissions":

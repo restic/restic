@@ -48,8 +48,9 @@ func TestNewInsertRequest(t *testing.T) {
 		req    *bq.TableDataInsertAllRequest
 	}{
 		{
-			ul:  &Uploader{},
-			req: &bq.TableDataInsertAllRequest{},
+			ul:     &Uploader{},
+			savers: nil,
+			req:    nil,
 		},
 		{
 			ul: &Uploader{},
@@ -92,7 +93,7 @@ func TestNewInsertRequest(t *testing.T) {
 		}
 		want := tc.req
 		if !testutil.Equal(got, want) {
-			t.Errorf("%#d: %#v: got %#v, want %#v", i, tc.ul, got, want)
+			t.Errorf("%d: %#v: got %#v, want %#v", i, tc.ul, got, want)
 		}
 	}
 }
@@ -155,6 +156,8 @@ func TestValueSavers(t *testing.T) {
 		in   interface{}
 		want []ValueSaver
 	}{
+		{[]interface{}(nil), nil},
+		{[]interface{}{}, nil},
 		{ts, []ValueSaver{ts}},
 		{T{I: 1}, []ValueSaver{&StructSaver{Schema: schema, Struct: T{I: 1}}}},
 		{[]ValueSaver{ts, ts}, []ValueSaver{ts, ts}},
@@ -191,6 +194,7 @@ func TestValueSavers(t *testing.T) {
 
 func TestValueSaversErrors(t *testing.T) {
 	inputs := []interface{}{
+		nil,
 		1,
 		[]int{1, 2},
 		[]interface{}{

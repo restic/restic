@@ -728,6 +728,9 @@ func (s *ErrorProto) MarshalJSON() ([]byte, error) {
 }
 
 type ExplainQueryStage struct {
+	// CompletedParallelInputs: Number of parallel input segments completed.
+	CompletedParallelInputs int64 `json:"completedParallelInputs,omitempty,string"`
+
 	// ComputeMsAvg: Milliseconds the average shard spent on CPU-bound
 	// tasks.
 	ComputeMsAvg int64 `json:"computeMsAvg,omitempty,string"`
@@ -749,6 +752,9 @@ type ExplainQueryStage struct {
 
 	// Name: Human-readable name for stage.
 	Name string `json:"name,omitempty"`
+
+	// ParallelInputs: Number of parallel input segments to be processed.
+	ParallelInputs int64 `json:"parallelInputs,omitempty,string"`
 
 	// ReadMsAvg: Milliseconds the average shard spent reading input.
 	ReadMsAvg int64 `json:"readMsAvg,omitempty,string"`
@@ -814,20 +820,22 @@ type ExplainQueryStage struct {
 	// writing output.
 	WriteRatioMax float64 `json:"writeRatioMax,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "ComputeMsAvg") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "CompletedParallelInputs") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "ComputeMsAvg") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "CompletedParallelInputs")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -1248,11 +1256,11 @@ type JobConfiguration struct {
 	// Extract: [Pick one] Configures an extract job.
 	Extract *JobConfigurationExtract `json:"extract,omitempty"`
 
-	// Labels: [Experimental] The labels associated with this job. You can
-	// use these to organize and group your jobs. Label keys and values can
-	// be no longer than 63 characters, can only contain lowercase letters,
-	// numeric characters, underscores and dashes. International characters
-	// are allowed. Label values are optional. Label keys must start with a
+	// Labels: The labels associated with this job. You can use these to
+	// organize and group your jobs. Label keys and values can be no longer
+	// than 63 characters, can only contain lowercase letters, numeric
+	// characters, underscores and dashes. International characters are
+	// allowed. Label values are optional. Label keys must start with a
 	// letter and each label in the list must have a different key.
 	Labels map[string]string `json:"labels,omitempty"`
 
@@ -1940,6 +1948,10 @@ type JobStatistics2 struct {
 	// Present only for CREATE/DROP TABLE/VIEW queries.
 	DdlTargetTable *TableReference `json:"ddlTargetTable,omitempty"`
 
+	// EstimatedBytesProcessed: [Output-only] The original estimate of bytes
+	// processed for the job.
+	EstimatedBytesProcessed int64 `json:"estimatedBytesProcessed,omitempty,string"`
+
 	// NumDmlAffectedRows: [Output-only] The number of rows affected by a
 	// DML statement. Present only for DML statements INSERT, UPDATE or
 	// DELETE.
@@ -1958,8 +1970,14 @@ type JobStatistics2 struct {
 	Schema *TableSchema `json:"schema,omitempty"`
 
 	// StatementType: [Output-only, Experimental] The type of query
-	// statement, if valid.
+	// statement, if valid. Possible values (new values might be added in
+	// the future): "SELECT": SELECT query. "INSERT": INSERT query; see
+	// https://cloud.google.com/bigquery/docs/reference/standard-sql/data-manipulation-language "UPDATE": UPDATE query; see https://cloud.google.com/bigquery/docs/reference/standard-sql/data-manipulation-language "DELETE": DELETE query; see https://cloud.google.com/bigquery/docs/reference/standard-sql/data-manipulation-language "CREATE_TABLE": CREATE [OR REPLACE] TABLE without AS SELECT. "CREATE_TABLE_AS_SELECT": CREATE [OR REPLACE] TABLE ... AS SELECT ... "DROP_TABLE": DROP TABLE query. "CREATE_VIEW": CREATE [OR REPLACE] VIEW ... AS SELECT ... "DROP_VIEW": DROP VIEW
+	// query.
 	StatementType string `json:"statementType,omitempty"`
+
+	// Timeline: [Output-only] Describes a timeline of job execution.
+	Timeline []*QueryTimelineSample `json:"timeline,omitempty"`
 
 	// TotalBytesBilled: [Output-only] Total bytes billed for the job.
 	TotalBytesBilled int64 `json:"totalBytesBilled,omitempty,string"`
@@ -2532,6 +2550,53 @@ func (s *QueryResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type QueryTimelineSample struct {
+	// ActiveInputs: Total number of active workers. This does not
+	// correspond directly to slot usage. This is the largest value observed
+	// since the last sample.
+	ActiveInputs int64 `json:"activeInputs,omitempty"`
+
+	// CompletedInputs: Total parallel units of work completed by this
+	// query.
+	CompletedInputs int64 `json:"completedInputs,omitempty"`
+
+	// CompletedInputsForActiveStages: Total parallel units of work
+	// completed by the currently active stages.
+	CompletedInputsForActiveStages int64 `json:"completedInputsForActiveStages,omitempty"`
+
+	// ElapsedMs: Milliseconds elapsed since the start of query execution.
+	ElapsedMs int64 `json:"elapsedMs,omitempty,string"`
+
+	// PendingInputs: Total parallel units of work remaining for the active
+	// stages.
+	PendingInputs int64 `json:"pendingInputs,omitempty,string"`
+
+	// TotalSlotMs: Cumulative slot-ms consumed by the query.
+	TotalSlotMs int64 `json:"totalSlotMs,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "ActiveInputs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ActiveInputs") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *QueryTimelineSample) MarshalJSON() ([]byte, error) {
+	type NoMethod QueryTimelineSample
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 type Streamingbuffer struct {
 	// EstimatedBytes: [Output-only] A lower-bound estimate of the number of
 	// bytes currently in the streaming buffer.
@@ -2588,7 +2653,9 @@ type Table struct {
 	// ExpirationTime: [Optional] The time when this table expires, in
 	// milliseconds since the epoch. If not present, the table will persist
 	// indefinitely. Expired tables will be deleted and their storage
-	// reclaimed.
+	// reclaimed. The defaultTableExpirationMs property of the encapsulating
+	// dataset can be used to set a default expirationTime on newly created
+	// tables.
 	ExpirationTime int64 `json:"expirationTime,omitempty,string"`
 
 	// ExternalDataConfiguration: [Optional] Describes the data format,
@@ -2606,13 +2673,12 @@ type Table struct {
 	// Kind: [Output-only] The type of the resource.
 	Kind string `json:"kind,omitempty"`
 
-	// Labels: [Experimental] The labels associated with this table. You can
-	// use these to organize and group your tables. Label keys and values
-	// can be no longer than 63 characters, can only contain lowercase
-	// letters, numeric characters, underscores and dashes. International
-	// characters are allowed. Label values are optional. Label keys must
-	// start with a letter and each label in the list must have a different
-	// key.
+	// Labels: The labels associated with this table. You can use these to
+	// organize and group your tables. Label keys and values can be no
+	// longer than 63 characters, can only contain lowercase letters,
+	// numeric characters, underscores and dashes. International characters
+	// are allowed. Label values are optional. Label keys must start with a
+	// letter and each label in the list must have a different key.
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// LastModifiedTime: [Output-only] The time when this table was last
@@ -3023,8 +3089,8 @@ type TableListTables struct {
 	// Kind: The resource type.
 	Kind string `json:"kind,omitempty"`
 
-	// Labels: [Experimental] The labels associated with this table. You can
-	// use these to organize and group your tables.
+	// Labels: The labels associated with this table. You can use these to
+	// organize and group your tables.
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// TableReference: A reference uniquely identifying the table.

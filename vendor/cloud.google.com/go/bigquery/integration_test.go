@@ -53,8 +53,10 @@ var (
 		}},
 	}
 	testTableExpiration time.Time
-	datasetIDs          = testutil.NewUIDSpaceSep("dataset", '_')
-	tableIDs            = testutil.NewUIDSpaceSep("table", '_')
+	// BigQuery does not accept hyphens in dataset or table IDs, so we create IDs
+	// with underscores.
+	datasetIDs = testutil.NewUIDSpaceSep("dataset", '_')
+	tableIDs   = testutil.NewUIDSpaceSep("table", '_')
 )
 
 func TestMain(m *testing.M) {
@@ -94,8 +96,6 @@ func initIntegrationTest() func() {
 	if err != nil {
 		log.Fatalf("storage.NewClient: %v", err)
 	}
-	// BigQuery does not accept hyphens in dataset or table IDs, so we create IDs
-	// with underscores.
 	dataset = client.Dataset(datasetIDs.New())
 	if err := dataset.Create(ctx, nil); err != nil {
 		log.Fatalf("creating dataset %s: %v", dataset.DatasetID, err)
@@ -197,16 +197,28 @@ func TestIntegration_TableMetadata(t *testing.T) {
 
 	// Create tables that have time partitioning
 	partitionCases := []struct {
-		timePartitioning   TimePartitioning
-		expectedExpiration time.Duration
+		timePartitioning TimePartitioning
+		wantExpiration   time.Duration
+		wantField        string
 	}{
-		{TimePartitioning{}, time.Duration(0)},
-		{TimePartitioning{time.Second}, time.Second},
+		{TimePartitioning{}, time.Duration(0), ""},
+		{TimePartitioning{Expiration: time.Second}, time.Second, ""},
+		{
+			TimePartitioning{
+				Expiration: time.Second,
+				Field:      "date",
+			}, time.Second, "date"},
 	}
+
+	schema2 := Schema{
+		{Name: "name", Type: StringFieldType},
+		{Name: "date", Type: DateFieldType},
+	}
+
 	for i, c := range partitionCases {
 		table := dataset.Table(fmt.Sprintf("t_metadata_partition_%v", i))
 		err = table.Create(context.Background(), &TableMetadata{
-			Schema:           schema,
+			Schema:           schema2,
 			TimePartitioning: &c.timePartitioning,
 			ExpirationTime:   time.Now().Add(5 * time.Minute),
 		})
@@ -220,7 +232,10 @@ func TestIntegration_TableMetadata(t *testing.T) {
 		}
 
 		got := md.TimePartitioning
-		want := &TimePartitioning{c.expectedExpiration}
+		want := &TimePartitioning{
+			Expiration: c.wantExpiration,
+			Field:      c.wantField,
+		}
 		if !testutil.Equal(got, want) {
 			t.Errorf("metadata.TimePartitioning: got %v, want %v", got, want)
 		}
@@ -249,7 +264,7 @@ func TestIntegration_DatasetCreate(t *testing.T) {
 		t.Errorf("location: got %q, want %q", got, want)
 	}
 	if err := ds.Delete(ctx); err != nil {
-		t.Fatalf("deleting dataset %s: %v", ds, err)
+		t.Fatalf("deleting dataset %v: %v", ds, err)
 	}
 }
 
@@ -585,7 +600,7 @@ func TestIntegration_UploadAndRead(t *testing.T) {
 	}
 
 	// Test reading directly into a []Value.
-	valueLists, err := readAll(table.Read(ctx))
+	valueLists, schema, _, err := readAll(table.Read(ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,6 +609,9 @@ func TestIntegration_UploadAndRead(t *testing.T) {
 		var got []Value
 		if err := it.Next(&got); err != nil {
 			t.Fatal(err)
+		}
+		if !testutil.Equal(it.Schema, schema) {
+			t.Fatalf("got schema %v, want %v", it.Schema, schema)
 		}
 		want := []Value(vl)
 		if !testutil.Equal(got, want) {
@@ -655,6 +673,10 @@ type TestStruct struct {
 	Record      SubTestStruct
 	RecordArray []SubTestStruct
 }
+
+// Round times to the microsecond for comparison purposes.
+var roundToMicros = cmp.Transformer("RoundToMicros",
+	func(t time.Time) time.Time { return t.Round(time.Microsecond) })
 
 func TestIntegration_UploadAndReadStructs(t *testing.T) {
 	if client == nil {
@@ -755,15 +777,11 @@ func TestIntegration_UploadAndReadStructs(t *testing.T) {
 	}
 	sort.Sort(byName(got))
 
-	// Compare times to the microsecond.
-	timeEq := func(x, y time.Time) bool {
-		return x.Round(time.Microsecond).Equal(y.Round(time.Microsecond))
-	}
 	// BigQuery does not elide nils. It reports an error for nil fields.
 	for i, g := range got {
 		if i >= len(want) {
 			t.Errorf("%d: got %v, past end of want", i, pretty.Value(g))
-		} else if diff := testutil.Diff(g, want[i], cmp.Comparer(timeEq)); diff != "" {
+		} else if diff := testutil.Diff(g, want[i], roundToMicros); diff != "" {
 			t.Errorf("%d: got=-, want=+:\n%s", i, diff)
 		}
 	}
@@ -774,6 +792,69 @@ type byName []*TestStruct
 func (b byName) Len() int           { return len(b) }
 func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b byName) Less(i, j int) bool { return b[i].Name < b[j].Name }
+
+func TestIntegration_UploadAndReadNullable(t *testing.T) {
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctm := civil.Time{15, 4, 5, 6000}
+	cdt := civil.DateTime{testDate, ctm}
+	testUploadAndReadNullable(t, testStructNullable{}, make([]Value, len(testStructNullableSchema)))
+	testUploadAndReadNullable(t, testStructNullable{
+		String:    NullString{"x", true},
+		Bytes:     []byte{1, 2, 3},
+		Integer:   NullInt64{1, true},
+		Float:     NullFloat64{2.3, true},
+		Boolean:   NullBool{true, true},
+		Timestamp: NullTimestamp{testTimestamp, true},
+		Date:      NullDate{testDate, true},
+		Time:      NullTime{ctm, true},
+		DateTime:  NullDateTime{cdt, true},
+		Record:    &subNullable{X: NullInt64{4, true}},
+	},
+		[]Value{"x", []byte{1, 2, 3}, int64(1), 2.3, true, testTimestamp, testDate, ctm, cdt, []Value{int64(4)}})
+}
+
+func testUploadAndReadNullable(t *testing.T, ts testStructNullable, wantRow []Value) {
+	ctx := context.Background()
+	table := newTable(t, testStructNullableSchema)
+	defer table.Delete(ctx)
+
+	// Populate the table.
+	upl := table.Uploader()
+	if err := upl.Put(ctx, []*StructSaver{{Schema: testStructNullableSchema, Struct: ts}}); err != nil {
+		t.Fatal(putError(err))
+	}
+	// Wait until the data has been uploaded. This can take a few seconds, according
+	// to https://cloud.google.com/bigquery/streaming-data-into-bigquery.
+	if err := waitForRow(ctx, table); err != nil {
+		t.Fatal(err)
+	}
+
+	// Read into a []Value.
+	iter := table.Read(ctx)
+	gotRows, _, _, err := readAll(iter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotRows) != 1 {
+		t.Fatalf("got %d rows, want 1", len(gotRows))
+	}
+	if diff := testutil.Diff(gotRows[0], wantRow, roundToMicros); diff != "" {
+		t.Error(diff)
+	}
+
+	// Read into a struct.
+	want := ts
+	var sn testStructNullable
+	it := table.Read(ctx)
+	if err := it.Next(&sn); err != nil {
+		t.Fatal(err)
+	}
+	if diff := testutil.Diff(sn, want, roundToMicros); diff != "" {
+		t.Error(diff)
+	}
+}
 
 func TestIntegration_TableUpdate(t *testing.T) {
 	if client == nil {
@@ -940,7 +1021,7 @@ func TestIntegration_Load(t *testing.T) {
 	if err := wait(ctx, job); err != nil {
 		t.Fatal(err)
 	}
-	checkRead(t, "reader load", table.Read(ctx), wantRows)
+	checkReadAndTotalRows(t, "reader load", table.Read(ctx), wantRows)
 
 }
 
@@ -1270,7 +1351,7 @@ func TestIntegration_ExtractExternal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checkRead(t, "external query", iter, wantRows)
+	checkReadAndTotalRows(t, "external query", iter, wantRows)
 
 	// Make a table pointing to the file, and query it.
 	// BigQuery does not allow a Table.Read on an external table.
@@ -1288,7 +1369,7 @@ func TestIntegration_ExtractExternal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	checkRead(t, "external table", iter, wantRows)
+	checkReadAndTotalRows(t, "external table", iter, wantRows)
 
 	// While we're here, check that the table metadata is correct.
 	md, err := table.Metadata(ctx)
@@ -1452,18 +1533,27 @@ func newTable(t *testing.T, s Schema) *Table {
 }
 
 func checkRead(t *testing.T, msg string, it *RowIterator, want [][]Value) {
-	if msg2, ok := compareRead(it, want); !ok {
+	if msg2, ok := compareRead(it, want, false); !ok {
 		t.Errorf("%s: %s", msg, msg2)
 	}
 }
 
-func compareRead(it *RowIterator, want [][]Value) (msg string, ok bool) {
-	got, err := readAll(it)
+func checkReadAndTotalRows(t *testing.T, msg string, it *RowIterator, want [][]Value) {
+	if msg2, ok := compareRead(it, want, true); !ok {
+		t.Errorf("%s: %s", msg, msg2)
+	}
+}
+
+func compareRead(it *RowIterator, want [][]Value, compareTotalRows bool) (msg string, ok bool) {
+	got, _, totalRows, err := readAll(it)
 	if err != nil {
 		return err.Error(), false
 	}
 	if len(got) != len(want) {
 		return fmt.Sprintf("got %d rows, want %d", len(got), len(want)), false
+	}
+	if compareTotalRows && len(got) != int(totalRows) {
+		return fmt.Sprintf("got %d rows, but totalRows = %d", len(got), totalRows), false
 	}
 	sort.Sort(byCol0(got))
 	for i, r := range got {
@@ -1476,18 +1566,24 @@ func compareRead(it *RowIterator, want [][]Value) (msg string, ok bool) {
 	return "", true
 }
 
-func readAll(it *RowIterator) ([][]Value, error) {
-	var rows [][]Value
+func readAll(it *RowIterator) ([][]Value, Schema, uint64, error) {
+	var (
+		rows      [][]Value
+		schema    Schema
+		totalRows uint64
+	)
 	for {
 		var vals []Value
 		err := it.Next(&vals)
 		if err == iterator.Done {
-			return rows, nil
+			return rows, schema, totalRows, nil
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, 0, err
 		}
 		rows = append(rows, vals)
+		schema = it.Schema
+		totalRows = it.TotalRows
 	}
 }
 

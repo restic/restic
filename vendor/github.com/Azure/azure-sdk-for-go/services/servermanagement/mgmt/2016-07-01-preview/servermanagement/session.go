@@ -18,6 +18,7 @@ package servermanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // SessionClient is the REST API for Azure Server Management Service.
 type SessionClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSessionClient creates an instance of the SessionClient client.
@@ -39,15 +40,12 @@ func NewSessionClientWithBaseURI(baseURI string, subscriptionID string) SessionC
 	return SessionClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create creates a session for a node. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Create creates a session for a node.
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum). session is the sessionId from the user. sessionParameters is
 // parameters supplied to the CreateOrUpdate operation.
-func (client SessionClient) Create(resourceGroupName string, nodeName string, session string, sessionParameters SessionParameters, cancel <-chan struct{}) (<-chan SessionResource, <-chan error) {
-	resultChan := make(chan SessionResource, 1)
-	errChan := make(chan error, 1)
+func (client SessionClient) Create(ctx context.Context, resourceGroupName string, nodeName string, session string, sessionParameters SessionParameters) (result SessionCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -56,46 +54,26 @@ func (client SessionClient) Create(resourceGroupName string, nodeName string, se
 			Constraints: []validation.Constraint{{Target: "nodeName", Name: validation.MaxLength, Rule: 256, Chain: nil},
 				{Target: "nodeName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "nodeName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "servermanagement.SessionClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "servermanagement.SessionClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result SessionResource
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, nodeName, session, sessionParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, nodeName, session, sessionParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client SessionClient) CreatePreparer(resourceGroupName string, nodeName string, session string, sessionParameters SessionParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client SessionClient) CreatePreparer(ctx context.Context, resourceGroupName string, nodeName string, session string, sessionParameters SessionParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -115,16 +93,22 @@ func (client SessionClient) CreatePreparer(resourceGroupName string, nodeName st
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}/sessions/{session}", pathParameters),
 		autorest.WithJSON(sessionParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client SessionClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SessionClient) CreateSender(req *http.Request) (future SessionCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -144,7 +128,7 @@ func (client SessionClient) CreateResponder(resp *http.Response) (result Session
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum). session is the sessionId from the user.
-func (client SessionClient) Delete(resourceGroupName string, nodeName string, session string) (result autorest.Response, err error) {
+func (client SessionClient) Delete(ctx context.Context, resourceGroupName string, nodeName string, session string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -156,7 +140,7 @@ func (client SessionClient) Delete(resourceGroupName string, nodeName string, se
 		return result, validation.NewErrorWithValidationError(err, "servermanagement.SessionClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, nodeName, session)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, nodeName, session)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Delete", nil, "Failure preparing request")
 		return
@@ -178,7 +162,7 @@ func (client SessionClient) Delete(resourceGroupName string, nodeName string, se
 }
 
 // DeletePreparer prepares the Delete request.
-func (client SessionClient) DeletePreparer(resourceGroupName string, nodeName string, session string) (*http.Request, error) {
+func (client SessionClient) DeletePreparer(ctx context.Context, resourceGroupName string, nodeName string, session string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -196,14 +180,13 @@ func (client SessionClient) DeletePreparer(resourceGroupName string, nodeName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}/sessions/{session}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client SessionClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -223,7 +206,7 @@ func (client SessionClient) DeleteResponder(resp *http.Response) (result autores
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum). session is the sessionId from the user.
-func (client SessionClient) Get(resourceGroupName string, nodeName string, session string) (result SessionResource, err error) {
+func (client SessionClient) Get(ctx context.Context, resourceGroupName string, nodeName string, session string) (result SessionResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -235,7 +218,7 @@ func (client SessionClient) Get(resourceGroupName string, nodeName string, sessi
 		return result, validation.NewErrorWithValidationError(err, "servermanagement.SessionClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, nodeName, session)
+	req, err := client.GetPreparer(ctx, resourceGroupName, nodeName, session)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.SessionClient", "Get", nil, "Failure preparing request")
 		return
@@ -257,7 +240,7 @@ func (client SessionClient) Get(resourceGroupName string, nodeName string, sessi
 }
 
 // GetPreparer prepares the Get request.
-func (client SessionClient) GetPreparer(resourceGroupName string, nodeName string, session string) (*http.Request, error) {
+func (client SessionClient) GetPreparer(ctx context.Context, resourceGroupName string, nodeName string, session string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -275,14 +258,13 @@ func (client SessionClient) GetPreparer(resourceGroupName string, nodeName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}/sessions/{session}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client SessionClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

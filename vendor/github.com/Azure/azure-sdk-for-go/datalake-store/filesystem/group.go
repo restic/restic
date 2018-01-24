@@ -56,6 +56,8 @@ func NewGroupClient() GroupClient {
 // the file with the same leaseId will be allowed to do so. fileSessionID is optional unique GUID per file indicating
 // all the appends with the same fileSessionId are from the same client and same session. This will give a performance
 // benefit when syncFlag is DATA or METADATA.
+//
+// Deprecated: Please use github.com/Azure/azure-sdk-for-go/services/datalake/store/2016-11-01/filesystem
 func (client GroupClient) Append(accountName string, pathParameter string, streamContents io.ReadCloser, appendParameter string, op string, offset *int64, syncFlag SyncFlag, leaseID *uuid.UUID, fileSessionID *uuid.UUID) (result autorest.Response, err error) {
 	req, err := client.AppendPreparer(accountName, pathParameter, streamContents, appendParameter, op, offset, syncFlag, leaseID, fileSessionID)
 	if err != nil {

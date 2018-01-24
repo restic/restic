@@ -18,6 +18,7 @@ package commerce
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // RateCardClient is the client for the RateCard methods of the Commerce service.
 type RateCardClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewRateCardClient creates an instance of the RateCardClient client.
@@ -48,8 +49,8 @@ func NewRateCardClientWithBaseURI(baseURI string, subscriptionID string) RateCar
 // filter is the filter to apply on the operation. It ONLY supports the 'eq' and 'and' logical operators at this time.
 // All the 4 query parameters 'OfferDurableId',  'Currency', 'Locale', 'Region' are required to be a part of the
 // $filter.
-func (client RateCardClient) Get(filter string) (result ResourceRateCardInfo, err error) {
-	req, err := client.GetPreparer(filter)
+func (client RateCardClient) Get(ctx context.Context, filter string) (result ResourceRateCardInfo, err error) {
+	req, err := client.GetPreparer(ctx, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "commerce.RateCardClient", "Get", nil, "Failure preparing request")
 		return
@@ -71,7 +72,7 @@ func (client RateCardClient) Get(filter string) (result ResourceRateCardInfo, er
 }
 
 // GetPreparer prepares the Get request.
-func (client RateCardClient) GetPreparer(filter string) (*http.Request, error) {
+func (client RateCardClient) GetPreparer(ctx context.Context, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -87,14 +88,13 @@ func (client RateCardClient) GetPreparer(filter string) (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/RateCard", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client RateCardClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

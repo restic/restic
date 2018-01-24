@@ -147,6 +147,11 @@ type TimePartitioning struct {
 	// The amount of time to keep the storage for a partition.
 	// If the duration is empty (0), the data in the partitions do not expire.
 	Expiration time.Duration
+
+	// If empty, the table is partitioned by pseudo column '_PARTITIONTIME'; if set, the
+	// table is partitioned by this field. The field must be a top-level TIMESTAMP or
+	// DATE field. Its mode must be NULLABLE or REQUIRED.
+	Field string
 }
 
 func (p *TimePartitioning) toBQ() *bq.TimePartitioning {
@@ -156,6 +161,7 @@ func (p *TimePartitioning) toBQ() *bq.TimePartitioning {
 	return &bq.TimePartitioning{
 		Type:         "DAY",
 		ExpirationMs: int64(p.Expiration / time.Millisecond),
+		Field:        p.Field,
 	}
 }
 
@@ -165,6 +171,7 @@ func bqToTimePartitioning(q *bq.TimePartitioning) *TimePartitioning {
 	}
 	return &TimePartitioning{
 		Expiration: time.Duration(q.ExpirationMs) * time.Millisecond,
+		Field:      q.Field,
 	}
 }
 

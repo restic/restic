@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // PropertiesClient is the apiManagement Client
 type PropertiesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPropertiesClient creates an instance of the PropertiesClient client.
@@ -47,7 +48,7 @@ func NewPropertiesClientWithBaseURI(baseURI string, subscriptionID string) Prope
 // | tags  | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith, any, all |
 // | name  | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith           | top is number of records
 // to return. skip is number of records to skip.
-func (client PropertiesClient) ListByService(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result PropertyCollection, err error) {
+func (client PropertiesClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result PropertyCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -62,7 +63,8 @@ func (client PropertiesClient) ListByService(resourceGroupName string, serviceNa
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.PropertiesClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName, filter, top, skip)
+	result.fn = client.listByServiceNextResults
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -70,12 +72,12 @@ func (client PropertiesClient) ListByService(resourceGroupName string, serviceNa
 
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServiceResponder(resp)
+	result.pc, err = client.ListByServiceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", resp, "Failure responding to request")
 	}
@@ -84,7 +86,7 @@ func (client PropertiesClient) ListByService(resourceGroupName string, serviceNa
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client PropertiesClient) ListByServicePreparer(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client PropertiesClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -110,14 +112,13 @@ func (client PropertiesClient) ListByServicePreparer(resourceGroupName string, s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/properties", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client PropertiesClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -134,71 +135,29 @@ func (client PropertiesClient) ListByServiceResponder(resp *http.Response) (resu
 	return
 }
 
-// ListByServiceNextResults retrieves the next set of results, if any.
-func (client PropertiesClient) ListByServiceNextResults(lastResults PropertyCollection) (result PropertyCollection, err error) {
-	req, err := lastResults.PropertyCollectionPreparer()
+// listByServiceNextResults retrieves the next set of results, if any.
+func (client PropertiesClient) listByServiceNextResults(lastResults PropertyCollection) (result PropertyCollection, err error) {
+	req, err := lastResults.propertyCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "listByServiceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "listByServiceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServiceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "ListByService", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.PropertiesClient", "listByServiceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServiceComplete gets all elements from the list without paging.
-func (client PropertiesClient) ListByServiceComplete(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan PropertyContract, <-chan error) {
-	resultChan := make(chan PropertyContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByService(resourceGroupName, serviceName, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServiceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServiceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PropertiesClient) ListByServiceComplete(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result PropertyCollectionIterator, err error) {
+	result.page, err = client.ListByService(ctx, resourceGroupName, serviceName, filter, top, skip)
+	return
 }

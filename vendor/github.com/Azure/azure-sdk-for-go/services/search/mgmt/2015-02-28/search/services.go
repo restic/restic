@@ -18,6 +18,7 @@ package search
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ServicesClient is the client that can be used to manage Azure Search services and API keys.
 type ServicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServicesClient creates an instance of the ServicesClient client.
@@ -43,8 +44,8 @@ func NewServicesClientWithBaseURI(baseURI string, subscriptionID string) Service
 //
 // resourceGroupName is the name of the resource group within the current subscription. serviceName is the name of the
 // Search service to create or update. parameters is the properties to set or update on the Search service.
-func (client ServicesClient) CreateOrUpdate(resourceGroupName string, serviceName string, parameters ServiceCreateOrUpdateParameters) (result ServiceResource, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serviceName, parameters)
+func (client ServicesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serviceName string, parameters ServiceCreateOrUpdateParameters) (result ServiceResource, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serviceName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.ServicesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -66,7 +67,7 @@ func (client ServicesClient) CreateOrUpdate(resourceGroupName string, serviceNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ServicesClient) CreateOrUpdatePreparer(resourceGroupName string, serviceName string, parameters ServiceCreateOrUpdateParameters) (*http.Request, error) {
+func (client ServicesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, parameters ServiceCreateOrUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -85,14 +86,13 @@ func (client ServicesClient) CreateOrUpdatePreparer(resourceGroupName string, se
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Search/searchServices/{serviceName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client ServicesClient) CreateOrUpdateResponder(resp *http.Response) (resul
 //
 // resourceGroupName is the name of the resource group within the current subscription. serviceName is the name of the
 // Search service to delete.
-func (client ServicesClient) Delete(resourceGroupName string, serviceName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, serviceName)
+func (client ServicesClient) Delete(ctx context.Context, resourceGroupName string, serviceName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.ServicesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client ServicesClient) Delete(resourceGroupName string, serviceName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServicesClient) DeletePreparer(resourceGroupName string, serviceName string) (*http.Request, error) {
+func (client ServicesClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -153,14 +153,13 @@ func (client ServicesClient) DeletePreparer(resourceGroupName string, serviceNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Search/searchServices/{serviceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -170,7 +169,7 @@ func (client ServicesClient) DeleteResponder(resp *http.Response) (result autore
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNotFound, http.StatusNoContent),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusNotFound),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -179,8 +178,8 @@ func (client ServicesClient) DeleteResponder(resp *http.Response) (result autore
 // List returns a list of all Search services in the given resource group.
 //
 // resourceGroupName is the name of the resource group within the current subscription.
-func (client ServicesClient) List(resourceGroupName string) (result ServiceListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName)
+func (client ServicesClient) List(ctx context.Context, resourceGroupName string) (result ServiceListResult, err error) {
+	req, err := client.ListPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.ServicesClient", "List", nil, "Failure preparing request")
 		return
@@ -202,7 +201,7 @@ func (client ServicesClient) List(resourceGroupName string) (result ServiceListR
 }
 
 // ListPreparer prepares the List request.
-func (client ServicesClient) ListPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ServicesClient) ListPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -218,14 +217,13 @@ func (client ServicesClient) ListPreparer(resourceGroupName string) (*http.Reque
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Search/searchServices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

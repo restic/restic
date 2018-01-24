@@ -39,7 +39,7 @@ const (
 	operationSucceeded  string = "Succeeded"
 )
 
-var pollingCodes = [...]int{http.StatusAccepted, http.StatusCreated, http.StatusOK}
+var pollingCodes = [...]int{http.StatusNoContent, http.StatusAccepted, http.StatusCreated, http.StatusOK}
 
 // Future provides a mechanism to access the status and results of an asynchronous request.
 // Since futures are stateful they should be passed by value to avoid race conditions.
@@ -457,4 +457,22 @@ func newPollingRequest(ps pollingState) (*http.Request, error) {
 	}
 
 	return reqPoll, nil
+}
+
+// AsyncOpIncompleteError is the type that's returned from a future that has not completed.
+type AsyncOpIncompleteError struct {
+	// FutureType is the name of the type composed of a azure.Future.
+	FutureType string
+}
+
+// Error returns an error message including the originating type name of the error.
+func (e AsyncOpIncompleteError) Error() string {
+	return fmt.Sprintf("%s: asynchronous operation has not completed", e.FutureType)
+}
+
+// NewAsyncOpIncompleteError creates a new AsyncOpIncompleteError with the specified parameters.
+func NewAsyncOpIncompleteError(futureType string) AsyncOpIncompleteError {
+	return AsyncOpIncompleteError{
+		FutureType: futureType,
+	}
 }

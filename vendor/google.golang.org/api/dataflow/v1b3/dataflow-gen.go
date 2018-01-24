@@ -3928,6 +3928,9 @@ type ResourceUtilizationReportResponse struct {
 
 // RuntimeEnvironment: The environment values to set at runtime.
 type RuntimeEnvironment struct {
+	// AdditionalExperiments: Additional experiment flags for the job.
+	AdditionalExperiments []string `json:"additionalExperiments,omitempty"`
+
 	// BypassTempDirValidation: Whether to bypass the safety checks for the
 	// job's temporary directory.
 	// Use with caution.
@@ -3959,18 +3962,18 @@ type RuntimeEnvironment struct {
 	Zone string `json:"zone,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
-	// "BypassTempDirValidation") to unconditionally include in API
-	// requests. By default, fields with empty values are omitted from API
-	// requests. However, any non-pointer, non-interface field appearing in
+	// "AdditionalExperiments") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
 	// ForceSendFields will be sent to the server regardless of whether the
 	// field is empty or not. This may be used to include empty fields in
 	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BypassTempDirValidation")
-	// to include in API requests with the JSON null value. By default,
-	// fields with empty values are omitted from API requests. However, any
-	// field with an empty value appearing in NullFields will be sent to the
+	// NullFields is a list of field names (e.g. "AdditionalExperiments") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
 	// server as null. It is an error if a field in this list has a
 	// non-empty value. This may be used to include null fields in Patch
 	// requests.

@@ -18,7 +18,9 @@ package redis
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 )
@@ -27,23 +29,23 @@ import (
 type DayOfWeek string
 
 const (
-	// Everyday specifies the everyday state for day of week.
+	// Everyday ...
 	Everyday DayOfWeek = "Everyday"
-	// Friday specifies the friday state for day of week.
+	// Friday ...
 	Friday DayOfWeek = "Friday"
-	// Monday specifies the monday state for day of week.
+	// Monday ...
 	Monday DayOfWeek = "Monday"
-	// Saturday specifies the saturday state for day of week.
+	// Saturday ...
 	Saturday DayOfWeek = "Saturday"
-	// Sunday specifies the sunday state for day of week.
+	// Sunday ...
 	Sunday DayOfWeek = "Sunday"
-	// Thursday specifies the thursday state for day of week.
+	// Thursday ...
 	Thursday DayOfWeek = "Thursday"
-	// Tuesday specifies the tuesday state for day of week.
+	// Tuesday ...
 	Tuesday DayOfWeek = "Tuesday"
-	// Wednesday specifies the wednesday state for day of week.
+	// Wednesday ...
 	Wednesday DayOfWeek = "Wednesday"
-	// Weekend specifies the weekend state for day of week.
+	// Weekend ...
 	Weekend DayOfWeek = "Weekend"
 )
 
@@ -51,9 +53,9 @@ const (
 type KeyType string
 
 const (
-	// Primary specifies the primary state for key type.
+	// Primary ...
 	Primary KeyType = "Primary"
-	// Secondary specifies the secondary state for key type.
+	// Secondary ...
 	Secondary KeyType = "Secondary"
 )
 
@@ -61,11 +63,11 @@ const (
 type RebootType string
 
 const (
-	// AllNodes specifies the all nodes state for reboot type.
+	// AllNodes ...
 	AllNodes RebootType = "AllNodes"
-	// PrimaryNode specifies the primary node state for reboot type.
+	// PrimaryNode ...
 	PrimaryNode RebootType = "PrimaryNode"
-	// SecondaryNode specifies the secondary node state for reboot type.
+	// SecondaryNode ...
 	SecondaryNode RebootType = "SecondaryNode"
 )
 
@@ -73,9 +75,9 @@ const (
 type ReplicationRole string
 
 const (
-	// ReplicationRolePrimary specifies the replication role primary state for replication role.
+	// ReplicationRolePrimary ...
 	ReplicationRolePrimary ReplicationRole = "Primary"
-	// ReplicationRoleSecondary specifies the replication role secondary state for replication role.
+	// ReplicationRoleSecondary ...
 	ReplicationRoleSecondary ReplicationRole = "Secondary"
 )
 
@@ -83,9 +85,9 @@ const (
 type SkuFamily string
 
 const (
-	// C specifies the c state for sku family.
+	// C ...
 	C SkuFamily = "C"
-	// P specifies the p state for sku family.
+	// P ...
 	P SkuFamily = "P"
 )
 
@@ -93,279 +95,1272 @@ const (
 type SkuName string
 
 const (
-	// Basic specifies the basic state for sku name.
+	// Basic ...
 	Basic SkuName = "Basic"
-	// Premium specifies the premium state for sku name.
+	// Premium ...
 	Premium SkuName = "Premium"
-	// Standard specifies the standard state for sku name.
+	// Standard ...
 	Standard SkuName = "Standard"
 )
 
-// AccessKeys is redis cache access keys.
+// AccessKeys redis cache access keys.
 type AccessKeys struct {
 	autorest.Response `json:"-"`
-	PrimaryKey        *string `json:"primaryKey,omitempty"`
-	SecondaryKey      *string `json:"secondaryKey,omitempty"`
+	// PrimaryKey - The current primary key that clients can use to authenticate with Redis cache.
+	PrimaryKey *string `json:"primaryKey,omitempty"`
+	// SecondaryKey - The current secondary key that clients can use to authenticate with Redis cache.
+	SecondaryKey *string `json:"secondaryKey,omitempty"`
 }
 
-// ExportRDBParameters is parameters for Redis export operation.
+// CommonProperties create/Update/Get common properties of the redis cache.
+type CommonProperties struct {
+	// RedisConfiguration - All Redis Settings. Few possible keys: rdb-backup-enabled,rdb-storage-connection-string,rdb-backup-frequency,maxmemory-delta,maxmemory-policy,notify-keyspace-events,maxmemory-samples,slowlog-log-slower-than,slowlog-max-len,list-max-ziplist-entries,list-max-ziplist-value,hash-max-ziplist-entries,hash-max-ziplist-value,set-max-intset-entries,zset-max-ziplist-entries,zset-max-ziplist-value etc.
+	RedisConfiguration *map[string]*string `json:"redisConfiguration,omitempty"`
+	// EnableNonSslPort - Specifies whether the non-ssl Redis server port (6379) is enabled.
+	EnableNonSslPort *bool `json:"enableNonSslPort,omitempty"`
+	// TenantSettings - A dictionary of tenant settings
+	TenantSettings *map[string]*string `json:"tenantSettings,omitempty"`
+	// ShardCount - The number of shards to be created on a Premium Cluster Cache.
+	ShardCount *int32 `json:"shardCount,omitempty"`
+}
+
+// CreateParameters parameters supplied to the Create Redis operation.
+type CreateParameters struct {
+	// CreateProperties - Redis cache properties.
+	*CreateProperties `json:"properties,omitempty"`
+	// Zones - A list of availability zones denoting where the resource needs to come from.
+	Zones *[]string `json:"zones,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for CreateParameters struct.
+func (cp *CreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties CreateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cp.CreateProperties = &properties
+	}
+
+	v = m["zones"]
+	if v != nil {
+		var zones []string
+		err = json.Unmarshal(*m["zones"], &zones)
+		if err != nil {
+			return err
+		}
+		cp.Zones = &zones
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		cp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		cp.Tags = &tags
+	}
+
+	return nil
+}
+
+// CreateProperties properties supplied to Create Redis operation.
+type CreateProperties struct {
+	// RedisConfiguration - All Redis Settings. Few possible keys: rdb-backup-enabled,rdb-storage-connection-string,rdb-backup-frequency,maxmemory-delta,maxmemory-policy,notify-keyspace-events,maxmemory-samples,slowlog-log-slower-than,slowlog-max-len,list-max-ziplist-entries,list-max-ziplist-value,hash-max-ziplist-entries,hash-max-ziplist-value,set-max-intset-entries,zset-max-ziplist-entries,zset-max-ziplist-value etc.
+	RedisConfiguration *map[string]*string `json:"redisConfiguration,omitempty"`
+	// EnableNonSslPort - Specifies whether the non-ssl Redis server port (6379) is enabled.
+	EnableNonSslPort *bool `json:"enableNonSslPort,omitempty"`
+	// TenantSettings - A dictionary of tenant settings
+	TenantSettings *map[string]*string `json:"tenantSettings,omitempty"`
+	// ShardCount - The number of shards to be created on a Premium Cluster Cache.
+	ShardCount *int32 `json:"shardCount,omitempty"`
+	// Sku - The SKU of the Redis cache to deploy.
+	Sku *Sku `json:"sku,omitempty"`
+	// SubnetID - The full resource ID of a subnet in a virtual network to deploy the Redis cache in. Example format: /subscriptions/{subid}/resourceGroups/{resourceGroupName}/Microsoft.{Network|ClassicNetwork}/VirtualNetworks/vnet1/subnets/subnet1
+	SubnetID *string `json:"subnetId,omitempty"`
+	// StaticIP - Static IP address. Required when deploying a Redis cache inside an existing Azure Virtual Network.
+	StaticIP *string `json:"staticIP,omitempty"`
+}
+
+// ExportRDBParameters parameters for Redis export operation.
 type ExportRDBParameters struct {
-	Format    *string `json:"format,omitempty"`
-	Prefix    *string `json:"prefix,omitempty"`
+	// Format - File format.
+	Format *string `json:"format,omitempty"`
+	// Prefix - Prefix to use for exported files.
+	Prefix *string `json:"prefix,omitempty"`
+	// Container - Container name to export to.
 	Container *string `json:"container,omitempty"`
 }
 
-// FirewallRule is a firewall rule on a redis cache has a name, and describes a contiguous range of IP addresses
-// permitted to connect
+// FirewallRule a firewall rule on a redis cache has a name, and describes a contiguous range of IP addresses permitted
+// to connect
 type FirewallRule struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// FirewallRuleProperties - redis cache firewall rule properties
 	*FirewallRuleProperties `json:"properties,omitempty"`
 }
 
-// FirewallRuleListResult is the response of list firewall rules Redis operation.
-type FirewallRuleListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]FirewallRule `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for FirewallRule struct.
+func (fr *FirewallRule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties FirewallRuleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		fr.FirewallRuleProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		fr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		fr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		fr.Type = &typeVar
+	}
+
+	return nil
 }
 
-// FirewallRuleListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client FirewallRuleListResult) FirewallRuleListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// FirewallRuleCreateParameters parameters required for creating a firewall rule on redis cache.
+type FirewallRuleCreateParameters struct {
+	// FirewallRuleProperties - Properties required to create a firewall rule .
+	*FirewallRuleProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for FirewallRuleCreateParameters struct.
+func (frcp *FirewallRuleCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties FirewallRuleProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		frcp.FirewallRuleProperties = &properties
+	}
+
+	return nil
+}
+
+// FirewallRuleListResult the response of list firewall rules Redis operation.
+type FirewallRuleListResult struct {
+	autorest.Response `json:"-"`
+	// Value - Results of the list firewall rules operation.
+	Value *[]FirewallRule `json:"value,omitempty"`
+	// NextLink - Link for next set of locations.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// FirewallRuleListResultIterator provides access to a complete listing of FirewallRule values.
+type FirewallRuleListResultIterator struct {
+	i    int
+	page FirewallRuleListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *FirewallRuleListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter FirewallRuleListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter FirewallRuleListResultIterator) Response() FirewallRuleListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter FirewallRuleListResultIterator) Value() FirewallRule {
+	if !iter.page.NotDone() {
+		return FirewallRule{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (frlr FirewallRuleListResult) IsEmpty() bool {
+	return frlr.Value == nil || len(*frlr.Value) == 0
+}
+
+// firewallRuleListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (frlr FirewallRuleListResult) firewallRuleListResultPreparer() (*http.Request, error) {
+	if frlr.NextLink == nil || len(to.String(frlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(frlr.NextLink)))
 }
 
-// FirewallRuleProperties is specifies a range of IP addresses permitted to connect to the cache
+// FirewallRuleListResultPage contains a page of FirewallRule values.
+type FirewallRuleListResultPage struct {
+	fn   func(FirewallRuleListResult) (FirewallRuleListResult, error)
+	frlr FirewallRuleListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *FirewallRuleListResultPage) Next() error {
+	next, err := page.fn(page.frlr)
+	if err != nil {
+		return err
+	}
+	page.frlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page FirewallRuleListResultPage) NotDone() bool {
+	return !page.frlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page FirewallRuleListResultPage) Response() FirewallRuleListResult {
+	return page.frlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page FirewallRuleListResultPage) Values() []FirewallRule {
+	if page.frlr.IsEmpty() {
+		return nil
+	}
+	return *page.frlr.Value
+}
+
+// FirewallRuleProperties specifies a range of IP addresses permitted to connect to the cache
 type FirewallRuleProperties struct {
+	// StartIP - lowest IP address included in the range
 	StartIP *string `json:"startIP,omitempty"`
-	EndIP   *string `json:"endIP,omitempty"`
+	// EndIP - highest IP address included in the range
+	EndIP *string `json:"endIP,omitempty"`
 }
 
-// ForceRebootResponse is response to force reboot for Redis cache.
+// ForceRebootResponse response to force reboot for Redis cache.
 type ForceRebootResponse struct {
 	autorest.Response `json:"-"`
-	Message           *string `json:"message,omitempty"`
+	// Message - Status message
+	Message *string `json:"message,omitempty"`
 }
 
-// ImportRDBParameters is parameters for Redis import operation.
+// ImportRDBParameters parameters for Redis import operation.
 type ImportRDBParameters struct {
-	Format *string   `json:"format,omitempty"`
-	Files  *[]string `json:"files,omitempty"`
+	// Format - File format.
+	Format *string `json:"format,omitempty"`
+	// Files - files to import.
+	Files *[]string `json:"files,omitempty"`
 }
 
-// LinkedServer is linked server Id
+// LinkedServer linked server Id
 type LinkedServer struct {
+	// ID - Linked server Id.
 	ID *string `json:"id,omitempty"`
 }
 
-// LinkedServerCreateParameters is parameter required for creating a linked server to redis cache.
+// LinkedServerCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LinkedServerCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LinkedServerCreateFuture) Result(client LinkedServerClient) (lswp LinkedServerWithProperties, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return lswp, autorest.NewError("redis.LinkedServerCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		lswp, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	lswp, err = client.CreateResponder(resp)
+	return
+}
+
+// LinkedServerCreateParameters parameter required for creating a linked server to redis cache.
 type LinkedServerCreateParameters struct {
+	// LinkedServerCreateProperties - Properties required to create a linked server.
 	*LinkedServerCreateProperties `json:"properties,omitempty"`
 }
 
-// LinkedServerCreateProperties is create properties for a linked server
+// UnmarshalJSON is the custom unmarshaler for LinkedServerCreateParameters struct.
+func (lscp *LinkedServerCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LinkedServerCreateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lscp.LinkedServerCreateProperties = &properties
+	}
+
+	return nil
+}
+
+// LinkedServerCreateProperties create properties for a linked server
 type LinkedServerCreateProperties struct {
-	LinkedRedisCacheID       *string         `json:"linkedRedisCacheId,omitempty"`
-	LinkedRedisCacheLocation *string         `json:"linkedRedisCacheLocation,omitempty"`
-	ServerRole               ReplicationRole `json:"serverRole,omitempty"`
+	// LinkedRedisCacheID - Fully qualified resourceId of the linked redis cache.
+	LinkedRedisCacheID *string `json:"linkedRedisCacheId,omitempty"`
+	// LinkedRedisCacheLocation - Location of the linked redis cache.
+	LinkedRedisCacheLocation *string `json:"linkedRedisCacheLocation,omitempty"`
+	// ServerRole - Role of the linked server. Possible values include: 'ReplicationRolePrimary', 'ReplicationRoleSecondary'
+	ServerRole ReplicationRole `json:"serverRole,omitempty"`
 }
 
-// LinkedServerList is list of linked server Ids of a Redis cache.
-type LinkedServerList struct {
-	Value *[]LinkedServer `json:"value,omitempty"`
-}
-
-// LinkedServerProperties is properties of a linked server to be returned in get/put response
+// LinkedServerProperties properties of a linked server to be returned in get/put response
 type LinkedServerProperties struct {
-	LinkedRedisCacheID       *string         `json:"linkedRedisCacheId,omitempty"`
-	LinkedRedisCacheLocation *string         `json:"linkedRedisCacheLocation,omitempty"`
-	ServerRole               ReplicationRole `json:"serverRole,omitempty"`
-	ProvisioningState        *string         `json:"provisioningState,omitempty"`
+	// LinkedRedisCacheID - Fully qualified resourceId of the linked redis cache.
+	LinkedRedisCacheID *string `json:"linkedRedisCacheId,omitempty"`
+	// LinkedRedisCacheLocation - Location of the linked redis cache.
+	LinkedRedisCacheLocation *string `json:"linkedRedisCacheLocation,omitempty"`
+	// ServerRole - Role of the linked server. Possible values include: 'ReplicationRolePrimary', 'ReplicationRoleSecondary'
+	ServerRole ReplicationRole `json:"serverRole,omitempty"`
+	// ProvisioningState - Terminal state of the link between primary and secondary redis cache.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// LinkedServerWithProperties is response to put/get linked server (with properties) for Redis cache.
+// LinkedServerWithProperties response to put/get linked server (with properties) for Redis cache.
 type LinkedServerWithProperties struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
-	Type                    *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// LinkedServerProperties - Properties of the linked server.
 	*LinkedServerProperties `json:"properties,omitempty"`
 }
 
-// LinkedServerWithPropertiesList is list of linked servers (with properites) of a Redis cache.
+// UnmarshalJSON is the custom unmarshaler for LinkedServerWithProperties struct.
+func (lswp *LinkedServerWithProperties) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LinkedServerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lswp.LinkedServerProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lswp.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lswp.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lswp.Type = &typeVar
+	}
+
+	return nil
+}
+
+// LinkedServerWithPropertiesList list of linked servers (with properites) of a Redis cache.
 type LinkedServerWithPropertiesList struct {
 	autorest.Response `json:"-"`
-	Value             *[]LinkedServerWithProperties `json:"value,omitempty"`
+	// Value - List of linked servers (with properites) of a Redis cache.
+	Value *[]LinkedServerWithProperties `json:"value,omitempty"`
+	// NextLink - Link for next set.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListResult is the response of list Redis operation.
-type ListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]ResourceType `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// LinkedServerWithPropertiesListIterator provides access to a complete listing of LinkedServerWithProperties values.
+type LinkedServerWithPropertiesListIterator struct {
+	i    int
+	page LinkedServerWithPropertiesListPage
 }
 
-// ListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListResult) ListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *LinkedServerWithPropertiesListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter LinkedServerWithPropertiesListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter LinkedServerWithPropertiesListIterator) Response() LinkedServerWithPropertiesList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter LinkedServerWithPropertiesListIterator) Value() LinkedServerWithProperties {
+	if !iter.page.NotDone() {
+		return LinkedServerWithProperties{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lswpl LinkedServerWithPropertiesList) IsEmpty() bool {
+	return lswpl.Value == nil || len(*lswpl.Value) == 0
+}
+
+// linkedServerWithPropertiesListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lswpl LinkedServerWithPropertiesList) linkedServerWithPropertiesListPreparer() (*http.Request, error) {
+	if lswpl.NextLink == nil || len(to.String(lswpl.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lswpl.NextLink)))
 }
 
-// Operation is REST API operation
+// LinkedServerWithPropertiesListPage contains a page of LinkedServerWithProperties values.
+type LinkedServerWithPropertiesListPage struct {
+	fn    func(LinkedServerWithPropertiesList) (LinkedServerWithPropertiesList, error)
+	lswpl LinkedServerWithPropertiesList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *LinkedServerWithPropertiesListPage) Next() error {
+	next, err := page.fn(page.lswpl)
+	if err != nil {
+		return err
+	}
+	page.lswpl = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page LinkedServerWithPropertiesListPage) NotDone() bool {
+	return !page.lswpl.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page LinkedServerWithPropertiesListPage) Response() LinkedServerWithPropertiesList {
+	return page.lswpl
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page LinkedServerWithPropertiesListPage) Values() []LinkedServerWithProperties {
+	if page.lswpl.IsEmpty() {
+		return nil
+	}
+	return *page.lswpl.Value
+}
+
+// ListResult the response of list Redis operation.
+type ListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of Redis cache instances.
+	Value *[]ResourceType `json:"value,omitempty"`
+	// NextLink - Link for next set of locations.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ListResultIterator provides access to a complete listing of ResourceType values.
+type ListResultIterator struct {
+	i    int
+	page ListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListResultIterator) Response() ListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListResultIterator) Value() ResourceType {
+	if !iter.page.NotDone() {
+		return ResourceType{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lr ListResult) IsEmpty() bool {
+	return lr.Value == nil || len(*lr.Value) == 0
+}
+
+// listResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lr ListResult) listResultPreparer() (*http.Request, error) {
+	if lr.NextLink == nil || len(to.String(lr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(lr.NextLink)))
+}
+
+// ListResultPage contains a page of ResourceType values.
+type ListResultPage struct {
+	fn func(ListResult) (ListResult, error)
+	lr ListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListResultPage) Next() error {
+	next, err := page.fn(page.lr)
+	if err != nil {
+		return err
+	}
+	page.lr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListResultPage) NotDone() bool {
+	return !page.lr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListResultPage) Response() ListResult {
+	return page.lr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListResultPage) Values() []ResourceType {
+	if page.lr.IsEmpty() {
+		return nil
+	}
+	return *page.lr.Value
+}
+
+// Operation REST API operation
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - The object that describes the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is the object that describes the operation.
+// OperationDisplay the object that describes the operation.
 type OperationDisplay struct {
-	Provider    *string `json:"provider,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
+	// Provider - Friendly name of the resource provider
+	Provider *string `json:"provider,omitempty"`
+	// Operation - Operation type: read, write, delete, listKeys/action, etc.
+	Operation *string `json:"operation,omitempty"`
+	// Resource - Resource type on which the operation is performed.
+	Resource *string `json:"resource,omitempty"`
+	// Description - Friendly name of the operation
 	Description *string `json:"description,omitempty"`
 }
 
-// OperationListResult is result of the request to list REST API operations. It contains a list of operations and a URL
+// OperationListResult result of the request to list REST API operations. It contains a list of operations and a URL
 // nextLink to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - List of operations supported by the resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// PatchProperties is patchable properties of the redis cache.
-type PatchProperties struct {
-	Sku                *Sku                `json:"sku,omitempty"`
-	EnableNonSslPort   *bool               `json:"enableNonSslPort,omitempty"`
-	RedisConfiguration *map[string]*string `json:"redisConfiguration,omitempty"`
-	TenantSettings     *map[string]*string `json:"tenantSettings,omitempty"`
-	ShardCount         *int32              `json:"shardCount,omitempty"`
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
 }
 
-// PatchResource is a request holding properties to patch a redis cache.
-type PatchResource struct {
-	ID               *string `json:"id,omitempty"`
-	Name             *string `json:"name,omitempty"`
-	Type             *string `json:"type,omitempty"`
-	*PatchProperties `json:"properties,omitempty"`
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
 }
 
-// PatchSchedule is response to put/get patch schedules for Redis cache.
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// PatchSchedule response to put/get patch schedules for Redis cache.
 type PatchSchedule struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*ScheduleEntries  `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// ScheduleEntries - List of patch schedules for a Redis cache.
+	*ScheduleEntries `json:"properties,omitempty"`
 }
 
-// Properties is properties of the redis cache.
+// UnmarshalJSON is the custom unmarshaler for PatchSchedule struct.
+func (ps *PatchSchedule) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ScheduleEntries
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ps.ScheduleEntries = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ps.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ps.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ps.Type = &typeVar
+	}
+
+	return nil
+}
+
+// Properties properties of the redis cache.
 type Properties struct {
-	Sku                *Sku                `json:"sku,omitempty"`
-	EnableNonSslPort   *bool               `json:"enableNonSslPort,omitempty"`
+	// RedisConfiguration - All Redis Settings. Few possible keys: rdb-backup-enabled,rdb-storage-connection-string,rdb-backup-frequency,maxmemory-delta,maxmemory-policy,notify-keyspace-events,maxmemory-samples,slowlog-log-slower-than,slowlog-max-len,list-max-ziplist-entries,list-max-ziplist-value,hash-max-ziplist-entries,hash-max-ziplist-value,set-max-intset-entries,zset-max-ziplist-entries,zset-max-ziplist-value etc.
 	RedisConfiguration *map[string]*string `json:"redisConfiguration,omitempty"`
-	TenantSettings     *map[string]*string `json:"tenantSettings,omitempty"`
-	ShardCount         *int32              `json:"shardCount,omitempty"`
-	SubnetID           *string             `json:"subnetId,omitempty"`
-	StaticIP           *string             `json:"staticIP,omitempty"`
-	RedisVersion       *string             `json:"redisVersion,omitempty"`
-	ProvisioningState  *string             `json:"provisioningState,omitempty"`
-	HostName           *string             `json:"hostName,omitempty"`
-	Port               *int32              `json:"port,omitempty"`
-	SslPort            *int32              `json:"sslPort,omitempty"`
-	AccessKeys         *AccessKeys         `json:"accessKeys,omitempty"`
-	LinkedServers      *LinkedServerList   `json:"linkedServers,omitempty"`
+	// EnableNonSslPort - Specifies whether the non-ssl Redis server port (6379) is enabled.
+	EnableNonSslPort *bool `json:"enableNonSslPort,omitempty"`
+	// TenantSettings - A dictionary of tenant settings
+	TenantSettings *map[string]*string `json:"tenantSettings,omitempty"`
+	// ShardCount - The number of shards to be created on a Premium Cluster Cache.
+	ShardCount *int32 `json:"shardCount,omitempty"`
+	// Sku - The SKU of the Redis cache to deploy.
+	Sku *Sku `json:"sku,omitempty"`
+	// SubnetID - The full resource ID of a subnet in a virtual network to deploy the Redis cache in. Example format: /subscriptions/{subid}/resourceGroups/{resourceGroupName}/Microsoft.{Network|ClassicNetwork}/VirtualNetworks/vnet1/subnets/subnet1
+	SubnetID *string `json:"subnetId,omitempty"`
+	// StaticIP - Static IP address. Required when deploying a Redis cache inside an existing Azure Virtual Network.
+	StaticIP *string `json:"staticIP,omitempty"`
+	// RedisVersion - Redis version.
+	RedisVersion *string `json:"redisVersion,omitempty"`
+	// ProvisioningState - Redis instance provisioning status.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// HostName - Redis host name.
+	HostName *string `json:"hostName,omitempty"`
+	// Port - Redis non-SSL port.
+	Port *int32 `json:"port,omitempty"`
+	// SslPort - Redis SSL port.
+	SslPort *int32 `json:"sslPort,omitempty"`
+	// AccessKeys - The keys of the Redis cache - not set if this object is not the response to Create or Update redis cache
+	AccessKeys *AccessKeys `json:"accessKeys,omitempty"`
+	// LinkedServers - List of the linked servers associated with the cache
+	LinkedServers *[]LinkedServer `json:"linkedServers,omitempty"`
 }
 
-// ProxyResource is the resource model definition for a ARM proxy resource. It will have everything other than required
+// ProxyResource the resource model definition for a ARM proxy resource. It will have everything other than required
 // location and tags
 type ProxyResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// RebootParameters is specifies which Redis node(s) to reboot.
+// RebootParameters specifies which Redis node(s) to reboot.
 type RebootParameters struct {
+	// RebootType - Which Redis node(s) to reboot. Depending on this value data loss is possible. Possible values include: 'PrimaryNode', 'SecondaryNode', 'AllNodes'
 	RebootType RebootType `json:"rebootType,omitempty"`
-	ShardID    *int32     `json:"shardId,omitempty"`
+	// ShardID - If clustering is enabled, the ID of the shard to be rebooted.
+	ShardID *int32 `json:"shardId,omitempty"`
 }
 
-// RegenerateKeyParameters is specifies which Redis access keys to reset.
+// RedisCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RedisCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RedisCreateFuture) Result(client Client) (rt ResourceType, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rt, autorest.NewError("redis.RedisCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rt, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rt, err = client.CreateResponder(resp)
+	return
+}
+
+// RedisDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RedisDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RedisDeleteFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("redis.RedisDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// RedisExportDataFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RedisExportDataFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RedisExportDataFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("redis.RedisExportDataFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ExportDataResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ExportDataResponder(resp)
+	return
+}
+
+// RedisImportDataFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RedisImportDataFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RedisImportDataFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("redis.RedisImportDataFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.ImportDataResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.ImportDataResponder(resp)
+	return
+}
+
+// RegenerateKeyParameters specifies which Redis access keys to reset.
 type RegenerateKeyParameters struct {
+	// KeyType - The Redis access key to regenerate. Possible values include: 'Primary', 'Secondary'
 	KeyType KeyType `json:"keyType,omitempty"`
 }
 
-// Resource is the Resource definition.
+// Resource the Resource definition.
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// ResourceType is a single Redis item in List or Get Operation.
+// ResourceType a single Redis item in List or Get Operation.
 type ResourceType struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	*Properties       `json:"properties,omitempty"`
-	Zones             *[]string `json:"zones,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+	// Properties - Redis cache properties.
+	*Properties `json:"properties,omitempty"`
+	// Zones - A list of availability zones denoting where the resource needs to come from.
+	Zones *[]string `json:"zones,omitempty"`
 }
 
-// ScheduleEntries is list of patch schedules for a Redis cache.
+// UnmarshalJSON is the custom unmarshaler for ResourceType struct.
+func (rt *ResourceType) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties Properties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rt.Properties = &properties
+	}
+
+	v = m["zones"]
+	if v != nil {
+		var zones []string
+		err = json.Unmarshal(*m["zones"], &zones)
+		if err != nil {
+			return err
+		}
+		rt.Zones = &zones
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		rt.Tags = &tags
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		rt.Location = &location
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rt.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rt.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rt.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ScheduleEntries list of patch schedules for a Redis cache.
 type ScheduleEntries struct {
+	// ScheduleEntries - List of patch schedules for a Redis cache.
 	ScheduleEntries *[]ScheduleEntry `json:"scheduleEntries,omitempty"`
 }
 
-// ScheduleEntry is patch schedule entry for a Premium Redis Cache.
+// ScheduleEntry patch schedule entry for a Premium Redis Cache.
 type ScheduleEntry struct {
-	DayOfWeek         DayOfWeek `json:"dayOfWeek,omitempty"`
-	StartHourUtc      *int32    `json:"startHourUtc,omitempty"`
-	MaintenanceWindow *string   `json:"maintenanceWindow,omitempty"`
+	// DayOfWeek - Day of the week when a cache can be patched. Possible values include: 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Everyday', 'Weekend'
+	DayOfWeek DayOfWeek `json:"dayOfWeek,omitempty"`
+	// StartHourUtc - Start hour after which cache patching can start.
+	StartHourUtc *int32 `json:"startHourUtc,omitempty"`
+	// MaintenanceWindow - ISO8601 timespan specifying how much time cache patching can take.
+	MaintenanceWindow *string `json:"maintenanceWindow,omitempty"`
 }
 
-// Sku is SKU parameters supplied to the create Redis operation.
+// Sku SKU parameters supplied to the create Redis operation.
 type Sku struct {
-	Name     SkuName   `json:"name,omitempty"`
-	Family   SkuFamily `json:"family,omitempty"`
-	Capacity *int32    `json:"capacity,omitempty"`
+	// Name - The type of Redis cache to deploy. Valid values: (Basic, Standard, Premium). Possible values include: 'Basic', 'Standard', 'Premium'
+	Name SkuName `json:"name,omitempty"`
+	// Family - The SKU family to use. Valid values: (C, P). (C = Basic/Standard, P = Premium). Possible values include: 'C', 'P'
+	Family SkuFamily `json:"family,omitempty"`
+	// Capacity - The size of the Redis cache to deploy. Valid values: for C (Basic/Standard) family (0, 1, 2, 3, 4, 5, 6), for P (Premium) family (1, 2, 3, 4).
+	Capacity *int32 `json:"capacity,omitempty"`
 }
 
-// TrackedResource is the resource model definition for a ARM tracked top level resource
+// TrackedResource the resource model definition for a ARM tracked top level resource
 type TrackedResource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	Location *string             `json:"location,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Location - The geo-location where the resource lives
+	Location *string `json:"location,omitempty"`
+}
+
+// UpdateParameters parameters supplied to the Update Redis operation.
+type UpdateParameters struct {
+	// UpdateProperties - Redis cache properties.
+	*UpdateProperties `json:"properties,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for UpdateParameters struct.
+func (up *UpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties UpdateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		up.UpdateProperties = &properties
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		up.Tags = &tags
+	}
+
+	return nil
+}
+
+// UpdateProperties patchable properties of the redis cache.
+type UpdateProperties struct {
+	// RedisConfiguration - All Redis Settings. Few possible keys: rdb-backup-enabled,rdb-storage-connection-string,rdb-backup-frequency,maxmemory-delta,maxmemory-policy,notify-keyspace-events,maxmemory-samples,slowlog-log-slower-than,slowlog-max-len,list-max-ziplist-entries,list-max-ziplist-value,hash-max-ziplist-entries,hash-max-ziplist-value,set-max-intset-entries,zset-max-ziplist-entries,zset-max-ziplist-value etc.
+	RedisConfiguration *map[string]*string `json:"redisConfiguration,omitempty"`
+	// EnableNonSslPort - Specifies whether the non-ssl Redis server port (6379) is enabled.
+	EnableNonSslPort *bool `json:"enableNonSslPort,omitempty"`
+	// TenantSettings - A dictionary of tenant settings
+	TenantSettings *map[string]*string `json:"tenantSettings,omitempty"`
+	// ShardCount - The number of shards to be created on a Premium Cluster Cache.
+	ShardCount *int32 `json:"shardCount,omitempty"`
+	// Sku - The SKU of the Redis cache to deploy.
+	Sku *Sku `json:"sku,omitempty"`
 }

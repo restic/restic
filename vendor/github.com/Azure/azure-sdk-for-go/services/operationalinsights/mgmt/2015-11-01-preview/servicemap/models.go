@@ -19,7 +19,6 @@ package servicemap
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -30,9 +29,9 @@ import (
 type Accuracy string
 
 const (
-	// Actual specifies the actual state for accuracy.
+	// Actual ...
 	Actual Accuracy = "actual"
-	// Estimated specifies the estimated state for accuracy.
+	// Estimated ...
 	Estimated Accuracy = "estimated"
 )
 
@@ -40,9 +39,9 @@ const (
 type Bitness string
 
 const (
-	// SixFourbit specifies the six fourbit state for bitness.
+	// SixFourbit ...
 	SixFourbit Bitness = "64bit"
-	// ThreeTwobit specifies the three twobit state for bitness.
+	// ThreeTwobit ...
 	ThreeTwobit Bitness = "32bit"
 )
 
@@ -50,11 +49,11 @@ const (
 type ConnectionFailureState string
 
 const (
-	// Failed specifies the failed state for connection failure state.
+	// Failed ...
 	Failed ConnectionFailureState = "failed"
-	// Mixed specifies the mixed state for connection failure state.
+	// Mixed ...
 	Mixed ConnectionFailureState = "mixed"
-	// Ok specifies the ok state for connection failure state.
+	// Ok ...
 	Ok ConnectionFailureState = "ok"
 )
 
@@ -62,9 +61,9 @@ const (
 type HypervisorType string
 
 const (
-	// Hyperv specifies the hyperv state for hypervisor type.
+	// Hyperv ...
 	Hyperv HypervisorType = "hyperv"
-	// Unknown specifies the unknown state for hypervisor type.
+	// Unknown ...
 	Unknown HypervisorType = "unknown"
 )
 
@@ -72,61 +71,69 @@ const (
 type Kind string
 
 const (
-	// KindRefmachine specifies the kind refmachine state for kind.
+	// KindRefmachine ...
 	KindRefmachine Kind = "ref:machine"
-	// KindRefmachinewithhints specifies the kind refmachinewithhints state for kind.
+	// KindRefmachinewithhints ...
 	KindRefmachinewithhints Kind = "ref:machinewithhints"
-	// KindRefport specifies the kind refport state for kind.
+	// KindRefport ...
 	KindRefport Kind = "ref:port"
-	// KindRefprocess specifies the kind refprocess state for kind.
+	// KindRefprocess ...
 	KindRefprocess Kind = "ref:process"
+	// KindResourceReference ...
+	KindResourceReference Kind = "ResourceReference"
 )
 
-// KindCoreResource enumerates the values for kind core resource.
-type KindCoreResource string
+// KindBasicCoreResource enumerates the values for kind basic core resource.
+type KindBasicCoreResource string
 
 const (
-	// KindClientGroup specifies the kind client group state for kind core resource.
-	KindClientGroup KindCoreResource = "clientGroup"
-	// KindMachine specifies the kind machine state for kind core resource.
-	KindMachine KindCoreResource = "machine"
-	// KindMachineGroup specifies the kind machine group state for kind core resource.
-	KindMachineGroup KindCoreResource = "machineGroup"
-	// KindPort specifies the kind port state for kind core resource.
-	KindPort KindCoreResource = "port"
-	// KindProcess specifies the kind process state for kind core resource.
-	KindProcess KindCoreResource = "process"
+	// KindClientGroup ...
+	KindClientGroup KindBasicCoreResource = "clientGroup"
+	// KindCoreResource ...
+	KindCoreResource KindBasicCoreResource = "CoreResource"
+	// KindMachine ...
+	KindMachine KindBasicCoreResource = "machine"
+	// KindMachineGroup ...
+	KindMachineGroup KindBasicCoreResource = "machineGroup"
+	// KindPort ...
+	KindPort KindBasicCoreResource = "port"
+	// KindProcess ...
+	KindProcess KindBasicCoreResource = "process"
 )
 
-// KindMapRequest enumerates the values for kind map request.
-type KindMapRequest string
+// KindBasicMapRequest enumerates the values for kind basic map request.
+type KindBasicMapRequest string
 
 const (
-	// KindMapmachineGroupDependency specifies the kind mapmachine group dependency state for kind map request.
-	KindMapmachineGroupDependency KindMapRequest = "map:machine-group-dependency"
-	// KindMapsingleMachineDependency specifies the kind mapsingle machine dependency state for kind map request.
-	KindMapsingleMachineDependency KindMapRequest = "map:single-machine-dependency"
+	// KindMapmachineGroupDependency ...
+	KindMapmachineGroupDependency KindBasicMapRequest = "map:machine-group-dependency"
+	// KindMapRequest ...
+	KindMapRequest KindBasicMapRequest = "MapRequest"
+	// KindMapsingleMachineDependency ...
+	KindMapsingleMachineDependency KindBasicMapRequest = "map:single-machine-dependency"
 )
 
-// KindRelationship enumerates the values for kind relationship.
-type KindRelationship string
+// KindBasicRelationship enumerates the values for kind basic relationship.
+type KindBasicRelationship string
 
 const (
-	// KindRelacceptor specifies the kind relacceptor state for kind relationship.
-	KindRelacceptor KindRelationship = "rel:acceptor"
-	// KindRelconnection specifies the kind relconnection state for kind relationship.
-	KindRelconnection KindRelationship = "rel:connection"
+	// KindRelacceptor ...
+	KindRelacceptor KindBasicRelationship = "rel:acceptor"
+	// KindRelationship ...
+	KindRelationship KindBasicRelationship = "Relationship"
+	// KindRelconnection ...
+	KindRelconnection KindBasicRelationship = "rel:connection"
 )
 
 // MachineRebootStatus enumerates the values for machine reboot status.
 type MachineRebootStatus string
 
 const (
-	// MachineRebootStatusNotRebooted specifies the machine reboot status not rebooted state for machine reboot status.
+	// MachineRebootStatusNotRebooted ...
 	MachineRebootStatusNotRebooted MachineRebootStatus = "notRebooted"
-	// MachineRebootStatusRebooted specifies the machine reboot status rebooted state for machine reboot status.
+	// MachineRebootStatusRebooted ...
 	MachineRebootStatusRebooted MachineRebootStatus = "rebooted"
-	// MachineRebootStatusUnknown specifies the machine reboot status unknown state for machine reboot status.
+	// MachineRebootStatusUnknown ...
 	MachineRebootStatusUnknown MachineRebootStatus = "unknown"
 )
 
@@ -134,9 +141,9 @@ const (
 type MonitoringState string
 
 const (
-	// Discovered specifies the discovered state for monitoring state.
+	// Discovered ...
 	Discovered MonitoringState = "discovered"
-	// Monitored specifies the monitored state for monitoring state.
+	// Monitored ...
 	Monitored MonitoringState = "monitored"
 )
 
@@ -144,15 +151,15 @@ const (
 type OperatingSystemFamily string
 
 const (
-	// OperatingSystemFamilyAix specifies the operating system family aix state for operating system family.
+	// OperatingSystemFamilyAix ...
 	OperatingSystemFamilyAix OperatingSystemFamily = "aix"
-	// OperatingSystemFamilyLinux specifies the operating system family linux state for operating system family.
+	// OperatingSystemFamilyLinux ...
 	OperatingSystemFamilyLinux OperatingSystemFamily = "linux"
-	// OperatingSystemFamilySolaris specifies the operating system family solaris state for operating system family.
+	// OperatingSystemFamilySolaris ...
 	OperatingSystemFamilySolaris OperatingSystemFamily = "solaris"
-	// OperatingSystemFamilyUnknown specifies the operating system family unknown state for operating system family.
+	// OperatingSystemFamilyUnknown ...
 	OperatingSystemFamilyUnknown OperatingSystemFamily = "unknown"
-	// OperatingSystemFamilyWindows specifies the operating system family windows state for operating system family.
+	// OperatingSystemFamilyWindows ...
 	OperatingSystemFamilyWindows OperatingSystemFamily = "windows"
 )
 
@@ -160,15 +167,15 @@ const (
 type ProcessRole string
 
 const (
-	// AppServer specifies the app server state for process role.
+	// AppServer ...
 	AppServer ProcessRole = "appServer"
-	// DatabaseServer specifies the database server state for process role.
+	// DatabaseServer ...
 	DatabaseServer ProcessRole = "databaseServer"
-	// LdapServer specifies the ldap server state for process role.
+	// LdapServer ...
 	LdapServer ProcessRole = "ldapServer"
-	// SmbServer specifies the smb server state for process role.
+	// SmbServer ...
 	SmbServer ProcessRole = "smbServer"
-	// WebServer specifies the web server state for process role.
+	// WebServer ...
 	WebServer ProcessRole = "webServer"
 )
 
@@ -176,13 +183,13 @@ const (
 type VirtualizationState string
 
 const (
-	// VirtualizationStateHypervisor specifies the virtualization state hypervisor state for virtualization state.
+	// VirtualizationStateHypervisor ...
 	VirtualizationStateHypervisor VirtualizationState = "hypervisor"
-	// VirtualizationStatePhysical specifies the virtualization state physical state for virtualization state.
+	// VirtualizationStatePhysical ...
 	VirtualizationStatePhysical VirtualizationState = "physical"
-	// VirtualizationStateUnknown specifies the virtualization state unknown state for virtualization state.
+	// VirtualizationStateUnknown ...
 	VirtualizationStateUnknown VirtualizationState = "unknown"
-	// VirtualizationStateVirtual specifies the virtualization state virtual state for virtualization state.
+	// VirtualizationStateVirtual ...
 	VirtualizationStateVirtual VirtualizationState = "virtual"
 )
 
@@ -190,28 +197,32 @@ const (
 type VirtualMachineType string
 
 const (
-	// VirtualMachineTypeHyperv specifies the virtual machine type hyperv state for virtual machine type.
+	// VirtualMachineTypeHyperv ...
 	VirtualMachineTypeHyperv VirtualMachineType = "hyperv"
-	// VirtualMachineTypeLdom specifies the virtual machine type ldom state for virtual machine type.
+	// VirtualMachineTypeLdom ...
 	VirtualMachineTypeLdom VirtualMachineType = "ldom"
-	// VirtualMachineTypeLpar specifies the virtual machine type lpar state for virtual machine type.
+	// VirtualMachineTypeLpar ...
 	VirtualMachineTypeLpar VirtualMachineType = "lpar"
-	// VirtualMachineTypeUnknown specifies the virtual machine type unknown state for virtual machine type.
+	// VirtualMachineTypeUnknown ...
 	VirtualMachineTypeUnknown VirtualMachineType = "unknown"
-	// VirtualMachineTypeVirtualPc specifies the virtual machine type virtual pc state for virtual machine type.
+	// VirtualMachineTypeVirtualPc ...
 	VirtualMachineTypeVirtualPc VirtualMachineType = "virtualPc"
-	// VirtualMachineTypeVmware specifies the virtual machine type vmware state for virtual machine type.
+	// VirtualMachineTypeVmware ...
 	VirtualMachineTypeVmware VirtualMachineType = "vmware"
-	// VirtualMachineTypeXen specifies the virtual machine type xen state for virtual machine type.
+	// VirtualMachineTypeXen ...
 	VirtualMachineTypeXen VirtualMachineType = "xen"
 )
 
-// Acceptor is a process accepting on a port.
+// Acceptor a process accepting on a port.
 type Acceptor struct {
-	ID                  *string          `json:"id,omitempty"`
-	Type                *string          `json:"type,omitempty"`
-	Name                *string          `json:"name,omitempty"`
-	Kind                KindRelationship `json:"kind,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindRelationship', 'KindRelconnection', 'KindRelacceptor'
+	Kind                KindBasicRelationship `json:"kind,omitempty"`
 	*AcceptorProperties `json:"properties,omitempty"`
 }
 
@@ -226,93 +237,181 @@ func (a Acceptor) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsConnection is the Relationship implementation for Acceptor.
-func (a Acceptor) AsConnection() (*Connection, bool) {
-	return nil, false
-}
-
-// AsAcceptor is the Relationship implementation for Acceptor.
-func (a Acceptor) AsAcceptor() (*Acceptor, bool) {
-	return &a, true
-}
-
-// AsCoreResource is the Relationship implementation for Acceptor.
+// AsCoreResource is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsMachine is the Relationship implementation for Acceptor.
+// AsBasicCoreResource is the BasicResource implementation for Acceptor.
+func (a Acceptor) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return nil, false
+}
+
+// AsMachine is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsMachine() (*Machine, bool) {
 	return nil, false
 }
 
-// AsProcess is the Relationship implementation for Acceptor.
+// AsProcess is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsProcess() (*Process, bool) {
 	return nil, false
 }
 
-// AsPort is the Relationship implementation for Acceptor.
+// AsPort is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsPort() (*Port, bool) {
 	return nil, false
 }
 
-// AsClientGroup is the Relationship implementation for Acceptor.
+// AsClientGroup is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsClientGroup() (*ClientGroup, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the Relationship implementation for Acceptor.
+// AsClientGroupMember is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsMachineGroup is the Relationship implementation for Acceptor.
+// AsMachineGroup is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsMachineGroup() (*MachineGroup, bool) {
 	return nil, false
 }
 
-// AsSummary is the Relationship implementation for Acceptor.
+// AsSummary is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the Relationship implementation for Acceptor.
+// AsMachinesSummary is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the Relationship implementation for Acceptor.
+// AsRelationship is the BasicResource implementation for Acceptor.
 func (a Acceptor) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AcceptorProperties is properties for an acceptor relationship.
+// AsBasicRelationship is the BasicResource implementation for Acceptor.
+func (a Acceptor) AsBasicRelationship() (BasicRelationship, bool) {
+	return &a, true
+}
+
+// AsConnection is the BasicResource implementation for Acceptor.
+func (a Acceptor) AsConnection() (*Connection, bool) {
+	return nil, false
+}
+
+// AsAcceptor is the BasicResource implementation for Acceptor.
+func (a Acceptor) AsAcceptor() (*Acceptor, bool) {
+	return &a, true
+}
+
+// UnmarshalJSON is the custom unmarshaler for Acceptor struct.
+func (a *Acceptor) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AcceptorProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.AcceptorProperties = &properties
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicRelationship
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		a.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	return nil
+}
+
+// AcceptorProperties properties for an acceptor relationship.
 type AcceptorProperties struct {
-	Source      *PortReference    `json:"source,omitempty"`
+	// Source - Port being accepted.
+	Source *PortReference `json:"source,omitempty"`
+	// Destination - Accepting process.
 	Destination *ProcessReference `json:"destination,omitempty"`
-	StartTime   *date.Time        `json:"startTime,omitempty"`
-	EndTime     *date.Time        `json:"endTime,omitempty"`
+	// StartTime - Relationship start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Relationship end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
 }
 
-// AgentConfiguration is describes the configuration of the Dependency Agent installed on a machine.
+// AgentConfiguration describes the configuration of the Dependency Agent installed on a machine.
 type AgentConfiguration struct {
-	AgentID                 *string             `json:"agentId,omitempty"`
-	DependencyAgentID       *string             `json:"dependencyAgentId,omitempty"`
-	DependencyAgentVersion  *string             `json:"dependencyAgentVersion,omitempty"`
-	DependencyAgentRevision *string             `json:"dependencyAgentRevision,omitempty"`
-	RebootStatus            MachineRebootStatus `json:"rebootStatus,omitempty"`
-	ClockGranularity        *int32              `json:"clockGranularity,omitempty"`
+	// AgentID - Health Service Agent unique identifier.
+	AgentID *string `json:"agentId,omitempty"`
+	// DependencyAgentID - Dependency Agent unique identifier.
+	DependencyAgentID *string `json:"dependencyAgentId,omitempty"`
+	// DependencyAgentVersion - Dependency Agent version number.
+	DependencyAgentVersion *string `json:"dependencyAgentVersion,omitempty"`
+	// DependencyAgentRevision - Dependency Agent revision number.
+	DependencyAgentRevision *string `json:"dependencyAgentRevision,omitempty"`
+	// RebootStatus - Specifies whether the machine has been rebooted since the Dependency Agent installation. Possible values include: 'MachineRebootStatusUnknown', 'MachineRebootStatusRebooted', 'MachineRebootStatusNotRebooted'
+	RebootStatus MachineRebootStatus `json:"rebootStatus,omitempty"`
+	// ClockGranularity - Machine clock granularity in milliseconds.
+	ClockGranularity *int32 `json:"clockGranularity,omitempty"`
 }
 
-// ClientGroup is represents a collection of clients of a resource. A client group can represent the clients of a port,
+// ClientGroup represents a collection of clients of a resource. A client group can represent the clients of a port,
 // process, or a machine.
 type ClientGroup struct {
-	autorest.Response      `json:"-"`
-	ID                     *string          `json:"id,omitempty"`
-	Type                   *string          `json:"type,omitempty"`
-	Name                   *string          `json:"name,omitempty"`
-	Etag                   *string          `json:"etag,omitempty"`
-	Kind                   KindCoreResource `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+	// ClientGroupProperties - Resource properties.
 	*ClientGroupProperties `json:"properties,omitempty"`
 }
 
@@ -327,113 +426,343 @@ func (cg ClientGroup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachine is the CoreResource implementation for ClientGroup.
-func (cg ClientGroup) AsMachine() (*Machine, bool) {
-	return nil, false
-}
-
-// AsProcess is the CoreResource implementation for ClientGroup.
-func (cg ClientGroup) AsProcess() (*Process, bool) {
-	return nil, false
-}
-
-// AsPort is the CoreResource implementation for ClientGroup.
-func (cg ClientGroup) AsPort() (*Port, bool) {
-	return nil, false
-}
-
-// AsClientGroup is the CoreResource implementation for ClientGroup.
-func (cg ClientGroup) AsClientGroup() (*ClientGroup, bool) {
-	return &cg, true
-}
-
-// AsMachineGroup is the CoreResource implementation for ClientGroup.
-func (cg ClientGroup) AsMachineGroup() (*MachineGroup, bool) {
-	return nil, false
-}
-
-// AsCoreResource is the CoreResource implementation for ClientGroup.
+// AsCoreResource is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the CoreResource implementation for ClientGroup.
+// AsBasicCoreResource is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &cg, true
+}
+
+// AsMachine is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsProcess() (*Process, bool) {
+	return nil, false
+}
+
+// AsPort is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsPort() (*Port, bool) {
+	return nil, false
+}
+
+// AsClientGroup is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsClientGroup() (*ClientGroup, bool) {
+	return &cg, true
+}
+
+// AsClientGroupMember is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsSummary is the CoreResource implementation for ClientGroup.
+// AsMachineGroup is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsMachineGroup() (*MachineGroup, bool) {
+	return nil, false
+}
+
+// AsSummary is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the CoreResource implementation for ClientGroup.
+// AsMachinesSummary is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the CoreResource implementation for ClientGroup.
+// AsRelationship is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AsConnection is the CoreResource implementation for ClientGroup.
+// AsBasicRelationship is the BasicResource implementation for ClientGroup.
+func (cg ClientGroup) AsBasicRelationship() (BasicRelationship, bool) {
+	return nil, false
+}
+
+// AsConnection is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsConnection() (*Connection, bool) {
 	return nil, false
 }
 
-// AsAcceptor is the CoreResource implementation for ClientGroup.
+// AsAcceptor is the BasicResource implementation for ClientGroup.
 func (cg ClientGroup) AsAcceptor() (*Acceptor, bool) {
 	return nil, false
 }
 
-// ClientGroupMember is represents a member of a client group
+// UnmarshalJSON is the custom unmarshaler for ClientGroup struct.
+func (cg *ClientGroup) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClientGroupProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cg.ClientGroupProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		cg.Etag = &etag
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicCoreResource
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		cg.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cg.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cg.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cg.Name = &name
+	}
+
+	return nil
+}
+
+// ClientGroupMember represents a member of a client group
 type ClientGroupMember struct {
-	ID                           *string `json:"id,omitempty"`
-	Type                         *string `json:"type,omitempty"`
-	Name                         *string `json:"name,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// ClientGroupMemberProperties - Resource properties.
 	*ClientGroupMemberProperties `json:"properties,omitempty"`
 }
 
-// ClientGroupMemberProperties is resource properties.
+// UnmarshalJSON is the custom unmarshaler for ClientGroupMember struct.
+func (cgm *ClientGroupMember) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ClientGroupMemberProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cgm.ClientGroupMemberProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cgm.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cgm.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cgm.Name = &name
+	}
+
+	return nil
+}
+
+// ClientGroupMemberProperties resource properties.
 type ClientGroupMemberProperties struct {
-	IPAddress *string             `json:"ipAddress,omitempty"`
-	Port      *PortReference      `json:"port,omitempty"`
+	// IPAddress - IP address.
+	IPAddress *string `json:"ipAddress,omitempty"`
+	// Port - Port into which this client connected
+	Port *PortReference `json:"port,omitempty"`
+	// Processes - Processes accepting on the above port that received connections from this client.
 	Processes *[]ProcessReference `json:"processes,omitempty"`
 }
 
-// ClientGroupMembersCollection is collection of ClientGroupMember resources.
+// ClientGroupMembersCollection collection of ClientGroupMember resources.
 type ClientGroupMembersCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]ClientGroupMember `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Collection of ClientGroupMember resources.
+	Value *[]ClientGroupMember `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ClientGroupMembersCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ClientGroupMembersCollection) ClientGroupMembersCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ClientGroupMembersCollectionIterator provides access to a complete listing of ClientGroupMember values.
+type ClientGroupMembersCollectionIterator struct {
+	i    int
+	page ClientGroupMembersCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ClientGroupMembersCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ClientGroupMembersCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ClientGroupMembersCollectionIterator) Response() ClientGroupMembersCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ClientGroupMembersCollectionIterator) Value() ClientGroupMember {
+	if !iter.page.NotDone() {
+		return ClientGroupMember{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cgmc ClientGroupMembersCollection) IsEmpty() bool {
+	return cgmc.Value == nil || len(*cgmc.Value) == 0
+}
+
+// clientGroupMembersCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cgmc ClientGroupMembersCollection) clientGroupMembersCollectionPreparer() (*http.Request, error) {
+	if cgmc.NextLink == nil || len(to.String(cgmc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cgmc.NextLink)))
 }
 
-// ClientGroupMembersCount is specifies the number of members in a client group.
+// ClientGroupMembersCollectionPage contains a page of ClientGroupMember values.
+type ClientGroupMembersCollectionPage struct {
+	fn   func(ClientGroupMembersCollection) (ClientGroupMembersCollection, error)
+	cgmc ClientGroupMembersCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ClientGroupMembersCollectionPage) Next() error {
+	next, err := page.fn(page.cgmc)
+	if err != nil {
+		return err
+	}
+	page.cgmc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ClientGroupMembersCollectionPage) NotDone() bool {
+	return !page.cgmc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ClientGroupMembersCollectionPage) Response() ClientGroupMembersCollection {
+	return page.cgmc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ClientGroupMembersCollectionPage) Values() []ClientGroupMember {
+	if page.cgmc.IsEmpty() {
+		return nil
+	}
+	return *page.cgmc.Value
+}
+
+// ClientGroupMembersCount specifies the number of members in a client group.
 type ClientGroupMembersCount struct {
 	autorest.Response `json:"-"`
-	StartTime         *date.Time `json:"startTime,omitempty"`
-	EndTime           *date.Time `json:"endTime,omitempty"`
-	GroupID           *string    `json:"groupId,omitempty"`
-	Count             *int32     `json:"count,omitempty"`
-	Accuracy          Accuracy   `json:"accuracy,omitempty"`
+	// StartTime - Membership interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Membership interval start time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// GroupID - Client Group URI.
+	GroupID *string `json:"groupId,omitempty"`
+	// Count - Number of members in the client group. Use this value together with the value of ```accuracy```. If accuracy is `exact` then the value represents the actual number of members in the cloud. When accuracy is `estimated`, the actual number of members is larger than the value of ```count```.
+	Count *int32 `json:"count,omitempty"`
+	// Accuracy - Accuracy of the reported count. Possible values include: 'Actual', 'Estimated'
+	Accuracy Accuracy `json:"accuracy,omitempty"`
 }
 
-// ClientGroupProperties is resource properties.
+// ClientGroupProperties resource properties.
 type ClientGroupProperties struct {
-	ClientsOf ResourceReference `json:"clientsOf,omitempty"`
+	// ClientsOf - Reference to the resource whose clients are represented by this group.
+	ClientsOf BasicResourceReference `json:"clientsOf,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for ClientGroupProperties struct.
@@ -447,7 +776,7 @@ func (cg *ClientGroupProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["clientsOf"]
 	if v != nil {
-		clientsOf, err := unmarshalResourceReference(*m["clientsOf"])
+		clientsOf, err := unmarshalBasicResourceReference(*m["clientsOf"])
 		if err != nil {
 			return err
 		}
@@ -457,12 +786,16 @@ func (cg *ClientGroupProperties) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// Connection is a network connection.
+// Connection a network connection.
 type Connection struct {
-	ID                    *string          `json:"id,omitempty"`
-	Type                  *string          `json:"type,omitempty"`
-	Name                  *string          `json:"name,omitempty"`
-	Kind                  KindRelationship `json:"kind,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindRelationship', 'KindRelconnection', 'KindRelacceptor'
+	Kind                  KindBasicRelationship `json:"kind,omitempty"`
 	*ConnectionProperties `json:"properties,omitempty"`
 }
 
@@ -477,92 +810,253 @@ func (c Connection) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsConnection is the Relationship implementation for Connection.
-func (c Connection) AsConnection() (*Connection, bool) {
-	return &c, true
-}
-
-// AsAcceptor is the Relationship implementation for Connection.
-func (c Connection) AsAcceptor() (*Acceptor, bool) {
-	return nil, false
-}
-
-// AsCoreResource is the Relationship implementation for Connection.
+// AsCoreResource is the BasicResource implementation for Connection.
 func (c Connection) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsMachine is the Relationship implementation for Connection.
+// AsBasicCoreResource is the BasicResource implementation for Connection.
+func (c Connection) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return nil, false
+}
+
+// AsMachine is the BasicResource implementation for Connection.
 func (c Connection) AsMachine() (*Machine, bool) {
 	return nil, false
 }
 
-// AsProcess is the Relationship implementation for Connection.
+// AsProcess is the BasicResource implementation for Connection.
 func (c Connection) AsProcess() (*Process, bool) {
 	return nil, false
 }
 
-// AsPort is the Relationship implementation for Connection.
+// AsPort is the BasicResource implementation for Connection.
 func (c Connection) AsPort() (*Port, bool) {
 	return nil, false
 }
 
-// AsClientGroup is the Relationship implementation for Connection.
+// AsClientGroup is the BasicResource implementation for Connection.
 func (c Connection) AsClientGroup() (*ClientGroup, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the Relationship implementation for Connection.
+// AsClientGroupMember is the BasicResource implementation for Connection.
 func (c Connection) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsMachineGroup is the Relationship implementation for Connection.
+// AsMachineGroup is the BasicResource implementation for Connection.
 func (c Connection) AsMachineGroup() (*MachineGroup, bool) {
 	return nil, false
 }
 
-// AsSummary is the Relationship implementation for Connection.
+// AsSummary is the BasicResource implementation for Connection.
 func (c Connection) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the Relationship implementation for Connection.
+// AsMachinesSummary is the BasicResource implementation for Connection.
 func (c Connection) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the Relationship implementation for Connection.
+// AsRelationship is the BasicResource implementation for Connection.
 func (c Connection) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// ConnectionCollection is collection of Connection resources.
-type ConnectionCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Connection `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+// AsBasicRelationship is the BasicResource implementation for Connection.
+func (c Connection) AsBasicRelationship() (BasicRelationship, bool) {
+	return &c, true
 }
 
-// ConnectionCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ConnectionCollection) ConnectionCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AsConnection is the BasicResource implementation for Connection.
+func (c Connection) AsConnection() (*Connection, bool) {
+	return &c, true
+}
+
+// AsAcceptor is the BasicResource implementation for Connection.
+func (c Connection) AsAcceptor() (*Acceptor, bool) {
+	return nil, false
+}
+
+// UnmarshalJSON is the custom unmarshaler for Connection struct.
+func (c *Connection) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConnectionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		c.ConnectionProperties = &properties
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicRelationship
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		c.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		c.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		c.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		c.Name = &name
+	}
+
+	return nil
+}
+
+// ConnectionCollection collection of Connection resources.
+type ConnectionCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of Connection resources.
+	Value *[]Connection `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ConnectionCollectionIterator provides access to a complete listing of Connection values.
+type ConnectionCollectionIterator struct {
+	i    int
+	page ConnectionCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ConnectionCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ConnectionCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ConnectionCollectionIterator) Response() ConnectionCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ConnectionCollectionIterator) Value() Connection {
+	if !iter.page.NotDone() {
+		return Connection{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cc ConnectionCollection) IsEmpty() bool {
+	return cc.Value == nil || len(*cc.Value) == 0
+}
+
+// connectionCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cc ConnectionCollection) connectionCollectionPreparer() (*http.Request, error) {
+	if cc.NextLink == nil || len(to.String(cc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cc.NextLink)))
 }
 
-// ConnectionProperties is properties for a connection resource.
+// ConnectionCollectionPage contains a page of Connection values.
+type ConnectionCollectionPage struct {
+	fn func(ConnectionCollection) (ConnectionCollection, error)
+	cc ConnectionCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ConnectionCollectionPage) Next() error {
+	next, err := page.fn(page.cc)
+	if err != nil {
+		return err
+	}
+	page.cc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ConnectionCollectionPage) NotDone() bool {
+	return !page.cc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ConnectionCollectionPage) Response() ConnectionCollection {
+	return page.cc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ConnectionCollectionPage) Values() []Connection {
+	if page.cc.IsEmpty() {
+		return nil
+	}
+	return *page.cc.Value
+}
+
+// ConnectionProperties properties for a connection resource.
 type ConnectionProperties struct {
-	Source       ResourceReference      `json:"source,omitempty"`
-	Destination  ResourceReference      `json:"destination,omitempty"`
-	StartTime    *date.Time             `json:"startTime,omitempty"`
-	EndTime      *date.Time             `json:"endTime,omitempty"`
-	ServerPort   *PortReference         `json:"serverPort,omitempty"`
+	// Source - Source resource of the relationship.
+	Source BasicResourceReference `json:"source,omitempty"`
+	// Destination - Destination resource of the relationship.
+	Destination BasicResourceReference `json:"destination,omitempty"`
+	// StartTime - Relationship start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Relationship end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// ServerPort - Reference to the server port via which this connection has been established.
+	ServerPort *PortReference `json:"serverPort,omitempty"`
+	// FailureState - Specifies whether there are only successful, failed or a mixture of both connections represented by this resource. Possible values include: 'Ok', 'Failed', 'Mixed'
 	FailureState ConnectionFailureState `json:"failureState,omitempty"`
 }
 
@@ -597,7 +1091,7 @@ func (cp *ConnectionProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["source"]
 	if v != nil {
-		source, err := unmarshalResourceReference(*m["source"])
+		source, err := unmarshalBasicResourceReference(*m["source"])
 		if err != nil {
 			return err
 		}
@@ -606,7 +1100,7 @@ func (cp *ConnectionProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["destination"]
 	if v != nil {
-		destination, err := unmarshalResourceReference(*m["destination"])
+		destination, err := unmarshalBasicResourceReference(*m["destination"])
 		if err != nil {
 			return err
 		}
@@ -636,27 +1130,42 @@ func (cp *ConnectionProperties) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// CoreResource is marker resource for the core Service Map resources
-type CoreResource interface {
+// BasicCoreResource marker resource for the core Service Map resources
+type BasicCoreResource interface {
 	AsMachine() (*Machine, bool)
 	AsProcess() (*Process, bool)
 	AsPort() (*Port, bool)
 	AsClientGroup() (*ClientGroup, bool)
 	AsMachineGroup() (*MachineGroup, bool)
+	AsCoreResource() (*CoreResource, bool)
 }
 
-func unmarshalCoreResource(body []byte) (CoreResource, error) {
+// CoreResource marker resource for the core Service Map resources
+type CoreResource struct {
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+}
+
+func unmarshalBasicCoreResource(body []byte) (BasicCoreResource, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
 		return nil, err
 	}
 
-	switch m["kind"] {
+	switch m[""] {
 	case string(KindMachine):
-		var m Machine
-		err := json.Unmarshal(body, &m)
-		return m, err
+		var mVar Machine
+		err := json.Unmarshal(body, &mVar)
+		return mVar, err
 	case string(KindProcess):
 		var p Process
 		err := json.Unmarshal(body, &p)
@@ -674,20 +1183,22 @@ func unmarshalCoreResource(body []byte) (CoreResource, error) {
 		err := json.Unmarshal(body, &mg)
 		return mg, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var cr CoreResource
+		err := json.Unmarshal(body, &cr)
+		return cr, err
 	}
 }
-func unmarshalCoreResourceArray(body []byte) ([]CoreResource, error) {
+func unmarshalBasicCoreResourceArray(body []byte) ([]BasicCoreResource, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	crArray := make([]CoreResource, len(rawMessages))
+	crArray := make([]BasicCoreResource, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		cr, err := unmarshalCoreResource(*rawMessage)
+		cr, err := unmarshalBasicCoreResource(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -696,162 +1207,432 @@ func unmarshalCoreResourceArray(body []byte) ([]CoreResource, error) {
 	return crArray, nil
 }
 
-// Error is error details.
+// MarshalJSON is the custom marshaler for CoreResource.
+func (cr CoreResource) MarshalJSON() ([]byte, error) {
+	cr.Kind = KindCoreResource
+	type Alias CoreResource
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(cr),
+	})
+}
+
+// AsCoreResource is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsCoreResource() (*CoreResource, bool) {
+	return &cr, true
+}
+
+// AsBasicCoreResource is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &cr, true
+}
+
+// AsMachine is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsProcess() (*Process, bool) {
+	return nil, false
+}
+
+// AsPort is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsPort() (*Port, bool) {
+	return nil, false
+}
+
+// AsClientGroup is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsClientGroup() (*ClientGroup, bool) {
+	return nil, false
+}
+
+// AsClientGroupMember is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsClientGroupMember() (*ClientGroupMember, bool) {
+	return nil, false
+}
+
+// AsMachineGroup is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsMachineGroup() (*MachineGroup, bool) {
+	return nil, false
+}
+
+// AsSummary is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsSummary() (*Summary, bool) {
+	return nil, false
+}
+
+// AsMachinesSummary is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsMachinesSummary() (*MachinesSummary, bool) {
+	return nil, false
+}
+
+// AsRelationship is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsRelationship() (*Relationship, bool) {
+	return nil, false
+}
+
+// AsBasicRelationship is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsBasicRelationship() (BasicRelationship, bool) {
+	return nil, false
+}
+
+// AsConnection is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsConnection() (*Connection, bool) {
+	return nil, false
+}
+
+// AsAcceptor is the BasicResource implementation for CoreResource.
+func (cr CoreResource) AsAcceptor() (*Acceptor, bool) {
+	return nil, false
+}
+
+// Error error details.
 type Error struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - Error code identifying the specific error.
+	Code *string `json:"code,omitempty"`
+	// Message - Error message in the caller's locale.
 	Message *string `json:"message,omitempty"`
 }
 
-// ErrorResponse is an error response from the API.
+// ErrorResponse an error response from the API.
 type ErrorResponse struct {
+	// Error - Error information.
 	Error *Error `json:"error,omitempty"`
 }
 
-// HypervisorConfiguration is describes the hypervisor configuration of a machine.
+// HypervisorConfiguration describes the hypervisor configuration of a machine.
 type HypervisorConfiguration struct {
-	HypervisorType      HypervisorType `json:"hypervisorType,omitempty"`
-	NativeHostMachineID *string        `json:"nativeHostMachineId,omitempty"`
+	// HypervisorType - Specifies the virtualization technology used by the hypervisor (hyperv, vmware, etc.). Possible values include: 'Unknown', 'Hyperv'
+	HypervisorType HypervisorType `json:"hypervisorType,omitempty"`
+	// NativeHostMachineID - The unique identifier of the hypervisor machine as reported by the underlying virtualization system.
+	NativeHostMachineID *string `json:"nativeHostMachineId,omitempty"`
 }
 
-// Ipv4NetworkInterface is describes an IPv4 network interface.
+// Ipv4NetworkInterface describes an IPv4 network interface.
 type Ipv4NetworkInterface struct {
-	IPAddress  *string `json:"ipAddress,omitempty"`
+	// IPAddress - IPv4 address.
+	IPAddress *string `json:"ipAddress,omitempty"`
+	// SubnetMask - IPv4 subnet mask.
 	SubnetMask *string `json:"subnetMask,omitempty"`
 }
 
-// Ipv6NetworkInterface is describes an IPv6 network interface.
+// Ipv6NetworkInterface describes an IPv6 network interface.
 type Ipv6NetworkInterface struct {
+	// IPAddress - IPv6 address.
 	IPAddress *string `json:"ipAddress,omitempty"`
 }
 
-// Liveness is specifies the contents of a check liveness response.
+// Liveness specifies the contents of a check liveness response.
 type Liveness struct {
 	autorest.Response `json:"-"`
-	StartTime         *date.Time `json:"startTime,omitempty"`
-	EndTime           *date.Time `json:"endTime,omitempty"`
-	Live              *bool      `json:"live,omitempty"`
+	// StartTime - Liveness interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Liveness interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Live - `true` if the resource is live during [startTime, endTime], `false` otherwise
+	Live *bool `json:"live,omitempty"`
 }
 
-// Machine is a machine resource represents a discovered computer system. It can be *monitored*, i.e., a Dependency
-// Agent is running on it, or *discovered*, i.e., its existence was inferred by observing the data stream from
-// monitored machines. As machines change, prior versions of the machine resource are preserved and available for
-// access. A machine is live during an interval of time, if either its Dependency Agent has reported data during
-// (parts) of that interval, or a Dependency agent running on other machines has reported activity associated with the
-// machine.
+// Machine a machine resource represents a discovered computer system. It can be *monitored*, i.e., a Dependency Agent
+// is running on it, or *discovered*, i.e., its existence was inferred by observing the data stream from monitored
+// machines. As machines change, prior versions of the machine resource are preserved and available for access. A
+// machine is live during an interval of time, if either its Dependency Agent has reported data during (parts) of that
+// interval, or a Dependency agent running on other machines has reported activity associated with the machine.
 type Machine struct {
-	autorest.Response  `json:"-"`
-	ID                 *string          `json:"id,omitempty"`
-	Type               *string          `json:"type,omitempty"`
-	Name               *string          `json:"name,omitempty"`
-	Etag               *string          `json:"etag,omitempty"`
-	Kind               KindCoreResource `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+	// MachineProperties - Resource properties.
 	*MachineProperties `json:"properties,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for Machine.
-func (m Machine) MarshalJSON() ([]byte, error) {
-	m.Kind = KindMachine
+func (mVar Machine) MarshalJSON() ([]byte, error) {
+	mVar.Kind = KindMachine
 	type Alias Machine
 	return json.Marshal(&struct {
 		Alias
 	}{
-		Alias: (Alias)(m),
+		Alias: (Alias)(mVar),
 	})
 }
 
-// AsMachine is the CoreResource implementation for Machine.
-func (m Machine) AsMachine() (*Machine, bool) {
-	return &m, true
-}
-
-// AsProcess is the CoreResource implementation for Machine.
-func (m Machine) AsProcess() (*Process, bool) {
+// AsCoreResource is the BasicResource implementation for Machine.
+func (mVar Machine) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsPort is the CoreResource implementation for Machine.
-func (m Machine) AsPort() (*Port, bool) {
+// AsBasicCoreResource is the BasicResource implementation for Machine.
+func (mVar Machine) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &mVar, true
+}
+
+// AsMachine is the BasicResource implementation for Machine.
+func (mVar Machine) AsMachine() (*Machine, bool) {
+	return &mVar, true
+}
+
+// AsProcess is the BasicResource implementation for Machine.
+func (mVar Machine) AsProcess() (*Process, bool) {
 	return nil, false
 }
 
-// AsClientGroup is the CoreResource implementation for Machine.
-func (m Machine) AsClientGroup() (*ClientGroup, bool) {
+// AsPort is the BasicResource implementation for Machine.
+func (mVar Machine) AsPort() (*Port, bool) {
 	return nil, false
 }
 
-// AsMachineGroup is the CoreResource implementation for Machine.
-func (m Machine) AsMachineGroup() (*MachineGroup, bool) {
+// AsClientGroup is the BasicResource implementation for Machine.
+func (mVar Machine) AsClientGroup() (*ClientGroup, bool) {
 	return nil, false
 }
 
-// AsCoreResource is the CoreResource implementation for Machine.
-func (m Machine) AsCoreResource() (*CoreResource, bool) {
+// AsClientGroupMember is the BasicResource implementation for Machine.
+func (mVar Machine) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the CoreResource implementation for Machine.
-func (m Machine) AsClientGroupMember() (*ClientGroupMember, bool) {
+// AsMachineGroup is the BasicResource implementation for Machine.
+func (mVar Machine) AsMachineGroup() (*MachineGroup, bool) {
 	return nil, false
 }
 
-// AsSummary is the CoreResource implementation for Machine.
-func (m Machine) AsSummary() (*Summary, bool) {
+// AsSummary is the BasicResource implementation for Machine.
+func (mVar Machine) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the CoreResource implementation for Machine.
-func (m Machine) AsMachinesSummary() (*MachinesSummary, bool) {
+// AsMachinesSummary is the BasicResource implementation for Machine.
+func (mVar Machine) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the CoreResource implementation for Machine.
-func (m Machine) AsRelationship() (*Relationship, bool) {
+// AsRelationship is the BasicResource implementation for Machine.
+func (mVar Machine) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AsConnection is the CoreResource implementation for Machine.
-func (m Machine) AsConnection() (*Connection, bool) {
+// AsBasicRelationship is the BasicResource implementation for Machine.
+func (mVar Machine) AsBasicRelationship() (BasicRelationship, bool) {
 	return nil, false
 }
 
-// AsAcceptor is the CoreResource implementation for Machine.
-func (m Machine) AsAcceptor() (*Acceptor, bool) {
+// AsConnection is the BasicResource implementation for Machine.
+func (mVar Machine) AsConnection() (*Connection, bool) {
 	return nil, false
 }
 
-// MachineCollection is collection of Machine resources.
+// AsAcceptor is the BasicResource implementation for Machine.
+func (mVar Machine) AsAcceptor() (*Acceptor, bool) {
+	return nil, false
+}
+
+// UnmarshalJSON is the custom unmarshaler for Machine struct.
+func (mVar *Machine) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties MachineProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mVar.MachineProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		mVar.Etag = &etag
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicCoreResource
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		mVar.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mVar.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mVar.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mVar.Name = &name
+	}
+
+	return nil
+}
+
+// MachineCollection collection of Machine resources.
 type MachineCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]Machine `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - Collection of Machine resources.
+	Value *[]Machine `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// MachineCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client MachineCollection) MachineCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// MachineCollectionIterator provides access to a complete listing of Machine values.
+type MachineCollectionIterator struct {
+	i    int
+	page MachineCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *MachineCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter MachineCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter MachineCollectionIterator) Response() MachineCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter MachineCollectionIterator) Value() Machine {
+	if !iter.page.NotDone() {
+		return Machine{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mc MachineCollection) IsEmpty() bool {
+	return mc.Value == nil || len(*mc.Value) == 0
+}
+
+// machineCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mc MachineCollection) machineCollectionPreparer() (*http.Request, error) {
+	if mc.NextLink == nil || len(to.String(mc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(mc.NextLink)))
 }
 
-// MachineCountsByOperatingSystem is machines by operating system.
+// MachineCollectionPage contains a page of Machine values.
+type MachineCollectionPage struct {
+	fn func(MachineCollection) (MachineCollection, error)
+	mc MachineCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *MachineCollectionPage) Next() error {
+	next, err := page.fn(page.mc)
+	if err != nil {
+		return err
+	}
+	page.mc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page MachineCollectionPage) NotDone() bool {
+	return !page.mc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page MachineCollectionPage) Response() MachineCollection {
+	return page.mc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page MachineCollectionPage) Values() []Machine {
+	if page.mc.IsEmpty() {
+		return nil
+	}
+	return *page.mc.Value
+}
+
+// MachineCountsByOperatingSystem machines by operating system.
 type MachineCountsByOperatingSystem struct {
+	// Windows - Number of live Windows machines.
 	Windows *int32 `json:"windows,omitempty"`
-	Linux   *int32 `json:"linux,omitempty"`
+	// Linux - Number of live Linux machines.
+	Linux *int32 `json:"linux,omitempty"`
 }
 
-// MachineGroup is a user-defined logical grouping of machines.
+// MachineGroup a user-defined logical grouping of machines.
 type MachineGroup struct {
-	autorest.Response       `json:"-"`
-	ID                      *string          `json:"id,omitempty"`
-	Type                    *string          `json:"type,omitempty"`
-	Name                    *string          `json:"name,omitempty"`
-	Etag                    *string          `json:"etag,omitempty"`
-	Kind                    KindCoreResource `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+	// MachineGroupProperties - Resource properties.
 	*MachineGroupProperties `json:"properties,omitempty"`
 }
 
@@ -866,93 +1647,263 @@ func (mg MachineGroup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachine is the CoreResource implementation for MachineGroup.
-func (mg MachineGroup) AsMachine() (*Machine, bool) {
-	return nil, false
-}
-
-// AsProcess is the CoreResource implementation for MachineGroup.
-func (mg MachineGroup) AsProcess() (*Process, bool) {
-	return nil, false
-}
-
-// AsPort is the CoreResource implementation for MachineGroup.
-func (mg MachineGroup) AsPort() (*Port, bool) {
-	return nil, false
-}
-
-// AsClientGroup is the CoreResource implementation for MachineGroup.
-func (mg MachineGroup) AsClientGroup() (*ClientGroup, bool) {
-	return nil, false
-}
-
-// AsMachineGroup is the CoreResource implementation for MachineGroup.
-func (mg MachineGroup) AsMachineGroup() (*MachineGroup, bool) {
-	return &mg, true
-}
-
-// AsCoreResource is the CoreResource implementation for MachineGroup.
+// AsCoreResource is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the CoreResource implementation for MachineGroup.
+// AsBasicCoreResource is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &mg, true
+}
+
+// AsMachine is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsProcess() (*Process, bool) {
+	return nil, false
+}
+
+// AsPort is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsPort() (*Port, bool) {
+	return nil, false
+}
+
+// AsClientGroup is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsClientGroup() (*ClientGroup, bool) {
+	return nil, false
+}
+
+// AsClientGroupMember is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsSummary is the CoreResource implementation for MachineGroup.
+// AsMachineGroup is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsMachineGroup() (*MachineGroup, bool) {
+	return &mg, true
+}
+
+// AsSummary is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the CoreResource implementation for MachineGroup.
+// AsMachinesSummary is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the CoreResource implementation for MachineGroup.
+// AsRelationship is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AsConnection is the CoreResource implementation for MachineGroup.
+// AsBasicRelationship is the BasicResource implementation for MachineGroup.
+func (mg MachineGroup) AsBasicRelationship() (BasicRelationship, bool) {
+	return nil, false
+}
+
+// AsConnection is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsConnection() (*Connection, bool) {
 	return nil, false
 }
 
-// AsAcceptor is the CoreResource implementation for MachineGroup.
+// AsAcceptor is the BasicResource implementation for MachineGroup.
 func (mg MachineGroup) AsAcceptor() (*Acceptor, bool) {
 	return nil, false
 }
 
-// MachineGroupCollection is collection of Machine Group resources.
-type MachineGroupCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]MachineGroup `json:"value,omitempty"`
-	NextLink          *string         `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for MachineGroup struct.
+func (mg *MachineGroup) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties MachineGroupProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mg.MachineGroupProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		mg.Etag = &etag
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicCoreResource
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		mg.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mg.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mg.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mg.Name = &name
+	}
+
+	return nil
 }
 
-// MachineGroupCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client MachineGroupCollection) MachineGroupCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// MachineGroupCollection collection of Machine Group resources.
+type MachineGroupCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of Machine Group resources.
+	Value *[]MachineGroup `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// MachineGroupCollectionIterator provides access to a complete listing of MachineGroup values.
+type MachineGroupCollectionIterator struct {
+	i    int
+	page MachineGroupCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *MachineGroupCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter MachineGroupCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter MachineGroupCollectionIterator) Response() MachineGroupCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter MachineGroupCollectionIterator) Value() MachineGroup {
+	if !iter.page.NotDone() {
+		return MachineGroup{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mgc MachineGroupCollection) IsEmpty() bool {
+	return mgc.Value == nil || len(*mgc.Value) == 0
+}
+
+// machineGroupCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mgc MachineGroupCollection) machineGroupCollectionPreparer() (*http.Request, error) {
+	if mgc.NextLink == nil || len(to.String(mgc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(mgc.NextLink)))
 }
 
-// MachineGroupMapRequest is specifies the computation of a machine group dependency map. A machine group dependency
-// map includes all direct dependencies of a group of machines.
+// MachineGroupCollectionPage contains a page of MachineGroup values.
+type MachineGroupCollectionPage struct {
+	fn  func(MachineGroupCollection) (MachineGroupCollection, error)
+	mgc MachineGroupCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *MachineGroupCollectionPage) Next() error {
+	next, err := page.fn(page.mgc)
+	if err != nil {
+		return err
+	}
+	page.mgc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page MachineGroupCollectionPage) NotDone() bool {
+	return !page.mgc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page MachineGroupCollectionPage) Response() MachineGroupCollection {
+	return page.mgc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page MachineGroupCollectionPage) Values() []MachineGroup {
+	if page.mgc.IsEmpty() {
+		return nil
+	}
+	return *page.mgc.Value
+}
+
+// MachineGroupMapRequest specifies the computation of a machine group dependency map. A machine group dependency map
+// includes all direct dependencies of a group of machines.
 type MachineGroupMapRequest struct {
-	StartTime       *date.Time     `json:"startTime,omitempty"`
-	EndTime         *date.Time     `json:"endTime,omitempty"`
-	Kind            KindMapRequest `json:"kind,omitempty"`
-	MachineGroupID  *string        `json:"machineGroupId,omitempty"`
-	FilterProcesses *bool          `json:"filterProcesses,omitempty"`
+	// StartTime - Map interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Map interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Kind - Possible values include: 'KindMapRequest', 'KindMapsingleMachineDependency', 'KindMapmachineGroupDependency'
+	Kind KindBasicMapRequest `json:"kind,omitempty"`
+	// MachineGroupID - URI of machine group resource for which to generate the map.
+	MachineGroupID *string `json:"machineGroupId,omitempty"`
+	// FilterProcesses - If true, only processes between grouped machines will be included. Any connections in or out of those processes will be included.
+	FilterProcesses *bool `json:"filterProcesses,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for MachineGroupMapRequest.
@@ -966,46 +1917,76 @@ func (mgmr MachineGroupMapRequest) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsSingleMachineDependencyMapRequest is the MapRequest implementation for MachineGroupMapRequest.
+// AsSingleMachineDependencyMapRequest is the BasicMapRequest implementation for MachineGroupMapRequest.
 func (mgmr MachineGroupMapRequest) AsSingleMachineDependencyMapRequest() (*SingleMachineDependencyMapRequest, bool) {
 	return nil, false
 }
 
-// AsMachineGroupMapRequest is the MapRequest implementation for MachineGroupMapRequest.
+// AsMachineGroupMapRequest is the BasicMapRequest implementation for MachineGroupMapRequest.
 func (mgmr MachineGroupMapRequest) AsMachineGroupMapRequest() (*MachineGroupMapRequest, bool) {
 	return &mgmr, true
 }
 
-// MachineGroupProperties is resource properties.
+// AsMapRequest is the BasicMapRequest implementation for MachineGroupMapRequest.
+func (mgmr MachineGroupMapRequest) AsMapRequest() (*MapRequest, bool) {
+	return nil, false
+}
+
+// AsBasicMapRequest is the BasicMapRequest implementation for MachineGroupMapRequest.
+func (mgmr MachineGroupMapRequest) AsBasicMapRequest() (BasicMapRequest, bool) {
+	return &mgmr, true
+}
+
+// MachineGroupProperties resource properties.
 type MachineGroupProperties struct {
-	DisplayName *string                      `json:"displayName,omitempty"`
-	Machines    *[]MachineReferenceWithHints `json:"machines,omitempty"`
+	// DisplayName - User defined name for the group
+	DisplayName *string `json:"displayName,omitempty"`
+	// Machines - References of the machines in this group. The hints within each reference do not represent the current value of  the corresponding fields. They are a snapshot created during the last time the machine group was updated.
+	Machines *[]MachineReferenceWithHints `json:"machines,omitempty"`
 }
 
-// MachineProperties is resource properties.
+// MachineProperties resource properties.
 type MachineProperties struct {
-	Timestamp                *date.Time                     `json:"timestamp,omitempty"`
-	MonitoringState          MonitoringState                `json:"monitoringState,omitempty"`
-	VirtualizationState      VirtualizationState            `json:"virtualizationState,omitempty"`
-	DisplayName              *string                        `json:"displayName,omitempty"`
-	ComputerName             *string                        `json:"computerName,omitempty"`
-	FullyQualifiedDomainName *string                        `json:"fullyQualifiedDomainName,omitempty"`
-	BootTime                 *date.Time                     `json:"bootTime,omitempty"`
-	Timezone                 *Timezone                      `json:"timezone,omitempty"`
-	Agent                    *AgentConfiguration            `json:"agent,omitempty"`
-	Resources                *MachineResourcesConfiguration `json:"resources,omitempty"`
-	Networking               *NetworkConfiguration          `json:"networking,omitempty"`
-	OperatingSystem          *OperatingSystemConfiguration  `json:"operatingSystem,omitempty"`
-	VirtualMachine           *VirtualMachineConfiguration   `json:"virtualMachine,omitempty"`
-	Hypervisor               *HypervisorConfiguration       `json:"hypervisor,omitempty"`
+	// Timestamp - UTC date and time when this resource was updated in the system.
+	Timestamp *date.Time `json:"timestamp,omitempty"`
+	// MonitoringState - Specifies whether the machine is actively monitored or discovered. Possible values include: 'Monitored', 'Discovered'
+	MonitoringState MonitoringState `json:"monitoringState,omitempty"`
+	// VirtualizationState - Specifies whether the machine is virtualized. Possible values include: 'VirtualizationStateUnknown', 'VirtualizationStatePhysical', 'VirtualizationStateVirtual', 'VirtualizationStateHypervisor'
+	VirtualizationState VirtualizationState `json:"virtualizationState,omitempty"`
+	// DisplayName - Name to use for display purposes
+	DisplayName *string `json:"displayName,omitempty"`
+	// ComputerName - Name of the machine, e.g., server
+	ComputerName *string `json:"computerName,omitempty"`
+	// FullyQualifiedDomainName - Fully-qualified name of the machine, e.g., server.company.com
+	FullyQualifiedDomainName *string `json:"fullyQualifiedDomainName,omitempty"`
+	// BootTime - UTC date and time when the machine last booted
+	BootTime *date.Time `json:"bootTime,omitempty"`
+	// Timezone - Timezone of the machine.
+	Timezone *Timezone `json:"timezone,omitempty"`
+	// Agent - Dependency Agent configuration.
+	Agent *AgentConfiguration `json:"agent,omitempty"`
+	// Resources - Machine resources (memory, cpu, etc.).
+	Resources *MachineResourcesConfiguration `json:"resources,omitempty"`
+	// Networking - Network configuration (ips, gateways, dns, etc.)
+	Networking *NetworkConfiguration `json:"networking,omitempty"`
+	// OperatingSystem - Operating system information.
+	OperatingSystem *OperatingSystemConfiguration `json:"operatingSystem,omitempty"`
+	// VirtualMachine - Virtualization-related configuration. Present only when `virtualizationState` is `virtual`.
+	VirtualMachine *VirtualMachineConfiguration `json:"virtualMachine,omitempty"`
+	// Hypervisor - Hypervisor-related configuration. Present only when 'virtualizationState' is `hypervisor`.
+	Hypervisor *HypervisorConfiguration `json:"hypervisor,omitempty"`
 }
 
-// MachineReference is reference to a machine.
+// MachineReference reference to a machine.
 type MachineReference struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource URI.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type qualifier.
 	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
-	Kind Kind    `json:"kind,omitempty"`
+	// Kind - Possible values include: 'KindResourceReference', 'KindRefmachine', 'KindRefprocess', 'KindRefport', 'KindRefmachinewithhints'
+	Kind Kind `json:"kind,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for MachineReference.
@@ -1019,32 +2000,47 @@ func (mr MachineReference) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachineReference is the ResourceReference implementation for MachineReference.
+// AsMachineReference is the BasicResourceReference implementation for MachineReference.
 func (mr MachineReference) AsMachineReference() (*MachineReference, bool) {
 	return &mr, true
 }
 
-// AsProcessReference is the ResourceReference implementation for MachineReference.
+// AsProcessReference is the BasicResourceReference implementation for MachineReference.
 func (mr MachineReference) AsProcessReference() (*ProcessReference, bool) {
 	return nil, false
 }
 
-// AsPortReference is the ResourceReference implementation for MachineReference.
+// AsPortReference is the BasicResourceReference implementation for MachineReference.
 func (mr MachineReference) AsPortReference() (*PortReference, bool) {
 	return nil, false
 }
 
-// AsMachineReferenceWithHints is the ResourceReference implementation for MachineReference.
+// AsMachineReferenceWithHints is the BasicResourceReference implementation for MachineReference.
 func (mr MachineReference) AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool) {
 	return nil, false
 }
 
-// MachineReferenceWithHints is a machine reference with a hint of the machine's name and operating system.
+// AsResourceReference is the BasicResourceReference implementation for MachineReference.
+func (mr MachineReference) AsResourceReference() (*ResourceReference, bool) {
+	return nil, false
+}
+
+// AsBasicResourceReference is the BasicResourceReference implementation for MachineReference.
+func (mr MachineReference) AsBasicResourceReference() (BasicResourceReference, bool) {
+	return &mr, true
+}
+
+// MachineReferenceWithHints a machine reference with a hint of the machine's name and operating system.
 type MachineReferenceWithHints struct {
-	ID                                   *string `json:"id,omitempty"`
-	Type                                 *string `json:"type,omitempty"`
-	Name                                 *string `json:"name,omitempty"`
-	Kind                                 Kind    `json:"kind,omitempty"`
+	// ID - Resource URI.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type qualifier.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindResourceReference', 'KindRefmachine', 'KindRefprocess', 'KindRefport', 'KindRefmachinewithhints'
+	Kind Kind `json:"kind,omitempty"`
+	// MachineReferenceWithHintsProperties - Machine reference with name and os hints.
 	*MachineReferenceWithHintsProperties `json:"properties,omitempty"`
 }
 
@@ -1059,85 +2055,240 @@ func (mrwh MachineReferenceWithHints) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachineReference is the ResourceReference implementation for MachineReferenceWithHints.
+// AsMachineReference is the BasicResourceReference implementation for MachineReferenceWithHints.
 func (mrwh MachineReferenceWithHints) AsMachineReference() (*MachineReference, bool) {
 	return nil, false
 }
 
-// AsProcessReference is the ResourceReference implementation for MachineReferenceWithHints.
+// AsProcessReference is the BasicResourceReference implementation for MachineReferenceWithHints.
 func (mrwh MachineReferenceWithHints) AsProcessReference() (*ProcessReference, bool) {
 	return nil, false
 }
 
-// AsPortReference is the ResourceReference implementation for MachineReferenceWithHints.
+// AsPortReference is the BasicResourceReference implementation for MachineReferenceWithHints.
 func (mrwh MachineReferenceWithHints) AsPortReference() (*PortReference, bool) {
 	return nil, false
 }
 
-// AsMachineReferenceWithHints is the ResourceReference implementation for MachineReferenceWithHints.
+// AsMachineReferenceWithHints is the BasicResourceReference implementation for MachineReferenceWithHints.
 func (mrwh MachineReferenceWithHints) AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool) {
 	return &mrwh, true
 }
 
-// MachineReferenceWithHintsProperties is machine reference with name and os hints.
-type MachineReferenceWithHintsProperties struct {
-	DisplayNameHint *string               `json:"displayNameHint,omitempty"`
-	OsFamilyHint    OperatingSystemFamily `json:"osFamilyHint,omitempty"`
+// AsResourceReference is the BasicResourceReference implementation for MachineReferenceWithHints.
+func (mrwh MachineReferenceWithHints) AsResourceReference() (*ResourceReference, bool) {
+	return nil, false
 }
 
-// MachineResourcesConfiguration is describes the resources of a machine.
+// AsBasicResourceReference is the BasicResourceReference implementation for MachineReferenceWithHints.
+func (mrwh MachineReferenceWithHints) AsBasicResourceReference() (BasicResourceReference, bool) {
+	return &mrwh, true
+}
+
+// UnmarshalJSON is the custom unmarshaler for MachineReferenceWithHints struct.
+func (mrwh *MachineReferenceWithHints) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties MachineReferenceWithHintsProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		mrwh.MachineReferenceWithHintsProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		mrwh.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		mrwh.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		mrwh.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		mrwh.Kind = kind
+	}
+
+	return nil
+}
+
+// MachineReferenceWithHintsProperties machine reference with name and os hints.
+type MachineReferenceWithHintsProperties struct {
+	// DisplayNameHint - Last known display name.
+	DisplayNameHint *string `json:"displayNameHint,omitempty"`
+	// OsFamilyHint - Last known operating system family. Possible values include: 'OperatingSystemFamilyUnknown', 'OperatingSystemFamilyWindows', 'OperatingSystemFamilyLinux', 'OperatingSystemFamilySolaris', 'OperatingSystemFamilyAix'
+	OsFamilyHint OperatingSystemFamily `json:"osFamilyHint,omitempty"`
+}
+
+// MachineResourcesConfiguration describes the resources of a machine.
 type MachineResourcesConfiguration struct {
-	PhysicalMemory   *int32   `json:"physicalMemory,omitempty"`
-	Cpus             *int32   `json:"cpus,omitempty"`
-	CPUSpeed         *int32   `json:"cpuSpeed,omitempty"`
+	// PhysicalMemory - Physical memory in megabytes (MB).
+	PhysicalMemory *int32 `json:"physicalMemory,omitempty"`
+	// Cpus - Number of CPUs.
+	Cpus *int32 `json:"cpus,omitempty"`
+	// CPUSpeed - CPU speed in megahertz (Mhz).
+	CPUSpeed *int32 `json:"cpuSpeed,omitempty"`
+	// CPUSpeedAccuracy - Describes the accuracy of the cpuSpeed field. Possible values include: 'Actual', 'Estimated'
 	CPUSpeedAccuracy Accuracy `json:"cpuSpeedAccuracy,omitempty"`
 }
 
-// MachinesSummary is a summary of the machines in the workspace.
+// MachinesSummary a summary of the machines in the workspace.
 type MachinesSummary struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	Type                       *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
 	Name                       *string `json:"name,omitempty"`
 	*MachinesSummaryProperties `json:"properties,omitempty"`
 }
 
-// MachinesSummaryProperties is summarizes machines in the workspace.
-type MachinesSummaryProperties struct {
-	StartTime *date.Time                      `json:"startTime,omitempty"`
-	EndTime   *date.Time                      `json:"endTime,omitempty"`
-	Total     *int32                          `json:"total,omitempty"`
-	Live      *int32                          `json:"live,omitempty"`
-	Os        *MachineCountsByOperatingSystem `json:"os,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for MachinesSummary struct.
+func (ms *MachinesSummary) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties MachinesSummaryProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ms.MachinesSummaryProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ms.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ms.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ms.Name = &name
+	}
+
+	return nil
 }
 
-// Map is a map of resources and relationships between them.
+// MachinesSummaryProperties summarizes machines in the workspace.
+type MachinesSummaryProperties struct {
+	// StartTime - Summary interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Summary interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Total - Total number of machines.
+	Total *int32 `json:"total,omitempty"`
+	// Live - Number of live machines.
+	Live *int32 `json:"live,omitempty"`
+	// Os - Machine counts by operating system.
+	Os *MachineCountsByOperatingSystem `json:"os,omitempty"`
+}
+
+// Map a map of resources and relationships between them.
 type Map struct {
 	Nodes *MapNodes `json:"nodes,omitempty"`
 	Edges *MapEdges `json:"edges,omitempty"`
 }
 
-// MapEdges is the edges (relationships) of a map.
+// MapEdges the edges (relationships) of a map.
 type MapEdges struct {
+	// Connections - Network connections.
 	Connections *[]Connection `json:"connections,omitempty"`
-	Acceptors   *[]Acceptor   `json:"acceptors,omitempty"`
+	// Acceptors - Processes accepting on a port.
+	Acceptors *[]Acceptor `json:"acceptors,omitempty"`
 }
 
-// MapNodes is the nodes (entities) of a map.
+// MapNodes the nodes (entities) of a map.
 type MapNodes struct {
-	Machines     *[]Machine     `json:"machines,omitempty"`
-	Processes    *[]Process     `json:"processes,omitempty"`
-	Ports        *[]Port        `json:"Ports,omitempty"`
+	// Machines - Machine resources.
+	Machines *[]Machine `json:"machines,omitempty"`
+	// Processes - Process resources.
+	Processes *[]Process `json:"processes,omitempty"`
+	// Ports - Port resources.
+	Ports *[]Port `json:"Ports,omitempty"`
+	// ClientGroups - Client Group resources.
 	ClientGroups *[]ClientGroup `json:"ClientGroups,omitempty"`
 }
 
-// MapRequest is specifies the contents of request to generate a map.
-type MapRequest interface {
+// BasicMapRequest specifies the contents of request to generate a map.
+type BasicMapRequest interface {
 	AsSingleMachineDependencyMapRequest() (*SingleMachineDependencyMapRequest, bool)
 	AsMachineGroupMapRequest() (*MachineGroupMapRequest, bool)
+	AsMapRequest() (*MapRequest, bool)
 }
 
-func unmarshalMapRequest(body []byte) (MapRequest, error) {
+// MapRequest specifies the contents of request to generate a map.
+type MapRequest struct {
+	// StartTime - Map interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Map interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Kind - Possible values include: 'KindMapRequest', 'KindMapsingleMachineDependency', 'KindMapmachineGroupDependency'
+	Kind KindBasicMapRequest `json:"kind,omitempty"`
+}
+
+func unmarshalBasicMapRequest(body []byte) (BasicMapRequest, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -1154,20 +2305,22 @@ func unmarshalMapRequest(body []byte) (MapRequest, error) {
 		err := json.Unmarshal(body, &mgmr)
 		return mgmr, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var mr MapRequest
+		err := json.Unmarshal(body, &mr)
+		return mr, err
 	}
 }
-func unmarshalMapRequestArray(body []byte) ([]MapRequest, error) {
+func unmarshalBasicMapRequestArray(body []byte) ([]BasicMapRequest, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	mrArray := make([]MapRequest, len(rawMessages))
+	mrArray := make([]BasicMapRequest, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		mr, err := unmarshalMapRequest(*rawMessage)
+		mr, err := unmarshalBasicMapRequest(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -1176,42 +2329,90 @@ func unmarshalMapRequestArray(body []byte) ([]MapRequest, error) {
 	return mrArray, nil
 }
 
-// MapResponse is specified the contents of a map response.
+// MarshalJSON is the custom marshaler for MapRequest.
+func (mr MapRequest) MarshalJSON() ([]byte, error) {
+	mr.Kind = KindMapRequest
+	type Alias MapRequest
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(mr),
+	})
+}
+
+// AsSingleMachineDependencyMapRequest is the BasicMapRequest implementation for MapRequest.
+func (mr MapRequest) AsSingleMachineDependencyMapRequest() (*SingleMachineDependencyMapRequest, bool) {
+	return nil, false
+}
+
+// AsMachineGroupMapRequest is the BasicMapRequest implementation for MapRequest.
+func (mr MapRequest) AsMachineGroupMapRequest() (*MachineGroupMapRequest, bool) {
+	return nil, false
+}
+
+// AsMapRequest is the BasicMapRequest implementation for MapRequest.
+func (mr MapRequest) AsMapRequest() (*MapRequest, bool) {
+	return &mr, true
+}
+
+// AsBasicMapRequest is the BasicMapRequest implementation for MapRequest.
+func (mr MapRequest) AsBasicMapRequest() (BasicMapRequest, bool) {
+	return &mr, true
+}
+
+// MapResponse specified the contents of a map response.
 type MapResponse struct {
 	autorest.Response `json:"-"`
-	StartTime         *date.Time `json:"startTime,omitempty"`
-	EndTime           *date.Time `json:"endTime,omitempty"`
-	Map               *Map       `json:"map,omitempty"`
+	// StartTime - Map interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Map interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Map - The generated map.
+	Map *Map `json:"map,omitempty"`
 }
 
-// NetworkConfiguration is describes the network configuration of a machine.
+// NetworkConfiguration describes the network configuration of a machine.
 type NetworkConfiguration struct {
-	Ipv4Interfaces      *[]Ipv4NetworkInterface `json:"ipv4Interfaces,omitempty"`
-	Ipv6Interfaces      *[]Ipv6NetworkInterface `json:"ipv6Interfaces,omitempty"`
-	DefaultIpv4Gateways *[]string               `json:"defaultIpv4Gateways,omitempty"`
-	MacAddresses        *[]string               `json:"macAddresses,omitempty"`
-	DNSNames            *[]string               `json:"dnsNames,omitempty"`
+	// Ipv4Interfaces - IPv4 interfaces.
+	Ipv4Interfaces *[]Ipv4NetworkInterface `json:"ipv4Interfaces,omitempty"`
+	// Ipv6Interfaces - IPv6 interfaces.
+	Ipv6Interfaces *[]Ipv6NetworkInterface `json:"ipv6Interfaces,omitempty"`
+	// DefaultIpv4Gateways - Default IPv4 gateways.
+	DefaultIpv4Gateways *[]string `json:"defaultIpv4Gateways,omitempty"`
+	// MacAddresses - MAC addresses of all active network interfaces.
+	MacAddresses *[]string `json:"macAddresses,omitempty"`
+	// DNSNames - DNS names associated with the machine.
+	DNSNames *[]string `json:"dnsNames,omitempty"`
 }
 
-// OperatingSystemConfiguration is describes the configuration of the operating system of a machine.
+// OperatingSystemConfiguration describes the configuration of the operating system of a machine.
 type OperatingSystemConfiguration struct {
-	Family   OperatingSystemFamily `json:"family,omitempty"`
-	FullName *string               `json:"fullName,omitempty"`
-	Bitness  Bitness               `json:"bitness,omitempty"`
+	// Family - Windows, Linux, etc. Possible values include: 'OperatingSystemFamilyUnknown', 'OperatingSystemFamilyWindows', 'OperatingSystemFamilyLinux', 'OperatingSystemFamilySolaris', 'OperatingSystemFamilyAix'
+	Family OperatingSystemFamily `json:"family,omitempty"`
+	// FullName - Operating system full name.
+	FullName *string `json:"fullName,omitempty"`
+	// Bitness - Operating system bitness (32-bit or 64-bit). Possible values include: 'ThreeTwobit', 'SixFourbit'
+	Bitness Bitness `json:"bitness,omitempty"`
 }
 
-// Port is a port resource represents a server port on a machine. The port may be actively *monitored*, i.e., a
-// Dependency Agent is running on its machine, or *discovered*, i.e., its existence was inferred by observing the data
-// stream from monitored machines. A port is live during an interval of time, if that port had associated activity
-// during (parts) of that interval.
+// Port a port resource represents a server port on a machine. The port may be actively *monitored*, i.e., a Dependency
+// Agent is running on its machine, or *discovered*, i.e., its existence was inferred by observing the data stream from
+// monitored machines. A port is live during an interval of time, if that port had associated activity during (parts)
+// of that interval.
 type Port struct {
 	autorest.Response `json:"-"`
-	ID                *string          `json:"id,omitempty"`
-	Type              *string          `json:"type,omitempty"`
-	Name              *string          `json:"name,omitempty"`
-	Etag              *string          `json:"etag,omitempty"`
-	Kind              KindCoreResource `json:"kind,omitempty"`
-	*PortProperties   `json:"properties,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+	// PortProperties - Resource properties.
+	*PortProperties `json:"properties,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for Port.
@@ -1225,92 +2426,262 @@ func (p Port) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachine is the CoreResource implementation for Port.
-func (p Port) AsMachine() (*Machine, bool) {
-	return nil, false
-}
-
-// AsProcess is the CoreResource implementation for Port.
-func (p Port) AsProcess() (*Process, bool) {
-	return nil, false
-}
-
-// AsPort is the CoreResource implementation for Port.
-func (p Port) AsPort() (*Port, bool) {
-	return &p, true
-}
-
-// AsClientGroup is the CoreResource implementation for Port.
-func (p Port) AsClientGroup() (*ClientGroup, bool) {
-	return nil, false
-}
-
-// AsMachineGroup is the CoreResource implementation for Port.
-func (p Port) AsMachineGroup() (*MachineGroup, bool) {
-	return nil, false
-}
-
-// AsCoreResource is the CoreResource implementation for Port.
+// AsCoreResource is the BasicResource implementation for Port.
 func (p Port) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the CoreResource implementation for Port.
+// AsBasicCoreResource is the BasicResource implementation for Port.
+func (p Port) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &p, true
+}
+
+// AsMachine is the BasicResource implementation for Port.
+func (p Port) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for Port.
+func (p Port) AsProcess() (*Process, bool) {
+	return nil, false
+}
+
+// AsPort is the BasicResource implementation for Port.
+func (p Port) AsPort() (*Port, bool) {
+	return &p, true
+}
+
+// AsClientGroup is the BasicResource implementation for Port.
+func (p Port) AsClientGroup() (*ClientGroup, bool) {
+	return nil, false
+}
+
+// AsClientGroupMember is the BasicResource implementation for Port.
 func (p Port) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsSummary is the CoreResource implementation for Port.
+// AsMachineGroup is the BasicResource implementation for Port.
+func (p Port) AsMachineGroup() (*MachineGroup, bool) {
+	return nil, false
+}
+
+// AsSummary is the BasicResource implementation for Port.
 func (p Port) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the CoreResource implementation for Port.
+// AsMachinesSummary is the BasicResource implementation for Port.
 func (p Port) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the CoreResource implementation for Port.
+// AsRelationship is the BasicResource implementation for Port.
 func (p Port) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AsConnection is the CoreResource implementation for Port.
+// AsBasicRelationship is the BasicResource implementation for Port.
+func (p Port) AsBasicRelationship() (BasicRelationship, bool) {
+	return nil, false
+}
+
+// AsConnection is the BasicResource implementation for Port.
 func (p Port) AsConnection() (*Connection, bool) {
 	return nil, false
 }
 
-// AsAcceptor is the CoreResource implementation for Port.
+// AsAcceptor is the BasicResource implementation for Port.
 func (p Port) AsAcceptor() (*Acceptor, bool) {
 	return nil, false
 }
 
-// PortCollection is collection of Port resources.
-type PortCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Port `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Port struct.
+func (p *Port) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PortProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.PortProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		p.Etag = &etag
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicCoreResource
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		p.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	return nil
 }
 
-// PortCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client PortCollection) PortCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// PortCollection collection of Port resources.
+type PortCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of Port resources.
+	Value *[]Port `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// PortCollectionIterator provides access to a complete listing of Port values.
+type PortCollectionIterator struct {
+	i    int
+	page PortCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *PortCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter PortCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter PortCollectionIterator) Response() PortCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter PortCollectionIterator) Value() Port {
+	if !iter.page.NotDone() {
+		return Port{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (pc PortCollection) IsEmpty() bool {
+	return pc.Value == nil || len(*pc.Value) == 0
+}
+
+// portCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (pc PortCollection) portCollectionPreparer() (*http.Request, error) {
+	if pc.NextLink == nil || len(to.String(pc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(pc.NextLink)))
 }
 
-// PortProperties is resource properties.
+// PortCollectionPage contains a page of Port values.
+type PortCollectionPage struct {
+	fn func(PortCollection) (PortCollection, error)
+	pc PortCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *PortCollectionPage) Next() error {
+	next, err := page.fn(page.pc)
+	if err != nil {
+		return err
+	}
+	page.pc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page PortCollectionPage) NotDone() bool {
+	return !page.pc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page PortCollectionPage) Response() PortCollection {
+	return page.pc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page PortCollectionPage) Values() []Port {
+	if page.pc.IsEmpty() {
+		return nil
+	}
+	return *page.pc.Value
+}
+
+// PortProperties resource properties.
 type PortProperties struct {
-	MonitoringState MonitoringState   `json:"monitoringState,omitempty"`
-	Machine         ResourceReference `json:"machine,omitempty"`
-	DisplayName     *string           `json:"displayName,omitempty"`
-	IPAddress       *string           `json:"ipAddress,omitempty"`
-	PortNumber      *int32            `json:"portNumber,omitempty"`
+	// MonitoringState - Specifies whether the port is actively monitored or discovered. Possible values include: 'Monitored', 'Discovered'
+	MonitoringState MonitoringState `json:"monitoringState,omitempty"`
+	// Machine - Machine hosting this port.
+	Machine BasicResourceReference `json:"machine,omitempty"`
+	// DisplayName - Name to use for display purposes.
+	DisplayName *string `json:"displayName,omitempty"`
+	// IPAddress - IP address associated with the port. At present only IPv4 addresses are supported.
+	IPAddress *string `json:"ipAddress,omitempty"`
+	// PortNumber - Port number.
+	PortNumber *int32 `json:"portNumber,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for PortProperties struct.
@@ -1334,7 +2705,7 @@ func (p *PortProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["machine"]
 	if v != nil {
-		machine, err := unmarshalResourceReference(*m["machine"])
+		machine, err := unmarshalBasicResourceReference(*m["machine"])
 		if err != nil {
 			return err
 		}
@@ -1374,12 +2745,17 @@ func (p *PortProperties) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// PortReference is reference to a port.
+// PortReference reference to a port.
 type PortReference struct {
-	ID                       *string `json:"id,omitempty"`
-	Type                     *string `json:"type,omitempty"`
-	Name                     *string `json:"name,omitempty"`
-	Kind                     Kind    `json:"kind,omitempty"`
+	// ID - Resource URI.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type qualifier.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindResourceReference', 'KindRefmachine', 'KindRefprocess', 'KindRefport', 'KindRefmachinewithhints'
+	Kind Kind `json:"kind,omitempty"`
+	// PortReferenceProperties - Resource properties.
 	*PortReferenceProperties `json:"properties,omitempty"`
 }
 
@@ -1394,46 +2770,127 @@ func (pr PortReference) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachineReference is the ResourceReference implementation for PortReference.
+// AsMachineReference is the BasicResourceReference implementation for PortReference.
 func (pr PortReference) AsMachineReference() (*MachineReference, bool) {
 	return nil, false
 }
 
-// AsProcessReference is the ResourceReference implementation for PortReference.
+// AsProcessReference is the BasicResourceReference implementation for PortReference.
 func (pr PortReference) AsProcessReference() (*ProcessReference, bool) {
 	return nil, false
 }
 
-// AsPortReference is the ResourceReference implementation for PortReference.
+// AsPortReference is the BasicResourceReference implementation for PortReference.
 func (pr PortReference) AsPortReference() (*PortReference, bool) {
 	return &pr, true
 }
 
-// AsMachineReferenceWithHints is the ResourceReference implementation for PortReference.
+// AsMachineReferenceWithHints is the BasicResourceReference implementation for PortReference.
 func (pr PortReference) AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool) {
 	return nil, false
 }
 
-// PortReferenceProperties is resource properties.
-type PortReferenceProperties struct {
-	Machine    *MachineReference `json:"machine,omitempty"`
-	IPAddress  *string           `json:"ipAddress,omitempty"`
-	PortNumber *int32            `json:"portNumber,omitempty"`
+// AsResourceReference is the BasicResourceReference implementation for PortReference.
+func (pr PortReference) AsResourceReference() (*ResourceReference, bool) {
+	return nil, false
 }
 
-// Process is a process resource represents a process running on a machine. The process may be actively *monitored*,
-// i.e., a Dependency Agent is running on its machine, or *discovered*, i.e., its existence was inferred by observing
-// the data stream from monitored machines. A process resource represents a pool of actual operating system resources
-// that share command lines and metadata. As the process pool evolves over time, prior versions of the process resource
-// are preserved and available for access. A process is live during an interval of time, if that process is executing
+// AsBasicResourceReference is the BasicResourceReference implementation for PortReference.
+func (pr PortReference) AsBasicResourceReference() (BasicResourceReference, bool) {
+	return &pr, true
+}
+
+// UnmarshalJSON is the custom unmarshaler for PortReference struct.
+func (pr *PortReference) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties PortReferenceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pr.PortReferenceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		pr.Kind = kind
+	}
+
+	return nil
+}
+
+// PortReferenceProperties resource properties.
+type PortReferenceProperties struct {
+	// Machine - Machine hosting the port.
+	Machine *MachineReference `json:"machine,omitempty"`
+	// IPAddress - IP address of the port.
+	IPAddress *string `json:"ipAddress,omitempty"`
+	// PortNumber - Port number.
+	PortNumber *int32 `json:"portNumber,omitempty"`
+}
+
+// Process a process resource represents a process running on a machine. The process may be actively *monitored*, i.e.,
+// a Dependency Agent is running on its machine, or *discovered*, i.e., its existence was inferred by observing the
+// data stream from monitored machines. A process resource represents a pool of actual operating system resources that
+// share command lines and metadata. As the process pool evolves over time, prior versions of the process resource are
+// preserved and available for access. A process is live during an interval of time, if that process is executing
 // during (parts) of that interval
 type Process struct {
-	autorest.Response  `json:"-"`
-	ID                 *string          `json:"id,omitempty"`
-	Type               *string          `json:"type,omitempty"`
-	Name               *string          `json:"name,omitempty"`
-	Etag               *string          `json:"etag,omitempty"`
-	Kind               KindCoreResource `json:"kind,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Etag - Resource ETAG.
+	Etag *string `json:"etag,omitempty"`
+	// Kind - Possible values include: 'KindCoreResource', 'KindMachine', 'KindProcess', 'KindPort', 'KindClientGroup', 'KindMachineGroup'
+	Kind KindBasicCoreResource `json:"kind,omitempty"`
+	// ProcessProperties - Resource properties.
 	*ProcessProperties `json:"properties,omitempty"`
 }
 
@@ -1448,114 +2905,302 @@ func (p Process) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachine is the CoreResource implementation for Process.
-func (p Process) AsMachine() (*Machine, bool) {
-	return nil, false
-}
-
-// AsProcess is the CoreResource implementation for Process.
-func (p Process) AsProcess() (*Process, bool) {
-	return &p, true
-}
-
-// AsPort is the CoreResource implementation for Process.
-func (p Process) AsPort() (*Port, bool) {
-	return nil, false
-}
-
-// AsClientGroup is the CoreResource implementation for Process.
-func (p Process) AsClientGroup() (*ClientGroup, bool) {
-	return nil, false
-}
-
-// AsMachineGroup is the CoreResource implementation for Process.
-func (p Process) AsMachineGroup() (*MachineGroup, bool) {
-	return nil, false
-}
-
-// AsCoreResource is the CoreResource implementation for Process.
+// AsCoreResource is the BasicResource implementation for Process.
 func (p Process) AsCoreResource() (*CoreResource, bool) {
 	return nil, false
 }
 
-// AsClientGroupMember is the CoreResource implementation for Process.
+// AsBasicCoreResource is the BasicResource implementation for Process.
+func (p Process) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return &p, true
+}
+
+// AsMachine is the BasicResource implementation for Process.
+func (p Process) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for Process.
+func (p Process) AsProcess() (*Process, bool) {
+	return &p, true
+}
+
+// AsPort is the BasicResource implementation for Process.
+func (p Process) AsPort() (*Port, bool) {
+	return nil, false
+}
+
+// AsClientGroup is the BasicResource implementation for Process.
+func (p Process) AsClientGroup() (*ClientGroup, bool) {
+	return nil, false
+}
+
+// AsClientGroupMember is the BasicResource implementation for Process.
 func (p Process) AsClientGroupMember() (*ClientGroupMember, bool) {
 	return nil, false
 }
 
-// AsSummary is the CoreResource implementation for Process.
+// AsMachineGroup is the BasicResource implementation for Process.
+func (p Process) AsMachineGroup() (*MachineGroup, bool) {
+	return nil, false
+}
+
+// AsSummary is the BasicResource implementation for Process.
 func (p Process) AsSummary() (*Summary, bool) {
 	return nil, false
 }
 
-// AsMachinesSummary is the CoreResource implementation for Process.
+// AsMachinesSummary is the BasicResource implementation for Process.
 func (p Process) AsMachinesSummary() (*MachinesSummary, bool) {
 	return nil, false
 }
 
-// AsRelationship is the CoreResource implementation for Process.
+// AsRelationship is the BasicResource implementation for Process.
 func (p Process) AsRelationship() (*Relationship, bool) {
 	return nil, false
 }
 
-// AsConnection is the CoreResource implementation for Process.
+// AsBasicRelationship is the BasicResource implementation for Process.
+func (p Process) AsBasicRelationship() (BasicRelationship, bool) {
+	return nil, false
+}
+
+// AsConnection is the BasicResource implementation for Process.
 func (p Process) AsConnection() (*Connection, bool) {
 	return nil, false
 }
 
-// AsAcceptor is the CoreResource implementation for Process.
+// AsAcceptor is the BasicResource implementation for Process.
 func (p Process) AsAcceptor() (*Acceptor, bool) {
 	return nil, false
 }
 
-// ProcessCollection is collection of Process resources.
-type ProcessCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]Process `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Process struct.
+func (p *Process) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ProcessProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		p.ProcessProperties = &properties
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		p.Etag = &etag
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind KindBasicCoreResource
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		p.Kind = kind
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		p.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		p.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		p.Name = &name
+	}
+
+	return nil
 }
 
-// ProcessCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ProcessCollection) ProcessCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ProcessCollection collection of Process resources.
+type ProcessCollection struct {
+	autorest.Response `json:"-"`
+	// Value - Collection of Process resources.
+	Value *[]Process `json:"value,omitempty"`
+	// NextLink - The URL to the next set of resources.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ProcessCollectionIterator provides access to a complete listing of Process values.
+type ProcessCollectionIterator struct {
+	i    int
+	page ProcessCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ProcessCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ProcessCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ProcessCollectionIterator) Response() ProcessCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ProcessCollectionIterator) Value() Process {
+	if !iter.page.NotDone() {
+		return Process{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (pc ProcessCollection) IsEmpty() bool {
+	return pc.Value == nil || len(*pc.Value) == 0
+}
+
+// processCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (pc ProcessCollection) processCollectionPreparer() (*http.Request, error) {
+	if pc.NextLink == nil || len(to.String(pc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(pc.NextLink)))
 }
 
-// ProcessDetails is describes process metadata.
+// ProcessCollectionPage contains a page of Process values.
+type ProcessCollectionPage struct {
+	fn func(ProcessCollection) (ProcessCollection, error)
+	pc ProcessCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ProcessCollectionPage) Next() error {
+	next, err := page.fn(page.pc)
+	if err != nil {
+		return err
+	}
+	page.pc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ProcessCollectionPage) NotDone() bool {
+	return !page.pc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ProcessCollectionPage) Response() ProcessCollection {
+	return page.pc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ProcessCollectionPage) Values() []Process {
+	if page.pc.IsEmpty() {
+		return nil
+	}
+	return *page.pc.Value
+}
+
+// ProcessDetails describes process metadata.
 type ProcessDetails struct {
-	PersistentKey    *string `json:"persistentKey,omitempty"`
-	PoolID           *int32  `json:"poolId,omitempty"`
-	FirstPid         *int32  `json:"firstPid,omitempty"`
-	Description      *string `json:"description,omitempty"`
-	CompanyName      *string `json:"companyName,omitempty"`
-	InternalName     *string `json:"internalName,omitempty"`
-	ProductName      *string `json:"productName,omitempty"`
-	ProductVersion   *string `json:"productVersion,omitempty"`
-	FileVersion      *string `json:"fileVersion,omitempty"`
-	CommandLine      *string `json:"commandLine,omitempty"`
-	ExecutablePath   *string `json:"executablePath,omitempty"`
+	// PersistentKey - A unique indentifier for a process, generally resilient to process restart, computed by Service Map.
+	PersistentKey *string `json:"persistentKey,omitempty"`
+	// PoolID - Represents the identity of the process pool assigned to the process by Dependency Agent.
+	PoolID *int32 `json:"poolId,omitempty"`
+	// FirstPid - The Operating System Process Idendifier (PID) of the first process in this process pool.
+	FirstPid *int32 `json:"firstPid,omitempty"`
+	// Description - Process description.
+	Description *string `json:"description,omitempty"`
+	// CompanyName - Name of company that created the process executable.
+	CompanyName *string `json:"companyName,omitempty"`
+	// InternalName - Internal process name.
+	InternalName *string `json:"internalName,omitempty"`
+	// ProductName - Product name.
+	ProductName *string `json:"productName,omitempty"`
+	// ProductVersion - Product version.
+	ProductVersion *string `json:"productVersion,omitempty"`
+	// FileVersion - File version.
+	FileVersion *string `json:"fileVersion,omitempty"`
+	// CommandLine - Process command line.
+	CommandLine *string `json:"commandLine,omitempty"`
+	// ExecutablePath - Process executable path.
+	ExecutablePath *string `json:"executablePath,omitempty"`
+	// WorkingDirectory - Process workingDirectory.
 	WorkingDirectory *string `json:"workingDirectory,omitempty"`
 }
 
-// ProcessProperties is resource properties.
+// ProcessProperties resource properties.
 type ProcessProperties struct {
-	Timestamp       *date.Time        `json:"timestamp,omitempty"`
-	MonitoringState MonitoringState   `json:"monitoringState,omitempty"`
-	Machine         ResourceReference `json:"machine,omitempty"`
-	ExecutableName  *string           `json:"executableName,omitempty"`
-	DisplayName     *string           `json:"displayName,omitempty"`
-	StartTime       *date.Time        `json:"startTime,omitempty"`
-	Role            ProcessRole       `json:"role,omitempty"`
-	Details         *ProcessDetails   `json:"details,omitempty"`
-	User            *ProcessUser      `json:"user,omitempty"`
-	ClientOf        ResourceReference `json:"clientOf,omitempty"`
-	AcceptorOf      ResourceReference `json:"acceptorOf,omitempty"`
+	// Timestamp - UTC date and time when this process resource was updated in the system
+	Timestamp *date.Time `json:"timestamp,omitempty"`
+	// MonitoringState - Specifies whether the process is actively monitored or discovered. Possible values include: 'Monitored', 'Discovered'
+	MonitoringState MonitoringState `json:"monitoringState,omitempty"`
+	// Machine - Machine hosting this process.
+	Machine BasicResourceReference `json:"machine,omitempty"`
+	// ExecutableName - The name of the process executable
+	ExecutableName *string `json:"executableName,omitempty"`
+	// DisplayName - Name to use for display purposes
+	DisplayName *string `json:"displayName,omitempty"`
+	// StartTime - UTC date and time when the process started
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// Role - The inferred role of this process based on its name, command line, etc. Possible values include: 'WebServer', 'AppServer', 'DatabaseServer', 'LdapServer', 'SmbServer'
+	Role ProcessRole `json:"role,omitempty"`
+	// Details - Process metadata (command line, product name, etc.).
+	Details *ProcessDetails `json:"details,omitempty"`
+	// User - Information about the account under which the process is executing.
+	User *ProcessUser `json:"user,omitempty"`
+	// ClientOf - Present only for a discovered process acting as a client of a monitored process/machine/port. References the monitored process/machine/port that this process is a client of.
+	ClientOf BasicResourceReference `json:"clientOf,omitempty"`
+	// AcceptorOf - Present only for a discovered process acting as a server. References the port on which the discovered process is accepting.
+	AcceptorOf BasicResourceReference `json:"acceptorOf,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for ProcessProperties struct.
@@ -1589,7 +3234,7 @@ func (p *ProcessProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["machine"]
 	if v != nil {
-		machine, err := unmarshalResourceReference(*m["machine"])
+		machine, err := unmarshalBasicResourceReference(*m["machine"])
 		if err != nil {
 			return err
 		}
@@ -1658,7 +3303,7 @@ func (p *ProcessProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["clientOf"]
 	if v != nil {
-		clientOf, err := unmarshalResourceReference(*m["clientOf"])
+		clientOf, err := unmarshalBasicResourceReference(*m["clientOf"])
 		if err != nil {
 			return err
 		}
@@ -1667,7 +3312,7 @@ func (p *ProcessProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["acceptorOf"]
 	if v != nil {
-		acceptorOf, err := unmarshalResourceReference(*m["acceptorOf"])
+		acceptorOf, err := unmarshalBasicResourceReference(*m["acceptorOf"])
 		if err != nil {
 			return err
 		}
@@ -1677,12 +3322,17 @@ func (p *ProcessProperties) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// ProcessReference is reference to a process.
+// ProcessReference reference to a process.
 type ProcessReference struct {
-	ID                          *string `json:"id,omitempty"`
-	Type                        *string `json:"type,omitempty"`
-	Name                        *string `json:"name,omitempty"`
-	Kind                        Kind    `json:"kind,omitempty"`
+	// ID - Resource URI.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type qualifier.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindResourceReference', 'KindRefmachine', 'KindRefprocess', 'KindRefport', 'KindRefmachinewithhints'
+	Kind Kind `json:"kind,omitempty"`
+	// ProcessReferenceProperties - Resource properties.
 	*ProcessReferenceProperties `json:"properties,omitempty"`
 }
 
@@ -1697,51 +3347,139 @@ func (pr ProcessReference) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsMachineReference is the ResourceReference implementation for ProcessReference.
+// AsMachineReference is the BasicResourceReference implementation for ProcessReference.
 func (pr ProcessReference) AsMachineReference() (*MachineReference, bool) {
 	return nil, false
 }
 
-// AsProcessReference is the ResourceReference implementation for ProcessReference.
+// AsProcessReference is the BasicResourceReference implementation for ProcessReference.
 func (pr ProcessReference) AsProcessReference() (*ProcessReference, bool) {
 	return &pr, true
 }
 
-// AsPortReference is the ResourceReference implementation for ProcessReference.
+// AsPortReference is the BasicResourceReference implementation for ProcessReference.
 func (pr ProcessReference) AsPortReference() (*PortReference, bool) {
 	return nil, false
 }
 
-// AsMachineReferenceWithHints is the ResourceReference implementation for ProcessReference.
+// AsMachineReferenceWithHints is the BasicResourceReference implementation for ProcessReference.
 func (pr ProcessReference) AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool) {
 	return nil, false
 }
 
-// ProcessReferenceProperties is resource properties.
+// AsResourceReference is the BasicResourceReference implementation for ProcessReference.
+func (pr ProcessReference) AsResourceReference() (*ResourceReference, bool) {
+	return nil, false
+}
+
+// AsBasicResourceReference is the BasicResourceReference implementation for ProcessReference.
+func (pr ProcessReference) AsBasicResourceReference() (BasicResourceReference, bool) {
+	return &pr, true
+}
+
+// UnmarshalJSON is the custom unmarshaler for ProcessReference struct.
+func (pr *ProcessReference) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ProcessReferenceProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		pr.ProcessReferenceProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		pr.ID = &ID
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		pr.Type = &typeVar
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		pr.Name = &name
+	}
+
+	v = m["kind"]
+	if v != nil {
+		var kind Kind
+		err = json.Unmarshal(*m["kind"], &kind)
+		if err != nil {
+			return err
+		}
+		pr.Kind = kind
+	}
+
+	return nil
+}
+
+// ProcessReferenceProperties resource properties.
 type ProcessReferenceProperties struct {
+	// Machine - Machine hosting the process.
 	Machine *MachineReference `json:"machine,omitempty"`
 }
 
-// ProcessUser is describes the user under which a process is running.
+// ProcessUser describes the user under which a process is running.
 type ProcessUser struct {
-	UserName   *string `json:"userName,omitempty"`
+	// UserName - User name under which the process is running.
+	UserName *string `json:"userName,omitempty"`
+	// UserDomain - Domain name for the user.
 	UserDomain *string `json:"userDomain,omitempty"`
 }
 
-// Relationship is a typed relationship between two entities.
-type Relationship interface {
+// BasicRelationship a typed relationship between two entities.
+type BasicRelationship interface {
 	AsConnection() (*Connection, bool)
 	AsAcceptor() (*Acceptor, bool)
+	AsRelationship() (*Relationship, bool)
 }
 
-func unmarshalRelationship(body []byte) (Relationship, error) {
+// Relationship a typed relationship between two entities.
+type Relationship struct {
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindRelationship', 'KindRelconnection', 'KindRelacceptor'
+	Kind KindBasicRelationship `json:"kind,omitempty"`
+}
+
+func unmarshalBasicRelationship(body []byte) (BasicRelationship, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
 		return nil, err
 	}
 
-	switch m["kind"] {
+	switch m[""] {
 	case string(KindRelconnection):
 		var c Connection
 		err := json.Unmarshal(body, &c)
@@ -1751,20 +3489,22 @@ func unmarshalRelationship(body []byte) (Relationship, error) {
 		err := json.Unmarshal(body, &a)
 		return a, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var r Relationship
+		err := json.Unmarshal(body, &r)
+		return r, err
 	}
 }
-func unmarshalRelationshipArray(body []byte) ([]Relationship, error) {
+func unmarshalBasicRelationshipArray(body []byte) ([]BasicRelationship, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	rArray := make([]Relationship, len(rawMessages))
+	rArray := make([]BasicRelationship, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		r, err := unmarshalRelationship(*rawMessage)
+		r, err := unmarshalBasicRelationship(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -1773,12 +3513,97 @@ func unmarshalRelationshipArray(body []byte) ([]Relationship, error) {
 	return rArray, nil
 }
 
-// RelationshipProperties is relationship properties.
+// MarshalJSON is the custom marshaler for Relationship.
+func (r Relationship) MarshalJSON() ([]byte, error) {
+	r.Kind = KindRelationship
+	type Alias Relationship
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(r),
+	})
+}
+
+// AsCoreResource is the BasicResource implementation for Relationship.
+func (r Relationship) AsCoreResource() (*CoreResource, bool) {
+	return nil, false
+}
+
+// AsBasicCoreResource is the BasicResource implementation for Relationship.
+func (r Relationship) AsBasicCoreResource() (BasicCoreResource, bool) {
+	return nil, false
+}
+
+// AsMachine is the BasicResource implementation for Relationship.
+func (r Relationship) AsMachine() (*Machine, bool) {
+	return nil, false
+}
+
+// AsProcess is the BasicResource implementation for Relationship.
+func (r Relationship) AsProcess() (*Process, bool) {
+	return nil, false
+}
+
+// AsPort is the BasicResource implementation for Relationship.
+func (r Relationship) AsPort() (*Port, bool) {
+	return nil, false
+}
+
+// AsClientGroup is the BasicResource implementation for Relationship.
+func (r Relationship) AsClientGroup() (*ClientGroup, bool) {
+	return nil, false
+}
+
+// AsClientGroupMember is the BasicResource implementation for Relationship.
+func (r Relationship) AsClientGroupMember() (*ClientGroupMember, bool) {
+	return nil, false
+}
+
+// AsMachineGroup is the BasicResource implementation for Relationship.
+func (r Relationship) AsMachineGroup() (*MachineGroup, bool) {
+	return nil, false
+}
+
+// AsSummary is the BasicResource implementation for Relationship.
+func (r Relationship) AsSummary() (*Summary, bool) {
+	return nil, false
+}
+
+// AsMachinesSummary is the BasicResource implementation for Relationship.
+func (r Relationship) AsMachinesSummary() (*MachinesSummary, bool) {
+	return nil, false
+}
+
+// AsRelationship is the BasicResource implementation for Relationship.
+func (r Relationship) AsRelationship() (*Relationship, bool) {
+	return &r, true
+}
+
+// AsBasicRelationship is the BasicResource implementation for Relationship.
+func (r Relationship) AsBasicRelationship() (BasicRelationship, bool) {
+	return &r, true
+}
+
+// AsConnection is the BasicResource implementation for Relationship.
+func (r Relationship) AsConnection() (*Connection, bool) {
+	return nil, false
+}
+
+// AsAcceptor is the BasicResource implementation for Relationship.
+func (r Relationship) AsAcceptor() (*Acceptor, bool) {
+	return nil, false
+}
+
+// RelationshipProperties relationship properties.
 type RelationshipProperties struct {
-	Source      ResourceReference `json:"source,omitempty"`
-	Destination ResourceReference `json:"destination,omitempty"`
-	StartTime   *date.Time        `json:"startTime,omitempty"`
-	EndTime     *date.Time        `json:"endTime,omitempty"`
+	// Source - Source resource of the relationship.
+	Source BasicResourceReference `json:"source,omitempty"`
+	// Destination - Destination resource of the relationship.
+	Destination BasicResourceReference `json:"destination,omitempty"`
+	// StartTime - Relationship start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Relationship end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for RelationshipProperties struct.
@@ -1792,7 +3617,7 @@ func (rp *RelationshipProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["source"]
 	if v != nil {
-		source, err := unmarshalResourceReference(*m["source"])
+		source, err := unmarshalBasicResourceReference(*m["source"])
 		if err != nil {
 			return err
 		}
@@ -1801,7 +3626,7 @@ func (rp *RelationshipProperties) UnmarshalJSON(body []byte) error {
 
 	v = m["destination"]
 	if v != nil {
-		destination, err := unmarshalResourceReference(*m["destination"])
+		destination, err := unmarshalBasicResourceReference(*m["destination"])
 		if err != nil {
 			return err
 		}
@@ -1831,22 +3656,38 @@ func (rp *RelationshipProperties) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// Resource is resource model definition.
+// Resource resource model definition.
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
 }
 
-// ResourceReference is represents a reference to another resource.
-type ResourceReference interface {
+// BasicResourceReference represents a reference to another resource.
+type BasicResourceReference interface {
 	AsMachineReference() (*MachineReference, bool)
 	AsProcessReference() (*ProcessReference, bool)
 	AsPortReference() (*PortReference, bool)
 	AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool)
+	AsResourceReference() (*ResourceReference, bool)
 }
 
-func unmarshalResourceReference(body []byte) (ResourceReference, error) {
+// ResourceReference represents a reference to another resource.
+type ResourceReference struct {
+	// ID - Resource URI.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type qualifier.
+	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Kind - Possible values include: 'KindResourceReference', 'KindRefmachine', 'KindRefprocess', 'KindRefport', 'KindRefmachinewithhints'
+	Kind Kind `json:"kind,omitempty"`
+}
+
+func unmarshalBasicResourceReference(body []byte) (BasicResourceReference, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -1871,20 +3712,22 @@ func unmarshalResourceReference(body []byte) (ResourceReference, error) {
 		err := json.Unmarshal(body, &mrwh)
 		return mrwh, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var rr ResourceReference
+		err := json.Unmarshal(body, &rr)
+		return rr, err
 	}
 }
-func unmarshalResourceReferenceArray(body []byte) ([]ResourceReference, error) {
+func unmarshalBasicResourceReferenceArray(body []byte) ([]BasicResourceReference, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	rrArray := make([]ResourceReference, len(rawMessages))
+	rrArray := make([]BasicResourceReference, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		rr, err := unmarshalResourceReference(*rawMessage)
+		rr, err := unmarshalBasicResourceReference(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -1893,13 +3736,58 @@ func unmarshalResourceReferenceArray(body []byte) ([]ResourceReference, error) {
 	return rrArray, nil
 }
 
-// SingleMachineDependencyMapRequest is specifies the computation of a single server dependency map. A single server
+// MarshalJSON is the custom marshaler for ResourceReference.
+func (rr ResourceReference) MarshalJSON() ([]byte, error) {
+	rr.Kind = KindResourceReference
+	type Alias ResourceReference
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(rr),
+	})
+}
+
+// AsMachineReference is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsMachineReference() (*MachineReference, bool) {
+	return nil, false
+}
+
+// AsProcessReference is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsProcessReference() (*ProcessReference, bool) {
+	return nil, false
+}
+
+// AsPortReference is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsPortReference() (*PortReference, bool) {
+	return nil, false
+}
+
+// AsMachineReferenceWithHints is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsMachineReferenceWithHints() (*MachineReferenceWithHints, bool) {
+	return nil, false
+}
+
+// AsResourceReference is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsResourceReference() (*ResourceReference, bool) {
+	return &rr, true
+}
+
+// AsBasicResourceReference is the BasicResourceReference implementation for ResourceReference.
+func (rr ResourceReference) AsBasicResourceReference() (BasicResourceReference, bool) {
+	return &rr, true
+}
+
+// SingleMachineDependencyMapRequest specifies the computation of a single server dependency map. A single server
 // dependency map includes all direct dependencies of a given machine.
 type SingleMachineDependencyMapRequest struct {
-	StartTime *date.Time     `json:"startTime,omitempty"`
-	EndTime   *date.Time     `json:"endTime,omitempty"`
-	Kind      KindMapRequest `json:"kind,omitempty"`
-	MachineID *string        `json:"machineId,omitempty"`
+	// StartTime - Map interval start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Map interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Kind - Possible values include: 'KindMapRequest', 'KindMapsingleMachineDependency', 'KindMapmachineGroupDependency'
+	Kind KindBasicMapRequest `json:"kind,omitempty"`
+	// MachineID - URI of machine resource for which to generate the map.
+	MachineID *string `json:"machineId,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for SingleMachineDependencyMapRequest.
@@ -1913,38 +3801,58 @@ func (smdmr SingleMachineDependencyMapRequest) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsSingleMachineDependencyMapRequest is the MapRequest implementation for SingleMachineDependencyMapRequest.
+// AsSingleMachineDependencyMapRequest is the BasicMapRequest implementation for SingleMachineDependencyMapRequest.
 func (smdmr SingleMachineDependencyMapRequest) AsSingleMachineDependencyMapRequest() (*SingleMachineDependencyMapRequest, bool) {
 	return &smdmr, true
 }
 
-// AsMachineGroupMapRequest is the MapRequest implementation for SingleMachineDependencyMapRequest.
+// AsMachineGroupMapRequest is the BasicMapRequest implementation for SingleMachineDependencyMapRequest.
 func (smdmr SingleMachineDependencyMapRequest) AsMachineGroupMapRequest() (*MachineGroupMapRequest, bool) {
 	return nil, false
 }
 
-// Summary is base for all resource summaries.
+// AsMapRequest is the BasicMapRequest implementation for SingleMachineDependencyMapRequest.
+func (smdmr SingleMachineDependencyMapRequest) AsMapRequest() (*MapRequest, bool) {
+	return nil, false
+}
+
+// AsBasicMapRequest is the BasicMapRequest implementation for SingleMachineDependencyMapRequest.
+func (smdmr SingleMachineDependencyMapRequest) AsBasicMapRequest() (BasicMapRequest, bool) {
+	return &smdmr, true
+}
+
+// Summary base for all resource summaries.
 type Summary struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource identifier.
+	ID *string `json:"id,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
 }
 
-// SummaryProperties is base for all summaries.
+// SummaryProperties base for all summaries.
 type SummaryProperties struct {
+	// StartTime - Summary interval start time.
 	StartTime *date.Time `json:"startTime,omitempty"`
-	EndTime   *date.Time `json:"endTime,omitempty"`
+	// EndTime - Summary interval end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
 }
 
-// Timezone is describes a timezone.
+// Timezone describes a timezone.
 type Timezone struct {
+	// FullName - Timezone full name.
 	FullName *string `json:"fullName,omitempty"`
 }
 
-// VirtualMachineConfiguration is describes the virtualizaton-related configuration of a machine.
+// VirtualMachineConfiguration describes the virtualizaton-related configuration of a machine.
 type VirtualMachineConfiguration struct {
-	VirtualMachineType  VirtualMachineType `json:"virtualMachineType,omitempty"`
-	NativeMachineID     *string            `json:"nativeMachineId,omitempty"`
-	VirtualMachineName  *string            `json:"virtualMachineName,omitempty"`
-	NativeHostMachineID *string            `json:"nativeHostMachineId,omitempty"`
+	// VirtualMachineType - Specifies the virtualization technology used by the machine (hyperv, vmware, etc.). Possible values include: 'VirtualMachineTypeUnknown', 'VirtualMachineTypeHyperv', 'VirtualMachineTypeLdom', 'VirtualMachineTypeLpar', 'VirtualMachineTypeVmware', 'VirtualMachineTypeVirtualPc', 'VirtualMachineTypeXen'
+	VirtualMachineType VirtualMachineType `json:"virtualMachineType,omitempty"`
+	// NativeMachineID - The unique identifier of the virtual machine as reported by the underlying virtualization sytem.
+	NativeMachineID *string `json:"nativeMachineId,omitempty"`
+	// VirtualMachineName - The Name of the virtual machine.
+	VirtualMachineName *string `json:"virtualMachineName,omitempty"`
+	// NativeHostMachineID - The unique identifier of the host of this virtual machine as reported by the underlying virtualization system.
+	NativeHostMachineID *string `json:"nativeHostMachineId,omitempty"`
 }

@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // PartitionListsClient is the client for the PartitionLists methods of the Servicefabric service.
 type PartitionListsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPartitionListsClient creates an instance of the PartitionListsClient client.
@@ -41,8 +42,8 @@ func NewPartitionListsClientWithBaseURI(baseURI string, timeout *int32) Partitio
 // Repair repair partition lists
 //
 // serviceName is the name of the service
-func (client PartitionListsClient) Repair(serviceName string) (result String, err error) {
-	req, err := client.RepairPreparer(serviceName)
+func (client PartitionListsClient) Repair(ctx context.Context, serviceName string) (result String, err error) {
+	req, err := client.RepairPreparer(ctx, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.PartitionListsClient", "Repair", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client PartitionListsClient) Repair(serviceName string) (result String, er
 }
 
 // RepairPreparer prepares the Repair request.
-func (client PartitionListsClient) RepairPreparer(serviceName string) (*http.Request, error) {
+func (client PartitionListsClient) RepairPreparer(ctx context.Context, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -82,14 +83,13 @@ func (client PartitionListsClient) RepairPreparer(serviceName string) (*http.Req
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/GetPartitions/$/Recover", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RepairSender sends the Repair request. The method will close the
 // http.Response Body if it receives an error.
 func (client PartitionListsClient) RepairSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

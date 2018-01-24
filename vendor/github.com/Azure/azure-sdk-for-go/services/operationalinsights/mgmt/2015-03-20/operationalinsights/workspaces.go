@@ -18,6 +18,7 @@ package operationalinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // WorkspacesClient is the operational Insights Client
 type WorkspacesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewWorkspacesClient creates an instance of the WorkspacesClient client.
@@ -43,7 +44,7 @@ func NewWorkspacesClientWithBaseURI(baseURI string, subscriptionID string) Works
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics workspace name
-func (client WorkspacesClient) GetSchema(resourceGroupName string, workspaceName string) (result SearchGetSchemaResponse, err error) {
+func (client WorkspacesClient) GetSchema(ctx context.Context, resourceGroupName string, workspaceName string) (result SearchGetSchemaResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -52,7 +53,7 @@ func (client WorkspacesClient) GetSchema(resourceGroupName string, workspaceName
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "GetSchema")
 	}
 
-	req, err := client.GetSchemaPreparer(resourceGroupName, workspaceName)
+	req, err := client.GetSchemaPreparer(ctx, resourceGroupName, workspaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSchema", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client WorkspacesClient) GetSchema(resourceGroupName string, workspaceName
 }
 
 // GetSchemaPreparer prepares the GetSchema request.
-func (client WorkspacesClient) GetSchemaPreparer(resourceGroupName string, workspaceName string) (*http.Request, error) {
+func (client WorkspacesClient) GetSchemaPreparer(ctx context.Context, resourceGroupName string, workspaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -91,14 +92,13 @@ func (client WorkspacesClient) GetSchemaPreparer(resourceGroupName string, works
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/schema", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSchemaSender sends the GetSchema request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkspacesClient) GetSchemaSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -117,14 +117,11 @@ func (client WorkspacesClient) GetSchemaResponder(resp *http.Response) (result S
 
 // GetSearchResults submit a search for a given workspace. The response will contain an id to track the search. User
 // can use the id to poll the search status and get the full search result later if the search takes long time to
-// finish.  This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The
-// channel will be used to cancel polling and any outstanding HTTP requests.
+// finish.
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics workspace name parameters is the parameters required to execute a search query.
-func (client WorkspacesClient) GetSearchResults(resourceGroupName string, workspaceName string, parameters SearchParameters, cancel <-chan struct{}) (<-chan SearchResultsResponse, <-chan error) {
-	resultChan := make(chan SearchResultsResponse, 1)
-	errChan := make(chan error, 1)
+func (client WorkspacesClient) GetSearchResults(ctx context.Context, resourceGroupName string, workspaceName string, parameters SearchParameters) (result WorkspacesGetSearchResultsFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -132,46 +129,26 @@ func (client WorkspacesClient) GetSearchResults(resourceGroupName string, worksp
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}},
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Query", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "GetSearchResults")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "GetSearchResults")
 	}
 
-	go func() {
-		var err error
-		var result SearchResultsResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.GetSearchResultsPreparer(resourceGroupName, workspaceName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSearchResults", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.GetSearchResultsPreparer(ctx, resourceGroupName, workspaceName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSearchResults", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.GetSearchResultsSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSearchResults", resp, "Failure sending request")
-			return
-		}
+	result, err = client.GetSearchResultsSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSearchResults", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.GetSearchResultsResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "GetSearchResults", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // GetSearchResultsPreparer prepares the GetSearchResults request.
-func (client WorkspacesClient) GetSearchResultsPreparer(resourceGroupName string, workspaceName string, parameters SearchParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client WorkspacesClient) GetSearchResultsPreparer(ctx context.Context, resourceGroupName string, workspaceName string, parameters SearchParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -190,16 +167,22 @@ func (client WorkspacesClient) GetSearchResultsPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/search", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSearchResultsSender sends the GetSearchResults request. The method will close the
 // http.Response Body if it receives an error.
-func (client WorkspacesClient) GetSearchResultsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client WorkspacesClient) GetSearchResultsSender(req *http.Request) (future WorkspacesGetSearchResultsFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // GetSearchResultsResponder handles the response to the GetSearchResults request. The method always
@@ -217,8 +200,8 @@ func (client WorkspacesClient) GetSearchResultsResponder(resp *http.Response) (r
 
 // ListLinkTargets get a list of workspaces which the current user has administrator privileges and are not associated
 // with an Azure Subscription. The subscriptionId parameter in the Url is ignored.
-func (client WorkspacesClient) ListLinkTargets() (result ListLinkTarget, err error) {
-	req, err := client.ListLinkTargetsPreparer()
+func (client WorkspacesClient) ListLinkTargets(ctx context.Context) (result ListLinkTarget, err error) {
+	req, err := client.ListLinkTargetsPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "ListLinkTargets", nil, "Failure preparing request")
 		return
@@ -240,7 +223,7 @@ func (client WorkspacesClient) ListLinkTargets() (result ListLinkTarget, err err
 }
 
 // ListLinkTargetsPreparer prepares the ListLinkTargets request.
-func (client WorkspacesClient) ListLinkTargetsPreparer() (*http.Request, error) {
+func (client WorkspacesClient) ListLinkTargetsPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -255,14 +238,13 @@ func (client WorkspacesClient) ListLinkTargetsPreparer() (*http.Request, error) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.OperationalInsights/linkTargets", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListLinkTargetsSender sends the ListLinkTargets request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkspacesClient) ListLinkTargetsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -284,7 +266,7 @@ func (client WorkspacesClient) ListLinkTargetsResponder(resp *http.Response) (re
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
 // Analytics workspace name ID is the id of the search that will have results updated. You can get the id from the
 // response of the GetResults call.
-func (client WorkspacesClient) UpdateSearchResults(resourceGroupName string, workspaceName string, ID string) (result SearchResultsResponse, err error) {
+func (client WorkspacesClient) UpdateSearchResults(ctx context.Context, resourceGroupName string, workspaceName string, ID string) (result SearchResultsResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -293,7 +275,7 @@ func (client WorkspacesClient) UpdateSearchResults(resourceGroupName string, wor
 		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "UpdateSearchResults")
 	}
 
-	req, err := client.UpdateSearchResultsPreparer(resourceGroupName, workspaceName, ID)
+	req, err := client.UpdateSearchResultsPreparer(ctx, resourceGroupName, workspaceName, ID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "UpdateSearchResults", nil, "Failure preparing request")
 		return
@@ -315,7 +297,7 @@ func (client WorkspacesClient) UpdateSearchResults(resourceGroupName string, wor
 }
 
 // UpdateSearchResultsPreparer prepares the UpdateSearchResults request.
-func (client WorkspacesClient) UpdateSearchResultsPreparer(resourceGroupName string, workspaceName string, ID string) (*http.Request, error) {
+func (client WorkspacesClient) UpdateSearchResultsPreparer(ctx context.Context, resourceGroupName string, workspaceName string, ID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"id":                autorest.Encode("path", ID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -333,14 +315,13 @@ func (client WorkspacesClient) UpdateSearchResultsPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/search/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSearchResultsSender sends the UpdateSearchResults request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkspacesClient) UpdateSearchResultsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

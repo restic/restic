@@ -21,26 +21,26 @@ package keyvault
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
-	"net/http"
-
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
+	"net/http"
 )
 
-// ManagementClient is the base client for Keyvault.
-type ManagementClient struct {
+// BaseClient is the base client for Keyvault.
+type BaseClient struct {
 	autorest.Client
 }
 
-// New creates an instance of the ManagementClient client.
-func New() ManagementClient {
+// New creates an instance of the BaseClient client.
+func New() BaseClient {
 	return NewWithoutDefaults()
 }
 
-// NewWithoutDefaults creates an instance of the ManagementClient client.
-func NewWithoutDefaults() ManagementClient {
-	return ManagementClient{
+// NewWithoutDefaults creates an instance of the BaseClient client.
+func NewWithoutDefaults() BaseClient {
+	return BaseClient{
 		Client: autorest.NewClientWithUserAgent(UserAgent()),
 	}
 }
@@ -48,30 +48,30 @@ func NewWithoutDefaults() ManagementClient {
 // BackupKey requests that a backup of the specified key be downloaded to the client.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key
-func (client ManagementClient) BackupKey(vaultBaseURL string, keyName string) (result BackupKeyResult, err error) {
-	req, err := client.BackupKeyPreparer(vaultBaseURL, keyName)
+func (client BaseClient) BackupKey(ctx context.Context, vaultBaseURL string, keyName string) (result BackupKeyResult, err error) {
+	req, err := client.BackupKeyPreparer(ctx, vaultBaseURL, keyName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "BackupKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "BackupKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.BackupKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "BackupKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "BackupKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.BackupKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "BackupKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "BackupKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // BackupKeyPreparer prepares the BackupKey request.
-func (client ManagementClient) BackupKeyPreparer(vaultBaseURL string, keyName string) (*http.Request, error) {
+func (client BaseClient) BackupKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -90,20 +90,19 @@ func (client ManagementClient) BackupKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/keys/{key-name}/backup", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // BackupKeySender sends the BackupKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) BackupKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) BackupKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // BackupKeyResponder handles the response to the BackupKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) BackupKeyResponder(resp *http.Response) (result BackupKeyResult, err error) {
+func (client BaseClient) BackupKeyResponder(resp *http.Response) (result BackupKeyResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -119,7 +118,7 @@ func (client ManagementClient) BackupKeyResponder(resp *http.Response) (result B
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // parameters is the parameters to create certificate.
-func (client ManagementClient) CreateCertificate(vaultBaseURL string, certificateName string, parameters CertificateCreateParameters) (result CertificateOperation, err error) {
+func (client BaseClient) CreateCertificate(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateCreateParameters) (result CertificateOperation, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[0-9a-zA-Z-]+$`, Chain: nil}}},
@@ -130,32 +129,32 @@ func (client ManagementClient) CreateCertificate(vaultBaseURL string, certificat
 						Chain: []validation.Constraint{{Target: "parameters.CertificatePolicy.X509CertificateProperties.ValidityInMonths", Name: validation.InclusiveMinimum, Rule: 0, Chain: nil}}},
 					}},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "CreateCertificate")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "CreateCertificate")
 	}
 
-	req, err := client.CreateCertificatePreparer(vaultBaseURL, certificateName, parameters)
+	req, err := client.CreateCertificatePreparer(ctx, vaultBaseURL, certificateName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.CreateCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.CreateCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // CreateCertificatePreparer prepares the CreateCertificate request.
-func (client ManagementClient) CreateCertificatePreparer(vaultBaseURL string, certificateName string, parameters CertificateCreateParameters) (*http.Request, error) {
+func (client BaseClient) CreateCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateCreateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -176,20 +175,19 @@ func (client ManagementClient) CreateCertificatePreparer(vaultBaseURL string, ce
 		autorest.WithPathParameters("/certificates/{certificate-name}/create", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateCertificateSender sends the CreateCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) CreateCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) CreateCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CreateCertificateResponder handles the response to the CreateCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) CreateCertificateResponder(resp *http.Response) (result CertificateOperation, err error) {
+func (client BaseClient) CreateCertificateResponder(resp *http.Response) (result CertificateOperation, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -204,36 +202,36 @@ func (client ManagementClient) CreateCertificateResponder(resp *http.Response) (
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key parameters is
 // the parameters to create key.
-func (client ManagementClient) CreateKey(vaultBaseURL string, keyName string, parameters KeyCreateParameters) (result KeyBundle, err error) {
+func (client BaseClient) CreateKey(ctx context.Context, vaultBaseURL string, keyName string, parameters KeyCreateParameters) (result KeyBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: keyName,
 			Constraints: []validation.Constraint{{Target: "keyName", Name: validation.Pattern, Rule: `^[0-9a-zA-Z-]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "CreateKey")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "CreateKey")
 	}
 
-	req, err := client.CreateKeyPreparer(vaultBaseURL, keyName, parameters)
+	req, err := client.CreateKeyPreparer(ctx, vaultBaseURL, keyName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.CreateKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.CreateKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "CreateKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "CreateKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // CreateKeyPreparer prepares the CreateKey request.
-func (client ManagementClient) CreateKeyPreparer(vaultBaseURL string, keyName string, parameters KeyCreateParameters) (*http.Request, error) {
+func (client BaseClient) CreateKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, parameters KeyCreateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -254,20 +252,19 @@ func (client ManagementClient) CreateKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithPathParameters("/keys/{key-name}/create", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateKeySender sends the CreateKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) CreateKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) CreateKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CreateKeyResponder handles the response to the CreateKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) CreateKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) CreateKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -282,36 +279,36 @@ func (client ManagementClient) CreateKeyResponder(resp *http.Response) (result K
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) Decrypt(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
+func (client BaseClient) Decrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "Decrypt")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "Decrypt")
 	}
 
-	req, err := client.DecryptPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.DecryptPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Decrypt", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Decrypt", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DecryptSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Decrypt", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Decrypt", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DecryptResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Decrypt", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Decrypt", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DecryptPreparer prepares the Decrypt request.
-func (client ManagementClient) DecryptPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
+func (client BaseClient) DecryptPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -333,20 +330,19 @@ func (client ManagementClient) DecryptPreparer(vaultBaseURL string, keyName stri
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/decrypt", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DecryptSender sends the Decrypt request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DecryptSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DecryptSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DecryptResponder handles the response to the Decrypt request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DecryptResponder(resp *http.Response) (result KeyOperationResult, err error) {
+func (client BaseClient) DecryptResponder(resp *http.Response) (result KeyOperationResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -361,30 +357,30 @@ func (client ManagementClient) DecryptResponder(resp *http.Response) (result Key
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // in the given vault
-func (client ManagementClient) DeleteCertificate(vaultBaseURL string, certificateName string) (result CertificateBundle, err error) {
-	req, err := client.DeleteCertificatePreparer(vaultBaseURL, certificateName)
+func (client BaseClient) DeleteCertificate(ctx context.Context, vaultBaseURL string, certificateName string) (result CertificateBundle, err error) {
+	req, err := client.DeleteCertificatePreparer(ctx, vaultBaseURL, certificateName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteCertificatePreparer prepares the DeleteCertificate request.
-func (client ManagementClient) DeleteCertificatePreparer(vaultBaseURL string, certificateName string) (*http.Request, error) {
+func (client BaseClient) DeleteCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -403,20 +399,19 @@ func (client ManagementClient) DeleteCertificatePreparer(vaultBaseURL string, ce
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCertificateSender sends the DeleteCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteCertificateResponder handles the response to the DeleteCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
+func (client BaseClient) DeleteCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -430,30 +425,30 @@ func (client ManagementClient) DeleteCertificateResponder(resp *http.Response) (
 // DeleteCertificateContacts deletes the certificate contacts for the specified vault.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net
-func (client ManagementClient) DeleteCertificateContacts(vaultBaseURL string) (result Contacts, err error) {
-	req, err := client.DeleteCertificateContactsPreparer(vaultBaseURL)
+func (client BaseClient) DeleteCertificateContacts(ctx context.Context, vaultBaseURL string) (result Contacts, err error) {
+	req, err := client.DeleteCertificateContactsPreparer(ctx, vaultBaseURL)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateContacts", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateContacts", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteCertificateContactsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateContacts", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateContacts", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteCertificateContactsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateContacts", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateContacts", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteCertificateContactsPreparer prepares the DeleteCertificateContacts request.
-func (client ManagementClient) DeleteCertificateContactsPreparer(vaultBaseURL string) (*http.Request, error) {
+func (client BaseClient) DeleteCertificateContactsPreparer(ctx context.Context, vaultBaseURL string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -468,20 +463,19 @@ func (client ManagementClient) DeleteCertificateContactsPreparer(vaultBaseURL st
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/certificates/contacts"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCertificateContactsSender sends the DeleteCertificateContacts request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteCertificateContactsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteCertificateContactsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteCertificateContactsResponder handles the response to the DeleteCertificateContacts request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
+func (client BaseClient) DeleteCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -495,30 +489,30 @@ func (client ManagementClient) DeleteCertificateContactsResponder(resp *http.Res
 // DeleteCertificateIssuer deletes the specified certificate issuer.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net issuerName is the name of the issuer.
-func (client ManagementClient) DeleteCertificateIssuer(vaultBaseURL string, issuerName string) (result IssuerBundle, err error) {
-	req, err := client.DeleteCertificateIssuerPreparer(vaultBaseURL, issuerName)
+func (client BaseClient) DeleteCertificateIssuer(ctx context.Context, vaultBaseURL string, issuerName string) (result IssuerBundle, err error) {
+	req, err := client.DeleteCertificateIssuerPreparer(ctx, vaultBaseURL, issuerName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateIssuer", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateIssuer", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteCertificateIssuerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateIssuer", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateIssuer", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteCertificateIssuerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateIssuer", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateIssuer", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteCertificateIssuerPreparer prepares the DeleteCertificateIssuer request.
-func (client ManagementClient) DeleteCertificateIssuerPreparer(vaultBaseURL string, issuerName string) (*http.Request, error) {
+func (client BaseClient) DeleteCertificateIssuerPreparer(ctx context.Context, vaultBaseURL string, issuerName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -537,20 +531,19 @@ func (client ManagementClient) DeleteCertificateIssuerPreparer(vaultBaseURL stri
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/issuers/{issuer-name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCertificateIssuerSender sends the DeleteCertificateIssuer request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteCertificateIssuerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteCertificateIssuerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteCertificateIssuerResponder handles the response to the DeleteCertificateIssuer request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
+func (client BaseClient) DeleteCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -564,30 +557,30 @@ func (client ManagementClient) DeleteCertificateIssuerResponder(resp *http.Respo
 // DeleteCertificateOperation deletes the certificate operation.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
-func (client ManagementClient) DeleteCertificateOperation(vaultBaseURL string, certificateName string) (result CertificateOperation, err error) {
-	req, err := client.DeleteCertificateOperationPreparer(vaultBaseURL, certificateName)
+func (client BaseClient) DeleteCertificateOperation(ctx context.Context, vaultBaseURL string, certificateName string) (result CertificateOperation, err error) {
+	req, err := client.DeleteCertificateOperationPreparer(ctx, vaultBaseURL, certificateName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateOperation", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateOperation", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteCertificateOperationSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateOperation", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateOperation", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteCertificateOperationResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteCertificateOperation", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteCertificateOperation", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteCertificateOperationPreparer prepares the DeleteCertificateOperation request.
-func (client ManagementClient) DeleteCertificateOperationPreparer(vaultBaseURL string, certificateName string) (*http.Request, error) {
+func (client BaseClient) DeleteCertificateOperationPreparer(ctx context.Context, vaultBaseURL string, certificateName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -606,20 +599,19 @@ func (client ManagementClient) DeleteCertificateOperationPreparer(vaultBaseURL s
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}/pending", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteCertificateOperationSender sends the DeleteCertificateOperation request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteCertificateOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteCertificateOperationSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteCertificateOperationResponder handles the response to the DeleteCertificateOperation request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
+func (client BaseClient) DeleteCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -633,30 +625,30 @@ func (client ManagementClient) DeleteCertificateOperationResponder(resp *http.Re
 // DeleteKey deletes the specified key
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key
-func (client ManagementClient) DeleteKey(vaultBaseURL string, keyName string) (result KeyBundle, err error) {
-	req, err := client.DeleteKeyPreparer(vaultBaseURL, keyName)
+func (client BaseClient) DeleteKey(ctx context.Context, vaultBaseURL string, keyName string) (result KeyBundle, err error) {
+	req, err := client.DeleteKeyPreparer(ctx, vaultBaseURL, keyName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteKeyPreparer prepares the DeleteKey request.
-func (client ManagementClient) DeleteKeyPreparer(vaultBaseURL string, keyName string) (*http.Request, error) {
+func (client BaseClient) DeleteKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -675,20 +667,19 @@ func (client ManagementClient) DeleteKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/keys/{key-name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteKeySender sends the DeleteKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteKeyResponder handles the response to the DeleteKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) DeleteKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -703,30 +694,30 @@ func (client ManagementClient) DeleteKeyResponder(resp *http.Response) (result K
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net secretName is the name of the secret in the
 // given vault
-func (client ManagementClient) DeleteSecret(vaultBaseURL string, secretName string) (result SecretBundle, err error) {
-	req, err := client.DeleteSecretPreparer(vaultBaseURL, secretName)
+func (client BaseClient) DeleteSecret(ctx context.Context, vaultBaseURL string, secretName string) (result SecretBundle, err error) {
+	req, err := client.DeleteSecretPreparer(ctx, vaultBaseURL, secretName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteSecret", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteSecret", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.DeleteSecretSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteSecret", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteSecret", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.DeleteSecretResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "DeleteSecret", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "DeleteSecret", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeleteSecretPreparer prepares the DeleteSecret request.
-func (client ManagementClient) DeleteSecretPreparer(vaultBaseURL string, secretName string) (*http.Request, error) {
+func (client BaseClient) DeleteSecretPreparer(ctx context.Context, vaultBaseURL string, secretName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -745,20 +736,19 @@ func (client ManagementClient) DeleteSecretPreparer(vaultBaseURL string, secretN
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/secrets/{secret-name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSecretSender sends the DeleteSecret request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) DeleteSecretSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) DeleteSecretSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteSecretResponder handles the response to the DeleteSecret request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) DeleteSecretResponder(resp *http.Response) (result SecretBundle, err error) {
+func (client BaseClient) DeleteSecretResponder(resp *http.Response) (result SecretBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -773,36 +763,36 @@ func (client ManagementClient) DeleteSecretResponder(resp *http.Response) (resul
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) Encrypt(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
+func (client BaseClient) Encrypt(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "Encrypt")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "Encrypt")
 	}
 
-	req, err := client.EncryptPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.EncryptPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Encrypt", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Encrypt", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.EncryptSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Encrypt", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Encrypt", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.EncryptResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Encrypt", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Encrypt", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // EncryptPreparer prepares the Encrypt request.
-func (client ManagementClient) EncryptPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
+func (client BaseClient) EncryptPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -824,20 +814,19 @@ func (client ManagementClient) EncryptPreparer(vaultBaseURL string, keyName stri
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/encrypt", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // EncryptSender sends the Encrypt request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) EncryptSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) EncryptSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // EncryptResponder handles the response to the Encrypt request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) EncryptResponder(resp *http.Response) (result KeyOperationResult, err error) {
+func (client BaseClient) EncryptResponder(resp *http.Response) (result KeyOperationResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -852,30 +841,30 @@ func (client ManagementClient) EncryptResponder(resp *http.Response) (result Key
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // in the given vault certificateVersion is the version of the certificate
-func (client ManagementClient) GetCertificate(vaultBaseURL string, certificateName string, certificateVersion string) (result CertificateBundle, err error) {
-	req, err := client.GetCertificatePreparer(vaultBaseURL, certificateName, certificateVersion)
+func (client BaseClient) GetCertificate(ctx context.Context, vaultBaseURL string, certificateName string, certificateVersion string) (result CertificateBundle, err error) {
+	req, err := client.GetCertificatePreparer(ctx, vaultBaseURL, certificateName, certificateVersion)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificatePreparer prepares the GetCertificate request.
-func (client ManagementClient) GetCertificatePreparer(vaultBaseURL string, certificateName string, certificateVersion string) (*http.Request, error) {
+func (client BaseClient) GetCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string, certificateVersion string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -895,20 +884,19 @@ func (client ManagementClient) GetCertificatePreparer(vaultBaseURL string, certi
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}/{certificate-version}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateSender sends the GetCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateResponder handles the response to the GetCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
+func (client BaseClient) GetCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -922,30 +910,30 @@ func (client ManagementClient) GetCertificateResponder(resp *http.Response) (res
 // GetCertificateContacts gets the certificate contacts for the specified vault.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net
-func (client ManagementClient) GetCertificateContacts(vaultBaseURL string) (result Contacts, err error) {
-	req, err := client.GetCertificateContactsPreparer(vaultBaseURL)
+func (client BaseClient) GetCertificateContacts(ctx context.Context, vaultBaseURL string) (result Contacts, err error) {
+	req, err := client.GetCertificateContactsPreparer(ctx, vaultBaseURL)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateContacts", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateContacts", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateContactsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateContacts", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateContacts", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetCertificateContactsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateContacts", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateContacts", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificateContactsPreparer prepares the GetCertificateContacts request.
-func (client ManagementClient) GetCertificateContactsPreparer(vaultBaseURL string) (*http.Request, error) {
+func (client BaseClient) GetCertificateContactsPreparer(ctx context.Context, vaultBaseURL string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -960,20 +948,19 @@ func (client ManagementClient) GetCertificateContactsPreparer(vaultBaseURL strin
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/certificates/contacts"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateContactsSender sends the GetCertificateContacts request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateContactsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateContactsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateContactsResponder handles the response to the GetCertificateContacts request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
+func (client BaseClient) GetCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -987,30 +974,30 @@ func (client ManagementClient) GetCertificateContactsResponder(resp *http.Respon
 // GetCertificateIssuer gets the specified certificate issuer.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net issuerName is the name of the issuer.
-func (client ManagementClient) GetCertificateIssuer(vaultBaseURL string, issuerName string) (result IssuerBundle, err error) {
-	req, err := client.GetCertificateIssuerPreparer(vaultBaseURL, issuerName)
+func (client BaseClient) GetCertificateIssuer(ctx context.Context, vaultBaseURL string, issuerName string) (result IssuerBundle, err error) {
+	req, err := client.GetCertificateIssuerPreparer(ctx, vaultBaseURL, issuerName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuer", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuer", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateIssuerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuer", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuer", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetCertificateIssuerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuer", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuer", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificateIssuerPreparer prepares the GetCertificateIssuer request.
-func (client ManagementClient) GetCertificateIssuerPreparer(vaultBaseURL string, issuerName string) (*http.Request, error) {
+func (client BaseClient) GetCertificateIssuerPreparer(ctx context.Context, vaultBaseURL string, issuerName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1029,20 +1016,19 @@ func (client ManagementClient) GetCertificateIssuerPreparer(vaultBaseURL string,
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/issuers/{issuer-name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateIssuerSender sends the GetCertificateIssuer request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateIssuerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateIssuerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateIssuerResponder handles the response to the GetCertificateIssuer request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
+func (client BaseClient) GetCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1057,39 +1043,40 @@ func (client ManagementClient) GetCertificateIssuerResponder(resp *http.Response
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net maxresults is maximum number of results to
 // return in a page. If not specified the service will return up to 25 results.
-func (client ManagementClient) GetCertificateIssuers(vaultBaseURL string, maxresults *int32) (result CertificateIssuerListResult, err error) {
+func (client BaseClient) GetCertificateIssuers(ctx context.Context, vaultBaseURL string, maxresults *int32) (result CertificateIssuerListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetCertificateIssuers")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetCertificateIssuers")
 	}
 
-	req, err := client.GetCertificateIssuersPreparer(vaultBaseURL, maxresults)
+	result.fn = client.getCertificateIssuersNextResults
+	req, err := client.GetCertificateIssuersPreparer(ctx, vaultBaseURL, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuers", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateIssuersSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", resp, "Failure sending request")
+		result.cilr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuers", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetCertificateIssuersResponder(resp)
+	result.cilr, err = client.GetCertificateIssuersResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateIssuers", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificateIssuersPreparer prepares the GetCertificateIssuers request.
-func (client ManagementClient) GetCertificateIssuersPreparer(vaultBaseURL string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetCertificateIssuersPreparer(ctx context.Context, vaultBaseURL string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1107,20 +1094,19 @@ func (client ManagementClient) GetCertificateIssuersPreparer(vaultBaseURL string
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/certificates/issuers"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateIssuersSender sends the GetCertificateIssuers request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateIssuersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateIssuersSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateIssuersResponder handles the response to the GetCertificateIssuers request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateIssuersResponder(resp *http.Response) (result CertificateIssuerListResult, err error) {
+func (client BaseClient) GetCertificateIssuersResponder(resp *http.Response) (result CertificateIssuerListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1131,102 +1117,60 @@ func (client ManagementClient) GetCertificateIssuersResponder(resp *http.Respons
 	return
 }
 
-// GetCertificateIssuersNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetCertificateIssuersNextResults(lastResults CertificateIssuerListResult) (result CertificateIssuerListResult, err error) {
-	req, err := lastResults.CertificateIssuerListResultPreparer()
+// getCertificateIssuersNextResults retrieves the next set of results, if any.
+func (client BaseClient) getCertificateIssuersNextResults(lastResults CertificateIssuerListResult) (result CertificateIssuerListResult, err error) {
+	req, err := lastResults.certificateIssuerListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateIssuersNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetCertificateIssuersSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateIssuersNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetCertificateIssuersResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateIssuers", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateIssuersNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetCertificateIssuersComplete gets all elements from the list without paging.
-func (client ManagementClient) GetCertificateIssuersComplete(vaultBaseURL string, maxresults *int32, cancel <-chan struct{}) (<-chan CertificateIssuerItem, <-chan error) {
-	resultChan := make(chan CertificateIssuerItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetCertificateIssuers(vaultBaseURL, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetCertificateIssuersNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetCertificateIssuersComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetCertificateIssuersComplete(ctx context.Context, vaultBaseURL string, maxresults *int32) (result CertificateIssuerListResultIterator, err error) {
+	result.page, err = client.GetCertificateIssuers(ctx, vaultBaseURL, maxresults)
+	return
 }
 
 // GetCertificateOperation gets the certificate operation response.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
-func (client ManagementClient) GetCertificateOperation(vaultBaseURL string, certificateName string) (result CertificateOperation, err error) {
-	req, err := client.GetCertificateOperationPreparer(vaultBaseURL, certificateName)
+func (client BaseClient) GetCertificateOperation(ctx context.Context, vaultBaseURL string, certificateName string) (result CertificateOperation, err error) {
+	req, err := client.GetCertificateOperationPreparer(ctx, vaultBaseURL, certificateName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateOperation", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateOperation", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateOperationSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateOperation", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateOperation", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetCertificateOperationResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateOperation", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateOperation", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificateOperationPreparer prepares the GetCertificateOperation request.
-func (client ManagementClient) GetCertificateOperationPreparer(vaultBaseURL string, certificateName string) (*http.Request, error) {
+func (client BaseClient) GetCertificateOperationPreparer(ctx context.Context, vaultBaseURL string, certificateName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1245,20 +1189,19 @@ func (client ManagementClient) GetCertificateOperationPreparer(vaultBaseURL stri
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}/pending", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateOperationSender sends the GetCertificateOperation request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateOperationSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateOperationResponder handles the response to the GetCertificateOperation request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
+func (client BaseClient) GetCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1273,30 +1216,30 @@ func (client ManagementClient) GetCertificateOperationResponder(resp *http.Respo
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // in the given vault.
-func (client ManagementClient) GetCertificatePolicy(vaultBaseURL string, certificateName string) (result CertificatePolicy, err error) {
-	req, err := client.GetCertificatePolicyPreparer(vaultBaseURL, certificateName)
+func (client BaseClient) GetCertificatePolicy(ctx context.Context, vaultBaseURL string, certificateName string) (result CertificatePolicy, err error) {
+	req, err := client.GetCertificatePolicyPreparer(ctx, vaultBaseURL, certificateName)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificatePolicy", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificatePolicy", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificatePolicySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificatePolicy", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificatePolicy", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetCertificatePolicyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificatePolicy", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificatePolicy", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificatePolicyPreparer prepares the GetCertificatePolicy request.
-func (client ManagementClient) GetCertificatePolicyPreparer(vaultBaseURL string, certificateName string) (*http.Request, error) {
+func (client BaseClient) GetCertificatePolicyPreparer(ctx context.Context, vaultBaseURL string, certificateName string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1315,20 +1258,19 @@ func (client ManagementClient) GetCertificatePolicyPreparer(vaultBaseURL string,
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}/policy", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificatePolicySender sends the GetCertificatePolicy request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificatePolicySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificatePolicySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificatePolicyResponder handles the response to the GetCertificatePolicy request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificatePolicyResponder(resp *http.Response) (result CertificatePolicy, err error) {
+func (client BaseClient) GetCertificatePolicyResponder(resp *http.Response) (result CertificatePolicy, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1343,39 +1285,40 @@ func (client ManagementClient) GetCertificatePolicyResponder(resp *http.Response
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net maxresults is maximum number of results to
 // return in a page. If not specified the service will return up to 25 results.
-func (client ManagementClient) GetCertificates(vaultBaseURL string, maxresults *int32) (result CertificateListResult, err error) {
+func (client BaseClient) GetCertificates(ctx context.Context, vaultBaseURL string, maxresults *int32) (result CertificateListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetCertificates")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetCertificates")
 	}
 
-	req, err := client.GetCertificatesPreparer(vaultBaseURL, maxresults)
+	result.fn = client.getCertificatesNextResults
+	req, err := client.GetCertificatesPreparer(ctx, vaultBaseURL, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificates", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificatesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", resp, "Failure sending request")
+		result.clr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificates", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetCertificatesResponder(resp)
+	result.clr, err = client.GetCertificatesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificates", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificatesPreparer prepares the GetCertificates request.
-func (client ManagementClient) GetCertificatesPreparer(vaultBaseURL string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetCertificatesPreparer(ctx context.Context, vaultBaseURL string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1393,20 +1336,19 @@ func (client ManagementClient) GetCertificatesPreparer(vaultBaseURL string, maxr
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/certificates"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificatesSender sends the GetCertificates request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificatesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificatesSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificatesResponder handles the response to the GetCertificates request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificatesResponder(resp *http.Response) (result CertificateListResult, err error) {
+func (client BaseClient) GetCertificatesResponder(resp *http.Response) (result CertificateListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1417,73 +1359,31 @@ func (client ManagementClient) GetCertificatesResponder(resp *http.Response) (re
 	return
 }
 
-// GetCertificatesNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetCertificatesNextResults(lastResults CertificateListResult) (result CertificateListResult, err error) {
-	req, err := lastResults.CertificateListResultPreparer()
+// getCertificatesNextResults retrieves the next set of results, if any.
+func (client BaseClient) getCertificatesNextResults(lastResults CertificateListResult) (result CertificateListResult, err error) {
+	req, err := lastResults.certificateListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificatesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetCertificatesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificatesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetCertificatesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificates", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificatesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetCertificatesComplete gets all elements from the list without paging.
-func (client ManagementClient) GetCertificatesComplete(vaultBaseURL string, maxresults *int32, cancel <-chan struct{}) (<-chan CertificateItem, <-chan error) {
-	resultChan := make(chan CertificateItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetCertificates(vaultBaseURL, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetCertificatesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetCertificatesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetCertificatesComplete(ctx context.Context, vaultBaseURL string, maxresults *int32) (result CertificateListResultIterator, err error) {
+	result.page, err = client.GetCertificates(ctx, vaultBaseURL, maxresults)
+	return
 }
 
 // GetCertificateVersions list the versions of a certificate.
@@ -1491,39 +1391,40 @@ func (client ManagementClient) GetCertificatesComplete(vaultBaseURL string, maxr
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // maxresults is maximum number of results to return in a page. If not specified the service will return up to 25
 // results.
-func (client ManagementClient) GetCertificateVersions(vaultBaseURL string, certificateName string, maxresults *int32) (result CertificateListResult, err error) {
+func (client BaseClient) GetCertificateVersions(ctx context.Context, vaultBaseURL string, certificateName string, maxresults *int32) (result CertificateListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetCertificateVersions")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetCertificateVersions")
 	}
 
-	req, err := client.GetCertificateVersionsPreparer(vaultBaseURL, certificateName, maxresults)
+	result.fn = client.getCertificateVersionsNextResults
+	req, err := client.GetCertificateVersionsPreparer(ctx, vaultBaseURL, certificateName, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateVersions", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetCertificateVersionsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", resp, "Failure sending request")
+		result.clr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateVersions", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetCertificateVersionsResponder(resp)
+	result.clr, err = client.GetCertificateVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetCertificateVersions", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetCertificateVersionsPreparer prepares the GetCertificateVersions request.
-func (client ManagementClient) GetCertificateVersionsPreparer(vaultBaseURL string, certificateName string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetCertificateVersionsPreparer(ctx context.Context, vaultBaseURL string, certificateName string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1545,20 +1446,19 @@ func (client ManagementClient) GetCertificateVersionsPreparer(vaultBaseURL strin
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/certificates/{certificate-name}/versions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCertificateVersionsSender sends the GetCertificateVersions request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetCertificateVersionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetCertificateVersionsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetCertificateVersionsResponder handles the response to the GetCertificateVersions request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetCertificateVersionsResponder(resp *http.Response) (result CertificateListResult, err error) {
+func (client BaseClient) GetCertificateVersionsResponder(resp *http.Response) (result CertificateListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1569,103 +1469,61 @@ func (client ManagementClient) GetCertificateVersionsResponder(resp *http.Respon
 	return
 }
 
-// GetCertificateVersionsNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetCertificateVersionsNextResults(lastResults CertificateListResult) (result CertificateListResult, err error) {
-	req, err := lastResults.CertificateListResultPreparer()
+// getCertificateVersionsNextResults retrieves the next set of results, if any.
+func (client BaseClient) getCertificateVersionsNextResults(lastResults CertificateListResult) (result CertificateListResult, err error) {
+	req, err := lastResults.certificateListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateVersionsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetCertificateVersionsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateVersionsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetCertificateVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetCertificateVersions", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getCertificateVersionsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetCertificateVersionsComplete gets all elements from the list without paging.
-func (client ManagementClient) GetCertificateVersionsComplete(vaultBaseURL string, certificateName string, maxresults *int32, cancel <-chan struct{}) (<-chan CertificateItem, <-chan error) {
-	resultChan := make(chan CertificateItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetCertificateVersions(vaultBaseURL, certificateName, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetCertificateVersionsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetCertificateVersionsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetCertificateVersionsComplete(ctx context.Context, vaultBaseURL string, certificateName string, maxresults *int32) (result CertificateListResultIterator, err error) {
+	result.page, err = client.GetCertificateVersions(ctx, vaultBaseURL, certificateName, maxresults)
+	return
 }
 
 // GetKey retrieves the public portion of a key plus its attributes
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key
-func (client ManagementClient) GetKey(vaultBaseURL string, keyName string, keyVersion string) (result KeyBundle, err error) {
-	req, err := client.GetKeyPreparer(vaultBaseURL, keyName, keyVersion)
+func (client BaseClient) GetKey(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string) (result KeyBundle, err error) {
+	req, err := client.GetKeyPreparer(ctx, vaultBaseURL, keyName, keyVersion)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetKeyPreparer prepares the GetKey request.
-func (client ManagementClient) GetKeyPreparer(vaultBaseURL string, keyName string, keyVersion string) (*http.Request, error) {
+func (client BaseClient) GetKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1685,20 +1543,19 @@ func (client ManagementClient) GetKeyPreparer(vaultBaseURL string, keyName strin
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetKeySender sends the GetKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetKeyResponder handles the response to the GetKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) GetKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1713,39 +1570,40 @@ func (client ManagementClient) GetKeyResponder(resp *http.Response) (result KeyB
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net maxresults is maximum number of results to
 // return in a page. If not specified the service will return up to 25 results.
-func (client ManagementClient) GetKeys(vaultBaseURL string, maxresults *int32) (result KeyListResult, err error) {
+func (client BaseClient) GetKeys(ctx context.Context, vaultBaseURL string, maxresults *int32) (result KeyListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetKeys")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetKeys")
 	}
 
-	req, err := client.GetKeysPreparer(vaultBaseURL, maxresults)
+	result.fn = client.getKeysNextResults
+	req, err := client.GetKeysPreparer(ctx, vaultBaseURL, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeys", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetKeysSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", resp, "Failure sending request")
+		result.klr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeys", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetKeysResponder(resp)
+	result.klr, err = client.GetKeysResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeys", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetKeysPreparer prepares the GetKeys request.
-func (client ManagementClient) GetKeysPreparer(vaultBaseURL string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetKeysPreparer(ctx context.Context, vaultBaseURL string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1763,20 +1621,19 @@ func (client ManagementClient) GetKeysPreparer(vaultBaseURL string, maxresults *
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/keys"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetKeysSender sends the GetKeys request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetKeysSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetKeysResponder handles the response to the GetKeys request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetKeysResponder(resp *http.Response) (result KeyListResult, err error) {
+func (client BaseClient) GetKeysResponder(resp *http.Response) (result KeyListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1787,112 +1644,71 @@ func (client ManagementClient) GetKeysResponder(resp *http.Response) (result Key
 	return
 }
 
-// GetKeysNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetKeysNextResults(lastResults KeyListResult) (result KeyListResult, err error) {
-	req, err := lastResults.KeyListResultPreparer()
+// getKeysNextResults retrieves the next set of results, if any.
+func (client BaseClient) getKeysNextResults(lastResults KeyListResult) (result KeyListResult, err error) {
+	req, err := lastResults.keyListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeysNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetKeysSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeysNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetKeysResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeys", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeysNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetKeysComplete gets all elements from the list without paging.
-func (client ManagementClient) GetKeysComplete(vaultBaseURL string, maxresults *int32, cancel <-chan struct{}) (<-chan KeyItem, <-chan error) {
-	resultChan := make(chan KeyItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetKeys(vaultBaseURL, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetKeysNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetKeysComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetKeysComplete(ctx context.Context, vaultBaseURL string, maxresults *int32) (result KeyListResultIterator, err error) {
+	result.page, err = client.GetKeys(ctx, vaultBaseURL, maxresults)
+	return
 }
 
 // GetKeyVersions list the versions of the specified key
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key maxresults is
 // maximum number of results to return in a page. If not specified the service will return up to 25 results.
-func (client ManagementClient) GetKeyVersions(vaultBaseURL string, keyName string, maxresults *int32) (result KeyListResult, err error) {
+func (client BaseClient) GetKeyVersions(ctx context.Context, vaultBaseURL string, keyName string, maxresults *int32) (result KeyListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetKeyVersions")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetKeyVersions")
 	}
 
-	req, err := client.GetKeyVersionsPreparer(vaultBaseURL, keyName, maxresults)
+	result.fn = client.getKeyVersionsNextResults
+	req, err := client.GetKeyVersionsPreparer(ctx, vaultBaseURL, keyName, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeyVersions", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetKeyVersionsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", resp, "Failure sending request")
+		result.klr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeyVersions", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetKeyVersionsResponder(resp)
+	result.klr, err = client.GetKeyVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetKeyVersions", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetKeyVersionsPreparer prepares the GetKeyVersions request.
-func (client ManagementClient) GetKeyVersionsPreparer(vaultBaseURL string, keyName string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetKeyVersionsPreparer(ctx context.Context, vaultBaseURL string, keyName string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -1914,20 +1730,19 @@ func (client ManagementClient) GetKeyVersionsPreparer(vaultBaseURL string, keyNa
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/keys/{key-name}/versions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetKeyVersionsSender sends the GetKeyVersions request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetKeyVersionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetKeyVersionsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetKeyVersionsResponder handles the response to the GetKeyVersions request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetKeyVersionsResponder(resp *http.Response) (result KeyListResult, err error) {
+func (client BaseClient) GetKeyVersionsResponder(resp *http.Response) (result KeyListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -1938,103 +1753,61 @@ func (client ManagementClient) GetKeyVersionsResponder(resp *http.Response) (res
 	return
 }
 
-// GetKeyVersionsNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetKeyVersionsNextResults(lastResults KeyListResult) (result KeyListResult, err error) {
-	req, err := lastResults.KeyListResultPreparer()
+// getKeyVersionsNextResults retrieves the next set of results, if any.
+func (client BaseClient) getKeyVersionsNextResults(lastResults KeyListResult) (result KeyListResult, err error) {
+	req, err := lastResults.keyListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeyVersionsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetKeyVersionsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeyVersionsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetKeyVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetKeyVersions", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getKeyVersionsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetKeyVersionsComplete gets all elements from the list without paging.
-func (client ManagementClient) GetKeyVersionsComplete(vaultBaseURL string, keyName string, maxresults *int32, cancel <-chan struct{}) (<-chan KeyItem, <-chan error) {
-	resultChan := make(chan KeyItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetKeyVersions(vaultBaseURL, keyName, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetKeyVersionsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetKeyVersionsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetKeyVersionsComplete(ctx context.Context, vaultBaseURL string, keyName string, maxresults *int32) (result KeyListResultIterator, err error) {
+	result.page, err = client.GetKeyVersions(ctx, vaultBaseURL, keyName, maxresults)
+	return
 }
 
 // GetSecret gets a secret.
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net secretName is the name of the secret in the
 // given vault secretVersion is the version of the secret
-func (client ManagementClient) GetSecret(vaultBaseURL string, secretName string, secretVersion string) (result SecretBundle, err error) {
-	req, err := client.GetSecretPreparer(vaultBaseURL, secretName, secretVersion)
+func (client BaseClient) GetSecret(ctx context.Context, vaultBaseURL string, secretName string, secretVersion string) (result SecretBundle, err error) {
+	req, err := client.GetSecretPreparer(ctx, vaultBaseURL, secretName, secretVersion)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecret", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecret", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetSecretSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecret", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecret", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.GetSecretResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecret", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecret", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetSecretPreparer prepares the GetSecret request.
-func (client ManagementClient) GetSecretPreparer(vaultBaseURL string, secretName string, secretVersion string) (*http.Request, error) {
+func (client BaseClient) GetSecretPreparer(ctx context.Context, vaultBaseURL string, secretName string, secretVersion string) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2054,20 +1827,19 @@ func (client ManagementClient) GetSecretPreparer(vaultBaseURL string, secretName
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/secrets/{secret-name}/{secret-version}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSecretSender sends the GetSecret request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetSecretSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetSecretSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetSecretResponder handles the response to the GetSecret request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetSecretResponder(resp *http.Response) (result SecretBundle, err error) {
+func (client BaseClient) GetSecretResponder(resp *http.Response) (result SecretBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2082,39 +1854,40 @@ func (client ManagementClient) GetSecretResponder(resp *http.Response) (result S
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net maxresults is maximum number of results to
 // return in a page. If not specified the service will return up to 25 results.
-func (client ManagementClient) GetSecrets(vaultBaseURL string, maxresults *int32) (result SecretListResult, err error) {
+func (client BaseClient) GetSecrets(ctx context.Context, vaultBaseURL string, maxresults *int32) (result SecretListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetSecrets")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetSecrets")
 	}
 
-	req, err := client.GetSecretsPreparer(vaultBaseURL, maxresults)
+	result.fn = client.getSecretsNextResults
+	req, err := client.GetSecretsPreparer(ctx, vaultBaseURL, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecrets", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetSecretsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", resp, "Failure sending request")
+		result.slr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecrets", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSecretsResponder(resp)
+	result.slr, err = client.GetSecretsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecrets", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetSecretsPreparer prepares the GetSecrets request.
-func (client ManagementClient) GetSecretsPreparer(vaultBaseURL string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetSecretsPreparer(ctx context.Context, vaultBaseURL string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2132,20 +1905,19 @@ func (client ManagementClient) GetSecretsPreparer(vaultBaseURL string, maxresult
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPath("/secrets"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSecretsSender sends the GetSecrets request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetSecretsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetSecretsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetSecretsResponder handles the response to the GetSecrets request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetSecretsResponder(resp *http.Response) (result SecretListResult, err error) {
+func (client BaseClient) GetSecretsResponder(resp *http.Response) (result SecretListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2156,73 +1928,31 @@ func (client ManagementClient) GetSecretsResponder(resp *http.Response) (result 
 	return
 }
 
-// GetSecretsNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetSecretsNextResults(lastResults SecretListResult) (result SecretListResult, err error) {
-	req, err := lastResults.SecretListResultPreparer()
+// getSecretsNextResults retrieves the next set of results, if any.
+func (client BaseClient) getSecretsNextResults(lastResults SecretListResult) (result SecretListResult, err error) {
+	req, err := lastResults.secretListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSecretsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSecretsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecrets", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSecretsComplete gets all elements from the list without paging.
-func (client ManagementClient) GetSecretsComplete(vaultBaseURL string, maxresults *int32, cancel <-chan struct{}) (<-chan SecretItem, <-chan error) {
-	resultChan := make(chan SecretItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSecrets(vaultBaseURL, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSecretsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSecretsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetSecretsComplete(ctx context.Context, vaultBaseURL string, maxresults *int32) (result SecretListResultIterator, err error) {
+	result.page, err = client.GetSecrets(ctx, vaultBaseURL, maxresults)
+	return
 }
 
 // GetSecretVersions list the versions of the specified secret
@@ -2230,39 +1960,40 @@ func (client ManagementClient) GetSecretsComplete(vaultBaseURL string, maxresult
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net secretName is the name of the secret in the
 // given vault maxresults is maximum number of results to return in a page. If not specified the service will return up
 // to 25 results.
-func (client ManagementClient) GetSecretVersions(vaultBaseURL string, secretName string, maxresults *int32) (result SecretListResult, err error) {
+func (client BaseClient) GetSecretVersions(ctx context.Context, vaultBaseURL string, secretName string, maxresults *int32) (result SecretListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: maxresults,
 			Constraints: []validation.Constraint{{Target: "maxresults", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "maxresults", Name: validation.InclusiveMaximum, Rule: 25, Chain: nil},
 					{Target: "maxresults", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "GetSecretVersions")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "GetSecretVersions")
 	}
 
-	req, err := client.GetSecretVersionsPreparer(vaultBaseURL, secretName, maxresults)
+	result.fn = client.getSecretVersionsNextResults
+	req, err := client.GetSecretVersionsPreparer(ctx, vaultBaseURL, secretName, maxresults)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecretVersions", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.GetSecretVersionsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", resp, "Failure sending request")
+		result.slr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecretVersions", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.GetSecretVersionsResponder(resp)
+	result.slr, err = client.GetSecretVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "GetSecretVersions", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // GetSecretVersionsPreparer prepares the GetSecretVersions request.
-func (client ManagementClient) GetSecretVersionsPreparer(vaultBaseURL string, secretName string, maxresults *int32) (*http.Request, error) {
+func (client BaseClient) GetSecretVersionsPreparer(ctx context.Context, vaultBaseURL string, secretName string, maxresults *int32) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2284,20 +2015,19 @@ func (client ManagementClient) GetSecretVersionsPreparer(vaultBaseURL string, se
 		autorest.WithCustomBaseURL("{vaultBaseUrl}", urlParameters),
 		autorest.WithPathParameters("/secrets/{secret-name}/versions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSecretVersionsSender sends the GetSecretVersions request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) GetSecretVersionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) GetSecretVersionsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetSecretVersionsResponder handles the response to the GetSecretVersions request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) GetSecretVersionsResponder(resp *http.Response) (result SecretListResult, err error) {
+func (client BaseClient) GetSecretVersionsResponder(resp *http.Response) (result SecretListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2308,80 +2038,38 @@ func (client ManagementClient) GetSecretVersionsResponder(resp *http.Response) (
 	return
 }
 
-// GetSecretVersionsNextResults retrieves the next set of results, if any.
-func (client ManagementClient) GetSecretVersionsNextResults(lastResults SecretListResult) (result SecretListResult, err error) {
-	req, err := lastResults.SecretListResultPreparer()
+// getSecretVersionsNextResults retrieves the next set of results, if any.
+func (client BaseClient) getSecretVersionsNextResults(lastResults SecretListResult) (result SecretListResult, err error) {
+	req, err := lastResults.secretListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretVersionsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.GetSecretVersionsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretVersionsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.GetSecretVersionsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "GetSecretVersions", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "getSecretVersionsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// GetSecretVersionsComplete gets all elements from the list without paging.
-func (client ManagementClient) GetSecretVersionsComplete(vaultBaseURL string, secretName string, maxresults *int32, cancel <-chan struct{}) (<-chan SecretItem, <-chan error) {
-	resultChan := make(chan SecretItem)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.GetSecretVersions(vaultBaseURL, secretName, maxresults)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.GetSecretVersionsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// GetSecretVersionsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) GetSecretVersionsComplete(ctx context.Context, vaultBaseURL string, secretName string, maxresults *int32) (result SecretListResultIterator, err error) {
+	result.page, err = client.GetSecretVersions(ctx, vaultBaseURL, secretName, maxresults)
+	return
 }
 
 // ImportCertificate imports a certificate into the specified vault
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // parameters is the parameters to import certificate.
-func (client ManagementClient) ImportCertificate(vaultBaseURL string, certificateName string, parameters CertificateImportParameters) (result CertificateBundle, err error) {
+func (client BaseClient) ImportCertificate(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateImportParameters) (result CertificateBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[0-9a-zA-Z-]+$`, Chain: nil}}},
@@ -2393,32 +2081,32 @@ func (client ManagementClient) ImportCertificate(vaultBaseURL string, certificat
 							Chain: []validation.Constraint{{Target: "parameters.CertificatePolicy.X509CertificateProperties.ValidityInMonths", Name: validation.InclusiveMinimum, Rule: 0, Chain: nil}}},
 						}},
 					}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "ImportCertificate")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "ImportCertificate")
 	}
 
-	req, err := client.ImportCertificatePreparer(vaultBaseURL, certificateName, parameters)
+	req, err := client.ImportCertificatePreparer(ctx, vaultBaseURL, certificateName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ImportCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.ImportCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // ImportCertificatePreparer prepares the ImportCertificate request.
-func (client ManagementClient) ImportCertificatePreparer(vaultBaseURL string, certificateName string, parameters CertificateImportParameters) (*http.Request, error) {
+func (client BaseClient) ImportCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateImportParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2439,20 +2127,19 @@ func (client ManagementClient) ImportCertificatePreparer(vaultBaseURL string, ce
 		autorest.WithPathParameters("/certificates/{certificate-name}/import", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ImportCertificateSender sends the ImportCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) ImportCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) ImportCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ImportCertificateResponder handles the response to the ImportCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) ImportCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
+func (client BaseClient) ImportCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2467,38 +2154,38 @@ func (client ManagementClient) ImportCertificateResponder(resp *http.Response) (
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key parameters is
 // the parameters to import key.
-func (client ManagementClient) ImportKey(vaultBaseURL string, keyName string, parameters KeyImportParameters) (result KeyBundle, err error) {
+func (client BaseClient) ImportKey(ctx context.Context, vaultBaseURL string, keyName string, parameters KeyImportParameters) (result KeyBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: keyName,
 			Constraints: []validation.Constraint{{Target: "keyName", Name: validation.Pattern, Rule: `^[0-9a-zA-Z-]+$`, Chain: nil}}},
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Key", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "ImportKey")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "ImportKey")
 	}
 
-	req, err := client.ImportKeyPreparer(vaultBaseURL, keyName, parameters)
+	req, err := client.ImportKeyPreparer(ctx, vaultBaseURL, keyName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ImportKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.ImportKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "ImportKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "ImportKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // ImportKeyPreparer prepares the ImportKey request.
-func (client ManagementClient) ImportKeyPreparer(vaultBaseURL string, keyName string, parameters KeyImportParameters) (*http.Request, error) {
+func (client BaseClient) ImportKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, parameters KeyImportParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2519,20 +2206,19 @@ func (client ManagementClient) ImportKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithPathParameters("/keys/{key-name}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ImportKeySender sends the ImportKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) ImportKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) ImportKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ImportKeyResponder handles the response to the ImportKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) ImportKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) ImportKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2547,36 +2233,36 @@ func (client ManagementClient) ImportKeyResponder(resp *http.Response) (result K
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // parameters is the parameters to merge certificate.
-func (client ManagementClient) MergeCertificate(vaultBaseURL string, certificateName string, parameters CertificateMergeParameters) (result CertificateBundle, err error) {
+func (client BaseClient) MergeCertificate(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateMergeParameters) (result CertificateBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.X509Certificates", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "MergeCertificate")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "MergeCertificate")
 	}
 
-	req, err := client.MergeCertificatePreparer(vaultBaseURL, certificateName, parameters)
+	req, err := client.MergeCertificatePreparer(ctx, vaultBaseURL, certificateName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "MergeCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "MergeCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.MergeCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "MergeCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "MergeCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.MergeCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "MergeCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "MergeCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // MergeCertificatePreparer prepares the MergeCertificate request.
-func (client ManagementClient) MergeCertificatePreparer(vaultBaseURL string, certificateName string, parameters CertificateMergeParameters) (*http.Request, error) {
+func (client BaseClient) MergeCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string, parameters CertificateMergeParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2597,20 +2283,19 @@ func (client ManagementClient) MergeCertificatePreparer(vaultBaseURL string, cer
 		autorest.WithPathParameters("/certificates/{certificate-name}/pending/merge", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // MergeCertificateSender sends the MergeCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) MergeCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) MergeCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // MergeCertificateResponder handles the response to the MergeCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) MergeCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
+func (client BaseClient) MergeCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2624,36 +2309,36 @@ func (client ManagementClient) MergeCertificateResponder(resp *http.Response) (r
 // RestoreKey restores the backup key in to a vault
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net parameters is the parameters to restore key
-func (client ManagementClient) RestoreKey(vaultBaseURL string, parameters KeyRestoreParameters) (result KeyBundle, err error) {
+func (client BaseClient) RestoreKey(ctx context.Context, vaultBaseURL string, parameters KeyRestoreParameters) (result KeyBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.KeyBundleBackup", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "RestoreKey")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "RestoreKey")
 	}
 
-	req, err := client.RestoreKeyPreparer(vaultBaseURL, parameters)
+	req, err := client.RestoreKeyPreparer(ctx, vaultBaseURL, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "RestoreKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "RestoreKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.RestoreKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "RestoreKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "RestoreKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.RestoreKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "RestoreKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "RestoreKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // RestoreKeyPreparer prepares the RestoreKey request.
-func (client ManagementClient) RestoreKeyPreparer(vaultBaseURL string, parameters KeyRestoreParameters) (*http.Request, error) {
+func (client BaseClient) RestoreKeyPreparer(ctx context.Context, vaultBaseURL string, parameters KeyRestoreParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2670,20 +2355,19 @@ func (client ManagementClient) RestoreKeyPreparer(vaultBaseURL string, parameter
 		autorest.WithPath("/keys/restore"),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RestoreKeySender sends the RestoreKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) RestoreKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) RestoreKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // RestoreKeyResponder handles the response to the RestoreKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) RestoreKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) RestoreKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2698,30 +2382,30 @@ func (client ManagementClient) RestoreKeyResponder(resp *http.Response) (result 
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net contacts is the contacts for the vault
 // certificates.
-func (client ManagementClient) SetCertificateContacts(vaultBaseURL string, contacts Contacts) (result Contacts, err error) {
-	req, err := client.SetCertificateContactsPreparer(vaultBaseURL, contacts)
+func (client BaseClient) SetCertificateContacts(ctx context.Context, vaultBaseURL string, contacts Contacts) (result Contacts, err error) {
+	req, err := client.SetCertificateContactsPreparer(ctx, vaultBaseURL, contacts)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateContacts", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateContacts", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.SetCertificateContactsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateContacts", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateContacts", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.SetCertificateContactsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateContacts", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateContacts", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // SetCertificateContactsPreparer prepares the SetCertificateContacts request.
-func (client ManagementClient) SetCertificateContactsPreparer(vaultBaseURL string, contacts Contacts) (*http.Request, error) {
+func (client BaseClient) SetCertificateContactsPreparer(ctx context.Context, vaultBaseURL string, contacts Contacts) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2738,20 +2422,19 @@ func (client ManagementClient) SetCertificateContactsPreparer(vaultBaseURL strin
 		autorest.WithPath("/certificates/contacts"),
 		autorest.WithJSON(contacts),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SetCertificateContactsSender sends the SetCertificateContacts request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) SetCertificateContactsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) SetCertificateContactsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // SetCertificateContactsResponder handles the response to the SetCertificateContacts request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) SetCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
+func (client BaseClient) SetCertificateContactsResponder(resp *http.Response) (result Contacts, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2766,36 +2449,36 @@ func (client ManagementClient) SetCertificateContactsResponder(resp *http.Respon
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net issuerName is the name of the issuer. parameter
 // is certificate issuer set parameter.
-func (client ManagementClient) SetCertificateIssuer(vaultBaseURL string, issuerName string, parameter CertificateIssuerSetParameters) (result IssuerBundle, err error) {
+func (client BaseClient) SetCertificateIssuer(ctx context.Context, vaultBaseURL string, issuerName string, parameter CertificateIssuerSetParameters) (result IssuerBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameter,
 			Constraints: []validation.Constraint{{Target: "parameter.Provider", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "SetCertificateIssuer")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "SetCertificateIssuer")
 	}
 
-	req, err := client.SetCertificateIssuerPreparer(vaultBaseURL, issuerName, parameter)
+	req, err := client.SetCertificateIssuerPreparer(ctx, vaultBaseURL, issuerName, parameter)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateIssuer", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateIssuer", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.SetCertificateIssuerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateIssuer", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateIssuer", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.SetCertificateIssuerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetCertificateIssuer", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetCertificateIssuer", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // SetCertificateIssuerPreparer prepares the SetCertificateIssuer request.
-func (client ManagementClient) SetCertificateIssuerPreparer(vaultBaseURL string, issuerName string, parameter CertificateIssuerSetParameters) (*http.Request, error) {
+func (client BaseClient) SetCertificateIssuerPreparer(ctx context.Context, vaultBaseURL string, issuerName string, parameter CertificateIssuerSetParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2816,20 +2499,19 @@ func (client ManagementClient) SetCertificateIssuerPreparer(vaultBaseURL string,
 		autorest.WithPathParameters("/certificates/issuers/{issuer-name}", pathParameters),
 		autorest.WithJSON(parameter),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SetCertificateIssuerSender sends the SetCertificateIssuer request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) SetCertificateIssuerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) SetCertificateIssuerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // SetCertificateIssuerResponder handles the response to the SetCertificateIssuer request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) SetCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
+func (client BaseClient) SetCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2844,38 +2526,38 @@ func (client ManagementClient) SetCertificateIssuerResponder(resp *http.Response
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net secretName is the name of the secret in the
 // given vault parameters is the parameters for secret set
-func (client ManagementClient) SetSecret(vaultBaseURL string, secretName string, parameters SecretSetParameters) (result SecretBundle, err error) {
+func (client BaseClient) SetSecret(ctx context.Context, vaultBaseURL string, secretName string, parameters SecretSetParameters) (result SecretBundle, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: secretName,
 			Constraints: []validation.Constraint{{Target: "secretName", Name: validation.Pattern, Rule: `^[0-9a-zA-Z-]+$`, Chain: nil}}},
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "SetSecret")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "SetSecret")
 	}
 
-	req, err := client.SetSecretPreparer(vaultBaseURL, secretName, parameters)
+	req, err := client.SetSecretPreparer(ctx, vaultBaseURL, secretName, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetSecret", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetSecret", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.SetSecretSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetSecret", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetSecret", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.SetSecretResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "SetSecret", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "SetSecret", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // SetSecretPreparer prepares the SetSecret request.
-func (client ManagementClient) SetSecretPreparer(vaultBaseURL string, secretName string, parameters SecretSetParameters) (*http.Request, error) {
+func (client BaseClient) SetSecretPreparer(ctx context.Context, vaultBaseURL string, secretName string, parameters SecretSetParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2896,20 +2578,19 @@ func (client ManagementClient) SetSecretPreparer(vaultBaseURL string, secretName
 		autorest.WithPathParameters("/secrets/{secret-name}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SetSecretSender sends the SetSecret request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) SetSecretSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) SetSecretSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // SetSecretResponder handles the response to the SetSecret request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) SetSecretResponder(resp *http.Response) (result SecretBundle, err error) {
+func (client BaseClient) SetSecretResponder(resp *http.Response) (result SecretBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -2924,36 +2605,36 @@ func (client ManagementClient) SetSecretResponder(resp *http.Response) (result S
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) Sign(vaultBaseURL string, keyName string, keyVersion string, parameters KeySignParameters) (result KeyOperationResult, err error) {
+func (client BaseClient) Sign(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeySignParameters) (result KeyOperationResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "Sign")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "Sign")
 	}
 
-	req, err := client.SignPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.SignPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Sign", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Sign", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.SignSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Sign", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Sign", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.SignResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Sign", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Sign", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // SignPreparer prepares the Sign request.
-func (client ManagementClient) SignPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeySignParameters) (*http.Request, error) {
+func (client BaseClient) SignPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeySignParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -2975,20 +2656,19 @@ func (client ManagementClient) SignPreparer(vaultBaseURL string, keyName string,
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/sign", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SignSender sends the Sign request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) SignSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) SignSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // SignResponder handles the response to the Sign request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) SignResponder(resp *http.Response) (result KeyOperationResult, err error) {
+func (client BaseClient) SignResponder(resp *http.Response) (result KeyOperationResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3004,36 +2684,36 @@ func (client ManagementClient) SignResponder(resp *http.Response) (result KeyOpe
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) UnwrapKey(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
+func (client BaseClient) UnwrapKey(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "UnwrapKey")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "UnwrapKey")
 	}
 
-	req, err := client.UnwrapKeyPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.UnwrapKeyPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UnwrapKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UnwrapKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UnwrapKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UnwrapKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UnwrapKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UnwrapKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UnwrapKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UnwrapKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UnwrapKeyPreparer prepares the UnwrapKey request.
-func (client ManagementClient) UnwrapKeyPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
+func (client BaseClient) UnwrapKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3055,20 +2735,19 @@ func (client ManagementClient) UnwrapKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/unwrapkey", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UnwrapKeySender sends the UnwrapKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UnwrapKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UnwrapKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UnwrapKeyResponder handles the response to the UnwrapKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UnwrapKeyResponder(resp *http.Response) (result KeyOperationResult, err error) {
+func (client BaseClient) UnwrapKeyResponder(resp *http.Response) (result KeyOperationResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3083,30 +2762,30 @@ func (client ManagementClient) UnwrapKeyResponder(resp *http.Response) (result K
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // in the given vault certificateVersion is the version of the certificate
-func (client ManagementClient) UpdateCertificate(vaultBaseURL string, certificateName string, certificateVersion string, parameters CertificateUpdateParameters) (result CertificateBundle, err error) {
-	req, err := client.UpdateCertificatePreparer(vaultBaseURL, certificateName, certificateVersion, parameters)
+func (client BaseClient) UpdateCertificate(ctx context.Context, vaultBaseURL string, certificateName string, certificateVersion string, parameters CertificateUpdateParameters) (result CertificateBundle, err error) {
+	req, err := client.UpdateCertificatePreparer(ctx, vaultBaseURL, certificateName, certificateVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificate", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificate", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateCertificateSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificate", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificate", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateCertificateResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificate", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificate", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateCertificatePreparer prepares the UpdateCertificate request.
-func (client ManagementClient) UpdateCertificatePreparer(vaultBaseURL string, certificateName string, certificateVersion string, parameters CertificateUpdateParameters) (*http.Request, error) {
+func (client BaseClient) UpdateCertificatePreparer(ctx context.Context, vaultBaseURL string, certificateName string, certificateVersion string, parameters CertificateUpdateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3128,20 +2807,19 @@ func (client ManagementClient) UpdateCertificatePreparer(vaultBaseURL string, ce
 		autorest.WithPathParameters("/certificates/{certificate-name}/{certificate-version}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCertificateSender sends the UpdateCertificate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateCertificateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateCertificateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateCertificateResponder handles the response to the UpdateCertificate request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
+func (client BaseClient) UpdateCertificateResponder(resp *http.Response) (result CertificateBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3156,30 +2834,30 @@ func (client ManagementClient) UpdateCertificateResponder(resp *http.Response) (
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net issuerName is the name of the issuer. parameter
 // is certificate issuer update parameter.
-func (client ManagementClient) UpdateCertificateIssuer(vaultBaseURL string, issuerName string, parameter CertificateIssuerUpdateParameters) (result IssuerBundle, err error) {
-	req, err := client.UpdateCertificateIssuerPreparer(vaultBaseURL, issuerName, parameter)
+func (client BaseClient) UpdateCertificateIssuer(ctx context.Context, vaultBaseURL string, issuerName string, parameter CertificateIssuerUpdateParameters) (result IssuerBundle, err error) {
+	req, err := client.UpdateCertificateIssuerPreparer(ctx, vaultBaseURL, issuerName, parameter)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateIssuer", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateIssuer", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateCertificateIssuerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateIssuer", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateIssuer", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateCertificateIssuerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateIssuer", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateIssuer", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateCertificateIssuerPreparer prepares the UpdateCertificateIssuer request.
-func (client ManagementClient) UpdateCertificateIssuerPreparer(vaultBaseURL string, issuerName string, parameter CertificateIssuerUpdateParameters) (*http.Request, error) {
+func (client BaseClient) UpdateCertificateIssuerPreparer(ctx context.Context, vaultBaseURL string, issuerName string, parameter CertificateIssuerUpdateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3200,20 +2878,19 @@ func (client ManagementClient) UpdateCertificateIssuerPreparer(vaultBaseURL stri
 		autorest.WithPathParameters("/certificates/issuers/{issuer-name}", pathParameters),
 		autorest.WithJSON(parameter),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCertificateIssuerSender sends the UpdateCertificateIssuer request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateCertificateIssuerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateCertificateIssuerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateCertificateIssuerResponder handles the response to the UpdateCertificateIssuer request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
+func (client BaseClient) UpdateCertificateIssuerResponder(resp *http.Response) (result IssuerBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3228,30 +2905,30 @@ func (client ManagementClient) UpdateCertificateIssuerResponder(resp *http.Respo
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // certificateOperation is the certificate operation response.
-func (client ManagementClient) UpdateCertificateOperation(vaultBaseURL string, certificateName string, certificateOperation CertificateOperationUpdateParameter) (result CertificateOperation, err error) {
-	req, err := client.UpdateCertificateOperationPreparer(vaultBaseURL, certificateName, certificateOperation)
+func (client BaseClient) UpdateCertificateOperation(ctx context.Context, vaultBaseURL string, certificateName string, certificateOperation CertificateOperationUpdateParameter) (result CertificateOperation, err error) {
+	req, err := client.UpdateCertificateOperationPreparer(ctx, vaultBaseURL, certificateName, certificateOperation)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateOperation", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateOperation", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateCertificateOperationSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateOperation", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateOperation", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateCertificateOperationResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificateOperation", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificateOperation", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateCertificateOperationPreparer prepares the UpdateCertificateOperation request.
-func (client ManagementClient) UpdateCertificateOperationPreparer(vaultBaseURL string, certificateName string, certificateOperation CertificateOperationUpdateParameter) (*http.Request, error) {
+func (client BaseClient) UpdateCertificateOperationPreparer(ctx context.Context, vaultBaseURL string, certificateName string, certificateOperation CertificateOperationUpdateParameter) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3272,20 +2949,19 @@ func (client ManagementClient) UpdateCertificateOperationPreparer(vaultBaseURL s
 		autorest.WithPathParameters("/certificates/{certificate-name}/pending", pathParameters),
 		autorest.WithJSON(certificateOperation),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCertificateOperationSender sends the UpdateCertificateOperation request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateCertificateOperationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateCertificateOperationSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateCertificateOperationResponder handles the response to the UpdateCertificateOperation request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
+func (client BaseClient) UpdateCertificateOperationResponder(resp *http.Response) (result CertificateOperation, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3301,30 +2977,30 @@ func (client ManagementClient) UpdateCertificateOperationResponder(resp *http.Re
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net certificateName is the name of the certificate
 // in the given vault. certificatePolicy is the policy for the certificate.
-func (client ManagementClient) UpdateCertificatePolicy(vaultBaseURL string, certificateName string, certificatePolicy CertificatePolicy) (result CertificatePolicy, err error) {
-	req, err := client.UpdateCertificatePolicyPreparer(vaultBaseURL, certificateName, certificatePolicy)
+func (client BaseClient) UpdateCertificatePolicy(ctx context.Context, vaultBaseURL string, certificateName string, certificatePolicy CertificatePolicy) (result CertificatePolicy, err error) {
+	req, err := client.UpdateCertificatePolicyPreparer(ctx, vaultBaseURL, certificateName, certificatePolicy)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificatePolicy", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificatePolicy", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateCertificatePolicySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificatePolicy", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificatePolicy", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateCertificatePolicyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateCertificatePolicy", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateCertificatePolicy", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateCertificatePolicyPreparer prepares the UpdateCertificatePolicy request.
-func (client ManagementClient) UpdateCertificatePolicyPreparer(vaultBaseURL string, certificateName string, certificatePolicy CertificatePolicy) (*http.Request, error) {
+func (client BaseClient) UpdateCertificatePolicyPreparer(ctx context.Context, vaultBaseURL string, certificateName string, certificatePolicy CertificatePolicy) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3345,20 +3021,19 @@ func (client ManagementClient) UpdateCertificatePolicyPreparer(vaultBaseURL stri
 		autorest.WithPathParameters("/certificates/{certificate-name}/policy", pathParameters),
 		autorest.WithJSON(certificatePolicy),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateCertificatePolicySender sends the UpdateCertificatePolicy request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateCertificatePolicySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateCertificatePolicySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateCertificatePolicyResponder handles the response to the UpdateCertificatePolicy request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateCertificatePolicyResponder(resp *http.Response) (result CertificatePolicy, err error) {
+func (client BaseClient) UpdateCertificatePolicyResponder(resp *http.Response) (result CertificatePolicy, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3373,30 +3048,30 @@ func (client ManagementClient) UpdateCertificatePolicyResponder(resp *http.Respo
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters to update key.
-func (client ManagementClient) UpdateKey(vaultBaseURL string, keyName string, keyVersion string, parameters KeyUpdateParameters) (result KeyBundle, err error) {
-	req, err := client.UpdateKeyPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+func (client BaseClient) UpdateKey(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyUpdateParameters) (result KeyBundle, err error) {
+	req, err := client.UpdateKeyPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateKeyPreparer prepares the UpdateKey request.
-func (client ManagementClient) UpdateKeyPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyUpdateParameters) (*http.Request, error) {
+func (client BaseClient) UpdateKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyUpdateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3418,20 +3093,19 @@ func (client ManagementClient) UpdateKeyPreparer(vaultBaseURL string, keyName st
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateKeySender sends the UpdateKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateKeyResponder handles the response to the UpdateKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateKeyResponder(resp *http.Response) (result KeyBundle, err error) {
+func (client BaseClient) UpdateKeyResponder(resp *http.Response) (result KeyBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3446,30 +3120,30 @@ func (client ManagementClient) UpdateKeyResponder(resp *http.Response) (result K
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net secretName is the name of the secret in the
 // given vault secretVersion is the version of the secret
-func (client ManagementClient) UpdateSecret(vaultBaseURL string, secretName string, secretVersion string, parameters SecretUpdateParameters) (result SecretBundle, err error) {
-	req, err := client.UpdateSecretPreparer(vaultBaseURL, secretName, secretVersion, parameters)
+func (client BaseClient) UpdateSecret(ctx context.Context, vaultBaseURL string, secretName string, secretVersion string, parameters SecretUpdateParameters) (result SecretBundle, err error) {
+	req, err := client.UpdateSecretPreparer(ctx, vaultBaseURL, secretName, secretVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateSecret", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateSecret", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.UpdateSecretSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateSecret", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateSecret", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.UpdateSecretResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "UpdateSecret", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "UpdateSecret", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // UpdateSecretPreparer prepares the UpdateSecret request.
-func (client ManagementClient) UpdateSecretPreparer(vaultBaseURL string, secretName string, secretVersion string, parameters SecretUpdateParameters) (*http.Request, error) {
+func (client BaseClient) UpdateSecretPreparer(ctx context.Context, vaultBaseURL string, secretName string, secretVersion string, parameters SecretUpdateParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3491,20 +3165,19 @@ func (client ManagementClient) UpdateSecretPreparer(vaultBaseURL string, secretN
 		autorest.WithPathParameters("/secrets/{secret-name}/{secret-version}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSecretSender sends the UpdateSecret request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) UpdateSecretSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) UpdateSecretSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateSecretResponder handles the response to the UpdateSecret request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) UpdateSecretResponder(resp *http.Response) (result SecretBundle, err error) {
+func (client BaseClient) UpdateSecretResponder(resp *http.Response) (result SecretBundle, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3519,37 +3192,37 @@ func (client ManagementClient) UpdateSecretResponder(resp *http.Response) (resul
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) Verify(vaultBaseURL string, keyName string, keyVersion string, parameters KeyVerifyParameters) (result KeyVerifyResult, err error) {
+func (client BaseClient) Verify(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyVerifyParameters) (result KeyVerifyResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Digest", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.Signature", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "Verify")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "Verify")
 	}
 
-	req, err := client.VerifyPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.VerifyPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Verify", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Verify", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.VerifySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Verify", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Verify", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.VerifyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "Verify", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "Verify", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // VerifyPreparer prepares the Verify request.
-func (client ManagementClient) VerifyPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyVerifyParameters) (*http.Request, error) {
+func (client BaseClient) VerifyPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyVerifyParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3571,20 +3244,19 @@ func (client ManagementClient) VerifyPreparer(vaultBaseURL string, keyName strin
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/verify", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // VerifySender sends the Verify request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) VerifySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) VerifySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // VerifyResponder handles the response to the Verify request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) VerifyResponder(resp *http.Response) (result KeyVerifyResult, err error) {
+func (client BaseClient) VerifyResponder(resp *http.Response) (result KeyVerifyResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -3599,36 +3271,36 @@ func (client ManagementClient) VerifyResponder(resp *http.Response) (result KeyV
 //
 // vaultBaseURL is the vault name, e.g. https://myvault.vault.azure.net keyName is the name of the key keyVersion is
 // the version of the key parameters is the parameters for key operations.
-func (client ManagementClient) WrapKey(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
+func (client BaseClient) WrapKey(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (result KeyOperationResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Value", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "keyvault.ManagementClient", "WrapKey")
+		return result, validation.NewErrorWithValidationError(err, "keyvault.BaseClient", "WrapKey")
 	}
 
-	req, err := client.WrapKeyPreparer(vaultBaseURL, keyName, keyVersion, parameters)
+	req, err := client.WrapKeyPreparer(ctx, vaultBaseURL, keyName, keyVersion, parameters)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "WrapKey", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "WrapKey", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.WrapKeySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "WrapKey", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "WrapKey", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.WrapKeyResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.ManagementClient", "WrapKey", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "keyvault.BaseClient", "WrapKey", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // WrapKeyPreparer prepares the WrapKey request.
-func (client ManagementClient) WrapKeyPreparer(vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
+func (client BaseClient) WrapKeyPreparer(ctx context.Context, vaultBaseURL string, keyName string, keyVersion string, parameters KeyOperationsParameters) (*http.Request, error) {
 	urlParameters := map[string]interface{}{
 		"vaultBaseUrl": vaultBaseURL,
 	}
@@ -3650,20 +3322,19 @@ func (client ManagementClient) WrapKeyPreparer(vaultBaseURL string, keyName stri
 		autorest.WithPathParameters("/keys/{key-name}/{key-version}/wrapkey", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // WrapKeySender sends the WrapKey request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) WrapKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) WrapKeySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // WrapKeyResponder handles the response to the WrapKey request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) WrapKeyResponder(resp *http.Response) (result KeyOperationResult, err error) {
+func (client BaseClient) WrapKeyResponder(resp *http.Response) (result KeyOperationResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),

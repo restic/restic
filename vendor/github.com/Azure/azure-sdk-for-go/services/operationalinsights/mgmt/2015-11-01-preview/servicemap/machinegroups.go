@@ -18,6 +18,7 @@ package servicemap
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // MachineGroupsClient is the service Map API Reference
 type MachineGroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewMachineGroupsClient creates an instance of the MachineGroupsClient client.
@@ -43,7 +44,7 @@ func NewMachineGroupsClientWithBaseURI(baseURI string, subscriptionID string) Ma
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineGroup is machine Group resource to create.
-func (client MachineGroupsClient) Create(resourceGroupName string, workspaceName string, machineGroup MachineGroup) (result MachineGroup, err error) {
+func (client MachineGroupsClient) Create(ctx context.Context, resourceGroupName string, workspaceName string, machineGroup MachineGroup) (result MachineGroup, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -55,7 +56,7 @@ func (client MachineGroupsClient) Create(resourceGroupName string, workspaceName
 				{Target: "workspaceName", Name: validation.Pattern, Rule: `[a-zA-Z0-9_][a-zA-Z0-9_-]+[a-zA-Z0-9_]`, Chain: nil}}},
 		{TargetValue: machineGroup,
 			Constraints: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties", Name: validation.Null, Rule: false,
-				Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.Null, Rule: false,
+				Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.Null, Rule: true,
 					Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.MaxLength, Rule: 256, Chain: nil},
 						{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.MinLength, Rule: 1, Chain: nil},
 					}},
@@ -63,7 +64,7 @@ func (client MachineGroupsClient) Create(resourceGroupName string, workspaceName
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MachineGroupsClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(resourceGroupName, workspaceName, machineGroup)
+	req, err := client.CreatePreparer(ctx, resourceGroupName, workspaceName, machineGroup)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "Create", nil, "Failure preparing request")
 		return
@@ -85,7 +86,7 @@ func (client MachineGroupsClient) Create(resourceGroupName string, workspaceName
 }
 
 // CreatePreparer prepares the Create request.
-func (client MachineGroupsClient) CreatePreparer(resourceGroupName string, workspaceName string, machineGroup MachineGroup) (*http.Request, error) {
+func (client MachineGroupsClient) CreatePreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineGroup MachineGroup) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -104,14 +105,13 @@ func (client MachineGroupsClient) CreatePreparer(resourceGroupName string, works
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machineGroups", pathParameters),
 		autorest.WithJSON(machineGroup),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client MachineGroupsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -132,7 +132,7 @@ func (client MachineGroupsClient) CreateResponder(resp *http.Response) (result M
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineGroupName is machine Group resource name.
-func (client MachineGroupsClient) Delete(resourceGroupName string, workspaceName string, machineGroupName string) (result autorest.Response, err error) {
+func (client MachineGroupsClient) Delete(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -148,7 +148,7 @@ func (client MachineGroupsClient) Delete(resourceGroupName string, workspaceName
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MachineGroupsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, workspaceName, machineGroupName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, workspaceName, machineGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -170,7 +170,7 @@ func (client MachineGroupsClient) Delete(resourceGroupName string, workspaceName
 }
 
 // DeletePreparer prepares the Delete request.
-func (client MachineGroupsClient) DeletePreparer(resourceGroupName string, workspaceName string, machineGroupName string) (*http.Request, error) {
+func (client MachineGroupsClient) DeletePreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineGroupName":  autorest.Encode("path", machineGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -188,14 +188,13 @@ func (client MachineGroupsClient) DeletePreparer(resourceGroupName string, works
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machineGroups/{machineGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client MachineGroupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -215,7 +214,7 @@ func (client MachineGroupsClient) DeleteResponder(resp *http.Response) (result a
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineGroupName is machine Group resource name.
-func (client MachineGroupsClient) Get(resourceGroupName string, workspaceName string, machineGroupName string) (result MachineGroup, err error) {
+func (client MachineGroupsClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string) (result MachineGroup, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -231,7 +230,7 @@ func (client MachineGroupsClient) Get(resourceGroupName string, workspaceName st
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MachineGroupsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, workspaceName, machineGroupName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, machineGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -253,7 +252,7 @@ func (client MachineGroupsClient) Get(resourceGroupName string, workspaceName st
 }
 
 // GetPreparer prepares the Get request.
-func (client MachineGroupsClient) GetPreparer(resourceGroupName string, workspaceName string, machineGroupName string) (*http.Request, error) {
+func (client MachineGroupsClient) GetPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineGroupName":  autorest.Encode("path", machineGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -271,14 +270,13 @@ func (client MachineGroupsClient) GetPreparer(resourceGroupName string, workspac
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machineGroups/{machineGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client MachineGroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -299,7 +297,7 @@ func (client MachineGroupsClient) GetResponder(resp *http.Response) (result Mach
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest.
-func (client MachineGroupsClient) ListByWorkspace(resourceGroupName string, workspaceName string) (result MachineGroupCollection, err error) {
+func (client MachineGroupsClient) ListByWorkspace(ctx context.Context, resourceGroupName string, workspaceName string) (result MachineGroupCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -312,7 +310,8 @@ func (client MachineGroupsClient) ListByWorkspace(resourceGroupName string, work
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MachineGroupsClient", "ListByWorkspace")
 	}
 
-	req, err := client.ListByWorkspacePreparer(resourceGroupName, workspaceName)
+	result.fn = client.listByWorkspaceNextResults
+	req, err := client.ListByWorkspacePreparer(ctx, resourceGroupName, workspaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", nil, "Failure preparing request")
 		return
@@ -320,12 +319,12 @@ func (client MachineGroupsClient) ListByWorkspace(resourceGroupName string, work
 
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.mgc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByWorkspaceResponder(resp)
+	result.mgc, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", resp, "Failure responding to request")
 	}
@@ -334,7 +333,7 @@ func (client MachineGroupsClient) ListByWorkspace(resourceGroupName string, work
 }
 
 // ListByWorkspacePreparer prepares the ListByWorkspace request.
-func (client MachineGroupsClient) ListByWorkspacePreparer(resourceGroupName string, workspaceName string) (*http.Request, error) {
+func (client MachineGroupsClient) ListByWorkspacePreparer(ctx context.Context, resourceGroupName string, workspaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -351,14 +350,13 @@ func (client MachineGroupsClient) ListByWorkspacePreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machineGroups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByWorkspaceSender sends the ListByWorkspace request. The method will close the
 // http.Response Body if it receives an error.
 func (client MachineGroupsClient) ListByWorkspaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -375,73 +373,31 @@ func (client MachineGroupsClient) ListByWorkspaceResponder(resp *http.Response) 
 	return
 }
 
-// ListByWorkspaceNextResults retrieves the next set of results, if any.
-func (client MachineGroupsClient) ListByWorkspaceNextResults(lastResults MachineGroupCollection) (result MachineGroupCollection, err error) {
-	req, err := lastResults.MachineGroupCollectionPreparer()
+// listByWorkspaceNextResults retrieves the next set of results, if any.
+func (client MachineGroupsClient) listByWorkspaceNextResults(lastResults MachineGroupCollection) (result MachineGroupCollection, err error) {
+	req, err := lastResults.machineGroupCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "listByWorkspaceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByWorkspaceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "listByWorkspaceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByWorkspaceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "ListByWorkspace", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "listByWorkspaceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByWorkspaceComplete gets all elements from the list without paging.
-func (client MachineGroupsClient) ListByWorkspaceComplete(resourceGroupName string, workspaceName string, cancel <-chan struct{}) (<-chan MachineGroup, <-chan error) {
-	resultChan := make(chan MachineGroup)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByWorkspace(resourceGroupName, workspaceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByWorkspaceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByWorkspaceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client MachineGroupsClient) ListByWorkspaceComplete(ctx context.Context, resourceGroupName string, workspaceName string) (result MachineGroupCollectionIterator, err error) {
+	result.page, err = client.ListByWorkspace(ctx, resourceGroupName, workspaceName)
+	return
 }
 
 // Update updates a machine group.
@@ -449,7 +405,7 @@ func (client MachineGroupsClient) ListByWorkspaceComplete(resourceGroupName stri
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineGroupName is machine Group resource name. machineGroup is machine Group
 // resource to update.
-func (client MachineGroupsClient) Update(resourceGroupName string, workspaceName string, machineGroupName string, machineGroup MachineGroup) (result MachineGroup, err error) {
+func (client MachineGroupsClient) Update(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string, machineGroup MachineGroup) (result MachineGroup, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -464,7 +420,7 @@ func (client MachineGroupsClient) Update(resourceGroupName string, workspaceName
 				{Target: "machineGroupName", Name: validation.MinLength, Rule: 36, Chain: nil}}},
 		{TargetValue: machineGroup,
 			Constraints: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties", Name: validation.Null, Rule: false,
-				Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.Null, Rule: false,
+				Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.Null, Rule: true,
 					Chain: []validation.Constraint{{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.MaxLength, Rule: 256, Chain: nil},
 						{Target: "machineGroup.MachineGroupProperties.DisplayName", Name: validation.MinLength, Rule: 1, Chain: nil},
 					}},
@@ -472,7 +428,7 @@ func (client MachineGroupsClient) Update(resourceGroupName string, workspaceName
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MachineGroupsClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, workspaceName, machineGroupName, machineGroup)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, workspaceName, machineGroupName, machineGroup)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachineGroupsClient", "Update", nil, "Failure preparing request")
 		return
@@ -494,7 +450,7 @@ func (client MachineGroupsClient) Update(resourceGroupName string, workspaceName
 }
 
 // UpdatePreparer prepares the Update request.
-func (client MachineGroupsClient) UpdatePreparer(resourceGroupName string, workspaceName string, machineGroupName string, machineGroup MachineGroup) (*http.Request, error) {
+func (client MachineGroupsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineGroupName string, machineGroup MachineGroup) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineGroupName":  autorest.Encode("path", machineGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -514,14 +470,13 @@ func (client MachineGroupsClient) UpdatePreparer(resourceGroupName string, works
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/machineGroups/{machineGroupName}", pathParameters),
 		autorest.WithJSON(machineGroup),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client MachineGroupsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

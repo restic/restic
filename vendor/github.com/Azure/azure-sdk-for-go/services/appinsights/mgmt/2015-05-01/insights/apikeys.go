@@ -18,6 +18,7 @@ package insights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // APIKeysClient is the composite Swagger for Application Insights Management Client
 type APIKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAPIKeysClient creates an instance of the APIKeysClient client.
@@ -43,8 +44,8 @@ func NewAPIKeysClientWithBaseURI(baseURI string, subscriptionID string) APIKeysC
 // resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
 // resource. APIKeyProperties is properties that need to be specified to create an API key of a Application Insights
 // component.
-func (client APIKeysClient) Create(resourceGroupName string, resourceName string, APIKeyProperties APIKeyRequest) (result ApplicationInsightsComponentAPIKey, err error) {
-	req, err := client.CreatePreparer(resourceGroupName, resourceName, APIKeyProperties)
+func (client APIKeysClient) Create(ctx context.Context, resourceGroupName string, resourceName string, APIKeyProperties APIKeyRequest) (result ApplicationInsightsComponentAPIKey, err error) {
+	req, err := client.CreatePreparer(ctx, resourceGroupName, resourceName, APIKeyProperties)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.APIKeysClient", "Create", nil, "Failure preparing request")
 		return
@@ -66,7 +67,7 @@ func (client APIKeysClient) Create(resourceGroupName string, resourceName string
 }
 
 // CreatePreparer prepares the Create request.
-func (client APIKeysClient) CreatePreparer(resourceGroupName string, resourceName string, APIKeyProperties APIKeyRequest) (*http.Request, error) {
+func (client APIKeysClient) CreatePreparer(ctx context.Context, resourceGroupName string, resourceName string, APIKeyProperties APIKeyRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -85,14 +86,13 @@ func (client APIKeysClient) CreatePreparer(resourceGroupName string, resourceNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/ApiKeys", pathParameters),
 		autorest.WithJSON(APIKeyProperties),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client APIKeysClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client APIKeysClient) CreateResponder(resp *http.Response) (result Applica
 //
 // resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
 // resource. keyID is the API Key ID. This is unique within a Application Insights component.
-func (client APIKeysClient) Delete(resourceGroupName string, resourceName string, keyID string) (result ApplicationInsightsComponentAPIKey, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, resourceName, keyID)
+func (client APIKeysClient) Delete(ctx context.Context, resourceGroupName string, resourceName string, keyID string) (result ApplicationInsightsComponentAPIKey, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, resourceName, keyID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.APIKeysClient", "Delete", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client APIKeysClient) Delete(resourceGroupName string, resourceName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client APIKeysClient) DeletePreparer(resourceGroupName string, resourceName string, keyID string) (*http.Request, error) {
+func (client APIKeysClient) DeletePreparer(ctx context.Context, resourceGroupName string, resourceName string, keyID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyId":             autorest.Encode("path", keyID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -154,14 +154,13 @@ func (client APIKeysClient) DeletePreparer(resourceGroupName string, resourceNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/APIKeys/{keyId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client APIKeysClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -182,8 +181,8 @@ func (client APIKeysClient) DeleteResponder(resp *http.Response) (result Applica
 //
 // resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
 // resource. keyID is the API Key ID. This is unique within a Application Insights component.
-func (client APIKeysClient) Get(resourceGroupName string, resourceName string, keyID string) (result ApplicationInsightsComponentAPIKey, err error) {
-	req, err := client.GetPreparer(resourceGroupName, resourceName, keyID)
+func (client APIKeysClient) Get(ctx context.Context, resourceGroupName string, resourceName string, keyID string) (result ApplicationInsightsComponentAPIKey, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName, keyID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.APIKeysClient", "Get", nil, "Failure preparing request")
 		return
@@ -205,7 +204,7 @@ func (client APIKeysClient) Get(resourceGroupName string, resourceName string, k
 }
 
 // GetPreparer prepares the Get request.
-func (client APIKeysClient) GetPreparer(resourceGroupName string, resourceName string, keyID string) (*http.Request, error) {
+func (client APIKeysClient) GetPreparer(ctx context.Context, resourceGroupName string, resourceName string, keyID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"keyId":             autorest.Encode("path", keyID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -223,14 +222,13 @@ func (client APIKeysClient) GetPreparer(resourceGroupName string, resourceName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/APIKeys/{keyId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client APIKeysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -251,8 +249,8 @@ func (client APIKeysClient) GetResponder(resp *http.Response) (result Applicatio
 //
 // resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
 // resource.
-func (client APIKeysClient) List(resourceGroupName string, resourceName string) (result ApplicationInsightsComponentAPIKeyListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, resourceName)
+func (client APIKeysClient) List(ctx context.Context, resourceGroupName string, resourceName string) (result ApplicationInsightsComponentAPIKeyListResult, err error) {
+	req, err := client.ListPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.APIKeysClient", "List", nil, "Failure preparing request")
 		return
@@ -274,7 +272,7 @@ func (client APIKeysClient) List(resourceGroupName string, resourceName string) 
 }
 
 // ListPreparer prepares the List request.
-func (client APIKeysClient) ListPreparer(resourceGroupName string, resourceName string) (*http.Request, error) {
+func (client APIKeysClient) ListPreparer(ctx context.Context, resourceGroupName string, resourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -291,14 +289,13 @@ func (client APIKeysClient) ListPreparer(resourceGroupName string, resourceName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/ApiKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client APIKeysClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

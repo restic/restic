@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualMachineExtensionImagesClient is the compute Client
 type VirtualMachineExtensionImagesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineExtensionImagesClient creates an instance of the VirtualMachineExtensionImagesClient client.
@@ -42,8 +43,8 @@ func NewVirtualMachineExtensionImagesClientWithBaseURI(baseURI string, subscript
 // Get gets a virtual machine extension image.
 //
 // location is the name of a supported Azure region.
-func (client VirtualMachineExtensionImagesClient) Get(location string, publisherName string, typeParameter string, version string) (result VirtualMachineExtensionImage, err error) {
-	req, err := client.GetPreparer(location, publisherName, typeParameter, version)
+func (client VirtualMachineExtensionImagesClient) Get(ctx context.Context, location string, publisherName string, typeParameter string, version string) (result VirtualMachineExtensionImage, err error) {
+	req, err := client.GetPreparer(ctx, location, publisherName, typeParameter, version)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionImagesClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client VirtualMachineExtensionImagesClient) Get(location string, publisher
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualMachineExtensionImagesClient) GetPreparer(location string, publisherName string, typeParameter string, version string) (*http.Request, error) {
+func (client VirtualMachineExtensionImagesClient) GetPreparer(ctx context.Context, location string, publisherName string, typeParameter string, version string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"publisherName":  autorest.Encode("path", publisherName),
@@ -84,14 +85,13 @@ func (client VirtualMachineExtensionImagesClient) GetPreparer(location string, p
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/publishers/{publisherName}/artifacttypes/vmextension/types/{type}/versions/{version}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineExtensionImagesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,8 @@ func (client VirtualMachineExtensionImagesClient) GetResponder(resp *http.Respon
 // ListTypes gets a list of virtual machine extension image types.
 //
 // location is the name of a supported Azure region.
-func (client VirtualMachineExtensionImagesClient) ListTypes(location string, publisherName string) (result ListVirtualMachineExtensionImage, err error) {
-	req, err := client.ListTypesPreparer(location, publisherName)
+func (client VirtualMachineExtensionImagesClient) ListTypes(ctx context.Context, location string, publisherName string) (result ListVirtualMachineExtensionImage, err error) {
+	req, err := client.ListTypesPreparer(ctx, location, publisherName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionImagesClient", "ListTypes", nil, "Failure preparing request")
 		return
@@ -134,7 +134,7 @@ func (client VirtualMachineExtensionImagesClient) ListTypes(location string, pub
 }
 
 // ListTypesPreparer prepares the ListTypes request.
-func (client VirtualMachineExtensionImagesClient) ListTypesPreparer(location string, publisherName string) (*http.Request, error) {
+func (client VirtualMachineExtensionImagesClient) ListTypesPreparer(ctx context.Context, location string, publisherName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"publisherName":  autorest.Encode("path", publisherName),
@@ -151,14 +151,13 @@ func (client VirtualMachineExtensionImagesClient) ListTypesPreparer(location str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/publishers/{publisherName}/artifacttypes/vmextension/types", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListTypesSender sends the ListTypes request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineExtensionImagesClient) ListTypesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -178,8 +177,8 @@ func (client VirtualMachineExtensionImagesClient) ListTypesResponder(resp *http.
 // ListVersions gets a list of virtual machine extension image versions.
 //
 // location is the name of a supported Azure region. filter is the filter to apply on the operation.
-func (client VirtualMachineExtensionImagesClient) ListVersions(location string, publisherName string, typeParameter string, filter string, top *int32, orderby string) (result ListVirtualMachineExtensionImage, err error) {
-	req, err := client.ListVersionsPreparer(location, publisherName, typeParameter, filter, top, orderby)
+func (client VirtualMachineExtensionImagesClient) ListVersions(ctx context.Context, location string, publisherName string, typeParameter string, filter string, top *int32, orderby string) (result ListVirtualMachineExtensionImage, err error) {
+	req, err := client.ListVersionsPreparer(ctx, location, publisherName, typeParameter, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionImagesClient", "ListVersions", nil, "Failure preparing request")
 		return
@@ -201,7 +200,7 @@ func (client VirtualMachineExtensionImagesClient) ListVersions(location string, 
 }
 
 // ListVersionsPreparer prepares the ListVersions request.
-func (client VirtualMachineExtensionImagesClient) ListVersionsPreparer(location string, publisherName string, typeParameter string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client VirtualMachineExtensionImagesClient) ListVersionsPreparer(ctx context.Context, location string, publisherName string, typeParameter string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"publisherName":  autorest.Encode("path", publisherName),
@@ -228,14 +227,13 @@ func (client VirtualMachineExtensionImagesClient) ListVersionsPreparer(location 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/publishers/{publisherName}/artifacttypes/vmextension/types/{type}/versions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListVersionsSender sends the ListVersions request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineExtensionImagesClient) ListVersionsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

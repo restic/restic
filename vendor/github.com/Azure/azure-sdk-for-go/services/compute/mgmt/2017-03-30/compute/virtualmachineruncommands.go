@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // VirtualMachineRunCommandsClient is the compute Client
 type VirtualMachineRunCommandsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineRunCommandsClient creates an instance of the VirtualMachineRunCommandsClient client.
@@ -42,14 +43,14 @@ func NewVirtualMachineRunCommandsClientWithBaseURI(baseURI string, subscriptionI
 // Get gets specific run command for a subscription in a location.
 //
 // location is the location upon which run commands is queried. commandID is the command id.
-func (client VirtualMachineRunCommandsClient) Get(location string, commandID string) (result RunCommandDocument, err error) {
+func (client VirtualMachineRunCommandsClient) Get(ctx context.Context, location string, commandID string) (result RunCommandDocument, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: location,
 			Constraints: []validation.Constraint{{Target: "location", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachineRunCommandsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(location, commandID)
+	req, err := client.GetPreparer(ctx, location, commandID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "Get", nil, "Failure preparing request")
 		return
@@ -71,7 +72,7 @@ func (client VirtualMachineRunCommandsClient) Get(location string, commandID str
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualMachineRunCommandsClient) GetPreparer(location string, commandID string) (*http.Request, error) {
+func (client VirtualMachineRunCommandsClient) GetPreparer(ctx context.Context, location string, commandID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"commandId":      autorest.Encode("path", commandID),
 		"location":       autorest.Encode("path", location),
@@ -88,14 +89,13 @@ func (client VirtualMachineRunCommandsClient) GetPreparer(location string, comma
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/runCommands/{commandId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineRunCommandsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -115,14 +115,15 @@ func (client VirtualMachineRunCommandsClient) GetResponder(resp *http.Response) 
 // List lists all available run commands for a subscription in a location.
 //
 // location is the location upon which run commands is queried.
-func (client VirtualMachineRunCommandsClient) List(location string) (result RunCommandListResult, err error) {
+func (client VirtualMachineRunCommandsClient) List(ctx context.Context, location string) (result RunCommandListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: location,
 			Constraints: []validation.Constraint{{Target: "location", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachineRunCommandsClient", "List")
 	}
 
-	req, err := client.ListPreparer(location)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, location)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", nil, "Failure preparing request")
 		return
@@ -130,12 +131,12 @@ func (client VirtualMachineRunCommandsClient) List(location string) (result RunC
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rclr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", resp, "Failure responding to request")
 	}
@@ -144,7 +145,7 @@ func (client VirtualMachineRunCommandsClient) List(location string) (result RunC
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualMachineRunCommandsClient) ListPreparer(location string) (*http.Request, error) {
+func (client VirtualMachineRunCommandsClient) ListPreparer(ctx context.Context, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -160,14 +161,13 @@ func (client VirtualMachineRunCommandsClient) ListPreparer(location string) (*ht
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/runCommands", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineRunCommandsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -184,71 +184,29 @@ func (client VirtualMachineRunCommandsClient) ListResponder(resp *http.Response)
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualMachineRunCommandsClient) ListNextResults(lastResults RunCommandListResult) (result RunCommandListResult, err error) {
-	req, err := lastResults.RunCommandListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualMachineRunCommandsClient) listNextResults(lastResults RunCommandListResult) (result RunCommandListResult, err error) {
+	req, err := lastResults.runCommandListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineRunCommandsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualMachineRunCommandsClient) ListComplete(location string, cancel <-chan struct{}) (<-chan RunCommandDocumentBase, <-chan error) {
-	resultChan := make(chan RunCommandDocumentBase)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(location)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualMachineRunCommandsClient) ListComplete(ctx context.Context, location string) (result RunCommandListResultIterator, err error) {
+	result.page, err = client.List(ctx, location)
+	return
 }

@@ -1141,8 +1141,9 @@ type TransferCounters struct {
 	// scheduled to be deleted.
 	BytesFoundOnlyFromSink int64 `json:"bytesFoundOnlyFromSink,omitempty,string"`
 
-	// BytesFromSourceFailed: Bytes in the data source that failed during
-	// the transfer.
+	// BytesFromSourceFailed: Bytes in the data source that failed to be
+	// transferred or that failed to
+	// be deleted after being transferred.
 	BytesFromSourceFailed int64 `json:"bytesFromSourceFailed,omitempty,string"`
 
 	// BytesFromSourceSkippedBySync: Bytes in the data source that are not
@@ -1175,8 +1176,9 @@ type TransferCounters struct {
 	// are scheduled to be deleted.
 	ObjectsFoundOnlyFromSink int64 `json:"objectsFoundOnlyFromSink,omitempty,string"`
 
-	// ObjectsFromSourceFailed: Objects in the data source that failed
-	// during the transfer.
+	// ObjectsFromSourceFailed: Objects in the data source that failed to be
+	// transferred or that failed
+	// to be deleted after being transferred.
 	ObjectsFromSourceFailed int64 `json:"objectsFromSourceFailed,omitempty,string"`
 
 	// ObjectsFromSourceSkippedBySync: Objects in the data source that are

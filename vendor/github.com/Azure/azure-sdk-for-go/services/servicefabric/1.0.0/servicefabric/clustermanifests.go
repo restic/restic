@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClusterManifestsClient is the client for the ClusterManifests methods of the Servicefabric service.
 type ClusterManifestsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterManifestsClient creates an instance of the ClusterManifestsClient client.
@@ -39,8 +40,8 @@ func NewClusterManifestsClientWithBaseURI(baseURI string, timeout *int32) Cluste
 }
 
 // Get get cluster manifests
-func (client ClusterManifestsClient) Get() (result String, err error) {
-	req, err := client.GetPreparer()
+func (client ClusterManifestsClient) Get(ctx context.Context) (result String, err error) {
+	req, err := client.GetPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterManifestsClient", "Get", nil, "Failure preparing request")
 		return
@@ -62,7 +63,7 @@ func (client ClusterManifestsClient) Get() (result String, err error) {
 }
 
 // GetPreparer prepares the Get request.
-func (client ClusterManifestsClient) GetPreparer() (*http.Request, error) {
+func (client ClusterManifestsClient) GetPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -76,14 +77,13 @@ func (client ClusterManifestsClient) GetPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/GetClusterManifest"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterManifestsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

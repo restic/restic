@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // PartitionsClient is the client for the Partitions methods of the Servicefabric service.
 type PartitionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPartitionsClient creates an instance of the PartitionsClient client.
@@ -41,8 +42,8 @@ func NewPartitionsClientWithBaseURI(baseURI string, timeout *int32) PartitionsCl
 // Get get partitions
 //
 // serviceName is the name of the service partitionID is the id of the partition
-func (client PartitionsClient) Get(serviceName string, partitionID string) (result Partition, err error) {
-	req, err := client.GetPreparer(serviceName, partitionID)
+func (client PartitionsClient) Get(ctx context.Context, serviceName string, partitionID string) (result Partition, err error) {
+	req, err := client.GetPreparer(ctx, serviceName, partitionID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.PartitionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client PartitionsClient) Get(serviceName string, partitionID string) (resu
 }
 
 // GetPreparer prepares the Get request.
-func (client PartitionsClient) GetPreparer(serviceName string, partitionID string) (*http.Request, error) {
+func (client PartitionsClient) GetPreparer(ctx context.Context, serviceName string, partitionID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"partitionId": autorest.Encode("path", partitionID),
 		"serviceName": serviceName,
@@ -83,14 +84,13 @@ func (client PartitionsClient) GetPreparer(serviceName string, partitionID strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/GetPartitions/{partitionId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PartitionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -110,8 +110,8 @@ func (client PartitionsClient) GetResponder(resp *http.Response) (result Partiti
 // List list partitions
 //
 // serviceName is the name of the service
-func (client PartitionsClient) List(serviceName string) (result PartitionList, err error) {
-	req, err := client.ListPreparer(serviceName)
+func (client PartitionsClient) List(ctx context.Context, serviceName string) (result PartitionList, err error) {
+	req, err := client.ListPreparer(ctx, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.PartitionsClient", "List", nil, "Failure preparing request")
 		return
@@ -133,7 +133,7 @@ func (client PartitionsClient) List(serviceName string) (result PartitionList, e
 }
 
 // ListPreparer prepares the List request.
-func (client PartitionsClient) ListPreparer(serviceName string) (*http.Request, error) {
+func (client PartitionsClient) ListPreparer(ctx context.Context, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"serviceName": serviceName,
 	}
@@ -151,14 +151,13 @@ func (client PartitionsClient) ListPreparer(serviceName string) (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/GetPartitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PartitionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -178,8 +177,8 @@ func (client PartitionsClient) ListResponder(resp *http.Response) (result Partit
 // Repair repair partitions
 //
 // partitionID is the id of the partition
-func (client PartitionsClient) Repair(partitionID string) (result String, err error) {
-	req, err := client.RepairPreparer(partitionID)
+func (client PartitionsClient) Repair(ctx context.Context, partitionID string) (result String, err error) {
+	req, err := client.RepairPreparer(ctx, partitionID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.PartitionsClient", "Repair", nil, "Failure preparing request")
 		return
@@ -201,7 +200,7 @@ func (client PartitionsClient) Repair(partitionID string) (result String, err er
 }
 
 // RepairPreparer prepares the Repair request.
-func (client PartitionsClient) RepairPreparer(partitionID string) (*http.Request, error) {
+func (client PartitionsClient) RepairPreparer(ctx context.Context, partitionID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"partitionId": partitionID,
 	}
@@ -219,14 +218,13 @@ func (client PartitionsClient) RepairPreparer(partitionID string) (*http.Request
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Partitions/{partitionId}/$/Recover", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RepairSender sends the Repair request. The method will close the
 // http.Response Body if it receives an error.
 func (client PartitionsClient) RepairSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

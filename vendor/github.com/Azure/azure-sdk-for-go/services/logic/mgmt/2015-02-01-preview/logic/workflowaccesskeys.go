@@ -18,6 +18,7 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // WorkflowAccessKeysClient is the REST API for Azure Logic Apps.
 type WorkflowAccessKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewWorkflowAccessKeysClient creates an instance of the WorkflowAccessKeysClient client.
@@ -42,8 +43,8 @@ func NewWorkflowAccessKeysClientWithBaseURI(baseURI string, subscriptionID strin
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. accessKeyName is the workflow
 // access key name. workflowAccesskey is the workflow access key.
-func (client WorkflowAccessKeysClient) CreateOrUpdate(resourceGroupName string, workflowName string, accessKeyName string, workflowAccesskey WorkflowAccessKey) (result WorkflowAccessKey, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, workflowName, accessKeyName, workflowAccesskey)
+func (client WorkflowAccessKeysClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string, workflowAccesskey WorkflowAccessKey) (result WorkflowAccessKey, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, workflowName, accessKeyName, workflowAccesskey)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client WorkflowAccessKeysClient) CreateOrUpdate(resourceGroupName string, 
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client WorkflowAccessKeysClient) CreateOrUpdatePreparer(resourceGroupName string, workflowName string, accessKeyName string, workflowAccesskey WorkflowAccessKey) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string, workflowAccesskey WorkflowAccessKey) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessKeyName":     autorest.Encode("path", accessKeyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -85,14 +86,13 @@ func (client WorkflowAccessKeysClient) CreateOrUpdatePreparer(resourceGroupName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}", pathParameters),
 		autorest.WithJSON(workflowAccesskey),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client WorkflowAccessKeysClient) CreateOrUpdateResponder(resp *http.Respon
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. accessKeyName is the workflow
 // access key name.
-func (client WorkflowAccessKeysClient) Delete(resourceGroupName string, workflowName string, accessKeyName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, workflowName, accessKeyName)
+func (client WorkflowAccessKeysClient) Delete(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, workflowName, accessKeyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "Delete", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client WorkflowAccessKeysClient) Delete(resourceGroupName string, workflow
 }
 
 // DeletePreparer prepares the Delete request.
-func (client WorkflowAccessKeysClient) DeletePreparer(resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) DeletePreparer(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessKeyName":     autorest.Encode("path", accessKeyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -154,14 +154,13 @@ func (client WorkflowAccessKeysClient) DeletePreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,8 +180,8 @@ func (client WorkflowAccessKeysClient) DeleteResponder(resp *http.Response) (res
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. accessKeyName is the workflow
 // access key name.
-func (client WorkflowAccessKeysClient) Get(resourceGroupName string, workflowName string, accessKeyName string) (result WorkflowAccessKey, err error) {
-	req, err := client.GetPreparer(resourceGroupName, workflowName, accessKeyName)
+func (client WorkflowAccessKeysClient) Get(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (result WorkflowAccessKey, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, workflowName, accessKeyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "Get", nil, "Failure preparing request")
 		return
@@ -204,7 +203,7 @@ func (client WorkflowAccessKeysClient) Get(resourceGroupName string, workflowNam
 }
 
 // GetPreparer prepares the Get request.
-func (client WorkflowAccessKeysClient) GetPreparer(resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) GetPreparer(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessKeyName":     autorest.Encode("path", accessKeyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -222,14 +221,13 @@ func (client WorkflowAccessKeysClient) GetPreparer(resourceGroupName string, wor
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -250,8 +248,9 @@ func (client WorkflowAccessKeysClient) GetResponder(resp *http.Response) (result
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to be
 // included in the result.
-func (client WorkflowAccessKeysClient) List(resourceGroupName string, workflowName string, top *int32) (result WorkflowAccessKeyListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, workflowName, top)
+func (client WorkflowAccessKeysClient) List(ctx context.Context, resourceGroupName string, workflowName string, top *int32) (result WorkflowAccessKeyListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, workflowName, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", nil, "Failure preparing request")
 		return
@@ -259,12 +258,12 @@ func (client WorkflowAccessKeysClient) List(resourceGroupName string, workflowNa
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.waklr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.waklr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", resp, "Failure responding to request")
 	}
@@ -273,7 +272,7 @@ func (client WorkflowAccessKeysClient) List(resourceGroupName string, workflowNa
 }
 
 // ListPreparer prepares the List request.
-func (client WorkflowAccessKeysClient) ListPreparer(resourceGroupName string, workflowName string, top *int32) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) ListPreparer(ctx context.Context, resourceGroupName string, workflowName string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -293,14 +292,13 @@ func (client WorkflowAccessKeysClient) ListPreparer(resourceGroupName string, wo
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -317,81 +315,39 @@ func (client WorkflowAccessKeysClient) ListResponder(resp *http.Response) (resul
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client WorkflowAccessKeysClient) ListNextResults(lastResults WorkflowAccessKeyListResult) (result WorkflowAccessKeyListResult, err error) {
-	req, err := lastResults.WorkflowAccessKeyListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client WorkflowAccessKeysClient) listNextResults(lastResults WorkflowAccessKeyListResult) (result WorkflowAccessKeyListResult, err error) {
+	req, err := lastResults.workflowAccessKeyListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client WorkflowAccessKeysClient) ListComplete(resourceGroupName string, workflowName string, top *int32, cancel <-chan struct{}) (<-chan WorkflowAccessKey, <-chan error) {
-	resultChan := make(chan WorkflowAccessKey)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, workflowName, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WorkflowAccessKeysClient) ListComplete(ctx context.Context, resourceGroupName string, workflowName string, top *int32) (result WorkflowAccessKeyListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, workflowName, top)
+	return
 }
 
 // ListSecretKeys lists secret keys.
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. accessKeyName is the workflow
 // access key name.
-func (client WorkflowAccessKeysClient) ListSecretKeys(resourceGroupName string, workflowName string, accessKeyName string) (result WorkflowSecretKeys, err error) {
-	req, err := client.ListSecretKeysPreparer(resourceGroupName, workflowName, accessKeyName)
+func (client WorkflowAccessKeysClient) ListSecretKeys(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (result WorkflowSecretKeys, err error) {
+	req, err := client.ListSecretKeysPreparer(ctx, resourceGroupName, workflowName, accessKeyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "ListSecretKeys", nil, "Failure preparing request")
 		return
@@ -413,7 +369,7 @@ func (client WorkflowAccessKeysClient) ListSecretKeys(resourceGroupName string, 
 }
 
 // ListSecretKeysPreparer prepares the ListSecretKeys request.
-func (client WorkflowAccessKeysClient) ListSecretKeysPreparer(resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) ListSecretKeysPreparer(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessKeyName":     autorest.Encode("path", accessKeyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -431,14 +387,13 @@ func (client WorkflowAccessKeysClient) ListSecretKeysPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}/list", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSecretKeysSender sends the ListSecretKeys request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) ListSecretKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -459,8 +414,8 @@ func (client WorkflowAccessKeysClient) ListSecretKeysResponder(resp *http.Respon
 //
 // resourceGroupName is the resource group name. workflowName is the workflow name. accessKeyName is the workflow
 // access key name. parameters is the parameters.
-func (client WorkflowAccessKeysClient) RegenerateSecretKey(resourceGroupName string, workflowName string, accessKeyName string, parameters RegenerateSecretKeyParameters) (result WorkflowSecretKeys, err error) {
-	req, err := client.RegenerateSecretKeyPreparer(resourceGroupName, workflowName, accessKeyName, parameters)
+func (client WorkflowAccessKeysClient) RegenerateSecretKey(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string, parameters RegenerateSecretKeyParameters) (result WorkflowSecretKeys, err error) {
+	req, err := client.RegenerateSecretKeyPreparer(ctx, resourceGroupName, workflowName, accessKeyName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.WorkflowAccessKeysClient", "RegenerateSecretKey", nil, "Failure preparing request")
 		return
@@ -482,7 +437,7 @@ func (client WorkflowAccessKeysClient) RegenerateSecretKey(resourceGroupName str
 }
 
 // RegenerateSecretKeyPreparer prepares the RegenerateSecretKey request.
-func (client WorkflowAccessKeysClient) RegenerateSecretKeyPreparer(resourceGroupName string, workflowName string, accessKeyName string, parameters RegenerateSecretKeyParameters) (*http.Request, error) {
+func (client WorkflowAccessKeysClient) RegenerateSecretKeyPreparer(ctx context.Context, resourceGroupName string, workflowName string, accessKeyName string, parameters RegenerateSecretKeyParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accessKeyName":     autorest.Encode("path", accessKeyName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -502,14 +457,13 @@ func (client WorkflowAccessKeysClient) RegenerateSecretKeyPreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}/regenerate", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateSecretKeySender sends the RegenerateSecretKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client WorkflowAccessKeysClient) RegenerateSecretKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

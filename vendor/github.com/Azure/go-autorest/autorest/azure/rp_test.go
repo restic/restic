@@ -79,3 +79,48 @@ func TestDoRetryWithRegistration(t *testing.T) {
 		t.Fatalf("azure: Sender#DoRetryWithRegistration -- Got: StatusCode %v; Want: StatusCode 200 OK", r.StatusCode)
 	}
 }
+
+func TestDoRetrySkipRegistration(t *testing.T) {
+	client := mocks.NewSender()
+	// first response, should retry because it is a transient error
+	client.AppendResponse(mocks.NewResponseWithStatus("Internal server error", http.StatusInternalServerError))
+	// response indicates the resource provider has not been registered
+	client.AppendResponse(mocks.NewResponseWithBodyAndStatus(mocks.NewBody(`{
+	"error":{
+		"code":"MissingSubscriptionRegistration",
+		"message":"The subscription registration is in 'Unregistered' state. The subscription must be registered to use namespace 'Microsoft.EventGrid'. See https://aka.ms/rps-not-found for how to register subscriptions.",
+		"details":[
+			{
+				"code":"MissingSubscriptionRegistration",
+				"target":"Microsoft.EventGrid",
+				"message":"The subscription registration is in 'Unregistered' state. The subscription must be registered to use namespace 'Microsoft.EventGrid'. See https://aka.ms/rps-not-found for how to register subscriptions."
+			}
+		]
+	}
+}`), http.StatusConflict, "MissingSubscriptionRegistration"))
+
+	req := mocks.NewRequestForURL("https://lol/subscriptions/rofl")
+	req.Body = mocks.NewBody("lolol")
+	r, err := autorest.SendWithSender(client, req,
+		DoRetryWithRegistration(autorest.Client{
+			PollingDelay:    time.Second,
+			PollingDuration: time.Second * 10,
+			RetryAttempts:   5,
+			RetryDuration:   time.Second,
+			Sender:          client,
+			SkipResourceProviderRegistration: true,
+		}),
+	)
+	if err != nil {
+		t.Fatalf("got error: %v", err)
+	}
+
+	autorest.Respond(r,
+		autorest.ByDiscardingBody(),
+		autorest.ByClosing(),
+	)
+
+	if r.StatusCode != http.StatusConflict {
+		t.Fatalf("azure: Sender#DoRetryWithRegistration -- Got: StatusCode %v; Want: StatusCode 409 Conflict", r.StatusCode)
+	}
+}

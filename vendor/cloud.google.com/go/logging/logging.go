@@ -94,12 +94,12 @@ var ErrOversizedEntry = bundler.ErrOversizedItem
 
 // Client is a Logging client. A Client is associated with a single Cloud project.
 type Client struct {
-	client    *vkit.Client // client for the logging service
-	projectID string
-	errc      chan error     // should be buffered to minimize dropped errors
-	donec     chan struct{}  // closed on Client.Close to close Logger bundlers
-	loggers   sync.WaitGroup // so we can wait for loggers to close
-	closed    bool
+	client  *vkit.Client   // client for the logging service
+	parent  string         // e.g. "projects/proj-id"
+	errc    chan error     // should be buffered to minimize dropped errors
+	donec   chan struct{}  // closed on Client.Close to close Logger bundlers
+	loggers sync.WaitGroup // so we can wait for loggers to close
+	closed  bool
 
 	mu      sync.Mutex
 	nErrs   int   // number of errors we saw
@@ -117,15 +117,20 @@ type Client struct {
 	OnError func(err error)
 }
 
-// NewClient returns a new logging client associated with the provided project ID.
+// NewClient returns a new logging client associated with the provided parent.
+// A parent can take any of the following forms:
+//    projects/PROJECT_ID
+//    folders/FOLDER_ID
+//    billingAccounts/ACCOUNT_ID
+//    organizations/ORG_ID
+// for backwards compatibility, a string with no '/' is also allowed and is interpreted
+// as a project ID.
 //
 // By default NewClient uses WriteScope. To use a different scope, call
 // NewClient using a WithScopes option (see https://godoc.org/google.golang.org/api/option#WithScopes).
-func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (*Client, error) {
-	// Check for '/' in project ID to reserve the ability to support various owning resources,
-	// in the form "{Collection}/{Name}", for instance "organizations/my-org".
-	if strings.ContainsRune(projectID, '/') {
-		return nil, errors.New("logging: project ID contains '/'")
+func NewClient(ctx context.Context, parent string, opts ...option.ClientOption) (*Client, error) {
+	if !strings.ContainsRune(parent, '/') {
+		parent = "projects/" + parent
 	}
 	opts = append([]option.ClientOption{
 		option.WithEndpoint(internal.ProdAddr),
@@ -137,11 +142,11 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 	}
 	c.SetGoogleClientInfo("gccl", version.Repo)
 	client := &Client{
-		client:    c,
-		projectID: projectID,
-		errc:      make(chan error, defaultErrorCapacity), // create a small buffer for errors
-		donec:     make(chan struct{}),
-		OnError:   func(e error) { log.Printf("logging client: %v", e) },
+		client:  c,
+		parent:  parent,
+		errc:    make(chan error, defaultErrorCapacity), // create a small buffer for errors
+		donec:   make(chan struct{}),
+		OnError: func(e error) { log.Printf("logging client: %v", e) },
 	}
 	// Call the user's function synchronously, to make life easier for them.
 	go func() {
@@ -153,16 +158,11 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 			if fn := client.OnError; fn != nil {
 				fn(err)
 			} else {
-				log.Printf("logging (project ID %q): %v", projectID, err)
+				log.Printf("logging (parent %q): %v", parent, err)
 			}
 		}
 	}()
 	return client, nil
-}
-
-// parent returns the string used in many RPCs to denote the parent resource of the log.
-func (c *Client) parent() string {
-	return "projects/" + c.projectID
 }
 
 var unixZeroTimestamp *tspb.Timestamp
@@ -185,8 +185,8 @@ func (c *Client) Ping(ctx context.Context) error {
 		InsertId:  "ping",            // necessary for the service to dedup these entries.
 	}
 	_, err := c.client.WriteLogEntries(ctx, &logpb.WriteLogEntriesRequest{
-		LogName:  internal.LogPath(c.parent(), "ping"),
-		Resource: globalResource(c.projectID),
+		LogName:  internal.LogPath(c.parent, "ping"),
+		Resource: monitoredResource(c.parent),
 		Entries:  []*logpb.LogEntry{ent},
 	})
 	return err
@@ -279,6 +279,28 @@ func detectResource() *mrpb.MonitoredResource {
 	return detectedResource.pb
 }
 
+var resourceInfo = map[string]struct{ rtype, label string }{
+	"organizations":   {"organization", "organization_id"},
+	"folders":         {"folder", "folder_id"},
+	"projects":        {"project", "project_id"},
+	"billingAccounts": {"billing_account", "account_id"},
+}
+
+func monitoredResource(parent string) *mrpb.MonitoredResource {
+	parts := strings.SplitN(parent, "/", 2)
+	if len(parts) != 2 {
+		return globalResource(parent)
+	}
+	info, ok := resourceInfo[parts[0]]
+	if !ok {
+		return globalResource(parts[1])
+	}
+	return &mrpb.MonitoredResource{
+		Type:   info.rtype,
+		Labels: map[string]string{info.label: parts[1]},
+	}
+}
+
 func globalResource(projectID string) *mrpb.MonitoredResource {
 	return &mrpb.MonitoredResource{
 		Type: "global",
@@ -368,11 +390,11 @@ func (b bufferedByteLimit) set(l *Logger) { l.bundler.BufferedByteLimit = int(b)
 func (c *Client) Logger(logID string, opts ...LoggerOption) *Logger {
 	r := detectResource()
 	if r == nil {
-		r = globalResource(c.projectID)
+		r = monitoredResource(c.parent)
 	}
 	l := &Logger{
 		client:         c,
-		logName:        internal.LogPath(c.parent(), logID),
+		logName:        internal.LogPath(c.parent, logID),
 		commonResource: r,
 	}
 	// TODO(jba): determine the right context for the bundle handler.

@@ -18,6 +18,7 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // with Azure Customer Insights service to manage your resources. The API has entities that capture the relationship
 // between an end user and the Azure Customer Insights service.
 type ImagesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewImagesClient creates an instance of the ImagesClient client.
@@ -44,8 +45,8 @@ func NewImagesClientWithBaseURI(baseURI string, subscriptionID string) ImagesCli
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. parameters is parameters
 // supplied to the GetUploadUrlForData operation.
-func (client ImagesClient) GetUploadURLForData(resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (result ImageDefinition, err error) {
-	req, err := client.GetUploadURLForDataPreparer(resourceGroupName, hubName, parameters)
+func (client ImagesClient) GetUploadURLForData(ctx context.Context, resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (result ImageDefinition, err error) {
+	req, err := client.GetUploadURLForDataPreparer(ctx, resourceGroupName, hubName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ImagesClient", "GetUploadURLForData", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client ImagesClient) GetUploadURLForData(resourceGroupName string, hubName
 }
 
 // GetUploadURLForDataPreparer prepares the GetUploadURLForData request.
-func (client ImagesClient) GetUploadURLForDataPreparer(resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (*http.Request, error) {
+func (client ImagesClient) GetUploadURLForDataPreparer(ctx context.Context, resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -86,14 +87,13 @@ func (client ImagesClient) GetUploadURLForDataPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/images/getDataImageUploadUrl", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetUploadURLForDataSender sends the GetUploadURLForData request. The method will close the
 // http.Response Body if it receives an error.
 func (client ImagesClient) GetUploadURLForDataSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,8 +114,8 @@ func (client ImagesClient) GetUploadURLForDataResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. parameters is parameters
 // supplied to the GetUploadUrlForEntityType operation.
-func (client ImagesClient) GetUploadURLForEntityType(resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (result ImageDefinition, err error) {
-	req, err := client.GetUploadURLForEntityTypePreparer(resourceGroupName, hubName, parameters)
+func (client ImagesClient) GetUploadURLForEntityType(ctx context.Context, resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (result ImageDefinition, err error) {
+	req, err := client.GetUploadURLForEntityTypePreparer(ctx, resourceGroupName, hubName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ImagesClient", "GetUploadURLForEntityType", nil, "Failure preparing request")
 		return
@@ -137,7 +137,7 @@ func (client ImagesClient) GetUploadURLForEntityType(resourceGroupName string, h
 }
 
 // GetUploadURLForEntityTypePreparer prepares the GetUploadURLForEntityType request.
-func (client ImagesClient) GetUploadURLForEntityTypePreparer(resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (*http.Request, error) {
+func (client ImagesClient) GetUploadURLForEntityTypePreparer(ctx context.Context, resourceGroupName string, hubName string, parameters GetImageUploadURLInput) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -156,14 +156,13 @@ func (client ImagesClient) GetUploadURLForEntityTypePreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/images/getEntityTypeImageUploadUrl", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetUploadURLForEntityTypeSender sends the GetUploadURLForEntityType request. The method will close the
 // http.Response Body if it receives an error.
 func (client ImagesClient) GetUploadURLForEntityTypeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

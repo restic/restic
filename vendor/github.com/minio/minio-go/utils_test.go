@@ -82,8 +82,10 @@ func TestGetEndpointURL(t *testing.T) {
 	}{
 		{"s3.amazonaws.com", true, "https://s3.amazonaws.com", nil, true},
 		{"s3.cn-north-1.amazonaws.com.cn", true, "https://s3.cn-north-1.amazonaws.com.cn", nil, true},
+		{"s3.cn-northwest-1.amazonaws.com.cn", true, "https://s3.cn-northwest-1.amazonaws.com.cn", nil, true},
 		{"s3.amazonaws.com", false, "http://s3.amazonaws.com", nil, true},
 		{"s3.cn-north-1.amazonaws.com.cn", false, "http://s3.cn-north-1.amazonaws.com.cn", nil, true},
+		{"s3.cn-northwest-1.amazonaws.com.cn", false, "http://s3.cn-northwest-1.amazonaws.com.cn", nil, true},
 		{"192.168.1.1:9000", false, "http://192.168.1.1:9000", nil, true},
 		{"192.168.1.1:9000", true, "https://192.168.1.1:9000", nil, true},
 		{"s3.amazonaws.com:443", true, "https://s3.amazonaws.com:443", nil, true},
@@ -200,7 +202,13 @@ func TestDefaultBucketLocation(t *testing.T) {
 			regionOverride:   "",
 			expectedLocation: "cn-north-1",
 		},
-		// No region provided, no standard region strings provided as well. - Test 5.
+		// China region should be honored, region override not provided. - Test 5.
+		{
+			endpointURL:      url.URL{Host: "s3.cn-northwest-1.amazonaws.com.cn"},
+			regionOverride:   "",
+			expectedLocation: "cn-northwest-1",
+		},
+		// No region provided, no standard region strings provided as well. - Test 6.
 		{
 			endpointURL:      url.URL{Host: "s3.amazonaws.com"},
 			regionOverride:   "",

@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,52 +26,46 @@ import (
 
 // ApplicationClient is the azure Service Fabric Resource Provider API Client
 type ApplicationClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewApplicationClient creates an instance of the ApplicationClient client.
-func NewApplicationClient(subscriptionID string) ApplicationClient {
-	return NewApplicationClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewApplicationClient() ApplicationClient {
+	return NewApplicationClientWithBaseURI(DefaultBaseURI)
 }
 
 // NewApplicationClientWithBaseURI creates an instance of the ApplicationClient client.
-func NewApplicationClientWithBaseURI(baseURI string, subscriptionID string) ApplicationClient {
-	return ApplicationClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewApplicationClientWithBaseURI(baseURI string) ApplicationClient {
+	return ApplicationClient{NewWithBaseURI(baseURI)}
 }
 
 // Delete deletes an application resource with the specified name.
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource applicationName
-// is the name of the application resource.
-func (client ApplicationClient) Delete(resourceGroupName string, clusterName string, applicationName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, clusterName, applicationName)
+// subscriptionID is the customer subscription identifier resourceGroupName is the name of the resource group.
+// clusterName is the name of the cluster resource applicationName is the name of the application resource.
+func (client ApplicationClient) Delete(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string) (result ApplicationDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, subscriptionID, resourceGroupName, clusterName, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Delete", nil, "Failure preparing request")
 		return
 	}
 
-	resp, err := client.DeleteSender(req)
+	result, err = client.DeleteSender(req)
 	if err != nil {
-		result.Response = resp
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Delete", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Delete", result.Response(), "Failure sending request")
 		return
-	}
-
-	result, err = client.DeleteResponder(resp)
-	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Delete", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ApplicationClient) DeletePreparer(resourceGroupName string, clusterName string, applicationName string) (*http.Request, error) {
+func (client ApplicationClient) DeletePreparer(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":   autorest.Encode("path", applicationName),
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
-		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId":    autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -83,15 +78,22 @@ func (client ApplicationClient) DeletePreparer(resourceGroupName string, cluster
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applications/{applicationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ApplicationClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client))
+func (client ApplicationClient) DeleteSender(req *http.Request) (future ApplicationDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -108,10 +110,10 @@ func (client ApplicationClient) DeleteResponder(resp *http.Response) (result aut
 
 // Get returns an application resource with the specified name.
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource applicationName
-// is the name of the application resource.
-func (client ApplicationClient) Get(resourceGroupName string, clusterName string, applicationName string) (result ApplicationResource, err error) {
-	req, err := client.GetPreparer(resourceGroupName, clusterName, applicationName)
+// subscriptionID is the customer subscription identifier resourceGroupName is the name of the resource group.
+// clusterName is the name of the cluster resource applicationName is the name of the application resource.
+func (client ApplicationClient) Get(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string) (result ApplicationResource, err error) {
+	req, err := client.GetPreparer(ctx, subscriptionID, resourceGroupName, clusterName, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Get", nil, "Failure preparing request")
 		return
@@ -133,12 +135,12 @@ func (client ApplicationClient) Get(resourceGroupName string, clusterName string
 }
 
 // GetPreparer prepares the Get request.
-func (client ApplicationClient) GetPreparer(resourceGroupName string, clusterName string, applicationName string) (*http.Request, error) {
+func (client ApplicationClient) GetPreparer(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":   autorest.Encode("path", applicationName),
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
-		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId":    autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -151,14 +153,13 @@ func (client ApplicationClient) GetPreparer(resourceGroupName string, clusterNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applications/{applicationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -177,9 +178,10 @@ func (client ApplicationClient) GetResponder(resp *http.Response) (result Applic
 
 // List returns all application resources in the specified cluster.
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource
-func (client ApplicationClient) List(resourceGroupName string, clusterName string) (result ApplicationResourceList, err error) {
-	req, err := client.ListPreparer(resourceGroupName, clusterName)
+// subscriptionID is the customer subscription identifier resourceGroupName is the name of the resource group.
+// clusterName is the name of the cluster resource
+func (client ApplicationClient) List(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string) (result ApplicationResourceList, err error) {
+	req, err := client.ListPreparer(ctx, subscriptionID, resourceGroupName, clusterName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "List", nil, "Failure preparing request")
 		return
@@ -201,11 +203,11 @@ func (client ApplicationClient) List(resourceGroupName string, clusterName strin
 }
 
 // ListPreparer prepares the List request.
-func (client ApplicationClient) ListPreparer(resourceGroupName string, clusterName string) (*http.Request, error) {
+func (client ApplicationClient) ListPreparer(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
-		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId":    autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -218,14 +220,13 @@ func (client ApplicationClient) ListPreparer(resourceGroupName string, clusterNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applications", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -244,37 +245,32 @@ func (client ApplicationClient) ListResponder(resp *http.Response) (result Appli
 
 // Patch updates an application resource with the specified name.
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource applicationName
-// is the name of the application resource. parameters is the application resource for patch operations.
-func (client ApplicationClient) Patch(resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResourceUpdate) (result ApplicationResourceUpdate, err error) {
-	req, err := client.PatchPreparer(resourceGroupName, clusterName, applicationName, parameters)
+// subscriptionID is the customer subscription identifier resourceGroupName is the name of the resource group.
+// clusterName is the name of the cluster resource applicationName is the name of the application resource. parameters
+// is the application resource for patch operations.
+func (client ApplicationClient) Patch(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResourceUpdate) (result ApplicationPatchFuture, err error) {
+	req, err := client.PatchPreparer(ctx, subscriptionID, resourceGroupName, clusterName, applicationName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Patch", nil, "Failure preparing request")
 		return
 	}
 
-	resp, err := client.PatchSender(req)
+	result, err = client.PatchSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Patch", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Patch", result.Response(), "Failure sending request")
 		return
-	}
-
-	result, err = client.PatchResponder(resp)
-	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Patch", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // PatchPreparer prepares the Patch request.
-func (client ApplicationClient) PatchPreparer(resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResourceUpdate) (*http.Request, error) {
+func (client ApplicationClient) PatchPreparer(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResourceUpdate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":   autorest.Encode("path", applicationName),
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
-		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId":    autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -289,15 +285,22 @@ func (client ApplicationClient) PatchPreparer(resourceGroupName string, clusterN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applications/{applicationName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchSender sends the Patch request. The method will close the
 // http.Response Body if it receives an error.
-func (client ApplicationClient) PatchSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client))
+func (client ApplicationClient) PatchSender(req *http.Request) (future ApplicationPatchFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PatchResponder handles the response to the Patch request. The method always
@@ -306,7 +309,7 @@ func (client ApplicationClient) PatchResponder(resp *http.Response) (result Appl
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -315,37 +318,32 @@ func (client ApplicationClient) PatchResponder(resp *http.Response) (result Appl
 
 // Put creates or updates an application resource with the specified name.
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource applicationName
-// is the name of the application resource. parameters is the application resource.
-func (client ApplicationClient) Put(resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResource) (result ApplicationResource, err error) {
-	req, err := client.PutPreparer(resourceGroupName, clusterName, applicationName, parameters)
+// subscriptionID is the customer subscription identifier resourceGroupName is the name of the resource group.
+// clusterName is the name of the cluster resource applicationName is the name of the application resource. parameters
+// is the application resource.
+func (client ApplicationClient) Put(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResource) (result ApplicationPutFuture, err error) {
+	req, err := client.PutPreparer(ctx, subscriptionID, resourceGroupName, clusterName, applicationName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Put", nil, "Failure preparing request")
 		return
 	}
 
-	resp, err := client.PutSender(req)
+	result, err = client.PutSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Put", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Put", result.Response(), "Failure sending request")
 		return
-	}
-
-	result, err = client.PutResponder(resp)
-	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationClient", "Put", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // PutPreparer prepares the Put request.
-func (client ApplicationClient) PutPreparer(resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResource) (*http.Request, error) {
+func (client ApplicationClient) PutPreparer(ctx context.Context, subscriptionID string, resourceGroupName string, clusterName string, applicationName string, parameters ApplicationResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":   autorest.Encode("path", applicationName),
 		"clusterName":       autorest.Encode("path", clusterName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
-		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId":    autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -360,15 +358,22 @@ func (client ApplicationClient) PutPreparer(resourceGroupName string, clusterNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applications/{applicationName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PutSender sends the Put request. The method will close the
 // http.Response Body if it receives an error.
-func (client ApplicationClient) PutSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client))
+func (client ApplicationClient) PutSender(req *http.Request) (future ApplicationPutFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PutResponder handles the response to the Put request. The method always
@@ -377,7 +382,7 @@ func (client ApplicationClient) PutResponder(resp *http.Response) (result Applic
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}

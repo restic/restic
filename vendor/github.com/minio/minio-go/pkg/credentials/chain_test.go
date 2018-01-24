@@ -76,7 +76,14 @@ func TestChainGet(t *testing.T) {
 }
 
 func TestChainIsExpired(t *testing.T) {
-	credProvider := &credProvider{expired: true}
+	credProvider := &credProvider{
+		creds: Value{
+			AccessKeyID:     "UXHW",
+			SecretAccessKey: "MYSECRET",
+			SessionToken:    "",
+		},
+		expired: true,
+	}
 	p := &Chain{
 		Providers: []Provider{
 			credProvider,

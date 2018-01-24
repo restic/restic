@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // EnvironmentsClient is the the DevTest Labs Client.
 type EnvironmentsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewEnvironmentsClient creates an instance of the EnvironmentsClient client.
@@ -39,59 +40,35 @@ func NewEnvironmentsClientWithBaseURI(baseURI string, subscriptionID string) Env
 	return EnvironmentsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate create or replace an existing environment. This operation can take a while to complete. This method
-// may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to
-// cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate create or replace an existing environment. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the environment. dtlEnvironment is an environment, which is essentially an ARM
 // template deployment.
-func (client EnvironmentsClient) CreateOrUpdate(resourceGroupName string, labName string, userName string, name string, dtlEnvironment Environment, cancel <-chan struct{}) (<-chan Environment, <-chan error) {
-	resultChan := make(chan Environment, 1)
-	errChan := make(chan error, 1)
+func (client EnvironmentsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, labName string, userName string, name string, dtlEnvironment Environment) (result EnvironmentsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: dtlEnvironment,
 			Constraints: []validation.Constraint{{Target: "dtlEnvironment.EnvironmentProperties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "dtl.EnvironmentsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "dtl.EnvironmentsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result Environment
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, labName, userName, name, dtlEnvironment, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, labName, userName, name, dtlEnvironment)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client EnvironmentsClient) CreateOrUpdatePreparer(resourceGroupName string, labName string, userName string, name string, dtlEnvironment Environment, cancel <-chan struct{}) (*http.Request, error) {
+func (client EnvironmentsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, dtlEnvironment Environment) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -112,16 +89,22 @@ func (client EnvironmentsClient) CreateOrUpdatePreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/environments/{name}", pathParameters),
 		autorest.WithJSON(dtlEnvironment),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client EnvironmentsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client EnvironmentsClient) CreateOrUpdateSender(req *http.Request) (future EnvironmentsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -137,49 +120,28 @@ func (client EnvironmentsClient) CreateOrUpdateResponder(resp *http.Response) (r
 	return
 }
 
-// Delete delete environment. This operation can take a while to complete. This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Delete delete environment. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the environment.
-func (client EnvironmentsClient) Delete(resourceGroupName string, labName string, userName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, labName, userName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client EnvironmentsClient) Delete(ctx context.Context, resourceGroupName string, labName string, userName string, name string) (result EnvironmentsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, labName, userName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client EnvironmentsClient) DeletePreparer(resourceGroupName string, labName string, userName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client EnvironmentsClient) DeletePreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -198,16 +160,22 @@ func (client EnvironmentsClient) DeletePreparer(resourceGroupName string, labNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/environments/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client EnvironmentsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client EnvironmentsClient) DeleteSender(req *http.Request) (future EnvironmentsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -227,8 +195,8 @@ func (client EnvironmentsClient) DeleteResponder(resp *http.Response) (result au
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the environment. expand is specify the $expand query. Example:
 // 'properties($select=deploymentProperties)'
-func (client EnvironmentsClient) Get(resourceGroupName string, labName string, userName string, name string, expand string) (result Environment, err error) {
-	req, err := client.GetPreparer(resourceGroupName, labName, userName, name, expand)
+func (client EnvironmentsClient) Get(ctx context.Context, resourceGroupName string, labName string, userName string, name string, expand string) (result Environment, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, labName, userName, name, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "Get", nil, "Failure preparing request")
 		return
@@ -250,7 +218,7 @@ func (client EnvironmentsClient) Get(resourceGroupName string, labName string, u
 }
 
 // GetPreparer prepares the Get request.
-func (client EnvironmentsClient) GetPreparer(resourceGroupName string, labName string, userName string, name string, expand string) (*http.Request, error) {
+func (client EnvironmentsClient) GetPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -272,14 +240,13 @@ func (client EnvironmentsClient) GetPreparer(resourceGroupName string, labName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/environments/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client EnvironmentsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -302,8 +269,9 @@ func (client EnvironmentsClient) GetResponder(resp *http.Response) (result Envir
 // user profile. expand is specify the $expand query. Example: 'properties($select=deploymentProperties)' filter is the
 // filter to apply to the operation. top is the maximum number of resources to return from the operation. orderby is
 // the ordering expression for the results, using OData notation.
-func (client EnvironmentsClient) List(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDtlEnvironment, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, userName, expand, filter, top, orderby)
+func (client EnvironmentsClient) List(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDtlEnvironmentPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, userName, expand, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", nil, "Failure preparing request")
 		return
@@ -311,12 +279,12 @@ func (client EnvironmentsClient) List(resourceGroupName string, labName string, 
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcde.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcde, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", resp, "Failure responding to request")
 	}
@@ -325,7 +293,7 @@ func (client EnvironmentsClient) List(resourceGroupName string, labName string, 
 }
 
 // ListPreparer prepares the List request.
-func (client EnvironmentsClient) ListPreparer(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client EnvironmentsClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -355,14 +323,13 @@ func (client EnvironmentsClient) ListPreparer(resourceGroupName string, labName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/environments", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client EnvironmentsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -379,71 +346,29 @@ func (client EnvironmentsClient) ListResponder(resp *http.Response) (result Resp
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client EnvironmentsClient) ListNextResults(lastResults ResponseWithContinuationDtlEnvironment) (result ResponseWithContinuationDtlEnvironment, err error) {
-	req, err := lastResults.ResponseWithContinuationDtlEnvironmentPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client EnvironmentsClient) listNextResults(lastResults ResponseWithContinuationDtlEnvironment) (result ResponseWithContinuationDtlEnvironment, err error) {
+	req, err := lastResults.responseWithContinuationDtlEnvironmentPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.EnvironmentsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client EnvironmentsClient) ListComplete(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan Environment, <-chan error) {
-	resultChan := make(chan Environment)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, userName, expand, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client EnvironmentsClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDtlEnvironmentIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, userName, expand, filter, top, orderby)
+	return
 }

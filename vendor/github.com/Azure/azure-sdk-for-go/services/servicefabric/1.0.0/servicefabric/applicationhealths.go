@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ApplicationHealthsClient is the client for the ApplicationHealths methods of the Servicefabric service.
 type ApplicationHealthsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewApplicationHealthsClient creates an instance of the ApplicationHealthsClient client.
@@ -42,8 +43,8 @@ func NewApplicationHealthsClientWithBaseURI(baseURI string, timeout *int32) Appl
 //
 // applicationName is the name of the application eventsHealthStateFilter is the filter of the events health state
 // deployedApplicationsHealthStateFilter is the filter of the deployed application health state
-func (client ApplicationHealthsClient) Get(applicationName string, eventsHealthStateFilter string, deployedApplicationsHealthStateFilter string) (result ApplicationHealth, err error) {
-	req, err := client.GetPreparer(applicationName, eventsHealthStateFilter, deployedApplicationsHealthStateFilter)
+func (client ApplicationHealthsClient) Get(ctx context.Context, applicationName string, eventsHealthStateFilter string, deployedApplicationsHealthStateFilter string) (result ApplicationHealth, err error) {
+	req, err := client.GetPreparer(ctx, applicationName, eventsHealthStateFilter, deployedApplicationsHealthStateFilter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationHealthsClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ApplicationHealthsClient) Get(applicationName string, eventsHealthS
 }
 
 // GetPreparer prepares the Get request.
-func (client ApplicationHealthsClient) GetPreparer(applicationName string, eventsHealthStateFilter string, deployedApplicationsHealthStateFilter string) (*http.Request, error) {
+func (client ApplicationHealthsClient) GetPreparer(ctx context.Context, applicationName string, eventsHealthStateFilter string, deployedApplicationsHealthStateFilter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -89,14 +90,13 @@ func (client ApplicationHealthsClient) GetPreparer(applicationName string, event
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetHealth", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationHealthsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -116,8 +116,8 @@ func (client ApplicationHealthsClient) GetResponder(resp *http.Response) (result
 // Send send application health
 //
 // applicationName is the name of the application applicationHealthReport is the report of the application health
-func (client ApplicationHealthsClient) Send(applicationName string, applicationHealthReport ApplicationHealthReport) (result String, err error) {
-	req, err := client.SendPreparer(applicationName, applicationHealthReport)
+func (client ApplicationHealthsClient) Send(ctx context.Context, applicationName string, applicationHealthReport ApplicationHealthReport) (result String, err error) {
+	req, err := client.SendPreparer(ctx, applicationName, applicationHealthReport)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ApplicationHealthsClient", "Send", nil, "Failure preparing request")
 		return
@@ -139,7 +139,7 @@ func (client ApplicationHealthsClient) Send(applicationName string, applicationH
 }
 
 // SendPreparer prepares the Send request.
-func (client ApplicationHealthsClient) SendPreparer(applicationName string, applicationHealthReport ApplicationHealthReport) (*http.Request, error) {
+func (client ApplicationHealthsClient) SendPreparer(ctx context.Context, applicationName string, applicationHealthReport ApplicationHealthReport) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -159,14 +159,13 @@ func (client ApplicationHealthsClient) SendPreparer(applicationName string, appl
 		autorest.WithPathParameters("/Applications/{applicationName}/$/ReportHealth", pathParameters),
 		autorest.WithJSON(applicationHealthReport),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SendSender sends the Send request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationHealthsClient) SendSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

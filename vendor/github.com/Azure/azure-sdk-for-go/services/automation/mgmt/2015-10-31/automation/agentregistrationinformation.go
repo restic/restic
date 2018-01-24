@@ -18,6 +18,7 @@ package automation
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,31 +27,31 @@ import (
 
 // AgentRegistrationInformationClient is the automation Client
 type AgentRegistrationInformationClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAgentRegistrationInformationClient creates an instance of the AgentRegistrationInformationClient client.
-func NewAgentRegistrationInformationClient(subscriptionID string) AgentRegistrationInformationClient {
-	return NewAgentRegistrationInformationClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewAgentRegistrationInformationClient(subscriptionID string, resourceGroupName string) AgentRegistrationInformationClient {
+	return NewAgentRegistrationInformationClientWithBaseURI(DefaultBaseURI, subscriptionID, resourceGroupName)
 }
 
 // NewAgentRegistrationInformationClientWithBaseURI creates an instance of the AgentRegistrationInformationClient
 // client.
-func NewAgentRegistrationInformationClientWithBaseURI(baseURI string, subscriptionID string) AgentRegistrationInformationClient {
-	return AgentRegistrationInformationClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewAgentRegistrationInformationClientWithBaseURI(baseURI string, subscriptionID string, resourceGroupName string) AgentRegistrationInformationClient {
+	return AgentRegistrationInformationClient{NewWithBaseURI(baseURI, subscriptionID, resourceGroupName)}
 }
 
 // Get retrieve the automation agent registration information.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name.
-func (client AgentRegistrationInformationClient) Get(resourceGroupName string, automationAccountName string) (result AgentRegistration, err error) {
+// automationAccountName is the automation account name.
+func (client AgentRegistrationInformationClient) Get(ctx context.Context, automationAccountName string) (result AgentRegistration, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.AgentRegistrationInformationClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, automationAccountName)
+	req, err := client.GetPreparer(ctx, automationAccountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.AgentRegistrationInformationClient", "Get", nil, "Failure preparing request")
 		return
@@ -72,10 +73,10 @@ func (client AgentRegistrationInformationClient) Get(resourceGroupName string, a
 }
 
 // GetPreparer prepares the Get request.
-func (client AgentRegistrationInformationClient) GetPreparer(resourceGroupName string, automationAccountName string) (*http.Request, error) {
+func (client AgentRegistrationInformationClient) GetPreparer(ctx context.Context, automationAccountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
 
@@ -89,14 +90,13 @@ func (client AgentRegistrationInformationClient) GetPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/agentRegistrationInformation", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client AgentRegistrationInformationClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -115,16 +115,16 @@ func (client AgentRegistrationInformationClient) GetResponder(resp *http.Respons
 
 // RegenerateKey regenerate a primary or secondary agent registration key
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. parameters is
-// the name of the agent registration key to be regenerated
-func (client AgentRegistrationInformationClient) RegenerateKey(resourceGroupName string, automationAccountName string, parameters AgentRegistrationRegenerateKeyParameter) (result AgentRegistration, err error) {
+// automationAccountName is the automation account name. parameters is the name of the agent registration key to be
+// regenerated
+func (client AgentRegistrationInformationClient) RegenerateKey(ctx context.Context, automationAccountName string, parameters AgentRegistrationRegenerateKeyParameter) (result AgentRegistration, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.AgentRegistrationInformationClient", "RegenerateKey")
 	}
 
-	req, err := client.RegenerateKeyPreparer(resourceGroupName, automationAccountName, parameters)
+	req, err := client.RegenerateKeyPreparer(ctx, automationAccountName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.AgentRegistrationInformationClient", "RegenerateKey", nil, "Failure preparing request")
 		return
@@ -146,10 +146,10 @@ func (client AgentRegistrationInformationClient) RegenerateKey(resourceGroupName
 }
 
 // RegenerateKeyPreparer prepares the RegenerateKey request.
-func (client AgentRegistrationInformationClient) RegenerateKeyPreparer(resourceGroupName string, automationAccountName string, parameters AgentRegistrationRegenerateKeyParameter) (*http.Request, error) {
+func (client AgentRegistrationInformationClient) RegenerateKeyPreparer(ctx context.Context, automationAccountName string, parameters AgentRegistrationRegenerateKeyParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
 
@@ -165,14 +165,13 @@ func (client AgentRegistrationInformationClient) RegenerateKeyPreparer(resourceG
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/agentRegistrationInformation/regenerateKey", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateKeySender sends the RegenerateKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client AgentRegistrationInformationClient) RegenerateKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

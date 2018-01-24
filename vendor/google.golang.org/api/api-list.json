@@ -4,6 +4,21 @@
  "items": [
   {
    "kind": "discovery#directoryItem",
+   "id": "abusiveexperiencereport:v1",
+   "name": "abusiveexperiencereport",
+   "version": "v1",
+   "title": "Google Abusive Experience Report API",
+   "description": "View Abusive Experience Report data, and get a list of sites that have a significant number of abusive experiences.",
+   "discoveryRestUrl": "https://abusiveexperiencereport.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://developers.google.com/abusive-experience-report/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "acceleratedmobilepageurl:v1",
    "name": "acceleratedmobilepageurl",
    "version": "v1",
@@ -788,6 +803,36 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "cloudshell:v1alpha1",
+   "name": "cloudshell",
+   "version": "v1alpha1",
+   "title": "Cloud Shell API",
+   "description": "",
+   "discoveryRestUrl": "https://cloudshell.googleapis.com/$discovery/rest?version=v1alpha1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/shell/docs/",
+   "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "cloudshell:v1",
+   "name": "cloudshell",
+   "version": "v1",
+   "title": "Cloud Shell API",
+   "description": "",
+   "discoveryRestUrl": "https://cloudshell.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/shell/docs/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "cloudtasks:v2beta2",
    "name": "cloudtasks",
    "version": "v2beta2",
@@ -945,25 +990,10 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "consumersurveys:v2",
-   "name": "consumersurveys",
-   "version": "v2",
-   "title": "Consumer Surveys API",
-   "description": "Creates and conducts surveys, lists the surveys that an authenticated user owns, and retrieves survey results and information about specified surveys.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/consumersurveys/v2/rest",
-   "discoveryLink": "./apis/consumersurveys/v2/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "container:v1",
    "name": "container",
    "version": "v1",
-   "title": "Google Container Engine API",
+   "title": "Google Kubernetes Engine API",
    "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
    "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1",
    "icons": {
@@ -978,7 +1008,7 @@
    "id": "container:v1beta1",
    "name": "container",
    "version": "v1beta1",
-   "title": "Google Container Engine API",
+   "title": "Google Kubernetes Engine API",
    "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
    "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
@@ -1176,22 +1206,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "dfareporting:v2.7",
-   "name": "dfareporting",
-   "version": "v2.7",
-   "title": "DCM/DFA Reporting And Trafficking API",
-   "description": "Manages your DoubleClick Campaign Manager ad campaigns and reports.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/dfareporting/v2.7/rest",
-   "discoveryLink": "./apis/dfareporting/v2.7/rest",
-   "icons": {
-    "x16": "https://www.google.com/images/icons/product/doubleclick-16.gif",
-    "x32": "https://www.google.com/images/icons/product/doubleclick-32.gif"
-   },
-   "documentationLink": "https://developers.google.com/doubleclick-advertisers/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "dfareporting:v2.8",
    "name": "dfareporting",
    "version": "v2.8",
@@ -1239,6 +1253,21 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "digitalassetlinks:v1",
+   "name": "digitalassetlinks",
+   "version": "v1",
+   "title": "Digital Asset Links API",
+   "description": "API for discovering relationships between online assets such as web sites or mobile apps.",
+   "discoveryRestUrl": "https://digitalassetlinks.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://developers.google.com/digital-asset-links/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "discovery:v1",
    "name": "discovery",
    "version": "v1",
@@ -1261,6 +1290,21 @@
    "title": "DLP API",
    "description": "The Google Data Loss Prevention API provides methods for detection of privacy-sensitive fragments in text, images, and Google Cloud Platform storage repositories.",
    "discoveryRestUrl": "https://dlp.googleapis.com/$discovery/rest?version=v2beta1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/dlp/docs/",
+   "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dlp:v2beta2",
+   "name": "dlp",
+   "version": "v2beta2",
+   "title": "DLP API",
+   "description": "The Google Data Loss Prevention API provides methods for detection of privacy-sensitive fragments in text, images, and Google Cloud Platform storage repositories.",
+   "discoveryRestUrl": "https://dlp.googleapis.com/$discovery/rest?version=v2beta2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -2279,8 +2323,8 @@
    "id": "runtimeconfig:v1",
    "name": "runtimeconfig",
    "version": "v1",
-   "title": "Google Cloud RuntimeConfig API",
-   "description": "Provides capabilities for dynamic configuration and coordination for applications running on Google Cloud Platform.",
+   "title": "Google Cloud Runtime Configuration API",
+   "description": "The Runtime Configurator allows you to dynamically configure and expose variables through Google Cloud Platform. In addition, you can also set Watchers and Waiters that will watch for changes to your data and return based on certain conditions.",
    "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -2294,8 +2338,8 @@
    "id": "runtimeconfig:v1beta1",
    "name": "runtimeconfig",
    "version": "v1beta1",
-   "title": "Google Cloud RuntimeConfig API",
-   "description": "Provides capabilities for dynamic configuration and coordination for applications running on Google Cloud Platform.",
+   "title": "Google Cloud Runtime Configuration API",
+   "description": "The Runtime Configurator allows you to dynamically configure and expose variables through Google Cloud Platform. In addition, you can also set Watchers and Waiters that will watch for changes to your data and return based on certain conditions.",
    "discoveryRestUrl": "https://runtimeconfig.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -2324,14 +2368,14 @@
    "id": "script:v1",
    "name": "script",
    "version": "v1",
-   "title": "Google Apps Script Execution API",
+   "title": "Google Apps Script API",
    "description": "An API for managing and executing Google Apps Script projects.",
    "discoveryRestUrl": "https://script.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
-   "documentationLink": "https://developers.google.com/apps-script/execution/rest/v1/scripts/run",
+   "documentationLink": "https://developers.google.com/apps-script/api/",
    "preferred": true
   },
   {

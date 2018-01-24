@@ -18,6 +18,7 @@ package mobileengagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ExportTasksClient is the microsoft Azure Mobile Engagement REST APIs.
 type ExportTasksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewExportTasksClient creates an instance of the ExportTasksClient client.
@@ -43,7 +44,7 @@ func NewExportTasksClientWithBaseURI(baseURI string, subscriptionID string) Expo
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateActivitiesTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateActivitiesTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -52,7 +53,7 @@ func (client ExportTasksClient) CreateActivitiesTask(resourceGroupName string, a
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateActivitiesTask")
 	}
 
-	req, err := client.CreateActivitiesTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateActivitiesTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateActivitiesTask", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client ExportTasksClient) CreateActivitiesTask(resourceGroupName string, a
 }
 
 // CreateActivitiesTaskPreparer prepares the CreateActivitiesTask request.
-func (client ExportTasksClient) CreateActivitiesTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateActivitiesTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -94,14 +95,13 @@ func (client ExportTasksClient) CreateActivitiesTaskPreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/activities", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateActivitiesTaskSender sends the CreateActivitiesTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateActivitiesTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -122,7 +122,7 @@ func (client ExportTasksClient) CreateActivitiesTaskResponder(resp *http.Respons
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateCrashesTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateCrashesTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -131,7 +131,7 @@ func (client ExportTasksClient) CreateCrashesTask(resourceGroupName string, appC
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateCrashesTask")
 	}
 
-	req, err := client.CreateCrashesTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateCrashesTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateCrashesTask", nil, "Failure preparing request")
 		return
@@ -153,7 +153,7 @@ func (client ExportTasksClient) CreateCrashesTask(resourceGroupName string, appC
 }
 
 // CreateCrashesTaskPreparer prepares the CreateCrashesTask request.
-func (client ExportTasksClient) CreateCrashesTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateCrashesTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -173,14 +173,13 @@ func (client ExportTasksClient) CreateCrashesTaskPreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/crashes", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateCrashesTaskSender sends the CreateCrashesTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateCrashesTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -201,7 +200,7 @@ func (client ExportTasksClient) CreateCrashesTaskResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateErrorsTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateErrorsTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -210,7 +209,7 @@ func (client ExportTasksClient) CreateErrorsTask(resourceGroupName string, appCo
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateErrorsTask")
 	}
 
-	req, err := client.CreateErrorsTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateErrorsTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateErrorsTask", nil, "Failure preparing request")
 		return
@@ -232,7 +231,7 @@ func (client ExportTasksClient) CreateErrorsTask(resourceGroupName string, appCo
 }
 
 // CreateErrorsTaskPreparer prepares the CreateErrorsTask request.
-func (client ExportTasksClient) CreateErrorsTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateErrorsTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -252,14 +251,13 @@ func (client ExportTasksClient) CreateErrorsTaskPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/errors", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateErrorsTaskSender sends the CreateErrorsTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateErrorsTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -280,7 +278,7 @@ func (client ExportTasksClient) CreateErrorsTaskResponder(resp *http.Response) (
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateEventsTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateEventsTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -289,7 +287,7 @@ func (client ExportTasksClient) CreateEventsTask(resourceGroupName string, appCo
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateEventsTask")
 	}
 
-	req, err := client.CreateEventsTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateEventsTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateEventsTask", nil, "Failure preparing request")
 		return
@@ -311,7 +309,7 @@ func (client ExportTasksClient) CreateEventsTask(resourceGroupName string, appCo
 }
 
 // CreateEventsTaskPreparer prepares the CreateEventsTask request.
-func (client ExportTasksClient) CreateEventsTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateEventsTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -331,14 +329,13 @@ func (client ExportTasksClient) CreateEventsTaskPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/events", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateEventsTaskSender sends the CreateEventsTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateEventsTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -359,7 +356,7 @@ func (client ExportTasksClient) CreateEventsTaskResponder(resp *http.Response) (
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateFeedbackTaskByCampaign(resourceGroupName string, appCollection string, appName string, parameters FeedbackByCampaignParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateFeedbackTaskByCampaign(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters FeedbackByCampaignParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -368,7 +365,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByCampaign(resourceGroupName s
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateFeedbackTaskByCampaign")
 	}
 
-	req, err := client.CreateFeedbackTaskByCampaignPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateFeedbackTaskByCampaignPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateFeedbackTaskByCampaign", nil, "Failure preparing request")
 		return
@@ -390,7 +387,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByCampaign(resourceGroupName s
 }
 
 // CreateFeedbackTaskByCampaignPreparer prepares the CreateFeedbackTaskByCampaign request.
-func (client ExportTasksClient) CreateFeedbackTaskByCampaignPreparer(resourceGroupName string, appCollection string, appName string, parameters FeedbackByCampaignParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateFeedbackTaskByCampaignPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters FeedbackByCampaignParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -410,14 +407,13 @@ func (client ExportTasksClient) CreateFeedbackTaskByCampaignPreparer(resourceGro
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/feedbackByCampaign", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateFeedbackTaskByCampaignSender sends the CreateFeedbackTaskByCampaign request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateFeedbackTaskByCampaignSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -438,7 +434,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByCampaignResponder(resp *http
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateFeedbackTaskByDateRange(resourceGroupName string, appCollection string, appName string, parameters FeedbackByDateRangeParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateFeedbackTaskByDateRange(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters FeedbackByDateRangeParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -447,7 +443,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByDateRange(resourceGroupName 
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateFeedbackTaskByDateRange")
 	}
 
-	req, err := client.CreateFeedbackTaskByDateRangePreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateFeedbackTaskByDateRangePreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateFeedbackTaskByDateRange", nil, "Failure preparing request")
 		return
@@ -469,7 +465,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByDateRange(resourceGroupName 
 }
 
 // CreateFeedbackTaskByDateRangePreparer prepares the CreateFeedbackTaskByDateRange request.
-func (client ExportTasksClient) CreateFeedbackTaskByDateRangePreparer(resourceGroupName string, appCollection string, appName string, parameters FeedbackByDateRangeParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateFeedbackTaskByDateRangePreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters FeedbackByDateRangeParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -489,14 +485,13 @@ func (client ExportTasksClient) CreateFeedbackTaskByDateRangePreparer(resourceGr
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/feedbackByDate", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateFeedbackTaskByDateRangeSender sends the CreateFeedbackTaskByDateRange request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateFeedbackTaskByDateRangeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -517,7 +512,7 @@ func (client ExportTasksClient) CreateFeedbackTaskByDateRangeResponder(resp *htt
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateJobsTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateJobsTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -526,7 +521,7 @@ func (client ExportTasksClient) CreateJobsTask(resourceGroupName string, appColl
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateJobsTask")
 	}
 
-	req, err := client.CreateJobsTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateJobsTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateJobsTask", nil, "Failure preparing request")
 		return
@@ -548,7 +543,7 @@ func (client ExportTasksClient) CreateJobsTask(resourceGroupName string, appColl
 }
 
 // CreateJobsTaskPreparer prepares the CreateJobsTask request.
-func (client ExportTasksClient) CreateJobsTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateJobsTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -568,14 +563,13 @@ func (client ExportTasksClient) CreateJobsTaskPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/jobs", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateJobsTaskSender sends the CreateJobsTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateJobsTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -596,7 +590,7 @@ func (client ExportTasksClient) CreateJobsTaskResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateSessionsTask(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateSessionsTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil},
@@ -605,7 +599,7 @@ func (client ExportTasksClient) CreateSessionsTask(resourceGroupName string, app
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateSessionsTask")
 	}
 
-	req, err := client.CreateSessionsTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateSessionsTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateSessionsTask", nil, "Failure preparing request")
 		return
@@ -627,7 +621,7 @@ func (client ExportTasksClient) CreateSessionsTask(resourceGroupName string, app
 }
 
 // CreateSessionsTaskPreparer prepares the CreateSessionsTask request.
-func (client ExportTasksClient) CreateSessionsTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateSessionsTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters DateRangeExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -647,14 +641,13 @@ func (client ExportTasksClient) CreateSessionsTaskPreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/sessions", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSessionsTaskSender sends the CreateSessionsTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateSessionsTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -675,14 +668,14 @@ func (client ExportTasksClient) CreateSessionsTaskResponder(resp *http.Response)
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateTagsTask(resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateTagsTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateTagsTask")
 	}
 
-	req, err := client.CreateTagsTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateTagsTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateTagsTask", nil, "Failure preparing request")
 		return
@@ -704,7 +697,7 @@ func (client ExportTasksClient) CreateTagsTask(resourceGroupName string, appColl
 }
 
 // CreateTagsTaskPreparer prepares the CreateTagsTask request.
-func (client ExportTasksClient) CreateTagsTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateTagsTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -724,14 +717,13 @@ func (client ExportTasksClient) CreateTagsTaskPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/tags", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateTagsTaskSender sends the CreateTagsTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateTagsTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -752,14 +744,14 @@ func (client ExportTasksClient) CreateTagsTaskResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name.
-func (client ExportTasksClient) CreateTokensTask(resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (result ExportTaskResult, err error) {
+func (client ExportTasksClient) CreateTokensTask(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (result ExportTaskResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ContainerURL", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "CreateTokensTask")
 	}
 
-	req, err := client.CreateTokensTaskPreparer(resourceGroupName, appCollection, appName, parameters)
+	req, err := client.CreateTokensTaskPreparer(ctx, resourceGroupName, appCollection, appName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "CreateTokensTask", nil, "Failure preparing request")
 		return
@@ -781,7 +773,7 @@ func (client ExportTasksClient) CreateTokensTask(resourceGroupName string, appCo
 }
 
 // CreateTokensTaskPreparer prepares the CreateTokensTask request.
-func (client ExportTasksClient) CreateTokensTaskPreparer(resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (*http.Request, error) {
+func (client ExportTasksClient) CreateTokensTaskPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, parameters ExportTaskParameter) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -801,14 +793,13 @@ func (client ExportTasksClient) CreateTokensTaskPreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/tokens", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateTokensTaskSender sends the CreateTokensTask request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) CreateTokensTaskSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -829,8 +820,8 @@ func (client ExportTasksClient) CreateTokensTaskResponder(resp *http.Response) (
 //
 // resourceGroupName is the name of the resource group. appCollection is application collection. appName is application
 // resource name. ID is export task identifier.
-func (client ExportTasksClient) Get(resourceGroupName string, appCollection string, appName string, ID string) (result ExportTaskResult, err error) {
-	req, err := client.GetPreparer(resourceGroupName, appCollection, appName, ID)
+func (client ExportTasksClient) Get(ctx context.Context, resourceGroupName string, appCollection string, appName string, ID string) (result ExportTaskResult, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, appCollection, appName, ID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "Get", nil, "Failure preparing request")
 		return
@@ -852,7 +843,7 @@ func (client ExportTasksClient) Get(resourceGroupName string, appCollection stri
 }
 
 // GetPreparer prepares the Get request.
-func (client ExportTasksClient) GetPreparer(resourceGroupName string, appCollection string, appName string, ID string) (*http.Request, error) {
+func (client ExportTasksClient) GetPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, ID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -871,14 +862,13 @@ func (client ExportTasksClient) GetPreparer(resourceGroupName string, appCollect
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks/{id}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -909,7 +899,7 @@ func (client ExportTasksClient) GetResponder(resp *http.Response) (result Export
 // The available directions are asc (for ascending order) and desc (for descending order).
 // When not specified the asc direction is used.
 // Only one orderby property can be specified.
-func (client ExportTasksClient) List(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ExportTaskListResult, err error) {
+func (client ExportTasksClient) List(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ExportTaskListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: skip,
 			Constraints: []validation.Constraint{{Target: "skip", Name: validation.Null, Rule: false,
@@ -922,7 +912,8 @@ func (client ExportTasksClient) List(resourceGroupName string, appCollection str
 		return result, validation.NewErrorWithValidationError(err, "mobileengagement.ExportTasksClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, appCollection, appName, skip, top, orderby)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, appCollection, appName, skip, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", nil, "Failure preparing request")
 		return
@@ -930,12 +921,12 @@ func (client ExportTasksClient) List(resourceGroupName string, appCollection str
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.etlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.etlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", resp, "Failure responding to request")
 	}
@@ -944,7 +935,7 @@ func (client ExportTasksClient) List(resourceGroupName string, appCollection str
 }
 
 // ListPreparer prepares the List request.
-func (client ExportTasksClient) ListPreparer(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (*http.Request, error) {
+func (client ExportTasksClient) ListPreparer(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"appCollection":     autorest.Encode("path", appCollection),
 		"appName":           autorest.Encode("path", appName),
@@ -971,14 +962,13 @@ func (client ExportTasksClient) ListPreparer(resourceGroupName string, appCollec
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.MobileEngagement/appcollections/{appCollection}/apps/{appName}/devices/exportTasks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ExportTasksClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -995,71 +985,29 @@ func (client ExportTasksClient) ListResponder(resp *http.Response) (result Expor
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ExportTasksClient) ListNextResults(lastResults ExportTaskListResult) (result ExportTaskListResult, err error) {
-	req, err := lastResults.ExportTaskListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ExportTasksClient) listNextResults(lastResults ExportTaskListResult) (result ExportTaskListResult, err error) {
+	req, err := lastResults.exportTaskListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "mobileengagement.ExportTasksClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ExportTasksClient) ListComplete(resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string, cancel <-chan struct{}) (<-chan ExportTaskResult, <-chan error) {
-	resultChan := make(chan ExportTaskResult)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, appCollection, appName, skip, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ExportTasksClient) ListComplete(ctx context.Context, resourceGroupName string, appCollection string, appName string, skip *int32, top *int32, orderby string) (result ExportTaskListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, appCollection, appName, skip, top, orderby)
+	return
 }

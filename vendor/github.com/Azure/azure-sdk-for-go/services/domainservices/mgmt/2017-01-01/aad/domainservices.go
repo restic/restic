@@ -18,6 +18,7 @@ package aad
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DomainServicesClient is the the AAD Domain Services API.
 type DomainServicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDomainServicesClient creates an instance of the DomainServicesClient client.
@@ -41,60 +42,37 @@ func NewDomainServicesClientWithBaseURI(baseURI string, subscriptionID string) D
 
 // CreateOrUpdate the Create Domain Service operation creates a new domain service with the specified parameters. If
 // the specific service already exists, then any patchable properties will be updated and any immutable properties will
-// remain unchanged. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// remain unchanged.
 //
 // resourceGroupName is the name of the resource group within the user's subscription. The name is case insensitive.
 // domainServiceName is the name of the domain service in the specified subscription and resource group. properties is
 // properties supplied to the Create or Update a Domain Service operation.
-func (client DomainServicesClient) CreateOrUpdate(resourceGroupName string, domainServiceName string, properties DomainServiceProperties, cancel <-chan struct{}) (<-chan DomainService, <-chan error) {
-	resultChan := make(chan DomainService, 1)
-	errChan := make(chan error, 1)
+func (client DomainServicesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, domainServiceName string, properties DomainServiceProperties) (result DomainServicesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result DomainService
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, domainServiceName, properties, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, domainServiceName, properties)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DomainServicesClient) CreateOrUpdatePreparer(resourceGroupName string, domainServiceName string, properties DomainServiceProperties, cancel <-chan struct{}) (*http.Request, error) {
+func (client DomainServicesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, domainServiceName string, properties DomainServiceProperties) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"domainServiceName": autorest.Encode("path", domainServiceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -113,16 +91,22 @@ func (client DomainServicesClient) CreateOrUpdatePreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AAD/domainServices/{domainServiceName}", pathParameters),
 		autorest.WithJSON(properties),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client DomainServicesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DomainServicesClient) CreateOrUpdateSender(req *http.Request) (future DomainServicesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -138,60 +122,36 @@ func (client DomainServicesClient) CreateOrUpdateResponder(resp *http.Response) 
 	return
 }
 
-// Delete the Delete Domain Service operation deletes an existing Domain Service. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Delete the Delete Domain Service operation deletes an existing Domain Service.
 //
 // resourceGroupName is the name of the resource group within the user's subscription. The name is case insensitive.
 // domainServiceName is the name of the domain service in the specified subscription and resource group.
-func (client DomainServicesClient) Delete(resourceGroupName string, domainServiceName string, cancel <-chan struct{}) (<-chan DomainService, <-chan error) {
-	resultChan := make(chan DomainService, 1)
-	errChan := make(chan error, 1)
+func (client DomainServicesClient) Delete(ctx context.Context, resourceGroupName string, domainServiceName string) (result DomainServicesDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result DomainService
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, domainServiceName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, domainServiceName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DomainServicesClient) DeletePreparer(resourceGroupName string, domainServiceName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DomainServicesClient) DeletePreparer(ctx context.Context, resourceGroupName string, domainServiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"domainServiceName": autorest.Encode("path", domainServiceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -208,16 +168,22 @@ func (client DomainServicesClient) DeletePreparer(resourceGroupName string, doma
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AAD/domainServices/{domainServiceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client DomainServicesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DomainServicesClient) DeleteSender(req *http.Request) (future DomainServicesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -237,7 +203,7 @@ func (client DomainServicesClient) DeleteResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group within the user's subscription. The name is case insensitive.
 // domainServiceName is the name of the domain service in the specified subscription and resource group.
-func (client DomainServicesClient) Get(resourceGroupName string, domainServiceName string) (result DomainService, err error) {
+func (client DomainServicesClient) Get(ctx context.Context, resourceGroupName string, domainServiceName string) (result DomainService, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -246,7 +212,7 @@ func (client DomainServicesClient) Get(resourceGroupName string, domainServiceNa
 		return result, validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, domainServiceName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, domainServiceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Get", nil, "Failure preparing request")
 		return
@@ -268,7 +234,7 @@ func (client DomainServicesClient) Get(resourceGroupName string, domainServiceNa
 }
 
 // GetPreparer prepares the Get request.
-func (client DomainServicesClient) GetPreparer(resourceGroupName string, domainServiceName string) (*http.Request, error) {
+func (client DomainServicesClient) GetPreparer(ctx context.Context, resourceGroupName string, domainServiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"domainServiceName": autorest.Encode("path", domainServiceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -285,14 +251,13 @@ func (client DomainServicesClient) GetPreparer(resourceGroupName string, domainS
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AAD/domainServices/{domainServiceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DomainServicesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -311,8 +276,8 @@ func (client DomainServicesClient) GetResponder(resp *http.Response) (result Dom
 
 // List the List Domain Services in Subscription operation lists all the domain services available under the given
 // subscription (and across all resource groups within that subscription).
-func (client DomainServicesClient) List() (result DomainServiceListResult, err error) {
-	req, err := client.ListPreparer()
+func (client DomainServicesClient) List(ctx context.Context) (result DomainServiceListResult, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "List", nil, "Failure preparing request")
 		return
@@ -334,7 +299,7 @@ func (client DomainServicesClient) List() (result DomainServiceListResult, err e
 }
 
 // ListPreparer prepares the List request.
-func (client DomainServicesClient) ListPreparer() (*http.Request, error) {
+func (client DomainServicesClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -349,14 +314,13 @@ func (client DomainServicesClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.AAD/domainServices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DomainServicesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -377,7 +341,7 @@ func (client DomainServicesClient) ListResponder(resp *http.Response) (result Do
 // under the given resource group.
 //
 // resourceGroupName is the name of the resource group within the user's subscription. The name is case insensitive.
-func (client DomainServicesClient) ListByResourceGroup(resourceGroupName string) (result DomainServiceListResult, err error) {
+func (client DomainServicesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result DomainServiceListResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -386,7 +350,7 @@ func (client DomainServicesClient) ListByResourceGroup(resourceGroupName string)
 		return result, validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "ListByResourceGroup")
 	}
 
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -408,7 +372,7 @@ func (client DomainServicesClient) ListByResourceGroup(resourceGroupName string)
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client DomainServicesClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client DomainServicesClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -424,14 +388,13 @@ func (client DomainServicesClient) ListByResourceGroupPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AAD/domainServices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client DomainServicesClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -449,60 +412,37 @@ func (client DomainServicesClient) ListByResourceGroupResponder(resp *http.Respo
 }
 
 // Update the Update Domain Service operation can be used to update the existing deployment. The update call only
-// supports the properties listed in the PATCH body. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// supports the properties listed in the PATCH body.
 //
 // resourceGroupName is the name of the resource group within the user's subscription. The name is case insensitive.
 // domainServiceName is the name of the domain service in the specified subscription and resource group. properties is
 // properties supplied to the Update a Domain Service operation.
-func (client DomainServicesClient) Update(resourceGroupName string, domainServiceName string, properties DomainServicePatchProperties, cancel <-chan struct{}) (<-chan DomainService, <-chan error) {
-	resultChan := make(chan DomainService, 1)
-	errChan := make(chan error, 1)
+func (client DomainServicesClient) Update(ctx context.Context, resourceGroupName string, domainServiceName string, properties DomainServicePatchProperties) (result DomainServicesUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "Update")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "aad.DomainServicesClient", "Update")
 	}
 
-	go func() {
-		var err error
-		var result DomainService
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, domainServiceName, properties, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Update", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, domainServiceName, properties)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "aad.DomainServicesClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client DomainServicesClient) UpdatePreparer(resourceGroupName string, domainServiceName string, properties DomainServicePatchProperties, cancel <-chan struct{}) (*http.Request, error) {
+func (client DomainServicesClient) UpdatePreparer(ctx context.Context, resourceGroupName string, domainServiceName string, properties DomainServicePatchProperties) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"domainServiceName": autorest.Encode("path", domainServiceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -521,16 +461,22 @@ func (client DomainServicesClient) UpdatePreparer(resourceGroupName string, doma
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AAD/domainServices/{domainServiceName}", pathParameters),
 		autorest.WithJSON(properties),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client DomainServicesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DomainServicesClient) UpdateSender(req *http.Request) (future DomainServicesUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

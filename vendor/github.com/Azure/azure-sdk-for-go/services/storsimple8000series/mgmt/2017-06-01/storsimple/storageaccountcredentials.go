@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // StorageAccountCredentialsClient is the client for the StorageAccountCredentials methods of the Storsimple service.
 type StorageAccountCredentialsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewStorageAccountCredentialsClient creates an instance of the StorageAccountCredentialsClient client.
@@ -39,15 +40,11 @@ func NewStorageAccountCredentialsClientWithBaseURI(baseURI string, subscriptionI
 	return StorageAccountCredentialsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates the storage account credential. This method may poll for completion. Polling can
-// be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// CreateOrUpdate creates or updates the storage account credential.
 //
 // storageAccountCredentialName is the storage account credential name. parameters is the storage account credential to
 // be added or updated. resourceGroupName is the resource group name managerName is the manager name
-func (client StorageAccountCredentialsClient) CreateOrUpdate(storageAccountCredentialName string, parameters StorageAccountCredential, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan StorageAccountCredential, <-chan error) {
-	resultChan := make(chan StorageAccountCredential, 1)
-	errChan := make(chan error, 1)
+func (client StorageAccountCredentialsClient) CreateOrUpdate(ctx context.Context, storageAccountCredentialName string, parameters StorageAccountCredential, resourceGroupName string, managerName string) (result StorageAccountCredentialsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.StorageAccountCredentialProperties", Name: validation.Null, Rule: true,
@@ -58,46 +55,26 @@ func (client StorageAccountCredentialsClient) CreateOrUpdate(storageAccountCrede
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result StorageAccountCredential
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(storageAccountCredentialName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, storageAccountCredentialName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client StorageAccountCredentialsClient) CreateOrUpdatePreparer(storageAccountCredentialName string, parameters StorageAccountCredential, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client StorageAccountCredentialsClient) CreateOrUpdatePreparer(ctx context.Context, storageAccountCredentialName string, parameters StorageAccountCredential, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":                  managerName,
 		"resourceGroupName":            resourceGroupName,
@@ -117,16 +94,22 @@ func (client StorageAccountCredentialsClient) CreateOrUpdatePreparer(storageAcco
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/storageAccountCredentials/{storageAccountCredentialName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client StorageAccountCredentialsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StorageAccountCredentialsClient) CreateOrUpdateSender(req *http.Request) (future StorageAccountCredentialsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -142,58 +125,35 @@ func (client StorageAccountCredentialsClient) CreateOrUpdateResponder(resp *http
 	return
 }
 
-// Delete deletes the storage account credential. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the storage account credential.
 //
 // storageAccountCredentialName is the name of the storage account credential. resourceGroupName is the resource group
 // name managerName is the manager name
-func (client StorageAccountCredentialsClient) Delete(storageAccountCredentialName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client StorageAccountCredentialsClient) Delete(ctx context.Context, storageAccountCredentialName string, resourceGroupName string, managerName string) (result StorageAccountCredentialsDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(storageAccountCredentialName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, storageAccountCredentialName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client StorageAccountCredentialsClient) DeletePreparer(storageAccountCredentialName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client StorageAccountCredentialsClient) DeletePreparer(ctx context.Context, storageAccountCredentialName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":                  managerName,
 		"resourceGroupName":            resourceGroupName,
@@ -211,16 +171,22 @@ func (client StorageAccountCredentialsClient) DeletePreparer(storageAccountCrede
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/storageAccountCredentials/{storageAccountCredentialName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client StorageAccountCredentialsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client StorageAccountCredentialsClient) DeleteSender(req *http.Request) (future StorageAccountCredentialsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -239,7 +205,7 @@ func (client StorageAccountCredentialsClient) DeleteResponder(resp *http.Respons
 //
 // storageAccountCredentialName is the name of storage account credential to be fetched. resourceGroupName is the
 // resource group name managerName is the manager name
-func (client StorageAccountCredentialsClient) Get(storageAccountCredentialName string, resourceGroupName string, managerName string) (result StorageAccountCredential, err error) {
+func (client StorageAccountCredentialsClient) Get(ctx context.Context, storageAccountCredentialName string, resourceGroupName string, managerName string) (result StorageAccountCredential, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -247,7 +213,7 @@ func (client StorageAccountCredentialsClient) Get(storageAccountCredentialName s
 		return result, validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(storageAccountCredentialName, resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, storageAccountCredentialName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "Get", nil, "Failure preparing request")
 		return
@@ -269,7 +235,7 @@ func (client StorageAccountCredentialsClient) Get(storageAccountCredentialName s
 }
 
 // GetPreparer prepares the Get request.
-func (client StorageAccountCredentialsClient) GetPreparer(storageAccountCredentialName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client StorageAccountCredentialsClient) GetPreparer(ctx context.Context, storageAccountCredentialName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":                  managerName,
 		"resourceGroupName":            resourceGroupName,
@@ -287,14 +253,13 @@ func (client StorageAccountCredentialsClient) GetPreparer(storageAccountCredenti
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/storageAccountCredentials/{storageAccountCredentialName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageAccountCredentialsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -314,7 +279,7 @@ func (client StorageAccountCredentialsClient) GetResponder(resp *http.Response) 
 // ListByManager gets all the storage account credentials in a manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client StorageAccountCredentialsClient) ListByManager(resourceGroupName string, managerName string) (result StorageAccountCredentialList, err error) {
+func (client StorageAccountCredentialsClient) ListByManager(ctx context.Context, resourceGroupName string, managerName string) (result StorageAccountCredentialList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -322,7 +287,7 @@ func (client StorageAccountCredentialsClient) ListByManager(resourceGroupName st
 		return result, validation.NewErrorWithValidationError(err, "storsimple.StorageAccountCredentialsClient", "ListByManager")
 	}
 
-	req, err := client.ListByManagerPreparer(resourceGroupName, managerName)
+	req, err := client.ListByManagerPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsClient", "ListByManager", nil, "Failure preparing request")
 		return
@@ -344,7 +309,7 @@ func (client StorageAccountCredentialsClient) ListByManager(resourceGroupName st
 }
 
 // ListByManagerPreparer prepares the ListByManager request.
-func (client StorageAccountCredentialsClient) ListByManagerPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client StorageAccountCredentialsClient) ListByManagerPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -361,14 +326,13 @@ func (client StorageAccountCredentialsClient) ListByManagerPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/storageAccountCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByManagerSender sends the ListByManager request. The method will close the
 // http.Response Body if it receives an error.
 func (client StorageAccountCredentialsClient) ListByManagerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

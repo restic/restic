@@ -18,6 +18,7 @@ package account
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // FirewallRulesClient is the creates an Azure Data Lake Analytics account management client.
 type FirewallRulesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewFirewallRulesClient creates an instance of the FirewallRulesClient client.
@@ -45,7 +46,7 @@ func NewFirewallRulesClientWithBaseURI(baseURI string, subscriptionID string) Fi
 // resourceGroupName is the name of the Azure resource group that contains the Data Lake Analytics account. accountName
 // is the name of the Data Lake Analytics account to add or replace the firewall rule. firewallRuleName is the name of
 // the firewall rule to create or update. parameters is parameters supplied to create or update the firewall rule.
-func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, accountName string, firewallRuleName string, parameters FirewallRule) (result FirewallRule, err error) {
+func (client FirewallRulesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string, parameters FirewallRule) (result FirewallRule, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.FirewallRuleProperties", Name: validation.Null, Rule: true,
@@ -55,7 +56,7 @@ func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, accou
 		return result, validation.NewErrorWithValidationError(err, "account.FirewallRulesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, accountName, firewallRuleName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, accountName, firewallRuleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -77,7 +78,7 @@ func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, accou
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client FirewallRulesClient) CreateOrUpdatePreparer(resourceGroupName string, accountName string, firewallRuleName string, parameters FirewallRule) (*http.Request, error) {
+func (client FirewallRulesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string, parameters FirewallRule) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"firewallRuleName":  autorest.Encode("path", firewallRuleName),
@@ -97,14 +98,13 @@ func (client FirewallRulesClient) CreateOrUpdatePreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataLakeAnalytics/accounts/{accountName}/firewallRules/{firewallRuleName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -126,8 +126,8 @@ func (client FirewallRulesClient) CreateOrUpdateResponder(resp *http.Response) (
 // resourceGroupName is the name of the Azure resource group that contains the Data Lake Analytics account. accountName
 // is the name of the Data Lake Analytics account from which to delete the firewall rule. firewallRuleName is the name
 // of the firewall rule to delete.
-func (client FirewallRulesClient) Delete(resourceGroupName string, accountName string, firewallRuleName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, accountName, firewallRuleName)
+func (client FirewallRulesClient) Delete(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, accountName, firewallRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -149,7 +149,7 @@ func (client FirewallRulesClient) Delete(resourceGroupName string, accountName s
 }
 
 // DeletePreparer prepares the Delete request.
-func (client FirewallRulesClient) DeletePreparer(resourceGroupName string, accountName string, firewallRuleName string) (*http.Request, error) {
+func (client FirewallRulesClient) DeletePreparer(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"firewallRuleName":  autorest.Encode("path", firewallRuleName),
@@ -167,14 +167,13 @@ func (client FirewallRulesClient) DeletePreparer(resourceGroupName string, accou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataLakeAnalytics/accounts/{accountName}/firewallRules/{firewallRuleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -195,8 +194,8 @@ func (client FirewallRulesClient) DeleteResponder(resp *http.Response) (result a
 // resourceGroupName is the name of the Azure resource group that contains the Data Lake Analytics account. accountName
 // is the name of the Data Lake Analytics account from which to get the firewall rule. firewallRuleName is the name of
 // the firewall rule to retrieve.
-func (client FirewallRulesClient) Get(resourceGroupName string, accountName string, firewallRuleName string) (result FirewallRule, err error) {
-	req, err := client.GetPreparer(resourceGroupName, accountName, firewallRuleName)
+func (client FirewallRulesClient) Get(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string) (result FirewallRule, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, accountName, firewallRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "Get", nil, "Failure preparing request")
 		return
@@ -218,7 +217,7 @@ func (client FirewallRulesClient) Get(resourceGroupName string, accountName stri
 }
 
 // GetPreparer prepares the Get request.
-func (client FirewallRulesClient) GetPreparer(resourceGroupName string, accountName string, firewallRuleName string) (*http.Request, error) {
+func (client FirewallRulesClient) GetPreparer(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"firewallRuleName":  autorest.Encode("path", firewallRuleName),
@@ -236,14 +235,13 @@ func (client FirewallRulesClient) GetPreparer(resourceGroupName string, accountN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataLakeAnalytics/accounts/{accountName}/firewallRules/{firewallRuleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -264,8 +262,9 @@ func (client FirewallRulesClient) GetResponder(resp *http.Response) (result Fire
 //
 // resourceGroupName is the name of the Azure resource group that contains the Data Lake Analytics account. accountName
 // is the name of the Data Lake Analytics account from which to get the firewall rules.
-func (client FirewallRulesClient) ListByAccount(resourceGroupName string, accountName string) (result DataLakeAnalyticsFirewallRuleListResult, err error) {
-	req, err := client.ListByAccountPreparer(resourceGroupName, accountName)
+func (client FirewallRulesClient) ListByAccount(ctx context.Context, resourceGroupName string, accountName string) (result DataLakeAnalyticsFirewallRuleListResultPage, err error) {
+	result.fn = client.listByAccountNextResults
+	req, err := client.ListByAccountPreparer(ctx, resourceGroupName, accountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", nil, "Failure preparing request")
 		return
@@ -273,12 +272,12 @@ func (client FirewallRulesClient) ListByAccount(resourceGroupName string, accoun
 
 	resp, err := client.ListByAccountSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dlafrlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByAccountResponder(resp)
+	result.dlafrlr, err = client.ListByAccountResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", resp, "Failure responding to request")
 	}
@@ -287,7 +286,7 @@ func (client FirewallRulesClient) ListByAccount(resourceGroupName string, accoun
 }
 
 // ListByAccountPreparer prepares the ListByAccount request.
-func (client FirewallRulesClient) ListByAccountPreparer(resourceGroupName string, accountName string) (*http.Request, error) {
+func (client FirewallRulesClient) ListByAccountPreparer(ctx context.Context, resourceGroupName string, accountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -304,14 +303,13 @@ func (client FirewallRulesClient) ListByAccountPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataLakeAnalytics/accounts/{accountName}/firewallRules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByAccountSender sends the ListByAccount request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) ListByAccountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -328,73 +326,31 @@ func (client FirewallRulesClient) ListByAccountResponder(resp *http.Response) (r
 	return
 }
 
-// ListByAccountNextResults retrieves the next set of results, if any.
-func (client FirewallRulesClient) ListByAccountNextResults(lastResults DataLakeAnalyticsFirewallRuleListResult) (result DataLakeAnalyticsFirewallRuleListResult, err error) {
-	req, err := lastResults.DataLakeAnalyticsFirewallRuleListResultPreparer()
+// listByAccountNextResults retrieves the next set of results, if any.
+func (client FirewallRulesClient) listByAccountNextResults(lastResults DataLakeAnalyticsFirewallRuleListResult) (result DataLakeAnalyticsFirewallRuleListResult, err error) {
+	req, err := lastResults.dataLakeAnalyticsFirewallRuleListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "account.FirewallRulesClient", "listByAccountNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByAccountSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "account.FirewallRulesClient", "listByAccountNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByAccountResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "ListByAccount", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "listByAccountNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByAccountComplete gets all elements from the list without paging.
-func (client FirewallRulesClient) ListByAccountComplete(resourceGroupName string, accountName string, cancel <-chan struct{}) (<-chan FirewallRule, <-chan error) {
-	resultChan := make(chan FirewallRule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByAccount(resourceGroupName, accountName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByAccountNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByAccountComplete enumerates all values, automatically crossing page boundaries as required.
+func (client FirewallRulesClient) ListByAccountComplete(ctx context.Context, resourceGroupName string, accountName string) (result DataLakeAnalyticsFirewallRuleListResultIterator, err error) {
+	result.page, err = client.ListByAccount(ctx, resourceGroupName, accountName)
+	return
 }
 
 // Update updates the specified firewall rule.
@@ -402,8 +358,8 @@ func (client FirewallRulesClient) ListByAccountComplete(resourceGroupName string
 // resourceGroupName is the name of the Azure resource group that contains the Data Lake Analytics account. accountName
 // is the name of the Data Lake Analytics account to which to update the firewall rule. firewallRuleName is the name of
 // the firewall rule to update. parameters is parameters supplied to update the firewall rule.
-func (client FirewallRulesClient) Update(resourceGroupName string, accountName string, firewallRuleName string, parameters *UpdateFirewallRuleParameters) (result FirewallRule, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, accountName, firewallRuleName, parameters)
+func (client FirewallRulesClient) Update(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string, parameters *UpdateFirewallRuleParameters) (result FirewallRule, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, accountName, firewallRuleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "account.FirewallRulesClient", "Update", nil, "Failure preparing request")
 		return
@@ -425,7 +381,7 @@ func (client FirewallRulesClient) Update(resourceGroupName string, accountName s
 }
 
 // UpdatePreparer prepares the Update request.
-func (client FirewallRulesClient) UpdatePreparer(resourceGroupName string, accountName string, firewallRuleName string, parameters *UpdateFirewallRuleParameters) (*http.Request, error) {
+func (client FirewallRulesClient) UpdatePreparer(ctx context.Context, resourceGroupName string, accountName string, firewallRuleName string, parameters *UpdateFirewallRuleParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"firewallRuleName":  autorest.Encode("path", firewallRuleName),
@@ -448,14 +404,13 @@ func (client FirewallRulesClient) UpdatePreparer(resourceGroupName string, accou
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithJSON(parameters))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

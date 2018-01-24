@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/dTaDGpxiMHj3lFlb8pUnNUoP8XA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/mU9AB3arZXHonawOKvVGxjy7qkY\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:alpha",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager Alpha",
  "version": "alpha",
- "revision": "20171102",
+ "revision": "20171214",
  "title": "Google Cloud Deployment Manager Alpha API",
  "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -198,6 +198,10 @@
     "collection": {
      "type": "string",
      "description": "The collection that identifies this resource within its service."
+    },
+    "methodMap": {
+     "$ref": "MethodMap",
+     "description": "Custom verb method mappings to support unordered list API mappings."
     },
     "options": {
      "$ref": "Options",
@@ -739,10 +743,37 @@
     }
    }
   },
+  "MethodMap": {
+   "id": "MethodMap",
+   "type": "object",
+   "description": "Deployment Manager will call these methods during the events of creation/deletion/update/get/setIamPolicy",
+   "properties": {
+    "create": {
+     "type": "string",
+     "description": "The action identifier for the create method to be used for this collection"
+    },
+    "delete": {
+     "type": "string",
+     "description": "The action identifier for the delete method to be used for this collection"
+    },
+    "get": {
+     "type": "string",
+     "description": "The action identifier for the get method to be used for this collection"
+    },
+    "setIamPolicy": {
+     "type": "string",
+     "description": "The action identifier for the setIamPolicy method to be used for this collection"
+    },
+    "update": {
+     "type": "string",
+     "description": "The action identifier for the update method to be used for this collection"
+    }
+   }
+  },
   "Operation": {
    "id": "Operation",
    "type": "object",
-   "description": "An Operation resource, used to manage asynchronous API requests.",
+   "description": "An Operation resource, used to manage asynchronous API requests. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)",
    "properties": {
     "clientOperationId": {
      "type": "string",
@@ -1053,6 +1084,13 @@
      "type": "string",
      "description": "Output only. The current properties of the resource before any references have been filled in. Returned as serialized YAML."
     },
+    "runtimePolicies": {
+     "type": "array",
+     "description": "Output only. In case this is an action, it will show the runtimePolicies on which this action will run in the deployment",
+     "items": {
+      "type": "string"
+     }
+    },
     "type": {
      "type": "string",
      "description": "Output only. The type of the resource, for example compute.v1.instance, or cloudfunctions.v1beta1.function."
@@ -1171,6 +1209,13 @@
     "properties": {
      "type": "string",
      "description": "Output only. The set of updated properties for this resource, before references are expanded. Returned as serialized YAML."
+    },
+    "runtimePolicies": {
+     "type": "array",
+     "description": "Output only. In case this is an action, it will show the runtimePolicies that this action will have after updating the deployment.",
+     "items": {
+      "type": "string"
+     }
     },
     "state": {
      "type": "string",

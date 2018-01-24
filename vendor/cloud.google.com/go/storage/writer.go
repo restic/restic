@@ -187,6 +187,8 @@ func (w *Writer) Close() error {
 
 // CloseWithError aborts the write operation with the provided error.
 // CloseWithError always returns nil.
+//
+// Deprecated: cancel the context passed to NewWriter instead.
 func (w *Writer) CloseWithError(err error) error {
 	if !w.opened {
 		return nil

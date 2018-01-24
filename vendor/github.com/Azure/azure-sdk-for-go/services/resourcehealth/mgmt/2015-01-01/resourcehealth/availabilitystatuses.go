@@ -18,6 +18,7 @@ package resourcehealth
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // AvailabilityStatusesClient is the the Resource Health Client.
 type AvailabilityStatusesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAvailabilityStatusesClient creates an instance of the AvailabilityStatusesClient client.
@@ -48,8 +49,8 @@ func NewAvailabilityStatusesClientWithBaseURI(baseURI string, subscriptionID str
 // filter is the filter to apply on the operation. For more information please see
 // https://docs.microsoft.com/en-us/rest/api/apimanagement/apis?redirectedfrom=MSDN expand is setting
 // $expand=recommendedactions in url query expands the recommendedactions in the response.
-func (client AvailabilityStatusesClient) GetByResource(resourceURI string, filter string, expand string) (result AvailabilityStatus, err error) {
-	req, err := client.GetByResourcePreparer(resourceURI, filter, expand)
+func (client AvailabilityStatusesClient) GetByResource(ctx context.Context, resourceURI string, filter string, expand string) (result AvailabilityStatus, err error) {
+	req, err := client.GetByResourcePreparer(ctx, resourceURI, filter, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "GetByResource", nil, "Failure preparing request")
 		return
@@ -71,7 +72,7 @@ func (client AvailabilityStatusesClient) GetByResource(resourceURI string, filte
 }
 
 // GetByResourcePreparer prepares the GetByResource request.
-func (client AvailabilityStatusesClient) GetByResourcePreparer(resourceURI string, filter string, expand string) (*http.Request, error) {
+func (client AvailabilityStatusesClient) GetByResourcePreparer(ctx context.Context, resourceURI string, filter string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceUri": resourceURI,
 	}
@@ -92,14 +93,13 @@ func (client AvailabilityStatusesClient) GetByResourcePreparer(resourceURI strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{resourceUri}/providers/Microsoft.ResourceHealth/availabilityStatuses/current", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetByResourceSender sends the GetByResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client AvailabilityStatusesClient) GetByResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -127,8 +127,9 @@ func (client AvailabilityStatusesClient) GetByResourceResponder(resp *http.Respo
 // filter is the filter to apply on the operation. For more information please see
 // https://docs.microsoft.com/en-us/rest/api/apimanagement/apis?redirectedfrom=MSDN expand is setting
 // $expand=recommendedactions in url query expands the recommendedactions in the response.
-func (client AvailabilityStatusesClient) List(resourceURI string, filter string, expand string) (result AvailabilityStatusListResult, err error) {
-	req, err := client.ListPreparer(resourceURI, filter, expand)
+func (client AvailabilityStatusesClient) List(ctx context.Context, resourceURI string, filter string, expand string) (result AvailabilityStatusListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceURI, filter, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", nil, "Failure preparing request")
 		return
@@ -136,12 +137,12 @@ func (client AvailabilityStatusesClient) List(resourceURI string, filter string,
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.aslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.aslr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", resp, "Failure responding to request")
 	}
@@ -150,7 +151,7 @@ func (client AvailabilityStatusesClient) List(resourceURI string, filter string,
 }
 
 // ListPreparer prepares the List request.
-func (client AvailabilityStatusesClient) ListPreparer(resourceURI string, filter string, expand string) (*http.Request, error) {
+func (client AvailabilityStatusesClient) ListPreparer(ctx context.Context, resourceURI string, filter string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceUri": resourceURI,
 	}
@@ -171,14 +172,13 @@ func (client AvailabilityStatusesClient) ListPreparer(resourceURI string, filter
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{resourceUri}/providers/Microsoft.ResourceHealth/availabilityStatuses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client AvailabilityStatusesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -195,73 +195,31 @@ func (client AvailabilityStatusesClient) ListResponder(resp *http.Response) (res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client AvailabilityStatusesClient) ListNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
-	req, err := lastResults.AvailabilityStatusListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client AvailabilityStatusesClient) listNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
+	req, err := lastResults.availabilityStatusListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client AvailabilityStatusesClient) ListComplete(resourceURI string, filter string, expand string, cancel <-chan struct{}) (<-chan AvailabilityStatus, <-chan error) {
-	resultChan := make(chan AvailabilityStatus)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceURI, filter, expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AvailabilityStatusesClient) ListComplete(ctx context.Context, resourceURI string, filter string, expand string) (result AvailabilityStatusListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceURI, filter, expand)
+	return
 }
 
 // ListByResourceGroup lists the current availability status for all the resources in the resource group. Use the
@@ -270,8 +228,9 @@ func (client AvailabilityStatusesClient) ListComplete(resourceURI string, filter
 // resourceGroupName is the name of the resource group. filter is the filter to apply on the operation. For more
 // information please see https://docs.microsoft.com/en-us/rest/api/apimanagement/apis?redirectedfrom=MSDN expand is
 // setting $expand=recommendedactions in url query expands the recommendedactions in the response.
-func (client AvailabilityStatusesClient) ListByResourceGroup(resourceGroupName string, filter string, expand string) (result AvailabilityStatusListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, filter, expand)
+func (client AvailabilityStatusesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, filter string, expand string) (result AvailabilityStatusListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, filter, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -279,12 +238,12 @@ func (client AvailabilityStatusesClient) ListByResourceGroup(resourceGroupName s
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.aslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.aslr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -293,7 +252,7 @@ func (client AvailabilityStatusesClient) ListByResourceGroup(resourceGroupName s
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client AvailabilityStatusesClient) ListByResourceGroupPreparer(resourceGroupName string, filter string, expand string) (*http.Request, error) {
+func (client AvailabilityStatusesClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, filter string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -315,14 +274,13 @@ func (client AvailabilityStatusesClient) ListByResourceGroupPreparer(resourceGro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ResourceHealth/availabilityStatuses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client AvailabilityStatusesClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -339,73 +297,31 @@ func (client AvailabilityStatusesClient) ListByResourceGroupResponder(resp *http
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client AvailabilityStatusesClient) ListByResourceGroupNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
-	req, err := lastResults.AvailabilityStatusListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client AvailabilityStatusesClient) listByResourceGroupNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
+	req, err := lastResults.availabilityStatusListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client AvailabilityStatusesClient) ListByResourceGroupComplete(resourceGroupName string, filter string, expand string, cancel <-chan struct{}) (<-chan AvailabilityStatus, <-chan error) {
-	resultChan := make(chan AvailabilityStatus)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, filter, expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AvailabilityStatusesClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, filter string, expand string) (result AvailabilityStatusListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, filter, expand)
+	return
 }
 
 // ListBySubscriptionID lists the current availability status for all the resources in the subscription. Use the
@@ -414,8 +330,9 @@ func (client AvailabilityStatusesClient) ListByResourceGroupComplete(resourceGro
 // filter is the filter to apply on the operation. For more information please see
 // https://docs.microsoft.com/en-us/rest/api/apimanagement/apis?redirectedfrom=MSDN expand is setting
 // $expand=recommendedactions in url query expands the recommendedactions in the response.
-func (client AvailabilityStatusesClient) ListBySubscriptionID(filter string, expand string) (result AvailabilityStatusListResult, err error) {
-	req, err := client.ListBySubscriptionIDPreparer(filter, expand)
+func (client AvailabilityStatusesClient) ListBySubscriptionID(ctx context.Context, filter string, expand string) (result AvailabilityStatusListResultPage, err error) {
+	result.fn = client.listBySubscriptionIDNextResults
+	req, err := client.ListBySubscriptionIDPreparer(ctx, filter, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", nil, "Failure preparing request")
 		return
@@ -423,12 +340,12 @@ func (client AvailabilityStatusesClient) ListBySubscriptionID(filter string, exp
 
 	resp, err := client.ListBySubscriptionIDSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.aslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionIDResponder(resp)
+	result.aslr, err = client.ListBySubscriptionIDResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", resp, "Failure responding to request")
 	}
@@ -437,7 +354,7 @@ func (client AvailabilityStatusesClient) ListBySubscriptionID(filter string, exp
 }
 
 // ListBySubscriptionIDPreparer prepares the ListBySubscriptionID request.
-func (client AvailabilityStatusesClient) ListBySubscriptionIDPreparer(filter string, expand string) (*http.Request, error) {
+func (client AvailabilityStatusesClient) ListBySubscriptionIDPreparer(ctx context.Context, filter string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -458,14 +375,13 @@ func (client AvailabilityStatusesClient) ListBySubscriptionIDPreparer(filter str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ResourceHealth/availabilityStatuses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionIDSender sends the ListBySubscriptionID request. The method will close the
 // http.Response Body if it receives an error.
 func (client AvailabilityStatusesClient) ListBySubscriptionIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -482,71 +398,29 @@ func (client AvailabilityStatusesClient) ListBySubscriptionIDResponder(resp *htt
 	return
 }
 
-// ListBySubscriptionIDNextResults retrieves the next set of results, if any.
-func (client AvailabilityStatusesClient) ListBySubscriptionIDNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
-	req, err := lastResults.AvailabilityStatusListResultPreparer()
+// listBySubscriptionIDNextResults retrieves the next set of results, if any.
+func (client AvailabilityStatusesClient) listBySubscriptionIDNextResults(lastResults AvailabilityStatusListResult) (result AvailabilityStatusListResult, err error) {
+	req, err := lastResults.availabilityStatusListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listBySubscriptionIDNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionIDSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listBySubscriptionIDNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionIDResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "ListBySubscriptionID", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "resourcehealth.AvailabilityStatusesClient", "listBySubscriptionIDNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionIDComplete gets all elements from the list without paging.
-func (client AvailabilityStatusesClient) ListBySubscriptionIDComplete(filter string, expand string, cancel <-chan struct{}) (<-chan AvailabilityStatus, <-chan error) {
-	resultChan := make(chan AvailabilityStatus)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscriptionID(filter, expand)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionIDNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionIDComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AvailabilityStatusesClient) ListBySubscriptionIDComplete(ctx context.Context, filter string, expand string) (result AvailabilityStatusListResultIterator, err error) {
+	result.page, err = client.ListBySubscriptionID(ctx, filter, expand)
+	return
 }

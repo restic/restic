@@ -1,6 +1,8 @@
 // Package keyvault implements the Azure ARM Keyvault service API version 2016-10-01.
 //
 // The key vault client performs cryptographic key operations and vault operations against the Key Vault service.
+//
+// Deprecated: Please instead use github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault
 package keyvault
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.

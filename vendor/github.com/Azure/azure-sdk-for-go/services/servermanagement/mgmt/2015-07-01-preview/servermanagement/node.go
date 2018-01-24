@@ -18,6 +18,7 @@ package servermanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // NodeClient is the REST API for Azure Server Management Service.
 type NodeClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewNodeClient creates an instance of the NodeClient client.
@@ -39,15 +40,12 @@ func NewNodeClientWithBaseURI(baseURI string, subscriptionID string) NodeClient 
 	return NodeClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create creates or updates a management node. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Create creates or updates a management node.
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum). gatewayParameters is parameters supplied to the CreateOrUpdate
 // operation.
-func (client NodeClient) Create(resourceGroupName string, nodeName string, gatewayParameters NodeParameters, cancel <-chan struct{}) (<-chan NodeResource, <-chan error) {
-	resultChan := make(chan NodeResource, 1)
-	errChan := make(chan error, 1)
+func (client NodeClient) Create(ctx context.Context, resourceGroupName string, nodeName string, gatewayParameters NodeParameters) (result NodeCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -56,46 +54,26 @@ func (client NodeClient) Create(resourceGroupName string, nodeName string, gatew
 			Constraints: []validation.Constraint{{Target: "nodeName", Name: validation.MaxLength, Rule: 256, Chain: nil},
 				{Target: "nodeName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "nodeName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result NodeResource
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, nodeName, gatewayParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, nodeName, gatewayParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client NodeClient) CreatePreparer(resourceGroupName string, nodeName string, gatewayParameters NodeParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client NodeClient) CreatePreparer(ctx context.Context, resourceGroupName string, nodeName string, gatewayParameters NodeParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -114,16 +92,22 @@ func (client NodeClient) CreatePreparer(resourceGroupName string, nodeName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}", pathParameters),
 		autorest.WithJSON(gatewayParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client NodeClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client NodeClient) CreateSender(req *http.Request) (future NodeCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -143,7 +127,7 @@ func (client NodeClient) CreateResponder(resp *http.Response) (result NodeResour
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum).
-func (client NodeClient) Delete(resourceGroupName string, nodeName string) (result autorest.Response, err error) {
+func (client NodeClient) Delete(ctx context.Context, resourceGroupName string, nodeName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -155,7 +139,7 @@ func (client NodeClient) Delete(resourceGroupName string, nodeName string) (resu
 		return result, validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, nodeName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Delete", nil, "Failure preparing request")
 		return
@@ -177,7 +161,7 @@ func (client NodeClient) Delete(resourceGroupName string, nodeName string) (resu
 }
 
 // DeletePreparer prepares the Delete request.
-func (client NodeClient) DeletePreparer(resourceGroupName string, nodeName string) (*http.Request, error) {
+func (client NodeClient) DeletePreparer(ctx context.Context, resourceGroupName string, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -194,14 +178,13 @@ func (client NodeClient) DeletePreparer(resourceGroupName string, nodeName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -221,7 +204,7 @@ func (client NodeClient) DeleteResponder(resp *http.Response) (result autorest.R
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum).
-func (client NodeClient) Get(resourceGroupName string, nodeName string) (result NodeResource, err error) {
+func (client NodeClient) Get(ctx context.Context, resourceGroupName string, nodeName string) (result NodeResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -233,7 +216,7 @@ func (client NodeClient) Get(resourceGroupName string, nodeName string) (result 
 		return result, validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, nodeName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Get", nil, "Failure preparing request")
 		return
@@ -255,7 +238,7 @@ func (client NodeClient) Get(resourceGroupName string, nodeName string) (result 
 }
 
 // GetPreparer prepares the Get request.
-func (client NodeClient) GetPreparer(resourceGroupName string, nodeName string) (*http.Request, error) {
+func (client NodeClient) GetPreparer(ctx context.Context, resourceGroupName string, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -272,14 +255,13 @@ func (client NodeClient) GetPreparer(resourceGroupName string, nodeName string) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -297,8 +279,9 @@ func (client NodeClient) GetResponder(resp *http.Response) (result NodeResource,
 }
 
 // List lists nodes in a subscription.
-func (client NodeClient) List() (result NodeResources, err error) {
-	req, err := client.ListPreparer()
+func (client NodeClient) List(ctx context.Context) (result NodeResourcesPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", nil, "Failure preparing request")
 		return
@@ -306,12 +289,12 @@ func (client NodeClient) List() (result NodeResources, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.nr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.nr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", resp, "Failure responding to request")
 	}
@@ -320,7 +303,7 @@ func (client NodeClient) List() (result NodeResources, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client NodeClient) ListPreparer() (*http.Request, error) {
+func (client NodeClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -335,14 +318,13 @@ func (client NodeClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServerManagement/nodes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -359,79 +341,37 @@ func (client NodeClient) ListResponder(resp *http.Response) (result NodeResource
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client NodeClient) ListNextResults(lastResults NodeResources) (result NodeResources, err error) {
-	req, err := lastResults.NodeResourcesPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client NodeClient) listNextResults(lastResults NodeResources) (result NodeResources, err error) {
+	req, err := lastResults.nodeResourcesPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client NodeClient) ListComplete(cancel <-chan struct{}) (<-chan NodeResource, <-chan error) {
-	resultChan := make(chan NodeResource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client NodeClient) ListComplete(ctx context.Context) (result NodeResourcesIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListForResourceGroup lists nodes in a resource group.
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
-func (client NodeClient) ListForResourceGroup(resourceGroupName string) (result NodeResources, err error) {
+func (client NodeClient) ListForResourceGroup(ctx context.Context, resourceGroupName string) (result NodeResourcesPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -439,7 +379,8 @@ func (client NodeClient) ListForResourceGroup(resourceGroupName string) (result 
 		return result, validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "ListForResourceGroup")
 	}
 
-	req, err := client.ListForResourceGroupPreparer(resourceGroupName)
+	result.fn = client.listForResourceGroupNextResults
+	req, err := client.ListForResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", nil, "Failure preparing request")
 		return
@@ -447,12 +388,12 @@ func (client NodeClient) ListForResourceGroup(resourceGroupName string) (result 
 
 	resp, err := client.ListForResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.nr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListForResourceGroupResponder(resp)
+	result.nr, err = client.ListForResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", resp, "Failure responding to request")
 	}
@@ -461,7 +402,7 @@ func (client NodeClient) ListForResourceGroup(resourceGroupName string) (result 
 }
 
 // ListForResourceGroupPreparer prepares the ListForResourceGroup request.
-func (client NodeClient) ListForResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client NodeClient) ListForResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -477,14 +418,13 @@ func (client NodeClient) ListForResourceGroupPreparer(resourceGroupName string) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListForResourceGroupSender sends the ListForResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeClient) ListForResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -501,84 +441,39 @@ func (client NodeClient) ListForResourceGroupResponder(resp *http.Response) (res
 	return
 }
 
-// ListForResourceGroupNextResults retrieves the next set of results, if any.
-func (client NodeClient) ListForResourceGroupNextResults(lastResults NodeResources) (result NodeResources, err error) {
-	req, err := lastResults.NodeResourcesPreparer()
+// listForResourceGroupNextResults retrieves the next set of results, if any.
+func (client NodeClient) listForResourceGroupNextResults(lastResults NodeResources) (result NodeResources, err error) {
+	req, err := lastResults.nodeResourcesPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listForResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListForResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listForResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListForResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "ListForResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "listForResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListForResourceGroupComplete gets all elements from the list without paging.
-func (client NodeClient) ListForResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan NodeResource, <-chan error) {
-	resultChan := make(chan NodeResource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListForResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListForResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListForResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client NodeClient) ListForResourceGroupComplete(ctx context.Context, resourceGroupName string) (result NodeResourcesIterator, err error) {
+	result.page, err = client.ListForResourceGroup(ctx, resourceGroupName)
+	return
 }
 
-// Update updates a management node. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Update updates a management node.
 //
 // resourceGroupName is the resource group name uniquely identifies the resource group within the user subscriptionId.
 // nodeName is the node name (256 characters maximum). nodeParameters is parameters supplied to the CreateOrUpdate
 // operation.
-func (client NodeClient) Update(resourceGroupName string, nodeName string, nodeParameters NodeParameters, cancel <-chan struct{}) (<-chan NodeResource, <-chan error) {
-	resultChan := make(chan NodeResource, 1)
-	errChan := make(chan error, 1)
+func (client NodeClient) Update(ctx context.Context, resourceGroupName string, nodeName string, nodeParameters NodeParameters) (result NodeUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MinLength, Rule: 3, Chain: nil},
@@ -587,46 +482,26 @@ func (client NodeClient) Update(resourceGroupName string, nodeName string, nodeP
 			Constraints: []validation.Constraint{{Target: "nodeName", Name: validation.MaxLength, Rule: 256, Chain: nil},
 				{Target: "nodeName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "nodeName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Update")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "servermanagement.NodeClient", "Update")
 	}
 
-	go func() {
-		var err error
-		var result NodeResource
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, nodeName, nodeParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Update", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, nodeName, nodeParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "servermanagement.NodeClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client NodeClient) UpdatePreparer(resourceGroupName string, nodeName string, nodeParameters NodeParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client NodeClient) UpdatePreparer(ctx context.Context, resourceGroupName string, nodeName string, nodeParameters NodeParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName":          autorest.Encode("path", nodeName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -645,16 +520,22 @@ func (client NodeClient) UpdatePreparer(resourceGroupName string, nodeName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServerManagement/nodes/{nodeName}", pathParameters),
 		autorest.WithJSON(nodeParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client NodeClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client NodeClient) UpdateSender(req *http.Request) (future NodeUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

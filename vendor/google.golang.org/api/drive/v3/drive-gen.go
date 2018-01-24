@@ -791,8 +791,10 @@ type File struct {
 
 	// Parents: The IDs of the parent folders which contain the file.
 	// If not specified as part of a create request, the file will be placed
-	// directly in the My Drive folder. Update requests must use the
-	// addParents and removeParents parameters to modify the values.
+	// directly in the user's My Drive folder. If not specified as part of a
+	// copy request, the file will inherit any discoverable parents of the
+	// source file. Update requests must use the addParents and
+	// removeParents parameters to modify the parents list.
 	Parents []string `json:"parents,omitempty"`
 
 	// PermissionIds: List of permission IDs for users with access to this
@@ -5758,8 +5760,8 @@ func (r *PermissionsService) Create(fileId string, permission *Permission) *Perm
 	return c
 }
 
-// EmailMessage sets the optional parameter "emailMessage": A custom
-// message to include in the notification email.
+// EmailMessage sets the optional parameter "emailMessage": A plain text
+// custom message to include in the notification email.
 func (c *PermissionsCreateCall) EmailMessage(emailMessage string) *PermissionsCreateCall {
 	c.urlParams_.Set("emailMessage", emailMessage)
 	return c
@@ -5895,7 +5897,7 @@ func (c *PermissionsCreateCall) Do(opts ...googleapi.CallOption) (*Permission, e
 	//   ],
 	//   "parameters": {
 	//     "emailMessage": {
-	//       "description": "A custom message to include in the notification email.",
+	//       "description": "A plain text custom message to include in the notification email.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

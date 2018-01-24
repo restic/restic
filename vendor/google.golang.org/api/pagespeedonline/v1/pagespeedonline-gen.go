@@ -79,6 +79,9 @@ type PagespeedapiService struct {
 }
 
 type Result struct {
+	// CaptchaResult: The captcha verify result
+	CaptchaResult string `json:"captchaResult,omitempty"`
+
 	// FormattedResults: Localized PageSpeed results. Contains a ruleResults
 	// entry for each PageSpeed rule instantiated and run by the server.
 	FormattedResults *ResultFormattedResults `json:"formattedResults,omitempty"`
@@ -120,7 +123,7 @@ type Result struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "FormattedResults") to
+	// ForceSendFields is a list of field names (e.g. "CaptchaResult") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -128,13 +131,12 @@ type Result struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "FormattedResults") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "CaptchaResult") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 

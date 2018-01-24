@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // IdentityProvidersClient is the apiManagement Client
 type IdentityProvidersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewIdentityProvidersClient creates an instance of the IdentityProvidersClient client.
@@ -43,7 +44,7 @@ func NewIdentityProvidersClientWithBaseURI(baseURI string, subscriptionID string
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // identityProviderName is identity Provider Type identifier. parameters is create parameters.
-func (client IdentityProvidersClient) CreateOrUpdate(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderContract) (result autorest.Response, err error) {
+func (client IdentityProvidersClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderContract) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -59,7 +60,7 @@ func (client IdentityProvidersClient) CreateOrUpdate(resourceGroupName string, s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.IdentityProvidersClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serviceName, identityProviderName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serviceName, identityProviderName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.IdentityProvidersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -81,7 +82,7 @@ func (client IdentityProvidersClient) CreateOrUpdate(resourceGroupName string, s
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client IdentityProvidersClient) CreateOrUpdatePreparer(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderContract) (*http.Request, error) {
+func (client IdentityProvidersClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderContract) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"identityProviderName": autorest.Encode("path", identityProviderName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -101,14 +102,13 @@ func (client IdentityProvidersClient) CreateOrUpdatePreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/identityProviders/{identityProviderName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client IdentityProvidersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -129,7 +129,7 @@ func (client IdentityProvidersClient) CreateOrUpdateResponder(resp *http.Respons
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // identityProviderName is identity Provider Type identifier. ifMatch is the entity state (Etag) version of the backend
 // to delete. A value of "*" can be used for If-Match to unconditionally apply the operation.
-func (client IdentityProvidersClient) Delete(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, ifMatch string) (result autorest.Response, err error) {
+func (client IdentityProvidersClient) Delete(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -138,7 +138,7 @@ func (client IdentityProvidersClient) Delete(resourceGroupName string, serviceNa
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.IdentityProvidersClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, serviceName, identityProviderName, ifMatch)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName, identityProviderName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.IdentityProvidersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -160,7 +160,7 @@ func (client IdentityProvidersClient) Delete(resourceGroupName string, serviceNa
 }
 
 // DeletePreparer prepares the Delete request.
-func (client IdentityProvidersClient) DeletePreparer(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, ifMatch string) (*http.Request, error) {
+func (client IdentityProvidersClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"identityProviderName": autorest.Encode("path", identityProviderName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -179,14 +179,13 @@ func (client IdentityProvidersClient) DeletePreparer(resourceGroupName string, s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/identityProviders/{identityProviderName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client IdentityProvidersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -206,7 +205,7 @@ func (client IdentityProvidersClient) DeleteResponder(resp *http.Response) (resu
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // identityProviderName is identity Provider Type identifier.
-func (client IdentityProvidersClient) Get(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType) (result IdentityProviderContract, err error) {
+func (client IdentityProvidersClient) Get(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType) (result IdentityProviderContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -215,7 +214,7 @@ func (client IdentityProvidersClient) Get(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.IdentityProvidersClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, identityProviderName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, identityProviderName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.IdentityProvidersClient", "Get", nil, "Failure preparing request")
 		return
@@ -237,7 +236,7 @@ func (client IdentityProvidersClient) Get(resourceGroupName string, serviceName 
 }
 
 // GetPreparer prepares the Get request.
-func (client IdentityProvidersClient) GetPreparer(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType) (*http.Request, error) {
+func (client IdentityProvidersClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"identityProviderName": autorest.Encode("path", identityProviderName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -255,14 +254,13 @@ func (client IdentityProvidersClient) GetPreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/identityProviders/{identityProviderName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client IdentityProvidersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -282,7 +280,7 @@ func (client IdentityProvidersClient) GetResponder(resp *http.Response) (result 
 // ListByService lists a collection of Identity Provider configured in the specified service instance.
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
-func (client IdentityProvidersClient) ListByService(resourceGroupName string, serviceName string) (result IdentityProviderList, err error) {
+func (client IdentityProvidersClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string) (result IdentityProviderList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -291,7 +289,7 @@ func (client IdentityProvidersClient) ListByService(resourceGroupName string, se
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.IdentityProvidersClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName)
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.IdentityProvidersClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -313,7 +311,7 @@ func (client IdentityProvidersClient) ListByService(resourceGroupName string, se
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client IdentityProvidersClient) ListByServicePreparer(resourceGroupName string, serviceName string) (*http.Request, error) {
+func (client IdentityProvidersClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -330,14 +328,13 @@ func (client IdentityProvidersClient) ListByServicePreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/identityProviders", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client IdentityProvidersClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -360,7 +357,7 @@ func (client IdentityProvidersClient) ListByServiceResponder(resp *http.Response
 // identityProviderName is identity Provider Type identifier. parameters is update parameters. ifMatch is the entity
 // state (Etag) version of the identity provider configuration to update. A value of "*" can be used for If-Match to
 // unconditionally apply the operation.
-func (client IdentityProvidersClient) Update(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderUpdateParameters, ifMatch string) (result autorest.Response, err error) {
+func (client IdentityProvidersClient) Update(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderUpdateParameters, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -369,7 +366,7 @@ func (client IdentityProvidersClient) Update(resourceGroupName string, serviceNa
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.IdentityProvidersClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, serviceName, identityProviderName, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serviceName, identityProviderName, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.IdentityProvidersClient", "Update", nil, "Failure preparing request")
 		return
@@ -391,7 +388,7 @@ func (client IdentityProvidersClient) Update(resourceGroupName string, serviceNa
 }
 
 // UpdatePreparer prepares the Update request.
-func (client IdentityProvidersClient) UpdatePreparer(resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderUpdateParameters, ifMatch string) (*http.Request, error) {
+func (client IdentityProvidersClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, identityProviderName IdentityProviderNameType, parameters IdentityProviderUpdateParameters, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"identityProviderName": autorest.Encode("path", identityProviderName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -412,14 +409,13 @@ func (client IdentityProvidersClient) UpdatePreparer(resourceGroupName string, s
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client IdentityProvidersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

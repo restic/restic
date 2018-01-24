@@ -18,6 +18,7 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // with Azure Customer Insights service to manage your resources. The API has entities that capture the relationship
 // between an end user and the Azure Customer Insights service.
 type ViewsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewViewsClient creates an instance of the ViewsClient client.
@@ -45,7 +46,7 @@ func NewViewsClientWithBaseURI(baseURI string, subscriptionID string) ViewsClien
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. viewName is the name of the
 // view. parameters is parameters supplied to the CreateOrUpdate View operation.
-func (client ViewsClient) CreateOrUpdate(resourceGroupName string, hubName string, viewName string, parameters ViewResourceFormat) (result ViewResourceFormat, err error) {
+func (client ViewsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, hubName string, viewName string, parameters ViewResourceFormat) (result ViewResourceFormat, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: viewName,
 			Constraints: []validation.Constraint{{Target: "viewName", Name: validation.MaxLength, Rule: 512, Chain: nil},
@@ -56,7 +57,7 @@ func (client ViewsClient) CreateOrUpdate(resourceGroupName string, hubName strin
 		return result, validation.NewErrorWithValidationError(err, "customerinsights.ViewsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, hubName, viewName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, hubName, viewName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client ViewsClient) CreateOrUpdate(resourceGroupName string, hubName strin
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ViewsClient) CreateOrUpdatePreparer(resourceGroupName string, hubName string, viewName string, parameters ViewResourceFormat) (*http.Request, error) {
+func (client ViewsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, hubName string, viewName string, parameters ViewResourceFormat) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -98,14 +99,13 @@ func (client ViewsClient) CreateOrUpdatePreparer(resourceGroupName string, hubNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/views/{viewName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ViewsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -126,8 +126,8 @@ func (client ViewsClient) CreateOrUpdateResponder(resp *http.Response) (result V
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. viewName is the name of the
 // view. userID is the user ID. Use * to retreive hub level view.
-func (client ViewsClient) Delete(resourceGroupName string, hubName string, viewName string, userID string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, hubName, viewName, userID)
+func (client ViewsClient) Delete(ctx context.Context, resourceGroupName string, hubName string, viewName string, userID string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, hubName, viewName, userID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -149,7 +149,7 @@ func (client ViewsClient) Delete(resourceGroupName string, hubName string, viewN
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ViewsClient) DeletePreparer(resourceGroupName string, hubName string, viewName string, userID string) (*http.Request, error) {
+func (client ViewsClient) DeletePreparer(ctx context.Context, resourceGroupName string, hubName string, viewName string, userID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -168,14 +168,13 @@ func (client ViewsClient) DeletePreparer(resourceGroupName string, hubName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/views/{viewName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ViewsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -195,8 +194,8 @@ func (client ViewsClient) DeleteResponder(resp *http.Response) (result autorest.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. viewName is the name of the
 // view. userID is the user ID. Use * to retreive hub level view.
-func (client ViewsClient) Get(resourceGroupName string, hubName string, viewName string, userID string) (result ViewResourceFormat, err error) {
-	req, err := client.GetPreparer(resourceGroupName, hubName, viewName, userID)
+func (client ViewsClient) Get(ctx context.Context, resourceGroupName string, hubName string, viewName string, userID string) (result ViewResourceFormat, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, hubName, viewName, userID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "Get", nil, "Failure preparing request")
 		return
@@ -218,7 +217,7 @@ func (client ViewsClient) Get(resourceGroupName string, hubName string, viewName
 }
 
 // GetPreparer prepares the Get request.
-func (client ViewsClient) GetPreparer(resourceGroupName string, hubName string, viewName string, userID string) (*http.Request, error) {
+func (client ViewsClient) GetPreparer(ctx context.Context, resourceGroupName string, hubName string, viewName string, userID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -237,14 +236,13 @@ func (client ViewsClient) GetPreparer(resourceGroupName string, hubName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/views/{viewName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ViewsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -265,8 +263,9 @@ func (client ViewsClient) GetResponder(resp *http.Response) (result ViewResource
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. userID is the user ID. Use * to
 // retreive hub level views.
-func (client ViewsClient) ListByHub(resourceGroupName string, hubName string, userID string) (result ViewListResult, err error) {
-	req, err := client.ListByHubPreparer(resourceGroupName, hubName, userID)
+func (client ViewsClient) ListByHub(ctx context.Context, resourceGroupName string, hubName string, userID string) (result ViewListResultPage, err error) {
+	result.fn = client.listByHubNextResults
+	req, err := client.ListByHubPreparer(ctx, resourceGroupName, hubName, userID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", nil, "Failure preparing request")
 		return
@@ -274,12 +273,12 @@ func (client ViewsClient) ListByHub(resourceGroupName string, hubName string, us
 
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByHubResponder(resp)
+	result.vlr, err = client.ListByHubResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", resp, "Failure responding to request")
 	}
@@ -288,7 +287,7 @@ func (client ViewsClient) ListByHub(resourceGroupName string, hubName string, us
 }
 
 // ListByHubPreparer prepares the ListByHub request.
-func (client ViewsClient) ListByHubPreparer(resourceGroupName string, hubName string, userID string) (*http.Request, error) {
+func (client ViewsClient) ListByHubPreparer(ctx context.Context, resourceGroupName string, hubName string, userID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -306,14 +305,13 @@ func (client ViewsClient) ListByHubPreparer(resourceGroupName string, hubName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/views", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByHubSender sends the ListByHub request. The method will close the
 // http.Response Body if it receives an error.
 func (client ViewsClient) ListByHubSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -330,71 +328,29 @@ func (client ViewsClient) ListByHubResponder(resp *http.Response) (result ViewLi
 	return
 }
 
-// ListByHubNextResults retrieves the next set of results, if any.
-func (client ViewsClient) ListByHubNextResults(lastResults ViewListResult) (result ViewListResult, err error) {
-	req, err := lastResults.ViewListResultPreparer()
+// listByHubNextResults retrieves the next set of results, if any.
+func (client ViewsClient) listByHubNextResults(lastResults ViewListResult) (result ViewListResult, err error) {
+	req, err := lastResults.viewListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "listByHubNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "listByHubNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByHubResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "ListByHub", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "customerinsights.ViewsClient", "listByHubNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByHubComplete gets all elements from the list without paging.
-func (client ViewsClient) ListByHubComplete(resourceGroupName string, hubName string, userID string, cancel <-chan struct{}) (<-chan ViewResourceFormat, <-chan error) {
-	resultChan := make(chan ViewResourceFormat)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByHub(resourceGroupName, hubName, userID)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByHubNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByHubComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ViewsClient) ListByHubComplete(ctx context.Context, resourceGroupName string, hubName string, userID string) (result ViewListResultIterator, err error) {
+	result.page, err = client.ListByHub(ctx, resourceGroupName, hubName, userID)
+	return
 }

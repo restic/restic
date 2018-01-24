@@ -51,11 +51,13 @@ type Query struct {
 // in queries.
 const DocumentID = "__name__"
 
-// Select returns a new Query that specifies the field paths
+// Select returns a new Query that specifies the paths
 // to return from the result documents.
-func (q Query) Select(fieldPaths ...string) Query {
+// Each path argument can be a single field or a dot-separated sequence of
+// fields, and must not contain any of the runes "˜*/[]".
+func (q Query) Select(paths ...string) Query {
 	var fps []FieldPath
-	for _, s := range fieldPaths {
+	for _, s := range paths {
 		fp, err := parseDotSeparatedString(s)
 		if err != nil {
 			q.err = err
@@ -80,8 +82,11 @@ func (q Query) SelectPaths(fieldPaths ...FieldPath) Query {
 
 // Where returns a new Query that filters the set of results.
 // A Query can have multiple filters.
-func (q Query) Where(fieldPath, op string, value interface{}) Query {
-	fp, err := parseDotSeparatedString(fieldPath)
+// The path argument can be a single field or a dot-separated sequence of
+// fields, and must not contain any of the runes "˜*/[]".
+// The op argument must be one of "==", "<", "<=", ">" or ">=".
+func (q Query) Where(path, op string, value interface{}) Query {
+	fp, err := parseDotSeparatedString(path)
 	if err != nil {
 		q.err = err
 		return q
@@ -92,6 +97,7 @@ func (q Query) Where(fieldPath, op string, value interface{}) Query {
 
 // WherePath returns a new Query that filters the set of results.
 // A Query can have multiple filters.
+// The op argument must be one of "==", "<", "<=", ">" or ">=".
 func (q Query) WherePath(fp FieldPath, op string, value interface{}) Query {
 	q.filters = append(append([]filter(nil), q.filters...), filter{fp, op, value})
 	return q
@@ -112,9 +118,12 @@ const (
 // returned. A Query can have multiple OrderBy/OrderByPath specifications. OrderBy
 // appends the specification to the list of existing ones.
 //
+// The path argument can be a single field or a dot-separated sequence of
+// fields, and must not contain any of the runes "˜*/[]".
+//
 // To order by document name, use the special field path DocumentID.
-func (q Query) OrderBy(fieldPath string, dir Direction) Query {
-	fp, err := parseDotSeparatedString(fieldPath)
+func (q Query) OrderBy(path string, dir Direction) Query {
+	fp, err := parseDotSeparatedString(path)
 	if err != nil {
 		q.err = err
 		return q

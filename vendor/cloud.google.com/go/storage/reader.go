@@ -24,14 +24,20 @@ var crc32cTable = crc32.MakeTable(crc32.Castagnoli)
 
 // Reader reads a Cloud Storage object.
 // It implements io.Reader.
+//
+// Typically, a Reader computes the CRC of the downloaded content and compares it to
+// the stored CRC, returning an error from Read if there is a mismatch. This integrity check
+// is skipped if transcoding occurs. See https://cloud.google.com/storage/docs/transcoding.
 type Reader struct {
-	body         io.ReadCloser
-	remain, size int64
-	contentType  string
-	cacheControl string
-	checkCRC     bool   // should we check the CRC?
-	wantCRC      uint32 // the CRC32c value the server sent in the header
-	gotCRC       uint32 // running crc
+	body            io.ReadCloser
+	remain, size    int64
+	contentType     string
+	contentEncoding string
+	cacheControl    string
+	checkCRC        bool   // should we check the CRC?
+	wantCRC         uint32 // the CRC32c value the server sent in the header
+	gotCRC          uint32 // running crc
+	checkedCRC      bool   // did we check the CRC? (For tests.)
 }
 
 // Close closes the Reader. It must be called when done reading.
@@ -49,9 +55,12 @@ func (r *Reader) Read(p []byte) (int, error) {
 		// Check CRC here. It would be natural to check it in Close, but
 		// everybody defers Close on the assumption that it doesn't return
 		// anything worth looking at.
-		if r.remain == 0 && r.gotCRC != r.wantCRC {
-			return n, fmt.Errorf("storage: bad CRC on read: got %d, want %d",
-				r.gotCRC, r.wantCRC)
+		if r.remain == 0 { // Only check if we have Content-Length.
+			r.checkedCRC = true
+			if r.gotCRC != r.wantCRC {
+				return n, fmt.Errorf("storage: bad CRC on read: got %d, want %d",
+					r.gotCRC, r.wantCRC)
+			}
 		}
 	}
 	return n, err
@@ -72,6 +81,11 @@ func (r *Reader) Remain() int64 {
 // ContentType returns the content type of the object.
 func (r *Reader) ContentType() string {
 	return r.contentType
+}
+
+// ContentEncoding returns the content encoding of the object.
+func (r *Reader) ContentEncoding() string {
+	return r.contentEncoding
 }
 
 // CacheControl returns the cache control of the object.

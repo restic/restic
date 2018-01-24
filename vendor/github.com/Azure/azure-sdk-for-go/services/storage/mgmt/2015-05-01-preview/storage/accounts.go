@@ -18,6 +18,7 @@ package storage
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // AccountsClient is the the Storage Management Client.
 type AccountsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAccountsClient creates an instance of the AccountsClient client.
@@ -42,8 +43,8 @@ func NewAccountsClientWithBaseURI(baseURI string, subscriptionID string) Account
 //
 // accountName is the name of the storage account within the specified resource group. Storage account names must be
 // between 3 and 24 characters in length and use numbers and lower-case letters only.
-func (client AccountsClient) CheckNameAvailability(accountName AccountCheckNameAvailabilityParameters) (result CheckNameAvailabilityResult, err error) {
-	req, err := client.CheckNameAvailabilityPreparer(accountName)
+func (client AccountsClient) CheckNameAvailability(ctx context.Context, accountName AccountCheckNameAvailabilityParameters) (result CheckNameAvailabilityResult, err error) {
+	req, err := client.CheckNameAvailabilityPreparer(ctx, accountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "CheckNameAvailability", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client AccountsClient) CheckNameAvailability(accountName AccountCheckNameA
 }
 
 // CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
-func (client AccountsClient) CheckNameAvailabilityPreparer(accountName AccountCheckNameAvailabilityParameters) (*http.Request, error) {
+func (client AccountsClient) CheckNameAvailabilityPreparer(ctx context.Context, accountName AccountCheckNameAvailabilityParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -82,14 +83,13 @@ func (client AccountsClient) CheckNameAvailabilityPreparer(accountName AccountCh
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Storage/checkNameAvailability", pathParameters),
 		autorest.WithJSON(accountName),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -108,50 +108,29 @@ func (client AccountsClient) CheckNameAvailabilityResponder(resp *http.Response)
 
 // Create asynchronously creates a new storage account with the specified parameters. Existing accounts cannot be
 // updated with this API and should instead use the Update Storage Account API. If an account is already created and
-// subsequent PUT request is issued with exact same set of properties, then HTTP 200 would be returned.  This method
-// may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to
-// cancel polling and any outstanding HTTP requests.
+// subsequent PUT request is issued with exact same set of properties, then HTTP 200 would be returned.
 //
 // resourceGroupName is the name of the resource group within the user's subscription. accountName is the name of the
 // storage account within the specified resource group. Storage account names must be between 3 and 24 characters in
 // length and use numbers and lower-case letters only. parameters is the parameters to provide for the created account.
-func (client AccountsClient) Create(resourceGroupName string, accountName string, parameters AccountCreateParameters, cancel <-chan struct{}) (<-chan Account, <-chan error) {
-	resultChan := make(chan Account, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Account
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, accountName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Create", nil, "Failure preparing request")
-			return
-		}
+func (client AccountsClient) Create(ctx context.Context, resourceGroupName string, accountName string, parameters AccountCreateParameters) (result AccountsCreateFuture, err error) {
+	req, err := client.CreatePreparer(ctx, resourceGroupName, accountName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client AccountsClient) CreatePreparer(resourceGroupName string, accountName string, parameters AccountCreateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client AccountsClient) CreatePreparer(ctx context.Context, resourceGroupName string, accountName string, parameters AccountCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -170,16 +149,22 @@ func (client AccountsClient) CreatePreparer(resourceGroupName string, accountNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client AccountsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AccountsClient) CreateSender(req *http.Request) (future AccountsCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -200,8 +185,8 @@ func (client AccountsClient) CreateResponder(resp *http.Response) (result Accoun
 // resourceGroupName is the name of the resource group within the user's subscription. accountName is the name of the
 // storage account within the specified resource group. Storage account names must be between 3 and 24 characters in
 // length and use numbers and lower-case letters only.
-func (client AccountsClient) Delete(resourceGroupName string, accountName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, accountName)
+func (client AccountsClient) Delete(ctx context.Context, resourceGroupName string, accountName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, accountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -223,7 +208,7 @@ func (client AccountsClient) Delete(resourceGroupName string, accountName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client AccountsClient) DeletePreparer(resourceGroupName string, accountName string) (*http.Request, error) {
+func (client AccountsClient) DeletePreparer(ctx context.Context, resourceGroupName string, accountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -240,14 +225,13 @@ func (client AccountsClient) DeletePreparer(resourceGroupName string, accountNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -269,8 +253,8 @@ func (client AccountsClient) DeleteResponder(resp *http.Response) (result autore
 // resourceGroupName is the name of the resource group within the user's subscription. accountName is the name of the
 // storage account within the specified resource group. Storage account names must be between 3 and 24 characters in
 // length and use numbers and lower-case letters only.
-func (client AccountsClient) GetProperties(resourceGroupName string, accountName string) (result Account, err error) {
-	req, err := client.GetPropertiesPreparer(resourceGroupName, accountName)
+func (client AccountsClient) GetProperties(ctx context.Context, resourceGroupName string, accountName string) (result Account, err error) {
+	req, err := client.GetPropertiesPreparer(ctx, resourceGroupName, accountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "GetProperties", nil, "Failure preparing request")
 		return
@@ -292,7 +276,7 @@ func (client AccountsClient) GetProperties(resourceGroupName string, accountName
 }
 
 // GetPropertiesPreparer prepares the GetProperties request.
-func (client AccountsClient) GetPropertiesPreparer(resourceGroupName string, accountName string) (*http.Request, error) {
+func (client AccountsClient) GetPropertiesPreparer(ctx context.Context, resourceGroupName string, accountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -309,14 +293,13 @@ func (client AccountsClient) GetPropertiesPreparer(resourceGroupName string, acc
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetPropertiesSender sends the GetProperties request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) GetPropertiesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -335,8 +318,9 @@ func (client AccountsClient) GetPropertiesResponder(resp *http.Response) (result
 
 // List lists all the storage accounts available under the subscription. Note that storage keys are not returned; use
 // the ListKeys operation for this.
-func (client AccountsClient) List() (result AccountListResult, err error) {
-	req, err := client.ListPreparer()
+func (client AccountsClient) List(ctx context.Context) (result AccountListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "List", nil, "Failure preparing request")
 		return
@@ -344,12 +328,12 @@ func (client AccountsClient) List() (result AccountListResult, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.alr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.alr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "List", resp, "Failure responding to request")
 	}
@@ -358,7 +342,7 @@ func (client AccountsClient) List() (result AccountListResult, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client AccountsClient) ListPreparer() (*http.Request, error) {
+func (client AccountsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -373,14 +357,13 @@ func (client AccountsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Storage/storageAccounts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -397,81 +380,40 @@ func (client AccountsClient) ListResponder(resp *http.Response) (result AccountL
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client AccountsClient) ListNextResults(lastResults AccountListResult) (result AccountListResult, err error) {
-	req, err := lastResults.AccountListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client AccountsClient) listNextResults(lastResults AccountListResult) (result AccountListResult, err error) {
+	req, err := lastResults.accountListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client AccountsClient) ListComplete(cancel <-chan struct{}) (<-chan Account, <-chan error) {
-	resultChan := make(chan Account)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AccountsClient) ListComplete(ctx context.Context) (result AccountListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListByResourceGroup lists all the storage accounts available under the given resource group. Note that storage keys
 // are not returned; use the ListKeys operation for this.
 //
 // resourceGroupName is the name of the resource group within the user's subscription.
-func (client AccountsClient) ListByResourceGroup(resourceGroupName string) (result AccountListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client AccountsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result AccountListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -479,12 +421,12 @@ func (client AccountsClient) ListByResourceGroup(resourceGroupName string) (resu
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.alr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.alr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -493,7 +435,7 @@ func (client AccountsClient) ListByResourceGroup(resourceGroupName string) (resu
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client AccountsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client AccountsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -509,14 +451,13 @@ func (client AccountsClient) ListByResourceGroupPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -533,80 +474,38 @@ func (client AccountsClient) ListByResourceGroupResponder(resp *http.Response) (
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client AccountsClient) ListByResourceGroupNextResults(lastResults AccountListResult) (result AccountListResult, err error) {
-	req, err := lastResults.AccountListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client AccountsClient) listByResourceGroupNextResults(lastResults AccountListResult) (result AccountListResult, err error) {
+	req, err := lastResults.accountListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "storage.AccountsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client AccountsClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan Account, <-chan error) {
-	resultChan := make(chan Account)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AccountsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result AccountListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
 }
 
 // ListKeys lists the access keys for the specified storage account.
 //
 // resourceGroupName is the name of the resource group. accountName is the name of the storage account.
-func (client AccountsClient) ListKeys(resourceGroupName string, accountName string) (result AccountKeys, err error) {
-	req, err := client.ListKeysPreparer(resourceGroupName, accountName)
+func (client AccountsClient) ListKeys(ctx context.Context, resourceGroupName string, accountName string) (result AccountKeys, err error) {
+	req, err := client.ListKeysPreparer(ctx, resourceGroupName, accountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "ListKeys", nil, "Failure preparing request")
 		return
@@ -628,7 +527,7 @@ func (client AccountsClient) ListKeys(resourceGroupName string, accountName stri
 }
 
 // ListKeysPreparer prepares the ListKeys request.
-func (client AccountsClient) ListKeysPreparer(resourceGroupName string, accountName string) (*http.Request, error) {
+func (client AccountsClient) ListKeysPreparer(ctx context.Context, resourceGroupName string, accountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -645,14 +544,13 @@ func (client AccountsClient) ListKeysPreparer(resourceGroupName string, accountN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}/listKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListKeysSender sends the ListKeys request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) ListKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -675,8 +573,8 @@ func (client AccountsClient) ListKeysResponder(resp *http.Response) (result Acco
 // storage account within the specified resource group. Storage account names must be between 3 and 24 characters in
 // length and use numbers and lower-case letters only. regenerateKey is specifies name of the key which should be
 // regenerated.
-func (client AccountsClient) RegenerateKey(resourceGroupName string, accountName string, regenerateKey AccountRegenerateKeyParameters) (result AccountKeys, err error) {
-	req, err := client.RegenerateKeyPreparer(resourceGroupName, accountName, regenerateKey)
+func (client AccountsClient) RegenerateKey(ctx context.Context, resourceGroupName string, accountName string, regenerateKey AccountRegenerateKeyParameters) (result AccountKeys, err error) {
+	req, err := client.RegenerateKeyPreparer(ctx, resourceGroupName, accountName, regenerateKey)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "RegenerateKey", nil, "Failure preparing request")
 		return
@@ -698,7 +596,7 @@ func (client AccountsClient) RegenerateKey(resourceGroupName string, accountName
 }
 
 // RegenerateKeyPreparer prepares the RegenerateKey request.
-func (client AccountsClient) RegenerateKeyPreparer(resourceGroupName string, accountName string, regenerateKey AccountRegenerateKeyParameters) (*http.Request, error) {
+func (client AccountsClient) RegenerateKeyPreparer(ctx context.Context, resourceGroupName string, accountName string, regenerateKey AccountRegenerateKeyParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -717,14 +615,13 @@ func (client AccountsClient) RegenerateKeyPreparer(resourceGroupName string, acc
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}/regenerateKey", pathParameters),
 		autorest.WithJSON(regenerateKey),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateKeySender sends the RegenerateKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) RegenerateKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -752,8 +649,8 @@ func (client AccountsClient) RegenerateKeyResponder(resp *http.Response) (result
 // storage account within the specified resource group. Storage account names must be between 3 and 24 characters in
 // length and use numbers and lower-case letters only. parameters is the parameters to update on the account. Note that
 // only one property can be changed at a time using this API.
-func (client AccountsClient) Update(resourceGroupName string, accountName string, parameters AccountUpdateParameters) (result Account, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, accountName, parameters)
+func (client AccountsClient) Update(ctx context.Context, resourceGroupName string, accountName string, parameters AccountUpdateParameters) (result Account, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, accountName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storage.AccountsClient", "Update", nil, "Failure preparing request")
 		return
@@ -775,7 +672,7 @@ func (client AccountsClient) Update(resourceGroupName string, accountName string
 }
 
 // UpdatePreparer prepares the Update request.
-func (client AccountsClient) UpdatePreparer(resourceGroupName string, accountName string, parameters AccountUpdateParameters) (*http.Request, error) {
+func (client AccountsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, accountName string, parameters AccountUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -794,14 +691,13 @@ func (client AccountsClient) UpdatePreparer(resourceGroupName string, accountNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Storage/storageAccounts/{accountName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client AccountsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

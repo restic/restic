@@ -18,6 +18,7 @@ package servicemap
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // MapsClient is the service Map API Reference
 type MapsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewMapsClient creates an instance of the MapsClient client.
@@ -43,7 +44,7 @@ func NewMapsClientWithBaseURI(baseURI string, subscriptionID string) MapsClient 
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. request is request options.
-func (client MapsClient) Generate(resourceGroupName string, workspaceName string, request MapRequest) (result MapResponse, err error) {
+func (client MapsClient) Generate(ctx context.Context, resourceGroupName string, workspaceName string, request BasicMapRequest) (result MapResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -56,7 +57,7 @@ func (client MapsClient) Generate(resourceGroupName string, workspaceName string
 		return result, validation.NewErrorWithValidationError(err, "servicemap.MapsClient", "Generate")
 	}
 
-	req, err := client.GeneratePreparer(resourceGroupName, workspaceName, request)
+	req, err := client.GeneratePreparer(ctx, resourceGroupName, workspaceName, request)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MapsClient", "Generate", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client MapsClient) Generate(resourceGroupName string, workspaceName string
 }
 
 // GeneratePreparer prepares the Generate request.
-func (client MapsClient) GeneratePreparer(resourceGroupName string, workspaceName string, request MapRequest) (*http.Request, error) {
+func (client MapsClient) GeneratePreparer(ctx context.Context, resourceGroupName string, workspaceName string, request BasicMapRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -97,14 +98,13 @@ func (client MapsClient) GeneratePreparer(resourceGroupName string, workspaceNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/features/serviceMap/generateMap", pathParameters),
 		autorest.WithJSON(request),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateSender sends the Generate request. The method will close the
 // http.Response Body if it receives an error.
 func (client MapsClient) GenerateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

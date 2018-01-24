@@ -18,6 +18,7 @@ package batch
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // LocationClient is the client for the Location methods of the Batch service.
 type LocationClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLocationClient creates an instance of the LocationClient client.
@@ -41,8 +42,8 @@ func NewLocationClientWithBaseURI(baseURI string, subscriptionID string) Locatio
 // GetQuotas gets the Batch service quotas for the specified subscription at the given location.
 //
 // locationName is the desired region for the quotas.
-func (client LocationClient) GetQuotas(locationName string) (result LocationQuota, err error) {
-	req, err := client.GetQuotasPreparer(locationName)
+func (client LocationClient) GetQuotas(ctx context.Context, locationName string) (result LocationQuota, err error) {
+	req, err := client.GetQuotasPreparer(ctx, locationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.LocationClient", "GetQuotas", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client LocationClient) GetQuotas(locationName string) (result LocationQuot
 }
 
 // GetQuotasPreparer prepares the GetQuotas request.
-func (client LocationClient) GetQuotasPreparer(locationName string) (*http.Request, error) {
+func (client LocationClient) GetQuotasPreparer(ctx context.Context, locationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"locationName":   autorest.Encode("path", locationName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -80,14 +81,13 @@ func (client LocationClient) GetQuotasPreparer(locationName string) (*http.Reque
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Batch/locations/{locationName}/quotas", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetQuotasSender sends the GetQuotas request. The method will close the
 // http.Response Body if it receives an error.
 func (client LocationClient) GetQuotasSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // QuotaByPeriodKeysClient is the apiManagement Client
 type QuotaByPeriodKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewQuotaByPeriodKeysClient creates an instance of the QuotaByPeriodKeysClient client.
@@ -44,7 +45,7 @@ func NewQuotaByPeriodKeysClientWithBaseURI(baseURI string, subscriptionID string
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // quotaCounterKey is quota counter key identifier. quotaPeriodKey is quota period key identifier.
-func (client QuotaByPeriodKeysClient) Get(resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string) (result QuotaCounterContract, err error) {
+func (client QuotaByPeriodKeysClient) Get(ctx context.Context, resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string) (result QuotaCounterContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -53,7 +54,7 @@ func (client QuotaByPeriodKeysClient) Get(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.QuotaByPeriodKeysClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, quotaCounterKey, quotaPeriodKey)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, quotaCounterKey, quotaPeriodKey)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.QuotaByPeriodKeysClient", "Get", nil, "Failure preparing request")
 		return
@@ -75,7 +76,7 @@ func (client QuotaByPeriodKeysClient) Get(resourceGroupName string, serviceName 
 }
 
 // GetPreparer prepares the Get request.
-func (client QuotaByPeriodKeysClient) GetPreparer(resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string) (*http.Request, error) {
+func (client QuotaByPeriodKeysClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"quotaCounterKey":   autorest.Encode("path", quotaCounterKey),
 		"quotaPeriodKey":    autorest.Encode("path", quotaPeriodKey),
@@ -94,14 +95,13 @@ func (client QuotaByPeriodKeysClient) GetPreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/quotas/{quotaCounterKey}/{quotaPeriodKey}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client QuotaByPeriodKeysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -123,7 +123,7 @@ func (client QuotaByPeriodKeysClient) GetResponder(resp *http.Response) (result 
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // quotaCounterKey is quota counter key identifier. quotaPeriodKey is quota period key identifier. parameters is the
 // value of the Quota counter to be applied on the specified period.
-func (client QuotaByPeriodKeysClient) Update(resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string, parameters QuotaCounterValueContract) (result autorest.Response, err error) {
+func (client QuotaByPeriodKeysClient) Update(ctx context.Context, resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string, parameters QuotaCounterValueContract) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -132,7 +132,7 @@ func (client QuotaByPeriodKeysClient) Update(resourceGroupName string, serviceNa
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.QuotaByPeriodKeysClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, serviceName, quotaCounterKey, quotaPeriodKey, parameters)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serviceName, quotaCounterKey, quotaPeriodKey, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.QuotaByPeriodKeysClient", "Update", nil, "Failure preparing request")
 		return
@@ -154,7 +154,7 @@ func (client QuotaByPeriodKeysClient) Update(resourceGroupName string, serviceNa
 }
 
 // UpdatePreparer prepares the Update request.
-func (client QuotaByPeriodKeysClient) UpdatePreparer(resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string, parameters QuotaCounterValueContract) (*http.Request, error) {
+func (client QuotaByPeriodKeysClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, quotaCounterKey string, quotaPeriodKey string, parameters QuotaCounterValueContract) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"quotaCounterKey":   autorest.Encode("path", quotaCounterKey),
 		"quotaPeriodKey":    autorest.Encode("path", quotaPeriodKey),
@@ -175,14 +175,13 @@ func (client QuotaByPeriodKeysClient) UpdatePreparer(resourceGroupName string, s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/quotas/{quotaCounterKey}/{quotaPeriodKey}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client QuotaByPeriodKeysClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

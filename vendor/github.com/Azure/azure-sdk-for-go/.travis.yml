@@ -2,17 +2,14 @@ sudo: false
 
 language: go
 go:
-  - 1.7.x
   - 1.8.x
   - 1.9.x
 
 install:
   - go get -u github.com/golang/lint/golint
-  - go get -u github.com/Masterminds/glide
-  - go get -u golang.org/x/net/context
-  - go get -u gopkg.in/godo.v2/cmd/godo
+  - go get -u github.com/golang/dep/cmd/dep
   - export GO15VENDOREXPERIMENT=1
-  - glide install
+  - dep ensure
 
 script:
   - bash rungas.sh
@@ -27,6 +24,14 @@ script:
   - test -z "$(go vet $(find ./arm/* -type d -print) | tee /dev/stderr)"
   - test -z "$(golint ./arm/... | tee /dev/stderr)"
   - go build ./arm/examples/...
+  - go build ./profiles/...
+  - test -z "$(go fmt ./profiles/... | tee /dev/stderr)"
+  - test -z "$(go vet ./profiles/... | tee /dev/stderr)"
+  # - test -z "$(golint ./profiles/... | tee /dev/stderr)" # This line should be uncommented once Aliases include comments.
+  - go build ./services/...
+  - test -z "$(go fmt ./services/... | tee /dev/stderr)"
+  - test -z "$(go vet ./services/... | tee /dev/stderr)"
+  # - test -z "$(golint ./services/... | tee /dev/stderr)"
   - go test -v ./management/...
   - go test -v ./arm/...
   - go test -v ./storage/...

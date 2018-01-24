@@ -18,6 +18,7 @@ package mysql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // functionality for Azure MySQL resources including servers, databases, firewall rules, VNET rules, log files and
 // configurations.
 type PerformanceTiersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPerformanceTiersClient creates an instance of the PerformanceTiersClient client.
@@ -41,8 +42,8 @@ func NewPerformanceTiersClientWithBaseURI(baseURI string, subscriptionID string)
 }
 
 // List list all the performance tiers in a given subscription.
-func (client PerformanceTiersClient) List() (result PerformanceTierListResult, err error) {
-	req, err := client.ListPreparer()
+func (client PerformanceTiersClient) List(ctx context.Context) (result PerformanceTierListResult, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mysql.PerformanceTiersClient", "List", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client PerformanceTiersClient) List() (result PerformanceTierListResult, e
 }
 
 // ListPreparer prepares the List request.
-func (client PerformanceTiersClient) ListPreparer() (*http.Request, error) {
+func (client PerformanceTiersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -79,14 +80,13 @@ func (client PerformanceTiersClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DBforMySQL/performanceTiers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PerformanceTiersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

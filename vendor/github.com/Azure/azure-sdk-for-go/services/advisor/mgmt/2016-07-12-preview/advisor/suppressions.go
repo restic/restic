@@ -18,6 +18,7 @@ package advisor
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // SuppressionsClient is the REST APIs for Azure Advisor
 type SuppressionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSuppressionsClient creates an instance of the SuppressionsClient client.
@@ -44,8 +45,8 @@ func NewSuppressionsClientWithBaseURI(baseURI string, subscriptionID string) Sup
 // resourceURI is the fully qualified Azure Resource Manager identifier of the resource to which the recommendation
 // applies. recommendationID is the recommendation ID. name is the name of the suppression. suppressionContract is the
 // snoozed or dismissed attribute; for example, the snooze duration.
-func (client SuppressionsClient) Create(resourceURI string, recommendationID string, name string, suppressionContract SuppressionContract) (result SuppressionContract, err error) {
-	req, err := client.CreatePreparer(resourceURI, recommendationID, name, suppressionContract)
+func (client SuppressionsClient) Create(ctx context.Context, resourceURI string, recommendationID string, name string, suppressionContract SuppressionContract) (result SuppressionContract, err error) {
+	req, err := client.CreatePreparer(ctx, resourceURI, recommendationID, name, suppressionContract)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.SuppressionsClient", "Create", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client SuppressionsClient) Create(resourceURI string, recommendationID str
 }
 
 // CreatePreparer prepares the Create request.
-func (client SuppressionsClient) CreatePreparer(resourceURI string, recommendationID string, name string, suppressionContract SuppressionContract) (*http.Request, error) {
+func (client SuppressionsClient) CreatePreparer(ctx context.Context, resourceURI string, recommendationID string, name string, suppressionContract SuppressionContract) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":             autorest.Encode("path", name),
 		"recommendationId": autorest.Encode("path", recommendationID),
@@ -86,14 +87,13 @@ func (client SuppressionsClient) CreatePreparer(resourceURI string, recommendati
 		autorest.WithPathParameters("/{resourceUri}/providers/Microsoft.Advisor/recommendations/{recommendationId}/suppressions/{name}", pathParameters),
 		autorest.WithJSON(suppressionContract),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client SuppressionsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -115,8 +115,8 @@ func (client SuppressionsClient) CreateResponder(resp *http.Response) (result Su
 //
 // resourceURI is the fully qualified Azure Resource Manager identifier of the resource to which the recommendation
 // applies. recommendationID is the recommendation ID. name is the name of the suppression.
-func (client SuppressionsClient) Delete(resourceURI string, recommendationID string, name string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceURI, recommendationID, name)
+func (client SuppressionsClient) Delete(ctx context.Context, resourceURI string, recommendationID string, name string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceURI, recommendationID, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.SuppressionsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -138,7 +138,7 @@ func (client SuppressionsClient) Delete(resourceURI string, recommendationID str
 }
 
 // DeletePreparer prepares the Delete request.
-func (client SuppressionsClient) DeletePreparer(resourceURI string, recommendationID string, name string) (*http.Request, error) {
+func (client SuppressionsClient) DeletePreparer(ctx context.Context, resourceURI string, recommendationID string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":             autorest.Encode("path", name),
 		"recommendationId": autorest.Encode("path", recommendationID),
@@ -155,14 +155,13 @@ func (client SuppressionsClient) DeletePreparer(resourceURI string, recommendati
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{resourceUri}/providers/Microsoft.Advisor/recommendations/{recommendationId}/suppressions/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client SuppressionsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -182,8 +181,8 @@ func (client SuppressionsClient) DeleteResponder(resp *http.Response) (result au
 //
 // resourceURI is the fully qualified Azure Resource Manager identifier of the resource to which the recommendation
 // applies. recommendationID is the recommendation ID. name is the name of the suppression.
-func (client SuppressionsClient) Get(resourceURI string, recommendationID string, name string) (result SuppressionContract, err error) {
-	req, err := client.GetPreparer(resourceURI, recommendationID, name)
+func (client SuppressionsClient) Get(ctx context.Context, resourceURI string, recommendationID string, name string) (result SuppressionContract, err error) {
+	req, err := client.GetPreparer(ctx, resourceURI, recommendationID, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.SuppressionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -205,7 +204,7 @@ func (client SuppressionsClient) Get(resourceURI string, recommendationID string
 }
 
 // GetPreparer prepares the Get request.
-func (client SuppressionsClient) GetPreparer(resourceURI string, recommendationID string, name string) (*http.Request, error) {
+func (client SuppressionsClient) GetPreparer(ctx context.Context, resourceURI string, recommendationID string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":             autorest.Encode("path", name),
 		"recommendationId": autorest.Encode("path", recommendationID),
@@ -222,14 +221,13 @@ func (client SuppressionsClient) GetPreparer(resourceURI string, recommendationI
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{resourceUri}/providers/Microsoft.Advisor/recommendations/{recommendationId}/suppressions/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client SuppressionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -248,8 +246,8 @@ func (client SuppressionsClient) GetResponder(resp *http.Response) (result Suppr
 
 // List retrieves the list of snoozed or dismissed suppressions for a subscription. The snoozed or dismissed attribute
 // of a recommendation is referred to as a suppression.
-func (client SuppressionsClient) List() (result ListSuppressionContract, err error) {
-	req, err := client.ListPreparer()
+func (client SuppressionsClient) List(ctx context.Context) (result ListSuppressionContract, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.SuppressionsClient", "List", nil, "Failure preparing request")
 		return
@@ -271,7 +269,7 @@ func (client SuppressionsClient) List() (result ListSuppressionContract, err err
 }
 
 // ListPreparer prepares the List request.
-func (client SuppressionsClient) ListPreparer() (*http.Request, error) {
+func (client SuppressionsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -286,14 +284,13 @@ func (client SuppressionsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Advisor/suppressions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client SuppressionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

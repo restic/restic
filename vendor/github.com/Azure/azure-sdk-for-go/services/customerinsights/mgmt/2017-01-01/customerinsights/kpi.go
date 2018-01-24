@@ -18,6 +18,7 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // with Azure Customer Insights service to manage your resources. The API has entities that capture the relationship
 // between an end user and the Azure Customer Insights service.
 type KpiClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewKpiClient creates an instance of the KpiClient client.
@@ -41,15 +42,11 @@ func NewKpiClientWithBaseURI(baseURI string, subscriptionID string) KpiClient {
 	return KpiClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a KPI or updates an existing KPI in the hub. This method may poll for completion. Polling can
-// be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// CreateOrUpdate creates a KPI or updates an existing KPI in the hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. kpiName is the name of the KPI.
 // parameters is parameters supplied to the create/update KPI operation.
-func (client KpiClient) CreateOrUpdate(resourceGroupName string, hubName string, kpiName string, parameters KpiResourceFormat, cancel <-chan struct{}) (<-chan KpiResourceFormat, <-chan error) {
-	resultChan := make(chan KpiResourceFormat, 1)
-	errChan := make(chan error, 1)
+func (client KpiClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, hubName string, kpiName string, parameters KpiResourceFormat) (result KpiCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: kpiName,
 			Constraints: []validation.Constraint{{Target: "kpiName", Name: validation.MaxLength, Rule: 512, Chain: nil},
@@ -65,46 +62,26 @@ func (client KpiClient) CreateOrUpdate(resourceGroupName string, hubName string,
 							{Target: "parameters.KpiDefinition.ThresHolds.IncreasingKpi", Name: validation.Null, Rule: true, Chain: nil},
 						}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "customerinsights.KpiClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "customerinsights.KpiClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result KpiResourceFormat
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, hubName, kpiName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, hubName, kpiName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client KpiClient) CreateOrUpdatePreparer(resourceGroupName string, hubName string, kpiName string, parameters KpiResourceFormat, cancel <-chan struct{}) (*http.Request, error) {
+func (client KpiClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, hubName string, kpiName string, parameters KpiResourceFormat) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"kpiName":           autorest.Encode("path", kpiName),
@@ -124,16 +101,22 @@ func (client KpiClient) CreateOrUpdatePreparer(resourceGroupName string, hubName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/kpi/{kpiName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client KpiClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client KpiClient) CreateOrUpdateSender(req *http.Request) (future KpiCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -149,47 +132,27 @@ func (client KpiClient) CreateOrUpdateResponder(resp *http.Response) (result Kpi
 	return
 }
 
-// Delete deletes a KPI in the hub. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a KPI in the hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. kpiName is the name of the KPI.
-func (client KpiClient) Delete(resourceGroupName string, hubName string, kpiName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, hubName, kpiName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client KpiClient) Delete(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (result KpiDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, hubName, kpiName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client KpiClient) DeletePreparer(resourceGroupName string, hubName string, kpiName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client KpiClient) DeletePreparer(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"kpiName":           autorest.Encode("path", kpiName),
@@ -207,16 +170,22 @@ func (client KpiClient) DeletePreparer(resourceGroupName string, hubName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/kpi/{kpiName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client KpiClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client KpiClient) DeleteSender(req *http.Request) (future KpiDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -234,8 +203,8 @@ func (client KpiClient) DeleteResponder(resp *http.Response) (result autorest.Re
 // Get gets a KPI in the hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. kpiName is the name of the KPI.
-func (client KpiClient) Get(resourceGroupName string, hubName string, kpiName string) (result KpiResourceFormat, err error) {
-	req, err := client.GetPreparer(resourceGroupName, hubName, kpiName)
+func (client KpiClient) Get(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (result KpiResourceFormat, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, hubName, kpiName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Get", nil, "Failure preparing request")
 		return
@@ -257,7 +226,7 @@ func (client KpiClient) Get(resourceGroupName string, hubName string, kpiName st
 }
 
 // GetPreparer prepares the Get request.
-func (client KpiClient) GetPreparer(resourceGroupName string, hubName string, kpiName string) (*http.Request, error) {
+func (client KpiClient) GetPreparer(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"kpiName":           autorest.Encode("path", kpiName),
@@ -275,14 +244,13 @@ func (client KpiClient) GetPreparer(resourceGroupName string, hubName string, kp
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/kpi/{kpiName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client KpiClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -302,8 +270,9 @@ func (client KpiClient) GetResponder(resp *http.Response) (result KpiResourceFor
 // ListByHub gets all the KPIs in the specified hub.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub.
-func (client KpiClient) ListByHub(resourceGroupName string, hubName string) (result KpiListResult, err error) {
-	req, err := client.ListByHubPreparer(resourceGroupName, hubName)
+func (client KpiClient) ListByHub(ctx context.Context, resourceGroupName string, hubName string) (result KpiListResultPage, err error) {
+	result.fn = client.listByHubNextResults
+	req, err := client.ListByHubPreparer(ctx, resourceGroupName, hubName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", nil, "Failure preparing request")
 		return
@@ -311,12 +280,12 @@ func (client KpiClient) ListByHub(resourceGroupName string, hubName string) (res
 
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.klr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByHubResponder(resp)
+	result.klr, err = client.ListByHubResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", resp, "Failure responding to request")
 	}
@@ -325,7 +294,7 @@ func (client KpiClient) ListByHub(resourceGroupName string, hubName string) (res
 }
 
 // ListByHubPreparer prepares the ListByHub request.
-func (client KpiClient) ListByHubPreparer(resourceGroupName string, hubName string) (*http.Request, error) {
+func (client KpiClient) ListByHubPreparer(ctx context.Context, resourceGroupName string, hubName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -342,14 +311,13 @@ func (client KpiClient) ListByHubPreparer(resourceGroupName string, hubName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/kpi", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByHubSender sends the ListByHub request. The method will close the
 // http.Response Body if it receives an error.
 func (client KpiClient) ListByHubSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -366,80 +334,38 @@ func (client KpiClient) ListByHubResponder(resp *http.Response) (result KpiListR
 	return
 }
 
-// ListByHubNextResults retrieves the next set of results, if any.
-func (client KpiClient) ListByHubNextResults(lastResults KpiListResult) (result KpiListResult, err error) {
-	req, err := lastResults.KpiListResultPreparer()
+// listByHubNextResults retrieves the next set of results, if any.
+func (client KpiClient) listByHubNextResults(lastResults KpiListResult) (result KpiListResult, err error) {
+	req, err := lastResults.kpiListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.KpiClient", "listByHubNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByHubSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "customerinsights.KpiClient", "listByHubNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByHubResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "ListByHub", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "listByHubNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByHubComplete gets all elements from the list without paging.
-func (client KpiClient) ListByHubComplete(resourceGroupName string, hubName string, cancel <-chan struct{}) (<-chan KpiResourceFormat, <-chan error) {
-	resultChan := make(chan KpiResourceFormat)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByHub(resourceGroupName, hubName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByHubNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByHubComplete enumerates all values, automatically crossing page boundaries as required.
+func (client KpiClient) ListByHubComplete(ctx context.Context, resourceGroupName string, hubName string) (result KpiListResultIterator, err error) {
+	result.page, err = client.ListByHub(ctx, resourceGroupName, hubName)
+	return
 }
 
 // Reprocess reprocesses the Kpi values of the specified KPI.
 //
 // resourceGroupName is the name of the resource group. hubName is the name of the hub. kpiName is the name of the KPI.
-func (client KpiClient) Reprocess(resourceGroupName string, hubName string, kpiName string) (result autorest.Response, err error) {
-	req, err := client.ReprocessPreparer(resourceGroupName, hubName, kpiName)
+func (client KpiClient) Reprocess(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (result autorest.Response, err error) {
+	req, err := client.ReprocessPreparer(ctx, resourceGroupName, hubName, kpiName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "customerinsights.KpiClient", "Reprocess", nil, "Failure preparing request")
 		return
@@ -461,7 +387,7 @@ func (client KpiClient) Reprocess(resourceGroupName string, hubName string, kpiN
 }
 
 // ReprocessPreparer prepares the Reprocess request.
-func (client KpiClient) ReprocessPreparer(resourceGroupName string, hubName string, kpiName string) (*http.Request, error) {
+func (client KpiClient) ReprocessPreparer(ctx context.Context, resourceGroupName string, hubName string, kpiName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"hubName":           autorest.Encode("path", hubName),
 		"kpiName":           autorest.Encode("path", kpiName),
@@ -479,14 +405,13 @@ func (client KpiClient) ReprocessPreparer(resourceGroupName string, hubName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/kpi/{kpiName}/reprocess", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ReprocessSender sends the Reprocess request. The method will close the
 // http.Response Body if it receives an error.
 func (client KpiClient) ReprocessSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

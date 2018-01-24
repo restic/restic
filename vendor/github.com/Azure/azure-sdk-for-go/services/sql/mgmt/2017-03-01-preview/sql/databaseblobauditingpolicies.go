@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // services that interact with Azure SQL Database services to manage your databases. The API enables you to create,
 // retrieve, update, and delete databases.
 type DatabaseBlobAuditingPoliciesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDatabaseBlobAuditingPoliciesClient creates an instance of the DatabaseBlobAuditingPoliciesClient client.
@@ -47,8 +48,8 @@ func NewDatabaseBlobAuditingPoliciesClientWithBaseURI(baseURI string, subscripti
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database for which the blob auditing policy will be defined. blobAuditingPolicyName is the name of the blob auditing
 // policy. parameters is the database blob auditing policy.
-func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdate(resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string, parameters DatabaseBlobAuditingPolicy) (result DatabaseBlobAuditingPolicy, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, databaseName, blobAuditingPolicyName, parameters)
+func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string, parameters DatabaseBlobAuditingPolicy) (result DatabaseBlobAuditingPolicy, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, databaseName, blobAuditingPolicyName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabaseBlobAuditingPoliciesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -70,7 +71,7 @@ func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdate(resourceGroupNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string, parameters DatabaseBlobAuditingPolicy) (*http.Request, error) {
+func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string, parameters DatabaseBlobAuditingPolicy) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"blobAuditingPolicyName": autorest.Encode("path", blobAuditingPolicyName),
 		"databaseName":           autorest.Encode("path", databaseName),
@@ -91,14 +92,13 @@ func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdatePreparer(resource
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/auditingSettings/{blobAuditingPolicyName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -120,8 +120,8 @@ func (client DatabaseBlobAuditingPoliciesClient) CreateOrUpdateResponder(resp *h
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. databaseName is the name of the
 // database for which the blob audit policy is defined. blobAuditingPolicyName is the name of the blob auditing policy.
-func (client DatabaseBlobAuditingPoliciesClient) Get(resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string) (result DatabaseBlobAuditingPolicy, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, databaseName, blobAuditingPolicyName)
+func (client DatabaseBlobAuditingPoliciesClient) Get(ctx context.Context, resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string) (result DatabaseBlobAuditingPolicy, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, databaseName, blobAuditingPolicyName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.DatabaseBlobAuditingPoliciesClient", "Get", nil, "Failure preparing request")
 		return
@@ -143,7 +143,7 @@ func (client DatabaseBlobAuditingPoliciesClient) Get(resourceGroupName string, s
 }
 
 // GetPreparer prepares the Get request.
-func (client DatabaseBlobAuditingPoliciesClient) GetPreparer(resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string) (*http.Request, error) {
+func (client DatabaseBlobAuditingPoliciesClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, databaseName string, blobAuditingPolicyName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"blobAuditingPolicyName": autorest.Encode("path", blobAuditingPolicyName),
 		"databaseName":           autorest.Encode("path", databaseName),
@@ -162,14 +162,13 @@ func (client DatabaseBlobAuditingPoliciesClient) GetPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/databases/{databaseName}/auditingSettings/{blobAuditingPolicyName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DatabaseBlobAuditingPoliciesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

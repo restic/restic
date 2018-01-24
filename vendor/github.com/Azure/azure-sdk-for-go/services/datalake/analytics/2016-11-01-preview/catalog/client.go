@@ -29,20 +29,20 @@ const (
 	DefaultAdlaCatalogDNSSuffix = "azuredatalakeanalytics.net"
 )
 
-// ManagementClient is the base client for Catalog.
-type ManagementClient struct {
+// BaseClient is the base client for Catalog.
+type BaseClient struct {
 	autorest.Client
 	AdlaCatalogDNSSuffix string
 }
 
-// New creates an instance of the ManagementClient client.
-func New() ManagementClient {
+// New creates an instance of the BaseClient client.
+func New() BaseClient {
 	return NewWithoutDefaults(DefaultAdlaCatalogDNSSuffix)
 }
 
-// NewWithoutDefaults creates an instance of the ManagementClient client.
-func NewWithoutDefaults(adlaCatalogDNSSuffix string) ManagementClient {
-	return ManagementClient{
+// NewWithoutDefaults creates an instance of the BaseClient client.
+func NewWithoutDefaults(adlaCatalogDNSSuffix string) BaseClient {
+	return BaseClient{
 		Client:               autorest.NewClientWithUserAgent(UserAgent()),
 		AdlaCatalogDNSSuffix: adlaCatalogDNSSuffix,
 	}

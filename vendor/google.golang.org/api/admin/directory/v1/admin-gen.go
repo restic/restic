@@ -341,14 +341,29 @@ type ResolvedAppAccessSettingsService struct {
 
 func NewResourcesService(s *Service) *ResourcesService {
 	rs := &ResourcesService{s: s}
+	rs.Buildings = NewResourcesBuildingsService(s)
 	rs.Calendars = NewResourcesCalendarsService(s)
+	rs.Features = NewResourcesFeaturesService(s)
 	return rs
 }
 
 type ResourcesService struct {
 	s *Service
 
+	Buildings *ResourcesBuildingsService
+
 	Calendars *ResourcesCalendarsService
+
+	Features *ResourcesFeaturesService
+}
+
+func NewResourcesBuildingsService(s *Service) *ResourcesBuildingsService {
+	rs := &ResourcesBuildingsService{s: s}
+	return rs
+}
+
+type ResourcesBuildingsService struct {
+	s *Service
 }
 
 func NewResourcesCalendarsService(s *Service) *ResourcesCalendarsService {
@@ -357,6 +372,15 @@ func NewResourcesCalendarsService(s *Service) *ResourcesCalendarsService {
 }
 
 type ResourcesCalendarsService struct {
+	s *Service
+}
+
+func NewResourcesFeaturesService(s *Service) *ResourcesFeaturesService {
+	rs := &ResourcesFeaturesService{s: s}
+	return rs
+}
+
+type ResourcesFeaturesService struct {
 	s *Service
 }
 
@@ -675,44 +699,42 @@ func (s *Asps) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// CalendarResource: JSON template for Calendar Resource object in
-// Directory API.
-type CalendarResource struct {
+// Building: JSON template for Building object in Directory API.
+type Building struct {
+	// BuildingId: Unique identifier for the building. The maximum length is
+	// 100 characters.
+	BuildingId string `json:"buildingId,omitempty"`
+
+	// BuildingName: The building name as seen by users in Calendar. Must be
+	// unique for the customer. For example, "NYC-CHEL". The maximum length
+	// is 100 characters.
+	BuildingName string `json:"buildingName,omitempty"`
+
+	// Coordinates: The geographic coordinates of the center of the
+	// building, expressed as latitude and longitude in decimal degrees.
+	Coordinates *BuildingCoordinates `json:"coordinates,omitempty"`
+
+	// Description: A brief description of the building. For example,
+	// "Chelsea Market".
+	Description string `json:"description,omitempty"`
+
 	// Etags: ETag of the resource.
 	Etags string `json:"etags,omitempty"`
 
-	// GeneratedResourceName: The auto-generated name of the calendar
-	// resource which includes metadata about the resource such as building
-	// name, floor, capacity, etc. For example, NYC-2-Training Room 1A (16)
-	GeneratedResourceName string `json:"generatedResourceName,omitempty"`
+	// FloorNames: The display names for all floors in this building. The
+	// floors are expected to be sorted in ascending order, from lowest
+	// floor to highest floor. For example, ["B2", "B1", "L", "1", "2",
+	// "2M", "3", "PH"] Must contain at least one entry.
+	FloorNames []string `json:"floorNames,omitempty"`
 
-	// Kind: The type of the resource. For calendar resources, the value is
-	// admin#directory#resources#calendars#CalendarResource.
+	// Kind: Kind of resource this is.
 	Kind string `json:"kind,omitempty"`
-
-	// ResourceDescription: The brief description of the calendar resource.
-	ResourceDescription string `json:"resourceDescription,omitempty"`
-
-	// ResourceEmail: The read-only email ID for the calendar resource.
-	// Generated as part of creating a new calendar resource.
-	ResourceEmail string `json:"resourceEmail,omitempty"`
-
-	// ResourceId: The unique ID for the calendar resource.
-	ResourceId string `json:"resourceId,omitempty"`
-
-	// ResourceName: The name of the calendar resource. For example,
-	// Training Room 1A
-	ResourceName string `json:"resourceName,omitempty"`
-
-	// ResourceType: The type of the calendar resource. Used for grouping
-	// resources in the calendar user interface.
-	ResourceType string `json:"resourceType,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "Etags") to
+	// ForceSendFields is a list of field names (e.g. "BuildingId") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -720,8 +742,185 @@ type CalendarResource struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Etags") to include in API
-	// requests with the JSON null value. By default, fields with empty
+	// NullFields is a list of field names (e.g. "BuildingId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Building) MarshalJSON() ([]byte, error) {
+	type NoMethod Building
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BuildingCoordinates: JSON template for coordinates of a building in
+// Directory API.
+type BuildingCoordinates struct {
+	// Latitude: Latitude in decimal degrees.
+	Latitude float64 `json:"latitude,omitempty"`
+
+	// Longitude: Longitude in decimal degrees.
+	Longitude float64 `json:"longitude,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Latitude") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Latitude") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BuildingCoordinates) MarshalJSON() ([]byte, error) {
+	type NoMethod BuildingCoordinates
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *BuildingCoordinates) UnmarshalJSON(data []byte) error {
+	type NoMethod BuildingCoordinates
+	var s1 struct {
+		Latitude  gensupport.JSONFloat64 `json:"latitude"`
+		Longitude gensupport.JSONFloat64 `json:"longitude"`
+		*NoMethod
+	}
+	s1.NoMethod = (*NoMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.Latitude = float64(s1.Latitude)
+	s.Longitude = float64(s1.Longitude)
+	return nil
+}
+
+// Buildings: JSON template for Building List Response object in
+// Directory API.
+type Buildings struct {
+	// Buildings: The Buildings in this page of results.
+	Buildings []*Building `json:"buildings,omitempty"`
+
+	// Etag: ETag of the resource.
+	Etag string `json:"etag,omitempty"`
+
+	// Kind: Kind of resource this is.
+	Kind string `json:"kind,omitempty"`
+
+	// NextPageToken: The continuation token, used to page through large
+	// result sets. Provide this value in a subsequent request to return the
+	// next page of results.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Buildings") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Buildings") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Buildings) MarshalJSON() ([]byte, error) {
+	type NoMethod Buildings
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CalendarResource: JSON template for Calendar Resource object in
+// Directory API.
+type CalendarResource struct {
+	// BuildingId: Unique ID for the building a resource is located in.
+	BuildingId string `json:"buildingId,omitempty"`
+
+	// Capacity: Capacity of a resource, number of seats in a room.
+	Capacity int64 `json:"capacity,omitempty"`
+
+	// Etags: ETag of the resource.
+	Etags string `json:"etags,omitempty"`
+
+	FeatureInstances interface{} `json:"featureInstances,omitempty"`
+
+	// FloorName: Name of the floor a resource is located on.
+	FloorName string `json:"floorName,omitempty"`
+
+	// FloorSection: Name of the section within a floor a resource is
+	// located in.
+	FloorSection string `json:"floorSection,omitempty"`
+
+	// GeneratedResourceName: The read-only auto-generated name of the
+	// calendar resource which includes metadata about the resource such as
+	// building name, floor, capacity, etc. For example, "NYC-2-Training
+	// Room 1A (16)".
+	GeneratedResourceName string `json:"generatedResourceName,omitempty"`
+
+	// Kind: The type of the resource. For calendar resources, the value is
+	// admin#directory#resources#calendars#CalendarResource.
+	Kind string `json:"kind,omitempty"`
+
+	// ResourceCategory: The category of the calendar resource. Either
+	// CONFERENCE_ROOM or OTHER. Legacy data is set to CATEGORY_UNKNOWN.
+	ResourceCategory string `json:"resourceCategory,omitempty"`
+
+	// ResourceDescription: Description of the resource, visible only to
+	// admins.
+	ResourceDescription string `json:"resourceDescription,omitempty"`
+
+	// ResourceEmail: The read-only email for the calendar resource.
+	// Generated as part of creating a new calendar resource.
+	ResourceEmail string `json:"resourceEmail,omitempty"`
+
+	// ResourceId: The unique ID for the calendar resource.
+	ResourceId string `json:"resourceId,omitempty"`
+
+	// ResourceName: The name of the calendar resource. For example,
+	// "Training Room 1A".
+	ResourceName string `json:"resourceName,omitempty"`
+
+	// ResourceType: The type of the calendar resource, intended for
+	// non-room resources.
+	ResourceType string `json:"resourceType,omitempty"`
+
+	// UserVisibleDescription: Description of the resource, visible to users
+	// and admins.
+	UserVisibleDescription string `json:"userVisibleDescription,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "BuildingId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BuildingId") to include in
+	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
@@ -866,6 +1065,9 @@ type ChromeOsDevice struct {
 	// BootMode: Chromebook boot mode (Read-only)
 	BootMode string `json:"bootMode,omitempty"`
 
+	// DeviceFiles: List of device files to download (Read-only)
+	DeviceFiles []*ChromeOsDeviceDeviceFiles `json:"deviceFiles,omitempty"`
+
 	// DeviceId: Unique identifier of Chrome OS Device (Read-only)
 	DeviceId string `json:"deviceId,omitempty"`
 
@@ -930,6 +1132,8 @@ type ChromeOsDevice struct {
 	// SupportEndDate: Final date the device will be supported (Read-only)
 	SupportEndDate string `json:"supportEndDate,omitempty"`
 
+	TpmVersionInfo *ChromeOsDeviceTpmVersionInfo `json:"tpmVersionInfo,omitempty"`
+
 	// WillAutoRenew: Will Chromebook auto renew after support end date
 	// (Read-only)
 	WillAutoRenew bool `json:"willAutoRenew,omitempty"`
@@ -992,6 +1196,42 @@ func (s *ChromeOsDeviceActiveTimeRanges) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type ChromeOsDeviceDeviceFiles struct {
+	// CreateTime: Date and time the file was created
+	CreateTime string `json:"createTime,omitempty"`
+
+	// DownloadUrl: File downlod URL
+	DownloadUrl string `json:"downloadUrl,omitempty"`
+
+	// Name: File name
+	Name string `json:"name,omitempty"`
+
+	// Type: File type
+	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CreateTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CreateTime") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ChromeOsDeviceDeviceFiles) MarshalJSON() ([]byte, error) {
+	type NoMethod ChromeOsDeviceDeviceFiles
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 type ChromeOsDeviceRecentUsers struct {
 	// Email: Email address of the user. Present only if the user type is
 	// managed
@@ -1019,6 +1259,42 @@ type ChromeOsDeviceRecentUsers struct {
 
 func (s *ChromeOsDeviceRecentUsers) MarshalJSON() ([]byte, error) {
 	type NoMethod ChromeOsDeviceRecentUsers
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type ChromeOsDeviceTpmVersionInfo struct {
+	Family string `json:"family,omitempty"`
+
+	FirmwareVersion string `json:"firmwareVersion,omitempty"`
+
+	Manufacturer string `json:"manufacturer,omitempty"`
+
+	SpecLevel string `json:"specLevel,omitempty"`
+
+	TpmModel string `json:"tpmModel,omitempty"`
+
+	VendorSpecific string `json:"vendorSpecific,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Family") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Family") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ChromeOsDeviceTpmVersionInfo) MarshalJSON() ([]byte, error) {
+	type NoMethod ChromeOsDeviceTpmVersionInfo
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1420,6 +1696,143 @@ type Domains2 struct {
 
 func (s *Domains2) MarshalJSON() ([]byte, error) {
 	type NoMethod Domains2
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Feature: JSON template for Feature object in Directory API.
+type Feature struct {
+	// Etags: ETag of the resource.
+	Etags string `json:"etags,omitempty"`
+
+	// Kind: Kind of resource this is.
+	Kind string `json:"kind,omitempty"`
+
+	// Name: The name of the feature.
+	Name string `json:"name,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etags") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Etags") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Feature) MarshalJSON() ([]byte, error) {
+	type NoMethod Feature
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// FeatureInstance: JSON template for a "feature instance".
+type FeatureInstance struct {
+	Feature *Feature `json:"feature,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Feature") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Feature") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FeatureInstance) MarshalJSON() ([]byte, error) {
+	type NoMethod FeatureInstance
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// FeatureRename: JSON request template for renaming a feature.
+type FeatureRename struct {
+	// NewName: New name of the feature.
+	NewName string `json:"newName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "NewName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "NewName") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FeatureRename) MarshalJSON() ([]byte, error) {
+	type NoMethod FeatureRename
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Features: JSON template for Feature List Response object in Directory
+// API.
+type Features struct {
+	// Etag: ETag of the resource.
+	Etag string `json:"etag,omitempty"`
+
+	// Features: The Features in this page of results.
+	Features []*Feature `json:"features,omitempty"`
+
+	// Kind: Kind of resource this is.
+	Kind string `json:"kind,omitempty"`
+
+	// NextPageToken: The continuation token, used to page through large
+	// result sets. Provide this value in a subsequent request to return the
+	// next page of results.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Etag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Etag") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Features) MarshalJSON() ([]byte, error) {
+	type NoMethod Features
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -11761,6 +12174,816 @@ func (c *ResolvedAppAccessSettingsListTrustedAppsCall) Do(opts ...googleapi.Call
 
 }
 
+// method id "directory.resources.buildings.delete":
+
+type ResourcesBuildingsDeleteCall struct {
+	s          *Service
+	customer   string
+	buildingId string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: Deletes a building.
+func (r *ResourcesBuildingsService) Delete(customer string, buildingId string) *ResourcesBuildingsDeleteCall {
+	c := &ResourcesBuildingsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.buildingId = buildingId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsDeleteCall) Fields(s ...googleapi.Field) *ResourcesBuildingsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsDeleteCall) Context(ctx context.Context) *ResourcesBuildingsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings/{buildingId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"buildingId": c.buildingId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.delete" call.
+func (c *ResourcesBuildingsDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Deletes a building.",
+	//   "httpMethod": "DELETE",
+	//   "id": "directory.resources.buildings.delete",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "buildingId"
+	//   ],
+	//   "parameters": {
+	//     "buildingId": {
+	//       "description": "The ID of the building to delete.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings/{buildingId}",
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.buildings.get":
+
+type ResourcesBuildingsGetCall struct {
+	s            *Service
+	customer     string
+	buildingId   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Retrieves a building.
+func (r *ResourcesBuildingsService) Get(customer string, buildingId string) *ResourcesBuildingsGetCall {
+	c := &ResourcesBuildingsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.buildingId = buildingId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsGetCall) Fields(s ...googleapi.Field) *ResourcesBuildingsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ResourcesBuildingsGetCall) IfNoneMatch(entityTag string) *ResourcesBuildingsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsGetCall) Context(ctx context.Context) *ResourcesBuildingsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings/{buildingId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"buildingId": c.buildingId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.get" call.
+// Exactly one of *Building or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Building.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesBuildingsGetCall) Do(opts ...googleapi.CallOption) (*Building, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Building{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Retrieves a building.",
+	//   "httpMethod": "GET",
+	//   "id": "directory.resources.buildings.get",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "buildingId"
+	//   ],
+	//   "parameters": {
+	//     "buildingId": {
+	//       "description": "The unique ID of the building to retrieve.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings/{buildingId}",
+	//   "response": {
+	//     "$ref": "Building"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.buildings.insert":
+
+type ResourcesBuildingsInsertCall struct {
+	s          *Service
+	customer   string
+	building   *Building
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Insert: Inserts a building.
+func (r *ResourcesBuildingsService) Insert(customer string, building *Building) *ResourcesBuildingsInsertCall {
+	c := &ResourcesBuildingsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.building = building
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsInsertCall) Fields(s ...googleapi.Field) *ResourcesBuildingsInsertCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsInsertCall) Context(ctx context.Context) *ResourcesBuildingsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsInsertCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsInsertCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.building)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer": c.customer,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.insert" call.
+// Exactly one of *Building or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Building.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesBuildingsInsertCall) Do(opts ...googleapi.CallOption) (*Building, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Building{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Inserts a building.",
+	//   "httpMethod": "POST",
+	//   "id": "directory.resources.buildings.insert",
+	//   "parameterOrder": [
+	//     "customer"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings",
+	//   "request": {
+	//     "$ref": "Building"
+	//   },
+	//   "response": {
+	//     "$ref": "Building"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.buildings.list":
+
+type ResourcesBuildingsListCall struct {
+	s            *Service
+	customer     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Retrieves a list of buildings for an account.
+func (r *ResourcesBuildingsService) List(customer string) *ResourcesBuildingsListCall {
+	c := &ResourcesBuildingsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsListCall) Fields(s ...googleapi.Field) *ResourcesBuildingsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ResourcesBuildingsListCall) IfNoneMatch(entityTag string) *ResourcesBuildingsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsListCall) Context(ctx context.Context) *ResourcesBuildingsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer": c.customer,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.list" call.
+// Exactly one of *Buildings or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Buildings.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesBuildingsListCall) Do(opts ...googleapi.CallOption) (*Buildings, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Buildings{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Retrieves a list of buildings for an account.",
+	//   "httpMethod": "GET",
+	//   "id": "directory.resources.buildings.list",
+	//   "parameterOrder": [
+	//     "customer"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings",
+	//   "response": {
+	//     "$ref": "Buildings"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.buildings.patch":
+
+type ResourcesBuildingsPatchCall struct {
+	s          *Service
+	customer   string
+	buildingId string
+	building   *Building
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Patch: Updates a building. This method supports patch semantics.
+func (r *ResourcesBuildingsService) Patch(customer string, buildingId string, building *Building) *ResourcesBuildingsPatchCall {
+	c := &ResourcesBuildingsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.buildingId = buildingId
+	c.building = building
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsPatchCall) Fields(s ...googleapi.Field) *ResourcesBuildingsPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsPatchCall) Context(ctx context.Context) *ResourcesBuildingsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.building)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings/{buildingId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"buildingId": c.buildingId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.patch" call.
+// Exactly one of *Building or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Building.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesBuildingsPatchCall) Do(opts ...googleapi.CallOption) (*Building, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Building{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a building. This method supports patch semantics.",
+	//   "httpMethod": "PATCH",
+	//   "id": "directory.resources.buildings.patch",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "buildingId"
+	//   ],
+	//   "parameters": {
+	//     "buildingId": {
+	//       "description": "The ID of the building to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings/{buildingId}",
+	//   "request": {
+	//     "$ref": "Building"
+	//   },
+	//   "response": {
+	//     "$ref": "Building"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.buildings.update":
+
+type ResourcesBuildingsUpdateCall struct {
+	s          *Service
+	customer   string
+	buildingId string
+	building   *Building
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Update: Updates a building.
+func (r *ResourcesBuildingsService) Update(customer string, buildingId string, building *Building) *ResourcesBuildingsUpdateCall {
+	c := &ResourcesBuildingsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.buildingId = buildingId
+	c.building = building
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesBuildingsUpdateCall) Fields(s ...googleapi.Field) *ResourcesBuildingsUpdateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesBuildingsUpdateCall) Context(ctx context.Context) *ResourcesBuildingsUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesBuildingsUpdateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesBuildingsUpdateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.building)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/buildings/{buildingId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PUT", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"buildingId": c.buildingId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.buildings.update" call.
+// Exactly one of *Building or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Building.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesBuildingsUpdateCall) Do(opts ...googleapi.CallOption) (*Building, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Building{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a building.",
+	//   "httpMethod": "PUT",
+	//   "id": "directory.resources.buildings.update",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "buildingId"
+	//   ],
+	//   "parameters": {
+	//     "buildingId": {
+	//       "description": "The ID of the building to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/buildings/{buildingId}",
+	//   "request": {
+	//     "$ref": "Building"
+	//   },
+	//   "response": {
+	//     "$ref": "Building"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
 // method id "directory.resources.calendars.delete":
 
 type ResourcesCalendarsDeleteCall struct {
@@ -12172,10 +13395,33 @@ func (c *ResourcesCalendarsListCall) MaxResults(maxResults int64) *ResourcesCale
 	return c
 }
 
+// OrderBy sets the optional parameter "orderBy": Field(s) to sort
+// results by in either ascending or descending order. Supported fields
+// include resourceId, resourceName, capacity, buildingId, and
+// floorName. If no order is specified, defaults to ascending. Should be
+// of the form "field [asc|desc], field [asc|desc], ...". For example
+// buildingId, capacity desc would return results sorted first by
+// buildingId in ascending order then by capacity in descending order.
+func (c *ResourcesCalendarsListCall) OrderBy(orderBy string) *ResourcesCalendarsListCall {
+	c.urlParams_.Set("orderBy", orderBy)
+	return c
+}
+
 // PageToken sets the optional parameter "pageToken": Token to specify
 // the next page in the list.
 func (c *ResourcesCalendarsListCall) PageToken(pageToken string) *ResourcesCalendarsListCall {
 	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Query sets the optional parameter "query": String query used to
+// filter results. Should be of the form "field operator value" where
+// field can be any of supported fields and operators can be any of
+// supported operations. Operators include '=' for exact match and ':'
+// for prefix match where applicable. For prefix match, the value should
+// always be followed by a *.
+func (c *ResourcesCalendarsListCall) Query(query string) *ResourcesCalendarsListCall {
+	c.urlParams_.Set("query", query)
 	return c
 }
 
@@ -12294,8 +13540,18 @@ func (c *ResourcesCalendarsListCall) Do(opts ...googleapi.CallOption) (*Calendar
 	//       "minimum": "1",
 	//       "type": "integer"
 	//     },
+	//     "orderBy": {
+	//       "description": "Field(s) to sort results by in either ascending or descending order. Supported fields include resourceId, resourceName, capacity, buildingId, and floorName. If no order is specified, defaults to ascending. Should be of the form \"field [asc|desc], field [asc|desc], ...\". For example buildingId, capacity desc would return results sorted first by buildingId in ascending order then by capacity in descending order.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "pageToken": {
 	//       "description": "Token to specify the next page in the list.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "query": {
+	//       "description": "String query used to filter results. Should be of the form \"field operator value\" where field can be any of supported fields and operators can be any of supported operations. Operators include '=' for exact match and ':' for prefix match where applicable. For prefix match, the value should always be followed by a *.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -12619,6 +13875,964 @@ func (c *ResourcesCalendarsUpdateCall) Do(opts ...googleapi.CallOption) (*Calend
 	//   },
 	//   "response": {
 	//     "$ref": "CalendarResource"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.delete":
+
+type ResourcesFeaturesDeleteCall struct {
+	s          *Service
+	customer   string
+	featureKey string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: Deletes a feature.
+func (r *ResourcesFeaturesService) Delete(customer string, featureKey string) *ResourcesFeaturesDeleteCall {
+	c := &ResourcesFeaturesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.featureKey = featureKey
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesDeleteCall) Fields(s ...googleapi.Field) *ResourcesFeaturesDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesDeleteCall) Context(ctx context.Context) *ResourcesFeaturesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features/{featureKey}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"featureKey": c.featureKey,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.delete" call.
+func (c *ResourcesFeaturesDeleteCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Deletes a feature.",
+	//   "httpMethod": "DELETE",
+	//   "id": "directory.resources.features.delete",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "featureKey"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "featureKey": {
+	//       "description": "The unique ID of the feature to delete.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features/{featureKey}",
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.get":
+
+type ResourcesFeaturesGetCall struct {
+	s            *Service
+	customer     string
+	featureKey   string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Retrieves a feature.
+func (r *ResourcesFeaturesService) Get(customer string, featureKey string) *ResourcesFeaturesGetCall {
+	c := &ResourcesFeaturesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.featureKey = featureKey
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesGetCall) Fields(s ...googleapi.Field) *ResourcesFeaturesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ResourcesFeaturesGetCall) IfNoneMatch(entityTag string) *ResourcesFeaturesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesGetCall) Context(ctx context.Context) *ResourcesFeaturesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features/{featureKey}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"featureKey": c.featureKey,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.get" call.
+// Exactly one of *Feature or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Feature.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ResourcesFeaturesGetCall) Do(opts ...googleapi.CallOption) (*Feature, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Feature{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Retrieves a feature.",
+	//   "httpMethod": "GET",
+	//   "id": "directory.resources.features.get",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "featureKey"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "featureKey": {
+	//       "description": "The unique ID of the feature to retrieve.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features/{featureKey}",
+	//   "response": {
+	//     "$ref": "Feature"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.insert":
+
+type ResourcesFeaturesInsertCall struct {
+	s          *Service
+	customer   string
+	feature    *Feature
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Insert: Inserts a feature.
+func (r *ResourcesFeaturesService) Insert(customer string, feature *Feature) *ResourcesFeaturesInsertCall {
+	c := &ResourcesFeaturesInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.feature = feature
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesInsertCall) Fields(s ...googleapi.Field) *ResourcesFeaturesInsertCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesInsertCall) Context(ctx context.Context) *ResourcesFeaturesInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesInsertCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesInsertCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.feature)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer": c.customer,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.insert" call.
+// Exactly one of *Feature or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Feature.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ResourcesFeaturesInsertCall) Do(opts ...googleapi.CallOption) (*Feature, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Feature{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Inserts a feature.",
+	//   "httpMethod": "POST",
+	//   "id": "directory.resources.features.insert",
+	//   "parameterOrder": [
+	//     "customer"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features",
+	//   "request": {
+	//     "$ref": "Feature"
+	//   },
+	//   "response": {
+	//     "$ref": "Feature"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.list":
+
+type ResourcesFeaturesListCall struct {
+	s            *Service
+	customer     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Retrieves a list of features for an account.
+func (r *ResourcesFeaturesService) List(customer string) *ResourcesFeaturesListCall {
+	c := &ResourcesFeaturesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Token to specify
+// the next page in the list.
+func (c *ResourcesFeaturesListCall) PageToken(pageToken string) *ResourcesFeaturesListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesListCall) Fields(s ...googleapi.Field) *ResourcesFeaturesListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ResourcesFeaturesListCall) IfNoneMatch(entityTag string) *ResourcesFeaturesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesListCall) Context(ctx context.Context) *ResourcesFeaturesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer": c.customer,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.list" call.
+// Exactly one of *Features or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Features.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ResourcesFeaturesListCall) Do(opts ...googleapi.CallOption) (*Features, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Features{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Retrieves a list of features for an account.",
+	//   "httpMethod": "GET",
+	//   "id": "directory.resources.features.list",
+	//   "parameterOrder": [
+	//     "customer"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "pageToken": {
+	//       "description": "Token to specify the next page in the list.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features",
+	//   "response": {
+	//     "$ref": "Features"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ResourcesFeaturesListCall) Pages(ctx context.Context, f func(*Features) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "directory.resources.features.patch":
+
+type ResourcesFeaturesPatchCall struct {
+	s          *Service
+	customer   string
+	featureKey string
+	feature    *Feature
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Patch: Updates a feature. This method supports patch semantics.
+func (r *ResourcesFeaturesService) Patch(customer string, featureKey string, feature *Feature) *ResourcesFeaturesPatchCall {
+	c := &ResourcesFeaturesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.featureKey = featureKey
+	c.feature = feature
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesPatchCall) Fields(s ...googleapi.Field) *ResourcesFeaturesPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesPatchCall) Context(ctx context.Context) *ResourcesFeaturesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.feature)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features/{featureKey}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"featureKey": c.featureKey,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.patch" call.
+// Exactly one of *Feature or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Feature.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ResourcesFeaturesPatchCall) Do(opts ...googleapi.CallOption) (*Feature, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Feature{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a feature. This method supports patch semantics.",
+	//   "httpMethod": "PATCH",
+	//   "id": "directory.resources.features.patch",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "featureKey"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "featureKey": {
+	//       "description": "The unique ID of the feature to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features/{featureKey}",
+	//   "request": {
+	//     "$ref": "Feature"
+	//   },
+	//   "response": {
+	//     "$ref": "Feature"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.rename":
+
+type ResourcesFeaturesRenameCall struct {
+	s             *Service
+	customer      string
+	oldName       string
+	featurerename *FeatureRename
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// Rename: Renames a feature.
+func (r *ResourcesFeaturesService) Rename(customer string, oldName string, featurerename *FeatureRename) *ResourcesFeaturesRenameCall {
+	c := &ResourcesFeaturesRenameCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.oldName = oldName
+	c.featurerename = featurerename
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesRenameCall) Fields(s ...googleapi.Field) *ResourcesFeaturesRenameCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesRenameCall) Context(ctx context.Context) *ResourcesFeaturesRenameCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesRenameCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesRenameCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.featurerename)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features/{oldName}/rename")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer": c.customer,
+		"oldName":  c.oldName,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.rename" call.
+func (c *ResourcesFeaturesRenameCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Renames a feature.",
+	//   "httpMethod": "POST",
+	//   "id": "directory.resources.features.rename",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "oldName"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "oldName": {
+	//       "description": "The unique ID of the feature to rename.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features/{oldName}/rename",
+	//   "request": {
+	//     "$ref": "FeatureRename"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+	//   ]
+	// }
+
+}
+
+// method id "directory.resources.features.update":
+
+type ResourcesFeaturesUpdateCall struct {
+	s          *Service
+	customer   string
+	featureKey string
+	feature    *Feature
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Update: Updates a feature.
+func (r *ResourcesFeaturesService) Update(customer string, featureKey string, feature *Feature) *ResourcesFeaturesUpdateCall {
+	c := &ResourcesFeaturesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.customer = customer
+	c.featureKey = featureKey
+	c.feature = feature
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ResourcesFeaturesUpdateCall) Fields(s ...googleapi.Field) *ResourcesFeaturesUpdateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ResourcesFeaturesUpdateCall) Context(ctx context.Context) *ResourcesFeaturesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ResourcesFeaturesUpdateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ResourcesFeaturesUpdateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.feature)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "customer/{customer}/resources/features/{featureKey}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PUT", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"customer":   c.customer,
+		"featureKey": c.featureKey,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "directory.resources.features.update" call.
+// Exactly one of *Feature or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Feature.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *ResourcesFeaturesUpdateCall) Do(opts ...googleapi.CallOption) (*Feature, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Feature{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a feature.",
+	//   "httpMethod": "PUT",
+	//   "id": "directory.resources.features.update",
+	//   "parameterOrder": [
+	//     "customer",
+	//     "featureKey"
+	//   ],
+	//   "parameters": {
+	//     "customer": {
+	//       "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "featureKey": {
+	//       "description": "The unique ID of the feature to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "customer/{customer}/resources/features/{featureKey}",
+	//   "request": {
+	//     "$ref": "Feature"
+	//   },
+	//   "response": {
+	//     "$ref": "Feature"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/admin.directory.resource.calendar"

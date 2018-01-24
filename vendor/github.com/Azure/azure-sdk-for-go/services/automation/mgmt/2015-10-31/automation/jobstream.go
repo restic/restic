@@ -18,6 +18,7 @@ package automation
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,31 +27,30 @@ import (
 
 // JobStreamClient is the automation Client
 type JobStreamClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewJobStreamClient creates an instance of the JobStreamClient client.
-func NewJobStreamClient(subscriptionID string) JobStreamClient {
-	return NewJobStreamClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewJobStreamClient(subscriptionID string, resourceGroupName string) JobStreamClient {
+	return NewJobStreamClientWithBaseURI(DefaultBaseURI, subscriptionID, resourceGroupName)
 }
 
 // NewJobStreamClientWithBaseURI creates an instance of the JobStreamClient client.
-func NewJobStreamClientWithBaseURI(baseURI string, subscriptionID string) JobStreamClient {
-	return JobStreamClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewJobStreamClientWithBaseURI(baseURI string, subscriptionID string, resourceGroupName string) JobStreamClient {
+	return JobStreamClient{NewWithBaseURI(baseURI, subscriptionID, resourceGroupName)}
 }
 
 // Get retrieve the job stream identified by job stream id.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. jobID is the job
-// id. jobStreamID is the job stream id.
-func (client JobStreamClient) Get(resourceGroupName string, automationAccountName string, jobID string, jobStreamID string) (result JobStream, err error) {
+// automationAccountName is the automation account name. jobID is the job id. jobStreamID is the job stream id.
+func (client JobStreamClient) Get(ctx context.Context, automationAccountName string, jobID string, jobStreamID string) (result JobStream, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.JobStreamClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, automationAccountName, jobID, jobStreamID)
+	req, err := client.GetPreparer(ctx, automationAccountName, jobID, jobStreamID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "Get", nil, "Failure preparing request")
 		return
@@ -72,12 +72,12 @@ func (client JobStreamClient) Get(resourceGroupName string, automationAccountNam
 }
 
 // GetPreparer prepares the Get request.
-func (client JobStreamClient) GetPreparer(resourceGroupName string, automationAccountName string, jobID string, jobStreamID string) (*http.Request, error) {
+func (client JobStreamClient) GetPreparer(ctx context.Context, automationAccountName string, jobID string, jobStreamID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
 		"jobId":                 autorest.Encode("path", jobID),
 		"jobStreamId":           autorest.Encode("path", jobStreamID),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
 
@@ -91,14 +91,13 @@ func (client JobStreamClient) GetPreparer(resourceGroupName string, automationAc
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/jobs/{jobId}/streams/{jobStreamId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobStreamClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -117,16 +116,17 @@ func (client JobStreamClient) GetResponder(resp *http.Response) (result JobStrea
 
 // ListByJob retrieve a list of jobs streams identified by job id.
 //
-// resourceGroupName is the resource group name. automationAccountName is the automation account name. jobID is the job
-// Id. filter is the filter to apply on the operation.
-func (client JobStreamClient) ListByJob(resourceGroupName string, automationAccountName string, jobID string, filter string) (result JobStreamListResult, err error) {
+// automationAccountName is the automation account name. jobID is the job Id. filter is the filter to apply on the
+// operation.
+func (client JobStreamClient) ListByJob(ctx context.Context, automationAccountName string, jobID string, filter string) (result JobStreamListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
-		{TargetValue: resourceGroupName,
-			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
+		{TargetValue: client.ResourceGroupName,
+			Constraints: []validation.Constraint{{Target: "client.ResourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "automation.JobStreamClient", "ListByJob")
 	}
 
-	req, err := client.ListByJobPreparer(resourceGroupName, automationAccountName, jobID, filter)
+	result.fn = client.listByJobNextResults
+	req, err := client.ListByJobPreparer(ctx, automationAccountName, jobID, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", nil, "Failure preparing request")
 		return
@@ -134,12 +134,12 @@ func (client JobStreamClient) ListByJob(resourceGroupName string, automationAcco
 
 	resp, err := client.ListByJobSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.jslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByJobResponder(resp)
+	result.jslr, err = client.ListByJobResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", resp, "Failure responding to request")
 	}
@@ -148,11 +148,11 @@ func (client JobStreamClient) ListByJob(resourceGroupName string, automationAcco
 }
 
 // ListByJobPreparer prepares the ListByJob request.
-func (client JobStreamClient) ListByJobPreparer(resourceGroupName string, automationAccountName string, jobID string, filter string) (*http.Request, error) {
+func (client JobStreamClient) ListByJobPreparer(ctx context.Context, automationAccountName string, jobID string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"automationAccountName": autorest.Encode("path", automationAccountName),
 		"jobId":                 autorest.Encode("path", jobID),
-		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
+		"resourceGroupName":     autorest.Encode("path", client.ResourceGroupName),
 		"subscriptionId":        autorest.Encode("path", client.SubscriptionID),
 	}
 
@@ -169,14 +169,13 @@ func (client JobStreamClient) ListByJobPreparer(resourceGroupName string, automa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Automation/automationAccounts/{automationAccountName}/jobs/{jobId}/streams", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByJobSender sends the ListByJob request. The method will close the
 // http.Response Body if it receives an error.
 func (client JobStreamClient) ListByJobSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -193,71 +192,29 @@ func (client JobStreamClient) ListByJobResponder(resp *http.Response) (result Jo
 	return
 }
 
-// ListByJobNextResults retrieves the next set of results, if any.
-func (client JobStreamClient) ListByJobNextResults(lastResults JobStreamListResult) (result JobStreamListResult, err error) {
-	req, err := lastResults.JobStreamListResultPreparer()
+// listByJobNextResults retrieves the next set of results, if any.
+func (client JobStreamClient) listByJobNextResults(lastResults JobStreamListResult) (result JobStreamListResult, err error) {
+	req, err := lastResults.jobStreamListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "automation.JobStreamClient", "listByJobNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByJobSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "automation.JobStreamClient", "listByJobNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByJobResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "ListByJob", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "automation.JobStreamClient", "listByJobNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByJobComplete gets all elements from the list without paging.
-func (client JobStreamClient) ListByJobComplete(resourceGroupName string, automationAccountName string, jobID string, filter string, cancel <-chan struct{}) (<-chan JobStream, <-chan error) {
-	resultChan := make(chan JobStream)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByJob(resourceGroupName, automationAccountName, jobID, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByJobNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByJobComplete enumerates all values, automatically crossing page boundaries as required.
+func (client JobStreamClient) ListByJobComplete(ctx context.Context, automationAccountName string, jobID string, filter string) (result JobStreamListResultIterator, err error) {
+	result.page, err = client.ListByJob(ctx, automationAccountName, jobID, filter)
+	return
 }

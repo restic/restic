@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"cloud.google.com/go/internal/pretty"
 	"cloud.google.com/go/internal/testutil"
 	"google.golang.org/api/googleapi"
 	raw "google.golang.org/api/storage/v1"
@@ -56,11 +55,7 @@ func TestBucketAttrsToRawBucket(t *testing.T) {
 		Versioning:   nil, // ignore VersioningEnabled if false
 		Labels:       map[string]string{"label": "value"},
 	}
-	msg, ok, err := pretty.Diff(want, got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
+	if msg := testutil.Diff(got, want); msg != "" {
 		t.Error(msg)
 	}
 
@@ -69,11 +64,7 @@ func TestBucketAttrsToRawBucket(t *testing.T) {
 	got = attrs.toRawBucket()
 	want.Versioning = &raw.BucketVersioning{Enabled: true}
 	want.Billing = &raw.BucketBilling{RequesterPays: true}
-	msg, ok, err = pretty.Diff(want, got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
+	if msg := testutil.Diff(got, want); msg != "" {
 		t.Error(msg)
 	}
 }
@@ -103,11 +94,7 @@ func TestBucketAttrsToUpdateToRawBucket(t *testing.T) {
 		},
 		NullFields: []string{"Labels.b"},
 	}
-	msg, ok, err := pretty.Diff(want, got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
+	if msg := testutil.Diff(got, want); msg != "" {
 		t.Error(msg)
 	}
 
@@ -119,14 +106,10 @@ func TestBucketAttrsToUpdateToRawBucket(t *testing.T) {
 		ForceSendFields: []string{"Labels"},
 		NullFields:      []string{"Labels.b"},
 	}
-	msg, ok, err = pretty.Diff(want, got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ok {
+
+	if msg := testutil.Diff(got, want); msg != "" {
 		t.Error(msg)
 	}
-
 }
 
 func TestCallBuilders(t *testing.T) {

@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DisksClient is the compute Client
 type DisksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDisksClient creates an instance of the DisksClient client.
@@ -39,14 +40,11 @@ func NewDisksClientWithBaseURI(baseURI string, subscriptionID string) DisksClien
 	return DisksClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a disk. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates or updates a disk.
 //
 // resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
 // and resource group. disk is disk object supplied in the body of the Put disk operation.
-func (client DisksClient) CreateOrUpdate(resourceGroupName string, diskName string, disk Disk, cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk, 1)
-	errChan := make(chan error, 1)
+func (client DisksClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, diskName string, disk Disk) (result DisksCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: disk,
 			Constraints: []validation.Constraint{{Target: "disk.DiskProperties", Name: validation.Null, Rule: false,
@@ -65,46 +63,26 @@ func (client DisksClient) CreateOrUpdate(resourceGroupName string, diskName stri
 								}},
 						}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "compute.DisksClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "compute.DisksClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result Disk
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, diskName, disk, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, diskName, disk)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DisksClient) CreateOrUpdatePreparer(resourceGroupName string, diskName string, disk Disk, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, diskName string, disk Disk) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -123,16 +101,22 @@ func (client DisksClient) CreateOrUpdatePreparer(resourceGroupName string, diskN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}", pathParameters),
 		autorest.WithJSON(disk),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) CreateOrUpdateSender(req *http.Request) (future DisksCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -148,48 +132,28 @@ func (client DisksClient) CreateOrUpdateResponder(resp *http.Response) (result D
 	return
 }
 
-// Delete deletes a disk. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a disk.
 //
 // resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
 // and resource group.
-func (client DisksClient) Delete(resourceGroupName string, diskName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, diskName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client DisksClient) Delete(ctx context.Context, resourceGroupName string, diskName string) (result DisksDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, diskName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DisksClient) DeletePreparer(resourceGroupName string, diskName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) DeletePreparer(ctx context.Context, resourceGroupName string, diskName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -206,16 +170,22 @@ func (client DisksClient) DeletePreparer(resourceGroupName string, diskName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) DeleteSender(req *http.Request) (future DisksDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -235,8 +205,8 @@ func (client DisksClient) DeleteResponder(resp *http.Response) (result Operation
 //
 // resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
 // and resource group.
-func (client DisksClient) Get(resourceGroupName string, diskName string) (result Disk, err error) {
-	req, err := client.GetPreparer(resourceGroupName, diskName)
+func (client DisksClient) Get(ctx context.Context, resourceGroupName string, diskName string) (result Disk, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, diskName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "Get", nil, "Failure preparing request")
 		return
@@ -258,7 +228,7 @@ func (client DisksClient) Get(resourceGroupName string, diskName string) (result
 }
 
 // GetPreparer prepares the Get request.
-func (client DisksClient) GetPreparer(resourceGroupName string, diskName string) (*http.Request, error) {
+func (client DisksClient) GetPreparer(ctx context.Context, resourceGroupName string, diskName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -275,14 +245,13 @@ func (client DisksClient) GetPreparer(resourceGroupName string, diskName string)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -299,57 +268,34 @@ func (client DisksClient) GetResponder(resp *http.Response) (result Disk, err er
 	return
 }
 
-// GrantAccess grants access to a disk. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// GrantAccess grants access to a disk.
 //
 // resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
 // and resource group. grantAccessData is access data object supplied in the body of the get disk access operation.
-func (client DisksClient) GrantAccess(resourceGroupName string, diskName string, grantAccessData GrantAccessData, cancel <-chan struct{}) (<-chan AccessURI, <-chan error) {
-	resultChan := make(chan AccessURI, 1)
-	errChan := make(chan error, 1)
+func (client DisksClient) GrantAccess(ctx context.Context, resourceGroupName string, diskName string, grantAccessData GrantAccessData) (result DisksGrantAccessFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: grantAccessData,
 			Constraints: []validation.Constraint{{Target: "grantAccessData.DurationInSeconds", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "compute.DisksClient", "GrantAccess")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "compute.DisksClient", "GrantAccess")
 	}
 
-	go func() {
-		var err error
-		var result AccessURI
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.GrantAccessPreparer(resourceGroupName, diskName, grantAccessData, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "GrantAccess", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.GrantAccessPreparer(ctx, resourceGroupName, diskName, grantAccessData)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "GrantAccess", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.GrantAccessSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "GrantAccess", resp, "Failure sending request")
-			return
-		}
+	result, err = client.GrantAccessSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "GrantAccess", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.GrantAccessResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "GrantAccess", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // GrantAccessPreparer prepares the GrantAccess request.
-func (client DisksClient) GrantAccessPreparer(resourceGroupName string, diskName string, grantAccessData GrantAccessData, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) GrantAccessPreparer(ctx context.Context, resourceGroupName string, diskName string, grantAccessData GrantAccessData) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -368,16 +314,22 @@ func (client DisksClient) GrantAccessPreparer(resourceGroupName string, diskName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}/beginGetAccess", pathParameters),
 		autorest.WithJSON(grantAccessData),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GrantAccessSender sends the GrantAccess request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) GrantAccessSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) GrantAccessSender(req *http.Request) (future DisksGrantAccessFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // GrantAccessResponder handles the response to the GrantAccess request. The method always
@@ -394,8 +346,9 @@ func (client DisksClient) GrantAccessResponder(resp *http.Response) (result Acce
 }
 
 // List lists all the disks under a subscription.
-func (client DisksClient) List() (result DiskList, err error) {
-	req, err := client.ListPreparer()
+func (client DisksClient) List(ctx context.Context) (result DiskListPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "List", nil, "Failure preparing request")
 		return
@@ -403,12 +356,12 @@ func (client DisksClient) List() (result DiskList, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.dl, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "List", resp, "Failure responding to request")
 	}
@@ -417,7 +370,7 @@ func (client DisksClient) List() (result DiskList, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client DisksClient) ListPreparer() (*http.Request, error) {
+func (client DisksClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -432,14 +385,13 @@ func (client DisksClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/disks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisksClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -456,80 +408,39 @@ func (client DisksClient) ListResponder(resp *http.Response) (result DiskList, e
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DisksClient) ListNextResults(lastResults DiskList) (result DiskList, err error) {
-	req, err := lastResults.DiskListPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DisksClient) listNextResults(lastResults DiskList) (result DiskList, err error) {
+	req, err := lastResults.diskListPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.DisksClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DisksClient) ListComplete(cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DisksClient) ListComplete(ctx context.Context) (result DiskListIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListByResourceGroup lists all the disks under a resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client DisksClient) ListByResourceGroup(resourceGroupName string) (result DiskList, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client DisksClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result DiskListPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -537,12 +448,12 @@ func (client DisksClient) ListByResourceGroup(resourceGroupName string) (result 
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.dl, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -551,7 +462,7 @@ func (client DisksClient) ListByResourceGroup(resourceGroupName string) (result 
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client DisksClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client DisksClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -567,14 +478,13 @@ func (client DisksClient) ListByResourceGroupPreparer(resourceGroupName string) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisksClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -591,117 +501,55 @@ func (client DisksClient) ListByResourceGroupResponder(resp *http.Response) (res
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client DisksClient) ListByResourceGroupNextResults(lastResults DiskList) (result DiskList, err error) {
-	req, err := lastResults.DiskListPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client DisksClient) listByResourceGroupNextResults(lastResults DiskList) (result DiskList, err error) {
+	req, err := lastResults.diskListPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.DisksClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.DisksClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DisksClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result DiskListIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
+}
+
+// RevokeAccess revokes access to a disk.
+//
+// resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
+// and resource group.
+func (client DisksClient) RevokeAccess(ctx context.Context, resourceGroupName string, diskName string) (result DisksRevokeAccessFuture, err error) {
+	req, err := client.RevokeAccessPreparer(ctx, resourceGroupName, diskName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "RevokeAccess", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.RevokeAccessSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "RevokeAccess", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client DisksClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// RevokeAccess revokes access to a disk. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
-//
-// resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
-// and resource group.
-func (client DisksClient) RevokeAccess(resourceGroupName string, diskName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RevokeAccessPreparer(resourceGroupName, diskName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "RevokeAccess", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.RevokeAccessSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "RevokeAccess", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.RevokeAccessResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "RevokeAccess", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // RevokeAccessPreparer prepares the RevokeAccess request.
-func (client DisksClient) RevokeAccessPreparer(resourceGroupName string, diskName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) RevokeAccessPreparer(ctx context.Context, resourceGroupName string, diskName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -718,16 +566,22 @@ func (client DisksClient) RevokeAccessPreparer(resourceGroupName string, diskNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}/endGetAccess", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RevokeAccessSender sends the RevokeAccess request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) RevokeAccessSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) RevokeAccessSender(req *http.Request) (future DisksRevokeAccessFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RevokeAccessResponder handles the response to the RevokeAccess request. The method always
@@ -743,48 +597,28 @@ func (client DisksClient) RevokeAccessResponder(resp *http.Response) (result Ope
 	return
 }
 
-// Update updates (patches) a disk. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Update updates (patches) a disk.
 //
 // resourceGroupName is the name of the resource group. diskName is the name of the disk within the given subscription
 // and resource group. disk is disk object supplied in the body of the Patch disk operation.
-func (client DisksClient) Update(resourceGroupName string, diskName string, disk DiskUpdate, cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Disk
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, diskName, disk, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Update", nil, "Failure preparing request")
-			return
-		}
+func (client DisksClient) Update(ctx context.Context, resourceGroupName string, diskName string, disk DiskUpdate) (result DisksUpdateFuture, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, diskName, disk)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.DisksClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client DisksClient) UpdatePreparer(resourceGroupName string, diskName string, disk DiskUpdate, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) UpdatePreparer(ctx context.Context, resourceGroupName string, diskName string, disk DiskUpdate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"diskName":          autorest.Encode("path", diskName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -803,16 +637,22 @@ func (client DisksClient) UpdatePreparer(resourceGroupName string, diskName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/disks/{diskName}", pathParameters),
 		autorest.WithJSON(disk),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) UpdateSender(req *http.Request) (future DisksUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

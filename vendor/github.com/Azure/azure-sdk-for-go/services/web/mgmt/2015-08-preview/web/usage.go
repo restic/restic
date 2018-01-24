@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // UsageClient is the webSite Management Client
 type UsageClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewUsageClient creates an instance of the UsageClient client.
@@ -42,8 +43,8 @@ func NewUsageClientWithBaseURI(baseURI string, subscriptionID string) UsageClien
 //
 // resourceGroupName is name of resource group environmentName is environment name lastID is last marker that was
 // returned from the batch batchSize is size of the batch to be returned.
-func (client UsageClient) GetUsage(resourceGroupName string, environmentName string, lastID string, batchSize int32) (result SetObject, err error) {
-	req, err := client.GetUsagePreparer(resourceGroupName, environmentName, lastID, batchSize)
+func (client UsageClient) GetUsage(ctx context.Context, resourceGroupName string, environmentName string, lastID string, batchSize int32) (result SetObject, err error) {
+	req, err := client.GetUsagePreparer(ctx, resourceGroupName, environmentName, lastID, batchSize)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.UsageClient", "GetUsage", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client UsageClient) GetUsage(resourceGroupName string, environmentName str
 }
 
 // GetUsagePreparer prepares the GetUsage request.
-func (client UsageClient) GetUsagePreparer(resourceGroupName string, environmentName string, lastID string, batchSize int32) (*http.Request, error) {
+func (client UsageClient) GetUsagePreparer(ctx context.Context, resourceGroupName string, environmentName string, lastID string, batchSize int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"environmentName":   autorest.Encode("path", environmentName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -84,14 +85,13 @@ func (client UsageClient) GetUsagePreparer(resourceGroupName string, environment
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web.Admin/environments/{environmentName}/usage", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetUsageSender sends the GetUsage request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsageClient) GetUsageSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

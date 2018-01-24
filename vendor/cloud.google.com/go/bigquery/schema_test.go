@@ -248,6 +248,14 @@ func reqField(name, typ string) *FieldSchema {
 	}
 }
 
+func optField(name, typ string) *FieldSchema {
+	return &FieldSchema{
+		Name:     name,
+		Type:     FieldType(typ),
+		Required: false,
+	}
+}
+
 func TestSimpleInference(t *testing.T) {
 	testCases := []struct {
 		in   interface{}
@@ -491,6 +499,37 @@ func TestRepeatedInference(t *testing.T) {
 	}
 }
 
+type allNulls struct {
+	A NullInt64
+	B NullFloat64
+	C NullBool
+	D NullString
+	E NullTimestamp
+	F NullTime
+	G NullDate
+	H NullDateTime
+}
+
+func TestNullInference(t *testing.T) {
+	got, err := InferSchema(allNulls{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Schema{
+		optField("A", "INTEGER"),
+		optField("B", "FLOAT"),
+		optField("C", "BOOLEAN"),
+		optField("D", "STRING"),
+		optField("E", "TIMESTAMP"),
+		optField("F", "TIME"),
+		optField("G", "DATE"),
+		optField("H", "DATETIME"),
+	}
+	if diff := testutil.Diff(got, want); diff != "" {
+		t.Error(diff)
+	}
+}
+
 type Embedded struct {
 	Embedded int
 }
@@ -532,10 +571,11 @@ func TestRecursiveInference(t *testing.T) {
 
 type withTags struct {
 	NoTag         int
-	ExcludeTag    int `bigquery:"-"`
-	SimpleTag     int `bigquery:"simple_tag"`
-	UnderscoreTag int `bigquery:"_id"`
-	MixedCase     int `bigquery:"MIXEDcase"`
+	ExcludeTag    int    `bigquery:"-"`
+	SimpleTag     int    `bigquery:"simple_tag"`
+	UnderscoreTag int    `bigquery:"_id"`
+	MixedCase     int    `bigquery:"MIXEDcase"`
+	Nullable      []byte `bigquery:",nullable"`
 }
 
 type withTagsNested struct {
@@ -544,6 +584,8 @@ type withTagsNested struct {
 		ExcludeTag int `bigquery:"-"`
 		Inside     int `bigquery:"inside"`
 	} `bigquery:"anon"`
+	PNested         *struct{ X int } // not nullable, for backwards compatibility
+	PNestedNullable *struct{ X int } `bigquery:",nullable"`
 }
 
 type withTagsRepeated struct {
@@ -563,6 +605,7 @@ var withTagsSchema = Schema{
 	reqField("simple_tag", "INTEGER"),
 	reqField("_id", "INTEGER"),
 	reqField("MIXEDcase", "INTEGER"),
+	optField("Nullable", "BYTES"),
 }
 
 func TestTagInference(t *testing.T) {
@@ -588,6 +631,18 @@ func TestTagInference(t *testing.T) {
 					Required: true,
 					Type:     "RECORD",
 					Schema:   Schema{reqField("inside", "INTEGER")},
+				},
+				&FieldSchema{
+					Name:     "PNested",
+					Required: true,
+					Type:     "RECORD",
+					Schema:   Schema{reqField("X", "INTEGER")},
+				},
+				&FieldSchema{
+					Name:     "PNestedNullable",
+					Required: false,
+					Type:     "RECORD",
+					Schema:   Schema{reqField("X", "INTEGER")},
 				},
 			},
 		},
@@ -666,12 +721,6 @@ func TestTagInferenceErrors(t *testing.T) {
 			}{},
 			err: errInvalidFieldName,
 		},
-		{
-			in: struct {
-				OmitEmpty int `bigquery:"abc,omitempty"`
-			}{},
-			err: errInvalidFieldName,
-		},
 	}
 	for i, tc := range testCases {
 		want := tc.err
@@ -679,6 +728,13 @@ func TestTagInferenceErrors(t *testing.T) {
 		if got != want {
 			t.Errorf("%d: inferring TableSchema: got:\n%#v\nwant:\n%#v", i, got, want)
 		}
+	}
+
+	_, err := InferSchema(struct {
+		X int `bigquery:",optional"`
+	}{})
+	if err == nil {
+		t.Error("got nil, want error")
 	}
 }
 
@@ -721,7 +777,7 @@ func TestSchemaErrors(t *testing.T) {
 		},
 		{
 			in:  struct{ Ptr *int }{},
-			err: errNoStruct,
+			err: errUnsupportedFieldType,
 		},
 		{
 			in:  struct{ Interface interface{} }{},
@@ -736,11 +792,55 @@ func TestSchemaErrors(t *testing.T) {
 			err: errUnsupportedFieldType,
 		},
 		{
+			in:  struct{ SliceOfPointer []*int }{},
+			err: errUnsupportedFieldType,
+		},
+		{
+			in:  struct{ SliceOfNull []NullInt64 }{},
+			err: errUnsupportedFieldType,
+		},
+		{
 			in:  struct{ ChanSlice []chan bool }{},
 			err: errUnsupportedFieldType,
 		},
 		{
 			in:  struct{ NestedChan struct{ Chan []chan bool } }{},
+			err: errUnsupportedFieldType,
+		},
+		{
+			in: struct {
+				X int `bigquery:",nullable"`
+			}{},
+			err: errBadNullable,
+		},
+		{
+			in: struct {
+				X bool `bigquery:",nullable"`
+			}{},
+			err: errBadNullable,
+		},
+		{
+			in: struct {
+				X struct{ N int } `bigquery:",nullable"`
+			}{},
+			err: errBadNullable,
+		},
+		{
+			in: struct {
+				X []int `bigquery:",nullable"`
+			}{},
+			err: errBadNullable,
+		},
+		{
+			in:  struct{ X *[]byte }{},
+			err: errUnsupportedFieldType,
+		},
+		{
+			in:  struct{ X *[]int }{},
+			err: errUnsupportedFieldType,
+		},
+		{
+			in:  struct{ X *int }{},
 			err: errUnsupportedFieldType,
 		},
 	}

@@ -100,6 +100,10 @@ type QueryConfig struct {
 	// It is illegal to mix positional and named syntax.
 	Parameters []QueryParameter
 
+	// TimePartitioning specifies time-based partitioning
+	// for the destination table.
+	TimePartitioning *TimePartitioning
+
 	// The labels associated with this job.
 	Labels map[string]string
 
@@ -121,6 +125,7 @@ func (qc *QueryConfig) toBQ() (*bq.JobConfiguration, error) {
 		AllowLargeResults:  qc.AllowLargeResults,
 		Priority:           string(qc.Priority),
 		MaximumBytesBilled: qc.MaxBytesBilled,
+		TimePartitioning:   qc.TimePartitioning.toBQ(),
 	}
 	if len(qc.TableDefinitions) > 0 {
 		qconf.TableDefinitions = make(map[string]bq.ExternalDataConfiguration)
@@ -188,6 +193,7 @@ func bqToQueryConfig(q *bq.JobConfiguration, c *Client) (*QueryConfig, error) {
 		MaxBytesBilled:    qq.MaximumBytesBilled,
 		UseLegacySQL:      qq.UseLegacySql,
 		UseStandardSQL:    !qq.UseLegacySql,
+		TimePartitioning:  bqToTimePartitioning(qq.TimePartitioning),
 	}
 	if len(qq.TableDefinitions) > 0 {
 		qc.TableDefinitions = make(map[string]ExternalData)

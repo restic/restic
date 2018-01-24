@@ -17,7 +17,6 @@ package firestore
 import (
 	"math/rand"
 	"os"
-	"reflect"
 	"sync"
 	"time"
 
@@ -45,15 +44,6 @@ type CollectionRef struct {
 
 	// Use the methods of Query on a CollectionRef to create and run queries.
 	Query
-}
-
-func (c1 *CollectionRef) equal(c2 *CollectionRef) bool {
-	return c1.c == c2.c &&
-		c1.parentPath == c2.parentPath &&
-		c1.Parent.equal(c2.Parent) &&
-		c1.Path == c2.Path &&
-		c1.ID == c2.ID &&
-		reflect.DeepEqual(c1.Query, c2.Query)
 }
 
 func newTopLevelCollRef(c *Client, dbPath, id string) *CollectionRef {

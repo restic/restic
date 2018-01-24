@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // APIExportClient is the apiManagement Client
 type APIExportClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAPIExportClient creates an instance of the APIExportClient client.
@@ -43,7 +44,7 @@ func NewAPIExportClientWithBaseURI(baseURI string, subscriptionID string) APIExp
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. apiid is
 // API identifier. Must be unique in the current API Management service instance.
-func (client APIExportClient) Get(resourceGroupName string, serviceName string, apiid string) (result APIExportResult, err error) {
+func (client APIExportClient) Get(ctx context.Context, resourceGroupName string, serviceName string, apiid string) (result APIExportResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -56,7 +57,7 @@ func (client APIExportClient) Get(resourceGroupName string, serviceName string, 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.APIExportClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, apiid)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, apiid)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.APIExportClient", "Get", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client APIExportClient) Get(resourceGroupName string, serviceName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client APIExportClient) GetPreparer(resourceGroupName string, serviceName string, apiid string) (*http.Request, error) {
+func (client APIExportClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, apiid string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"apiId":             autorest.Encode("path", apiid),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -96,14 +97,13 @@ func (client APIExportClient) GetPreparer(resourceGroupName string, serviceName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/apis/{apiId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client APIExportClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

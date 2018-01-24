@@ -18,6 +18,7 @@ package storsimple
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // BandwidthSettingsClient is the client for the BandwidthSettings methods of the Storsimple service.
 type BandwidthSettingsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewBandwidthSettingsClient creates an instance of the BandwidthSettingsClient client.
@@ -39,15 +40,11 @@ func NewBandwidthSettingsClientWithBaseURI(baseURI string, subscriptionID string
 	return BandwidthSettingsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates the bandwidth setting This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate creates or updates the bandwidth setting
 //
 // bandwidthSettingName is the bandwidth setting name. parameters is the bandwidth setting to be added or updated.
 // resourceGroupName is the resource group name managerName is the manager name
-func (client BandwidthSettingsClient) CreateOrUpdate(bandwidthSettingName string, parameters BandwidthSetting, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan BandwidthSetting, <-chan error) {
-	resultChan := make(chan BandwidthSetting, 1)
-	errChan := make(chan error, 1)
+func (client BandwidthSettingsClient) CreateOrUpdate(ctx context.Context, bandwidthSettingName string, parameters BandwidthSetting, resourceGroupName string, managerName string) (result BandwidthSettingsCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.BandwidthRateSettingProperties", Name: validation.Null, Rule: true,
@@ -55,46 +52,26 @@ func (client BandwidthSettingsClient) CreateOrUpdate(bandwidthSettingName string
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result BandwidthSetting
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(bandwidthSettingName, parameters, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, bandwidthSettingName, parameters, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client BandwidthSettingsClient) CreateOrUpdatePreparer(bandwidthSettingName string, parameters BandwidthSetting, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BandwidthSettingsClient) CreateOrUpdatePreparer(ctx context.Context, bandwidthSettingName string, parameters BandwidthSetting, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"bandwidthSettingName": bandwidthSettingName,
 		"managerName":          managerName,
@@ -114,16 +91,22 @@ func (client BandwidthSettingsClient) CreateOrUpdatePreparer(bandwidthSettingNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/bandwidthSettings/{bandwidthSettingName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client BandwidthSettingsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BandwidthSettingsClient) CreateOrUpdateSender(req *http.Request) (future BandwidthSettingsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -139,58 +122,35 @@ func (client BandwidthSettingsClient) CreateOrUpdateResponder(resp *http.Respons
 	return
 }
 
-// Delete deletes the bandwidth setting This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the bandwidth setting
 //
 // bandwidthSettingName is the name of the bandwidth setting. resourceGroupName is the resource group name managerName
 // is the manager name
-func (client BandwidthSettingsClient) Delete(bandwidthSettingName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client BandwidthSettingsClient) Delete(ctx context.Context, bandwidthSettingName string, resourceGroupName string, managerName string) (result BandwidthSettingsDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
 				{Target: "managerName", Name: validation.MinLength, Rule: 2, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(bandwidthSettingName, resourceGroupName, managerName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, bandwidthSettingName, resourceGroupName, managerName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client BandwidthSettingsClient) DeletePreparer(bandwidthSettingName string, resourceGroupName string, managerName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client BandwidthSettingsClient) DeletePreparer(ctx context.Context, bandwidthSettingName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"bandwidthSettingName": bandwidthSettingName,
 		"managerName":          managerName,
@@ -208,16 +168,22 @@ func (client BandwidthSettingsClient) DeletePreparer(bandwidthSettingName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/bandwidthSettings/{bandwidthSettingName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client BandwidthSettingsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client BandwidthSettingsClient) DeleteSender(req *http.Request) (future BandwidthSettingsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -236,7 +202,7 @@ func (client BandwidthSettingsClient) DeleteResponder(resp *http.Response) (resu
 //
 // bandwidthSettingName is the name of bandwidth setting to be fetched. resourceGroupName is the resource group name
 // managerName is the manager name
-func (client BandwidthSettingsClient) Get(bandwidthSettingName string, resourceGroupName string, managerName string) (result BandwidthSetting, err error) {
+func (client BandwidthSettingsClient) Get(ctx context.Context, bandwidthSettingName string, resourceGroupName string, managerName string) (result BandwidthSetting, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -244,7 +210,7 @@ func (client BandwidthSettingsClient) Get(bandwidthSettingName string, resourceG
 		return result, validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(bandwidthSettingName, resourceGroupName, managerName)
+	req, err := client.GetPreparer(ctx, bandwidthSettingName, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "Get", nil, "Failure preparing request")
 		return
@@ -266,7 +232,7 @@ func (client BandwidthSettingsClient) Get(bandwidthSettingName string, resourceG
 }
 
 // GetPreparer prepares the Get request.
-func (client BandwidthSettingsClient) GetPreparer(bandwidthSettingName string, resourceGroupName string, managerName string) (*http.Request, error) {
+func (client BandwidthSettingsClient) GetPreparer(ctx context.Context, bandwidthSettingName string, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"bandwidthSettingName": bandwidthSettingName,
 		"managerName":          managerName,
@@ -284,14 +250,13 @@ func (client BandwidthSettingsClient) GetPreparer(bandwidthSettingName string, r
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/bandwidthSettings/{bandwidthSettingName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client BandwidthSettingsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -311,7 +276,7 @@ func (client BandwidthSettingsClient) GetResponder(resp *http.Response) (result 
 // ListByManager retrieves all the bandwidth setting in a manager.
 //
 // resourceGroupName is the resource group name managerName is the manager name
-func (client BandwidthSettingsClient) ListByManager(resourceGroupName string, managerName string) (result BandwidthSettingList, err error) {
+func (client BandwidthSettingsClient) ListByManager(ctx context.Context, resourceGroupName string, managerName string) (result BandwidthSettingList, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: managerName,
 			Constraints: []validation.Constraint{{Target: "managerName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -319,7 +284,7 @@ func (client BandwidthSettingsClient) ListByManager(resourceGroupName string, ma
 		return result, validation.NewErrorWithValidationError(err, "storsimple.BandwidthSettingsClient", "ListByManager")
 	}
 
-	req, err := client.ListByManagerPreparer(resourceGroupName, managerName)
+	req, err := client.ListByManagerPreparer(ctx, resourceGroupName, managerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsClient", "ListByManager", nil, "Failure preparing request")
 		return
@@ -341,7 +306,7 @@ func (client BandwidthSettingsClient) ListByManager(resourceGroupName string, ma
 }
 
 // ListByManagerPreparer prepares the ListByManager request.
-func (client BandwidthSettingsClient) ListByManagerPreparer(resourceGroupName string, managerName string) (*http.Request, error) {
+func (client BandwidthSettingsClient) ListByManagerPreparer(ctx context.Context, resourceGroupName string, managerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managerName":       managerName,
 		"resourceGroupName": resourceGroupName,
@@ -358,14 +323,13 @@ func (client BandwidthSettingsClient) ListByManagerPreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.StorSimple/managers/{managerName}/bandwidthSettings", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByManagerSender sends the ListByManager request. The method will close the
 // http.Response Body if it receives an error.
 func (client BandwidthSettingsClient) ListByManagerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

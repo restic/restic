@@ -28,6 +28,7 @@ import (
 
 	"github.com/minio/minio-go/pkg/encrypt"
 	"github.com/minio/minio-go/pkg/s3utils"
+	"golang.org/x/net/lex/httplex"
 )
 
 // PutObjectOptions represents options specified by user for PutObject call
@@ -40,6 +41,7 @@ type PutObjectOptions struct {
 	CacheControl       string
 	EncryptMaterials   encrypt.Materials
 	NumThreads         uint
+	StorageClass       string
 }
 
 // getNumThreads - gets the number of threads to be used in the multipart
@@ -77,8 +79,11 @@ func (opts PutObjectOptions) Header() (header http.Header) {
 		header[amzHeaderKey] = []string{opts.EncryptMaterials.GetKey()}
 		header[amzHeaderMatDesc] = []string{opts.EncryptMaterials.GetDesc()}
 	}
+	if opts.StorageClass != "" {
+		header[amzStorageClass] = []string{opts.StorageClass}
+	}
 	for k, v := range opts.UserMetadata {
-		if !isAmzHeader(k) && !isStandardHeader(k) && !isSSEHeader(k) {
+		if !isAmzHeader(k) && !isStandardHeader(k) && !isSSEHeader(k) && !isStorageClassHeader(k) {
 			header["X-Amz-Meta-"+k] = []string{v}
 		} else {
 			header[k] = []string{v}
@@ -90,9 +95,12 @@ func (opts PutObjectOptions) Header() (header http.Header) {
 // validate() checks if the UserMetadata map has standard headers or client side
 // encryption headers and raises an error if so.
 func (opts PutObjectOptions) validate() (err error) {
-	for k := range opts.UserMetadata {
-		if isStandardHeader(k) || isCSEHeader(k) {
-			return ErrInvalidArgument(k + " unsupported request parameter for user defined metadata")
+	for k, v := range opts.UserMetadata {
+		if !httplex.ValidHeaderFieldName(k) || isStandardHeader(k) || isCSEHeader(k) || isStorageClassHeader(k) {
+			return ErrInvalidArgument(k + " unsupported user defined metadata name")
+		}
+		if !httplex.ValidHeaderFieldValue(v) {
+			return ErrInvalidArgument(v + " unsupported user defined metadata value")
 		}
 	}
 	return nil
@@ -129,7 +137,7 @@ func (c Client) putObjectCommon(ctx context.Context, bucketName, objectName stri
 	}
 
 	// NOTE: Streaming signature is not supported by GCS.
-	if s3utils.IsGoogleEndpoint(c.endpointURL) {
+	if s3utils.IsGoogleEndpoint(*c.endpointURL) {
 		// Do not compute MD5 for Google Cloud Storage.
 		return c.putObjectNoChecksum(ctx, bucketName, objectName, reader, size, opts)
 	}

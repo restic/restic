@@ -18,6 +18,7 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // IntegrationAccountsClient is the REST API for Azure Logic Apps.
 type IntegrationAccountsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewIntegrationAccountsClient creates an instance of the IntegrationAccountsClient client.
@@ -42,8 +43,8 @@ func NewIntegrationAccountsClientWithBaseURI(baseURI string, subscriptionID stri
 //
 // resourceGroupName is the resource group name. integrationAccountName is the integration account name.
 // integrationAccount is the integration account.
-func (client IntegrationAccountsClient) CreateOrUpdate(resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (result IntegrationAccount, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, integrationAccountName, integrationAccount)
+func (client IntegrationAccountsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (result IntegrationAccount, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, integrationAccountName, integrationAccount)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client IntegrationAccountsClient) CreateOrUpdate(resourceGroupName string,
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client IntegrationAccountsClient) CreateOrUpdatePreparer(resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (*http.Request, error) {
+func (client IntegrationAccountsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"integrationAccountName": autorest.Encode("path", integrationAccountName),
 		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
@@ -84,14 +85,13 @@ func (client IntegrationAccountsClient) CreateOrUpdatePreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),
 		autorest.WithJSON(integrationAccount),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,8 @@ func (client IntegrationAccountsClient) CreateOrUpdateResponder(resp *http.Respo
 // Delete deletes an integration account.
 //
 // resourceGroupName is the resource group name. integrationAccountName is the integration account name.
-func (client IntegrationAccountsClient) Delete(resourceGroupName string, integrationAccountName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, integrationAccountName)
+func (client IntegrationAccountsClient) Delete(ctx context.Context, resourceGroupName string, integrationAccountName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, integrationAccountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -134,7 +134,7 @@ func (client IntegrationAccountsClient) Delete(resourceGroupName string, integra
 }
 
 // DeletePreparer prepares the Delete request.
-func (client IntegrationAccountsClient) DeletePreparer(resourceGroupName string, integrationAccountName string) (*http.Request, error) {
+func (client IntegrationAccountsClient) DeletePreparer(ctx context.Context, resourceGroupName string, integrationAccountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"integrationAccountName": autorest.Encode("path", integrationAccountName),
 		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
@@ -151,14 +151,13 @@ func (client IntegrationAccountsClient) DeletePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -177,8 +176,8 @@ func (client IntegrationAccountsClient) DeleteResponder(resp *http.Response) (re
 // Get gets an integration account.
 //
 // resourceGroupName is the resource group name. integrationAccountName is the integration account name.
-func (client IntegrationAccountsClient) Get(resourceGroupName string, integrationAccountName string) (result IntegrationAccount, err error) {
-	req, err := client.GetPreparer(resourceGroupName, integrationAccountName)
+func (client IntegrationAccountsClient) Get(ctx context.Context, resourceGroupName string, integrationAccountName string) (result IntegrationAccount, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, integrationAccountName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "Get", nil, "Failure preparing request")
 		return
@@ -200,7 +199,7 @@ func (client IntegrationAccountsClient) Get(resourceGroupName string, integratio
 }
 
 // GetPreparer prepares the Get request.
-func (client IntegrationAccountsClient) GetPreparer(resourceGroupName string, integrationAccountName string) (*http.Request, error) {
+func (client IntegrationAccountsClient) GetPreparer(ctx context.Context, resourceGroupName string, integrationAccountName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"integrationAccountName": autorest.Encode("path", integrationAccountName),
 		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
@@ -217,14 +216,13 @@ func (client IntegrationAccountsClient) GetPreparer(resourceGroupName string, in
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -245,8 +243,8 @@ func (client IntegrationAccountsClient) GetResponder(resp *http.Response) (resul
 //
 // resourceGroupName is the resource group name. integrationAccountName is the integration account name. parameters is
 // the callback URL parameters.
-func (client IntegrationAccountsClient) GetCallbackURL(resourceGroupName string, integrationAccountName string, parameters GetCallbackURLParameters) (result CallbackURL, err error) {
-	req, err := client.GetCallbackURLPreparer(resourceGroupName, integrationAccountName, parameters)
+func (client IntegrationAccountsClient) GetCallbackURL(ctx context.Context, resourceGroupName string, integrationAccountName string, parameters GetCallbackURLParameters) (result CallbackURL, err error) {
+	req, err := client.GetCallbackURLPreparer(ctx, resourceGroupName, integrationAccountName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "GetCallbackURL", nil, "Failure preparing request")
 		return
@@ -268,7 +266,7 @@ func (client IntegrationAccountsClient) GetCallbackURL(resourceGroupName string,
 }
 
 // GetCallbackURLPreparer prepares the GetCallbackURL request.
-func (client IntegrationAccountsClient) GetCallbackURLPreparer(resourceGroupName string, integrationAccountName string, parameters GetCallbackURLParameters) (*http.Request, error) {
+func (client IntegrationAccountsClient) GetCallbackURLPreparer(ctx context.Context, resourceGroupName string, integrationAccountName string, parameters GetCallbackURLParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"integrationAccountName": autorest.Encode("path", integrationAccountName),
 		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
@@ -287,14 +285,13 @@ func (client IntegrationAccountsClient) GetCallbackURLPreparer(resourceGroupName
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}/listCallbackUrl", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetCallbackURLSender sends the GetCallbackURL request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) GetCallbackURLSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -314,8 +311,9 @@ func (client IntegrationAccountsClient) GetCallbackURLResponder(resp *http.Respo
 // ListByResourceGroup gets a list of integration accounts by resource group.
 //
 // resourceGroupName is the resource group name. top is the number of items to be included in the result.
-func (client IntegrationAccountsClient) ListByResourceGroup(resourceGroupName string, top *int32) (result IntegrationAccountListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, top)
+func (client IntegrationAccountsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result IntegrationAccountListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -323,12 +321,12 @@ func (client IntegrationAccountsClient) ListByResourceGroup(resourceGroupName st
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.ialr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -337,7 +335,7 @@ func (client IntegrationAccountsClient) ListByResourceGroup(resourceGroupName st
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client IntegrationAccountsClient) ListByResourceGroupPreparer(resourceGroupName string, top *int32) (*http.Request, error) {
+func (client IntegrationAccountsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -356,14 +354,13 @@ func (client IntegrationAccountsClient) ListByResourceGroupPreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -380,80 +377,39 @@ func (client IntegrationAccountsClient) ListByResourceGroupResponder(resp *http.
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client IntegrationAccountsClient) ListByResourceGroupNextResults(lastResults IntegrationAccountListResult) (result IntegrationAccountListResult, err error) {
-	req, err := lastResults.IntegrationAccountListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client IntegrationAccountsClient) listByResourceGroupNextResults(lastResults IntegrationAccountListResult) (result IntegrationAccountListResult, err error) {
+	req, err := lastResults.integrationAccountListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client IntegrationAccountsClient) ListByResourceGroupComplete(resourceGroupName string, top *int32, cancel <-chan struct{}) (<-chan IntegrationAccount, <-chan error) {
-	resultChan := make(chan IntegrationAccount)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client IntegrationAccountsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result IntegrationAccountListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, top)
+	return
 }
 
 // ListBySubscription gets a list of integration accounts by subscription.
 //
 // top is the number of items to be included in the result.
-func (client IntegrationAccountsClient) ListBySubscription(top *int32) (result IntegrationAccountListResult, err error) {
-	req, err := client.ListBySubscriptionPreparer(top)
+func (client IntegrationAccountsClient) ListBySubscription(ctx context.Context, top *int32) (result IntegrationAccountListResultPage, err error) {
+	result.fn = client.listBySubscriptionNextResults
+	req, err := client.ListBySubscriptionPreparer(ctx, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", nil, "Failure preparing request")
 		return
@@ -461,12 +417,12 @@ func (client IntegrationAccountsClient) ListBySubscription(top *int32) (result I
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.ialr, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -475,7 +431,7 @@ func (client IntegrationAccountsClient) ListBySubscription(top *int32) (result I
 }
 
 // ListBySubscriptionPreparer prepares the ListBySubscription request.
-func (client IntegrationAccountsClient) ListBySubscriptionPreparer(top *int32) (*http.Request, error) {
+func (client IntegrationAccountsClient) ListBySubscriptionPreparer(ctx context.Context, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -493,14 +449,13 @@ func (client IntegrationAccountsClient) ListBySubscriptionPreparer(top *int32) (
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Logic/integrationAccounts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionSender sends the ListBySubscription request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) ListBySubscriptionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -517,81 +472,39 @@ func (client IntegrationAccountsClient) ListBySubscriptionResponder(resp *http.R
 	return
 }
 
-// ListBySubscriptionNextResults retrieves the next set of results, if any.
-func (client IntegrationAccountsClient) ListBySubscriptionNextResults(lastResults IntegrationAccountListResult) (result IntegrationAccountListResult, err error) {
-	req, err := lastResults.IntegrationAccountListResultPreparer()
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client IntegrationAccountsClient) listBySubscriptionNextResults(lastResults IntegrationAccountListResult) (result IntegrationAccountListResult, err error) {
+	req, err := lastResults.integrationAccountListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "ListBySubscription", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionComplete gets all elements from the list without paging.
-func (client IntegrationAccountsClient) ListBySubscriptionComplete(top *int32, cancel <-chan struct{}) (<-chan IntegrationAccount, <-chan error) {
-	resultChan := make(chan IntegrationAccount)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscription(top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client IntegrationAccountsClient) ListBySubscriptionComplete(ctx context.Context, top *int32) (result IntegrationAccountListResultIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx, top)
+	return
 }
 
 // Update updates an integration account.
 //
 // resourceGroupName is the resource group name. integrationAccountName is the integration account name.
 // integrationAccount is the integration account.
-func (client IntegrationAccountsClient) Update(resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (result IntegrationAccount, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, integrationAccountName, integrationAccount)
+func (client IntegrationAccountsClient) Update(ctx context.Context, resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (result IntegrationAccount, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, integrationAccountName, integrationAccount)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "logic.IntegrationAccountsClient", "Update", nil, "Failure preparing request")
 		return
@@ -613,7 +526,7 @@ func (client IntegrationAccountsClient) Update(resourceGroupName string, integra
 }
 
 // UpdatePreparer prepares the Update request.
-func (client IntegrationAccountsClient) UpdatePreparer(resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (*http.Request, error) {
+func (client IntegrationAccountsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, integrationAccountName string, integrationAccount IntegrationAccount) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"integrationAccountName": autorest.Encode("path", integrationAccountName),
 		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
@@ -632,14 +545,13 @@ func (client IntegrationAccountsClient) UpdatePreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),
 		autorest.WithJSON(integrationAccount),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationAccountsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

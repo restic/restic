@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // that interact with Azure SQL Database services to manage your databases. The API enables you to create, retrieve,
 // update, and delete databases.
 type ServerCommunicationLinksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServerCommunicationLinksClient creates an instance of the ServerCommunicationLinksClient client.
@@ -41,59 +42,36 @@ func NewServerCommunicationLinksClientWithBaseURI(baseURI string, subscriptionID
 	return ServerCommunicationLinksClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a server communication link. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates a server communication link.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. communicationLinkName is the name of
 // the server communication link. parameters is the required parameters for creating a server communication link.
-func (client ServerCommunicationLinksClient) CreateOrUpdate(resourceGroupName string, serverName string, communicationLinkName string, parameters ServerCommunicationLink, cancel <-chan struct{}) (<-chan ServerCommunicationLink, <-chan error) {
-	resultChan := make(chan ServerCommunicationLink, 1)
-	errChan := make(chan error, 1)
+func (client ServerCommunicationLinksClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string, parameters ServerCommunicationLink) (result ServerCommunicationLinksCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ServerCommunicationLinkProperties", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.ServerCommunicationLinkProperties.PartnerServer", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result ServerCommunicationLink
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, communicationLinkName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, communicationLinkName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ServerCommunicationLinksClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, communicationLinkName string, parameters ServerCommunicationLink, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServerCommunicationLinksClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string, parameters ServerCommunicationLink) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"communicationLinkName": autorest.Encode("path", communicationLinkName),
 		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
@@ -113,16 +91,22 @@ func (client ServerCommunicationLinksClient) CreateOrUpdatePreparer(resourceGrou
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/communicationLinks/{communicationLinkName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServerCommunicationLinksClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServerCommunicationLinksClient) CreateOrUpdateSender(req *http.Request) (future ServerCommunicationLinksCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -143,8 +127,8 @@ func (client ServerCommunicationLinksClient) CreateOrUpdateResponder(resp *http.
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. communicationLinkName is the name of
 // the server communication link.
-func (client ServerCommunicationLinksClient) Delete(resourceGroupName string, serverName string, communicationLinkName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, serverName, communicationLinkName)
+func (client ServerCommunicationLinksClient) Delete(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, communicationLinkName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "Delete", nil, "Failure preparing request")
 		return
@@ -166,7 +150,7 @@ func (client ServerCommunicationLinksClient) Delete(resourceGroupName string, se
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServerCommunicationLinksClient) DeletePreparer(resourceGroupName string, serverName string, communicationLinkName string) (*http.Request, error) {
+func (client ServerCommunicationLinksClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"communicationLinkName": autorest.Encode("path", communicationLinkName),
 		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
@@ -184,14 +168,13 @@ func (client ServerCommunicationLinksClient) DeletePreparer(resourceGroupName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/communicationLinks/{communicationLinkName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerCommunicationLinksClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -212,8 +195,8 @@ func (client ServerCommunicationLinksClient) DeleteResponder(resp *http.Response
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. communicationLinkName is the name of
 // the server communication link.
-func (client ServerCommunicationLinksClient) Get(resourceGroupName string, serverName string, communicationLinkName string) (result ServerCommunicationLink, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, communicationLinkName)
+func (client ServerCommunicationLinksClient) Get(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string) (result ServerCommunicationLink, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, communicationLinkName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "Get", nil, "Failure preparing request")
 		return
@@ -235,7 +218,7 @@ func (client ServerCommunicationLinksClient) Get(resourceGroupName string, serve
 }
 
 // GetPreparer prepares the Get request.
-func (client ServerCommunicationLinksClient) GetPreparer(resourceGroupName string, serverName string, communicationLinkName string) (*http.Request, error) {
+func (client ServerCommunicationLinksClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, communicationLinkName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"communicationLinkName": autorest.Encode("path", communicationLinkName),
 		"resourceGroupName":     autorest.Encode("path", resourceGroupName),
@@ -253,14 +236,13 @@ func (client ServerCommunicationLinksClient) GetPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/communicationLinks/{communicationLinkName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerCommunicationLinksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -281,8 +263,8 @@ func (client ServerCommunicationLinksClient) GetResponder(resp *http.Response) (
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ServerCommunicationLinksClient) ListByServer(resourceGroupName string, serverName string) (result ServerCommunicationLinkListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client ServerCommunicationLinksClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result ServerCommunicationLinkListResult, err error) {
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.ServerCommunicationLinksClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -304,7 +286,7 @@ func (client ServerCommunicationLinksClient) ListByServer(resourceGroupName stri
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client ServerCommunicationLinksClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServerCommunicationLinksClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -321,14 +303,13 @@ func (client ServerCommunicationLinksClient) ListByServerPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/communicationLinks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServerCommunicationLinksClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

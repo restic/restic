@@ -18,6 +18,7 @@ package keyvault
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // VaultsClient is the the Azure management API provides a RESTful set of web services that interact with Azure Key
 // Vault.
 type VaultsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVaultsClient creates an instance of the VaultsClient client.
@@ -44,7 +45,7 @@ func NewVaultsClientWithBaseURI(baseURI string, subscriptionID string) VaultsCli
 //
 // resourceGroupName is the name of the Resource Group to which the server belongs. vaultName is name of the vault
 // parameters is parameters to create or update the vault
-func (client VaultsClient) CreateOrUpdate(resourceGroupName string, vaultName string, parameters VaultCreateOrUpdateParameters) (result Vault, err error) {
+func (client VaultsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, vaultName string, parameters VaultCreateOrUpdateParameters) (result Vault, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: vaultName,
 			Constraints: []validation.Constraint{{Target: "vaultName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9-]{3,24}$`, Chain: nil}}},
@@ -60,7 +61,7 @@ func (client VaultsClient) CreateOrUpdate(resourceGroupName string, vaultName st
 		return result, validation.NewErrorWithValidationError(err, "keyvault.VaultsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, vaultName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, vaultName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -82,7 +83,7 @@ func (client VaultsClient) CreateOrUpdate(resourceGroupName string, vaultName st
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client VaultsClient) CreateOrUpdatePreparer(resourceGroupName string, vaultName string, parameters VaultCreateOrUpdateParameters) (*http.Request, error) {
+func (client VaultsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, vaultName string, parameters VaultCreateOrUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -101,14 +102,13 @@ func (client VaultsClient) CreateOrUpdatePreparer(resourceGroupName string, vaul
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -118,7 +118,7 @@ func (client VaultsClient) CreateOrUpdateResponder(resp *http.Response) (result 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -129,8 +129,8 @@ func (client VaultsClient) CreateOrUpdateResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the Resource Group to which the vault belongs. vaultName is the name of the vault
 // to delete
-func (client VaultsClient) Delete(resourceGroupName string, vaultName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, vaultName)
+func (client VaultsClient) Delete(ctx context.Context, resourceGroupName string, vaultName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, vaultName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -152,7 +152,7 @@ func (client VaultsClient) Delete(resourceGroupName string, vaultName string) (r
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VaultsClient) DeletePreparer(resourceGroupName string, vaultName string) (*http.Request, error) {
+func (client VaultsClient) DeletePreparer(ctx context.Context, resourceGroupName string, vaultName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -169,14 +169,13 @@ func (client VaultsClient) DeletePreparer(resourceGroupName string, vaultName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -195,8 +194,8 @@ func (client VaultsClient) DeleteResponder(resp *http.Response) (result autorest
 // Get gets the specified Azure key vault.
 //
 // resourceGroupName is the name of the Resource Group to which the vault belongs. vaultName is the name of the vault.
-func (client VaultsClient) Get(resourceGroupName string, vaultName string) (result Vault, err error) {
-	req, err := client.GetPreparer(resourceGroupName, vaultName)
+func (client VaultsClient) Get(ctx context.Context, resourceGroupName string, vaultName string) (result Vault, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, vaultName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "Get", nil, "Failure preparing request")
 		return
@@ -218,7 +217,7 @@ func (client VaultsClient) Get(resourceGroupName string, vaultName string) (resu
 }
 
 // GetPreparer prepares the Get request.
-func (client VaultsClient) GetPreparer(resourceGroupName string, vaultName string) (*http.Request, error) {
+func (client VaultsClient) GetPreparer(ctx context.Context, resourceGroupName string, vaultName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -235,14 +234,13 @@ func (client VaultsClient) GetPreparer(resourceGroupName string, vaultName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults/{vaultName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -262,8 +260,8 @@ func (client VaultsClient) GetResponder(resp *http.Response) (result Vault, err 
 // GetDeleted gets the deleted Azure key vault.
 //
 // vaultName is the name of the vault. location is the location of the deleted vault.
-func (client VaultsClient) GetDeleted(vaultName string, location string) (result DeletedVault, err error) {
-	req, err := client.GetDeletedPreparer(vaultName, location)
+func (client VaultsClient) GetDeleted(ctx context.Context, vaultName string, location string) (result DeletedVault, err error) {
+	req, err := client.GetDeletedPreparer(ctx, vaultName, location)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "GetDeleted", nil, "Failure preparing request")
 		return
@@ -285,7 +283,7 @@ func (client VaultsClient) GetDeleted(vaultName string, location string) (result
 }
 
 // GetDeletedPreparer prepares the GetDeleted request.
-func (client VaultsClient) GetDeletedPreparer(vaultName string, location string) (*http.Request, error) {
+func (client VaultsClient) GetDeletedPreparer(ctx context.Context, vaultName string, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -302,14 +300,13 @@ func (client VaultsClient) GetDeletedPreparer(vaultName string, location string)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.KeyVault/locations/{location}/deletedVaults/{vaultName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetDeletedSender sends the GetDeleted request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) GetDeletedSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -329,8 +326,9 @@ func (client VaultsClient) GetDeletedResponder(resp *http.Response) (result Dele
 // List the List operation gets information about the vaults associated with the subscription.
 //
 // filter is the filter to apply on the operation. top is maximum number of results to return.
-func (client VaultsClient) List(filter string, top *int32) (result ResourceListResult, err error) {
-	req, err := client.ListPreparer(filter, top)
+func (client VaultsClient) List(ctx context.Context, filter string, top *int32) (result ResourceListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, filter, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", nil, "Failure preparing request")
 		return
@@ -338,12 +336,12 @@ func (client VaultsClient) List(filter string, top *int32) (result ResourceListR
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", resp, "Failure responding to request")
 	}
@@ -352,7 +350,7 @@ func (client VaultsClient) List(filter string, top *int32) (result ResourceListR
 }
 
 // ListPreparer prepares the List request.
-func (client VaultsClient) ListPreparer(filter string, top *int32) (*http.Request, error) {
+func (client VaultsClient) ListPreparer(ctx context.Context, filter string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -371,14 +369,13 @@ func (client VaultsClient) ListPreparer(filter string, top *int32) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resources", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -395,73 +392,31 @@ func (client VaultsClient) ListResponder(resp *http.Response) (result ResourceLi
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VaultsClient) ListNextResults(lastResults ResourceListResult) (result ResourceListResult, err error) {
-	req, err := lastResults.ResourceListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VaultsClient) listNextResults(lastResults ResourceListResult) (result ResourceListResult, err error) {
+	req, err := lastResults.resourceListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VaultsClient) ListComplete(filter string, top *int32, cancel <-chan struct{}) (<-chan Resource, <-chan error) {
-	resultChan := make(chan Resource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(filter, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VaultsClient) ListComplete(ctx context.Context, filter string, top *int32) (result ResourceListResultIterator, err error) {
+	result.page, err = client.List(ctx, filter, top)
+	return
 }
 
 // ListByResourceGroup the List operation gets information about the vaults associated with the subscription and within
@@ -469,8 +424,9 @@ func (client VaultsClient) ListComplete(filter string, top *int32, cancel <-chan
 //
 // resourceGroupName is the name of the Resource Group to which the vault belongs. top is maximum number of results to
 // return.
-func (client VaultsClient) ListByResourceGroup(resourceGroupName string, top *int32) (result VaultListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName, top)
+func (client VaultsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result VaultListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -478,12 +434,12 @@ func (client VaultsClient) ListByResourceGroup(resourceGroupName string, top *in
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.vlr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -492,7 +448,7 @@ func (client VaultsClient) ListByResourceGroup(resourceGroupName string, top *in
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client VaultsClient) ListByResourceGroupPreparer(resourceGroupName string, top *int32) (*http.Request, error) {
+func (client VaultsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -511,14 +467,13 @@ func (client VaultsClient) ListByResourceGroupPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.KeyVault/vaults", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -535,78 +490,37 @@ func (client VaultsClient) ListByResourceGroupResponder(resp *http.Response) (re
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client VaultsClient) ListByResourceGroupNextResults(lastResults VaultListResult) (result VaultListResult, err error) {
-	req, err := lastResults.VaultListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client VaultsClient) listByResourceGroupNextResults(lastResults VaultListResult) (result VaultListResult, err error) {
+	req, err := lastResults.vaultListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client VaultsClient) ListByResourceGroupComplete(resourceGroupName string, top *int32, cancel <-chan struct{}) (<-chan Vault, <-chan error) {
-	resultChan := make(chan Vault)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VaultsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result VaultListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName, top)
+	return
 }
 
 // ListDeleted gets information about the deleted vaults in a subscription.
-func (client VaultsClient) ListDeleted() (result DeletedVaultListResult, err error) {
-	req, err := client.ListDeletedPreparer()
+func (client VaultsClient) ListDeleted(ctx context.Context) (result DeletedVaultListResultPage, err error) {
+	result.fn = client.listDeletedNextResults
+	req, err := client.ListDeletedPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", nil, "Failure preparing request")
 		return
@@ -614,12 +528,12 @@ func (client VaultsClient) ListDeleted() (result DeletedVaultListResult, err err
 
 	resp, err := client.ListDeletedSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dvlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListDeletedResponder(resp)
+	result.dvlr, err = client.ListDeletedResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", resp, "Failure responding to request")
 	}
@@ -628,7 +542,7 @@ func (client VaultsClient) ListDeleted() (result DeletedVaultListResult, err err
 }
 
 // ListDeletedPreparer prepares the ListDeleted request.
-func (client VaultsClient) ListDeletedPreparer() (*http.Request, error) {
+func (client VaultsClient) ListDeletedPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -643,14 +557,13 @@ func (client VaultsClient) ListDeletedPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.KeyVault/deletedVaults", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListDeletedSender sends the ListDeleted request. The method will close the
 // http.Response Body if it receives an error.
 func (client VaultsClient) ListDeletedSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -667,117 +580,54 @@ func (client VaultsClient) ListDeletedResponder(resp *http.Response) (result Del
 	return
 }
 
-// ListDeletedNextResults retrieves the next set of results, if any.
-func (client VaultsClient) ListDeletedNextResults(lastResults DeletedVaultListResult) (result DeletedVaultListResult, err error) {
-	req, err := lastResults.DeletedVaultListResultPreparer()
+// listDeletedNextResults retrieves the next set of results, if any.
+func (client VaultsClient) listDeletedNextResults(lastResults DeletedVaultListResult) (result DeletedVaultListResult, err error) {
+	req, err := lastResults.deletedVaultListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listDeletedNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListDeletedSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listDeletedNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListDeletedResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "ListDeleted", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "listDeletedNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListDeletedComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VaultsClient) ListDeletedComplete(ctx context.Context) (result DeletedVaultListResultIterator, err error) {
+	result.page, err = client.ListDeleted(ctx)
+	return
+}
+
+// PurgeDeleted permanently deletes the specified vault. aka Purges the deleted Azure key vault.
+//
+// vaultName is the name of the soft-deleted vault. location is the location of the soft-deleted vault.
+func (client VaultsClient) PurgeDeleted(ctx context.Context, vaultName string, location string) (result VaultsPurgeDeletedFuture, err error) {
+	req, err := client.PurgeDeletedPreparer(ctx, vaultName, location)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "PurgeDeleted", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.PurgeDeletedSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "PurgeDeleted", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListDeletedComplete gets all elements from the list without paging.
-func (client VaultsClient) ListDeletedComplete(cancel <-chan struct{}) (<-chan DeletedVault, <-chan error) {
-	resultChan := make(chan DeletedVault)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListDeleted()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListDeletedNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// PurgeDeleted permanently deletes the specified vault. aka Purges the deleted Azure key vault. This method may poll
-// for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
-//
-// vaultName is the name of the soft-deleted vault. location is the location of the soft-deleted vault.
-func (client VaultsClient) PurgeDeleted(vaultName string, location string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.PurgeDeletedPreparer(vaultName, location, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "PurgeDeleted", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.PurgeDeletedSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "PurgeDeleted", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.PurgeDeletedResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "keyvault.VaultsClient", "PurgeDeleted", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // PurgeDeletedPreparer prepares the PurgeDeleted request.
-func (client VaultsClient) PurgeDeletedPreparer(vaultName string, location string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VaultsClient) PurgeDeletedPreparer(ctx context.Context, vaultName string, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -794,16 +644,22 @@ func (client VaultsClient) PurgeDeletedPreparer(vaultName string, location strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.KeyVault/locations/{location}/deletedVaults/{vaultName}/purge", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PurgeDeletedSender sends the PurgeDeleted request. The method will close the
 // http.Response Body if it receives an error.
-func (client VaultsClient) PurgeDeletedSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VaultsClient) PurgeDeletedSender(req *http.Request) (future VaultsPurgeDeletedFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // PurgeDeletedResponder handles the response to the PurgeDeleted request. The method always

@@ -18,6 +18,7 @@ package postgresql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // ServersClient is the the Microsoft Azure management API provides create, read, update, and delete functionality for
 // Azure PostgreSQL resources including servers, databases, firewall rules, VNET rules, log files and configurations.
 type ServersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServersClient creates an instance of the ServersClient client.
@@ -40,16 +41,12 @@ func NewServersClientWithBaseURI(baseURI string, subscriptionID string) ServersC
 	return ServersClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create creates a new server, or will overwrite an existing server. This method may poll for completion. Polling can
-// be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// Create creates a new server, or will overwrite an existing server.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. parameters is the required
 // parameters for creating or updating a server.
-func (client ServersClient) Create(resourceGroupName string, serverName string, parameters ServerForCreate, cancel <-chan struct{}) (<-chan Server, <-chan error) {
-	resultChan := make(chan Server, 1)
-	errChan := make(chan error, 1)
+func (client ServersClient) Create(ctx context.Context, resourceGroupName string, serverName string, parameters ServerForCreate) (result ServersCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Sku", Name: validation.Null, Rule: false,
@@ -61,46 +58,26 @@ func (client ServersClient) Create(resourceGroupName string, serverName string, 
 						Chain: []validation.Constraint{{Target: "parameters.Properties.StorageMB", Name: validation.InclusiveMinimum, Rule: 1024, Chain: nil}}},
 					}},
 				{Target: "parameters.Location", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "postgresql.ServersClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "postgresql.ServersClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Server
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, serverName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, serverName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client ServersClient) CreatePreparer(resourceGroupName string, serverName string, parameters ServerForCreate, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) CreatePreparer(ctx context.Context, resourceGroupName string, serverName string, parameters ServerForCreate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -119,16 +96,22 @@ func (client ServersClient) CreatePreparer(resourceGroupName string, serverName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers/{serverName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) CreateSender(req *http.Request) (future ServersCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -144,48 +127,28 @@ func (client ServersClient) CreateResponder(resp *http.Response) (result Server,
 	return
 }
 
-// Delete deletes a server. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a server.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ServersClient) Delete(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, serverName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client ServersClient) Delete(ctx context.Context, resourceGroupName string, serverName string) (result ServersDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServersClient) DeletePreparer(resourceGroupName string, serverName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -202,16 +165,22 @@ func (client ServersClient) DeletePreparer(resourceGroupName string, serverName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers/{serverName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) DeleteSender(req *http.Request) (future ServersDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -230,8 +199,8 @@ func (client ServersClient) DeleteResponder(resp *http.Response) (result autores
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server.
-func (client ServersClient) Get(resourceGroupName string, serverName string) (result Server, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName)
+func (client ServersClient) Get(ctx context.Context, resourceGroupName string, serverName string) (result Server, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Get", nil, "Failure preparing request")
 		return
@@ -253,7 +222,7 @@ func (client ServersClient) Get(resourceGroupName string, serverName string) (re
 }
 
 // GetPreparer prepares the Get request.
-func (client ServersClient) GetPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client ServersClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -270,14 +239,13 @@ func (client ServersClient) GetPreparer(resourceGroupName string, serverName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers/{serverName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -295,8 +263,8 @@ func (client ServersClient) GetResponder(resp *http.Response) (result Server, er
 }
 
 // List list all the servers in a given subscription.
-func (client ServersClient) List() (result ServerListResult, err error) {
-	req, err := client.ListPreparer()
+func (client ServersClient) List(ctx context.Context) (result ServerListResult, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "List", nil, "Failure preparing request")
 		return
@@ -318,7 +286,7 @@ func (client ServersClient) List() (result ServerListResult, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client ServersClient) ListPreparer() (*http.Request, error) {
+func (client ServersClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -333,14 +301,13 @@ func (client ServersClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DBforPostgreSQL/servers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -361,8 +328,8 @@ func (client ServersClient) ListResponder(resp *http.Response) (result ServerLis
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal.
-func (client ServersClient) ListByResourceGroup(resourceGroupName string) (result ServerListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client ServersClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ServerListResult, err error) {
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -384,7 +351,7 @@ func (client ServersClient) ListByResourceGroup(resourceGroupName string) (resul
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ServersClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ServersClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -400,14 +367,13 @@ func (client ServersClient) ListByResourceGroupPreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServersClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -425,49 +391,29 @@ func (client ServersClient) ListByResourceGroupResponder(resp *http.Response) (r
 }
 
 // Update updates an existing server. The request body can contain one to many of the properties present in the normal
-// server definition. This method may poll for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// server definition.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server. parameters is the required
 // parameters for updating a server.
-func (client ServersClient) Update(resourceGroupName string, serverName string, parameters ServerUpdateParameters, cancel <-chan struct{}) (<-chan Server, <-chan error) {
-	resultChan := make(chan Server, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Server
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.UpdatePreparer(resourceGroupName, serverName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Update", nil, "Failure preparing request")
-			return
-		}
+func (client ServersClient) Update(ctx context.Context, resourceGroupName string, serverName string, parameters ServerUpdateParameters) (result ServersUpdateFuture, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serverName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Update", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.UpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Update", resp, "Failure sending request")
-			return
-		}
+	result, err = client.UpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Update", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.UpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "postgresql.ServersClient", "Update", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ServersClient) UpdatePreparer(resourceGroupName string, serverName string, parameters ServerUpdateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client ServersClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, parameters ServerUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -486,16 +432,22 @@ func (client ServersClient) UpdatePreparer(resourceGroupName string, serverName 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DBforPostgreSQL/servers/{serverName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
-func (client ServersClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ServersClient) UpdateSender(req *http.Request) (future ServersUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // UpdateResponder handles the response to the Update request. The method always

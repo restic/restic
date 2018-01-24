@@ -16,17 +16,19 @@ package firestore
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/internal/testutil"
 
 	"golang.org/x/net/context"
 
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	tspb "github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/type/latlng"
 	"google.golang.org/grpc"
@@ -49,22 +51,19 @@ func mustTimestampProto(t time.Time) *tspb.Timestamp {
 	return ts
 }
 
+var cmpOpts = []cmp.Option{
+	cmp.AllowUnexported(DocumentRef{}, CollectionRef{}, DocumentSnapshot{},
+		Query{}, filter{}, order{}, fpv{}),
+	cmpopts.IgnoreTypes(Client{}),
+}
+
 // testEqual implements equality for Firestore tests.
 func testEqual(a, b interface{}) bool {
-	switch a := a.(type) {
-	case time.Time:
-		return a.Equal(b.(time.Time))
-	case proto.Message:
-		return proto.Equal(a, b.(proto.Message))
-	case *DocumentSnapshot:
-		return a.equal(b.(*DocumentSnapshot))
-	case *DocumentRef:
-		return a.equal(b.(*DocumentRef))
-	case *CollectionRef:
-		return a.equal(b.(*CollectionRef))
-	default:
-		return reflect.DeepEqual(a, b)
-	}
+	return testutil.Equal(a, b, cmpOpts...)
+}
+
+func testDiff(a, b interface{}) string {
+	return testutil.Diff(a, b, cmpOpts...)
 }
 
 func TestTestEqual(t *testing.T) {

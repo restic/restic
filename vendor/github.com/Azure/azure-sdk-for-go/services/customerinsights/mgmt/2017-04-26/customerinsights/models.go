@@ -18,7 +18,9 @@ package customerinsights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/shopspring/decimal"
@@ -29,15 +31,15 @@ import (
 type CalculationWindowTypes string
 
 const (
-	// Day specifies the day state for calculation window types.
+	// Day ...
 	Day CalculationWindowTypes = "Day"
-	// Hour specifies the hour state for calculation window types.
+	// Hour ...
 	Hour CalculationWindowTypes = "Hour"
-	// Lifetime specifies the lifetime state for calculation window types.
+	// Lifetime ...
 	Lifetime CalculationWindowTypes = "Lifetime"
-	// Month specifies the month state for calculation window types.
+	// Month ...
 	Month CalculationWindowTypes = "Month"
-	// Week specifies the week state for calculation window types.
+	// Week ...
 	Week CalculationWindowTypes = "Week"
 )
 
@@ -45,13 +47,13 @@ const (
 type CanonicalPropertyValueType string
 
 const (
-	// Categorical specifies the categorical state for canonical property value type.
+	// Categorical ...
 	Categorical CanonicalPropertyValueType = "Categorical"
-	// DerivedCategorical specifies the derived categorical state for canonical property value type.
+	// DerivedCategorical ...
 	DerivedCategorical CanonicalPropertyValueType = "DerivedCategorical"
-	// DerivedNumeric specifies the derived numeric state for canonical property value type.
+	// DerivedNumeric ...
 	DerivedNumeric CanonicalPropertyValueType = "DerivedNumeric"
-	// Numeric specifies the numeric state for canonical property value type.
+	// Numeric ...
 	Numeric CanonicalPropertyValueType = "Numeric"
 )
 
@@ -59,11 +61,11 @@ const (
 type CardinalityTypes string
 
 const (
-	// ManyToMany specifies the many to many state for cardinality types.
+	// ManyToMany ...
 	ManyToMany CardinalityTypes = "ManyToMany"
-	// OneToMany specifies the one to many state for cardinality types.
+	// OneToMany ...
 	OneToMany CardinalityTypes = "OneToMany"
-	// OneToOne specifies the one to one state for cardinality types.
+	// OneToOne ...
 	OneToOne CardinalityTypes = "OneToOne"
 )
 
@@ -71,11 +73,11 @@ const (
 type CompletionOperationTypes string
 
 const (
-	// DeleteFile specifies the delete file state for completion operation types.
+	// DeleteFile ...
 	DeleteFile CompletionOperationTypes = "DeleteFile"
-	// DoNothing specifies the do nothing state for completion operation types.
+	// DoNothing ...
 	DoNothing CompletionOperationTypes = "DoNothing"
-	// MoveFile specifies the move file state for completion operation types.
+	// MoveFile ...
 	MoveFile CompletionOperationTypes = "MoveFile"
 )
 
@@ -83,19 +85,19 @@ const (
 type ConnectorMappingStates string
 
 const (
-	// Created specifies the created state for connector mapping states.
+	// Created ...
 	Created ConnectorMappingStates = "Created"
-	// Creating specifies the creating state for connector mapping states.
+	// Creating ...
 	Creating ConnectorMappingStates = "Creating"
-	// Expiring specifies the expiring state for connector mapping states.
+	// Expiring ...
 	Expiring ConnectorMappingStates = "Expiring"
-	// Failed specifies the failed state for connector mapping states.
+	// Failed ...
 	Failed ConnectorMappingStates = "Failed"
-	// Ready specifies the ready state for connector mapping states.
+	// Ready ...
 	Ready ConnectorMappingStates = "Ready"
-	// Running specifies the running state for connector mapping states.
+	// Running ...
 	Running ConnectorMappingStates = "Running"
-	// Stopped specifies the stopped state for connector mapping states.
+	// Stopped ...
 	Stopped ConnectorMappingStates = "Stopped"
 )
 
@@ -103,17 +105,17 @@ const (
 type ConnectorStates string
 
 const (
-	// ConnectorStatesCreated specifies the connector states created state for connector states.
+	// ConnectorStatesCreated ...
 	ConnectorStatesCreated ConnectorStates = "Created"
-	// ConnectorStatesCreating specifies the connector states creating state for connector states.
+	// ConnectorStatesCreating ...
 	ConnectorStatesCreating ConnectorStates = "Creating"
-	// ConnectorStatesDeleting specifies the connector states deleting state for connector states.
+	// ConnectorStatesDeleting ...
 	ConnectorStatesDeleting ConnectorStates = "Deleting"
-	// ConnectorStatesExpiring specifies the connector states expiring state for connector states.
+	// ConnectorStatesExpiring ...
 	ConnectorStatesExpiring ConnectorStates = "Expiring"
-	// ConnectorStatesFailed specifies the connector states failed state for connector states.
+	// ConnectorStatesFailed ...
 	ConnectorStatesFailed ConnectorStates = "Failed"
-	// ConnectorStatesReady specifies the connector states ready state for connector states.
+	// ConnectorStatesReady ...
 	ConnectorStatesReady ConnectorStates = "Ready"
 )
 
@@ -121,17 +123,17 @@ const (
 type ConnectorTypes string
 
 const (
-	// AzureBlob specifies the azure blob state for connector types.
+	// AzureBlob ...
 	AzureBlob ConnectorTypes = "AzureBlob"
-	// CRM specifies the crm state for connector types.
+	// CRM ...
 	CRM ConnectorTypes = "CRM"
-	// ExchangeOnline specifies the exchange online state for connector types.
+	// ExchangeOnline ...
 	ExchangeOnline ConnectorTypes = "ExchangeOnline"
-	// None specifies the none state for connector types.
+	// None ...
 	None ConnectorTypes = "None"
-	// Outbound specifies the outbound state for connector types.
+	// Outbound ...
 	Outbound ConnectorTypes = "Outbound"
-	// Salesforce specifies the salesforce state for connector types.
+	// Salesforce ...
 	Salesforce ConnectorTypes = "Salesforce"
 )
 
@@ -139,11 +141,11 @@ const (
 type DataSourceType string
 
 const (
-	// DataSourceTypeConnector specifies the data source type connector state for data source type.
+	// DataSourceTypeConnector ...
 	DataSourceTypeConnector DataSourceType = "Connector"
-	// DataSourceTypeLinkInteraction specifies the data source type link interaction state for data source type.
+	// DataSourceTypeLinkInteraction ...
 	DataSourceTypeLinkInteraction DataSourceType = "LinkInteraction"
-	// DataSourceTypeSystemDefault specifies the data source type system default state for data source type.
+	// DataSourceTypeSystemDefault ...
 	DataSourceTypeSystemDefault DataSourceType = "SystemDefault"
 )
 
@@ -151,13 +153,13 @@ const (
 type EntityType string
 
 const (
-	// EntityTypeInteraction specifies the entity type interaction state for entity type.
+	// EntityTypeInteraction ...
 	EntityTypeInteraction EntityType = "Interaction"
-	// EntityTypeNone specifies the entity type none state for entity type.
+	// EntityTypeNone ...
 	EntityTypeNone EntityType = "None"
-	// EntityTypeProfile specifies the entity type profile state for entity type.
+	// EntityTypeProfile ...
 	EntityTypeProfile EntityType = "Profile"
-	// EntityTypeRelationship specifies the entity type relationship state for entity type.
+	// EntityTypeRelationship ...
 	EntityTypeRelationship EntityType = "Relationship"
 )
 
@@ -165,13 +167,13 @@ const (
 type EntityTypes string
 
 const (
-	// EntityTypesInteraction specifies the entity types interaction state for entity types.
+	// EntityTypesInteraction ...
 	EntityTypesInteraction EntityTypes = "Interaction"
-	// EntityTypesNone specifies the entity types none state for entity types.
+	// EntityTypesNone ...
 	EntityTypesNone EntityTypes = "None"
-	// EntityTypesProfile specifies the entity types profile state for entity types.
+	// EntityTypesProfile ...
 	EntityTypesProfile EntityTypes = "Profile"
-	// EntityTypesRelationship specifies the entity types relationship state for entity types.
+	// EntityTypesRelationship ...
 	EntityTypesRelationship EntityTypes = "Relationship"
 )
 
@@ -179,11 +181,11 @@ const (
 type ErrorManagementTypes string
 
 const (
-	// RejectAndContinue specifies the reject and continue state for error management types.
+	// RejectAndContinue ...
 	RejectAndContinue ErrorManagementTypes = "RejectAndContinue"
-	// RejectUntilLimit specifies the reject until limit state for error management types.
+	// RejectUntilLimit ...
 	RejectUntilLimit ErrorManagementTypes = "RejectUntilLimit"
-	// StopImport specifies the stop import state for error management types.
+	// StopImport ...
 	StopImport ErrorManagementTypes = "StopImport"
 )
 
@@ -191,15 +193,15 @@ const (
 type FrequencyTypes string
 
 const (
-	// FrequencyTypesDay specifies the frequency types day state for frequency types.
+	// FrequencyTypesDay ...
 	FrequencyTypesDay FrequencyTypes = "Day"
-	// FrequencyTypesHour specifies the frequency types hour state for frequency types.
+	// FrequencyTypesHour ...
 	FrequencyTypesHour FrequencyTypes = "Hour"
-	// FrequencyTypesMinute specifies the frequency types minute state for frequency types.
+	// FrequencyTypesMinute ...
 	FrequencyTypesMinute FrequencyTypes = "Minute"
-	// FrequencyTypesMonth specifies the frequency types month state for frequency types.
+	// FrequencyTypesMonth ...
 	FrequencyTypesMonth FrequencyTypes = "Month"
-	// FrequencyTypesWeek specifies the frequency types week state for frequency types.
+	// FrequencyTypesWeek ...
 	FrequencyTypesWeek FrequencyTypes = "Week"
 )
 
@@ -207,9 +209,9 @@ const (
 type InstanceOperationType string
 
 const (
-	// Delete specifies the delete state for instance operation type.
+	// Delete ...
 	Delete InstanceOperationType = "Delete"
-	// Upsert specifies the upsert state for instance operation type.
+	// Upsert ...
 	Upsert InstanceOperationType = "Upsert"
 )
 
@@ -217,21 +219,21 @@ const (
 type KpiFunctions string
 
 const (
-	// KpiFunctionsAvg specifies the kpi functions avg state for kpi functions.
+	// KpiFunctionsAvg ...
 	KpiFunctionsAvg KpiFunctions = "Avg"
-	// KpiFunctionsCount specifies the kpi functions count state for kpi functions.
+	// KpiFunctionsCount ...
 	KpiFunctionsCount KpiFunctions = "Count"
-	// KpiFunctionsCountDistinct specifies the kpi functions count distinct state for kpi functions.
+	// KpiFunctionsCountDistinct ...
 	KpiFunctionsCountDistinct KpiFunctions = "CountDistinct"
-	// KpiFunctionsLast specifies the kpi functions last state for kpi functions.
+	// KpiFunctionsLast ...
 	KpiFunctionsLast KpiFunctions = "Last"
-	// KpiFunctionsMax specifies the kpi functions max state for kpi functions.
+	// KpiFunctionsMax ...
 	KpiFunctionsMax KpiFunctions = "Max"
-	// KpiFunctionsMin specifies the kpi functions min state for kpi functions.
+	// KpiFunctionsMin ...
 	KpiFunctionsMin KpiFunctions = "Min"
-	// KpiFunctionsNone specifies the kpi functions none state for kpi functions.
+	// KpiFunctionsNone ...
 	KpiFunctionsNone KpiFunctions = "None"
-	// KpiFunctionsSum specifies the kpi functions sum state for kpi functions.
+	// KpiFunctionsSum ...
 	KpiFunctionsSum KpiFunctions = "Sum"
 )
 
@@ -239,9 +241,9 @@ const (
 type LinkTypes string
 
 const (
-	// CopyIfNull specifies the copy if null state for link types.
+	// CopyIfNull ...
 	CopyIfNull LinkTypes = "CopyIfNull"
-	// UpdateAlways specifies the update always state for link types.
+	// UpdateAlways ...
 	UpdateAlways LinkTypes = "UpdateAlways"
 )
 
@@ -249,11 +251,11 @@ const (
 type PermissionTypes string
 
 const (
-	// Manage specifies the manage state for permission types.
+	// Manage ...
 	Manage PermissionTypes = "Manage"
-	// Read specifies the read state for permission types.
+	// Read ...
 	Read PermissionTypes = "Read"
-	// Write specifies the write state for permission types.
+	// Write ...
 	Write PermissionTypes = "Write"
 )
 
@@ -261,58 +263,41 @@ const (
 type PredictionModelLifeCycle string
 
 const (
-	// PredictionModelLifeCycleActive specifies the prediction model life cycle active state for prediction model life
-	// cycle.
+	// PredictionModelLifeCycleActive ...
 	PredictionModelLifeCycleActive PredictionModelLifeCycle = "Active"
-	// PredictionModelLifeCycleDeleted specifies the prediction model life cycle deleted state for prediction model life
-	// cycle.
+	// PredictionModelLifeCycleDeleted ...
 	PredictionModelLifeCycleDeleted PredictionModelLifeCycle = "Deleted"
-	// PredictionModelLifeCycleDiscovering specifies the prediction model life cycle discovering state for prediction model
-	// life cycle.
+	// PredictionModelLifeCycleDiscovering ...
 	PredictionModelLifeCycleDiscovering PredictionModelLifeCycle = "Discovering"
-	// PredictionModelLifeCycleEvaluating specifies the prediction model life cycle evaluating state for prediction model
-	// life cycle.
+	// PredictionModelLifeCycleEvaluating ...
 	PredictionModelLifeCycleEvaluating PredictionModelLifeCycle = "Evaluating"
-	// PredictionModelLifeCycleEvaluatingFailed specifies the prediction model life cycle evaluating failed state for
-	// prediction model life cycle.
+	// PredictionModelLifeCycleEvaluatingFailed ...
 	PredictionModelLifeCycleEvaluatingFailed PredictionModelLifeCycle = "EvaluatingFailed"
-	// PredictionModelLifeCycleFailed specifies the prediction model life cycle failed state for prediction model life
-	// cycle.
+	// PredictionModelLifeCycleFailed ...
 	PredictionModelLifeCycleFailed PredictionModelLifeCycle = "Failed"
-	// PredictionModelLifeCycleFeaturing specifies the prediction model life cycle featuring state for prediction model
-	// life cycle.
+	// PredictionModelLifeCycleFeaturing ...
 	PredictionModelLifeCycleFeaturing PredictionModelLifeCycle = "Featuring"
-	// PredictionModelLifeCycleFeaturingFailed specifies the prediction model life cycle featuring failed state for
-	// prediction model life cycle.
+	// PredictionModelLifeCycleFeaturingFailed ...
 	PredictionModelLifeCycleFeaturingFailed PredictionModelLifeCycle = "FeaturingFailed"
-	// PredictionModelLifeCycleHumanIntervention specifies the prediction model life cycle human intervention state for
-	// prediction model life cycle.
+	// PredictionModelLifeCycleHumanIntervention ...
 	PredictionModelLifeCycleHumanIntervention PredictionModelLifeCycle = "HumanIntervention"
-	// PredictionModelLifeCycleNew specifies the prediction model life cycle new state for prediction model life cycle.
+	// PredictionModelLifeCycleNew ...
 	PredictionModelLifeCycleNew PredictionModelLifeCycle = "New"
-	// PredictionModelLifeCyclePendingDiscovering specifies the prediction model life cycle pending discovering state for
-	// prediction model life cycle.
+	// PredictionModelLifeCyclePendingDiscovering ...
 	PredictionModelLifeCyclePendingDiscovering PredictionModelLifeCycle = "PendingDiscovering"
-	// PredictionModelLifeCyclePendingFeaturing specifies the prediction model life cycle pending featuring state for
-	// prediction model life cycle.
+	// PredictionModelLifeCyclePendingFeaturing ...
 	PredictionModelLifeCyclePendingFeaturing PredictionModelLifeCycle = "PendingFeaturing"
-	// PredictionModelLifeCyclePendingModelConfirmation specifies the prediction model life cycle pending model
-	// confirmation state for prediction model life cycle.
+	// PredictionModelLifeCyclePendingModelConfirmation ...
 	PredictionModelLifeCyclePendingModelConfirmation PredictionModelLifeCycle = "PendingModelConfirmation"
-	// PredictionModelLifeCyclePendingTraining specifies the prediction model life cycle pending training state for
-	// prediction model life cycle.
+	// PredictionModelLifeCyclePendingTraining ...
 	PredictionModelLifeCyclePendingTraining PredictionModelLifeCycle = "PendingTraining"
-	// PredictionModelLifeCycleProvisioning specifies the prediction model life cycle provisioning state for prediction
-	// model life cycle.
+	// PredictionModelLifeCycleProvisioning ...
 	PredictionModelLifeCycleProvisioning PredictionModelLifeCycle = "Provisioning"
-	// PredictionModelLifeCycleProvisioningFailed specifies the prediction model life cycle provisioning failed state for
-	// prediction model life cycle.
+	// PredictionModelLifeCycleProvisioningFailed ...
 	PredictionModelLifeCycleProvisioningFailed PredictionModelLifeCycle = "ProvisioningFailed"
-	// PredictionModelLifeCycleTraining specifies the prediction model life cycle training state for prediction model life
-	// cycle.
+	// PredictionModelLifeCycleTraining ...
 	PredictionModelLifeCycleTraining PredictionModelLifeCycle = "Training"
-	// PredictionModelLifeCycleTrainingFailed specifies the prediction model life cycle training failed state for
-	// prediction model life cycle.
+	// PredictionModelLifeCycleTrainingFailed ...
 	PredictionModelLifeCycleTrainingFailed PredictionModelLifeCycle = "TrainingFailed"
 )
 
@@ -320,18 +305,17 @@ const (
 type ProvisioningStates string
 
 const (
-	// ProvisioningStatesDeleting specifies the provisioning states deleting state for provisioning states.
+	// ProvisioningStatesDeleting ...
 	ProvisioningStatesDeleting ProvisioningStates = "Deleting"
-	// ProvisioningStatesExpiring specifies the provisioning states expiring state for provisioning states.
+	// ProvisioningStatesExpiring ...
 	ProvisioningStatesExpiring ProvisioningStates = "Expiring"
-	// ProvisioningStatesFailed specifies the provisioning states failed state for provisioning states.
+	// ProvisioningStatesFailed ...
 	ProvisioningStatesFailed ProvisioningStates = "Failed"
-	// ProvisioningStatesHumanIntervention specifies the provisioning states human intervention state for provisioning
-	// states.
+	// ProvisioningStatesHumanIntervention ...
 	ProvisioningStatesHumanIntervention ProvisioningStates = "HumanIntervention"
-	// ProvisioningStatesProvisioning specifies the provisioning states provisioning state for provisioning states.
+	// ProvisioningStatesProvisioning ...
 	ProvisioningStatesProvisioning ProvisioningStates = "Provisioning"
-	// ProvisioningStatesSucceeded specifies the provisioning states succeeded state for provisioning states.
+	// ProvisioningStatesSucceeded ...
 	ProvisioningStatesSucceeded ProvisioningStates = "Succeeded"
 )
 
@@ -339,17 +323,17 @@ const (
 type RoleTypes string
 
 const (
-	// Admin specifies the admin state for role types.
+	// Admin ...
 	Admin RoleTypes = "Admin"
-	// DataAdmin specifies the data admin state for role types.
+	// DataAdmin ...
 	DataAdmin RoleTypes = "DataAdmin"
-	// DataReader specifies the data reader state for role types.
+	// DataReader ...
 	DataReader RoleTypes = "DataReader"
-	// ManageAdmin specifies the manage admin state for role types.
+	// ManageAdmin ...
 	ManageAdmin RoleTypes = "ManageAdmin"
-	// ManageReader specifies the manage reader state for role types.
+	// ManageReader ...
 	ManageReader RoleTypes = "ManageReader"
-	// Reader specifies the reader state for role types.
+	// Reader ...
 	Reader RoleTypes = "Reader"
 )
 
@@ -357,1134 +341,4487 @@ const (
 type Status string
 
 const (
-	// StatusActive specifies the status active state for status.
+	// StatusActive ...
 	StatusActive Status = "Active"
-	// StatusDeleted specifies the status deleted state for status.
+	// StatusDeleted ...
 	StatusDeleted Status = "Deleted"
-	// StatusNone specifies the status none state for status.
+	// StatusNone ...
 	StatusNone Status = "None"
 )
 
-// AssignmentPrincipal is the AssignmentPrincipal
+// AssignmentPrincipal the AssignmentPrincipal
 type AssignmentPrincipal struct {
-	PrincipalID       *string             `json:"principalId,omitempty"`
-	PrincipalType     *string             `json:"principalType,omitempty"`
+	// PrincipalID - The principal id being assigned to.
+	PrincipalID *string `json:"principalId,omitempty"`
+	// PrincipalType - The Type of the principal ID.
+	PrincipalType *string `json:"principalType,omitempty"`
+	// PrincipalMetadata - Other metadata for the principal.
 	PrincipalMetadata *map[string]*string `json:"principalMetadata,omitempty"`
 }
 
-// AuthorizationPolicy is the authorization policy.
+// AuthorizationPolicy the authorization policy.
 type AuthorizationPolicy struct {
 	autorest.Response `json:"-"`
-	PolicyName        *string            `json:"policyName,omitempty"`
-	Permissions       *[]PermissionTypes `json:"permissions,omitempty"`
-	PrimaryKey        *string            `json:"primaryKey,omitempty"`
-	SecondaryKey      *string            `json:"secondaryKey,omitempty"`
+	// PolicyName - Name of the policy.
+	PolicyName *string `json:"policyName,omitempty"`
+	// Permissions - The permissions associated with the policy.
+	Permissions *[]PermissionTypes `json:"permissions,omitempty"`
+	// PrimaryKey - Primary key assiciated with the policy.
+	PrimaryKey *string `json:"primaryKey,omitempty"`
+	// SecondaryKey - Secondary key assiciated with the policy.
+	SecondaryKey *string `json:"secondaryKey,omitempty"`
 }
 
-// AuthorizationPolicyListResult is the response of list authorization policy operation.
+// AuthorizationPolicyListResult the response of list authorization policy operation.
 type AuthorizationPolicyListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]AuthorizationPolicyResourceFormat `json:"value,omitempty"`
-	NextLink          *string                              `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]AuthorizationPolicyResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AuthorizationPolicyListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AuthorizationPolicyListResult) AuthorizationPolicyListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AuthorizationPolicyListResultIterator provides access to a complete listing of AuthorizationPolicyResourceFormat
+// values.
+type AuthorizationPolicyListResultIterator struct {
+	i    int
+	page AuthorizationPolicyListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AuthorizationPolicyListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AuthorizationPolicyListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AuthorizationPolicyListResultIterator) Response() AuthorizationPolicyListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AuthorizationPolicyListResultIterator) Value() AuthorizationPolicyResourceFormat {
+	if !iter.page.NotDone() {
+		return AuthorizationPolicyResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (aplr AuthorizationPolicyListResult) IsEmpty() bool {
+	return aplr.Value == nil || len(*aplr.Value) == 0
+}
+
+// authorizationPolicyListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (aplr AuthorizationPolicyListResult) authorizationPolicyListResultPreparer() (*http.Request, error) {
+	if aplr.NextLink == nil || len(to.String(aplr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(aplr.NextLink)))
 }
 
-// AuthorizationPolicyResourceFormat is the authorization policy resource format.
+// AuthorizationPolicyListResultPage contains a page of AuthorizationPolicyResourceFormat values.
+type AuthorizationPolicyListResultPage struct {
+	fn   func(AuthorizationPolicyListResult) (AuthorizationPolicyListResult, error)
+	aplr AuthorizationPolicyListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AuthorizationPolicyListResultPage) Next() error {
+	next, err := page.fn(page.aplr)
+	if err != nil {
+		return err
+	}
+	page.aplr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AuthorizationPolicyListResultPage) NotDone() bool {
+	return !page.aplr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AuthorizationPolicyListResultPage) Response() AuthorizationPolicyListResult {
+	return page.aplr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AuthorizationPolicyListResultPage) Values() []AuthorizationPolicyResourceFormat {
+	if page.aplr.IsEmpty() {
+		return nil
+	}
+	return *page.aplr.Value
+}
+
+// AuthorizationPolicyResourceFormat the authorization policy resource format.
 type AuthorizationPolicyResourceFormat struct {
-	autorest.Response    `json:"-"`
-	ID                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type                 *string `json:"type,omitempty"`
 	*AuthorizationPolicy `json:"properties,omitempty"`
 }
 
-// AzureBlobConnectorProperties is the Azure Blob connector properties.
+// UnmarshalJSON is the custom unmarshaler for AuthorizationPolicyResourceFormat struct.
+func (aprf *AuthorizationPolicyResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AuthorizationPolicy
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		aprf.AuthorizationPolicy = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		aprf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		aprf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		aprf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// AzureBlobConnectorProperties the Azure Blob connector properties.
 type AzureBlobConnectorProperties struct {
+	// ConnectionKeyVaultURL - The connection KeyVault URL.
 	ConnectionKeyVaultURL *string `json:"connectionKeyVaultUrl,omitempty"`
 }
 
-// CanonicalProfileDefinition is definition of canonical profile.
+// CanonicalProfileDefinition definition of canonical profile.
 type CanonicalProfileDefinition struct {
-	CanonicalProfileID *int32                                      `json:"canonicalProfileId,omitempty"`
-	Properties         *[]CanonicalProfileDefinitionPropertiesItem `json:"properties,omitempty"`
+	// CanonicalProfileID - Canonical profile ID.
+	CanonicalProfileID *int32 `json:"canonicalProfileId,omitempty"`
+	// Properties - Properties of the canonical profile.
+	Properties *[]CanonicalProfileDefinitionPropertiesItem `json:"properties,omitempty"`
 }
 
-// CanonicalProfileDefinitionPropertiesItem is the definition of a canonical profile property.
+// CanonicalProfileDefinitionPropertiesItem the definition of a canonical profile property.
 type CanonicalProfileDefinitionPropertiesItem struct {
-	ProfileName         *string                    `json:"profileName,omitempty"`
-	ProfilePropertyName *string                    `json:"profilePropertyName,omitempty"`
-	Rank                *int32                     `json:"rank,omitempty"`
-	Type                CanonicalPropertyValueType `json:"type,omitempty"`
-	Value               *string                    `json:"value,omitempty"`
+	// ProfileName - Profile name.
+	ProfileName *string `json:"profileName,omitempty"`
+	// ProfilePropertyName - Property name of profile.
+	ProfilePropertyName *string `json:"profilePropertyName,omitempty"`
+	// Rank - The rank.
+	Rank *int32 `json:"rank,omitempty"`
+	// Type - Type of canonical property value. Possible values include: 'Numeric', 'Categorical', 'DerivedCategorical', 'DerivedNumeric'
+	Type CanonicalPropertyValueType `json:"type,omitempty"`
+	// Value - Value of the canonical property.
+	Value *string `json:"value,omitempty"`
 }
 
-// Connector is properties of connector.
+// Connector properties of connector.
 type Connector struct {
-	ConnectorID         *int32                              `json:"connectorId,omitempty"`
-	ConnectorName       *string                             `json:"connectorName,omitempty"`
-	ConnectorType       ConnectorTypes                      `json:"connectorType,omitempty"`
-	DisplayName         *string                             `json:"displayName,omitempty"`
-	Description         *string                             `json:"description,omitempty"`
+	// ConnectorID - ID of the connector.
+	ConnectorID *int32 `json:"connectorId,omitempty"`
+	// ConnectorName - Name of the connector.
+	ConnectorName *string `json:"connectorName,omitempty"`
+	// ConnectorType - Type of connector. Possible values include: 'None', 'CRM', 'AzureBlob', 'Salesforce', 'ExchangeOnline', 'Outbound'
+	ConnectorType ConnectorTypes `json:"connectorType,omitempty"`
+	// DisplayName - Display name of the connector.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - Description of the connector.
+	Description *string `json:"description,omitempty"`
+	// ConnectorProperties - The connector properties.
 	ConnectorProperties *map[string]*map[string]interface{} `json:"connectorProperties,omitempty"`
-	Created             *date.Time                          `json:"created,omitempty"`
-	LastModified        *date.Time                          `json:"lastModified,omitempty"`
-	State               ConnectorStates                     `json:"state,omitempty"`
-	TenantID            *string                             `json:"tenantId,omitempty"`
-	IsInternal          *bool                               `json:"isInternal,omitempty"`
+	// Created - The created time.
+	Created *date.Time `json:"created,omitempty"`
+	// LastModified - The last monified time.
+	LastModified *date.Time `json:"lastModified,omitempty"`
+	// State - State of connector. Possible values include: 'ConnectorStatesCreating', 'ConnectorStatesCreated', 'ConnectorStatesReady', 'ConnectorStatesExpiring', 'ConnectorStatesDeleting', 'ConnectorStatesFailed'
+	State ConnectorStates `json:"state,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// IsInternal - If this is an internal connector.
+	IsInternal *bool `json:"isInternal,omitempty"`
 }
 
-// ConnectorListResult is the response of list connector operation.
+// ConnectorListResult the response of list connector operation.
 type ConnectorListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ConnectorResourceFormat `json:"value,omitempty"`
-	NextLink          *string                    `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ConnectorResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ConnectorListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ConnectorListResult) ConnectorListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ConnectorListResultIterator provides access to a complete listing of ConnectorResourceFormat values.
+type ConnectorListResultIterator struct {
+	i    int
+	page ConnectorListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ConnectorListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ConnectorListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ConnectorListResultIterator) Response() ConnectorListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ConnectorListResultIterator) Value() ConnectorResourceFormat {
+	if !iter.page.NotDone() {
+		return ConnectorResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (clr ConnectorListResult) IsEmpty() bool {
+	return clr.Value == nil || len(*clr.Value) == 0
+}
+
+// connectorListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (clr ConnectorListResult) connectorListResultPreparer() (*http.Request, error) {
+	if clr.NextLink == nil || len(to.String(clr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(clr.NextLink)))
 }
 
-// ConnectorMapping is the connector mapping definition.
+// ConnectorListResultPage contains a page of ConnectorResourceFormat values.
+type ConnectorListResultPage struct {
+	fn  func(ConnectorListResult) (ConnectorListResult, error)
+	clr ConnectorListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ConnectorListResultPage) Next() error {
+	next, err := page.fn(page.clr)
+	if err != nil {
+		return err
+	}
+	page.clr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ConnectorListResultPage) NotDone() bool {
+	return !page.clr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ConnectorListResultPage) Response() ConnectorListResult {
+	return page.clr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ConnectorListResultPage) Values() []ConnectorResourceFormat {
+	if page.clr.IsEmpty() {
+		return nil
+	}
+	return *page.clr.Value
+}
+
+// ConnectorMapping the connector mapping definition.
 type ConnectorMapping struct {
-	ConnectorName        *string                     `json:"connectorName,omitempty"`
-	ConnectorType        ConnectorTypes              `json:"connectorType,omitempty"`
-	Created              *date.Time                  `json:"created,omitempty"`
-	LastModified         *date.Time                  `json:"lastModified,omitempty"`
-	EntityType           EntityTypes                 `json:"entityType,omitempty"`
-	EntityTypeName       *string                     `json:"entityTypeName,omitempty"`
-	ConnectorMappingName *string                     `json:"connectorMappingName,omitempty"`
-	DisplayName          *string                     `json:"displayName,omitempty"`
-	Description          *string                     `json:"description,omitempty"`
-	DataFormatID         *string                     `json:"dataFormatId,omitempty"`
-	MappingProperties    *ConnectorMappingProperties `json:"mappingProperties,omitempty"`
-	NextRunTime          *date.Time                  `json:"nextRunTime,omitempty"`
-	RunID                *string                     `json:"runId,omitempty"`
-	State                ConnectorMappingStates      `json:"state,omitempty"`
-	TenantID             *string                     `json:"tenantId,omitempty"`
+	// ConnectorName - The connector name.
+	ConnectorName *string `json:"connectorName,omitempty"`
+	// ConnectorType - Type of connector. Possible values include: 'None', 'CRM', 'AzureBlob', 'Salesforce', 'ExchangeOnline', 'Outbound'
+	ConnectorType ConnectorTypes `json:"connectorType,omitempty"`
+	// Created - The created time.
+	Created *date.Time `json:"created,omitempty"`
+	// LastModified - The last monified time.
+	LastModified *date.Time `json:"lastModified,omitempty"`
+	// EntityType - Defines which entity type the file should map to. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// EntityTypeName - The mapping entity name.
+	EntityTypeName *string `json:"entityTypeName,omitempty"`
+	// ConnectorMappingName - The connector mapping name
+	ConnectorMappingName *string `json:"connectorMappingName,omitempty"`
+	// DisplayName - Display name for the connector mapping.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - The description of the connector mapping.
+	Description *string `json:"description,omitempty"`
+	// DataFormatID - The DataFormat ID.
+	DataFormatID *string `json:"dataFormatId,omitempty"`
+	// MappingProperties - The properties of the mapping.
+	MappingProperties *ConnectorMappingProperties `json:"mappingProperties,omitempty"`
+	// NextRunTime - The next run time based on customer's settings.
+	NextRunTime *date.Time `json:"nextRunTime,omitempty"`
+	// RunID - The RunId.
+	RunID *string `json:"runId,omitempty"`
+	// State - State of connector mapping. Possible values include: 'Creating', 'Created', 'Failed', 'Ready', 'Running', 'Stopped', 'Expiring'
+	State ConnectorMappingStates `json:"state,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
 }
 
-// ConnectorMappingAvailability is connector mapping property availability.
+// ConnectorMappingAvailability connector mapping property availability.
 type ConnectorMappingAvailability struct {
+	// Frequency - The frequency to update. Possible values include: 'FrequencyTypesMinute', 'FrequencyTypesHour', 'FrequencyTypesDay', 'FrequencyTypesWeek', 'FrequencyTypesMonth'
 	Frequency FrequencyTypes `json:"frequency,omitempty"`
-	Interval  *int32         `json:"interval,omitempty"`
+	// Interval - The interval of the given frequency to use.
+	Interval *int32 `json:"interval,omitempty"`
 }
 
-// ConnectorMappingCompleteOperation is the complete operation.
+// ConnectorMappingCompleteOperation the complete operation.
 type ConnectorMappingCompleteOperation struct {
+	// CompletionOperationType - The type of completion operation. Possible values include: 'DoNothing', 'DeleteFile', 'MoveFile'
 	CompletionOperationType CompletionOperationTypes `json:"completionOperationType,omitempty"`
-	DestinationFolder       *string                  `json:"destinationFolder,omitempty"`
+	// DestinationFolder - The destination folder where files will be moved to once the import is done.
+	DestinationFolder *string `json:"destinationFolder,omitempty"`
 }
 
-// ConnectorMappingErrorManagement is the error mangement.
+// ConnectorMappingErrorManagement the error mangement.
 type ConnectorMappingErrorManagement struct {
+	// ErrorManagementType - The type of error management to use for the mapping. Possible values include: 'RejectAndContinue', 'StopImport', 'RejectUntilLimit'
 	ErrorManagementType ErrorManagementTypes `json:"errorManagementType,omitempty"`
-	ErrorLimit          *int32               `json:"errorLimit,omitempty"`
+	// ErrorLimit - The error limit allowed while importing data.
+	ErrorLimit *int32 `json:"errorLimit,omitempty"`
 }
 
-// ConnectorMappingFormat is connector mapping property format.
+// ConnectorMappingFormat connector mapping property format.
 type ConnectorMappingFormat struct {
-	FormatType           *string `json:"formatType,omitempty"`
-	ColumnDelimiter      *string `json:"columnDelimiter,omitempty"`
-	AcceptLanguage       *string `json:"acceptLanguage,omitempty"`
-	QuoteCharacter       *string `json:"quoteCharacter,omitempty"`
+	// FormatType - The type mapping format.
+	FormatType *string `json:"formatType,omitempty"`
+	// ColumnDelimiter - The character that signifies a break between columns.
+	ColumnDelimiter *string `json:"columnDelimiter,omitempty"`
+	// AcceptLanguage - The oData language.
+	AcceptLanguage *string `json:"acceptLanguage,omitempty"`
+	// QuoteCharacter - Quote character, used to indicate enquoted fields.
+	QuoteCharacter *string `json:"quoteCharacter,omitempty"`
+	// QuoteEscapeCharacter - Escape character for quotes, can be the same as the quoteCharacter.
 	QuoteEscapeCharacter *string `json:"quoteEscapeCharacter,omitempty"`
-	ArraySeparator       *string `json:"arraySeparator,omitempty"`
+	// ArraySeparator - Character separating array elements.
+	ArraySeparator *string `json:"arraySeparator,omitempty"`
 }
 
-// ConnectorMappingListResult is the response of list connector mapping operation.
+// ConnectorMappingListResult the response of list connector mapping operation.
 type ConnectorMappingListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ConnectorMappingResourceFormat `json:"value,omitempty"`
-	NextLink          *string                           `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ConnectorMappingResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ConnectorMappingListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ConnectorMappingListResult) ConnectorMappingListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ConnectorMappingListResultIterator provides access to a complete listing of ConnectorMappingResourceFormat values.
+type ConnectorMappingListResultIterator struct {
+	i    int
+	page ConnectorMappingListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ConnectorMappingListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ConnectorMappingListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ConnectorMappingListResultIterator) Response() ConnectorMappingListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ConnectorMappingListResultIterator) Value() ConnectorMappingResourceFormat {
+	if !iter.page.NotDone() {
+		return ConnectorMappingResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cmlr ConnectorMappingListResult) IsEmpty() bool {
+	return cmlr.Value == nil || len(*cmlr.Value) == 0
+}
+
+// connectorMappingListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cmlr ConnectorMappingListResult) connectorMappingListResultPreparer() (*http.Request, error) {
+	if cmlr.NextLink == nil || len(to.String(cmlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(cmlr.NextLink)))
 }
 
-// ConnectorMappingProperties is the connector mapping properties.
+// ConnectorMappingListResultPage contains a page of ConnectorMappingResourceFormat values.
+type ConnectorMappingListResultPage struct {
+	fn   func(ConnectorMappingListResult) (ConnectorMappingListResult, error)
+	cmlr ConnectorMappingListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ConnectorMappingListResultPage) Next() error {
+	next, err := page.fn(page.cmlr)
+	if err != nil {
+		return err
+	}
+	page.cmlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ConnectorMappingListResultPage) NotDone() bool {
+	return !page.cmlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ConnectorMappingListResultPage) Response() ConnectorMappingListResult {
+	return page.cmlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ConnectorMappingListResultPage) Values() []ConnectorMappingResourceFormat {
+	if page.cmlr.IsEmpty() {
+		return nil
+	}
+	return *page.cmlr.Value
+}
+
+// ConnectorMappingProperties the connector mapping properties.
 type ConnectorMappingProperties struct {
-	FolderPath        *string                            `json:"folderPath,omitempty"`
-	FileFilter        *string                            `json:"fileFilter,omitempty"`
-	HasHeader         *bool                              `json:"hasHeader,omitempty"`
-	ErrorManagement   *ConnectorMappingErrorManagement   `json:"errorManagement,omitempty"`
-	Format            *ConnectorMappingFormat            `json:"format,omitempty"`
-	Availability      *ConnectorMappingAvailability      `json:"availability,omitempty"`
-	Structure         *[]ConnectorMappingStructure       `json:"structure,omitempty"`
+	// FolderPath - The folder path for the mapping.
+	FolderPath *string `json:"folderPath,omitempty"`
+	// FileFilter - The file filter for the mapping.
+	FileFilter *string `json:"fileFilter,omitempty"`
+	// HasHeader - If the file contains a header or not.
+	HasHeader *bool `json:"hasHeader,omitempty"`
+	// ErrorManagement - The error management setting for the mapping.
+	ErrorManagement *ConnectorMappingErrorManagement `json:"errorManagement,omitempty"`
+	// Format - The format of mapping property.
+	Format *ConnectorMappingFormat `json:"format,omitempty"`
+	// Availability - The availability of mapping property.
+	Availability *ConnectorMappingAvailability `json:"availability,omitempty"`
+	// Structure - Ingestion mapping information at property level.
+	Structure *[]ConnectorMappingStructure `json:"structure,omitempty"`
+	// CompleteOperation - The operation after import is done.
 	CompleteOperation *ConnectorMappingCompleteOperation `json:"completeOperation,omitempty"`
 }
 
-// ConnectorMappingResourceFormat is the c onnector mapping resource format.
+// ConnectorMappingResourceFormat the c onnector mapping resource format.
 type ConnectorMappingResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type              *string `json:"type,omitempty"`
 	*ConnectorMapping `json:"properties,omitempty"`
 }
 
-// ConnectorMappingStructure is connector mapping property structure.
-type ConnectorMappingStructure struct {
-	PropertyName          *string `json:"propertyName,omitempty"`
-	ColumnName            *string `json:"columnName,omitempty"`
-	CustomFormatSpecifier *string `json:"customFormatSpecifier,omitempty"`
-	IsEncrypted           *bool   `json:"isEncrypted,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for ConnectorMappingResourceFormat struct.
+func (cmrf *ConnectorMappingResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ConnectorMapping
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		cmrf.ConnectorMapping = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		cmrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		cmrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		cmrf.Type = &typeVar
+	}
+
+	return nil
 }
 
-// ConnectorResourceFormat is the connector resource format.
+// ConnectorMappingStructure connector mapping property structure.
+type ConnectorMappingStructure struct {
+	// PropertyName - The property name of the mapping entity.
+	PropertyName *string `json:"propertyName,omitempty"`
+	// ColumnName - The column name of the import file.
+	ColumnName *string `json:"columnName,omitempty"`
+	// CustomFormatSpecifier - Custom format specifier for input parsing.
+	CustomFormatSpecifier *string `json:"customFormatSpecifier,omitempty"`
+	// IsEncrypted - Indicates if the column is encrypted.
+	IsEncrypted *bool `json:"isEncrypted,omitempty"`
+}
+
+// ConnectorResourceFormat the connector resource format.
 type ConnectorResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*Connector        `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type       *string `json:"type,omitempty"`
+	*Connector `json:"properties,omitempty"`
 }
 
-// CrmConnectorEntities is the CRM connector entities.
+// UnmarshalJSON is the custom unmarshaler for ConnectorResourceFormat struct.
+func (crf *ConnectorResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties Connector
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		crf.Connector = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		crf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		crf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		crf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ConnectorsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ConnectorsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ConnectorsCreateOrUpdateFuture) Result(client ConnectorsClient) (crf ConnectorResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return crf, autorest.NewError("customerinsights.ConnectorsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		crf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	crf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// ConnectorsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ConnectorsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ConnectorsDeleteFuture) Result(client ConnectorsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.ConnectorsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// CrmConnectorEntities the CRM connector entities.
 type CrmConnectorEntities struct {
+	// LogicalName - The logical name.
 	LogicalName *string `json:"logicalName,omitempty"`
+	// DisplayName - The display name.
 	DisplayName *string `json:"displayName,omitempty"`
-	IsProfile   *bool   `json:"isProfile,omitempty"`
+	// IsProfile - Indicating whether this is profile.
+	IsProfile *bool `json:"isProfile,omitempty"`
 }
 
-// CrmConnectorProperties is the CRM connector properties.
+// CrmConnectorProperties the CRM connector properties.
 type CrmConnectorProperties struct {
-	ConnectionString *string                 `json:"connectionString,omitempty"`
-	OrganizationID   *string                 `json:"organizationId,omitempty"`
-	OrganizationURL  *string                 `json:"organizationUrl,omitempty"`
-	Entities         *[]CrmConnectorEntities `json:"entities,omitempty"`
-	AccessToken      *string                 `json:"accessToken,omitempty"`
+	// ConnectionString - The connection string.
+	ConnectionString *string `json:"connectionString,omitempty"`
+	// OrganizationID - The organization ID.
+	OrganizationID *string `json:"organizationId,omitempty"`
+	// OrganizationURL - The organization URL.
+	OrganizationURL *string `json:"organizationUrl,omitempty"`
+	// Entities - The entities like account, contact, opportunity.
+	Entities *[]CrmConnectorEntities `json:"entities,omitempty"`
+	// AccessToken - The access token.
+	AccessToken *string `json:"accessToken,omitempty"`
 }
 
-// DataSource is data Source is a way for us to know the source of instances. A single type can have data coming in
-// from multiple places. In activities we use this to determine precedence rules.
+// DataSource data Source is a way for us to know the source of instances. A single type can have data coming in from
+// multiple places. In activities we use this to determine precedence rules.
 type DataSource struct {
-	Name                  *string        `json:"name,omitempty"`
-	DataSourceType        DataSourceType `json:"dataSourceType,omitempty"`
-	Status                Status         `json:"status,omitempty"`
-	ID                    *int32         `json:"id,omitempty"`
-	DataSourceReferenceID *string        `json:"dataSourceReferenceId,omitempty"`
+	// Name - The data source name
+	Name *string `json:"name,omitempty"`
+	// DataSourceType - The data source type. Possible values include: 'DataSourceTypeConnector', 'DataSourceTypeLinkInteraction', 'DataSourceTypeSystemDefault'
+	DataSourceType DataSourceType `json:"dataSourceType,omitempty"`
+	// Status - The data source status. Possible values include: 'StatusNone', 'StatusActive', 'StatusDeleted'
+	Status Status `json:"status,omitempty"`
+	// ID - The data source ID.
+	ID *int32 `json:"id,omitempty"`
+	// DataSourceReferenceID - The data source reference id.
+	DataSourceReferenceID *string `json:"dataSourceReferenceId,omitempty"`
 }
 
-// DataSourcePrecedence is the data source precedence is a way to know the precedence of each data source.
+// DataSourcePrecedence the data source precedence is a way to know the precedence of each data source.
 type DataSourcePrecedence struct {
 	*DataSource `json:"dataSource,omitempty"`
-	Precedence  *int32 `json:"precedence,omitempty"`
+	// Precedence - the precedence value.
+	Precedence *int32 `json:"precedence,omitempty"`
 }
 
-// EnrichingKpi is the enriching KPI definition.
+// UnmarshalJSON is the custom unmarshaler for DataSourcePrecedence struct.
+func (dsp *DataSourcePrecedence) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["dataSource"]
+	if v != nil {
+		var dataSource DataSource
+		err = json.Unmarshal(*m["dataSource"], &dataSource)
+		if err != nil {
+			return err
+		}
+		dsp.DataSource = &dataSource
+	}
+
+	v = m["precedence"]
+	if v != nil {
+		var precedence int32
+		err = json.Unmarshal(*m["precedence"], &precedence)
+		if err != nil {
+			return err
+		}
+		dsp.Precedence = &precedence
+	}
+
+	return nil
+}
+
+// EnrichingKpi the enriching KPI definition.
 type EnrichingKpi struct {
-	EntityType                  EntityTypes                       `json:"entityType,omitempty"`
-	EntityTypeName              *string                           `json:"entityTypeName,omitempty"`
-	TenantID                    *string                           `json:"tenantId,omitempty"`
-	KpiName                     *string                           `json:"kpiName,omitempty"`
-	DisplayName                 *map[string]*string               `json:"displayName,omitempty"`
-	Description                 *map[string]*string               `json:"description,omitempty"`
-	CalculationWindow           CalculationWindowTypes            `json:"calculationWindow,omitempty"`
-	CalculationWindowFieldName  *string                           `json:"calculationWindowFieldName,omitempty"`
-	Function                    KpiFunctions                      `json:"function,omitempty"`
-	Expression                  *string                           `json:"expression,omitempty"`
-	Unit                        *string                           `json:"unit,omitempty"`
-	Filter                      *string                           `json:"filter,omitempty"`
-	GroupBy                     *[]string                         `json:"groupBy,omitempty"`
-	GroupByMetadata             *[]KpiGroupByMetadata             `json:"groupByMetadata,omitempty"`
-	ParticipantProfilesMetadata *[]KpiParticipantProfilesMetadata `json:"participantProfilesMetadata,omitempty"`
-	ProvisioningState           ProvisioningStates                `json:"provisioningState,omitempty"`
-	ThresHolds                  *KpiThresholds                    `json:"thresHolds,omitempty"`
-	Aliases                     *[]KpiAlias                       `json:"aliases,omitempty"`
-	Extracts                    *[]KpiExtract                     `json:"extracts,omitempty"`
-}
-
-// EntityTypeDefinition is describes an entity.
-type EntityTypeDefinition struct {
-	Attributes          *map[string][]string           `json:"attributes,omitempty"`
-	Description         *map[string]*string            `json:"description,omitempty"`
-	DisplayName         *map[string]*string            `json:"displayName,omitempty"`
-	LocalizedAttributes *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
-	SmallImage          *string                        `json:"smallImage,omitempty"`
-	MediumImage         *string                        `json:"mediumImage,omitempty"`
-	LargeImage          *string                        `json:"largeImage,omitempty"`
-	APIEntitySetName    *string                        `json:"apiEntitySetName,omitempty"`
-	EntityType          EntityTypes                    `json:"entityType,omitempty"`
-	Fields              *[]PropertyDefinition          `json:"fields,omitempty"`
-	InstancesCount      *int32                         `json:"instancesCount,omitempty"`
-	LastChangedUtc      *date.Time                     `json:"lastChangedUtc,omitempty"`
-	ProvisioningState   ProvisioningStates             `json:"provisioningState,omitempty"`
-	SchemaItemTypeLink  *string                        `json:"schemaItemTypeLink,omitempty"`
-	TenantID            *string                        `json:"tenantId,omitempty"`
-	TimestampFieldName  *string                        `json:"timestampFieldName,omitempty"`
-	TypeName            *string                        `json:"typeName,omitempty"`
-}
-
-// GetImageUploadURLInput is input type for getting image upload url.
-type GetImageUploadURLInput struct {
-	EntityType     *string `json:"entityType,omitempty"`
+	// EntityType - The mapping entity type. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// EntityTypeName - The mapping entity name.
 	EntityTypeName *string `json:"entityTypeName,omitempty"`
-	RelativePath   *string `json:"relativePath,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// KpiName - The KPI name.
+	KpiName *string `json:"kpiName,omitempty"`
+	// DisplayName - Localized display name for the KPI.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized description for the KPI.
+	Description *map[string]*string `json:"description,omitempty"`
+	// CalculationWindow - The calculation window. Possible values include: 'Lifetime', 'Hour', 'Day', 'Week', 'Month'
+	CalculationWindow CalculationWindowTypes `json:"calculationWindow,omitempty"`
+	// CalculationWindowFieldName - Name of calculation window field.
+	CalculationWindowFieldName *string `json:"calculationWindowFieldName,omitempty"`
+	// Function - The computation function for the KPI. Possible values include: 'KpiFunctionsSum', 'KpiFunctionsAvg', 'KpiFunctionsMin', 'KpiFunctionsMax', 'KpiFunctionsLast', 'KpiFunctionsCount', 'KpiFunctionsNone', 'KpiFunctionsCountDistinct'
+	Function KpiFunctions `json:"function,omitempty"`
+	// Expression - The computation expression for the KPI.
+	Expression *string `json:"expression,omitempty"`
+	// Unit - The unit of measurement for the KPI.
+	Unit *string `json:"unit,omitempty"`
+	// Filter - The filter expression for the KPI.
+	Filter *string `json:"filter,omitempty"`
+	// GroupBy - the group by properties for the KPI.
+	GroupBy *[]string `json:"groupBy,omitempty"`
+	// GroupByMetadata - The KPI GroupByMetadata.
+	GroupByMetadata *[]KpiGroupByMetadata `json:"groupByMetadata,omitempty"`
+	// ParticipantProfilesMetadata - The participant profiles.
+	ParticipantProfilesMetadata *[]KpiParticipantProfilesMetadata `json:"participantProfilesMetadata,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// ThresHolds - The KPI thresholds.
+	ThresHolds *KpiThresholds `json:"thresHolds,omitempty"`
+	// Aliases - The aliases.
+	Aliases *[]KpiAlias `json:"aliases,omitempty"`
+	// Extracts - The KPI extracts.
+	Extracts *[]KpiExtract `json:"extracts,omitempty"`
 }
 
-// Hub is hub resource.
+// EntityTypeDefinition describes an entity.
+type EntityTypeDefinition struct {
+	// Attributes - The attributes for the Type.
+	Attributes *map[string][]string `json:"attributes,omitempty"`
+	// Description - Localized descriptions for the property.
+	Description *map[string]*string `json:"description,omitempty"`
+	// DisplayName - Localized display names for the property.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// LocalizedAttributes - Any custom localized attributes for the Type.
+	LocalizedAttributes *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
+	// SmallImage - Small Image associated with the Property or EntityType.
+	SmallImage *string `json:"smallImage,omitempty"`
+	// MediumImage - Medium Image associated with the Property or EntityType.
+	MediumImage *string `json:"mediumImage,omitempty"`
+	// LargeImage - Large Image associated with the Property or EntityType.
+	LargeImage *string `json:"largeImage,omitempty"`
+	// APIEntitySetName - The api entity set name. This becomes the odata entity set name for the entity Type being refered in this object.
+	APIEntitySetName *string `json:"apiEntitySetName,omitempty"`
+	// EntityType - Type of entity. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// Fields - The properties of the Profile.
+	Fields *[]PropertyDefinition `json:"fields,omitempty"`
+	// InstancesCount - The instance count.
+	InstancesCount *int32 `json:"instancesCount,omitempty"`
+	// LastChangedUtc - The last changed time for the type definition.
+	LastChangedUtc *date.Time `json:"lastChangedUtc,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// SchemaItemTypeLink - The schema org link. This helps ACI identify and suggest semantic models.
+	SchemaItemTypeLink *string `json:"schemaItemTypeLink,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// TimestampFieldName - The timestamp property name. Represents the time when the interaction or profile update happened.
+	TimestampFieldName *string `json:"timestampFieldName,omitempty"`
+	// TypeName - The name of the entity.
+	TypeName *string `json:"typeName,omitempty"`
+}
+
+// GetImageUploadURLInput input type for getting image upload url.
+type GetImageUploadURLInput struct {
+	// EntityType - Type of entity. Can be Profile or Interaction.
+	EntityType *string `json:"entityType,omitempty"`
+	// EntityTypeName - Name of the entity type.
+	EntityTypeName *string `json:"entityTypeName,omitempty"`
+	// RelativePath - Relative path of the image.
+	RelativePath *string `json:"relativePath,omitempty"`
+}
+
+// Hub hub resource.
 type Hub struct {
-	autorest.Response    `json:"-"`
-	ID                   *string             `json:"id,omitempty"`
-	Name                 *string             `json:"name,omitempty"`
-	Type                 *string             `json:"type,omitempty"`
-	Location             *string             `json:"location,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
 	Tags                 *map[string]*string `json:"tags,omitempty"`
 	*HubPropertiesFormat `json:"properties,omitempty"`
 }
 
-// HubBillingInfoFormat is hub billing info.
-type HubBillingInfoFormat struct {
-	SkuName  *string `json:"skuName,omitempty"`
-	MinUnits *int32  `json:"minUnits,omitempty"`
-	MaxUnits *int32  `json:"maxUnits,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Hub struct.
+func (h *Hub) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties HubPropertiesFormat
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		h.HubPropertiesFormat = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		h.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		h.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		h.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		h.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		h.Tags = &tags
+	}
+
+	return nil
 }
 
-// HubListResult is response of list hub operation.
+// HubBillingInfoFormat hub billing info.
+type HubBillingInfoFormat struct {
+	// SkuName - The sku name.
+	SkuName *string `json:"skuName,omitempty"`
+	// MinUnits - The minimum number of units will be billed. One unit is 10,000 Profiles and 100,000 Interactions.
+	MinUnits *int32 `json:"minUnits,omitempty"`
+	// MaxUnits - The maximum number of units can be used.  One unit is 10,000 Profiles and 100,000 Interactions.
+	MaxUnits *int32 `json:"maxUnits,omitempty"`
+}
+
+// HubListResult response of list hub operation.
 type HubListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Hub  `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]Hub `json:"value,omitempty"`
+	// NextLink - Link for next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// HubListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client HubListResult) HubListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// HubListResultIterator provides access to a complete listing of Hub values.
+type HubListResultIterator struct {
+	i    int
+	page HubListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *HubListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter HubListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter HubListResultIterator) Response() HubListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter HubListResultIterator) Value() Hub {
+	if !iter.page.NotDone() {
+		return Hub{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (hlr HubListResult) IsEmpty() bool {
+	return hlr.Value == nil || len(*hlr.Value) == 0
+}
+
+// hubListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (hlr HubListResult) hubListResultPreparer() (*http.Request, error) {
+	if hlr.NextLink == nil || len(to.String(hlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(hlr.NextLink)))
 }
 
-// HubPropertiesFormat is properties of hub.
+// HubListResultPage contains a page of Hub values.
+type HubListResultPage struct {
+	fn  func(HubListResult) (HubListResult, error)
+	hlr HubListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *HubListResultPage) Next() error {
+	next, err := page.fn(page.hlr)
+	if err != nil {
+		return err
+	}
+	page.hlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page HubListResultPage) NotDone() bool {
+	return !page.hlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page HubListResultPage) Response() HubListResult {
+	return page.hlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page HubListResultPage) Values() []Hub {
+	if page.hlr.IsEmpty() {
+		return nil
+	}
+	return *page.hlr.Value
+}
+
+// HubPropertiesFormat properties of hub.
 type HubPropertiesFormat struct {
-	APIEndpoint       *string               `json:"apiEndpoint,omitempty"`
-	WebEndpoint       *string               `json:"webEndpoint,omitempty"`
-	ProvisioningState *string               `json:"provisioningState,omitempty"`
-	TenantFeatures    *int32                `json:"tenantFeatures,omitempty"`
-	HubBillingInfo    *HubBillingInfoFormat `json:"hubBillingInfo,omitempty"`
+	// APIEndpoint - API endpoint URL of the hub.
+	APIEndpoint *string `json:"apiEndpoint,omitempty"`
+	// WebEndpoint - Web endpoint URL of the hub.
+	WebEndpoint *string `json:"webEndpoint,omitempty"`
+	// ProvisioningState - Provisioning state of the hub.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// TenantFeatures - The bit flags for enabled hub features. Bit 0 is set to 1 indicates graph is enabled, or disabled if set to 0. Bit 1 is set to 1 indicates the hub is disabled, or enabled if set to 0.
+	TenantFeatures *int32 `json:"tenantFeatures,omitempty"`
+	// HubBillingInfo - Billing settings of the hub.
+	HubBillingInfo *HubBillingInfoFormat `json:"hubBillingInfo,omitempty"`
 }
 
-// ImageDefinition is the image definition.
+// HubsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type HubsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future HubsDeleteFuture) Result(client HubsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.HubsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// ImageDefinition the image definition.
 type ImageDefinition struct {
 	autorest.Response `json:"-"`
-	ImageExists       *bool   `json:"imageExists,omitempty"`
-	ContentURL        *string `json:"contentUrl,omitempty"`
-	RelativePath      *string `json:"relativePath,omitempty"`
+	// ImageExists - Whether image exists already.
+	ImageExists *bool `json:"imageExists,omitempty"`
+	// ContentURL - Content URL for the image blob.
+	ContentURL *string `json:"contentUrl,omitempty"`
+	// RelativePath - Relative path of the image.
+	RelativePath *string `json:"relativePath,omitempty"`
 }
 
-// InteractionListResult is the response of list interaction operation.
+// InteractionListResult the response of list interaction operation.
 type InteractionListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]InteractionResourceFormat `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]InteractionResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// InteractionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client InteractionListResult) InteractionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// InteractionListResultIterator provides access to a complete listing of InteractionResourceFormat values.
+type InteractionListResultIterator struct {
+	i    int
+	page InteractionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *InteractionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter InteractionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter InteractionListResultIterator) Response() InteractionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter InteractionListResultIterator) Value() InteractionResourceFormat {
+	if !iter.page.NotDone() {
+		return InteractionResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ilr InteractionListResult) IsEmpty() bool {
+	return ilr.Value == nil || len(*ilr.Value) == 0
+}
+
+// interactionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ilr InteractionListResult) interactionListResultPreparer() (*http.Request, error) {
+	if ilr.NextLink == nil || len(to.String(ilr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(ilr.NextLink)))
 }
 
-// InteractionResourceFormat is the interaction resource format.
+// InteractionListResultPage contains a page of InteractionResourceFormat values.
+type InteractionListResultPage struct {
+	fn  func(InteractionListResult) (InteractionListResult, error)
+	ilr InteractionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *InteractionListResultPage) Next() error {
+	next, err := page.fn(page.ilr)
+	if err != nil {
+		return err
+	}
+	page.ilr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page InteractionListResultPage) NotDone() bool {
+	return !page.ilr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page InteractionListResultPage) Response() InteractionListResult {
+	return page.ilr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page InteractionListResultPage) Values() []InteractionResourceFormat {
+	if page.ilr.IsEmpty() {
+		return nil
+	}
+	return *page.ilr.Value
+}
+
+// InteractionResourceFormat the interaction resource format.
 type InteractionResourceFormat struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
-	Name                       *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type                       *string `json:"type,omitempty"`
 	*InteractionTypeDefinition `json:"properties,omitempty"`
 }
 
-// InteractionTypeDefinition is the Interaction Type Definition
-type InteractionTypeDefinition struct {
-	Attributes                            *map[string][]string           `json:"attributes,omitempty"`
-	Description                           *map[string]*string            `json:"description,omitempty"`
-	DisplayName                           *map[string]*string            `json:"displayName,omitempty"`
-	LocalizedAttributes                   *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
-	SmallImage                            *string                        `json:"smallImage,omitempty"`
-	MediumImage                           *string                        `json:"mediumImage,omitempty"`
-	LargeImage                            *string                        `json:"largeImage,omitempty"`
-	APIEntitySetName                      *string                        `json:"apiEntitySetName,omitempty"`
-	EntityType                            EntityTypes                    `json:"entityType,omitempty"`
-	Fields                                *[]PropertyDefinition          `json:"fields,omitempty"`
-	InstancesCount                        *int32                         `json:"instancesCount,omitempty"`
-	LastChangedUtc                        *date.Time                     `json:"lastChangedUtc,omitempty"`
-	ProvisioningState                     ProvisioningStates             `json:"provisioningState,omitempty"`
-	SchemaItemTypeLink                    *string                        `json:"schemaItemTypeLink,omitempty"`
-	TenantID                              *string                        `json:"tenantId,omitempty"`
-	TimestampFieldName                    *string                        `json:"timestampFieldName,omitempty"`
-	TypeName                              *string                        `json:"typeName,omitempty"`
-	IDPropertyNames                       *[]string                      `json:"idPropertyNames,omitempty"`
-	ParticipantProfiles                   *[]Participant                 `json:"participantProfiles,omitempty"`
-	PrimaryParticipantProfilePropertyName *string                        `json:"primaryParticipantProfilePropertyName,omitempty"`
-	DataSourcePrecedenceRules             *[]DataSourcePrecedence        `json:"dataSourcePrecedenceRules,omitempty"`
-	*DataSource                           `json:"defaultDataSource,omitempty"`
-	IsActivity                            *bool `json:"isActivity,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for InteractionResourceFormat struct.
+func (irf *InteractionResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties InteractionTypeDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		irf.InteractionTypeDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		irf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		irf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		irf.Type = &typeVar
+	}
+
+	return nil
 }
 
-// KpiAlias is the KPI alias.
+// InteractionsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type InteractionsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future InteractionsCreateOrUpdateFuture) Result(client InteractionsClient) (irf InteractionResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return irf, autorest.NewError("customerinsights.InteractionsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		irf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	irf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// InteractionTypeDefinition the Interaction Type Definition
+type InteractionTypeDefinition struct {
+	// Attributes - The attributes for the Type.
+	Attributes *map[string][]string `json:"attributes,omitempty"`
+	// Description - Localized descriptions for the property.
+	Description *map[string]*string `json:"description,omitempty"`
+	// DisplayName - Localized display names for the property.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// LocalizedAttributes - Any custom localized attributes for the Type.
+	LocalizedAttributes *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
+	// SmallImage - Small Image associated with the Property or EntityType.
+	SmallImage *string `json:"smallImage,omitempty"`
+	// MediumImage - Medium Image associated with the Property or EntityType.
+	MediumImage *string `json:"mediumImage,omitempty"`
+	// LargeImage - Large Image associated with the Property or EntityType.
+	LargeImage *string `json:"largeImage,omitempty"`
+	// APIEntitySetName - The api entity set name. This becomes the odata entity set name for the entity Type being refered in this object.
+	APIEntitySetName *string `json:"apiEntitySetName,omitempty"`
+	// EntityType - Type of entity. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// Fields - The properties of the Profile.
+	Fields *[]PropertyDefinition `json:"fields,omitempty"`
+	// InstancesCount - The instance count.
+	InstancesCount *int32 `json:"instancesCount,omitempty"`
+	// LastChangedUtc - The last changed time for the type definition.
+	LastChangedUtc *date.Time `json:"lastChangedUtc,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// SchemaItemTypeLink - The schema org link. This helps ACI identify and suggest semantic models.
+	SchemaItemTypeLink *string `json:"schemaItemTypeLink,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// TimestampFieldName - The timestamp property name. Represents the time when the interaction or profile update happened.
+	TimestampFieldName *string `json:"timestampFieldName,omitempty"`
+	// TypeName - The name of the entity.
+	TypeName *string `json:"typeName,omitempty"`
+	// IDPropertyNames - The id property names. Properties which uniquely identify an interaction instance.
+	IDPropertyNames *[]string `json:"idPropertyNames,omitempty"`
+	// ParticipantProfiles - Profiles that participated in the interaction.
+	ParticipantProfiles *[]Participant `json:"participantProfiles,omitempty"`
+	// PrimaryParticipantProfilePropertyName - The primary participant property name for an interaction ,This is used to logically represent the agent of the interaction, Specify the participant name here from ParticipantName.
+	PrimaryParticipantProfilePropertyName *string `json:"primaryParticipantProfilePropertyName,omitempty"`
+	// DataSourcePrecedenceRules - This is specific to interactions modeled as activities. Data sources are used to determine where data is stored and also in precedence rules.
+	DataSourcePrecedenceRules *[]DataSourcePrecedence `json:"dataSourcePrecedenceRules,omitempty"`
+	// DataSource - Default data source is specifically used in cases where data source is not specified in an instance.
+	*DataSource `json:"defaultDataSource,omitempty"`
+	// IsActivity - An interaction can be tagged as an activity only during create. This enables the interaction to be editable and can enable merging of properties from multiple data sources based on precedence, which is defined at a link level.
+	IsActivity *bool `json:"isActivity,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for InteractionTypeDefinition struct.
+func (itd *InteractionTypeDefinition) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["idPropertyNames"]
+	if v != nil {
+		var IDPropertyNames []string
+		err = json.Unmarshal(*m["idPropertyNames"], &IDPropertyNames)
+		if err != nil {
+			return err
+		}
+		itd.IDPropertyNames = &IDPropertyNames
+	}
+
+	v = m["participantProfiles"]
+	if v != nil {
+		var participantProfiles []Participant
+		err = json.Unmarshal(*m["participantProfiles"], &participantProfiles)
+		if err != nil {
+			return err
+		}
+		itd.ParticipantProfiles = &participantProfiles
+	}
+
+	v = m["primaryParticipantProfilePropertyName"]
+	if v != nil {
+		var primaryParticipantProfilePropertyName string
+		err = json.Unmarshal(*m["primaryParticipantProfilePropertyName"], &primaryParticipantProfilePropertyName)
+		if err != nil {
+			return err
+		}
+		itd.PrimaryParticipantProfilePropertyName = &primaryParticipantProfilePropertyName
+	}
+
+	v = m["dataSourcePrecedenceRules"]
+	if v != nil {
+		var dataSourcePrecedenceRules []DataSourcePrecedence
+		err = json.Unmarshal(*m["dataSourcePrecedenceRules"], &dataSourcePrecedenceRules)
+		if err != nil {
+			return err
+		}
+		itd.DataSourcePrecedenceRules = &dataSourcePrecedenceRules
+	}
+
+	v = m["defaultDataSource"]
+	if v != nil {
+		var defaultDataSource DataSource
+		err = json.Unmarshal(*m["defaultDataSource"], &defaultDataSource)
+		if err != nil {
+			return err
+		}
+		itd.DataSource = &defaultDataSource
+	}
+
+	v = m["isActivity"]
+	if v != nil {
+		var isActivity bool
+		err = json.Unmarshal(*m["isActivity"], &isActivity)
+		if err != nil {
+			return err
+		}
+		itd.IsActivity = &isActivity
+	}
+
+	v = m["apiEntitySetName"]
+	if v != nil {
+		var APIEntitySetName string
+		err = json.Unmarshal(*m["apiEntitySetName"], &APIEntitySetName)
+		if err != nil {
+			return err
+		}
+		itd.APIEntitySetName = &APIEntitySetName
+	}
+
+	v = m["entityType"]
+	if v != nil {
+		var entityType EntityTypes
+		err = json.Unmarshal(*m["entityType"], &entityType)
+		if err != nil {
+			return err
+		}
+		itd.EntityType = entityType
+	}
+
+	v = m["fields"]
+	if v != nil {
+		var fields []PropertyDefinition
+		err = json.Unmarshal(*m["fields"], &fields)
+		if err != nil {
+			return err
+		}
+		itd.Fields = &fields
+	}
+
+	v = m["instancesCount"]
+	if v != nil {
+		var instancesCount int32
+		err = json.Unmarshal(*m["instancesCount"], &instancesCount)
+		if err != nil {
+			return err
+		}
+		itd.InstancesCount = &instancesCount
+	}
+
+	v = m["lastChangedUtc"]
+	if v != nil {
+		var lastChangedUtc date.Time
+		err = json.Unmarshal(*m["lastChangedUtc"], &lastChangedUtc)
+		if err != nil {
+			return err
+		}
+		itd.LastChangedUtc = &lastChangedUtc
+	}
+
+	v = m["provisioningState"]
+	if v != nil {
+		var provisioningState ProvisioningStates
+		err = json.Unmarshal(*m["provisioningState"], &provisioningState)
+		if err != nil {
+			return err
+		}
+		itd.ProvisioningState = provisioningState
+	}
+
+	v = m["schemaItemTypeLink"]
+	if v != nil {
+		var schemaItemTypeLink string
+		err = json.Unmarshal(*m["schemaItemTypeLink"], &schemaItemTypeLink)
+		if err != nil {
+			return err
+		}
+		itd.SchemaItemTypeLink = &schemaItemTypeLink
+	}
+
+	v = m["tenantId"]
+	if v != nil {
+		var tenantID string
+		err = json.Unmarshal(*m["tenantId"], &tenantID)
+		if err != nil {
+			return err
+		}
+		itd.TenantID = &tenantID
+	}
+
+	v = m["timestampFieldName"]
+	if v != nil {
+		var timestampFieldName string
+		err = json.Unmarshal(*m["timestampFieldName"], &timestampFieldName)
+		if err != nil {
+			return err
+		}
+		itd.TimestampFieldName = &timestampFieldName
+	}
+
+	v = m["typeName"]
+	if v != nil {
+		var typeName string
+		err = json.Unmarshal(*m["typeName"], &typeName)
+		if err != nil {
+			return err
+		}
+		itd.TypeName = &typeName
+	}
+
+	v = m["attributes"]
+	if v != nil {
+		var attributes map[string][]string
+		err = json.Unmarshal(*m["attributes"], &attributes)
+		if err != nil {
+			return err
+		}
+		itd.Attributes = &attributes
+	}
+
+	v = m["description"]
+	if v != nil {
+		var description map[string]*string
+		err = json.Unmarshal(*m["description"], &description)
+		if err != nil {
+			return err
+		}
+		itd.Description = &description
+	}
+
+	v = m["displayName"]
+	if v != nil {
+		var displayName map[string]*string
+		err = json.Unmarshal(*m["displayName"], &displayName)
+		if err != nil {
+			return err
+		}
+		itd.DisplayName = &displayName
+	}
+
+	v = m["localizedAttributes"]
+	if v != nil {
+		var localizedAttributes map[string]map[string]*string
+		err = json.Unmarshal(*m["localizedAttributes"], &localizedAttributes)
+		if err != nil {
+			return err
+		}
+		itd.LocalizedAttributes = &localizedAttributes
+	}
+
+	v = m["smallImage"]
+	if v != nil {
+		var smallImage string
+		err = json.Unmarshal(*m["smallImage"], &smallImage)
+		if err != nil {
+			return err
+		}
+		itd.SmallImage = &smallImage
+	}
+
+	v = m["mediumImage"]
+	if v != nil {
+		var mediumImage string
+		err = json.Unmarshal(*m["mediumImage"], &mediumImage)
+		if err != nil {
+			return err
+		}
+		itd.MediumImage = &mediumImage
+	}
+
+	v = m["largeImage"]
+	if v != nil {
+		var largeImage string
+		err = json.Unmarshal(*m["largeImage"], &largeImage)
+		if err != nil {
+			return err
+		}
+		itd.LargeImage = &largeImage
+	}
+
+	return nil
+}
+
+// KpiAlias the KPI alias.
 type KpiAlias struct {
-	AliasName  *string `json:"aliasName,omitempty"`
+	// AliasName - KPI alias name.
+	AliasName *string `json:"aliasName,omitempty"`
+	// Expression - The expression.
 	Expression *string `json:"expression,omitempty"`
 }
 
-// KpiDefinition is defines the KPI Threshold limits.
+// KpiCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type KpiCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future KpiCreateOrUpdateFuture) Result(client KpiClient) (krf KpiResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return krf, autorest.NewError("customerinsights.KpiCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		krf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	krf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// KpiDefinition defines the KPI Threshold limits.
 type KpiDefinition struct {
-	EntityType                  EntityTypes                       `json:"entityType,omitempty"`
-	EntityTypeName              *string                           `json:"entityTypeName,omitempty"`
-	TenantID                    *string                           `json:"tenantId,omitempty"`
-	KpiName                     *string                           `json:"kpiName,omitempty"`
-	DisplayName                 *map[string]*string               `json:"displayName,omitempty"`
-	Description                 *map[string]*string               `json:"description,omitempty"`
-	CalculationWindow           CalculationWindowTypes            `json:"calculationWindow,omitempty"`
-	CalculationWindowFieldName  *string                           `json:"calculationWindowFieldName,omitempty"`
-	Function                    KpiFunctions                      `json:"function,omitempty"`
-	Expression                  *string                           `json:"expression,omitempty"`
-	Unit                        *string                           `json:"unit,omitempty"`
-	Filter                      *string                           `json:"filter,omitempty"`
-	GroupBy                     *[]string                         `json:"groupBy,omitempty"`
-	GroupByMetadata             *[]KpiGroupByMetadata             `json:"groupByMetadata,omitempty"`
-	ParticipantProfilesMetadata *[]KpiParticipantProfilesMetadata `json:"participantProfilesMetadata,omitempty"`
-	ProvisioningState           ProvisioningStates                `json:"provisioningState,omitempty"`
-	ThresHolds                  *KpiThresholds                    `json:"thresHolds,omitempty"`
-	Aliases                     *[]KpiAlias                       `json:"aliases,omitempty"`
-	Extracts                    *[]KpiExtract                     `json:"extracts,omitempty"`
-}
-
-// KpiExtract is the KPI extract.
-type KpiExtract struct {
-	ExtractName *string `json:"extractName,omitempty"`
-	Expression  *string `json:"expression,omitempty"`
-}
-
-// KpiGroupByMetadata is the KPI GroupBy field metadata.
-type KpiGroupByMetadata struct {
+	// EntityType - The mapping entity type. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// EntityTypeName - The mapping entity name.
+	EntityTypeName *string `json:"entityTypeName,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// KpiName - The KPI name.
+	KpiName *string `json:"kpiName,omitempty"`
+	// DisplayName - Localized display name for the KPI.
 	DisplayName *map[string]*string `json:"displayName,omitempty"`
-	FieldName   *string             `json:"fieldName,omitempty"`
-	FieldType   *string             `json:"fieldType,omitempty"`
+	// Description - Localized description for the KPI.
+	Description *map[string]*string `json:"description,omitempty"`
+	// CalculationWindow - The calculation window. Possible values include: 'Lifetime', 'Hour', 'Day', 'Week', 'Month'
+	CalculationWindow CalculationWindowTypes `json:"calculationWindow,omitempty"`
+	// CalculationWindowFieldName - Name of calculation window field.
+	CalculationWindowFieldName *string `json:"calculationWindowFieldName,omitempty"`
+	// Function - The computation function for the KPI. Possible values include: 'KpiFunctionsSum', 'KpiFunctionsAvg', 'KpiFunctionsMin', 'KpiFunctionsMax', 'KpiFunctionsLast', 'KpiFunctionsCount', 'KpiFunctionsNone', 'KpiFunctionsCountDistinct'
+	Function KpiFunctions `json:"function,omitempty"`
+	// Expression - The computation expression for the KPI.
+	Expression *string `json:"expression,omitempty"`
+	// Unit - The unit of measurement for the KPI.
+	Unit *string `json:"unit,omitempty"`
+	// Filter - The filter expression for the KPI.
+	Filter *string `json:"filter,omitempty"`
+	// GroupBy - the group by properties for the KPI.
+	GroupBy *[]string `json:"groupBy,omitempty"`
+	// GroupByMetadata - The KPI GroupByMetadata.
+	GroupByMetadata *[]KpiGroupByMetadata `json:"groupByMetadata,omitempty"`
+	// ParticipantProfilesMetadata - The participant profiles.
+	ParticipantProfilesMetadata *[]KpiParticipantProfilesMetadata `json:"participantProfilesMetadata,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// ThresHolds - The KPI thresholds.
+	ThresHolds *KpiThresholds `json:"thresHolds,omitempty"`
+	// Aliases - The aliases.
+	Aliases *[]KpiAlias `json:"aliases,omitempty"`
+	// Extracts - The KPI extracts.
+	Extracts *[]KpiExtract `json:"extracts,omitempty"`
 }
 
-// KpiListResult is the response of list KPI operation.
+// KpiDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type KpiDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future KpiDeleteFuture) Result(client KpiClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.KpiDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// KpiExtract the KPI extract.
+type KpiExtract struct {
+	// ExtractName - KPI extract name.
+	ExtractName *string `json:"extractName,omitempty"`
+	// Expression - The expression.
+	Expression *string `json:"expression,omitempty"`
+}
+
+// KpiGroupByMetadata the KPI GroupBy field metadata.
+type KpiGroupByMetadata struct {
+	// DisplayName - The display name.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// FieldName - The name of the field.
+	FieldName *string `json:"fieldName,omitempty"`
+	// FieldType - The type of the field.
+	FieldType *string `json:"fieldType,omitempty"`
+}
+
+// KpiListResult the response of list KPI operation.
 type KpiListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]KpiResourceFormat `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]KpiResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// KpiListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client KpiListResult) KpiListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// KpiListResultIterator provides access to a complete listing of KpiResourceFormat values.
+type KpiListResultIterator struct {
+	i    int
+	page KpiListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *KpiListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter KpiListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter KpiListResultIterator) Response() KpiListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter KpiListResultIterator) Value() KpiResourceFormat {
+	if !iter.page.NotDone() {
+		return KpiResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (klr KpiListResult) IsEmpty() bool {
+	return klr.Value == nil || len(*klr.Value) == 0
+}
+
+// kpiListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (klr KpiListResult) kpiListResultPreparer() (*http.Request, error) {
+	if klr.NextLink == nil || len(to.String(klr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(klr.NextLink)))
 }
 
-// KpiParticipantProfilesMetadata is the KPI participant profile metadata.
+// KpiListResultPage contains a page of KpiResourceFormat values.
+type KpiListResultPage struct {
+	fn  func(KpiListResult) (KpiListResult, error)
+	klr KpiListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *KpiListResultPage) Next() error {
+	next, err := page.fn(page.klr)
+	if err != nil {
+		return err
+	}
+	page.klr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page KpiListResultPage) NotDone() bool {
+	return !page.klr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page KpiListResultPage) Response() KpiListResult {
+	return page.klr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page KpiListResultPage) Values() []KpiResourceFormat {
+	if page.klr.IsEmpty() {
+		return nil
+	}
+	return *page.klr.Value
+}
+
+// KpiParticipantProfilesMetadata the KPI participant profile metadata.
 type KpiParticipantProfilesMetadata struct {
+	// TypeName - Name of the type.
 	TypeName *string `json:"typeName,omitempty"`
 }
 
-// KpiResourceFormat is the KPI resource format.
+// KpiResourceFormat the KPI resource format.
 type KpiResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*KpiDefinition    `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type           *string `json:"type,omitempty"`
+	*KpiDefinition `json:"properties,omitempty"`
 }
 
-// KpiThresholds is defines the KPI Threshold limits.
+// UnmarshalJSON is the custom unmarshaler for KpiResourceFormat struct.
+func (krf *KpiResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties KpiDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		krf.KpiDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		krf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		krf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		krf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// KpiThresholds defines the KPI Threshold limits.
 type KpiThresholds struct {
-	LowerLimit    *decimal.Decimal `json:"lowerLimit,omitempty"`
-	UpperLimit    *decimal.Decimal `json:"upperLimit,omitempty"`
-	IncreasingKpi *bool            `json:"increasingKpi,omitempty"`
+	// LowerLimit - The lower threshold limit.
+	LowerLimit *decimal.Decimal `json:"lowerLimit,omitempty"`
+	// UpperLimit - The upper threshold limit.
+	UpperLimit *decimal.Decimal `json:"upperLimit,omitempty"`
+	// IncreasingKpi - Whether or not the KPI is an increasing KPI.
+	IncreasingKpi *bool `json:"increasingKpi,omitempty"`
 }
 
-// LinkDefinition is the definition of Link.
+// LinkDefinition the definition of Link.
 type LinkDefinition struct {
-	TenantID                      *string                         `json:"tenantId,omitempty"`
-	LinkName                      *string                         `json:"linkName,omitempty"`
-	SourceEntityType              EntityType                      `json:"sourceEntityType,omitempty"`
-	TargetEntityType              EntityType                      `json:"targetEntityType,omitempty"`
-	SourceEntityTypeName          *string                         `json:"sourceEntityTypeName,omitempty"`
-	TargetEntityTypeName          *string                         `json:"targetEntityTypeName,omitempty"`
-	DisplayName                   *map[string]*string             `json:"displayName,omitempty"`
-	Description                   *map[string]*string             `json:"description,omitempty"`
-	Mappings                      *[]TypePropertiesMapping        `json:"mappings,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// LinkName - The link name.
+	LinkName *string `json:"linkName,omitempty"`
+	// SourceEntityType - Type of source entity. Possible values include: 'EntityTypeNone', 'EntityTypeProfile', 'EntityTypeInteraction', 'EntityTypeRelationship'
+	SourceEntityType EntityType `json:"sourceEntityType,omitempty"`
+	// TargetEntityType - Type of target entity. Possible values include: 'EntityTypeNone', 'EntityTypeProfile', 'EntityTypeInteraction', 'EntityTypeRelationship'
+	TargetEntityType EntityType `json:"targetEntityType,omitempty"`
+	// SourceEntityTypeName - Name of the source Entity Type.
+	SourceEntityTypeName *string `json:"sourceEntityTypeName,omitempty"`
+	// TargetEntityTypeName - Name of the target Entity Type.
+	TargetEntityTypeName *string `json:"targetEntityTypeName,omitempty"`
+	// DisplayName - Localized display name for the Link.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized descriptions for the Link.
+	Description *map[string]*string `json:"description,omitempty"`
+	// Mappings - The set of properties mappings between the source and target Types.
+	Mappings *[]TypePropertiesMapping `json:"mappings,omitempty"`
+	// ParticipantPropertyReferences - The properties that represent the participating profile.
 	ParticipantPropertyReferences *[]ParticipantPropertyReference `json:"participantPropertyReferences,omitempty"`
-	ProvisioningState             ProvisioningStates              `json:"provisioningState,omitempty"`
-	ReferenceOnly                 *bool                           `json:"referenceOnly,omitempty"`
-	OperationType                 InstanceOperationType           `json:"operationType,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// ReferenceOnly - Indicating whether the link is reference only link. This flag is ingored if the Mappings are defined. If the mappings are not defined and it is set to true, links processing will not create or update profiles.
+	ReferenceOnly *bool `json:"referenceOnly,omitempty"`
+	// OperationType - Determines whether this link is supposed to create or delete instances if Link is NOT Reference Only. Possible values include: 'Upsert', 'Delete'
+	OperationType InstanceOperationType `json:"operationType,omitempty"`
 }
 
-// LinkListResult is the response of list link operation.
+// LinkListResult the response of list link operation.
 type LinkListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]LinkResourceFormat `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]LinkResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// LinkListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client LinkListResult) LinkListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// LinkListResultIterator provides access to a complete listing of LinkResourceFormat values.
+type LinkListResultIterator struct {
+	i    int
+	page LinkListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *LinkListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter LinkListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter LinkListResultIterator) Response() LinkListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter LinkListResultIterator) Value() LinkResourceFormat {
+	if !iter.page.NotDone() {
+		return LinkResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (llr LinkListResult) IsEmpty() bool {
+	return llr.Value == nil || len(*llr.Value) == 0
+}
+
+// linkListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (llr LinkListResult) linkListResultPreparer() (*http.Request, error) {
+	if llr.NextLink == nil || len(to.String(llr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(llr.NextLink)))
 }
 
-// LinkResourceFormat is the link resource format.
+// LinkListResultPage contains a page of LinkResourceFormat values.
+type LinkListResultPage struct {
+	fn  func(LinkListResult) (LinkListResult, error)
+	llr LinkListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *LinkListResultPage) Next() error {
+	next, err := page.fn(page.llr)
+	if err != nil {
+		return err
+	}
+	page.llr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page LinkListResultPage) NotDone() bool {
+	return !page.llr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page LinkListResultPage) Response() LinkListResult {
+	return page.llr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page LinkListResultPage) Values() []LinkResourceFormat {
+	if page.llr.IsEmpty() {
+		return nil
+	}
+	return *page.llr.Value
+}
+
+// LinkResourceFormat the link resource format.
 type LinkResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*LinkDefinition   `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type            *string `json:"type,omitempty"`
+	*LinkDefinition `json:"properties,omitempty"`
 }
 
-// ListKpiDefinition is
+// UnmarshalJSON is the custom unmarshaler for LinkResourceFormat struct.
+func (lrf *LinkResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LinkDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lrf.LinkDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lrf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// LinksCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type LinksCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future LinksCreateOrUpdateFuture) Result(client LinksClient) (lrf LinkResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return lrf, autorest.NewError("customerinsights.LinksCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		lrf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	lrf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// ListKpiDefinition ...
 type ListKpiDefinition struct {
 	autorest.Response `json:"-"`
 	Value             *[]KpiDefinition `json:"value,omitempty"`
 }
 
-// MetadataDefinitionBase is the Metadata definition base.
+// MetadataDefinitionBase the Metadata definition base.
 type MetadataDefinitionBase struct {
-	Attributes          *map[string][]string           `json:"attributes,omitempty"`
-	Description         *map[string]*string            `json:"description,omitempty"`
-	DisplayName         *map[string]*string            `json:"displayName,omitempty"`
+	// Attributes - The attributes for the Type.
+	Attributes *map[string][]string `json:"attributes,omitempty"`
+	// Description - Localized descriptions for the property.
+	Description *map[string]*string `json:"description,omitempty"`
+	// DisplayName - Localized display names for the property.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// LocalizedAttributes - Any custom localized attributes for the Type.
 	LocalizedAttributes *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
-	SmallImage          *string                        `json:"smallImage,omitempty"`
-	MediumImage         *string                        `json:"mediumImage,omitempty"`
-	LargeImage          *string                        `json:"largeImage,omitempty"`
+	// SmallImage - Small Image associated with the Property or EntityType.
+	SmallImage *string `json:"smallImage,omitempty"`
+	// MediumImage - Medium Image associated with the Property or EntityType.
+	MediumImage *string `json:"mediumImage,omitempty"`
+	// LargeImage - Large Image associated with the Property or EntityType.
+	LargeImage *string `json:"largeImage,omitempty"`
 }
 
-// Operation is a Customer Insights REST API operation
+// Operation a Customer Insights REST API operation
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - The object that represents the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is the object that represents the operation.
+// OperationDisplay the object that represents the operation.
 type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
+	// Provider - Service provider: Microsoft.CustomerInsights
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: Invoice, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Read, write, delete, etc.
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult is result of the request to list Customer Insights operations. It contains a list of operations
-// and a URL link to get the next set of results.
+// OperationListResult result of the request to list Customer Insights operations. It contains a list of operations and
+// a URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - List of Customer Insights operations supported by the Microsoft.CustomerInsights resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// Participant is describes a profile type participating in an interaction.
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// Participant describes a profile type participating in an interaction.
 type Participant struct {
-	ProfileTypeName               *string                         `json:"profileTypeName,omitempty"`
+	// ProfileTypeName - Profile type name.
+	ProfileTypeName *string `json:"profileTypeName,omitempty"`
+	// ParticipantPropertyReferences - The property references.
 	ParticipantPropertyReferences *[]ParticipantPropertyReference `json:"participantPropertyReferences,omitempty"`
-	ParticipantName               *string                         `json:"participantName,omitempty"`
-	DisplayName                   *map[string]*string             `json:"displayName,omitempty"`
-	Description                   *map[string]*string             `json:"description,omitempty"`
-	Role                          *string                         `json:"role,omitempty"`
+	// ParticipantName - Participant name.
+	ParticipantName *string `json:"participantName,omitempty"`
+	// DisplayName - Localized display name.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized descriptions.
+	Description *map[string]*string `json:"description,omitempty"`
+	// Role - The role that the participant is playing in the interaction.
+	Role *string `json:"role,omitempty"`
 }
 
-// ParticipantProfilePropertyReference is the participant profile property reference.
+// ParticipantProfilePropertyReference the participant profile property reference.
 type ParticipantProfilePropertyReference struct {
+	// InteractionPropertyName - The source interaction property that maps to the target profile property.
 	InteractionPropertyName *string `json:"interactionPropertyName,omitempty"`
-	ProfilePropertyName     *string `json:"profilePropertyName,omitempty"`
+	// ProfilePropertyName - The target profile property that maps to the source interaction property.
+	ProfilePropertyName *string `json:"profilePropertyName,omitempty"`
 }
 
-// ParticipantPropertyReference is the participant property reference.
+// ParticipantPropertyReference the participant property reference.
 type ParticipantPropertyReference struct {
+	// SourcePropertyName - The source property that maps to the target property.
 	SourcePropertyName *string `json:"sourcePropertyName,omitempty"`
+	// TargetPropertyName - The target property that maps to the source property.
 	TargetPropertyName *string `json:"targetPropertyName,omitempty"`
 }
 
-// Prediction is the prediction definition.
+// Prediction the prediction definition.
 type Prediction struct {
-	Description               *map[string]*string                `json:"description,omitempty"`
-	DisplayName               *map[string]*string                `json:"displayName,omitempty"`
-	InvolvedInteractionTypes  *[]string                          `json:"involvedInteractionTypes,omitempty"`
-	InvolvedKpiTypes          *[]string                          `json:"involvedKpiTypes,omitempty"`
-	InvolvedRelationships     *[]string                          `json:"involvedRelationships,omitempty"`
-	NegativeOutcomeExpression *string                            `json:"negativeOutcomeExpression,omitempty"`
-	PositiveOutcomeExpression *string                            `json:"positiveOutcomeExpression,omitempty"`
-	PrimaryProfileType        *string                            `json:"primaryProfileType,omitempty"`
-	ProvisioningState         ProvisioningStates                 `json:"provisioningState,omitempty"`
-	PredictionName            *string                            `json:"predictionName,omitempty"`
-	ScopeExpression           *string                            `json:"scopeExpression,omitempty"`
-	TenantID                  *string                            `json:"tenantId,omitempty"`
-	AutoAnalyze               *bool                              `json:"autoAnalyze,omitempty"`
-	Mappings                  *PredictionMappings                `json:"mappings,omitempty"`
-	ScoreLabel                *string                            `json:"scoreLabel,omitempty"`
-	Grades                    *[]PredictionGradesItem            `json:"grades,omitempty"`
-	SystemGeneratedEntities   *PredictionSystemGeneratedEntities `json:"systemGeneratedEntities,omitempty"`
+	// Description - Description of the prediction.
+	Description *map[string]*string `json:"description,omitempty"`
+	// DisplayName - Display name of the prediction.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// InvolvedInteractionTypes - Interaction types involved in the prediction.
+	InvolvedInteractionTypes *[]string `json:"involvedInteractionTypes,omitempty"`
+	// InvolvedKpiTypes - KPI types involved in the prediction.
+	InvolvedKpiTypes *[]string `json:"involvedKpiTypes,omitempty"`
+	// InvolvedRelationships - Relationships involved in the prediction.
+	InvolvedRelationships *[]string `json:"involvedRelationships,omitempty"`
+	// NegativeOutcomeExpression - Negative outcome expression.
+	NegativeOutcomeExpression *string `json:"negativeOutcomeExpression,omitempty"`
+	// PositiveOutcomeExpression - Positive outcome expression.
+	PositiveOutcomeExpression *string `json:"positiveOutcomeExpression,omitempty"`
+	// PrimaryProfileType - Primary profile type.
+	PrimaryProfileType *string `json:"primaryProfileType,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// PredictionName - Name of the prediction.
+	PredictionName *string `json:"predictionName,omitempty"`
+	// ScopeExpression - Scope expression.
+	ScopeExpression *string `json:"scopeExpression,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// AutoAnalyze - Whether do auto analyze.
+	AutoAnalyze *bool `json:"autoAnalyze,omitempty"`
+	// Mappings - Definition of the link mapping of prediction.
+	Mappings *PredictionMappings `json:"mappings,omitempty"`
+	// ScoreLabel - Score label.
+	ScoreLabel *string `json:"scoreLabel,omitempty"`
+	// Grades - The prediction grades.
+	Grades *[]PredictionGradesItem `json:"grades,omitempty"`
+	// SystemGeneratedEntities - System generated entities.
+	SystemGeneratedEntities *PredictionSystemGeneratedEntities `json:"systemGeneratedEntities,omitempty"`
 }
 
-// PredictionDistributionDefinition is the definition of the prediction distribution.
+// PredictionDistributionDefinition the definition of the prediction distribution.
 type PredictionDistributionDefinition struct {
-	TotalPositives *int64                                               `json:"totalPositives,omitempty"`
-	TotalNegatives *int64                                               `json:"totalNegatives,omitempty"`
-	Distributions  *[]PredictionDistributionDefinitionDistributionsItem `json:"distributions,omitempty"`
+	// TotalPositives - Total positive in the distribution.
+	TotalPositives *int64 `json:"totalPositives,omitempty"`
+	// TotalNegatives - Total negatives in the distribution.
+	TotalNegatives *int64 `json:"totalNegatives,omitempty"`
+	// Distributions - Distributions of the prediction.
+	Distributions *[]PredictionDistributionDefinitionDistributionsItem `json:"distributions,omitempty"`
 }
 
-// PredictionDistributionDefinitionDistributionsItem is the definition of a prediction distribution.
+// PredictionDistributionDefinitionDistributionsItem the definition of a prediction distribution.
 type PredictionDistributionDefinitionDistributionsItem struct {
-	ScoreThreshold          *int32 `json:"scoreThreshold,omitempty"`
-	Positives               *int64 `json:"positives,omitempty"`
-	Negatives               *int64 `json:"negatives,omitempty"`
+	// ScoreThreshold - Score threshold.
+	ScoreThreshold *int32 `json:"scoreThreshold,omitempty"`
+	// Positives - Number of positives.
+	Positives *int64 `json:"positives,omitempty"`
+	// Negatives - Number of negatives.
+	Negatives *int64 `json:"negatives,omitempty"`
+	// PositivesAboveThreshold - Number of positives above threshold.
 	PositivesAboveThreshold *int64 `json:"positivesAboveThreshold,omitempty"`
+	// NegativesAboveThreshold - Number of negatives above threshold.
 	NegativesAboveThreshold *int64 `json:"negativesAboveThreshold,omitempty"`
 }
 
-// PredictionGradesItem is the definition of a prediction grade.
+// PredictionGradesItem the definition of a prediction grade.
 type PredictionGradesItem struct {
-	GradeName         *string `json:"gradeName,omitempty"`
-	MinScoreThreshold *int32  `json:"minScoreThreshold,omitempty"`
-	MaxScoreThreshold *int32  `json:"maxScoreThreshold,omitempty"`
+	// GradeName - Name of the grade.
+	GradeName *string `json:"gradeName,omitempty"`
+	// MinScoreThreshold - Minimum score threshold.
+	MinScoreThreshold *int32 `json:"minScoreThreshold,omitempty"`
+	// MaxScoreThreshold - Maximum score threshold.
+	MaxScoreThreshold *int32 `json:"maxScoreThreshold,omitempty"`
 }
 
-// PredictionListResult is the response of list predictions operation.
+// PredictionListResult the response of list predictions operation.
 type PredictionListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]PredictionResourceFormat `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]PredictionResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// PredictionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client PredictionListResult) PredictionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// PredictionListResultIterator provides access to a complete listing of PredictionResourceFormat values.
+type PredictionListResultIterator struct {
+	i    int
+	page PredictionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *PredictionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter PredictionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter PredictionListResultIterator) Response() PredictionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter PredictionListResultIterator) Value() PredictionResourceFormat {
+	if !iter.page.NotDone() {
+		return PredictionResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (plr PredictionListResult) IsEmpty() bool {
+	return plr.Value == nil || len(*plr.Value) == 0
+}
+
+// predictionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (plr PredictionListResult) predictionListResultPreparer() (*http.Request, error) {
+	if plr.NextLink == nil || len(to.String(plr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(plr.NextLink)))
 }
 
-// PredictionMappings is definition of the link mapping of prediction.
+// PredictionListResultPage contains a page of PredictionResourceFormat values.
+type PredictionListResultPage struct {
+	fn  func(PredictionListResult) (PredictionListResult, error)
+	plr PredictionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *PredictionListResultPage) Next() error {
+	next, err := page.fn(page.plr)
+	if err != nil {
+		return err
+	}
+	page.plr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page PredictionListResultPage) NotDone() bool {
+	return !page.plr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page PredictionListResultPage) Response() PredictionListResult {
+	return page.plr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page PredictionListResultPage) Values() []PredictionResourceFormat {
+	if page.plr.IsEmpty() {
+		return nil
+	}
+	return *page.plr.Value
+}
+
+// PredictionMappings definition of the link mapping of prediction.
 type PredictionMappings struct {
-	Score  *string `json:"score,omitempty"`
-	Grade  *string `json:"grade,omitempty"`
+	// Score - The score of the link mapping.
+	Score *string `json:"score,omitempty"`
+	// Grade - The grade of the link mapping.
+	Grade *string `json:"grade,omitempty"`
+	// Reason - The reason of the link mapping.
 	Reason *string `json:"reason,omitempty"`
 }
 
-// PredictionModelStatus is the prediction model status.
+// PredictionModelStatus the prediction model status.
 type PredictionModelStatus struct {
-	autorest.Response  `json:"-"`
-	TenantID           *string                  `json:"tenantId,omitempty"`
-	PredictionName     *string                  `json:"predictionName,omitempty"`
-	PredictionGUIDID   *string                  `json:"predictionGuidId,omitempty"`
-	Status             PredictionModelLifeCycle `json:"status,omitempty"`
-	Message            *string                  `json:"message,omitempty"`
-	TrainingSetCount   *int32                   `json:"trainingSetCount,omitempty"`
-	TestSetCount       *int32                   `json:"testSetCount,omitempty"`
-	ValidationSetCount *int32                   `json:"validationSetCount,omitempty"`
-	TrainingAccuracy   *int32                   `json:"trainingAccuracy,omitempty"`
-	SignalsUsed        *int32                   `json:"signalsUsed,omitempty"`
-	ModelVersion       *string                  `json:"modelVersion,omitempty"`
+	autorest.Response `json:"-"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// PredictionName - The prediction name.
+	PredictionName *string `json:"predictionName,omitempty"`
+	// PredictionGUIDID - The prediction GUID ID.
+	PredictionGUIDID *string `json:"predictionGuidId,omitempty"`
+	// Status - Prediction model life cycle.  When prediction is in PendingModelConfirmation status, it is allowed to update the status to PendingFeaturing or Active through API. Possible values include: 'PredictionModelLifeCycleNew', 'PredictionModelLifeCycleProvisioning', 'PredictionModelLifeCycleProvisioningFailed', 'PredictionModelLifeCyclePendingDiscovering', 'PredictionModelLifeCycleDiscovering', 'PredictionModelLifeCyclePendingFeaturing', 'PredictionModelLifeCycleFeaturing', 'PredictionModelLifeCycleFeaturingFailed', 'PredictionModelLifeCyclePendingTraining', 'PredictionModelLifeCycleTraining', 'PredictionModelLifeCycleTrainingFailed', 'PredictionModelLifeCycleEvaluating', 'PredictionModelLifeCycleEvaluatingFailed', 'PredictionModelLifeCyclePendingModelConfirmation', 'PredictionModelLifeCycleActive', 'PredictionModelLifeCycleDeleted', 'PredictionModelLifeCycleHumanIntervention', 'PredictionModelLifeCycleFailed'
+	Status PredictionModelLifeCycle `json:"status,omitempty"`
+	// Message - The model status message.
+	Message *string `json:"message,omitempty"`
+	// TrainingSetCount - Count of the training set.
+	TrainingSetCount *int32 `json:"trainingSetCount,omitempty"`
+	// TestSetCount - Count of the test set.
+	TestSetCount *int32 `json:"testSetCount,omitempty"`
+	// ValidationSetCount - Count of the validation set.
+	ValidationSetCount *int32 `json:"validationSetCount,omitempty"`
+	// TrainingAccuracy - The training accuracy.
+	TrainingAccuracy *int32 `json:"trainingAccuracy,omitempty"`
+	// SignalsUsed - The singnas used.
+	SignalsUsed *int32 `json:"signalsUsed,omitempty"`
+	// ModelVersion - Version of the model.
+	ModelVersion *string `json:"modelVersion,omitempty"`
 }
 
-// PredictionResourceFormat is the prediction resource format.
+// PredictionResourceFormat the prediction resource format.
 type PredictionResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*Prediction       `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type        *string `json:"type,omitempty"`
+	*Prediction `json:"properties,omitempty"`
 }
 
-// PredictionSystemGeneratedEntities is system generated entities.
+// UnmarshalJSON is the custom unmarshaler for PredictionResourceFormat struct.
+func (prf *PredictionResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties Prediction
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		prf.Prediction = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		prf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		prf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		prf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// PredictionsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type PredictionsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PredictionsCreateOrUpdateFuture) Result(client PredictionsClient) (prf PredictionResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return prf, autorest.NewError("customerinsights.PredictionsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		prf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	prf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// PredictionsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type PredictionsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future PredictionsDeleteFuture) Result(client PredictionsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.PredictionsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// PredictionSystemGeneratedEntities system generated entities.
 type PredictionSystemGeneratedEntities struct {
-	GeneratedInteractionTypes *[]string           `json:"generatedInteractionTypes,omitempty"`
-	GeneratedLinks            *[]string           `json:"generatedLinks,omitempty"`
-	GeneratedKpis             *map[string]*string `json:"generatedKpis,omitempty"`
+	// GeneratedInteractionTypes - Generated interaction types.
+	GeneratedInteractionTypes *[]string `json:"generatedInteractionTypes,omitempty"`
+	// GeneratedLinks - Generated links.
+	GeneratedLinks *[]string `json:"generatedLinks,omitempty"`
+	// GeneratedKpis - Generated KPIs.
+	GeneratedKpis *map[string]*string `json:"generatedKpis,omitempty"`
 }
 
-// PredictionTrainingResults is the training results of the prediction.
+// PredictionTrainingResults the training results of the prediction.
 type PredictionTrainingResults struct {
-	autorest.Response           `json:"-"`
-	TenantID                    *string                           `json:"tenantId,omitempty"`
-	ScoreName                   *string                           `json:"scoreName,omitempty"`
-	PredictionDistribution      *PredictionDistributionDefinition `json:"predictionDistribution,omitempty"`
-	CanonicalProfiles           *[]CanonicalProfileDefinition     `json:"canonicalProfiles,omitempty"`
-	PrimaryProfileInstanceCount *int64                            `json:"primaryProfileInstanceCount,omitempty"`
+	autorest.Response `json:"-"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// ScoreName - Score name.
+	ScoreName *string `json:"scoreName,omitempty"`
+	// PredictionDistribution - Prediction distribution.
+	PredictionDistribution *PredictionDistributionDefinition `json:"predictionDistribution,omitempty"`
+	// CanonicalProfiles - Canonical profiles.
+	CanonicalProfiles *[]CanonicalProfileDefinition `json:"canonicalProfiles,omitempty"`
+	// PrimaryProfileInstanceCount - Instance count of the primary profile.
+	PrimaryProfileInstanceCount *int64 `json:"primaryProfileInstanceCount,omitempty"`
 }
 
-// ProfileEnumValidValuesFormat is valid enum values in case of an enum property.
+// ProfileEnumValidValuesFormat valid enum values in case of an enum property.
 type ProfileEnumValidValuesFormat struct {
-	Value               *int32              `json:"value,omitempty"`
+	// Value - The integer value of the enum member.
+	Value *int32 `json:"value,omitempty"`
+	// LocalizedValueNames - Localized names of the enum member.
 	LocalizedValueNames *map[string]*string `json:"localizedValueNames,omitempty"`
 }
 
-// ProfileListResult is the response of list profile operation.
+// ProfileListResult the response of list profile operation.
 type ProfileListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ProfileResourceFormat `json:"value,omitempty"`
-	NextLink          *string                  `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ProfileResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ProfileListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ProfileListResult) ProfileListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ProfileListResultIterator provides access to a complete listing of ProfileResourceFormat values.
+type ProfileListResultIterator struct {
+	i    int
+	page ProfileListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ProfileListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ProfileListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ProfileListResultIterator) Response() ProfileListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ProfileListResultIterator) Value() ProfileResourceFormat {
+	if !iter.page.NotDone() {
+		return ProfileResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (plr ProfileListResult) IsEmpty() bool {
+	return plr.Value == nil || len(*plr.Value) == 0
+}
+
+// profileListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (plr ProfileListResult) profileListResultPreparer() (*http.Request, error) {
+	if plr.NextLink == nil || len(to.String(plr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(plr.NextLink)))
 }
 
-// ProfileResourceFormat is the profile resource format.
+// ProfileListResultPage contains a page of ProfileResourceFormat values.
+type ProfileListResultPage struct {
+	fn  func(ProfileListResult) (ProfileListResult, error)
+	plr ProfileListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ProfileListResultPage) Next() error {
+	next, err := page.fn(page.plr)
+	if err != nil {
+		return err
+	}
+	page.plr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ProfileListResultPage) NotDone() bool {
+	return !page.plr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ProfileListResultPage) Response() ProfileListResult {
+	return page.plr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ProfileListResultPage) Values() []ProfileResourceFormat {
+	if page.plr.IsEmpty() {
+		return nil
+	}
+	return *page.plr.Value
+}
+
+// ProfileResourceFormat the profile resource format.
 type ProfileResourceFormat struct {
-	autorest.Response      `json:"-"`
-	ID                     *string `json:"id,omitempty"`
-	Name                   *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type                   *string `json:"type,omitempty"`
 	*ProfileTypeDefinition `json:"properties,omitempty"`
 }
 
-// ProfileTypeDefinition is the profile type definition.
+// UnmarshalJSON is the custom unmarshaler for ProfileResourceFormat struct.
+func (prf *ProfileResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ProfileTypeDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		prf.ProfileTypeDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		prf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		prf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		prf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ProfilesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesCreateOrUpdateFuture) Result(client ProfilesClient) (prf ProfileResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return prf, autorest.NewError("customerinsights.ProfilesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		prf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	prf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// ProfilesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ProfilesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ProfilesDeleteFuture) Result(client ProfilesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.ProfilesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// ProfileTypeDefinition the profile type definition.
 type ProfileTypeDefinition struct {
-	Attributes          *map[string][]string           `json:"attributes,omitempty"`
-	Description         *map[string]*string            `json:"description,omitempty"`
-	DisplayName         *map[string]*string            `json:"displayName,omitempty"`
+	// Attributes - The attributes for the Type.
+	Attributes *map[string][]string `json:"attributes,omitempty"`
+	// Description - Localized descriptions for the property.
+	Description *map[string]*string `json:"description,omitempty"`
+	// DisplayName - Localized display names for the property.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// LocalizedAttributes - Any custom localized attributes for the Type.
 	LocalizedAttributes *map[string]map[string]*string `json:"localizedAttributes,omitempty"`
-	SmallImage          *string                        `json:"smallImage,omitempty"`
-	MediumImage         *string                        `json:"mediumImage,omitempty"`
-	LargeImage          *string                        `json:"largeImage,omitempty"`
-	APIEntitySetName    *string                        `json:"apiEntitySetName,omitempty"`
-	EntityType          EntityTypes                    `json:"entityType,omitempty"`
-	Fields              *[]PropertyDefinition          `json:"fields,omitempty"`
-	InstancesCount      *int32                         `json:"instancesCount,omitempty"`
-	LastChangedUtc      *date.Time                     `json:"lastChangedUtc,omitempty"`
-	ProvisioningState   ProvisioningStates             `json:"provisioningState,omitempty"`
-	SchemaItemTypeLink  *string                        `json:"schemaItemTypeLink,omitempty"`
-	TenantID            *string                        `json:"tenantId,omitempty"`
-	TimestampFieldName  *string                        `json:"timestampFieldName,omitempty"`
-	TypeName            *string                        `json:"typeName,omitempty"`
-	StrongIds           *[]StrongID                    `json:"strongIds,omitempty"`
+	// SmallImage - Small Image associated with the Property or EntityType.
+	SmallImage *string `json:"smallImage,omitempty"`
+	// MediumImage - Medium Image associated with the Property or EntityType.
+	MediumImage *string `json:"mediumImage,omitempty"`
+	// LargeImage - Large Image associated with the Property or EntityType.
+	LargeImage *string `json:"largeImage,omitempty"`
+	// APIEntitySetName - The api entity set name. This becomes the odata entity set name for the entity Type being refered in this object.
+	APIEntitySetName *string `json:"apiEntitySetName,omitempty"`
+	// EntityType - Type of entity. Possible values include: 'EntityTypesNone', 'EntityTypesProfile', 'EntityTypesInteraction', 'EntityTypesRelationship'
+	EntityType EntityTypes `json:"entityType,omitempty"`
+	// Fields - The properties of the Profile.
+	Fields *[]PropertyDefinition `json:"fields,omitempty"`
+	// InstancesCount - The instance count.
+	InstancesCount *int32 `json:"instancesCount,omitempty"`
+	// LastChangedUtc - The last changed time for the type definition.
+	LastChangedUtc *date.Time `json:"lastChangedUtc,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// SchemaItemTypeLink - The schema org link. This helps ACI identify and suggest semantic models.
+	SchemaItemTypeLink *string `json:"schemaItemTypeLink,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// TimestampFieldName - The timestamp property name. Represents the time when the interaction or profile update happened.
+	TimestampFieldName *string `json:"timestampFieldName,omitempty"`
+	// TypeName - The name of the entity.
+	TypeName *string `json:"typeName,omitempty"`
+	// StrongIds - The strong IDs.
+	StrongIds *[]StrongID `json:"strongIds,omitempty"`
 }
 
-// PropertyDefinition is property definition.
+// PropertyDefinition property definition.
 type PropertyDefinition struct {
-	ArrayValueSeparator       *string                         `json:"arrayValueSeparator,omitempty"`
-	EnumValidValues           *[]ProfileEnumValidValuesFormat `json:"enumValidValues,omitempty"`
-	FieldName                 *string                         `json:"fieldName,omitempty"`
-	FieldType                 *string                         `json:"fieldType,omitempty"`
-	IsArray                   *bool                           `json:"isArray,omitempty"`
-	IsEnum                    *bool                           `json:"isEnum,omitempty"`
-	IsFlagEnum                *bool                           `json:"isFlagEnum,omitempty"`
-	IsImage                   *bool                           `json:"isImage,omitempty"`
-	IsLocalizedString         *bool                           `json:"isLocalizedString,omitempty"`
-	IsName                    *bool                           `json:"isName,omitempty"`
-	IsRequired                *bool                           `json:"isRequired,omitempty"`
-	PropertyID                *string                         `json:"propertyId,omitempty"`
-	SchemaItemPropLink        *string                         `json:"schemaItemPropLink,omitempty"`
-	MaxLength                 *int32                          `json:"maxLength,omitempty"`
-	IsAvailableInGraph        *bool                           `json:"isAvailableInGraph,omitempty"`
-	DataSourcePrecedenceRules *[]DataSourcePrecedence         `json:"dataSourcePrecedenceRules,omitempty"`
+	// ArrayValueSeparator - Array value separator for properties with isArray set.
+	ArrayValueSeparator *string `json:"arrayValueSeparator,omitempty"`
+	// EnumValidValues - Describes valid values for an enum property.
+	EnumValidValues *[]ProfileEnumValidValuesFormat `json:"enumValidValues,omitempty"`
+	// FieldName - Name of the property.
+	FieldName *string `json:"fieldName,omitempty"`
+	// FieldType - Type of the property.
+	FieldType *string `json:"fieldType,omitempty"`
+	// IsArray - Indicates if the property is actually an array of the fieldType above on the data api.
+	IsArray *bool `json:"isArray,omitempty"`
+	// IsEnum - Indicates if the property is an enum.
+	IsEnum *bool `json:"isEnum,omitempty"`
+	// IsFlagEnum - Indicates if the property is an flag enum.
+	IsFlagEnum *bool `json:"isFlagEnum,omitempty"`
+	// IsImage - Whether the property is an Image.
+	IsImage *bool `json:"isImage,omitempty"`
+	// IsLocalizedString - Whether the property is a localized string.
+	IsLocalizedString *bool `json:"isLocalizedString,omitempty"`
+	// IsName - Whether the property is a name or a part of name.
+	IsName *bool `json:"isName,omitempty"`
+	// IsRequired - Whether property value is required on instances, IsRequired field only for Intercation. Profile Instance will not check for required field.
+	IsRequired *bool `json:"isRequired,omitempty"`
+	// PropertyID - The ID associated with the property.
+	PropertyID *string `json:"propertyId,omitempty"`
+	// SchemaItemPropLink - URL encoded schema.org item prop link for the property.
+	SchemaItemPropLink *string `json:"schemaItemPropLink,omitempty"`
+	// MaxLength - Max length of string. Used only if type is string.
+	MaxLength *int32 `json:"maxLength,omitempty"`
+	// IsAvailableInGraph - Whether property is available in graph or not.
+	IsAvailableInGraph *bool `json:"isAvailableInGraph,omitempty"`
+	// DataSourcePrecedenceRules - This is specific to interactions modeled as activities. Data sources are used to determine where data is stored and also in precedence rules.
+	DataSourcePrecedenceRules *[]DataSourcePrecedence `json:"dataSourcePrecedenceRules,omitempty"`
 }
 
-// ProxyResource is common properties of proxy resource.
+// ProxyResource common properties of proxy resource.
 type ProxyResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// RelationshipDefinition is the definition of Relationship.
+// RelationshipDefinition the definition of Relationship.
 type RelationshipDefinition struct {
-	Cardinality        CardinalityTypes           `json:"cardinality,omitempty"`
-	DisplayName        *map[string]*string        `json:"displayName,omitempty"`
-	Description        *map[string]*string        `json:"description,omitempty"`
-	ExpiryDateTimeUtc  *date.Time                 `json:"expiryDateTimeUtc,omitempty"`
-	Fields             *[]PropertyDefinition      `json:"fields,omitempty"`
-	LookupMappings     *[]RelationshipTypeMapping `json:"lookupMappings,omitempty"`
-	ProfileType        *string                    `json:"profileType,omitempty"`
-	ProvisioningState  ProvisioningStates         `json:"provisioningState,omitempty"`
-	RelationshipName   *string                    `json:"relationshipName,omitempty"`
-	RelatedProfileType *string                    `json:"relatedProfileType,omitempty"`
-	RelationshipGUIDID *string                    `json:"relationshipGuidId,omitempty"`
-	TenantID           *string                    `json:"tenantId,omitempty"`
+	// Cardinality - The Relationship Cardinality. Possible values include: 'OneToOne', 'OneToMany', 'ManyToMany'
+	Cardinality CardinalityTypes `json:"cardinality,omitempty"`
+	// DisplayName - Localized display name for the Relationship.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized descriptions for the Relationship.
+	Description *map[string]*string `json:"description,omitempty"`
+	// ExpiryDateTimeUtc - The expiry date time in UTC.
+	ExpiryDateTimeUtc *date.Time `json:"expiryDateTimeUtc,omitempty"`
+	// Fields - The properties of the Relationship.
+	Fields *[]PropertyDefinition `json:"fields,omitempty"`
+	// LookupMappings - Optional property to be used to map fields in profile to their strong ids in related profile.
+	LookupMappings *[]RelationshipTypeMapping `json:"lookupMappings,omitempty"`
+	// ProfileType - Profile type.
+	ProfileType *string `json:"profileType,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// RelationshipName - The Relationship name.
+	RelationshipName *string `json:"relationshipName,omitempty"`
+	// RelatedProfileType - Related profile being referenced.
+	RelatedProfileType *string `json:"relatedProfileType,omitempty"`
+	// RelationshipGUIDID - The relationship guid id.
+	RelationshipGUIDID *string `json:"relationshipGuidId,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
 }
 
-// RelationshipLinkDefinition is the definition of relationship link.
+// RelationshipLinkDefinition the definition of relationship link.
 type RelationshipLinkDefinition struct {
-	DisplayName                      *map[string]*string                    `json:"displayName,omitempty"`
-	Description                      *map[string]*string                    `json:"description,omitempty"`
-	InteractionType                  *string                                `json:"interactionType,omitempty"`
-	LinkName                         *string                                `json:"linkName,omitempty"`
-	Mappings                         *[]RelationshipLinkFieldMapping        `json:"mappings,omitempty"`
-	ProfilePropertyReferences        *[]ParticipantProfilePropertyReference `json:"profilePropertyReferences,omitempty"`
-	ProvisioningState                ProvisioningStates                     `json:"provisioningState,omitempty"`
+	// DisplayName - Localized display name for the Relationship Link.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized descriptions for the Relationship Link.
+	Description *map[string]*string `json:"description,omitempty"`
+	// InteractionType - The InteractionType associated with the Relationship Link.
+	InteractionType *string `json:"interactionType,omitempty"`
+	// LinkName - The name of the Relationship Link.
+	LinkName *string `json:"linkName,omitempty"`
+	// Mappings - The mappings between Interaction and Relationship fields.
+	Mappings *[]RelationshipLinkFieldMapping `json:"mappings,omitempty"`
+	// ProfilePropertyReferences - The property references for the Profile of the Relationship.
+	ProfilePropertyReferences *[]ParticipantProfilePropertyReference `json:"profilePropertyReferences,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// RelatedProfilePropertyReferences - The property references for the Related Profile of the Relationship.
 	RelatedProfilePropertyReferences *[]ParticipantProfilePropertyReference `json:"relatedProfilePropertyReferences,omitempty"`
-	RelationshipName                 *string                                `json:"relationshipName,omitempty"`
-	RelationshipGUIDID               *string                                `json:"relationshipGuidId,omitempty"`
-	TenantID                         *string                                `json:"tenantId,omitempty"`
+	// RelationshipName - The Relationship associated with the Link.
+	RelationshipName *string `json:"relationshipName,omitempty"`
+	// RelationshipGUIDID - The relationship guid id.
+	RelationshipGUIDID *string `json:"relationshipGuidId,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
 }
 
-// RelationshipLinkFieldMapping is the fields mapping for Relationships.
+// RelationshipLinkFieldMapping the fields mapping for Relationships.
 type RelationshipLinkFieldMapping struct {
-	InteractionFieldName  *string   `json:"interactionFieldName,omitempty"`
-	LinkType              LinkTypes `json:"linkType,omitempty"`
-	RelationshipFieldName *string   `json:"relationshipFieldName,omitempty"`
+	// InteractionFieldName - The field name on the Interaction Type.
+	InteractionFieldName *string `json:"interactionFieldName,omitempty"`
+	// LinkType - Link type. Possible values include: 'UpdateAlways', 'CopyIfNull'
+	LinkType LinkTypes `json:"linkType,omitempty"`
+	// RelationshipFieldName - The field name on the Relationship metadata.
+	RelationshipFieldName *string `json:"relationshipFieldName,omitempty"`
 }
 
-// RelationshipLinkListResult is the response of list relationship link operation.
+// RelationshipLinkListResult the response of list relationship link operation.
 type RelationshipLinkListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RelationshipLinkResourceFormat `json:"value,omitempty"`
-	NextLink          *string                           `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]RelationshipLinkResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// RelationshipLinkListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RelationshipLinkListResult) RelationshipLinkListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RelationshipLinkListResultIterator provides access to a complete listing of RelationshipLinkResourceFormat values.
+type RelationshipLinkListResultIterator struct {
+	i    int
+	page RelationshipLinkListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RelationshipLinkListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RelationshipLinkListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RelationshipLinkListResultIterator) Response() RelationshipLinkListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RelationshipLinkListResultIterator) Value() RelationshipLinkResourceFormat {
+	if !iter.page.NotDone() {
+		return RelationshipLinkResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rllr RelationshipLinkListResult) IsEmpty() bool {
+	return rllr.Value == nil || len(*rllr.Value) == 0
+}
+
+// relationshipLinkListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rllr RelationshipLinkListResult) relationshipLinkListResultPreparer() (*http.Request, error) {
+	if rllr.NextLink == nil || len(to.String(rllr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rllr.NextLink)))
 }
 
-// RelationshipLinkResourceFormat is the relationship link resource format.
+// RelationshipLinkListResultPage contains a page of RelationshipLinkResourceFormat values.
+type RelationshipLinkListResultPage struct {
+	fn   func(RelationshipLinkListResult) (RelationshipLinkListResult, error)
+	rllr RelationshipLinkListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RelationshipLinkListResultPage) Next() error {
+	next, err := page.fn(page.rllr)
+	if err != nil {
+		return err
+	}
+	page.rllr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RelationshipLinkListResultPage) NotDone() bool {
+	return !page.rllr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RelationshipLinkListResultPage) Response() RelationshipLinkListResult {
+	return page.rllr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RelationshipLinkListResultPage) Values() []RelationshipLinkResourceFormat {
+	if page.rllr.IsEmpty() {
+		return nil
+	}
+	return *page.rllr.Value
+}
+
+// RelationshipLinkResourceFormat the relationship link resource format.
 type RelationshipLinkResourceFormat struct {
-	autorest.Response           `json:"-"`
-	ID                          *string `json:"id,omitempty"`
-	Name                        *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type                        *string `json:"type,omitempty"`
 	*RelationshipLinkDefinition `json:"properties,omitempty"`
 }
 
-// RelationshipListResult is the response of list relationship operation.
-type RelationshipListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]RelationshipResourceFormat `json:"value,omitempty"`
-	NextLink          *string                       `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RelationshipLinkResourceFormat struct.
+func (rlrf *RelationshipLinkResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RelationshipLinkDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rlrf.RelationshipLinkDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rlrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rlrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rlrf.Type = &typeVar
+	}
+
+	return nil
 }
 
-// RelationshipListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RelationshipListResult) RelationshipListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RelationshipLinksCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type RelationshipLinksCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RelationshipLinksCreateOrUpdateFuture) Result(client RelationshipLinksClient) (rlrf RelationshipLinkResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rlrf, autorest.NewError("customerinsights.RelationshipLinksCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rlrf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rlrf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// RelationshipLinksDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RelationshipLinksDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RelationshipLinksDeleteFuture) Result(client RelationshipLinksClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.RelationshipLinksDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// RelationshipListResult the response of list relationship operation.
+type RelationshipListResult struct {
+	autorest.Response `json:"-"`
+	// Value - Results of the list operation.
+	Value *[]RelationshipResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// RelationshipListResultIterator provides access to a complete listing of RelationshipResourceFormat values.
+type RelationshipListResultIterator struct {
+	i    int
+	page RelationshipListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RelationshipListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RelationshipListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RelationshipListResultIterator) Response() RelationshipListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RelationshipListResultIterator) Value() RelationshipResourceFormat {
+	if !iter.page.NotDone() {
+		return RelationshipResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rlr RelationshipListResult) IsEmpty() bool {
+	return rlr.Value == nil || len(*rlr.Value) == 0
+}
+
+// relationshipListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rlr RelationshipListResult) relationshipListResultPreparer() (*http.Request, error) {
+	if rlr.NextLink == nil || len(to.String(rlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rlr.NextLink)))
 }
 
-// RelationshipResourceFormat is the relationship resource format.
+// RelationshipListResultPage contains a page of RelationshipResourceFormat values.
+type RelationshipListResultPage struct {
+	fn  func(RelationshipListResult) (RelationshipListResult, error)
+	rlr RelationshipListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RelationshipListResultPage) Next() error {
+	next, err := page.fn(page.rlr)
+	if err != nil {
+		return err
+	}
+	page.rlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RelationshipListResultPage) NotDone() bool {
+	return !page.rlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RelationshipListResultPage) Response() RelationshipListResult {
+	return page.rlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RelationshipListResultPage) Values() []RelationshipResourceFormat {
+	if page.rlr.IsEmpty() {
+		return nil
+	}
+	return *page.rlr.Value
+}
+
+// RelationshipResourceFormat the relationship resource format.
 type RelationshipResourceFormat struct {
-	autorest.Response       `json:"-"`
-	ID                      *string `json:"id,omitempty"`
-	Name                    *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type                    *string `json:"type,omitempty"`
 	*RelationshipDefinition `json:"properties,omitempty"`
 }
 
-// RelationshipsLookup is the definition of suggested relationship for the type.
-type RelationshipsLookup struct {
-	ProfileName                      *string                                `json:"profileName,omitempty"`
-	ProfilePropertyReferences        *[]ParticipantProfilePropertyReference `json:"profilePropertyReferences,omitempty"`
-	RelatedProfileName               *string                                `json:"relatedProfileName,omitempty"`
-	RelatedProfilePropertyReferences *[]ParticipantProfilePropertyReference `json:"relatedProfilePropertyReferences,omitempty"`
-	ExistingRelationshipName         *string                                `json:"existingRelationshipName,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RelationshipResourceFormat struct.
+func (rrf *RelationshipResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RelationshipDefinition
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rrf.RelationshipDefinition = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rrf.Type = &typeVar
+	}
+
+	return nil
 }
 
-// RelationshipTypeFieldMapping is map a field of profile to its corresponding StrongId in Related Profile.
+// RelationshipsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type RelationshipsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RelationshipsCreateOrUpdateFuture) Result(client RelationshipsClient) (rrf RelationshipResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rrf, autorest.NewError("customerinsights.RelationshipsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rrf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rrf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// RelationshipsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type RelationshipsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RelationshipsDeleteFuture) Result(client RelationshipsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("customerinsights.RelationshipsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// RelationshipsLookup the definition of suggested relationship for the type.
+type RelationshipsLookup struct {
+	// ProfileName - The relationship profile.
+	ProfileName *string `json:"profileName,omitempty"`
+	// ProfilePropertyReferences - The property references for the profile type.
+	ProfilePropertyReferences *[]ParticipantProfilePropertyReference `json:"profilePropertyReferences,omitempty"`
+	// RelatedProfileName - The related profile.
+	RelatedProfileName *string `json:"relatedProfileName,omitempty"`
+	// RelatedProfilePropertyReferences - The property references for the related profile type.
+	RelatedProfilePropertyReferences *[]ParticipantProfilePropertyReference `json:"relatedProfilePropertyReferences,omitempty"`
+	// ExistingRelationshipName - The name of existing Relationship.
+	ExistingRelationshipName *string `json:"existingRelationshipName,omitempty"`
+}
+
+// RelationshipTypeFieldMapping map a field of profile to its corresponding StrongId in Related Profile.
 type RelationshipTypeFieldMapping struct {
-	ProfileFieldName          *string `json:"profileFieldName,omitempty"`
+	// ProfileFieldName - Specifies the fieldName in profile.
+	ProfileFieldName *string `json:"profileFieldName,omitempty"`
+	// RelatedProfileKeyProperty - Specifies the KeyProperty (from StrongId) of the related profile.
 	RelatedProfileKeyProperty *string `json:"relatedProfileKeyProperty,omitempty"`
 }
 
-// RelationshipTypeMapping is maps fields in Profile to their corresponding StrongIds in Related Profile.
+// RelationshipTypeMapping maps fields in Profile to their corresponding StrongIds in Related Profile.
 type RelationshipTypeMapping struct {
+	// FieldMappings - Maps a profile property with the StrongId of related profile. This is an array to support StrongIds that are composite key as well.
 	FieldMappings *[]RelationshipTypeFieldMapping `json:"fieldMappings,omitempty"`
 }
 
-// Resource is common properties of Azure resource.
+// Resource common properties of Azure resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ResourceSetDescription is the resource set description.
+// ResourceSetDescription the resource set description.
 type ResourceSetDescription struct {
-	Elements   *[]string `json:"elements,omitempty"`
+	// Elements - The elements included in the set.
+	Elements *[]string `json:"elements,omitempty"`
+	// Exceptions - The elements that are not included in the set, in case elements contains '*' indicating 'all'.
 	Exceptions *[]string `json:"exceptions,omitempty"`
 }
 
-// Role is the Role definition.
+// Role the Role definition.
 type Role struct {
-	RoleName    *string `json:"roleName,omitempty"`
+	// RoleName - The role name.
+	RoleName *string `json:"roleName,omitempty"`
+	// Description - The description of the role.
 	Description *string `json:"description,omitempty"`
 }
 
-// RoleAssignment is the Role Assignment definition.
+// RoleAssignment the Role Assignment definition.
 type RoleAssignment struct {
-	TenantID           *string                 `json:"tenantId,omitempty"`
-	AssignmentName     *string                 `json:"assignmentName,omitempty"`
-	DisplayName        *map[string]*string     `json:"displayName,omitempty"`
-	Description        *map[string]*string     `json:"description,omitempty"`
-	ProvisioningState  ProvisioningStates      `json:"provisioningState,omitempty"`
-	Role               RoleTypes               `json:"role,omitempty"`
-	Principals         *[]AssignmentPrincipal  `json:"principals,omitempty"`
-	Profiles           *ResourceSetDescription `json:"profiles,omitempty"`
-	Interactions       *ResourceSetDescription `json:"interactions,omitempty"`
-	Links              *ResourceSetDescription `json:"links,omitempty"`
-	Kpis               *ResourceSetDescription `json:"kpis,omitempty"`
-	SasPolicies        *ResourceSetDescription `json:"sasPolicies,omitempty"`
-	Connectors         *ResourceSetDescription `json:"connectors,omitempty"`
-	Views              *ResourceSetDescription `json:"views,omitempty"`
-	RelationshipLinks  *ResourceSetDescription `json:"relationshipLinks,omitempty"`
-	Relationships      *ResourceSetDescription `json:"relationships,omitempty"`
-	WidgetTypes        *ResourceSetDescription `json:"widgetTypes,omitempty"`
-	RoleAssignments    *ResourceSetDescription `json:"roleAssignments,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// AssignmentName - The name of the metadata object.
+	AssignmentName *string `json:"assignmentName,omitempty"`
+	// DisplayName - Localized display names for the metadata.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized description for the metadata.
+	Description *map[string]*string `json:"description,omitempty"`
+	// ProvisioningState - Provisioning state. Possible values include: 'ProvisioningStatesProvisioning', 'ProvisioningStatesSucceeded', 'ProvisioningStatesExpiring', 'ProvisioningStatesDeleting', 'ProvisioningStatesHumanIntervention', 'ProvisioningStatesFailed'
+	ProvisioningState ProvisioningStates `json:"provisioningState,omitempty"`
+	// Role - Type of roles. Possible values include: 'Admin', 'Reader', 'ManageAdmin', 'ManageReader', 'DataAdmin', 'DataReader'
+	Role RoleTypes `json:"role,omitempty"`
+	// Principals - The principals being assigned to.
+	Principals *[]AssignmentPrincipal `json:"principals,omitempty"`
+	// Profiles - Profiles set for the assignment.
+	Profiles *ResourceSetDescription `json:"profiles,omitempty"`
+	// Interactions - Interactions set for the assignment.
+	Interactions *ResourceSetDescription `json:"interactions,omitempty"`
+	// Links - Links set for the assignment.
+	Links *ResourceSetDescription `json:"links,omitempty"`
+	// Kpis - Kpis set for the assignment.
+	Kpis *ResourceSetDescription `json:"kpis,omitempty"`
+	// SasPolicies - Sas Policies set for the assignment.
+	SasPolicies *ResourceSetDescription `json:"sasPolicies,omitempty"`
+	// Connectors - Connectors set for the assignment.
+	Connectors *ResourceSetDescription `json:"connectors,omitempty"`
+	// Views - Views set for the assignment.
+	Views *ResourceSetDescription `json:"views,omitempty"`
+	// RelationshipLinks - The Role assignments set for the relationship links.
+	RelationshipLinks *ResourceSetDescription `json:"relationshipLinks,omitempty"`
+	// Relationships - The Role assignments set for the relationships.
+	Relationships *ResourceSetDescription `json:"relationships,omitempty"`
+	// WidgetTypes - Widget types set for the assignment.
+	WidgetTypes *ResourceSetDescription `json:"widgetTypes,omitempty"`
+	// RoleAssignments - The Role assignments set for the assignment.
+	RoleAssignments *ResourceSetDescription `json:"roleAssignments,omitempty"`
+	// ConflationPolicies - Widget types set for the assignment.
 	ConflationPolicies *ResourceSetDescription `json:"conflationPolicies,omitempty"`
-	Segments           *ResourceSetDescription `json:"segments,omitempty"`
+	// Segments - The Role assignments set for the assignment.
+	Segments *ResourceSetDescription `json:"segments,omitempty"`
 }
 
-// RoleAssignmentListResult is the response of list role assignment operation.
+// RoleAssignmentListResult the response of list role assignment operation.
 type RoleAssignmentListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RoleAssignmentResourceFormat `json:"value,omitempty"`
-	NextLink          *string                         `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]RoleAssignmentResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// RoleAssignmentListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RoleAssignmentListResult) RoleAssignmentListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RoleAssignmentListResultIterator provides access to a complete listing of RoleAssignmentResourceFormat values.
+type RoleAssignmentListResultIterator struct {
+	i    int
+	page RoleAssignmentListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RoleAssignmentListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RoleAssignmentListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RoleAssignmentListResultIterator) Response() RoleAssignmentListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RoleAssignmentListResultIterator) Value() RoleAssignmentResourceFormat {
+	if !iter.page.NotDone() {
+		return RoleAssignmentResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ralr RoleAssignmentListResult) IsEmpty() bool {
+	return ralr.Value == nil || len(*ralr.Value) == 0
+}
+
+// roleAssignmentListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ralr RoleAssignmentListResult) roleAssignmentListResultPreparer() (*http.Request, error) {
+	if ralr.NextLink == nil || len(to.String(ralr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(ralr.NextLink)))
 }
 
-// RoleAssignmentResourceFormat is the Role Assignment resource format.
+// RoleAssignmentListResultPage contains a page of RoleAssignmentResourceFormat values.
+type RoleAssignmentListResultPage struct {
+	fn   func(RoleAssignmentListResult) (RoleAssignmentListResult, error)
+	ralr RoleAssignmentListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RoleAssignmentListResultPage) Next() error {
+	next, err := page.fn(page.ralr)
+	if err != nil {
+		return err
+	}
+	page.ralr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RoleAssignmentListResultPage) NotDone() bool {
+	return !page.ralr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RoleAssignmentListResultPage) Response() RoleAssignmentListResult {
+	return page.ralr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RoleAssignmentListResultPage) Values() []RoleAssignmentResourceFormat {
+	if page.ralr.IsEmpty() {
+		return nil
+	}
+	return *page.ralr.Value
+}
+
+// RoleAssignmentResourceFormat the Role Assignment resource format.
 type RoleAssignmentResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*RoleAssignment   `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type            *string `json:"type,omitempty"`
+	*RoleAssignment `json:"properties,omitempty"`
 }
 
-// RoleListResult is the response of list role assignment operation.
+// UnmarshalJSON is the custom unmarshaler for RoleAssignmentResourceFormat struct.
+func (rarf *RoleAssignmentResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties RoleAssignment
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rarf.RoleAssignment = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rarf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rarf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rarf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// RoleAssignmentsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type RoleAssignmentsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future RoleAssignmentsCreateOrUpdateFuture) Result(client RoleAssignmentsClient) (rarf RoleAssignmentResourceFormat, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return rarf, autorest.NewError("customerinsights.RoleAssignmentsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		rarf, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	rarf, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// RoleListResult the response of list role assignment operation.
 type RoleListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RoleResourceFormat `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]RoleResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// RoleListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RoleListResult) RoleListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RoleListResultIterator provides access to a complete listing of RoleResourceFormat values.
+type RoleListResultIterator struct {
+	i    int
+	page RoleListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RoleListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RoleListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RoleListResultIterator) Response() RoleListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RoleListResultIterator) Value() RoleResourceFormat {
+	if !iter.page.NotDone() {
+		return RoleResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rlr RoleListResult) IsEmpty() bool {
+	return rlr.Value == nil || len(*rlr.Value) == 0
+}
+
+// roleListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rlr RoleListResult) roleListResultPreparer() (*http.Request, error) {
+	if rlr.NextLink == nil || len(to.String(rlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rlr.NextLink)))
 }
 
-// RoleResourceFormat is the role resource format.
+// RoleListResultPage contains a page of RoleResourceFormat values.
+type RoleListResultPage struct {
+	fn  func(RoleListResult) (RoleListResult, error)
+	rlr RoleListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RoleListResultPage) Next() error {
+	next, err := page.fn(page.rlr)
+	if err != nil {
+		return err
+	}
+	page.rlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RoleListResultPage) NotDone() bool {
+	return !page.rlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RoleListResultPage) Response() RoleListResult {
+	return page.rlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RoleListResultPage) Values() []RoleResourceFormat {
+	if page.rlr.IsEmpty() {
+		return nil
+	}
+	return *page.rlr.Value
+}
+
+// RoleResourceFormat the role resource format.
 type RoleResourceFormat struct {
-	ID    *string `json:"id,omitempty"`
-	Name  *string `json:"name,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type  *string `json:"type,omitempty"`
 	*Role `json:"properties,omitempty"`
 }
 
-// SalesforceConnectorProperties is the Salesforce connector properties.
-type SalesforceConnectorProperties struct {
-	Usersetting      *SalesforceDiscoverSetting `json:"usersetting,omitempty"`
-	Salesforcetables *[]SalesforceTable         `json:"salesforcetables,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RoleResourceFormat struct.
+func (rrf *RoleResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties Role
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rrf.Role = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rrf.Type = &typeVar
+	}
+
+	return nil
 }
 
-// SalesforceDiscoverSetting is salesforce discover setting.
+// SalesforceConnectorProperties the Salesforce connector properties.
+type SalesforceConnectorProperties struct {
+	// Usersetting - The user settings.
+	Usersetting *SalesforceDiscoverSetting `json:"usersetting,omitempty"`
+	// Salesforcetables - The Salesforce tables.
+	Salesforcetables *[]SalesforceTable `json:"salesforcetables,omitempty"`
+}
+
+// SalesforceDiscoverSetting salesforce discover setting.
 type SalesforceDiscoverSetting struct {
+	// SalesforceConnectionStringSecretURL - The salesforce connection string secret URL.
 	SalesforceConnectionStringSecretURL *string `json:"salesforceConnectionStringSecretUrl,omitempty"`
 }
 
-// SalesforceTable is salesforce table.
+// SalesforceTable salesforce table.
 type SalesforceTable struct {
-	IsProfile     *string `json:"isProfile,omitempty"`
+	// IsProfile - Indicating whether this instance is profile.
+	IsProfile *string `json:"isProfile,omitempty"`
+	// TableCategory - The table category.
 	TableCategory *string `json:"tableCategory,omitempty"`
-	TableName     *string `json:"tableName,omitempty"`
-	TableRemarks  *string `json:"tableRemarks,omitempty"`
-	TableSchema   *string `json:"tableSchema,omitempty"`
+	// TableName - The name of the table.
+	TableName *string `json:"tableName,omitempty"`
+	// TableRemarks - The table remarks.
+	TableRemarks *string `json:"tableRemarks,omitempty"`
+	// TableSchema - The table schema.
+	TableSchema *string `json:"tableSchema,omitempty"`
 }
 
-// StrongID is property/Properties which represent a unique ID.
+// StrongID property/Properties which represent a unique ID.
 type StrongID struct {
-	KeyPropertyNames *[]string           `json:"keyPropertyNames,omitempty"`
-	StrongIDName     *string             `json:"strongIdName,omitempty"`
-	DisplayName      *map[string]*string `json:"displayName,omitempty"`
-	Description      *map[string]*string `json:"description,omitempty"`
+	// KeyPropertyNames - The properties which make up the unique ID.
+	KeyPropertyNames *[]string `json:"keyPropertyNames,omitempty"`
+	// StrongIDName - The Name identifying the strong ID.
+	StrongIDName *string `json:"strongIdName,omitempty"`
+	// DisplayName - Localized display name.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// Description - Localized descriptions.
+	Description *map[string]*string `json:"description,omitempty"`
 }
 
-// SuggestRelationshipLinksResponse is the response of suggest relationship links operation.
+// SuggestRelationshipLinksResponse the response of suggest relationship links operation.
 type SuggestRelationshipLinksResponse struct {
-	autorest.Response      `json:"-"`
-	InteractionName        *string                `json:"interactionName,omitempty"`
+	autorest.Response `json:"-"`
+	// InteractionName - The interaction name.
+	InteractionName *string `json:"interactionName,omitempty"`
+	// SuggestedRelationships - Suggested relationships for the type.
 	SuggestedRelationships *[]RelationshipsLookup `json:"suggestedRelationships,omitempty"`
 }
 
-// TypePropertiesMapping is metadata for a Link's property mapping.
+// TypePropertiesMapping metadata for a Link's property mapping.
 type TypePropertiesMapping struct {
-	SourcePropertyName *string   `json:"sourcePropertyName,omitempty"`
-	TargetPropertyName *string   `json:"targetPropertyName,omitempty"`
-	LinkType           LinkTypes `json:"linkType,omitempty"`
+	// SourcePropertyName -  Property name on the source Entity Type.
+	SourcePropertyName *string `json:"sourcePropertyName,omitempty"`
+	// TargetPropertyName - Property name on the target Entity Type.
+	TargetPropertyName *string `json:"targetPropertyName,omitempty"`
+	// LinkType - Link type. Possible values include: 'UpdateAlways', 'CopyIfNull'
+	LinkType LinkTypes `json:"linkType,omitempty"`
 }
 
-// View is the view in Customer 360 web application.
+// View the view in Customer 360 web application.
 type View struct {
-	ViewName    *string             `json:"viewName,omitempty"`
-	UserID      *string             `json:"userId,omitempty"`
-	TenantID    *string             `json:"tenantId,omitempty"`
+	// ViewName - Name of the view.
+	ViewName *string `json:"viewName,omitempty"`
+	// UserID - the user ID.
+	UserID *string `json:"userId,omitempty"`
+	// TenantID - the hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// DisplayName - Localized display name for the view.
 	DisplayName *map[string]*string `json:"displayName,omitempty"`
-	Definition  *string             `json:"definition,omitempty"`
-	Changed     *date.Time          `json:"changed,omitempty"`
-	Created     *date.Time          `json:"created,omitempty"`
+	// Definition - View definition.
+	Definition *string `json:"definition,omitempty"`
+	// Changed - Date time when view was last modified.
+	Changed *date.Time `json:"changed,omitempty"`
+	// Created - Date time when view was created.
+	Created *date.Time `json:"created,omitempty"`
 }
 
-// ViewListResult is the response of list view operation.
+// ViewListResult the response of list view operation.
 type ViewListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]ViewResourceFormat `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]ViewResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ViewListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ViewListResult) ViewListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ViewListResultIterator provides access to a complete listing of ViewResourceFormat values.
+type ViewListResultIterator struct {
+	i    int
+	page ViewListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ViewListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ViewListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ViewListResultIterator) Response() ViewListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ViewListResultIterator) Value() ViewResourceFormat {
+	if !iter.page.NotDone() {
+		return ViewResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (vlr ViewListResult) IsEmpty() bool {
+	return vlr.Value == nil || len(*vlr.Value) == 0
+}
+
+// viewListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (vlr ViewListResult) viewListResultPreparer() (*http.Request, error) {
+	if vlr.NextLink == nil || len(to.String(vlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(vlr.NextLink)))
 }
 
-// ViewResourceFormat is the view resource format.
+// ViewListResultPage contains a page of ViewResourceFormat values.
+type ViewListResultPage struct {
+	fn  func(ViewListResult) (ViewListResult, error)
+	vlr ViewListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ViewListResultPage) Next() error {
+	next, err := page.fn(page.vlr)
+	if err != nil {
+		return err
+	}
+	page.vlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ViewListResultPage) NotDone() bool {
+	return !page.vlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ViewListResultPage) Response() ViewListResult {
+	return page.vlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ViewListResultPage) Values() []ViewResourceFormat {
+	if page.vlr.IsEmpty() {
+		return nil
+	}
+	return *page.vlr.Value
+}
+
+// ViewResourceFormat the view resource format.
 type ViewResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*View             `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type  *string `json:"type,omitempty"`
+	*View `json:"properties,omitempty"`
 }
 
-// WidgetType is definition of WidgetType.
+// UnmarshalJSON is the custom unmarshaler for ViewResourceFormat struct.
+func (vrf *ViewResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties View
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		vrf.View = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		vrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		vrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		vrf.Type = &typeVar
+	}
+
+	return nil
+}
+
+// WidgetType definition of WidgetType.
 type WidgetType struct {
-	WidgetTypeName *string             `json:"widgetTypeName,omitempty"`
-	Definition     *string             `json:"definition,omitempty"`
-	Description    *string             `json:"description,omitempty"`
-	DisplayName    *map[string]*string `json:"displayName,omitempty"`
-	ImageURL       *string             `json:"imageUrl,omitempty"`
-	TenantID       *string             `json:"tenantId,omitempty"`
-	WidgetVersion  *string             `json:"widgetVersion,omitempty"`
-	Changed        *date.Time          `json:"changed,omitempty"`
-	Created        *date.Time          `json:"created,omitempty"`
+	// WidgetTypeName - Name of the widget type.
+	WidgetTypeName *string `json:"widgetTypeName,omitempty"`
+	// Definition - Definition for widget type.
+	Definition *string `json:"definition,omitempty"`
+	// Description - Description for widget type.
+	Description *string `json:"description,omitempty"`
+	// DisplayName - Localized display name for the widget type.
+	DisplayName *map[string]*string `json:"displayName,omitempty"`
+	// ImageURL - The image URL.
+	ImageURL *string `json:"imageUrl,omitempty"`
+	// TenantID - The hub name.
+	TenantID *string `json:"tenantId,omitempty"`
+	// WidgetVersion - The widget version.
+	WidgetVersion *string `json:"widgetVersion,omitempty"`
+	// Changed - Date time when widget type was last modified.
+	Changed *date.Time `json:"changed,omitempty"`
+	// Created - Date time when widget type was created.
+	Created *date.Time `json:"created,omitempty"`
 }
 
-// WidgetTypeListResult is the response of list widget type operation.
+// WidgetTypeListResult the response of list widget type operation.
 type WidgetTypeListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WidgetTypeResourceFormat `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+	// Value - Results of the list operation.
+	Value *[]WidgetTypeResourceFormat `json:"value,omitempty"`
+	// NextLink - Link to the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WidgetTypeListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WidgetTypeListResult) WidgetTypeListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WidgetTypeListResultIterator provides access to a complete listing of WidgetTypeResourceFormat values.
+type WidgetTypeListResultIterator struct {
+	i    int
+	page WidgetTypeListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WidgetTypeListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WidgetTypeListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WidgetTypeListResultIterator) Response() WidgetTypeListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WidgetTypeListResultIterator) Value() WidgetTypeResourceFormat {
+	if !iter.page.NotDone() {
+		return WidgetTypeResourceFormat{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wtlr WidgetTypeListResult) IsEmpty() bool {
+	return wtlr.Value == nil || len(*wtlr.Value) == 0
+}
+
+// widgetTypeListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wtlr WidgetTypeListResult) widgetTypeListResultPreparer() (*http.Request, error) {
+	if wtlr.NextLink == nil || len(to.String(wtlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wtlr.NextLink)))
 }
 
-// WidgetTypeResourceFormat is the WidgetTypeResourceFormat
+// WidgetTypeListResultPage contains a page of WidgetTypeResourceFormat values.
+type WidgetTypeListResultPage struct {
+	fn   func(WidgetTypeListResult) (WidgetTypeListResult, error)
+	wtlr WidgetTypeListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WidgetTypeListResultPage) Next() error {
+	next, err := page.fn(page.wtlr)
+	if err != nil {
+		return err
+	}
+	page.wtlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WidgetTypeListResultPage) NotDone() bool {
+	return !page.wtlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WidgetTypeListResultPage) Response() WidgetTypeListResult {
+	return page.wtlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WidgetTypeListResultPage) Values() []WidgetTypeResourceFormat {
+	if page.wtlr.IsEmpty() {
+		return nil
+	}
+	return *page.wtlr.Value
+}
+
+// WidgetTypeResourceFormat the WidgetTypeResourceFormat
 type WidgetTypeResourceFormat struct {
 	autorest.Response `json:"-"`
-	ID                *string `json:"id,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	Type              *string `json:"type,omitempty"`
-	*WidgetType       `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type        *string `json:"type,omitempty"`
+	*WidgetType `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for WidgetTypeResourceFormat struct.
+func (wtrf *WidgetTypeResourceFormat) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WidgetType
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wtrf.WidgetType = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wtrf.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wtrf.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wtrf.Type = &typeVar
+	}
+
+	return nil
 }

@@ -18,6 +18,7 @@ package mobileengagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // AppCollectionsClient is the microsoft Azure Mobile Engagement REST APIs.
 type AppCollectionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAppCollectionsClient creates an instance of the AppCollectionsClient client.
@@ -40,8 +41,8 @@ func NewAppCollectionsClientWithBaseURI(baseURI string, subscriptionID string) A
 
 // CheckNameAvailability checks availability of an app collection name in the Engagement domain.
 //
-func (client AppCollectionsClient) CheckNameAvailability(parameters AppCollectionNameAvailability) (result AppCollectionNameAvailability, err error) {
-	req, err := client.CheckNameAvailabilityPreparer(parameters)
+func (client AppCollectionsClient) CheckNameAvailability(ctx context.Context, parameters AppCollectionNameAvailability) (result AppCollectionNameAvailability, err error) {
+	req, err := client.CheckNameAvailabilityPreparer(ctx, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "CheckNameAvailability", nil, "Failure preparing request")
 		return
@@ -63,7 +64,7 @@ func (client AppCollectionsClient) CheckNameAvailability(parameters AppCollectio
 }
 
 // CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
-func (client AppCollectionsClient) CheckNameAvailabilityPreparer(parameters AppCollectionNameAvailability) (*http.Request, error) {
+func (client AppCollectionsClient) CheckNameAvailabilityPreparer(ctx context.Context, parameters AppCollectionNameAvailability) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -80,14 +81,13 @@ func (client AppCollectionsClient) CheckNameAvailabilityPreparer(parameters AppC
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.MobileEngagement/checkAppCollectionNameAvailability", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppCollectionsClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -105,8 +105,9 @@ func (client AppCollectionsClient) CheckNameAvailabilityResponder(resp *http.Res
 }
 
 // List lists app collections in a subscription.
-func (client AppCollectionsClient) List() (result AppCollectionListResult, err error) {
-	req, err := client.ListPreparer()
+func (client AppCollectionsClient) List(ctx context.Context) (result AppCollectionListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", nil, "Failure preparing request")
 		return
@@ -114,12 +115,12 @@ func (client AppCollectionsClient) List() (result AppCollectionListResult, err e
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.aclr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.aclr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", resp, "Failure responding to request")
 	}
@@ -128,7 +129,7 @@ func (client AppCollectionsClient) List() (result AppCollectionListResult, err e
 }
 
 // ListPreparer prepares the List request.
-func (client AppCollectionsClient) ListPreparer() (*http.Request, error) {
+func (client AppCollectionsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -143,14 +144,13 @@ func (client AppCollectionsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.MobileEngagement/appCollections", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppCollectionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -167,71 +167,29 @@ func (client AppCollectionsClient) ListResponder(resp *http.Response) (result Ap
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client AppCollectionsClient) ListNextResults(lastResults AppCollectionListResult) (result AppCollectionListResult, err error) {
-	req, err := lastResults.AppCollectionListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client AppCollectionsClient) listNextResults(lastResults AppCollectionListResult) (result AppCollectionListResult, err error) {
+	req, err := lastResults.appCollectionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "mobileengagement.AppCollectionsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client AppCollectionsClient) ListComplete(cancel <-chan struct{}) (<-chan AppCollection, <-chan error) {
-	resultChan := make(chan AppCollection)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AppCollectionsClient) ListComplete(ctx context.Context) (result AppCollectionListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }

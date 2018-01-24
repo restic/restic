@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // PolicySetClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type PolicySetClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPolicySetClient creates an instance of the PolicySetClient client.
@@ -42,8 +43,8 @@ func NewPolicySetClientWithBaseURI(baseURI string, subscriptionID string) Policy
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the policy
 // set.
-func (client PolicySetClient) EvaluatePolicies(resourceGroupName string, labName string, name string, evaluatePoliciesRequest EvaluatePoliciesRequest) (result EvaluatePoliciesResponse, err error) {
-	req, err := client.EvaluatePoliciesPreparer(resourceGroupName, labName, name, evaluatePoliciesRequest)
+func (client PolicySetClient) EvaluatePolicies(ctx context.Context, resourceGroupName string, labName string, name string, evaluatePoliciesRequest EvaluatePoliciesRequest) (result EvaluatePoliciesResponse, err error) {
+	req, err := client.EvaluatePoliciesPreparer(ctx, resourceGroupName, labName, name, evaluatePoliciesRequest)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.PolicySetClient", "EvaluatePolicies", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client PolicySetClient) EvaluatePolicies(resourceGroupName string, labName
 }
 
 // EvaluatePoliciesPreparer prepares the EvaluatePolicies request.
-func (client PolicySetClient) EvaluatePoliciesPreparer(resourceGroupName string, labName string, name string, evaluatePoliciesRequest EvaluatePoliciesRequest) (*http.Request, error) {
+func (client PolicySetClient) EvaluatePoliciesPreparer(ctx context.Context, resourceGroupName string, labName string, name string, evaluatePoliciesRequest EvaluatePoliciesRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -85,14 +86,13 @@ func (client PolicySetClient) EvaluatePoliciesPreparer(resourceGroupName string,
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{name}/evaluatePolicies", pathParameters),
 		autorest.WithJSON(evaluatePoliciesRequest),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // EvaluatePoliciesSender sends the EvaluatePolicies request. The method will close the
 // http.Response Body if it receives an error.
 func (client PolicySetClient) EvaluatePoliciesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -34,7 +34,7 @@ import (
 
 func TestLoggerCreation(t *testing.T) {
 	const logID = "testing"
-	c := &Client{projectID: "PROJECT_ID"}
+	c := &Client{parent: "projects/PROJECT_ID"}
 	customResource := &mrpb.MonitoredResource{
 		Type: "global",
 		Labels: map[string]string{
@@ -220,6 +220,62 @@ func TestFromHTTPRequest(t *testing.T) {
 	}
 	if !proto.Equal(got, want) {
 		t.Errorf("got  %+v\nwant %+v", got, want)
+	}
+}
+
+func TestMonitoredResource(t *testing.T) {
+	for _, test := range []struct {
+		parent string
+		want   *mrpb.MonitoredResource
+	}{
+		{
+			"projects/P",
+			&mrpb.MonitoredResource{
+				Type:   "project",
+				Labels: map[string]string{"project_id": "P"},
+			},
+		},
+
+		{
+			"folders/F",
+			&mrpb.MonitoredResource{
+				Type:   "folder",
+				Labels: map[string]string{"folder_id": "F"},
+			},
+		},
+		{
+			"billingAccounts/B",
+			&mrpb.MonitoredResource{
+				Type:   "billing_account",
+				Labels: map[string]string{"account_id": "B"},
+			},
+		},
+		{
+			"organizations/123",
+			&mrpb.MonitoredResource{
+				Type:   "organization",
+				Labels: map[string]string{"organization_id": "123"},
+			},
+		},
+		{
+			"unknown/X",
+			&mrpb.MonitoredResource{
+				Type:   "global",
+				Labels: map[string]string{"project_id": "X"},
+			},
+		},
+		{
+			"whatever",
+			&mrpb.MonitoredResource{
+				Type:   "global",
+				Labels: map[string]string{"project_id": "whatever"},
+			},
+		},
+	} {
+		got := monitoredResource(test.parent)
+		if !testutil.Equal(got, test.want) {
+			t.Errorf("%q: got %+v, want %+v", test.parent, got, test.want)
+		}
 	}
 }
 

@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // VirtualMachineSizesClient is the compute Client
 type VirtualMachineSizesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineSizesClient creates an instance of the VirtualMachineSizesClient client.
@@ -42,14 +43,14 @@ func NewVirtualMachineSizesClientWithBaseURI(baseURI string, subscriptionID stri
 // List lists all available virtual machine sizes for a subscription in a location.
 //
 // location is the location upon which virtual-machine-sizes is queried.
-func (client VirtualMachineSizesClient) List(location string) (result VirtualMachineSizeListResult, err error) {
+func (client VirtualMachineSizesClient) List(ctx context.Context, location string) (result VirtualMachineSizeListResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: location,
 			Constraints: []validation.Constraint{{Target: "location", Name: validation.Pattern, Rule: `^[-\w\._]+$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachineSizesClient", "List")
 	}
 
-	req, err := client.ListPreparer(location)
+	req, err := client.ListPreparer(ctx, location)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineSizesClient", "List", nil, "Failure preparing request")
 		return
@@ -71,7 +72,7 @@ func (client VirtualMachineSizesClient) List(location string) (result VirtualMac
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualMachineSizesClient) ListPreparer(location string) (*http.Request, error) {
+func (client VirtualMachineSizesClient) ListPreparer(ctx context.Context, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -87,14 +88,13 @@ func (client VirtualMachineSizesClient) ListPreparer(location string) (*http.Req
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Compute/locations/{location}/vmSizes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineSizesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -1,4 +1,4 @@
-// Package container provides access to the Google Container Engine API.
+// Package container provides access to the Google Kubernetes Engine API.
 //
 // See https://cloud.google.com/container-engine/
 //
@@ -421,7 +421,7 @@ func (s *ClientCertificateConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Cluster: A Google Container Engine cluster.
+// Cluster: A Google Kubernetes Engine cluster.
 type Cluster struct {
 	// AddonsConfig: Configurations for the various addons available to run
 	// in the cluster.
@@ -1686,10 +1686,16 @@ type NodeConfig struct {
 	// server.
 	// Additionally, to avoid ambiguity, keys must not conflict with any
 	// other
-	// metadata keys for the project or be one of the four reserved
-	// keys:
-	// "instance-template", "kube-env", "startup-script", and
-	// "user-data"
+	// metadata keys for the project or be one of the reserved keys:
+	//  "cluster-name"
+	//  "cluster-uid"
+	//  "configure-sh"
+	//  "gci-update-strategy"
+	//  "gci-ensure-gke-docker"
+	//  "instance-template"
+	//  "kube-env"
+	//  "startup-script"
+	//  "user-data"
 	//
 	// Values are free-form strings, and only have meaning as interpreted
 	// by
@@ -1766,6 +1772,10 @@ type NodeConfig struct {
 	// https://kubernetes.io/docs/concepts/configuration/taint-and-toler
 	// ation/
 	Taints []*NodeTaint `json:"taints,omitempty"`
+
+	// WorkloadMetadataConfig: The workload metadata configuration for this
+	// node.
+	WorkloadMetadataConfig *WorkloadMetadataConfig `json:"workloadMetadataConfig,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Accelerators") to
 	// unconditionally include in API requests. By default, fields with
@@ -2216,7 +2226,7 @@ func (s *RollbackNodePoolUpgradeRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ServerConfig: Container Engine service configuration.
+// ServerConfig: Kubernetes Engine service configuration.
 type ServerConfig struct {
 	// DefaultClusterVersion: Version of Kubernetes the service deploys by
 	// default.
@@ -2332,7 +2342,7 @@ type SetLabelsRequest struct {
 	// this resource,
 	// used to detect conflicts. The fingerprint is initially generated
 	// by
-	// Container Engine and changes after every request to modify or
+	// Kubernetes Engine and changes after every request to modify or
 	// update
 	// labels. You must always provide an up-to-date fingerprint hash
 	// when
@@ -2909,6 +2919,64 @@ func (s *SetNodePoolManagementRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SetNodePoolSizeRequest: SetNodePoolSizeRequest sets the size a
+// node
+// pool.
+type SetNodePoolSizeRequest struct {
+	// ClusterId: The name of the cluster to update.
+	// This field is deprecated, use name instead.
+	ClusterId string `json:"clusterId,omitempty"`
+
+	// Name: The name (project, location, cluster, node pool id) of the node
+	// pool to set
+	// size.
+	// Specified in the format
+	// 'projects/*/locations/*/clusters/*/nodePools/*'.
+	Name string `json:"name,omitempty"`
+
+	// NodeCount: The desired node count for the pool.
+	NodeCount int64 `json:"nodeCount,omitempty"`
+
+	// NodePoolId: The name of the node pool to update.
+	// This field is deprecated, use name instead.
+	NodePoolId string `json:"nodePoolId,omitempty"`
+
+	// ProjectId: The Google Developers Console [project ID or
+	// project
+	// number](https://support.google.com/cloud/answer/6158840).
+	ProjectId string `json:"projectId,omitempty"`
+
+	// Zone: The name of the Google Compute
+	// Engine
+	// [zone](/compute/docs/zones#available) in which the
+	// cluster
+	// resides.
+	// This field is deprecated, use name instead.
+	Zone string `json:"zone,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ClusterId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ClusterId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SetNodePoolSizeRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod SetNodePoolSizeRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // StartIPRotationRequest: StartIPRotationRequest creates a new IP for
 // the cluster and then performs
 // a node upgrade on each node pool to point to the new IP.
@@ -3132,6 +3200,45 @@ func (s *UpdateNodePoolRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// WorkloadMetadataConfig: WorkloadMetadataConfig defines the metadata
+// configuration to expose to
+// workloads on the node pool.
+type WorkloadMetadataConfig struct {
+	// NodeMetadata: NodeMetadata is the configuration for if and how to
+	// expose the node
+	// metadata to the workload running on the node.
+	//
+	// Possible values:
+	//   "UNSPECIFIED" - Not set.
+	//   "SECURE" - Expose only a secure subset of metadata to pods.
+	// Currently, this blocks
+	// kube-env, but exposes all other metadata.
+	//   "EXPOSE" - Expose all GCE metadata to pods.
+	NodeMetadata string `json:"nodeMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "NodeMetadata") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "NodeMetadata") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *WorkloadMetadataConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod WorkloadMetadataConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // method id "container.projects.locations.getServerConfig":
 
 type ProjectsLocationsGetServerConfigCall struct {
@@ -3143,7 +3250,7 @@ type ProjectsLocationsGetServerConfigCall struct {
 	header_      http.Header
 }
 
-// GetServerConfig: Returns configuration info about the Container
+// GetServerConfig: Returns configuration info about the Kubernetes
 // Engine service.
 func (r *ProjectsLocationsService) GetServerConfig(name string) *ProjectsLocationsGetServerConfigCall {
 	c := &ProjectsLocationsGetServerConfigCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -3265,7 +3372,7 @@ func (c *ProjectsLocationsGetServerConfigCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns configuration info about the Container Engine service.",
+	//   "description": "Returns configuration info about the Kubernetes Engine service.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/serverConfig",
 	//   "httpMethod": "GET",
 	//   "id": "container.projects.locations.getServerConfig",
@@ -6857,6 +6964,141 @@ func (c *ProjectsLocationsClustersNodePoolsSetManagementCall) Do(opts ...googlea
 
 }
 
+// method id "container.projects.locations.clusters.nodePools.setSize":
+
+type ProjectsLocationsClustersNodePoolsSetSizeCall struct {
+	s                      *Service
+	name                   string
+	setnodepoolsizerequest *SetNodePoolSizeRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetSize: Sets the size of a specific node pool.
+func (r *ProjectsLocationsClustersNodePoolsService) SetSize(name string, setnodepoolsizerequest *SetNodePoolSizeRequest) *ProjectsLocationsClustersNodePoolsSetSizeCall {
+	c := &ProjectsLocationsClustersNodePoolsSetSizeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.setnodepoolsizerequest = setnodepoolsizerequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsClustersNodePoolsSetSizeCall) Fields(s ...googleapi.Field) *ProjectsLocationsClustersNodePoolsSetSizeCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsClustersNodePoolsSetSizeCall) Context(ctx context.Context) *ProjectsLocationsClustersNodePoolsSetSizeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsClustersNodePoolsSetSizeCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsClustersNodePoolsSetSizeCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.setnodepoolsizerequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}:setSize")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "container.projects.locations.clusters.nodePools.setSize" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsLocationsClustersNodePoolsSetSizeCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the size of a specific node pool.",
+	//   "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}/nodePools/{nodePoolsId}:setSize",
+	//   "httpMethod": "POST",
+	//   "id": "container.projects.locations.clusters.nodePools.setSize",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name (project, location, cluster, node pool id) of the node pool to set\nsize.\nSpecified in the format 'projects/*/locations/*/clusters/*/nodePools/*'.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+/nodePools/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1beta1/{+name}:setSize",
+	//   "request": {
+	//     "$ref": "SetNodePoolSizeRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
 // method id "container.projects.locations.clusters.nodePools.update":
 
 type ProjectsLocationsClustersNodePoolsUpdateCall struct {
@@ -7494,7 +7736,7 @@ type ProjectsZonesGetServerconfigCall struct {
 	header_      http.Header
 }
 
-// GetServerconfig: Returns configuration info about the Container
+// GetServerconfig: Returns configuration info about the Kubernetes
 // Engine service.
 func (r *ProjectsZonesService) GetServerconfig(projectId string, zone string) *ProjectsZonesGetServerconfigCall {
 	c := &ProjectsZonesGetServerconfigCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -7606,7 +7848,7 @@ func (c *ProjectsZonesGetServerconfigCall) Do(opts ...googleapi.CallOption) (*Se
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns configuration info about the Container Engine service.",
+	//   "description": "Returns configuration info about the Kubernetes Engine service.",
 	//   "flatPath": "v1beta1/projects/{projectId}/zones/{zone}/serverconfig",
 	//   "httpMethod": "GET",
 	//   "id": "container.projects.zones.getServerconfig",
@@ -11472,6 +11714,170 @@ func (c *ProjectsZonesClustersNodePoolsSetManagementCall) Do(opts ...googleapi.C
 	//   "path": "v1beta1/projects/{projectId}/zones/{zone}/clusters/{clusterId}/nodePools/{nodePoolId}/setManagement",
 	//   "request": {
 	//     "$ref": "SetNodePoolManagementRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "container.projects.zones.clusters.nodePools.setSize":
+
+type ProjectsZonesClustersNodePoolsSetSizeCall struct {
+	s                      *Service
+	projectId              string
+	zone                   string
+	clusterId              string
+	nodePoolId             string
+	setnodepoolsizerequest *SetNodePoolSizeRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetSize: Sets the size of a specific node pool.
+func (r *ProjectsZonesClustersNodePoolsService) SetSize(projectId string, zone string, clusterId string, nodePoolId string, setnodepoolsizerequest *SetNodePoolSizeRequest) *ProjectsZonesClustersNodePoolsSetSizeCall {
+	c := &ProjectsZonesClustersNodePoolsSetSizeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.projectId = projectId
+	c.zone = zone
+	c.clusterId = clusterId
+	c.nodePoolId = nodePoolId
+	c.setnodepoolsizerequest = setnodepoolsizerequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsZonesClustersNodePoolsSetSizeCall) Fields(s ...googleapi.Field) *ProjectsZonesClustersNodePoolsSetSizeCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsZonesClustersNodePoolsSetSizeCall) Context(ctx context.Context) *ProjectsZonesClustersNodePoolsSetSizeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsZonesClustersNodePoolsSetSizeCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsZonesClustersNodePoolsSetSizeCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.setnodepoolsizerequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/projects/{projectId}/zones/{zone}/clusters/{clusterId}/nodePools/{nodePoolId}/setSize")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"projectId":  c.projectId,
+		"zone":       c.zone,
+		"clusterId":  c.clusterId,
+		"nodePoolId": c.nodePoolId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "container.projects.zones.clusters.nodePools.setSize" call.
+// Exactly one of *Operation or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsZonesClustersNodePoolsSetSizeCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets the size of a specific node pool.",
+	//   "flatPath": "v1beta1/projects/{projectId}/zones/{zone}/clusters/{clusterId}/nodePools/{nodePoolId}/setSize",
+	//   "httpMethod": "POST",
+	//   "id": "container.projects.zones.clusters.nodePools.setSize",
+	//   "parameterOrder": [
+	//     "projectId",
+	//     "zone",
+	//     "clusterId",
+	//     "nodePoolId"
+	//   ],
+	//   "parameters": {
+	//     "clusterId": {
+	//       "description": "The name of the cluster to update.\nThis field is deprecated, use name instead.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "nodePoolId": {
+	//       "description": "The name of the node pool to update.\nThis field is deprecated, use name instead.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "projectId": {
+	//       "description": "The Google Developers Console [project ID or project\nnumber](https://support.google.com/cloud/answer/6158840).",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "zone": {
+	//       "description": "The name of the Google Compute Engine\n[zone](/compute/docs/zones#available) in which the cluster\nresides.\nThis field is deprecated, use name instead.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1beta1/projects/{projectId}/zones/{zone}/clusters/{clusterId}/nodePools/{nodePoolId}/setSize",
+	//   "request": {
+	//     "$ref": "SetNodePoolSizeRequest"
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"

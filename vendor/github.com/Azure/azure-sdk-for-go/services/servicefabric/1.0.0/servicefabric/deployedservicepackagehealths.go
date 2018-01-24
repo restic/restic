@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // DeployedServicePackageHealthsClient is the client for the DeployedServicePackageHealths methods of the Servicefabric
 // service.
 type DeployedServicePackageHealthsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeployedServicePackageHealthsClient creates an instance of the DeployedServicePackageHealthsClient client.
@@ -44,8 +45,8 @@ func NewDeployedServicePackageHealthsClientWithBaseURI(baseURI string, timeout *
 //
 // nodeName is the name of the node applicationName is the name of the application servicePackageName is the name of
 // the service package eventsHealthStateFilter is the filter of the events health state
-func (client DeployedServicePackageHealthsClient) Get(nodeName string, applicationName string, servicePackageName string, eventsHealthStateFilter string) (result DeployedServicePackageHealth, err error) {
-	req, err := client.GetPreparer(nodeName, applicationName, servicePackageName, eventsHealthStateFilter)
+func (client DeployedServicePackageHealthsClient) Get(ctx context.Context, nodeName string, applicationName string, servicePackageName string, eventsHealthStateFilter string) (result DeployedServicePackageHealth, err error) {
+	req, err := client.GetPreparer(ctx, nodeName, applicationName, servicePackageName, eventsHealthStateFilter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedServicePackageHealthsClient", "Get", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client DeployedServicePackageHealthsClient) Get(nodeName string, applicati
 }
 
 // GetPreparer prepares the Get request.
-func (client DeployedServicePackageHealthsClient) GetPreparer(nodeName string, applicationName string, servicePackageName string, eventsHealthStateFilter string) (*http.Request, error) {
+func (client DeployedServicePackageHealthsClient) GetPreparer(ctx context.Context, nodeName string, applicationName string, servicePackageName string, eventsHealthStateFilter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":    applicationName,
 		"nodeName":           autorest.Encode("path", nodeName),
@@ -90,14 +91,13 @@ func (client DeployedServicePackageHealthsClient) GetPreparer(nodeName string, a
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}/$/GetServicePackages/{servicePackageName}/$/GetHealth", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedServicePackageHealthsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -118,8 +118,8 @@ func (client DeployedServicePackageHealthsClient) GetResponder(resp *http.Respon
 //
 // nodeName is the name of the node applicationName is the name of the application serviceManifestName is the name of
 // the service manifest deployedServicePackageHealthReport is the report of the deployed service package health
-func (client DeployedServicePackageHealthsClient) Send(nodeName string, applicationName string, serviceManifestName string, deployedServicePackageHealthReport DeployedServiceHealthReport) (result String, err error) {
-	req, err := client.SendPreparer(nodeName, applicationName, serviceManifestName, deployedServicePackageHealthReport)
+func (client DeployedServicePackageHealthsClient) Send(ctx context.Context, nodeName string, applicationName string, serviceManifestName string, deployedServicePackageHealthReport DeployedServiceHealthReport) (result String, err error) {
+	req, err := client.SendPreparer(ctx, nodeName, applicationName, serviceManifestName, deployedServicePackageHealthReport)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedServicePackageHealthsClient", "Send", nil, "Failure preparing request")
 		return
@@ -141,7 +141,7 @@ func (client DeployedServicePackageHealthsClient) Send(nodeName string, applicat
 }
 
 // SendPreparer prepares the Send request.
-func (client DeployedServicePackageHealthsClient) SendPreparer(nodeName string, applicationName string, serviceManifestName string, deployedServicePackageHealthReport DeployedServiceHealthReport) (*http.Request, error) {
+func (client DeployedServicePackageHealthsClient) SendPreparer(ctx context.Context, nodeName string, applicationName string, serviceManifestName string, deployedServicePackageHealthReport DeployedServiceHealthReport) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName":     applicationName,
 		"nodeName":            autorest.Encode("path", nodeName),
@@ -163,14 +163,13 @@ func (client DeployedServicePackageHealthsClient) SendPreparer(nodeName string, 
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}/$/GetServicePackages/{serviceManifestName}/$/ReportHealth", pathParameters),
 		autorest.WithJSON(deployedServicePackageHealthReport),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SendSender sends the Send request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedServicePackageHealthsClient) SendSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

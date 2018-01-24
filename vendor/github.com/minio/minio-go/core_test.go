@@ -484,6 +484,151 @@ func TestCoreCopyObject(t *testing.T) {
 	// Do not need to remove destBucketName its same as bucketName.
 }
 
+// Test Core CopyObjectPart implementation
+func TestCoreCopyObjectPart(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping functional tests for short runs")
+	}
+
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Instantiate new minio client object.
+	c, err := NewCore(
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableSecurity)),
+	)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
+
+	// Make a new bucket.
+	err = c.MakeBucket(bucketName, "us-east-1")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName)
+	}
+
+	// Make a buffer with 5MB of data
+	buf := bytes.Repeat([]byte("abcde"), 1024*1024)
+
+	// Save the data
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
+	objInfo, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), int64(len(buf)), "", "", map[string]string{
+		"Content-Type": "binary/octet-stream",
+	})
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	if objInfo.Size != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", len(buf), objInfo.Size)
+	}
+
+	destBucketName := bucketName
+	destObjectName := objectName + "-dest"
+
+	uploadID, err := c.NewMultipartUpload(destBucketName, destObjectName, PutObjectOptions{})
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	// Content of the destination object will be two copies of
+	// `objectName` concatenated, followed by first byte of
+	// `objectName`.
+
+	// First of three parts
+	fstPart, err := c.CopyObjectPart(bucketName, objectName, destBucketName, destObjectName, uploadID, 1, 0, -1, nil)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+
+	// Second of three parts
+	sndPart, err := c.CopyObjectPart(bucketName, objectName, destBucketName, destObjectName, uploadID, 2, 0, -1, nil)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+
+	// Last of three parts
+	lstPart, err := c.CopyObjectPart(bucketName, objectName, destBucketName, destObjectName, uploadID, 3, 0, 1, nil)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+
+	// Complete the multipart upload
+	err = c.CompleteMultipartUpload(destBucketName, destObjectName, uploadID, []CompletePart{fstPart, sndPart, lstPart})
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+
+	// Stat the object and check its length matches
+	objInfo, err = c.StatObject(destBucketName, destObjectName, StatObjectOptions{})
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+
+	if objInfo.Size != (5*1024*1024)*2+1 {
+		t.Fatal("Destination object has incorrect size!")
+	}
+
+	// Now we read the data back
+	getOpts := GetObjectOptions{}
+	getOpts.SetRange(0, 5*1024*1024-1)
+	r, _, err := c.GetObject(destBucketName, destObjectName, getOpts)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+	getBuf := make([]byte, 5*1024*1024)
+	_, err = io.ReadFull(r, getBuf)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+	if !bytes.Equal(getBuf, buf) {
+		t.Fatal("Got unexpected data in first 5MB")
+	}
+
+	getOpts.SetRange(5*1024*1024, 0)
+	r, _, err = c.GetObject(destBucketName, destObjectName, getOpts)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+	getBuf = make([]byte, 5*1024*1024+1)
+	_, err = io.ReadFull(r, getBuf)
+	if err != nil {
+		t.Fatal("Error:", err, destBucketName, destObjectName)
+	}
+	if !bytes.Equal(getBuf[:5*1024*1024], buf) {
+		t.Fatal("Got unexpected data in second 5MB")
+	}
+	if getBuf[5*1024*1024] != buf[0] {
+		t.Fatal("Got unexpected data in last byte of copied object!")
+	}
+
+	if err := c.RemoveObject(destBucketName, destObjectName); err != nil {
+		t.Fatal("Error: ", err)
+	}
+
+	if err := c.RemoveObject(bucketName, objectName); err != nil {
+		t.Fatal("Error: ", err)
+	}
+
+	if err := c.RemoveBucket(bucketName); err != nil {
+		t.Fatal("Error: ", err)
+	}
+
+	// Do not need to remove destBucketName its same as bucketName.
+}
+
 // Test Core PutObject.
 func TestCorePutObject(t *testing.T) {
 	if testing.Short() {

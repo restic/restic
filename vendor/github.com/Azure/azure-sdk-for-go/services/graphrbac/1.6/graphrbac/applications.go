@@ -18,15 +18,17 @@ package graphrbac
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/Azure/go-autorest/autorest/validation"
 	"net/http"
 )
 
 // ApplicationsClient is the the Graph RBAC Management Client
 type ApplicationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewApplicationsClient creates an instance of the ApplicationsClient client.
@@ -39,10 +41,84 @@ func NewApplicationsClientWithBaseURI(baseURI string, tenantID string) Applicati
 	return ApplicationsClient{NewWithBaseURI(baseURI, tenantID)}
 }
 
+// AddOwner add an owner to an application.
+//
+// applicationObjectID is the object ID of the application to which to add the owner. parameters is the URL of the
+// owner object, such as
+// https://graph.windows.net/0b1f9851-1bf0-433f-aec3-cb9272f093dc/directoryObjects/f260bbc4-c254-447b-94cf-293b5ec434dd.
+func (client ApplicationsClient) AddOwner(ctx context.Context, applicationObjectID string, parameters ApplicationAddOwnerParameters) (result autorest.Response, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: parameters,
+			Constraints: []validation.Constraint{{Target: "parameters.URL", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "graphrbac.ApplicationsClient", "AddOwner")
+	}
+
+	req, err := client.AddOwnerPreparer(ctx, applicationObjectID, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "AddOwner", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.AddOwnerSender(req)
+	if err != nil {
+		result.Response = resp
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "AddOwner", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.AddOwnerResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "AddOwner", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// AddOwnerPreparer prepares the AddOwner request.
+func (client ApplicationsClient) AddOwnerPreparer(ctx context.Context, applicationObjectID string, parameters ApplicationAddOwnerParameters) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"applicationObjectId": autorest.Encode("path", applicationObjectID),
+		"tenantID":            autorest.Encode("path", client.TenantID),
+	}
+
+	const APIVersion = "1.6"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsJSON(),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/$links/owners", pathParameters),
+		autorest.WithJSON(parameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// AddOwnerSender sends the AddOwner request. The method will close the
+// http.Response Body if it receives an error.
+func (client ApplicationsClient) AddOwnerSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+}
+
+// AddOwnerResponder handles the response to the AddOwner request. The method always
+// closes the http.Response Body.
+func (client ApplicationsClient) AddOwnerResponder(resp *http.Response) (result autorest.Response, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
+		autorest.ByClosing())
+	result.Response = resp
+	return
+}
+
 // Create create a new application.
 //
 // parameters is the parameters for creating an application.
-func (client ApplicationsClient) Create(parameters ApplicationCreateParameters) (result Application, err error) {
+func (client ApplicationsClient) Create(ctx context.Context, parameters ApplicationCreateParameters) (result Application, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.AvailableToOtherTenants", Name: validation.Null, Rule: true, Chain: nil},
@@ -51,7 +127,7 @@ func (client ApplicationsClient) Create(parameters ApplicationCreateParameters) 
 		return result, validation.NewErrorWithValidationError(err, "graphrbac.ApplicationsClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(parameters)
+	req, err := client.CreatePreparer(ctx, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "Create", nil, "Failure preparing request")
 		return
@@ -73,7 +149,7 @@ func (client ApplicationsClient) Create(parameters ApplicationCreateParameters) 
 }
 
 // CreatePreparer prepares the Create request.
-func (client ApplicationsClient) CreatePreparer(parameters ApplicationCreateParameters) (*http.Request, error) {
+func (client ApplicationsClient) CreatePreparer(ctx context.Context, parameters ApplicationCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -90,13 +166,14 @@ func (client ApplicationsClient) CreatePreparer(parameters ApplicationCreatePara
 		autorest.WithPathParameters("/{tenantID}/applications", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -115,8 +192,8 @@ func (client ApplicationsClient) CreateResponder(resp *http.Response) (result Ap
 // Delete delete an application.
 //
 // applicationObjectID is application object ID.
-func (client ApplicationsClient) Delete(applicationObjectID string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(applicationObjectID)
+func (client ApplicationsClient) Delete(ctx context.Context, applicationObjectID string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, applicationObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -138,7 +215,7 @@ func (client ApplicationsClient) Delete(applicationObjectID string) (result auto
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ApplicationsClient) DeletePreparer(applicationObjectID string) (*http.Request, error) {
+func (client ApplicationsClient) DeletePreparer(ctx context.Context, applicationObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -154,13 +231,14 @@ func (client ApplicationsClient) DeletePreparer(applicationObjectID string) (*ht
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -178,8 +256,8 @@ func (client ApplicationsClient) DeleteResponder(resp *http.Response) (result au
 // Get get an application by object ID.
 //
 // applicationObjectID is application object ID.
-func (client ApplicationsClient) Get(applicationObjectID string) (result Application, err error) {
-	req, err := client.GetPreparer(applicationObjectID)
+func (client ApplicationsClient) Get(ctx context.Context, applicationObjectID string) (result Application, err error) {
+	req, err := client.GetPreparer(ctx, applicationObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -201,7 +279,7 @@ func (client ApplicationsClient) Get(applicationObjectID string) (result Applica
 }
 
 // GetPreparer prepares the Get request.
-func (client ApplicationsClient) GetPreparer(applicationObjectID string) (*http.Request, error) {
+func (client ApplicationsClient) GetPreparer(ctx context.Context, applicationObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -217,13 +295,14 @@ func (client ApplicationsClient) GetPreparer(applicationObjectID string) (*http.
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetResponder handles the response to the Get request. The method always
@@ -242,8 +321,14 @@ func (client ApplicationsClient) GetResponder(resp *http.Response) (result Appli
 // List lists applications by filter parameters.
 //
 // filter is the filters to apply to the operation.
-func (client ApplicationsClient) List(filter string) (result ApplicationListResult, err error) {
-	req, err := client.ListPreparer(filter)
+func (client ApplicationsClient) List(ctx context.Context, filter string) (result ApplicationListResultPage, err error) {
+	result.fn = func(lastResult ApplicationListResult) (ApplicationListResult, error) {
+		if lastResult.OdataNextLink == nil || len(to.String(lastResult.OdataNextLink)) < 1 {
+			return ApplicationListResult{}, nil
+		}
+		return client.ListNext(ctx, *lastResult.OdataNextLink)
+	}
+	req, err := client.ListPreparer(ctx, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "List", nil, "Failure preparing request")
 		return
@@ -251,12 +336,12 @@ func (client ApplicationsClient) List(filter string) (result ApplicationListResu
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.alr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.alr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "List", resp, "Failure responding to request")
 	}
@@ -265,7 +350,7 @@ func (client ApplicationsClient) List(filter string) (result ApplicationListResu
 }
 
 // ListPreparer prepares the List request.
-func (client ApplicationsClient) ListPreparer(filter string) (*http.Request, error) {
+func (client ApplicationsClient) ListPreparer(ctx context.Context, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -283,13 +368,14 @@ func (client ApplicationsClient) ListPreparer(filter string) (*http.Request, err
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/applications", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListResponder handles the response to the List request. The method always
@@ -305,56 +391,17 @@ func (client ApplicationsClient) ListResponder(resp *http.Response) (result Appl
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ApplicationsClient) ListComplete(filter string, cancel <-chan struct{}) (<-chan Application, <-chan error) {
-	resultChan := make(chan Application)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.OdataNextLink != nil {
-			list, err = client.ListNext(*list.OdataNextLink)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ApplicationsClient) ListComplete(ctx context.Context, filter string) (result ApplicationListResultIterator, err error) {
+	result.page, err = client.List(ctx, filter)
+	return
 }
 
 // ListKeyCredentials get the keyCredentials associated with an application.
 //
 // applicationObjectID is application object ID.
-func (client ApplicationsClient) ListKeyCredentials(applicationObjectID string) (result KeyCredentialListResult, err error) {
-	req, err := client.ListKeyCredentialsPreparer(applicationObjectID)
+func (client ApplicationsClient) ListKeyCredentials(ctx context.Context, applicationObjectID string) (result KeyCredentialListResult, err error) {
+	req, err := client.ListKeyCredentialsPreparer(ctx, applicationObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListKeyCredentials", nil, "Failure preparing request")
 		return
@@ -376,7 +423,7 @@ func (client ApplicationsClient) ListKeyCredentials(applicationObjectID string) 
 }
 
 // ListKeyCredentialsPreparer prepares the ListKeyCredentials request.
-func (client ApplicationsClient) ListKeyCredentialsPreparer(applicationObjectID string) (*http.Request, error) {
+func (client ApplicationsClient) ListKeyCredentialsPreparer(ctx context.Context, applicationObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -392,13 +439,14 @@ func (client ApplicationsClient) ListKeyCredentialsPreparer(applicationObjectID 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/keyCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListKeyCredentialsSender sends the ListKeyCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) ListKeyCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListKeyCredentialsResponder handles the response to the ListKeyCredentials request. The method always
@@ -417,8 +465,8 @@ func (client ApplicationsClient) ListKeyCredentialsResponder(resp *http.Response
 // ListNext gets a list of applications from the current tenant.
 //
 // nextLink is next link for the list operation.
-func (client ApplicationsClient) ListNext(nextLink string) (result ApplicationListResult, err error) {
-	req, err := client.ListNextPreparer(nextLink)
+func (client ApplicationsClient) ListNext(ctx context.Context, nextLink string) (result ApplicationListResult, err error) {
+	req, err := client.ListNextPreparer(ctx, nextLink)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListNext", nil, "Failure preparing request")
 		return
@@ -440,7 +488,7 @@ func (client ApplicationsClient) ListNext(nextLink string) (result ApplicationLi
 }
 
 // ListNextPreparer prepares the ListNext request.
-func (client ApplicationsClient) ListNextPreparer(nextLink string) (*http.Request, error) {
+func (client ApplicationsClient) ListNextPreparer(ctx context.Context, nextLink string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nextLink": nextLink,
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -456,13 +504,14 @@ func (client ApplicationsClient) ListNextPreparer(nextLink string) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/{nextLink}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListNextSender sends the ListNext request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) ListNextSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListNextResponder handles the response to the ListNext request. The method always
@@ -478,11 +527,76 @@ func (client ApplicationsClient) ListNextResponder(resp *http.Response) (result 
 	return
 }
 
+// ListOwners the owners are a set of non-admin users who are allowed to modify this object.
+//
+// applicationObjectID is the object ID of the application for which to get owners.
+func (client ApplicationsClient) ListOwners(ctx context.Context, applicationObjectID string) (result DirectoryObjectListResult, err error) {
+	req, err := client.ListOwnersPreparer(ctx, applicationObjectID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListOwners", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListOwnersSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListOwners", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListOwnersResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListOwners", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListOwnersPreparer prepares the ListOwners request.
+func (client ApplicationsClient) ListOwnersPreparer(ctx context.Context, applicationObjectID string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"applicationObjectId": autorest.Encode("path", applicationObjectID),
+		"tenantID":            autorest.Encode("path", client.TenantID),
+	}
+
+	const APIVersion = "1.6"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/owners", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListOwnersSender sends the ListOwners request. The method will close the
+// http.Response Body if it receives an error.
+func (client ApplicationsClient) ListOwnersSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+}
+
+// ListOwnersResponder handles the response to the ListOwners request. The method always
+// closes the http.Response Body.
+func (client ApplicationsClient) ListOwnersResponder(resp *http.Response) (result DirectoryObjectListResult, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // ListPasswordCredentials get the passwordCredentials associated with an application.
 //
 // applicationObjectID is application object ID.
-func (client ApplicationsClient) ListPasswordCredentials(applicationObjectID string) (result PasswordCredentialListResult, err error) {
-	req, err := client.ListPasswordCredentialsPreparer(applicationObjectID)
+func (client ApplicationsClient) ListPasswordCredentials(ctx context.Context, applicationObjectID string) (result PasswordCredentialListResult, err error) {
+	req, err := client.ListPasswordCredentialsPreparer(ctx, applicationObjectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "ListPasswordCredentials", nil, "Failure preparing request")
 		return
@@ -504,7 +618,7 @@ func (client ApplicationsClient) ListPasswordCredentials(applicationObjectID str
 }
 
 // ListPasswordCredentialsPreparer prepares the ListPasswordCredentials request.
-func (client ApplicationsClient) ListPasswordCredentialsPreparer(applicationObjectID string) (*http.Request, error) {
+func (client ApplicationsClient) ListPasswordCredentialsPreparer(ctx context.Context, applicationObjectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -520,13 +634,14 @@ func (client ApplicationsClient) ListPasswordCredentialsPreparer(applicationObje
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/passwordCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListPasswordCredentialsSender sends the ListPasswordCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) ListPasswordCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListPasswordCredentialsResponder handles the response to the ListPasswordCredentials request. The method always
@@ -545,8 +660,8 @@ func (client ApplicationsClient) ListPasswordCredentialsResponder(resp *http.Res
 // Patch update an existing application.
 //
 // applicationObjectID is application object ID. parameters is parameters to update an existing application.
-func (client ApplicationsClient) Patch(applicationObjectID string, parameters ApplicationUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.PatchPreparer(applicationObjectID, parameters)
+func (client ApplicationsClient) Patch(ctx context.Context, applicationObjectID string, parameters ApplicationUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.PatchPreparer(ctx, applicationObjectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "Patch", nil, "Failure preparing request")
 		return
@@ -568,7 +683,7 @@ func (client ApplicationsClient) Patch(applicationObjectID string, parameters Ap
 }
 
 // PatchPreparer prepares the Patch request.
-func (client ApplicationsClient) PatchPreparer(applicationObjectID string, parameters ApplicationUpdateParameters) (*http.Request, error) {
+func (client ApplicationsClient) PatchPreparer(ctx context.Context, applicationObjectID string, parameters ApplicationUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -586,13 +701,14 @@ func (client ApplicationsClient) PatchPreparer(applicationObjectID string, param
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchSender sends the Patch request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) PatchSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // PatchResponder handles the response to the Patch request. The method always
@@ -611,8 +727,8 @@ func (client ApplicationsClient) PatchResponder(resp *http.Response) (result aut
 //
 // applicationObjectID is application object ID. parameters is parameters to update the keyCredentials of an existing
 // application.
-func (client ApplicationsClient) UpdateKeyCredentials(applicationObjectID string, parameters KeyCredentialsUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.UpdateKeyCredentialsPreparer(applicationObjectID, parameters)
+func (client ApplicationsClient) UpdateKeyCredentials(ctx context.Context, applicationObjectID string, parameters KeyCredentialsUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.UpdateKeyCredentialsPreparer(ctx, applicationObjectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "UpdateKeyCredentials", nil, "Failure preparing request")
 		return
@@ -634,7 +750,7 @@ func (client ApplicationsClient) UpdateKeyCredentials(applicationObjectID string
 }
 
 // UpdateKeyCredentialsPreparer prepares the UpdateKeyCredentials request.
-func (client ApplicationsClient) UpdateKeyCredentialsPreparer(applicationObjectID string, parameters KeyCredentialsUpdateParameters) (*http.Request, error) {
+func (client ApplicationsClient) UpdateKeyCredentialsPreparer(ctx context.Context, applicationObjectID string, parameters KeyCredentialsUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -652,13 +768,14 @@ func (client ApplicationsClient) UpdateKeyCredentialsPreparer(applicationObjectI
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/keyCredentials", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateKeyCredentialsSender sends the UpdateKeyCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) UpdateKeyCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateKeyCredentialsResponder handles the response to the UpdateKeyCredentials request. The method always
@@ -677,8 +794,8 @@ func (client ApplicationsClient) UpdateKeyCredentialsResponder(resp *http.Respon
 //
 // applicationObjectID is application object ID. parameters is parameters to update passwordCredentials of an existing
 // application.
-func (client ApplicationsClient) UpdatePasswordCredentials(applicationObjectID string, parameters PasswordCredentialsUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.UpdatePasswordCredentialsPreparer(applicationObjectID, parameters)
+func (client ApplicationsClient) UpdatePasswordCredentials(ctx context.Context, applicationObjectID string, parameters PasswordCredentialsUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.UpdatePasswordCredentialsPreparer(ctx, applicationObjectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ApplicationsClient", "UpdatePasswordCredentials", nil, "Failure preparing request")
 		return
@@ -700,7 +817,7 @@ func (client ApplicationsClient) UpdatePasswordCredentials(applicationObjectID s
 }
 
 // UpdatePasswordCredentialsPreparer prepares the UpdatePasswordCredentials request.
-func (client ApplicationsClient) UpdatePasswordCredentialsPreparer(applicationObjectID string, parameters PasswordCredentialsUpdateParameters) (*http.Request, error) {
+func (client ApplicationsClient) UpdatePasswordCredentialsPreparer(ctx context.Context, applicationObjectID string, parameters PasswordCredentialsUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationObjectId": autorest.Encode("path", applicationObjectID),
 		"tenantID":            autorest.Encode("path", client.TenantID),
@@ -718,13 +835,14 @@ func (client ApplicationsClient) UpdatePasswordCredentialsPreparer(applicationOb
 		autorest.WithPathParameters("/{tenantID}/applications/{applicationObjectId}/passwordCredentials", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdatePasswordCredentialsSender sends the UpdatePasswordCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ApplicationsClient) UpdatePasswordCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdatePasswordCredentialsResponder handles the response to the UpdatePasswordCredentials request. The method always

@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/wCcRyDpa6JwxkLwmzDkr55huG84\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/FEIM1JSTcD4HhoBpMoEeP9vkMCQ\"",
  "discoveryVersion": "v1",
  "id": "admin:directory_v1",
  "name": "admin",
  "canonicalName": "directory",
  "version": "directory_v1",
- "revision": "20171113",
+ "revision": "20171212",
  "title": "Admin Directory API",
  "description": "The Admin SDK Directory API lets you view and manage enterprise resources such as users and groups, administrative notifications, security features, and more.",
  "ownerDomain": "google.com",
@@ -312,31 +312,138 @@
     }
    }
   },
+  "Building": {
+   "id": "Building",
+   "type": "object",
+   "description": "JSON template for Building object in Directory API.",
+   "properties": {
+    "buildingId": {
+     "type": "string",
+     "description": "Unique identifier for the building. The maximum length is 100 characters."
+    },
+    "buildingName": {
+     "type": "string",
+     "description": "The building name as seen by users in Calendar. Must be unique for the customer. For example, \"NYC-CHEL\". The maximum length is 100 characters."
+    },
+    "coordinates": {
+     "$ref": "BuildingCoordinates",
+     "description": "The geographic coordinates of the center of the building, expressed as latitude and longitude in decimal degrees."
+    },
+    "description": {
+     "type": "string",
+     "description": "A brief description of the building. For example, \"Chelsea Market\"."
+    },
+    "etags": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "floorNames": {
+     "type": "array",
+     "description": "The display names for all floors in this building. The floors are expected to be sorted in ascending order, from lowest floor to highest floor. For example, [\"B2\", \"B1\", \"L\", \"1\", \"2\", \"2M\", \"3\", \"PH\"] Must contain at least one entry.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Kind of resource this is.",
+     "default": "admin#directory#resources#buildings#Building"
+    }
+   }
+  },
+  "BuildingCoordinates": {
+   "id": "BuildingCoordinates",
+   "type": "object",
+   "description": "JSON template for coordinates of a building in Directory API.",
+   "properties": {
+    "latitude": {
+     "type": "number",
+     "description": "Latitude in decimal degrees.",
+     "format": "double"
+    },
+    "longitude": {
+     "type": "number",
+     "description": "Longitude in decimal degrees.",
+     "format": "double"
+    }
+   }
+  },
+  "Buildings": {
+   "id": "Buildings",
+   "type": "object",
+   "description": "JSON template for Building List Response object in Directory API.",
+   "properties": {
+    "buildings": {
+     "type": "array",
+     "description": "The Buildings in this page of results.",
+     "items": {
+      "$ref": "Building"
+     }
+    },
+    "etag": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "kind": {
+     "type": "string",
+     "description": "Kind of resource this is.",
+     "default": "admin#directory#resources#buildings#buildingsList"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results."
+    }
+   }
+  },
   "CalendarResource": {
    "id": "CalendarResource",
    "type": "object",
    "description": "JSON template for Calendar Resource object in Directory API.",
    "properties": {
+    "buildingId": {
+     "type": "string",
+     "description": "Unique ID for the building a resource is located in."
+    },
+    "capacity": {
+     "type": "integer",
+     "description": "Capacity of a resource, number of seats in a room.",
+     "format": "int32"
+    },
     "etags": {
      "type": "string",
      "description": "ETag of the resource."
     },
+    "featureInstances": {
+     "type": "any"
+    },
+    "floorName": {
+     "type": "string",
+     "description": "Name of the floor a resource is located on."
+    },
+    "floorSection": {
+     "type": "string",
+     "description": "Name of the section within a floor a resource is located in."
+    },
     "generatedResourceName": {
      "type": "string",
-     "description": "The auto-generated name of the calendar resource which includes metadata about the resource such as building name, floor, capacity, etc. For example, NYC-2-Training Room 1A (16)"
+     "description": "The read-only auto-generated name of the calendar resource which includes metadata about the resource such as building name, floor, capacity, etc. For example, \"NYC-2-Training Room 1A (16)\"."
     },
     "kind": {
      "type": "string",
      "description": "The type of the resource. For calendar resources, the value is admin#directory#resources#calendars#CalendarResource.",
      "default": "admin#directory#resources#calendars#CalendarResource"
     },
+    "resourceCategory": {
+     "type": "string",
+     "description": "The category of the calendar resource. Either CONFERENCE_ROOM or OTHER. Legacy data is set to CATEGORY_UNKNOWN."
+    },
     "resourceDescription": {
      "type": "string",
-     "description": "The brief description of the calendar resource."
+     "description": "Description of the resource, visible only to admins."
     },
     "resourceEmail": {
      "type": "string",
-     "description": "The read-only email ID for the calendar resource. Generated as part of creating a new calendar resource."
+     "description": "The read-only email for the calendar resource. Generated as part of creating a new calendar resource."
     },
     "resourceId": {
      "type": "string",
@@ -344,11 +451,15 @@
     },
     "resourceName": {
      "type": "string",
-     "description": "The name of the calendar resource. For example, Training Room 1A"
+     "description": "The name of the calendar resource. For example, \"Training Room 1A\"."
     },
     "resourceType": {
      "type": "string",
-     "description": "The type of the calendar resource. Used for grouping resources in the calendar user interface."
+     "description": "The type of the calendar resource, intended for non-room resources."
+    },
+    "userVisibleDescription": {
+     "type": "string",
+     "description": "Description of the resource, visible to users and admins."
     }
    }
   },
@@ -472,6 +583,32 @@
      "type": "string",
      "description": "Chromebook boot mode (Read-only)"
     },
+    "deviceFiles": {
+     "type": "array",
+     "description": "List of device files to download (Read-only)",
+     "items": {
+      "type": "object",
+      "properties": {
+       "createTime": {
+        "type": "string",
+        "description": "Date and time the file was created",
+        "format": "date-time"
+       },
+       "downloadUrl": {
+        "type": "string",
+        "description": "File downlod URL"
+       },
+       "name": {
+        "type": "string",
+        "description": "File name"
+       },
+       "type": {
+        "type": "string",
+        "description": "File type"
+       }
+      }
+     }
+    },
     "deviceId": {
      "type": "string",
      "description": "Unique identifier of Chrome OS Device (Read-only)"
@@ -564,6 +701,29 @@
      "type": "string",
      "description": "Final date the device will be supported (Read-only)",
      "format": "date-time"
+    },
+    "tpmVersionInfo": {
+     "type": "object",
+     "properties": {
+      "family": {
+       "type": "string"
+      },
+      "firmwareVersion": {
+       "type": "string"
+      },
+      "manufacturer": {
+       "type": "string"
+      },
+      "specLevel": {
+       "type": "string"
+      },
+      "tpmModel": {
+       "type": "string"
+      },
+      "vendorSpecific": {
+       "type": "string"
+      }
+     }
     },
     "willAutoRenew": {
      "type": "boolean",
@@ -850,6 +1010,84 @@
      "type": "string",
      "description": "Kind of resource this is.",
      "default": "admin#directory#domains"
+    }
+   }
+  },
+  "Feature": {
+   "id": "Feature",
+   "type": "object",
+   "description": "JSON template for Feature object in Directory API.",
+   "properties": {
+    "etags": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "kind": {
+     "type": "string",
+     "description": "Kind of resource this is.",
+     "default": "admin#directory#resources#features#Feature"
+    },
+    "name": {
+     "type": "string",
+     "description": "The name of the feature.",
+     "annotations": {
+      "required": [
+       "directory.resources.features.insert"
+      ]
+     }
+    }
+   }
+  },
+  "FeatureInstance": {
+   "id": "FeatureInstance",
+   "type": "object",
+   "description": "JSON template for a \"feature instance\".",
+   "properties": {
+    "feature": {
+     "$ref": "Feature"
+    }
+   }
+  },
+  "FeatureRename": {
+   "id": "FeatureRename",
+   "type": "object",
+   "description": "JSON request template for renaming a feature.",
+   "properties": {
+    "newName": {
+     "type": "string",
+     "description": "New name of the feature.",
+     "annotations": {
+      "required": [
+       "directory.resources.features.rename"
+      ]
+     }
+    }
+   }
+  },
+  "Features": {
+   "id": "Features",
+   "type": "object",
+   "description": "JSON template for Feature List Response object in Directory API.",
+   "properties": {
+    "etag": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "features": {
+     "type": "array",
+     "description": "The Features in this page of results.",
+     "items": {
+      "$ref": "Feature"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Kind of resource this is.",
+     "default": "admin#directory#resources#features#featuresList"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results."
     }
    }
   },
@@ -4515,6 +4753,184 @@
   },
   "resources": {
    "resources": {
+    "buildings": {
+     "methods": {
+      "delete": {
+       "id": "directory.resources.buildings.delete",
+       "path": "customer/{customer}/resources/buildings/{buildingId}",
+       "httpMethod": "DELETE",
+       "description": "Deletes a building.",
+       "parameters": {
+        "buildingId": {
+         "type": "string",
+         "description": "The ID of the building to delete.",
+         "required": true,
+         "location": "path"
+        },
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "buildingId"
+       ],
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "get": {
+       "id": "directory.resources.buildings.get",
+       "path": "customer/{customer}/resources/buildings/{buildingId}",
+       "httpMethod": "GET",
+       "description": "Retrieves a building.",
+       "parameters": {
+        "buildingId": {
+         "type": "string",
+         "description": "The unique ID of the building to retrieve.",
+         "required": true,
+         "location": "path"
+        },
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "buildingId"
+       ],
+       "response": {
+        "$ref": "Building"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+       ]
+      },
+      "insert": {
+       "id": "directory.resources.buildings.insert",
+       "path": "customer/{customer}/resources/buildings",
+       "httpMethod": "POST",
+       "description": "Inserts a building.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer"
+       ],
+       "request": {
+        "$ref": "Building"
+       },
+       "response": {
+        "$ref": "Building"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "list": {
+       "id": "directory.resources.buildings.list",
+       "path": "customer/{customer}/resources/buildings",
+       "httpMethod": "GET",
+       "description": "Retrieves a list of buildings for an account.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer"
+       ],
+       "response": {
+        "$ref": "Buildings"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+       ]
+      },
+      "patch": {
+       "id": "directory.resources.buildings.patch",
+       "path": "customer/{customer}/resources/buildings/{buildingId}",
+       "httpMethod": "PATCH",
+       "description": "Updates a building. This method supports patch semantics.",
+       "parameters": {
+        "buildingId": {
+         "type": "string",
+         "description": "The ID of the building to update.",
+         "required": true,
+         "location": "path"
+        },
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "buildingId"
+       ],
+       "request": {
+        "$ref": "Building"
+       },
+       "response": {
+        "$ref": "Building"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "update": {
+       "id": "directory.resources.buildings.update",
+       "path": "customer/{customer}/resources/buildings/{buildingId}",
+       "httpMethod": "PUT",
+       "description": "Updates a building.",
+       "parameters": {
+        "buildingId": {
+         "type": "string",
+         "description": "The ID of the building to update.",
+         "required": true,
+         "location": "path"
+        },
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "buildingId"
+       ],
+       "request": {
+        "$ref": "Building"
+       },
+       "response": {
+        "$ref": "Building"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      }
+     }
+    },
     "calendars": {
      "methods": {
       "delete": {
@@ -4621,9 +5037,19 @@
          "maximum": "500",
          "location": "query"
         },
+        "orderBy": {
+         "type": "string",
+         "description": "Field(s) to sort results by in either ascending or descending order. Supported fields include resourceId, resourceName, capacity, buildingId, and floorName. If no order is specified, defaults to ascending. Should be of the form \"field [asc|desc], field [asc|desc], ...\". For example buildingId, capacity desc would return results sorted first by buildingId in ascending order then by capacity in descending order.",
+         "location": "query"
+        },
         "pageToken": {
          "type": "string",
          "description": "Token to specify the next page in the list.",
+         "location": "query"
+        },
+        "query": {
+         "type": "string",
+         "description": "String query used to filter results. Should be of the form \"field operator value\" where field can be any of supported fields and operators can be any of supported operations. Operators include '=' for exact match and ':' for prefix match where applicable. For prefix match, the value should always be followed by a *.",
          "location": "query"
         }
        },
@@ -4699,6 +5125,219 @@
        },
        "response": {
         "$ref": "CalendarResource"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      }
+     }
+    },
+    "features": {
+     "methods": {
+      "delete": {
+       "id": "directory.resources.features.delete",
+       "path": "customer/{customer}/resources/features/{featureKey}",
+       "httpMethod": "DELETE",
+       "description": "Deletes a feature.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "featureKey": {
+         "type": "string",
+         "description": "The unique ID of the feature to delete.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "featureKey"
+       ],
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "get": {
+       "id": "directory.resources.features.get",
+       "path": "customer/{customer}/resources/features/{featureKey}",
+       "httpMethod": "GET",
+       "description": "Retrieves a feature.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "featureKey": {
+         "type": "string",
+         "description": "The unique ID of the feature to retrieve.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "featureKey"
+       ],
+       "response": {
+        "$ref": "Feature"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+       ]
+      },
+      "insert": {
+       "id": "directory.resources.features.insert",
+       "path": "customer/{customer}/resources/features",
+       "httpMethod": "POST",
+       "description": "Inserts a feature.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer"
+       ],
+       "request": {
+        "$ref": "Feature"
+       },
+       "response": {
+        "$ref": "Feature"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "list": {
+       "id": "directory.resources.features.list",
+       "path": "customer/{customer}/resources/features",
+       "httpMethod": "GET",
+       "description": "Retrieves a list of features for an account.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "pageToken": {
+         "type": "string",
+         "description": "Token to specify the next page in the list.",
+         "location": "query"
+        }
+       },
+       "parameterOrder": [
+        "customer"
+       ],
+       "response": {
+        "$ref": "Features"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar",
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar.readonly"
+       ]
+      },
+      "patch": {
+       "id": "directory.resources.features.patch",
+       "path": "customer/{customer}/resources/features/{featureKey}",
+       "httpMethod": "PATCH",
+       "description": "Updates a feature. This method supports patch semantics.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "featureKey": {
+         "type": "string",
+         "description": "The unique ID of the feature to update.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "featureKey"
+       ],
+       "request": {
+        "$ref": "Feature"
+       },
+       "response": {
+        "$ref": "Feature"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "rename": {
+       "id": "directory.resources.features.rename",
+       "path": "customer/{customer}/resources/features/{oldName}/rename",
+       "httpMethod": "POST",
+       "description": "Renames a feature.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "oldName": {
+         "type": "string",
+         "description": "The unique ID of the feature to rename.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "oldName"
+       ],
+       "request": {
+        "$ref": "FeatureRename"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/admin.directory.resource.calendar"
+       ]
+      },
+      "update": {
+       "id": "directory.resources.features.update",
+       "path": "customer/{customer}/resources/features/{featureKey}",
+       "httpMethod": "PUT",
+       "description": "Updates a feature.",
+       "parameters": {
+        "customer": {
+         "type": "string",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "required": true,
+         "location": "path"
+        },
+        "featureKey": {
+         "type": "string",
+         "description": "The unique ID of the feature to update.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "customer",
+        "featureKey"
+       ],
+       "request": {
+        "$ref": "Feature"
+       },
+       "response": {
+        "$ref": "Feature"
        },
        "scopes": [
         "https://www.googleapis.com/auth/admin.directory.resource.calendar"

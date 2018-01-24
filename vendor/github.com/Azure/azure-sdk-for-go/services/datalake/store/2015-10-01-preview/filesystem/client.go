@@ -29,20 +29,20 @@ const (
 	DefaultAdlsFileSystemDNSSuffix = "azuredatalakestore.net"
 )
 
-// ManagementClient is the base client for Filesystem.
-type ManagementClient struct {
+// BaseClient is the base client for Filesystem.
+type BaseClient struct {
 	autorest.Client
 	AdlsFileSystemDNSSuffix string
 }
 
-// New creates an instance of the ManagementClient client.
-func New() ManagementClient {
+// New creates an instance of the BaseClient client.
+func New() BaseClient {
 	return NewWithoutDefaults(DefaultAdlsFileSystemDNSSuffix)
 }
 
-// NewWithoutDefaults creates an instance of the ManagementClient client.
-func NewWithoutDefaults(adlsFileSystemDNSSuffix string) ManagementClient {
-	return ManagementClient{
+// NewWithoutDefaults creates an instance of the BaseClient client.
+func NewWithoutDefaults(adlsFileSystemDNSSuffix string) BaseClient {
+	return BaseClient{
 		Client:                  autorest.NewClientWithUserAgent(UserAgent()),
 		AdlsFileSystemDNSSuffix: adlsFileSystemDNSSuffix,
 	}

@@ -19,7 +19,6 @@ package insights
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -30,9 +29,9 @@ import (
 type CategoryType string
 
 const (
-	// Logs specifies the logs state for category type.
+	// Logs ...
 	Logs CategoryType = "Logs"
-	// Metrics specifies the metrics state for category type.
+	// Metrics ...
 	Metrics CategoryType = "Metrics"
 )
 
@@ -40,17 +39,17 @@ const (
 type ComparisonOperationType string
 
 const (
-	// Equals specifies the equals state for comparison operation type.
+	// Equals ...
 	Equals ComparisonOperationType = "Equals"
-	// GreaterThan specifies the greater than state for comparison operation type.
+	// GreaterThan ...
 	GreaterThan ComparisonOperationType = "GreaterThan"
-	// GreaterThanOrEqual specifies the greater than or equal state for comparison operation type.
+	// GreaterThanOrEqual ...
 	GreaterThanOrEqual ComparisonOperationType = "GreaterThanOrEqual"
-	// LessThan specifies the less than state for comparison operation type.
+	// LessThan ...
 	LessThan ComparisonOperationType = "LessThan"
-	// LessThanOrEqual specifies the less than or equal state for comparison operation type.
+	// LessThanOrEqual ...
 	LessThanOrEqual ComparisonOperationType = "LessThanOrEqual"
-	// NotEquals specifies the not equals state for comparison operation type.
+	// NotEquals ...
 	NotEquals ComparisonOperationType = "NotEquals"
 )
 
@@ -58,14 +57,13 @@ const (
 type ConditionOperator string
 
 const (
-	// ConditionOperatorGreaterThan specifies the condition operator greater than state for condition operator.
+	// ConditionOperatorGreaterThan ...
 	ConditionOperatorGreaterThan ConditionOperator = "GreaterThan"
-	// ConditionOperatorGreaterThanOrEqual specifies the condition operator greater than or equal state for condition
-	// operator.
+	// ConditionOperatorGreaterThanOrEqual ...
 	ConditionOperatorGreaterThanOrEqual ConditionOperator = "GreaterThanOrEqual"
-	// ConditionOperatorLessThan specifies the condition operator less than state for condition operator.
+	// ConditionOperatorLessThan ...
 	ConditionOperatorLessThan ConditionOperator = "LessThan"
-	// ConditionOperatorLessThanOrEqual specifies the condition operator less than or equal state for condition operator.
+	// ConditionOperatorLessThanOrEqual ...
 	ConditionOperatorLessThanOrEqual ConditionOperator = "LessThanOrEqual"
 )
 
@@ -73,13 +71,13 @@ const (
 type MetricStatisticType string
 
 const (
-	// Average specifies the average state for metric statistic type.
+	// Average ...
 	Average MetricStatisticType = "Average"
-	// Max specifies the max state for metric statistic type.
+	// Max ...
 	Max MetricStatisticType = "Max"
-	// Min specifies the min state for metric statistic type.
+	// Min ...
 	Min MetricStatisticType = "Min"
-	// Sum specifies the sum state for metric statistic type.
+	// Sum ...
 	Sum MetricStatisticType = "Sum"
 )
 
@@ -87,50 +85,49 @@ const (
 type OdataType string
 
 const (
-	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource specifies the odata type microsoft
-	// azure management insights models rule management event data source state for odata type.
+	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource ...
 	OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource OdataType = "Microsoft.Azure.Management.Insights.Models.RuleManagementEventDataSource"
-	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource specifies the odata type microsoft azure
-	// management insights models rule metric data source state for odata type.
+	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource ...
 	OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource OdataType = "Microsoft.Azure.Management.Insights.Models.RuleMetricDataSource"
+	// OdataTypeRuleDataSource ...
+	OdataTypeRuleDataSource OdataType = "RuleDataSource"
 )
 
-// OdataType1 enumerates the values for odata type 1.
-type OdataType1 string
+// OdataTypeBasicRuleAction enumerates the values for odata type basic rule action.
+type OdataTypeBasicRuleAction string
 
 const (
-	// OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition specifies the odata type microsoft
-	// azure management insights models location threshold rule condition state for odata type 1.
-	OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition OdataType1 = "Microsoft.Azure.Management.Insights.Models.LocationThresholdRuleCondition"
-	// OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition specifies the odata type microsoft azure
-	// management insights models management event rule condition state for odata type 1.
-	OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition OdataType1 = "Microsoft.Azure.Management.Insights.Models.ManagementEventRuleCondition"
-	// OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition specifies the odata type microsoft azure
-	// management insights models threshold rule condition state for odata type 1.
-	OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition OdataType1 = "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition"
+	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction ...
+	OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction OdataTypeBasicRuleAction = "Microsoft.Azure.Management.Insights.Models.RuleEmailAction"
+	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction ...
+	OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction OdataTypeBasicRuleAction = "Microsoft.Azure.Management.Insights.Models.RuleWebhookAction"
+	// OdataTypeRuleAction ...
+	OdataTypeRuleAction OdataTypeBasicRuleAction = "RuleAction"
 )
 
-// OdataType2 enumerates the values for odata type 2.
-type OdataType2 string
+// OdataTypeBasicRuleCondition enumerates the values for odata type basic rule condition.
+type OdataTypeBasicRuleCondition string
 
 const (
-	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction specifies the odata type microsoft azure management
-	// insights models rule email action state for odata type 2.
-	OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction OdataType2 = "Microsoft.Azure.Management.Insights.Models.RuleEmailAction"
-	// OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction specifies the odata type microsoft azure management
-	// insights models rule webhook action state for odata type 2.
-	OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction OdataType2 = "Microsoft.Azure.Management.Insights.Models.RuleWebhookAction"
+	// OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition ...
+	OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition OdataTypeBasicRuleCondition = "Microsoft.Azure.Management.Insights.Models.LocationThresholdRuleCondition"
+	// OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition ...
+	OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition OdataTypeBasicRuleCondition = "Microsoft.Azure.Management.Insights.Models.ManagementEventRuleCondition"
+	// OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition ...
+	OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition OdataTypeBasicRuleCondition = "Microsoft.Azure.Management.Insights.Models.ThresholdRuleCondition"
+	// OdataTypeRuleCondition ...
+	OdataTypeRuleCondition OdataTypeBasicRuleCondition = "RuleCondition"
 )
 
 // ReceiverStatus enumerates the values for receiver status.
 type ReceiverStatus string
 
 const (
-	// Disabled specifies the disabled state for receiver status.
+	// Disabled ...
 	Disabled ReceiverStatus = "Disabled"
-	// Enabled specifies the enabled state for receiver status.
+	// Enabled ...
 	Enabled ReceiverStatus = "Enabled"
-	// NotSpecified specifies the not specified state for receiver status.
+	// NotSpecified ...
 	NotSpecified ReceiverStatus = "NotSpecified"
 )
 
@@ -138,21 +135,21 @@ const (
 type RecurrenceFrequency string
 
 const (
-	// Day specifies the day state for recurrence frequency.
+	// Day ...
 	Day RecurrenceFrequency = "Day"
-	// Hour specifies the hour state for recurrence frequency.
+	// Hour ...
 	Hour RecurrenceFrequency = "Hour"
-	// Minute specifies the minute state for recurrence frequency.
+	// Minute ...
 	Minute RecurrenceFrequency = "Minute"
-	// Month specifies the month state for recurrence frequency.
+	// Month ...
 	Month RecurrenceFrequency = "Month"
-	// None specifies the none state for recurrence frequency.
+	// None ...
 	None RecurrenceFrequency = "None"
-	// Second specifies the second state for recurrence frequency.
+	// Second ...
 	Second RecurrenceFrequency = "Second"
-	// Week specifies the week state for recurrence frequency.
+	// Week ...
 	Week RecurrenceFrequency = "Week"
-	// Year specifies the year state for recurrence frequency.
+	// Year ...
 	Year RecurrenceFrequency = "Year"
 )
 
@@ -160,11 +157,11 @@ const (
 type ScaleDirection string
 
 const (
-	// ScaleDirectionDecrease specifies the scale direction decrease state for scale direction.
+	// ScaleDirectionDecrease ...
 	ScaleDirectionDecrease ScaleDirection = "Decrease"
-	// ScaleDirectionIncrease specifies the scale direction increase state for scale direction.
+	// ScaleDirectionIncrease ...
 	ScaleDirectionIncrease ScaleDirection = "Increase"
-	// ScaleDirectionNone specifies the scale direction none state for scale direction.
+	// ScaleDirectionNone ...
 	ScaleDirectionNone ScaleDirection = "None"
 )
 
@@ -172,11 +169,11 @@ const (
 type ScaleType string
 
 const (
-	// ChangeCount specifies the change count state for scale type.
+	// ChangeCount ...
 	ChangeCount ScaleType = "ChangeCount"
-	// ExactCount specifies the exact count state for scale type.
+	// ExactCount ...
 	ExactCount ScaleType = "ExactCount"
-	// PercentChangeCount specifies the percent change count state for scale type.
+	// PercentChangeCount ...
 	PercentChangeCount ScaleType = "PercentChangeCount"
 )
 
@@ -184,15 +181,15 @@ const (
 type TimeAggregationOperator string
 
 const (
-	// TimeAggregationOperatorAverage specifies the time aggregation operator average state for time aggregation operator.
+	// TimeAggregationOperatorAverage ...
 	TimeAggregationOperatorAverage TimeAggregationOperator = "Average"
-	// TimeAggregationOperatorLast specifies the time aggregation operator last state for time aggregation operator.
+	// TimeAggregationOperatorLast ...
 	TimeAggregationOperatorLast TimeAggregationOperator = "Last"
-	// TimeAggregationOperatorMaximum specifies the time aggregation operator maximum state for time aggregation operator.
+	// TimeAggregationOperatorMaximum ...
 	TimeAggregationOperatorMaximum TimeAggregationOperator = "Maximum"
-	// TimeAggregationOperatorMinimum specifies the time aggregation operator minimum state for time aggregation operator.
+	// TimeAggregationOperatorMinimum ...
 	TimeAggregationOperatorMinimum TimeAggregationOperator = "Minimum"
-	// TimeAggregationOperatorTotal specifies the time aggregation operator total state for time aggregation operator.
+	// TimeAggregationOperatorTotal ...
 	TimeAggregationOperatorTotal TimeAggregationOperator = "Total"
 )
 
@@ -200,115 +197,331 @@ const (
 type TimeAggregationType string
 
 const (
-	// TimeAggregationTypeAverage specifies the time aggregation type average state for time aggregation type.
+	// TimeAggregationTypeAverage ...
 	TimeAggregationTypeAverage TimeAggregationType = "Average"
-	// TimeAggregationTypeCount specifies the time aggregation type count state for time aggregation type.
+	// TimeAggregationTypeCount ...
 	TimeAggregationTypeCount TimeAggregationType = "Count"
-	// TimeAggregationTypeMaximum specifies the time aggregation type maximum state for time aggregation type.
+	// TimeAggregationTypeMaximum ...
 	TimeAggregationTypeMaximum TimeAggregationType = "Maximum"
-	// TimeAggregationTypeMinimum specifies the time aggregation type minimum state for time aggregation type.
+	// TimeAggregationTypeMinimum ...
 	TimeAggregationTypeMinimum TimeAggregationType = "Minimum"
-	// TimeAggregationTypeTotal specifies the time aggregation type total state for time aggregation type.
+	// TimeAggregationTypeTotal ...
 	TimeAggregationTypeTotal TimeAggregationType = "Total"
 )
 
-// ActionGroup is an Azure action group.
+// ActionGroup an Azure action group.
 type ActionGroup struct {
-	GroupShortName   *string            `json:"groupShortName,omitempty"`
-	Enabled          *bool              `json:"enabled,omitempty"`
-	EmailReceivers   *[]EmailReceiver   `json:"emailReceivers,omitempty"`
-	SmsReceivers     *[]SmsReceiver     `json:"smsReceivers,omitempty"`
+	// GroupShortName - The short name of the action group. This will be used in SMS messages.
+	GroupShortName *string `json:"groupShortName,omitempty"`
+	// Enabled - Indicates whether this action group is enabled. If an action group is not enabled, then none of its receivers will receive communications.
+	Enabled *bool `json:"enabled,omitempty"`
+	// EmailReceivers - The list of email receivers that are part of this action group.
+	EmailReceivers *[]EmailReceiver `json:"emailReceivers,omitempty"`
+	// SmsReceivers - The list of SMS receivers that are part of this action group.
+	SmsReceivers *[]SmsReceiver `json:"smsReceivers,omitempty"`
+	// WebhookReceivers - The list of webhook receivers that are part of this action group.
 	WebhookReceivers *[]WebhookReceiver `json:"webhookReceivers,omitempty"`
 }
 
-// ActionGroupList is a list of action groups.
+// ActionGroupList a list of action groups.
 type ActionGroupList struct {
 	autorest.Response `json:"-"`
-	Value             *[]ActionGroupResource `json:"value,omitempty"`
-	NextLink          *string                `json:"nextLink,omitempty"`
+	// Value - The list of action groups.
+	Value *[]ActionGroupResource `json:"value,omitempty"`
+	// NextLink - Provides the link to retrieve the next set of elements.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ActionGroupResource is an action group resource.
+// ActionGroupResource an action group resource.
 type ActionGroupResource struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*ActionGroup      `json:"properties,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ActionGroup - The action groups properties of the resource.
+	*ActionGroup `json:"properties,omitempty"`
 }
 
-// ActivityLogAlert is an Azure activity log alert.
+// UnmarshalJSON is the custom unmarshaler for ActionGroupResource struct.
+func (agr *ActionGroupResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ActionGroup
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		agr.ActionGroup = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		agr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		agr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		agr.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		agr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		agr.Tags = &tags
+	}
+
+	return nil
+}
+
+// ActivityLogAlert an Azure activity log alert.
 type ActivityLogAlert struct {
-	Scopes      *[]string                       `json:"scopes,omitempty"`
-	Enabled     *bool                           `json:"enabled,omitempty"`
-	Condition   *ActivityLogAlertAllOfCondition `json:"condition,omitempty"`
-	Actions     *ActivityLogAlertActionList     `json:"actions,omitempty"`
-	Description *string                         `json:"description,omitempty"`
+	// Scopes - A list of resourceIds that will be used as prefixes. The alert will only apply to activityLogs with resourceIds that fall under one of these prefixes. This list must include at least one item.
+	Scopes *[]string `json:"scopes,omitempty"`
+	// Enabled - Indicates whether this activity log alert is enabled. If an activity log alert is not enabled, then none of its actions will be activated.
+	Enabled *bool `json:"enabled,omitempty"`
+	// Condition - The condition that will cause this alert to activate.
+	Condition *ActivityLogAlertAllOfCondition `json:"condition,omitempty"`
+	// Actions - The actions that will activate when the condition is met.
+	Actions *ActivityLogAlertActionList `json:"actions,omitempty"`
+	// Description - A description of this activity log alert.
+	Description *string `json:"description,omitempty"`
 }
 
-// ActivityLogAlertActionGroup is a pointer to an Azure Action Group.
+// ActivityLogAlertActionGroup a pointer to an Azure Action Group.
 type ActivityLogAlertActionGroup struct {
-	ActionGroupID     *string             `json:"actionGroupId,omitempty"`
+	// ActionGroupID - The resourceId of the action group. This cannot be null or empty.
+	ActionGroupID *string `json:"actionGroupId,omitempty"`
+	// WebhookProperties - the dictionary of custom properties to include with the post operation. These data are appended to the webhook payload.
 	WebhookProperties *map[string]*string `json:"webhookProperties,omitempty"`
 }
 
-// ActivityLogAlertActionList is a list of activity log alert actions.
+// ActivityLogAlertActionList a list of activity log alert actions.
 type ActivityLogAlertActionList struct {
+	// ActionGroups - The list of activity log alerts.
 	ActionGroups *[]ActivityLogAlertActionGroup `json:"actionGroups,omitempty"`
 }
 
-// ActivityLogAlertAllOfCondition is an Activity Log alert condition that is met when all its member conditions are
-// met.
+// ActivityLogAlertAllOfCondition an Activity Log alert condition that is met when all its member conditions are met.
 type ActivityLogAlertAllOfCondition struct {
+	// AllOf - The list of activity log alert conditions.
 	AllOf *[]ActivityLogAlertLeafCondition `json:"allOf,omitempty"`
 }
 
-// ActivityLogAlertLeafCondition is an Activity Log alert condition that is met by comparing an activity log field and
+// ActivityLogAlertLeafCondition an Activity Log alert condition that is met by comparing an activity log field and
 // value.
 type ActivityLogAlertLeafCondition struct {
-	Field  *string `json:"field,omitempty"`
+	// Field - The name of the field that this condition will examine. The possible values for this field are (case-insensitive): 'resourceId', 'category', 'caller', 'level', 'operationName', 'resourceGroup', 'resourceProvider', 'status', 'subStatus', 'resourceType', or anything beginning with 'properties.'.
+	Field *string `json:"field,omitempty"`
+	// Equals - The field value will be compared to this value (case-insensitive) to determine if the condition is met.
 	Equals *string `json:"equals,omitempty"`
 }
 
-// ActivityLogAlertList is a list of activity log alerts.
+// ActivityLogAlertList a list of activity log alerts.
 type ActivityLogAlertList struct {
 	autorest.Response `json:"-"`
-	Value             *[]ActivityLogAlertResource `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+	// Value - The list of activity log alerts.
+	Value *[]ActivityLogAlertResource `json:"value,omitempty"`
+	// NextLink - Provides the link to retrieve the next set of elements.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ActivityLogAlertPatch is an Azure activity log alert for patch operations.
+// ActivityLogAlertPatch an Azure activity log alert for patch operations.
 type ActivityLogAlertPatch struct {
+	// Enabled - Indicates whether this activity log alert is enabled. If an activity log alert is not enabled, then none of its actions will be activated.
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// ActivityLogAlertPatchBody is an activity log alert object for the body of patch operations.
+// ActivityLogAlertPatchBody an activity log alert object for the body of patch operations.
 type ActivityLogAlertPatchBody struct {
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ActivityLogAlertPatch - The activity log alert settings for an update operation.
 	*ActivityLogAlertPatch `json:"properties,omitempty"`
 }
 
-// ActivityLogAlertResource is an activity log alert resource.
+// UnmarshalJSON is the custom unmarshaler for ActivityLogAlertPatchBody struct.
+func (alapb *ActivityLogAlertPatchBody) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		alapb.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ActivityLogAlertPatch
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		alapb.ActivityLogAlertPatch = &properties
+	}
+
+	return nil
+}
+
+// ActivityLogAlertResource an activity log alert resource.
 type ActivityLogAlertResource struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// ActivityLogAlert - The activity log alert properties of the resource.
 	*ActivityLogAlert `json:"properties,omitempty"`
 }
 
-// AlertRule is an alert rule.
+// UnmarshalJSON is the custom unmarshaler for ActivityLogAlertResource struct.
+func (alar *ActivityLogAlertResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties ActivityLogAlert
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		alar.ActivityLogAlert = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		alar.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		alar.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		alar.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		alar.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		alar.Tags = &tags
+	}
+
+	return nil
+}
+
+// AlertRule an alert rule.
 type AlertRule struct {
-	Name            *string       `json:"name,omitempty"`
-	Description     *string       `json:"description,omitempty"`
-	IsEnabled       *bool         `json:"isEnabled,omitempty"`
-	Condition       RuleCondition `json:"condition,omitempty"`
-	Actions         *[]RuleAction `json:"actions,omitempty"`
-	LastUpdatedTime *date.Time    `json:"lastUpdatedTime,omitempty"`
+	// Name - the name of the alert rule.
+	Name *string `json:"name,omitempty"`
+	// Description - the description of the alert rule that will be included in the alert email.
+	Description *string `json:"description,omitempty"`
+	// IsEnabled - the flag that indicates whether the alert rule is enabled.
+	IsEnabled *bool `json:"isEnabled,omitempty"`
+	// Condition - the condition that results in the alert rule being activated.
+	Condition BasicRuleCondition `json:"condition,omitempty"`
+	// Actions - the array of actions that are performed when the alert rule becomes active, and when an alert condition is resolved.
+	Actions *[]BasicRuleAction `json:"actions,omitempty"`
+	// LastUpdatedTime - Last time the rule was updated in ISO8601 format.
+	LastUpdatedTime *date.Time `json:"lastUpdatedTime,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for AlertRule struct.
@@ -352,7 +565,7 @@ func (ar *AlertRule) UnmarshalJSON(body []byte) error {
 
 	v = m["condition"]
 	if v != nil {
-		condition, err := unmarshalRuleCondition(*m["condition"])
+		condition, err := unmarshalBasicRuleCondition(*m["condition"])
 		if err != nil {
 			return err
 		}
@@ -361,7 +574,7 @@ func (ar *AlertRule) UnmarshalJSON(body []byte) error {
 
 	v = m["actions"]
 	if v != nil {
-		actions, err := unmarshalRuleActionArray(*m["actions"])
+		actions, err := unmarshalBasicRuleActionArray(*m["actions"])
 		if err != nil {
 			return err
 		}
@@ -381,182 +594,641 @@ func (ar *AlertRule) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// AlertRuleResource is the alert rule resource.
+// AlertRuleResource the alert rule resource.
 type AlertRuleResource struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*AlertRule        `json:"properties,omitempty"`
-}
-
-// AlertRuleResourceCollection is represents a collection of alert rule resources.
-type AlertRuleResourceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]AlertRuleResource `json:"value,omitempty"`
-}
-
-// AlertRuleResourcePatch is the alert rule object for patch operations.
-type AlertRuleResourcePatch struct {
-	Tags       *map[string]*string `json:"tags,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AlertRule - The alert rule properties of the resource.
 	*AlertRule `json:"properties,omitempty"`
 }
 
-// AutoscaleNotification is autoscale notification.
+// UnmarshalJSON is the custom unmarshaler for AlertRuleResource struct.
+func (arr *AlertRuleResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AlertRule
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		arr.AlertRule = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		arr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		arr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		arr.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		arr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		arr.Tags = &tags
+	}
+
+	return nil
+}
+
+// AlertRuleResourceCollection represents a collection of alert rule resources.
+type AlertRuleResourceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - the values for the alert rule resources.
+	Value *[]AlertRuleResource `json:"value,omitempty"`
+}
+
+// AlertRuleResourcePatch the alert rule object for patch operations.
+type AlertRuleResourcePatch struct {
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AlertRule - The properties of an alert rule.
+	*AlertRule `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for AlertRuleResourcePatch struct.
+func (arrp *AlertRuleResourcePatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		arrp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AlertRule
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		arrp.AlertRule = &properties
+	}
+
+	return nil
+}
+
+// AutoscaleNotification autoscale notification.
 type AutoscaleNotification struct {
-	Operation *string                `json:"operation,omitempty"`
-	Email     *EmailNotification     `json:"email,omitempty"`
-	Webhooks  *[]WebhookNotification `json:"webhooks,omitempty"`
+	// Operation - the operation associated with the notification and its value must be "scale"
+	Operation *string `json:"operation,omitempty"`
+	// Email - the email notification.
+	Email *EmailNotification `json:"email,omitempty"`
+	// Webhooks - the collection of webhook notifications.
+	Webhooks *[]WebhookNotification `json:"webhooks,omitempty"`
 }
 
-// AutoscaleProfile is autoscale profile.
+// AutoscaleProfile autoscale profile.
 type AutoscaleProfile struct {
-	Name       *string        `json:"name,omitempty"`
-	Capacity   *ScaleCapacity `json:"capacity,omitempty"`
-	Rules      *[]ScaleRule   `json:"rules,omitempty"`
-	FixedDate  *TimeWindow    `json:"fixedDate,omitempty"`
-	Recurrence *Recurrence    `json:"recurrence,omitempty"`
+	// Name - the name of the profile.
+	Name *string `json:"name,omitempty"`
+	// Capacity - the number of instances that can be used during this profile.
+	Capacity *ScaleCapacity `json:"capacity,omitempty"`
+	// Rules - the collection of rules that provide the triggers and parameters for the scaling action. A maximum of 10 rules can be specified.
+	Rules *[]ScaleRule `json:"rules,omitempty"`
+	// FixedDate - the specific date-time for the profile. This element is not used if the Recurrence element is used.
+	FixedDate *TimeWindow `json:"fixedDate,omitempty"`
+	// Recurrence - the repeating times at which this profile begins. This element is not used if the FixedDate element is used.
+	Recurrence *Recurrence `json:"recurrence,omitempty"`
 }
 
-// AutoscaleSetting is a setting that contains all of the configuration for the automatic scaling of a resource.
+// AutoscaleSetting a setting that contains all of the configuration for the automatic scaling of a resource.
 type AutoscaleSetting struct {
-	Profiles          *[]AutoscaleProfile      `json:"profiles,omitempty"`
-	Notifications     *[]AutoscaleNotification `json:"notifications,omitempty"`
-	Enabled           *bool                    `json:"enabled,omitempty"`
-	Name              *string                  `json:"name,omitempty"`
-	TargetResourceURI *string                  `json:"targetResourceUri,omitempty"`
+	// Profiles - the collection of automatic scaling profiles that specify different scaling parameters for different time periods. A maximum of 20 profiles can be specified.
+	Profiles *[]AutoscaleProfile `json:"profiles,omitempty"`
+	// Notifications - the collection of notifications.
+	Notifications *[]AutoscaleNotification `json:"notifications,omitempty"`
+	// Enabled - the enabled flag. Specifies whether automatic scaling is enabled for the resource. The default value is 'true'.
+	Enabled *bool `json:"enabled,omitempty"`
+	// Name - the name of the autoscale setting.
+	Name *string `json:"name,omitempty"`
+	// TargetResourceURI - the resource identifier of the resource that the autoscale setting should be added to.
+	TargetResourceURI *string `json:"targetResourceUri,omitempty"`
 }
 
-// AutoscaleSettingResource is the autoscale setting resource.
+// AutoscaleSettingResource the autoscale setting resource.
 type AutoscaleSettingResource struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AutoscaleSetting - The autoscale setting of the resource.
 	*AutoscaleSetting `json:"properties,omitempty"`
 }
 
-// AutoscaleSettingResourceCollection is represents a collection of autoscale setting resources.
-type AutoscaleSettingResourceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]AutoscaleSettingResource `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for AutoscaleSettingResource struct.
+func (asr *AutoscaleSettingResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AutoscaleSetting
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		asr.AutoscaleSetting = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		asr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		asr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		asr.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		asr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		asr.Tags = &tags
+	}
+
+	return nil
 }
 
-// AutoscaleSettingResourceCollectionPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AutoscaleSettingResourceCollection) AutoscaleSettingResourceCollectionPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AutoscaleSettingResourceCollection represents a collection of autoscale setting resources.
+type AutoscaleSettingResourceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - the values for the autoscale setting resources.
+	Value *[]AutoscaleSettingResource `json:"value,omitempty"`
+	// NextLink - URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// AutoscaleSettingResourceCollectionIterator provides access to a complete listing of AutoscaleSettingResource values.
+type AutoscaleSettingResourceCollectionIterator struct {
+	i    int
+	page AutoscaleSettingResourceCollectionPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AutoscaleSettingResourceCollectionIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AutoscaleSettingResourceCollectionIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AutoscaleSettingResourceCollectionIterator) Response() AutoscaleSettingResourceCollection {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AutoscaleSettingResourceCollectionIterator) Value() AutoscaleSettingResource {
+	if !iter.page.NotDone() {
+		return AutoscaleSettingResource{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (asrc AutoscaleSettingResourceCollection) IsEmpty() bool {
+	return asrc.Value == nil || len(*asrc.Value) == 0
+}
+
+// autoscaleSettingResourceCollectionPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (asrc AutoscaleSettingResourceCollection) autoscaleSettingResourceCollectionPreparer() (*http.Request, error) {
+	if asrc.NextLink == nil || len(to.String(asrc.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(asrc.NextLink)))
 }
 
-// AutoscaleSettingResourcePatch is the autoscale setting object for patch operations.
+// AutoscaleSettingResourceCollectionPage contains a page of AutoscaleSettingResource values.
+type AutoscaleSettingResourceCollectionPage struct {
+	fn   func(AutoscaleSettingResourceCollection) (AutoscaleSettingResourceCollection, error)
+	asrc AutoscaleSettingResourceCollection
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AutoscaleSettingResourceCollectionPage) Next() error {
+	next, err := page.fn(page.asrc)
+	if err != nil {
+		return err
+	}
+	page.asrc = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AutoscaleSettingResourceCollectionPage) NotDone() bool {
+	return !page.asrc.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AutoscaleSettingResourceCollectionPage) Response() AutoscaleSettingResourceCollection {
+	return page.asrc
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AutoscaleSettingResourceCollectionPage) Values() []AutoscaleSettingResource {
+	if page.asrc.IsEmpty() {
+		return nil
+	}
+	return *page.asrc.Value
+}
+
+// AutoscaleSettingResourcePatch the autoscale setting object for patch operations.
 type AutoscaleSettingResourcePatch struct {
-	Tags              *map[string]*string `json:"tags,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AutoscaleSetting - The autoscale setting properties of the update operation.
 	*AutoscaleSetting `json:"properties,omitempty"`
 }
 
-// DiagnosticSettings is the diagnostic settings.
-type DiagnosticSettings struct {
-	StorageAccountID            *string           `json:"storageAccountId,omitempty"`
-	EventHubAuthorizationRuleID *string           `json:"eventHubAuthorizationRuleId,omitempty"`
-	EventHubName                *string           `json:"eventHubName,omitempty"`
-	Metrics                     *[]MetricSettings `json:"metrics,omitempty"`
-	Logs                        *[]LogSettings    `json:"logs,omitempty"`
-	WorkspaceID                 *string           `json:"workspaceId,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for AutoscaleSettingResourcePatch struct.
+func (asrp *AutoscaleSettingResourcePatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		asrp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AutoscaleSetting
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		asrp.AutoscaleSetting = &properties
+	}
+
+	return nil
 }
 
-// DiagnosticSettingsCategory is the diagnostic settings Category.
+// DiagnosticSettings the diagnostic settings.
+type DiagnosticSettings struct {
+	// StorageAccountID - The resource ID of the storage account to which you would like to send Diagnostic Logs.
+	StorageAccountID *string `json:"storageAccountId,omitempty"`
+	// EventHubAuthorizationRuleID - The resource Id for the event hub authorization rule.
+	EventHubAuthorizationRuleID *string `json:"eventHubAuthorizationRuleId,omitempty"`
+	// EventHubName - The name of the event hub. If none is specified, the default event hub will be selected.
+	EventHubName *string `json:"eventHubName,omitempty"`
+	// Metrics - the list of metric settings.
+	Metrics *[]MetricSettings `json:"metrics,omitempty"`
+	// Logs - the list of logs settings.
+	Logs *[]LogSettings `json:"logs,omitempty"`
+	// WorkspaceID - The workspace ID (resource ID of a Log Analytics workspace) for a Log Analytics workspace to which you would like to send Diagnostic Logs. Example: /subscriptions/4b9e8510-67ab-4e9a-95a9-e2f1e570ea9c/resourceGroups/insights-integration/providers/Microsoft.OperationalInsights/workspaces/viruela2
+	WorkspaceID *string `json:"workspaceId,omitempty"`
+}
+
+// DiagnosticSettingsCategory the diagnostic settings Category.
 type DiagnosticSettingsCategory struct {
+	// CategoryType - The type of the diagnostic settings category. Possible values include: 'Metrics', 'Logs'
 	CategoryType CategoryType `json:"categoryType,omitempty"`
 }
 
-// DiagnosticSettingsCategoryResource is the diagnostic settings category resource.
+// DiagnosticSettingsCategoryResource the diagnostic settings category resource.
 type DiagnosticSettingsCategoryResource struct {
-	autorest.Response           `json:"-"`
-	ID                          *string `json:"id,omitempty"`
-	Name                        *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
 	Type                        *string `json:"type,omitempty"`
 	*DiagnosticSettingsCategory `json:"properties,omitempty"`
 }
 
-// DiagnosticSettingsCategoryResourceCollection is represents a collection of diagnostic setting category resources.
-type DiagnosticSettingsCategoryResourceCollection struct {
-	autorest.Response `json:"-"`
-	Value             *[]DiagnosticSettingsCategoryResource `json:"value,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for DiagnosticSettingsCategoryResource struct.
+func (dscr *DiagnosticSettingsCategoryResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DiagnosticSettingsCategory
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dscr.DiagnosticSettingsCategory = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dscr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dscr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dscr.Type = &typeVar
+	}
+
+	return nil
 }
 
-// DiagnosticSettingsResource is the diagnostic setting resource.
+// DiagnosticSettingsCategoryResourceCollection represents a collection of diagnostic setting category resources.
+type DiagnosticSettingsCategoryResourceCollection struct {
+	autorest.Response `json:"-"`
+	// Value - The collection of diagnostic settings category resources.
+	Value *[]DiagnosticSettingsCategoryResource `json:"value,omitempty"`
+}
+
+// DiagnosticSettingsResource the diagnostic setting resource.
 type DiagnosticSettingsResource struct {
-	autorest.Response   `json:"-"`
-	ID                  *string `json:"id,omitempty"`
-	Name                *string `json:"name,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
 	Type                *string `json:"type,omitempty"`
 	*DiagnosticSettings `json:"properties,omitempty"`
 }
 
-// DiagnosticSettingsResourceCollection is represents a collection of alert rule resources.
+// UnmarshalJSON is the custom unmarshaler for DiagnosticSettingsResource struct.
+func (dsr *DiagnosticSettingsResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties DiagnosticSettings
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		dsr.DiagnosticSettings = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		dsr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		dsr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		dsr.Type = &typeVar
+	}
+
+	return nil
+}
+
+// DiagnosticSettingsResourceCollection represents a collection of alert rule resources.
 type DiagnosticSettingsResourceCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]DiagnosticSettingsResource `json:"value,omitempty"`
+	// Value - The collection of diagnostic settings resources;.
+	Value *[]DiagnosticSettingsResource `json:"value,omitempty"`
 }
 
-// EmailNotification is email notification of an autoscale event.
+// EmailNotification email notification of an autoscale event.
 type EmailNotification struct {
-	SendToSubscriptionAdministrator    *bool     `json:"sendToSubscriptionAdministrator,omitempty"`
-	SendToSubscriptionCoAdministrators *bool     `json:"sendToSubscriptionCoAdministrators,omitempty"`
-	CustomEmails                       *[]string `json:"customEmails,omitempty"`
+	// SendToSubscriptionAdministrator - a value indicating whether to send email to subscription administrator.
+	SendToSubscriptionAdministrator *bool `json:"sendToSubscriptionAdministrator,omitempty"`
+	// SendToSubscriptionCoAdministrators - a value indicating whether to send email to subscription co-administrators.
+	SendToSubscriptionCoAdministrators *bool `json:"sendToSubscriptionCoAdministrators,omitempty"`
+	// CustomEmails - the custom e-mails list. This value can be null or empty, in which case this attribute will be ignored.
+	CustomEmails *[]string `json:"customEmails,omitempty"`
 }
 
-// EmailReceiver is an email receiver.
+// EmailReceiver an email receiver.
 type EmailReceiver struct {
-	Name         *string        `json:"name,omitempty"`
-	EmailAddress *string        `json:"emailAddress,omitempty"`
-	Status       ReceiverStatus `json:"status,omitempty"`
+	// Name - The name of the email receiver. Names must be unique across all receivers within an action group.
+	Name *string `json:"name,omitempty"`
+	// EmailAddress - The email address of this receiver.
+	EmailAddress *string `json:"emailAddress,omitempty"`
+	// Status - The receiver status of the e-mail. Possible values include: 'NotSpecified', 'Enabled', 'Disabled'
+	Status ReceiverStatus `json:"status,omitempty"`
 }
 
-// EnableRequest is describes a receiver that should be resubscribed.
+// EnableRequest describes a receiver that should be resubscribed.
 type EnableRequest struct {
+	// ReceiverName - The name of the receiver to resubscribe.
 	ReceiverName *string `json:"receiverName,omitempty"`
 }
 
-// ErrorResponse is describes the format of Error response.
+// ErrorResponse describes the format of Error response.
 type ErrorResponse struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - Error code
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
 	Message *string `json:"message,omitempty"`
 }
 
-// Incident is an alert incident indicates the activation status of an alert rule.
+// Incident an alert incident indicates the activation status of an alert rule.
 type Incident struct {
 	autorest.Response `json:"-"`
-	Name              *string    `json:"name,omitempty"`
-	RuleName          *string    `json:"ruleName,omitempty"`
-	IsActive          *bool      `json:"isActive,omitempty"`
-	ActivatedTime     *date.Time `json:"activatedTime,omitempty"`
-	ResolvedTime      *date.Time `json:"resolvedTime,omitempty"`
+	// Name - Incident name.
+	Name *string `json:"name,omitempty"`
+	// RuleName - Rule name that is associated with the incident.
+	RuleName *string `json:"ruleName,omitempty"`
+	// IsActive - A boolean to indicate whether the incident is active or resolved.
+	IsActive *bool `json:"isActive,omitempty"`
+	// ActivatedTime - The time at which the incident was activated in ISO8601 format.
+	ActivatedTime *date.Time `json:"activatedTime,omitempty"`
+	// ResolvedTime - The time at which the incident was resolved in ISO8601 format. If null, it means the incident is still active.
+	ResolvedTime *date.Time `json:"resolvedTime,omitempty"`
 }
 
-// IncidentListResult is the List incidents operation response.
+// IncidentListResult the List incidents operation response.
 type IncidentListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Incident `json:"value,omitempty"`
+	// Value - the incident collection.
+	Value *[]Incident `json:"value,omitempty"`
 }
 
-// LocationThresholdRuleCondition is a rule condition based on a certain number of locations failing.
+// LocationThresholdRuleCondition a rule condition based on a certain number of locations failing.
 type LocationThresholdRuleCondition struct {
-	DataSource          RuleDataSource `json:"dataSource,omitempty"`
-	OdataType           OdataType1     `json:"odata.type,omitempty"`
-	WindowSize          *string        `json:"windowSize,omitempty"`
-	FailedLocationCount *int32         `json:"failedLocationCount,omitempty"`
+	// DataSource - the resource from which the rule collects its data. For this type dataSource will always be of type RuleMetricDataSource.
+	DataSource BasicRuleDataSource `json:"dataSource,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition'
+	OdataType OdataTypeBasicRuleCondition `json:"odata.type,omitempty"`
+	// WindowSize - the period of time (in ISO 8601 duration format) that is used to monitor alert activity based on the threshold. If specified then it must be between 5 minutes and 1 day.
+	WindowSize *string `json:"windowSize,omitempty"`
+	// FailedLocationCount - the number of locations that must fail to activate the alert.
+	FailedLocationCount *int32 `json:"failedLocationCount,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for LocationThresholdRuleCondition.
@@ -570,19 +1242,29 @@ func (ltrc LocationThresholdRuleCondition) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsThresholdRuleCondition is the RuleCondition implementation for LocationThresholdRuleCondition.
+// AsThresholdRuleCondition is the BasicRuleCondition implementation for LocationThresholdRuleCondition.
 func (ltrc LocationThresholdRuleCondition) AsThresholdRuleCondition() (*ThresholdRuleCondition, bool) {
 	return nil, false
 }
 
-// AsLocationThresholdRuleCondition is the RuleCondition implementation for LocationThresholdRuleCondition.
+// AsLocationThresholdRuleCondition is the BasicRuleCondition implementation for LocationThresholdRuleCondition.
 func (ltrc LocationThresholdRuleCondition) AsLocationThresholdRuleCondition() (*LocationThresholdRuleCondition, bool) {
 	return &ltrc, true
 }
 
-// AsManagementEventRuleCondition is the RuleCondition implementation for LocationThresholdRuleCondition.
+// AsManagementEventRuleCondition is the BasicRuleCondition implementation for LocationThresholdRuleCondition.
 func (ltrc LocationThresholdRuleCondition) AsManagementEventRuleCondition() (*ManagementEventRuleCondition, bool) {
 	return nil, false
+}
+
+// AsRuleCondition is the BasicRuleCondition implementation for LocationThresholdRuleCondition.
+func (ltrc LocationThresholdRuleCondition) AsRuleCondition() (*RuleCondition, bool) {
+	return nil, false
+}
+
+// AsBasicRuleCondition is the BasicRuleCondition implementation for LocationThresholdRuleCondition.
+func (ltrc LocationThresholdRuleCondition) AsBasicRuleCondition() (BasicRuleCondition, bool) {
+	return &ltrc, true
 }
 
 // UnmarshalJSON is the custom unmarshaler for LocationThresholdRuleCondition struct.
@@ -616,7 +1298,7 @@ func (ltrc *LocationThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["dataSource"]
 	if v != nil {
-		dataSource, err := unmarshalRuleDataSource(*m["dataSource"])
+		dataSource, err := unmarshalBasicRuleDataSource(*m["dataSource"])
 		if err != nil {
 			return err
 		}
@@ -625,7 +1307,7 @@ func (ltrc *LocationThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["odata.type"]
 	if v != nil {
-		var odatatype OdataType1
+		var odatatype OdataTypeBasicRuleCondition
 		err = json.Unmarshal(*m["odata.type"], &odatatype)
 		if err != nil {
 			return err
@@ -636,56 +1318,183 @@ func (ltrc *LocationThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// LogProfileCollection is represents a collection of log profiles.
+// LogProfileCollection represents a collection of log profiles.
 type LogProfileCollection struct {
 	autorest.Response `json:"-"`
-	Value             *[]LogProfileResource `json:"value,omitempty"`
+	// Value - the values of the log profiles.
+	Value *[]LogProfileResource `json:"value,omitempty"`
 }
 
-// LogProfileProperties is the log profile properties.
+// LogProfileProperties the log profile properties.
 type LogProfileProperties struct {
-	StorageAccountID *string          `json:"storageAccountId,omitempty"`
-	ServiceBusRuleID *string          `json:"serviceBusRuleId,omitempty"`
-	Locations        *[]string        `json:"locations,omitempty"`
-	Categories       *[]string        `json:"categories,omitempty"`
-	RetentionPolicy  *RetentionPolicy `json:"retentionPolicy,omitempty"`
-}
-
-// LogProfileResource is the log profile resource.
-type LogProfileResource struct {
-	autorest.Response     `json:"-"`
-	ID                    *string             `json:"id,omitempty"`
-	Name                  *string             `json:"name,omitempty"`
-	Type                  *string             `json:"type,omitempty"`
-	Location              *string             `json:"location,omitempty"`
-	Tags                  *map[string]*string `json:"tags,omitempty"`
-	*LogProfileProperties `json:"properties,omitempty"`
-}
-
-// LogProfileResourcePatch is the log profile resource for patch operations.
-type LogProfileResourcePatch struct {
-	Tags                  *map[string]*string `json:"tags,omitempty"`
-	*LogProfileProperties `json:"properties,omitempty"`
-}
-
-// LogSettings is part of MultiTenantDiagnosticSettings. Specifies the settings for a particular log.
-type LogSettings struct {
-	Category        *string          `json:"category,omitempty"`
-	Enabled         *bool            `json:"enabled,omitempty"`
+	// StorageAccountID - the resource id of the storage account to which you would like to send the Activity Log.
+	StorageAccountID *string `json:"storageAccountId,omitempty"`
+	// ServiceBusRuleID - The service bus rule ID of the service bus namespace in which you would like to have Event Hubs created for streaming the Activity Log. The rule ID is of the format: '{service bus resource ID}/authorizationrules/{key name}'.
+	ServiceBusRuleID *string `json:"serviceBusRuleId,omitempty"`
+	// Locations - List of regions for which Activity Log events should be stored or streamed. It is a comma separated list of valid ARM locations including the 'global' location.
+	Locations *[]string `json:"locations,omitempty"`
+	// Categories - the categories of the logs. These categories are created as is convenient to the user. Some values are: 'Write', 'Delete', and/or 'Action.'
+	Categories *[]string `json:"categories,omitempty"`
+	// RetentionPolicy - the retention policy for the events in the log.
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 }
 
-// ManagementEventAggregationCondition is how the data that is collected should be combined over time.
-type ManagementEventAggregationCondition struct {
-	Operator   ConditionOperator `json:"operator,omitempty"`
-	Threshold  *float64          `json:"threshold,omitempty"`
-	WindowSize *string           `json:"windowSize,omitempty"`
+// LogProfileResource the log profile resource.
+type LogProfileResource struct {
+	autorest.Response `json:"-"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LogProfileProperties - The log profile properties of the resource.
+	*LogProfileProperties `json:"properties,omitempty"`
 }
 
-// ManagementEventRuleCondition is a management event rule condition.
+// UnmarshalJSON is the custom unmarshaler for LogProfileResource struct.
+func (lpr *LogProfileResource) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties LogProfileProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lpr.LogProfileProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		lpr.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		lpr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		lpr.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		lpr.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lpr.Tags = &tags
+	}
+
+	return nil
+}
+
+// LogProfileResourcePatch the log profile resource for patch operations.
+type LogProfileResourcePatch struct {
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// LogProfileProperties - The log profile properties for an update operation.
+	*LogProfileProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for LogProfileResourcePatch struct.
+func (lprp *LogProfileResourcePatch) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		lprp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties LogProfileProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		lprp.LogProfileProperties = &properties
+	}
+
+	return nil
+}
+
+// LogSettings part of MultiTenantDiagnosticSettings. Specifies the settings for a particular log.
+type LogSettings struct {
+	// Category - Name of a Diagnostic Log category for a resource type this setting is applied to. To obtain the list of Diagnostic Log categories for a resource, first perform a GET diagnostic settings operation.
+	Category *string `json:"category,omitempty"`
+	// Enabled - a value indicating whether this log is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
+	// RetentionPolicy - the retention policy for this log.
+	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
+}
+
+// ManagementEventAggregationCondition how the data that is collected should be combined over time.
+type ManagementEventAggregationCondition struct {
+	// Operator - the condition operator. Possible values include: 'ConditionOperatorGreaterThan', 'ConditionOperatorGreaterThanOrEqual', 'ConditionOperatorLessThan', 'ConditionOperatorLessThanOrEqual'
+	Operator ConditionOperator `json:"operator,omitempty"`
+	// Threshold - The threshold value that activates the alert.
+	Threshold *float64 `json:"threshold,omitempty"`
+	// WindowSize - the period of time (in ISO 8601 duration format) that is used to monitor alert activity based on the threshold. If specified then it must be between 5 minutes and 1 day.
+	WindowSize *string `json:"windowSize,omitempty"`
+}
+
+// ManagementEventRuleCondition a management event rule condition.
 type ManagementEventRuleCondition struct {
-	DataSource  RuleDataSource                       `json:"dataSource,omitempty"`
-	OdataType   OdataType1                           `json:"odata.type,omitempty"`
+	// DataSource - the resource from which the rule collects its data. For this type dataSource will always be of type RuleMetricDataSource.
+	DataSource BasicRuleDataSource `json:"dataSource,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition'
+	OdataType OdataTypeBasicRuleCondition `json:"odata.type,omitempty"`
+	// Aggregation - How the data that is collected should be combined over time and when the alert is activated. Note that for management event alerts aggregation is optional – if it is not provided then any event will cause the alert to activate.
 	Aggregation *ManagementEventAggregationCondition `json:"aggregation,omitempty"`
 }
 
@@ -700,18 +1509,28 @@ func (merc ManagementEventRuleCondition) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsThresholdRuleCondition is the RuleCondition implementation for ManagementEventRuleCondition.
+// AsThresholdRuleCondition is the BasicRuleCondition implementation for ManagementEventRuleCondition.
 func (merc ManagementEventRuleCondition) AsThresholdRuleCondition() (*ThresholdRuleCondition, bool) {
 	return nil, false
 }
 
-// AsLocationThresholdRuleCondition is the RuleCondition implementation for ManagementEventRuleCondition.
+// AsLocationThresholdRuleCondition is the BasicRuleCondition implementation for ManagementEventRuleCondition.
 func (merc ManagementEventRuleCondition) AsLocationThresholdRuleCondition() (*LocationThresholdRuleCondition, bool) {
 	return nil, false
 }
 
-// AsManagementEventRuleCondition is the RuleCondition implementation for ManagementEventRuleCondition.
+// AsManagementEventRuleCondition is the BasicRuleCondition implementation for ManagementEventRuleCondition.
 func (merc ManagementEventRuleCondition) AsManagementEventRuleCondition() (*ManagementEventRuleCondition, bool) {
+	return &merc, true
+}
+
+// AsRuleCondition is the BasicRuleCondition implementation for ManagementEventRuleCondition.
+func (merc ManagementEventRuleCondition) AsRuleCondition() (*RuleCondition, bool) {
+	return nil, false
+}
+
+// AsBasicRuleCondition is the BasicRuleCondition implementation for ManagementEventRuleCondition.
+func (merc ManagementEventRuleCondition) AsBasicRuleCondition() (BasicRuleCondition, bool) {
 	return &merc, true
 }
 
@@ -736,7 +1555,7 @@ func (merc *ManagementEventRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["dataSource"]
 	if v != nil {
-		dataSource, err := unmarshalRuleDataSource(*m["dataSource"])
+		dataSource, err := unmarshalBasicRuleDataSource(*m["dataSource"])
 		if err != nil {
 			return err
 		}
@@ -745,7 +1564,7 @@ func (merc *ManagementEventRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["odata.type"]
 	if v != nil {
-		var odatatype OdataType1
+		var odatatype OdataTypeBasicRuleCondition
 		err = json.Unmarshal(*m["odata.type"], &odatatype)
 		if err != nil {
 			return err
@@ -756,92 +1575,134 @@ func (merc *ManagementEventRuleCondition) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// MetricSettings is part of MultiTenantDiagnosticSettings. Specifies the settings for a particular metric.
+// MetricSettings part of MultiTenantDiagnosticSettings. Specifies the settings for a particular metric.
 type MetricSettings struct {
-	TimeGrain       *string          `json:"timeGrain,omitempty"`
-	Category        *string          `json:"category,omitempty"`
-	Enabled         *bool            `json:"enabled,omitempty"`
+	// TimeGrain - the timegrain of the metric in ISO8601 format.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Category - Name of a Diagnostic Metric category for a resource type this setting is applied to. To obtain the list of Diagnostic metric categories for a resource, first perform a GET diagnostic settings operation.
+	Category *string `json:"category,omitempty"`
+	// Enabled - a value indicating whether this category is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
+	// RetentionPolicy - the retention policy for this category.
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 }
 
-// MetricTrigger is the trigger that results in a scaling action.
+// MetricTrigger the trigger that results in a scaling action.
 type MetricTrigger struct {
-	MetricName        *string                 `json:"metricName,omitempty"`
-	MetricResourceURI *string                 `json:"metricResourceUri,omitempty"`
-	TimeGrain         *string                 `json:"timeGrain,omitempty"`
-	Statistic         MetricStatisticType     `json:"statistic,omitempty"`
-	TimeWindow        *string                 `json:"timeWindow,omitempty"`
-	TimeAggregation   TimeAggregationType     `json:"timeAggregation,omitempty"`
-	Operator          ComparisonOperationType `json:"operator,omitempty"`
-	Threshold         *float64                `json:"threshold,omitempty"`
+	// MetricName - the name of the metric that defines what the rule monitors.
+	MetricName *string `json:"metricName,omitempty"`
+	// MetricResourceURI - the resource identifier of the resource the rule monitors.
+	MetricResourceURI *string `json:"metricResourceUri,omitempty"`
+	// TimeGrain - the granularity of metrics the rule monitors. Must be one of the predefined values returned from metric definitions for the metric. Must be between 12 hours and 1 minute.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Statistic - the metric statistic type. How the metrics from multiple instances are combined. Possible values include: 'Average', 'Min', 'Max', 'Sum'
+	Statistic MetricStatisticType `json:"statistic,omitempty"`
+	// TimeWindow - the range of time in which instance data is collected. This value must be greater than the delay in metric collection, which can vary from resource-to-resource. Must be between 12 hours and 5 minutes.
+	TimeWindow *string `json:"timeWindow,omitempty"`
+	// TimeAggregation - time aggregation type. How the data that is collected should be combined over time. The default value is Average. Possible values include: 'TimeAggregationTypeAverage', 'TimeAggregationTypeMinimum', 'TimeAggregationTypeMaximum', 'TimeAggregationTypeTotal', 'TimeAggregationTypeCount'
+	TimeAggregation TimeAggregationType `json:"timeAggregation,omitempty"`
+	// Operator - the operator that is used to compare the metric data and the threshold. Possible values include: 'Equals', 'NotEquals', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual'
+	Operator ComparisonOperationType `json:"operator,omitempty"`
+	// Threshold - the threshold of the metric that triggers the scale action.
+	Threshold *float64 `json:"threshold,omitempty"`
 }
 
-// Operation is microsoft Insights API operation definition.
+// Operation microsoft Insights API operation definition.
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - Display metadata associated with the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is display metadata associated with the operation.
+// OperationDisplay display metadata associated with the operation.
 type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
+	// Provider - Service provider: Microsoft.Insights
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: AlertRules, Autoscale, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Read, write, delete, etc.
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult is result of the request to list Microsoft.Insights operations. It contains a list of operations
+// OperationListResult result of the request to list Microsoft.Insights operations. It contains a list of operations
 // and a URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - List of operations supported by the Microsoft.Insights provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ProxyOnlyResource is a proxy only azure resource object
+// ProxyOnlyResource a proxy only azure resource object
 type ProxyOnlyResource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
 	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
 	Type *string `json:"type,omitempty"`
 }
 
-// Recurrence is the repeating times at which this profile begins. This element is not used if the FixedDate element is
+// Recurrence the repeating times at which this profile begins. This element is not used if the FixedDate element is
 // used.
 type Recurrence struct {
+	// Frequency - the recurrence frequency. How often the schedule profile should take effect. This value must be Week, meaning each week will have the same set of profiles. Possible values include: 'None', 'Second', 'Minute', 'Hour', 'Day', 'Week', 'Month', 'Year'
 	Frequency RecurrenceFrequency `json:"frequency,omitempty"`
-	Schedule  *RecurrentSchedule  `json:"schedule,omitempty"`
+	// Schedule - the scheduling constraints for when the profile begins.
+	Schedule *RecurrentSchedule `json:"schedule,omitempty"`
 }
 
-// RecurrentSchedule is the scheduling constraints for when the profile begins.
+// RecurrentSchedule the scheduling constraints for when the profile begins.
 type RecurrentSchedule struct {
-	TimeZone *string   `json:"timeZone,omitempty"`
-	Days     *[]string `json:"days,omitempty"`
-	Hours    *[]int32  `json:"hours,omitempty"`
-	Minutes  *[]int32  `json:"minutes,omitempty"`
+	// TimeZone - the timezone for the hours of the profile. Some examples of valid timezones are: Dateline Standard Time, UTC-11, Hawaiian Standard Time, Alaskan Standard Time, Pacific Standard Time (Mexico), Pacific Standard Time, US Mountain Standard Time, Mountain Standard Time (Mexico), Mountain Standard Time, Central America Standard Time, Central Standard Time, Central Standard Time (Mexico), Canada Central Standard Time, SA Pacific Standard Time, Eastern Standard Time, US Eastern Standard Time, Venezuela Standard Time, Paraguay Standard Time, Atlantic Standard Time, Central Brazilian Standard Time, SA Western Standard Time, Pacific SA Standard Time, Newfoundland Standard Time, E. South America Standard Time, Argentina Standard Time, SA Eastern Standard Time, Greenland Standard Time, Montevideo Standard Time, Bahia Standard Time, UTC-02, Mid-Atlantic Standard Time, Azores Standard Time, Cape Verde Standard Time, Morocco Standard Time, UTC, GMT Standard Time, Greenwich Standard Time, W. Europe Standard Time, Central Europe Standard Time, Romance Standard Time, Central European Standard Time, W. Central Africa Standard Time, Namibia Standard Time, Jordan Standard Time, GTB Standard Time, Middle East Standard Time, Egypt Standard Time, Syria Standard Time, E. Europe Standard Time, South Africa Standard Time, FLE Standard Time, Turkey Standard Time, Israel Standard Time, Kaliningrad Standard Time, Libya Standard Time, Arabic Standard Time, Arab Standard Time, Belarus Standard Time, Russian Standard Time, E. Africa Standard Time, Iran Standard Time, Arabian Standard Time, Azerbaijan Standard Time, Russia Time Zone 3, Mauritius Standard Time, Georgian Standard Time, Caucasus Standard Time, Afghanistan Standard Time, West Asia Standard Time, Ekaterinburg Standard Time, Pakistan Standard Time, India Standard Time, Sri Lanka Standard Time, Nepal Standard Time, Central Asia Standard Time, Bangladesh Standard Time, N. Central Asia Standard Time, Myanmar Standard Time, SE Asia Standard Time, North Asia Standard Time, China Standard Time, North Asia East Standard Time, Singapore Standard Time, W. Australia Standard Time, Taipei Standard Time, Ulaanbaatar Standard Time, Tokyo Standard Time, Korea Standard Time, Yakutsk Standard Time, Cen. Australia Standard Time, AUS Central Standard Time, E. Australia Standard Time, AUS Eastern Standard Time, West Pacific Standard Time, Tasmania Standard Time, Magadan Standard Time, Vladivostok Standard Time, Russia Time Zone 10, Central Pacific Standard Time, Russia Time Zone 11, New Zealand Standard Time, UTC+12, Fiji Standard Time, Kamchatka Standard Time, Tonga Standard Time, Samoa Standard Time, Line Islands Standard Time
+	TimeZone *string `json:"timeZone,omitempty"`
+	// Days - the collection of days that the profile takes effect on. Possible values are Sunday through Saturday.
+	Days *[]string `json:"days,omitempty"`
+	// Hours - A collection of hours that the profile takes effect on. Values supported are 0 to 23 on the 24-hour clock (AM/PM times are not supported).
+	Hours *[]int32 `json:"hours,omitempty"`
+	// Minutes - A collection of minutes at which the profile takes effect at.
+	Minutes *[]int32 `json:"minutes,omitempty"`
 }
 
-// Resource is an azure resource object
+// Resource an azure resource object
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Azure resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Azure resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Azure resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// RetentionPolicy is specifies the retention policy for the log.
+// RetentionPolicy specifies the retention policy for the log.
 type RetentionPolicy struct {
-	Enabled *bool  `json:"enabled,omitempty"`
-	Days    *int32 `json:"days,omitempty"`
+	// Enabled - a value indicating whether the retention policy is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
+	// Days - the number of days for the retention in days. A value of 0 will retain the events indefinitely.
+	Days *int32 `json:"days,omitempty"`
 }
 
-// RuleAction is the action that is performed when the alert rule becomes active, and when an alert condition is
+// BasicRuleAction the action that is performed when the alert rule becomes active, and when an alert condition is
 // resolved.
-type RuleAction interface {
+type BasicRuleAction interface {
 	AsRuleEmailAction() (*RuleEmailAction, bool)
 	AsRuleWebhookAction() (*RuleWebhookAction, bool)
+	AsRuleAction() (*RuleAction, bool)
 }
 
-func unmarshalRuleAction(body []byte) (RuleAction, error) {
+// RuleAction the action that is performed when the alert rule becomes active, and when an alert condition is resolved.
+type RuleAction struct {
+	// OdataType - Possible values include: 'OdataTypeRuleAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction'
+	OdataType OdataTypeBasicRuleAction `json:"odata.type,omitempty"`
+}
+
+func unmarshalBasicRuleAction(body []byte) (BasicRuleAction, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -858,20 +1719,22 @@ func unmarshalRuleAction(body []byte) (RuleAction, error) {
 		err := json.Unmarshal(body, &rwa)
 		return rwa, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var ra RuleAction
+		err := json.Unmarshal(body, &ra)
+		return ra, err
 	}
 }
-func unmarshalRuleActionArray(body []byte) ([]RuleAction, error) {
+func unmarshalBasicRuleActionArray(body []byte) ([]BasicRuleAction, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	raArray := make([]RuleAction, len(rawMessages))
+	raArray := make([]BasicRuleAction, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		ra, err := unmarshalRuleAction(*rawMessage)
+		ra, err := unmarshalBasicRuleAction(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -880,14 +1743,54 @@ func unmarshalRuleActionArray(body []byte) ([]RuleAction, error) {
 	return raArray, nil
 }
 
-// RuleCondition is the condition that results in the alert rule being activated.
-type RuleCondition interface {
+// MarshalJSON is the custom marshaler for RuleAction.
+func (ra RuleAction) MarshalJSON() ([]byte, error) {
+	ra.OdataType = OdataTypeRuleAction
+	type Alias RuleAction
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(ra),
+	})
+}
+
+// AsRuleEmailAction is the BasicRuleAction implementation for RuleAction.
+func (ra RuleAction) AsRuleEmailAction() (*RuleEmailAction, bool) {
+	return nil, false
+}
+
+// AsRuleWebhookAction is the BasicRuleAction implementation for RuleAction.
+func (ra RuleAction) AsRuleWebhookAction() (*RuleWebhookAction, bool) {
+	return nil, false
+}
+
+// AsRuleAction is the BasicRuleAction implementation for RuleAction.
+func (ra RuleAction) AsRuleAction() (*RuleAction, bool) {
+	return &ra, true
+}
+
+// AsBasicRuleAction is the BasicRuleAction implementation for RuleAction.
+func (ra RuleAction) AsBasicRuleAction() (BasicRuleAction, bool) {
+	return &ra, true
+}
+
+// BasicRuleCondition the condition that results in the alert rule being activated.
+type BasicRuleCondition interface {
 	AsThresholdRuleCondition() (*ThresholdRuleCondition, bool)
 	AsLocationThresholdRuleCondition() (*LocationThresholdRuleCondition, bool)
 	AsManagementEventRuleCondition() (*ManagementEventRuleCondition, bool)
+	AsRuleCondition() (*RuleCondition, bool)
 }
 
-func unmarshalRuleCondition(body []byte) (RuleCondition, error) {
+// RuleCondition the condition that results in the alert rule being activated.
+type RuleCondition struct {
+	// DataSource - the resource from which the rule collects its data. For this type dataSource will always be of type RuleMetricDataSource.
+	DataSource BasicRuleDataSource `json:"dataSource,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition'
+	OdataType OdataTypeBasicRuleCondition `json:"odata.type,omitempty"`
+}
+
+func unmarshalBasicRuleCondition(body []byte) (BasicRuleCondition, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -908,20 +1811,22 @@ func unmarshalRuleCondition(body []byte) (RuleCondition, error) {
 		err := json.Unmarshal(body, &merc)
 		return merc, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var rc RuleCondition
+		err := json.Unmarshal(body, &rc)
+		return rc, err
 	}
 }
-func unmarshalRuleConditionArray(body []byte) ([]RuleCondition, error) {
+func unmarshalBasicRuleConditionArray(body []byte) ([]BasicRuleCondition, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	rcArray := make([]RuleCondition, len(rawMessages))
+	rcArray := make([]BasicRuleCondition, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		rc, err := unmarshalRuleCondition(*rawMessage)
+		rc, err := unmarshalBasicRuleCondition(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -930,13 +1835,89 @@ func unmarshalRuleConditionArray(body []byte) ([]RuleCondition, error) {
 	return rcArray, nil
 }
 
-// RuleDataSource is the resource from which the rule collects its data.
-type RuleDataSource interface {
-	AsRuleMetricDataSource() (*RuleMetricDataSource, bool)
-	AsRuleManagementEventDataSource() (*RuleManagementEventDataSource, bool)
+// MarshalJSON is the custom marshaler for RuleCondition.
+func (rc RuleCondition) MarshalJSON() ([]byte, error) {
+	rc.OdataType = OdataTypeRuleCondition
+	type Alias RuleCondition
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(rc),
+	})
 }
 
-func unmarshalRuleDataSource(body []byte) (RuleDataSource, error) {
+// AsThresholdRuleCondition is the BasicRuleCondition implementation for RuleCondition.
+func (rc RuleCondition) AsThresholdRuleCondition() (*ThresholdRuleCondition, bool) {
+	return nil, false
+}
+
+// AsLocationThresholdRuleCondition is the BasicRuleCondition implementation for RuleCondition.
+func (rc RuleCondition) AsLocationThresholdRuleCondition() (*LocationThresholdRuleCondition, bool) {
+	return nil, false
+}
+
+// AsManagementEventRuleCondition is the BasicRuleCondition implementation for RuleCondition.
+func (rc RuleCondition) AsManagementEventRuleCondition() (*ManagementEventRuleCondition, bool) {
+	return nil, false
+}
+
+// AsRuleCondition is the BasicRuleCondition implementation for RuleCondition.
+func (rc RuleCondition) AsRuleCondition() (*RuleCondition, bool) {
+	return &rc, true
+}
+
+// AsBasicRuleCondition is the BasicRuleCondition implementation for RuleCondition.
+func (rc RuleCondition) AsBasicRuleCondition() (BasicRuleCondition, bool) {
+	return &rc, true
+}
+
+// UnmarshalJSON is the custom unmarshaler for RuleCondition struct.
+func (rc *RuleCondition) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["dataSource"]
+	if v != nil {
+		dataSource, err := unmarshalBasicRuleDataSource(*m["dataSource"])
+		if err != nil {
+			return err
+		}
+		rc.DataSource = dataSource
+	}
+
+	v = m["odata.type"]
+	if v != nil {
+		var odatatype OdataTypeBasicRuleCondition
+		err = json.Unmarshal(*m["odata.type"], &odatatype)
+		if err != nil {
+			return err
+		}
+		rc.OdataType = odatatype
+	}
+
+	return nil
+}
+
+// BasicRuleDataSource the resource from which the rule collects its data.
+type BasicRuleDataSource interface {
+	AsRuleMetricDataSource() (*RuleMetricDataSource, bool)
+	AsRuleManagementEventDataSource() (*RuleManagementEventDataSource, bool)
+	AsRuleDataSource() (*RuleDataSource, bool)
+}
+
+// RuleDataSource the resource from which the rule collects its data.
+type RuleDataSource struct {
+	// ResourceURI - the resource identifier of the resource the rule monitors. **NOTE**: this property cannot be updated for an existing rule.
+	ResourceURI *string `json:"resourceUri,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource'
+	OdataType OdataType `json:"odata.type,omitempty"`
+}
+
+func unmarshalBasicRuleDataSource(body []byte) (BasicRuleDataSource, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -953,20 +1934,22 @@ func unmarshalRuleDataSource(body []byte) (RuleDataSource, error) {
 		err := json.Unmarshal(body, &rmeds)
 		return rmeds, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var rds RuleDataSource
+		err := json.Unmarshal(body, &rds)
+		return rds, err
 	}
 }
-func unmarshalRuleDataSourceArray(body []byte) ([]RuleDataSource, error) {
+func unmarshalBasicRuleDataSourceArray(body []byte) ([]BasicRuleDataSource, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	rdsArray := make([]RuleDataSource, len(rawMessages))
+	rdsArray := make([]BasicRuleDataSource, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		rds, err := unmarshalRuleDataSource(*rawMessage)
+		rds, err := unmarshalBasicRuleDataSource(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -975,12 +1958,46 @@ func unmarshalRuleDataSourceArray(body []byte) ([]RuleDataSource, error) {
 	return rdsArray, nil
 }
 
-// RuleEmailAction is specifies the action to send email when the rule condition is evaluated. The discriminator is
-// always RuleEmailAction in this case.
+// MarshalJSON is the custom marshaler for RuleDataSource.
+func (rds RuleDataSource) MarshalJSON() ([]byte, error) {
+	rds.OdataType = OdataTypeRuleDataSource
+	type Alias RuleDataSource
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(rds),
+	})
+}
+
+// AsRuleMetricDataSource is the BasicRuleDataSource implementation for RuleDataSource.
+func (rds RuleDataSource) AsRuleMetricDataSource() (*RuleMetricDataSource, bool) {
+	return nil, false
+}
+
+// AsRuleManagementEventDataSource is the BasicRuleDataSource implementation for RuleDataSource.
+func (rds RuleDataSource) AsRuleManagementEventDataSource() (*RuleManagementEventDataSource, bool) {
+	return nil, false
+}
+
+// AsRuleDataSource is the BasicRuleDataSource implementation for RuleDataSource.
+func (rds RuleDataSource) AsRuleDataSource() (*RuleDataSource, bool) {
+	return &rds, true
+}
+
+// AsBasicRuleDataSource is the BasicRuleDataSource implementation for RuleDataSource.
+func (rds RuleDataSource) AsBasicRuleDataSource() (BasicRuleDataSource, bool) {
+	return &rds, true
+}
+
+// RuleEmailAction specifies the action to send email when the rule condition is evaluated. The discriminator is always
+// RuleEmailAction in this case.
 type RuleEmailAction struct {
-	OdataType           OdataType2 `json:"odata.type,omitempty"`
-	SendToServiceOwners *bool      `json:"sendToServiceOwners,omitempty"`
-	CustomEmails        *[]string  `json:"customEmails,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction'
+	OdataType OdataTypeBasicRuleAction `json:"odata.type,omitempty"`
+	// SendToServiceOwners - Whether the administrators (service and co-administrators) of the service should be notified when the alert is activated.
+	SendToServiceOwners *bool `json:"sendToServiceOwners,omitempty"`
+	// CustomEmails - the list of administrator's custom email addresses to notify of the activation of the alert.
+	CustomEmails *[]string `json:"customEmails,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for RuleEmailAction.
@@ -994,35 +2011,57 @@ func (rea RuleEmailAction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsRuleEmailAction is the RuleAction implementation for RuleEmailAction.
+// AsRuleEmailAction is the BasicRuleAction implementation for RuleEmailAction.
 func (rea RuleEmailAction) AsRuleEmailAction() (*RuleEmailAction, bool) {
 	return &rea, true
 }
 
-// AsRuleWebhookAction is the RuleAction implementation for RuleEmailAction.
+// AsRuleWebhookAction is the BasicRuleAction implementation for RuleEmailAction.
 func (rea RuleEmailAction) AsRuleWebhookAction() (*RuleWebhookAction, bool) {
 	return nil, false
 }
 
-// RuleManagementEventClaimsDataSource is the claims for a rule management event data source.
+// AsRuleAction is the BasicRuleAction implementation for RuleEmailAction.
+func (rea RuleEmailAction) AsRuleAction() (*RuleAction, bool) {
+	return nil, false
+}
+
+// AsBasicRuleAction is the BasicRuleAction implementation for RuleEmailAction.
+func (rea RuleEmailAction) AsBasicRuleAction() (BasicRuleAction, bool) {
+	return &rea, true
+}
+
+// RuleManagementEventClaimsDataSource the claims for a rule management event data source.
 type RuleManagementEventClaimsDataSource struct {
+	// EmailAddress - the email address.
 	EmailAddress *string `json:"emailAddress,omitempty"`
 }
 
-// RuleManagementEventDataSource is a rule management event data source. The discriminator fields is always
+// RuleManagementEventDataSource a rule management event data source. The discriminator fields is always
 // RuleManagementEventDataSource in this case.
 type RuleManagementEventDataSource struct {
-	ResourceURI          *string                              `json:"resourceUri,omitempty"`
-	OdataType            OdataType                            `json:"odata.type,omitempty"`
-	EventName            *string                              `json:"eventName,omitempty"`
-	EventSource          *string                              `json:"eventSource,omitempty"`
-	Level                *string                              `json:"level,omitempty"`
-	OperationName        *string                              `json:"operationName,omitempty"`
-	ResourceGroupName    *string                              `json:"resourceGroupName,omitempty"`
-	ResourceProviderName *string                              `json:"resourceProviderName,omitempty"`
-	Status               *string                              `json:"status,omitempty"`
-	SubStatus            *string                              `json:"subStatus,omitempty"`
-	Claims               *RuleManagementEventClaimsDataSource `json:"claims,omitempty"`
+	// ResourceURI - the resource identifier of the resource the rule monitors. **NOTE**: this property cannot be updated for an existing rule.
+	ResourceURI *string `json:"resourceUri,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource'
+	OdataType OdataType `json:"odata.type,omitempty"`
+	// EventName - the event name.
+	EventName *string `json:"eventName,omitempty"`
+	// EventSource - the event source.
+	EventSource *string `json:"eventSource,omitempty"`
+	// Level - the level.
+	Level *string `json:"level,omitempty"`
+	// OperationName - The name of the operation that should be checked for. If no name is provided, any operation will match.
+	OperationName *string `json:"operationName,omitempty"`
+	// ResourceGroupName - the resource group name.
+	ResourceGroupName *string `json:"resourceGroupName,omitempty"`
+	// ResourceProviderName - the resource provider name.
+	ResourceProviderName *string `json:"resourceProviderName,omitempty"`
+	// Status - The status of the operation that should be checked for. If no status is provided, any status will match.
+	Status *string `json:"status,omitempty"`
+	// SubStatus - the substatus.
+	SubStatus *string `json:"subStatus,omitempty"`
+	// Claims - the claims.
+	Claims *RuleManagementEventClaimsDataSource `json:"claims,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for RuleManagementEventDataSource.
@@ -1036,22 +2075,34 @@ func (rmeds RuleManagementEventDataSource) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsRuleMetricDataSource is the RuleDataSource implementation for RuleManagementEventDataSource.
+// AsRuleMetricDataSource is the BasicRuleDataSource implementation for RuleManagementEventDataSource.
 func (rmeds RuleManagementEventDataSource) AsRuleMetricDataSource() (*RuleMetricDataSource, bool) {
 	return nil, false
 }
 
-// AsRuleManagementEventDataSource is the RuleDataSource implementation for RuleManagementEventDataSource.
+// AsRuleManagementEventDataSource is the BasicRuleDataSource implementation for RuleManagementEventDataSource.
 func (rmeds RuleManagementEventDataSource) AsRuleManagementEventDataSource() (*RuleManagementEventDataSource, bool) {
 	return &rmeds, true
 }
 
-// RuleMetricDataSource is a rule metric data source. The discriminator value is always RuleMetricDataSource in this
-// case.
+// AsRuleDataSource is the BasicRuleDataSource implementation for RuleManagementEventDataSource.
+func (rmeds RuleManagementEventDataSource) AsRuleDataSource() (*RuleDataSource, bool) {
+	return nil, false
+}
+
+// AsBasicRuleDataSource is the BasicRuleDataSource implementation for RuleManagementEventDataSource.
+func (rmeds RuleManagementEventDataSource) AsBasicRuleDataSource() (BasicRuleDataSource, bool) {
+	return &rmeds, true
+}
+
+// RuleMetricDataSource a rule metric data source. The discriminator value is always RuleMetricDataSource in this case.
 type RuleMetricDataSource struct {
-	ResourceURI *string   `json:"resourceUri,omitempty"`
-	OdataType   OdataType `json:"odata.type,omitempty"`
-	MetricName  *string   `json:"metricName,omitempty"`
+	// ResourceURI - the resource identifier of the resource the rule monitors. **NOTE**: this property cannot be updated for an existing rule.
+	ResourceURI *string `json:"resourceUri,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleMetricDataSource', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleManagementEventDataSource'
+	OdataType OdataType `json:"odata.type,omitempty"`
+	// MetricName - the name of the metric that defines what the rule monitors.
+	MetricName *string `json:"metricName,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for RuleMetricDataSource.
@@ -1065,21 +2116,34 @@ func (rmds RuleMetricDataSource) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsRuleMetricDataSource is the RuleDataSource implementation for RuleMetricDataSource.
+// AsRuleMetricDataSource is the BasicRuleDataSource implementation for RuleMetricDataSource.
 func (rmds RuleMetricDataSource) AsRuleMetricDataSource() (*RuleMetricDataSource, bool) {
 	return &rmds, true
 }
 
-// AsRuleManagementEventDataSource is the RuleDataSource implementation for RuleMetricDataSource.
+// AsRuleManagementEventDataSource is the BasicRuleDataSource implementation for RuleMetricDataSource.
 func (rmds RuleMetricDataSource) AsRuleManagementEventDataSource() (*RuleManagementEventDataSource, bool) {
 	return nil, false
 }
 
-// RuleWebhookAction is specifies the action to post to service when the rule condition is evaluated. The discriminator
-// is always RuleWebhookAction in this case.
+// AsRuleDataSource is the BasicRuleDataSource implementation for RuleMetricDataSource.
+func (rmds RuleMetricDataSource) AsRuleDataSource() (*RuleDataSource, bool) {
+	return nil, false
+}
+
+// AsBasicRuleDataSource is the BasicRuleDataSource implementation for RuleMetricDataSource.
+func (rmds RuleMetricDataSource) AsBasicRuleDataSource() (BasicRuleDataSource, bool) {
+	return &rmds, true
+}
+
+// RuleWebhookAction specifies the action to post to service when the rule condition is evaluated. The discriminator is
+// always RuleWebhookAction in this case.
 type RuleWebhookAction struct {
-	OdataType  OdataType2          `json:"odata.type,omitempty"`
-	ServiceURI *string             `json:"serviceUri,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleEmailAction', 'OdataTypeMicrosoftAzureManagementInsightsModelsRuleWebhookAction'
+	OdataType OdataTypeBasicRuleAction `json:"odata.type,omitempty"`
+	// ServiceURI - the service uri to Post the notification when the alert activates or resolves.
+	ServiceURI *string `json:"serviceUri,omitempty"`
+	// Properties - the dictionary of custom properties to include with the post operation. These data are appended to the webhook payload.
 	Properties *map[string]*string `json:"properties,omitempty"`
 }
 
@@ -1094,52 +2158,81 @@ func (rwa RuleWebhookAction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsRuleEmailAction is the RuleAction implementation for RuleWebhookAction.
+// AsRuleEmailAction is the BasicRuleAction implementation for RuleWebhookAction.
 func (rwa RuleWebhookAction) AsRuleEmailAction() (*RuleEmailAction, bool) {
 	return nil, false
 }
 
-// AsRuleWebhookAction is the RuleAction implementation for RuleWebhookAction.
+// AsRuleWebhookAction is the BasicRuleAction implementation for RuleWebhookAction.
 func (rwa RuleWebhookAction) AsRuleWebhookAction() (*RuleWebhookAction, bool) {
 	return &rwa, true
 }
 
-// ScaleAction is the parameters for the scaling action.
-type ScaleAction struct {
-	Direction ScaleDirection `json:"direction,omitempty"`
-	Type      ScaleType      `json:"type,omitempty"`
-	Value     *string        `json:"value,omitempty"`
-	Cooldown  *string        `json:"cooldown,omitempty"`
+// AsRuleAction is the BasicRuleAction implementation for RuleWebhookAction.
+func (rwa RuleWebhookAction) AsRuleAction() (*RuleAction, bool) {
+	return nil, false
 }
 
-// ScaleCapacity is the number of instances that can be used during this profile.
+// AsBasicRuleAction is the BasicRuleAction implementation for RuleWebhookAction.
+func (rwa RuleWebhookAction) AsBasicRuleAction() (BasicRuleAction, bool) {
+	return &rwa, true
+}
+
+// ScaleAction the parameters for the scaling action.
+type ScaleAction struct {
+	// Direction - the scale direction. Whether the scaling action increases or decreases the number of instances. Possible values include: 'ScaleDirectionNone', 'ScaleDirectionIncrease', 'ScaleDirectionDecrease'
+	Direction ScaleDirection `json:"direction,omitempty"`
+	// Type - the type of action that should occur when the scale rule fires. Possible values include: 'ChangeCount', 'PercentChangeCount', 'ExactCount'
+	Type ScaleType `json:"type,omitempty"`
+	// Value - the number of instances that are involved in the scaling action. This value must be 1 or greater. The default value is 1.
+	Value *string `json:"value,omitempty"`
+	// Cooldown - the amount of time to wait since the last scaling action before this action occurs. It must be between 1 week and 1 minute in ISO 8601 format.
+	Cooldown *string `json:"cooldown,omitempty"`
+}
+
+// ScaleCapacity the number of instances that can be used during this profile.
 type ScaleCapacity struct {
+	// Minimum - the minimum number of instances for the resource.
 	Minimum *string `json:"minimum,omitempty"`
+	// Maximum - the maximum number of instances for the resource. The actual maximum number of instances is limited by the cores that are available in the subscription.
 	Maximum *string `json:"maximum,omitempty"`
+	// Default - the number of instances that will be set if metrics are not available for evaluation. The default is only used if the current instance count is lower than the default.
 	Default *string `json:"default,omitempty"`
 }
 
-// ScaleRule is a rule that provide the triggers and parameters for the scaling action.
+// ScaleRule a rule that provide the triggers and parameters for the scaling action.
 type ScaleRule struct {
+	// MetricTrigger - the trigger that results in a scaling action.
 	MetricTrigger *MetricTrigger `json:"metricTrigger,omitempty"`
-	ScaleAction   *ScaleAction   `json:"scaleAction,omitempty"`
+	// ScaleAction - the parameters for the scaling action.
+	ScaleAction *ScaleAction `json:"scaleAction,omitempty"`
 }
 
-// SmsReceiver is an SMS receiver.
+// SmsReceiver an SMS receiver.
 type SmsReceiver struct {
-	Name        *string        `json:"name,omitempty"`
-	CountryCode *string        `json:"countryCode,omitempty"`
-	PhoneNumber *string        `json:"phoneNumber,omitempty"`
-	Status      ReceiverStatus `json:"status,omitempty"`
+	// Name - The name of the SMS receiver. Names must be unique across all receivers within an action group.
+	Name *string `json:"name,omitempty"`
+	// CountryCode - The country code of the SMS receiver.
+	CountryCode *string `json:"countryCode,omitempty"`
+	// PhoneNumber - The phone number of the SMS receiver.
+	PhoneNumber *string `json:"phoneNumber,omitempty"`
+	// Status - The status of the receiver. Possible values include: 'NotSpecified', 'Enabled', 'Disabled'
+	Status ReceiverStatus `json:"status,omitempty"`
 }
 
-// ThresholdRuleCondition is a rule condition based on a metric crossing a threshold.
+// ThresholdRuleCondition a rule condition based on a metric crossing a threshold.
 type ThresholdRuleCondition struct {
-	DataSource      RuleDataSource          `json:"dataSource,omitempty"`
-	OdataType       OdataType1              `json:"odata.type,omitempty"`
-	Operator        ConditionOperator       `json:"operator,omitempty"`
-	Threshold       *float64                `json:"threshold,omitempty"`
-	WindowSize      *string                 `json:"windowSize,omitempty"`
+	// DataSource - the resource from which the rule collects its data. For this type dataSource will always be of type RuleMetricDataSource.
+	DataSource BasicRuleDataSource `json:"dataSource,omitempty"`
+	// OdataType - Possible values include: 'OdataTypeRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsLocationThresholdRuleCondition', 'OdataTypeMicrosoftAzureManagementInsightsModelsManagementEventRuleCondition'
+	OdataType OdataTypeBasicRuleCondition `json:"odata.type,omitempty"`
+	// Operator - the operator used to compare the data and the threshold. Possible values include: 'ConditionOperatorGreaterThan', 'ConditionOperatorGreaterThanOrEqual', 'ConditionOperatorLessThan', 'ConditionOperatorLessThanOrEqual'
+	Operator ConditionOperator `json:"operator,omitempty"`
+	// Threshold - the threshold value that activates the alert.
+	Threshold *float64 `json:"threshold,omitempty"`
+	// WindowSize - the period of time (in ISO 8601 duration format) that is used to monitor alert activity based on the threshold. If specified then it must be between 5 minutes and 1 day.
+	WindowSize *string `json:"windowSize,omitempty"`
+	// TimeAggregation - the time aggregation operator. How the data that are collected should be combined over time. The default value is the PrimaryAggregationType of the Metric. Possible values include: 'TimeAggregationOperatorAverage', 'TimeAggregationOperatorMinimum', 'TimeAggregationOperatorMaximum', 'TimeAggregationOperatorTotal', 'TimeAggregationOperatorLast'
 	TimeAggregation TimeAggregationOperator `json:"timeAggregation,omitempty"`
 }
 
@@ -1154,19 +2247,29 @@ func (trc ThresholdRuleCondition) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsThresholdRuleCondition is the RuleCondition implementation for ThresholdRuleCondition.
+// AsThresholdRuleCondition is the BasicRuleCondition implementation for ThresholdRuleCondition.
 func (trc ThresholdRuleCondition) AsThresholdRuleCondition() (*ThresholdRuleCondition, bool) {
 	return &trc, true
 }
 
-// AsLocationThresholdRuleCondition is the RuleCondition implementation for ThresholdRuleCondition.
+// AsLocationThresholdRuleCondition is the BasicRuleCondition implementation for ThresholdRuleCondition.
 func (trc ThresholdRuleCondition) AsLocationThresholdRuleCondition() (*LocationThresholdRuleCondition, bool) {
 	return nil, false
 }
 
-// AsManagementEventRuleCondition is the RuleCondition implementation for ThresholdRuleCondition.
+// AsManagementEventRuleCondition is the BasicRuleCondition implementation for ThresholdRuleCondition.
 func (trc ThresholdRuleCondition) AsManagementEventRuleCondition() (*ManagementEventRuleCondition, bool) {
 	return nil, false
+}
+
+// AsRuleCondition is the BasicRuleCondition implementation for ThresholdRuleCondition.
+func (trc ThresholdRuleCondition) AsRuleCondition() (*RuleCondition, bool) {
+	return nil, false
+}
+
+// AsBasicRuleCondition is the BasicRuleCondition implementation for ThresholdRuleCondition.
+func (trc ThresholdRuleCondition) AsBasicRuleCondition() (BasicRuleCondition, bool) {
+	return &trc, true
 }
 
 // UnmarshalJSON is the custom unmarshaler for ThresholdRuleCondition struct.
@@ -1220,7 +2323,7 @@ func (trc *ThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["dataSource"]
 	if v != nil {
-		dataSource, err := unmarshalRuleDataSource(*m["dataSource"])
+		dataSource, err := unmarshalBasicRuleDataSource(*m["dataSource"])
 		if err != nil {
 			return err
 		}
@@ -1229,7 +2332,7 @@ func (trc *ThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 
 	v = m["odata.type"]
 	if v != nil {
-		var odatatype OdataType1
+		var odatatype OdataTypeBasicRuleCondition
 		err = json.Unmarshal(*m["odata.type"], &odatatype)
 		if err != nil {
 			return err
@@ -1240,21 +2343,28 @@ func (trc *ThresholdRuleCondition) UnmarshalJSON(body []byte) error {
 	return nil
 }
 
-// TimeWindow is a specific date-time for the profile.
+// TimeWindow a specific date-time for the profile.
 type TimeWindow struct {
-	TimeZone *string    `json:"timeZone,omitempty"`
-	Start    *date.Time `json:"start,omitempty"`
-	End      *date.Time `json:"end,omitempty"`
+	// TimeZone - the timezone of the start and end times for the profile. Some examples of valid timezones are: Dateline Standard Time, UTC-11, Hawaiian Standard Time, Alaskan Standard Time, Pacific Standard Time (Mexico), Pacific Standard Time, US Mountain Standard Time, Mountain Standard Time (Mexico), Mountain Standard Time, Central America Standard Time, Central Standard Time, Central Standard Time (Mexico), Canada Central Standard Time, SA Pacific Standard Time, Eastern Standard Time, US Eastern Standard Time, Venezuela Standard Time, Paraguay Standard Time, Atlantic Standard Time, Central Brazilian Standard Time, SA Western Standard Time, Pacific SA Standard Time, Newfoundland Standard Time, E. South America Standard Time, Argentina Standard Time, SA Eastern Standard Time, Greenland Standard Time, Montevideo Standard Time, Bahia Standard Time, UTC-02, Mid-Atlantic Standard Time, Azores Standard Time, Cape Verde Standard Time, Morocco Standard Time, UTC, GMT Standard Time, Greenwich Standard Time, W. Europe Standard Time, Central Europe Standard Time, Romance Standard Time, Central European Standard Time, W. Central Africa Standard Time, Namibia Standard Time, Jordan Standard Time, GTB Standard Time, Middle East Standard Time, Egypt Standard Time, Syria Standard Time, E. Europe Standard Time, South Africa Standard Time, FLE Standard Time, Turkey Standard Time, Israel Standard Time, Kaliningrad Standard Time, Libya Standard Time, Arabic Standard Time, Arab Standard Time, Belarus Standard Time, Russian Standard Time, E. Africa Standard Time, Iran Standard Time, Arabian Standard Time, Azerbaijan Standard Time, Russia Time Zone 3, Mauritius Standard Time, Georgian Standard Time, Caucasus Standard Time, Afghanistan Standard Time, West Asia Standard Time, Ekaterinburg Standard Time, Pakistan Standard Time, India Standard Time, Sri Lanka Standard Time, Nepal Standard Time, Central Asia Standard Time, Bangladesh Standard Time, N. Central Asia Standard Time, Myanmar Standard Time, SE Asia Standard Time, North Asia Standard Time, China Standard Time, North Asia East Standard Time, Singapore Standard Time, W. Australia Standard Time, Taipei Standard Time, Ulaanbaatar Standard Time, Tokyo Standard Time, Korea Standard Time, Yakutsk Standard Time, Cen. Australia Standard Time, AUS Central Standard Time, E. Australia Standard Time, AUS Eastern Standard Time, West Pacific Standard Time, Tasmania Standard Time, Magadan Standard Time, Vladivostok Standard Time, Russia Time Zone 10, Central Pacific Standard Time, Russia Time Zone 11, New Zealand Standard Time, UTC+12, Fiji Standard Time, Kamchatka Standard Time, Tonga Standard Time, Samoa Standard Time, Line Islands Standard Time
+	TimeZone *string `json:"timeZone,omitempty"`
+	// Start - the start time for the profile in ISO 8601 format.
+	Start *date.Time `json:"start,omitempty"`
+	// End - the end time for the profile in ISO 8601 format.
+	End *date.Time `json:"end,omitempty"`
 }
 
-// WebhookNotification is webhook notification of an autoscale event.
+// WebhookNotification webhook notification of an autoscale event.
 type WebhookNotification struct {
-	ServiceURI *string             `json:"serviceUri,omitempty"`
+	// ServiceURI - the service address to receive the notification.
+	ServiceURI *string `json:"serviceUri,omitempty"`
+	// Properties - a property bag of settings. This value can be empty.
 	Properties *map[string]*string `json:"properties,omitempty"`
 }
 
-// WebhookReceiver is a webhook receiver.
+// WebhookReceiver a webhook receiver.
 type WebhookReceiver struct {
-	Name       *string `json:"name,omitempty"`
+	// Name - The name of the webhook receiver. Names must be unique across all receivers within an action group.
+	Name *string `json:"name,omitempty"`
+	// ServiceURI - The URI where webhooks should be sent.
 	ServiceURI *string `json:"serviceUri,omitempty"`
 }

@@ -50,6 +50,7 @@ func New(client *http.Client) (*Service, error) {
 		return nil, errors.New("client is nil")
 	}
 	s := &Service{client: client, BasePath: basePath}
+	s.Customers = NewCustomersService(s)
 	s.Operations = NewOperationsService(s)
 	s.Partners = NewPartnersService(s)
 	return s, nil
@@ -59,6 +60,8 @@ type Service struct {
 	client    *http.Client
 	BasePath  string // API endpoint base URL
 	UserAgent string // optional additional User-Agent fragment
+
+	Customers *CustomersService
 
 	Operations *OperationsService
 
@@ -70,6 +73,51 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func NewCustomersService(s *Service) *CustomersService {
+	rs := &CustomersService{s: s}
+	rs.Configurations = NewCustomersConfigurationsService(s)
+	rs.Devices = NewCustomersDevicesService(s)
+	rs.Dpcs = NewCustomersDpcsService(s)
+	return rs
+}
+
+type CustomersService struct {
+	s *Service
+
+	Configurations *CustomersConfigurationsService
+
+	Devices *CustomersDevicesService
+
+	Dpcs *CustomersDpcsService
+}
+
+func NewCustomersConfigurationsService(s *Service) *CustomersConfigurationsService {
+	rs := &CustomersConfigurationsService{s: s}
+	return rs
+}
+
+type CustomersConfigurationsService struct {
+	s *Service
+}
+
+func NewCustomersDevicesService(s *Service) *CustomersDevicesService {
+	rs := &CustomersDevicesService{s: s}
+	return rs
+}
+
+type CustomersDevicesService struct {
+	s *Service
+}
+
+func NewCustomersDpcsService(s *Service) *CustomersDpcsService {
+	rs := &CustomersDpcsService{s: s}
+	return rs
+}
+
+type CustomersDpcsService struct {
+	s *Service
 }
 
 func NewOperationsService(s *Service) *OperationsService {
@@ -280,6 +328,118 @@ func (s *Company) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// Configuration: A configuration collects the provisioning options for
+// Android devices. Each
+// configuration combines the following:
+//
+// * The EMM device policy controller (DPC) installed on the devices.
+// * EMM policies enforced on the devices.
+// * Metadata displayed on the device to help users during
+// setup.
+//
+// Customers can add as many configurations as they need. However,
+// zero-touch
+// enrollment works best when a customer sets a default configuration
+// that's
+// applied to any new devices the organization purchases.
+type Configuration struct {
+	// CompanyName: Required. The name of the organization. Zero-touch
+	// enrollment shows this
+	// organization name to device users during device provisioning.
+	CompanyName string `json:"companyName,omitempty"`
+
+	// ConfigurationId: Output only. The ID of the configuration. Assigned
+	// by the server.
+	ConfigurationId int64 `json:"configurationId,omitempty,string"`
+
+	// ConfigurationName: Required. A short name that describes the
+	// configuration's purpose. For
+	// example, _Sales team_ or _Temporary employees_. The zero-touch
+	// enrollment
+	// portal displays this name to IT admins.
+	ConfigurationName string `json:"configurationName,omitempty"`
+
+	// ContactEmail: Required. The email address that device users can
+	// contact to get help.
+	// Zero-touch enrollment shows this email address to device users
+	// before
+	// device provisioning. The value is validated on input.
+	ContactEmail string `json:"contactEmail,omitempty"`
+
+	// ContactPhone: Required. The telephone number that device users can
+	// call, using another
+	// device, to get help. Zero-touch enrollment shows this number to
+	// device
+	// users before device provisioning. Accepts numerals, spaces, the plus
+	// sign,
+	// hyphens, and parentheses.
+	ContactPhone string `json:"contactPhone,omitempty"`
+
+	// CustomMessage: A message, containing one or two sentences, to help
+	// device users get help
+	// or give them more details about what’s happening to their
+	// device.
+	// Zero-touch enrollment shows this message before the device is
+	// provisioned.
+	CustomMessage string `json:"customMessage,omitempty"`
+
+	// DpcExtras: The JSON-formatted EMM provisioning extras that are passed
+	// to the DPC.
+	DpcExtras string `json:"dpcExtras,omitempty"`
+
+	// DpcResourcePath: Required. The resource name of the selected DPC
+	// (device policy controller)
+	// in the format `customers/[CUSTOMER_ID]/dpcs/*`. To list the supported
+	// DPCs,
+	// call
+	// `customers.dpcs.list`.
+	DpcResourcePath string `json:"dpcResourcePath,omitempty"`
+
+	// IsDefault: Required. Whether this is the default configuration that
+	// zero-touch
+	// enrollment applies to any new devices the organization purchases in
+	// the
+	// future. Only one customer configuration can be the default. Setting
+	// this
+	// value to `true`, changes the previous default configuration's
+	// `isDefault`
+	// value to `false`.
+	IsDefault bool `json:"isDefault,omitempty"`
+
+	// Name: Output only. The API resource name in the
+	// format
+	// `customers/[CUSTOMER_ID]/configurations/[CONFIGURATION_ID]`. Assigned
+	// by
+	// the server.
+	Name string `json:"name,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "CompanyName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CompanyName") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Configuration) MarshalJSON() ([]byte, error) {
+	type NoMethod Configuration
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CreateCustomerRequest: Request message to create a customer.
 type CreateCustomerRequest struct {
 	// Customer: Required. The company data to populate the new customer.
@@ -309,6 +469,244 @@ type CreateCustomerRequest struct {
 
 func (s *CreateCustomerRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateCustomerRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerApplyConfigurationRequest: Request message for customer to
+// assign a configuration to device.
+type CustomerApplyConfigurationRequest struct {
+	// Configuration: Required. The configuration applied to the device in
+	// the
+	// format
+	// `customers/[CUSTOMER_ID]/configurations/[CONFIGURATION_ID]`.
+	Configuration string `json:"configuration,omitempty"`
+
+	// Device: Required. The device the configuration is applied to.
+	Device *DeviceReference `json:"device,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Configuration") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Configuration") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerApplyConfigurationRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerApplyConfigurationRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerListConfigurationsResponse: Response message of customer's
+// listing configuration.
+type CustomerListConfigurationsResponse struct {
+	// Configurations: The configurations.
+	Configurations []*Configuration `json:"configurations,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Configurations") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Configurations") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerListConfigurationsResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerListConfigurationsResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerListCustomersResponse: Response message for listing my
+// customers.
+type CustomerListCustomersResponse struct {
+	// Customers: Customers the current user can act as.
+	Customers []*Company `json:"customers,omitempty"`
+
+	// NextPageToken: Token to retrieve the next page of results, or empty
+	// if there are no
+	// more results in the list.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Customers") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Customers") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerListCustomersResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerListCustomersResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerListDevicesResponse: Response message of customer's liting
+// devices.
+type CustomerListDevicesResponse struct {
+	// Devices: The customer's devices.
+	Devices []*Device `json:"devices,omitempty"`
+
+	// NextPageToken: A token used to access the next page of results.
+	// Omitted if no further
+	// results are available.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Devices") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Devices") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerListDevicesResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerListDevicesResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerListDpcsResponse: Response message of customer's listing
+// DPCs.
+type CustomerListDpcsResponse struct {
+	// Dpcs: The list of DPCs available to the customer that support
+	// zero-touch
+	// enrollment.
+	Dpcs []*Dpc `json:"dpcs,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Dpcs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Dpcs") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerListDpcsResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerListDpcsResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerRemoveConfigurationRequest: Request message for customer to
+// remove the configuration from device.
+type CustomerRemoveConfigurationRequest struct {
+	// Device: Required. The device to remove the configuration from.
+	Device *DeviceReference `json:"device,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Device") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Device") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerRemoveConfigurationRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerRemoveConfigurationRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CustomerUnclaimDeviceRequest: Request message for customer to unclaim
+// a device.
+type CustomerUnclaimDeviceRequest struct {
+	// Device: Required. The device to unclaim.
+	Device *DeviceReference `json:"device,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Device") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Device") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CustomerUnclaimDeviceRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod CustomerUnclaimDeviceRequest
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -497,6 +895,50 @@ func (s *DeviceMetadata) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DeviceReference: A `DeviceReference` is an API abstraction that lets
+// you supply a _device_
+// argument to a method using one of the following identifier types:
+//
+// * A numeric API resource ID.
+// * Real-world hardware IDs, such as IMEI number, belonging to the
+// manufactured
+//   device.
+//
+// Methods that operate on devices take a `DeviceReference` as a
+// parameter type
+// because it's more flexible for the caller. To learn more about
+// device
+// identifiers, read [Identifiers](/zero-touch/guides/identifiers).
+type DeviceReference struct {
+	// DeviceId: The ID of the device.
+	DeviceId int64 `json:"deviceId,omitempty,string"`
+
+	// DeviceIdentifier: The hardware IDs of the device.
+	DeviceIdentifier *DeviceIdentifier `json:"deviceIdentifier,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeviceId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeviceId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeviceReference) MarshalJSON() ([]byte, error) {
+	type NoMethod DeviceReference
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DevicesLongRunningOperationMetadata: Long running operation metadata.
 type DevicesLongRunningOperationMetadata struct {
 	// DevicesCount: Number of devices parsed in your requests.
@@ -571,6 +1013,57 @@ type DevicesLongRunningOperationResponse struct {
 
 func (s *DevicesLongRunningOperationResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod DevicesLongRunningOperationResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Dpc: An EMM's DPC ([device policy
+// controller](/android/work/dpc/build-dpc)).
+// Zero-touch enrollment installs a DPC (listed in the `Configuration`)
+// on a
+// device to maintain the customer's mobile policies. All the DPCs
+// listed by the
+// API support zero-touch enrollment and are available in Google Play.
+type Dpc struct {
+	// DpcName: Output only. The title of the DPC app in Google Play. For
+	// example, _Google
+	// Apps Device Policy_. Useful in an application's user interface.
+	DpcName string `json:"dpcName,omitempty"`
+
+	// Name: Output only. The API resource name in the
+	// format
+	// `customers/[CUSTOMER_ID]/dpcs/[DPC_ID]`. Assigned by
+	// the server. To maintain a reference to a DPC across customer
+	// accounts,
+	// persist and match the last path component (`DPC_ID`).
+	Name string `json:"name,omitempty"`
+
+	// PackageName: Output only. The DPC's Android application ID that looks
+	// like a Java
+	// package name. Zero-touch enrollment installs the DPC app onto a
+	// device
+	// using this identifier.
+	PackageName string `json:"packageName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DpcName") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DpcName") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Dpc) MarshalJSON() ([]byte, error) {
+	type NoMethod Dpc
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1281,6 +1774,1718 @@ func (s *UpdateMetadataArguments) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateMetadataArguments
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// method id "androiddeviceprovisioning.customers.list":
+
+type CustomersListCall struct {
+	s            *Service
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: List the user's customer accounts.
+func (r *CustomersService) List() *CustomersListCall {
+	c := &CustomersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": The maximum number
+// of items to return.
+func (c *CustomersListCall) PageSize(pageSize int64) *CustomersListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": The
+// next_page_token value returned from a previous List request, if any.
+func (c *CustomersListCall) PageToken(pageToken string) *CustomersListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersListCall) Fields(s ...googleapi.Field) *CustomersListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersListCall) IfNoneMatch(entityTag string) *CustomersListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersListCall) Context(ctx context.Context) *CustomersListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/customers")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.list" call.
+// Exactly one of *CustomerListCustomersResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *CustomerListCustomersResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersListCall) Do(opts ...googleapi.CallOption) (*CustomerListCustomersResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &CustomerListCustomersResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "List the user's customer accounts.",
+	//   "flatPath": "v1/customers",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.list",
+	//   "parameterOrder": [],
+	//   "parameters": {
+	//     "pageSize": {
+	//       "description": "The maximum number of items to return.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "The next_page_token value returned from a previous List request, if any.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/customers",
+	//   "response": {
+	//     "$ref": "CustomerListCustomersResponse"
+	//   }
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *CustomersListCall) Pages(ctx context.Context, f func(*CustomerListCustomersResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "androiddeviceprovisioning.customers.configurations.create":
+
+type CustomersConfigurationsCreateCall struct {
+	s             *Service
+	parent        string
+	configuration *Configuration
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// Create: Creates a new configuration. Once created, a customer can
+// apply the
+// configuration to devices.
+func (r *CustomersConfigurationsService) Create(parent string, configuration *Configuration) *CustomersConfigurationsCreateCall {
+	c := &CustomersConfigurationsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.configuration = configuration
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersConfigurationsCreateCall) Fields(s ...googleapi.Field) *CustomersConfigurationsCreateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersConfigurationsCreateCall) Context(ctx context.Context) *CustomersConfigurationsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersConfigurationsCreateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersConfigurationsCreateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.configuration)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/configurations")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.configurations.create" call.
+// Exactly one of *Configuration or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Configuration.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersConfigurationsCreateCall) Do(opts ...googleapi.CallOption) (*Configuration, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Configuration{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Creates a new configuration. Once created, a customer can apply the\nconfiguration to devices.",
+	//   "flatPath": "v1/customers/{customersId}/configurations",
+	//   "httpMethod": "POST",
+	//   "id": "androiddeviceprovisioning.customers.configurations.create",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer that manages the configuration. An API resource name\nin the format `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/configurations",
+	//   "request": {
+	//     "$ref": "Configuration"
+	//   },
+	//   "response": {
+	//     "$ref": "Configuration"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.configurations.delete":
+
+type CustomersConfigurationsDeleteCall struct {
+	s          *Service
+	name       string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: Deletes an unused configuration. The API call fails if the
+// customer has
+// devices with the configuration applied.
+func (r *CustomersConfigurationsService) Delete(name string) *CustomersConfigurationsDeleteCall {
+	c := &CustomersConfigurationsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersConfigurationsDeleteCall) Fields(s ...googleapi.Field) *CustomersConfigurationsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersConfigurationsDeleteCall) Context(ctx context.Context) *CustomersConfigurationsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersConfigurationsDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersConfigurationsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.configurations.delete" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CustomersConfigurationsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes an unused configuration. The API call fails if the customer has\ndevices with the configuration applied.",
+	//   "flatPath": "v1/customers/{customersId}/configurations/{configurationsId}",
+	//   "httpMethod": "DELETE",
+	//   "id": "androiddeviceprovisioning.customers.configurations.delete",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The configuration to delete. An API resource name in the format\n`customers/[CUSTOMER_ID]/configurations/[CONFIGURATION_ID]`. If the\nconfiguration is applied to any devices, the API call fails.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+/configurations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "Empty"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.configurations.get":
+
+type CustomersConfigurationsGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Gets the details of a configuration.
+func (r *CustomersConfigurationsService) Get(name string) *CustomersConfigurationsGetCall {
+	c := &CustomersConfigurationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersConfigurationsGetCall) Fields(s ...googleapi.Field) *CustomersConfigurationsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersConfigurationsGetCall) IfNoneMatch(entityTag string) *CustomersConfigurationsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersConfigurationsGetCall) Context(ctx context.Context) *CustomersConfigurationsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersConfigurationsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersConfigurationsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.configurations.get" call.
+// Exactly one of *Configuration or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Configuration.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersConfigurationsGetCall) Do(opts ...googleapi.CallOption) (*Configuration, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Configuration{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets the details of a configuration.",
+	//   "flatPath": "v1/customers/{customersId}/configurations/{configurationsId}",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.configurations.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The configuration to get. An API resource name in the format\n`customers/[CUSTOMER_ID]/configurations/[CONFIGURATION_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+/configurations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "Configuration"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.configurations.list":
+
+type CustomersConfigurationsListCall struct {
+	s            *Service
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists a customer's configurations.
+func (r *CustomersConfigurationsService) List(parent string) *CustomersConfigurationsListCall {
+	c := &CustomersConfigurationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersConfigurationsListCall) Fields(s ...googleapi.Field) *CustomersConfigurationsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersConfigurationsListCall) IfNoneMatch(entityTag string) *CustomersConfigurationsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersConfigurationsListCall) Context(ctx context.Context) *CustomersConfigurationsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersConfigurationsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersConfigurationsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/configurations")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.configurations.list" call.
+// Exactly one of *CustomerListConfigurationsResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *CustomerListConfigurationsResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *CustomersConfigurationsListCall) Do(opts ...googleapi.CallOption) (*CustomerListConfigurationsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &CustomerListConfigurationsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists a customer's configurations.",
+	//   "flatPath": "v1/customers/{customersId}/configurations",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.configurations.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer that manages the listed configurations. An API\nresource name in the format `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/configurations",
+	//   "response": {
+	//     "$ref": "CustomerListConfigurationsResponse"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.configurations.patch":
+
+type CustomersConfigurationsPatchCall struct {
+	s             *Service
+	name          string
+	configuration *Configuration
+	urlParams_    gensupport.URLParams
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// Patch: Updates a configuration's field values.
+func (r *CustomersConfigurationsService) Patch(name string, configuration *Configuration) *CustomersConfigurationsPatchCall {
+	c := &CustomersConfigurationsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.configuration = configuration
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Required. The
+// field mask applied to the target `Configuration` before
+// updating the fields. To learn more about using field masks,
+// read
+// [FieldMask](/protocol-buffers/docs/reference/google.protobuf#fiel
+// dmask) in
+// the Protocol Buffers documentation.
+func (c *CustomersConfigurationsPatchCall) UpdateMask(updateMask string) *CustomersConfigurationsPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersConfigurationsPatchCall) Fields(s ...googleapi.Field) *CustomersConfigurationsPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersConfigurationsPatchCall) Context(ctx context.Context) *CustomersConfigurationsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersConfigurationsPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersConfigurationsPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.configuration)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.configurations.patch" call.
+// Exactly one of *Configuration or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Configuration.ServerResponse.Header or (if a response was returned
+// at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersConfigurationsPatchCall) Do(opts ...googleapi.CallOption) (*Configuration, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Configuration{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a configuration's field values.",
+	//   "flatPath": "v1/customers/{customersId}/configurations/{configurationsId}",
+	//   "httpMethod": "PATCH",
+	//   "id": "androiddeviceprovisioning.customers.configurations.patch",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Output only. The API resource name in the format\n`customers/[CUSTOMER_ID]/configurations/[CONFIGURATION_ID]`. Assigned by\nthe server.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+/configurations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Required. The field mask applied to the target `Configuration` before\nupdating the fields. To learn more about using field masks, read\n[FieldMask](/protocol-buffers/docs/reference/google.protobuf#fieldmask) in\nthe Protocol Buffers documentation.",
+	//       "format": "google-fieldmask",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "request": {
+	//     "$ref": "Configuration"
+	//   },
+	//   "response": {
+	//     "$ref": "Configuration"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.devices.applyConfiguration":
+
+type CustomersDevicesApplyConfigurationCall struct {
+	s                                 *Service
+	parent                            string
+	customerapplyconfigurationrequest *CustomerApplyConfigurationRequest
+	urlParams_                        gensupport.URLParams
+	ctx_                              context.Context
+	header_                           http.Header
+}
+
+// ApplyConfiguration: Applies a Configuration to the device to register
+// the device for zero-touch
+// enrollment. After applying a configuration to a device, the
+// device
+// automatically provisions itself on first boot, or next factory reset.
+func (r *CustomersDevicesService) ApplyConfiguration(parent string, customerapplyconfigurationrequest *CustomerApplyConfigurationRequest) *CustomersDevicesApplyConfigurationCall {
+	c := &CustomersDevicesApplyConfigurationCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.customerapplyconfigurationrequest = customerapplyconfigurationrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDevicesApplyConfigurationCall) Fields(s ...googleapi.Field) *CustomersDevicesApplyConfigurationCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDevicesApplyConfigurationCall) Context(ctx context.Context) *CustomersDevicesApplyConfigurationCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDevicesApplyConfigurationCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDevicesApplyConfigurationCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customerapplyconfigurationrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/devices:applyConfiguration")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.devices.applyConfiguration" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CustomersDevicesApplyConfigurationCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Applies a Configuration to the device to register the device for zero-touch\nenrollment. After applying a configuration to a device, the device\nautomatically provisions itself on first boot, or next factory reset.",
+	//   "flatPath": "v1/customers/{customersId}/devices:applyConfiguration",
+	//   "httpMethod": "POST",
+	//   "id": "androiddeviceprovisioning.customers.devices.applyConfiguration",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer managing the device. An API resource name in the\nformat `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/devices:applyConfiguration",
+	//   "request": {
+	//     "$ref": "CustomerApplyConfigurationRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Empty"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.devices.get":
+
+type CustomersDevicesGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Gets the details of a device.
+func (r *CustomersDevicesService) Get(name string) *CustomersDevicesGetCall {
+	c := &CustomersDevicesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDevicesGetCall) Fields(s ...googleapi.Field) *CustomersDevicesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersDevicesGetCall) IfNoneMatch(entityTag string) *CustomersDevicesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDevicesGetCall) Context(ctx context.Context) *CustomersDevicesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDevicesGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDevicesGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.devices.get" call.
+// Exactly one of *Device or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Device.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CustomersDevicesGetCall) Do(opts ...googleapi.CallOption) (*Device, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Device{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets the details of a device.",
+	//   "flatPath": "v1/customers/{customersId}/devices/{devicesId}",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.devices.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The device to get. An API resource name in the format\n`customers/[CUSTOMER_ID]/devices/[DEVICE_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+/devices/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "Device"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.devices.list":
+
+type CustomersDevicesListCall struct {
+	s            *Service
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists a customer's devices.
+func (r *CustomersDevicesService) List(parent string) *CustomersDevicesListCall {
+	c := &CustomersDevicesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": The maximum number
+// of devices to show in a page of results.
+// Must be between 1 and 100 inclusive.
+func (c *CustomersDevicesListCall) PageSize(pageSize int64) *CustomersDevicesListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": A token specifying
+// which result page to return.
+func (c *CustomersDevicesListCall) PageToken(pageToken string) *CustomersDevicesListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDevicesListCall) Fields(s ...googleapi.Field) *CustomersDevicesListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersDevicesListCall) IfNoneMatch(entityTag string) *CustomersDevicesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDevicesListCall) Context(ctx context.Context) *CustomersDevicesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDevicesListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDevicesListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/devices")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.devices.list" call.
+// Exactly one of *CustomerListDevicesResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *CustomerListDevicesResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersDevicesListCall) Do(opts ...googleapi.CallOption) (*CustomerListDevicesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &CustomerListDevicesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists a customer's devices.",
+	//   "flatPath": "v1/customers/{customersId}/devices",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.devices.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "pageSize": {
+	//       "description": "The maximum number of devices to show in a page of results.\nMust be between 1 and 100 inclusive.",
+	//       "format": "int64",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageToken": {
+	//       "description": "A token specifying which result page to return.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "parent": {
+	//       "description": "Required. The customer managing the devices. An API resource name in the\nformat `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/devices",
+	//   "response": {
+	//     "$ref": "CustomerListDevicesResponse"
+	//   }
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *CustomersDevicesListCall) Pages(ctx context.Context, f func(*CustomerListDevicesResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "androiddeviceprovisioning.customers.devices.removeConfiguration":
+
+type CustomersDevicesRemoveConfigurationCall struct {
+	s                                  *Service
+	parent                             string
+	customerremoveconfigurationrequest *CustomerRemoveConfigurationRequest
+	urlParams_                         gensupport.URLParams
+	ctx_                               context.Context
+	header_                            http.Header
+}
+
+// RemoveConfiguration: Removes a configuration from device.
+func (r *CustomersDevicesService) RemoveConfiguration(parent string, customerremoveconfigurationrequest *CustomerRemoveConfigurationRequest) *CustomersDevicesRemoveConfigurationCall {
+	c := &CustomersDevicesRemoveConfigurationCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.customerremoveconfigurationrequest = customerremoveconfigurationrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDevicesRemoveConfigurationCall) Fields(s ...googleapi.Field) *CustomersDevicesRemoveConfigurationCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDevicesRemoveConfigurationCall) Context(ctx context.Context) *CustomersDevicesRemoveConfigurationCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDevicesRemoveConfigurationCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDevicesRemoveConfigurationCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customerremoveconfigurationrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/devices:removeConfiguration")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.devices.removeConfiguration" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CustomersDevicesRemoveConfigurationCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Removes a configuration from device.",
+	//   "flatPath": "v1/customers/{customersId}/devices:removeConfiguration",
+	//   "httpMethod": "POST",
+	//   "id": "androiddeviceprovisioning.customers.devices.removeConfiguration",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer managing the device in the format\n`customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/devices:removeConfiguration",
+	//   "request": {
+	//     "$ref": "CustomerRemoveConfigurationRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Empty"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.devices.unclaim":
+
+type CustomersDevicesUnclaimCall struct {
+	s                            *Service
+	parent                       string
+	customerunclaimdevicerequest *CustomerUnclaimDeviceRequest
+	urlParams_                   gensupport.URLParams
+	ctx_                         context.Context
+	header_                      http.Header
+}
+
+// Unclaim: Unclaims a device from a customer and removes it from
+// zero-touch
+// enrollment.
+//
+// After removing a device, a customer must contact their reseller to
+// register
+// the device into zero-touch enrollment again.
+func (r *CustomersDevicesService) Unclaim(parent string, customerunclaimdevicerequest *CustomerUnclaimDeviceRequest) *CustomersDevicesUnclaimCall {
+	c := &CustomersDevicesUnclaimCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.customerunclaimdevicerequest = customerunclaimdevicerequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDevicesUnclaimCall) Fields(s ...googleapi.Field) *CustomersDevicesUnclaimCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDevicesUnclaimCall) Context(ctx context.Context) *CustomersDevicesUnclaimCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDevicesUnclaimCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDevicesUnclaimCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.customerunclaimdevicerequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/devices:unclaim")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.devices.unclaim" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *CustomersDevicesUnclaimCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Unclaims a device from a customer and removes it from zero-touch\nenrollment.\n\nAfter removing a device, a customer must contact their reseller to register\nthe device into zero-touch enrollment again.",
+	//   "flatPath": "v1/customers/{customersId}/devices:unclaim",
+	//   "httpMethod": "POST",
+	//   "id": "androiddeviceprovisioning.customers.devices.unclaim",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer managing the device. An API resource name in the\nformat `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/devices:unclaim",
+	//   "request": {
+	//     "$ref": "CustomerUnclaimDeviceRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Empty"
+	//   }
+	// }
+
+}
+
+// method id "androiddeviceprovisioning.customers.dpcs.list":
+
+type CustomersDpcsListCall struct {
+	s            *Service
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists the DPCs (device policy controllers) that support
+// zero-touch
+// enrollment.
+func (r *CustomersDpcsService) List(parent string) *CustomersDpcsListCall {
+	c := &CustomersDpcsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *CustomersDpcsListCall) Fields(s ...googleapi.Field) *CustomersDpcsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *CustomersDpcsListCall) IfNoneMatch(entityTag string) *CustomersDpcsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *CustomersDpcsListCall) Context(ctx context.Context) *CustomersDpcsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *CustomersDpcsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *CustomersDpcsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+parent}/dpcs")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androiddeviceprovisioning.customers.dpcs.list" call.
+// Exactly one of *CustomerListDpcsResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *CustomerListDpcsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *CustomersDpcsListCall) Do(opts ...googleapi.CallOption) (*CustomerListDpcsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &CustomerListDpcsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists the DPCs (device policy controllers) that support zero-touch\nenrollment.",
+	//   "flatPath": "v1/customers/{customersId}/dpcs",
+	//   "httpMethod": "GET",
+	//   "id": "androiddeviceprovisioning.customers.dpcs.list",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The customer that can use the DPCs in configurations. An API\nresource name in the format `customers/[CUSTOMER_ID]`.",
+	//       "location": "path",
+	//       "pattern": "^customers/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+parent}/dpcs",
+	//   "response": {
+	//     "$ref": "CustomerListDpcsResponse"
+	//   }
+	// }
+
 }
 
 // method id "androiddeviceprovisioning.operations.get":

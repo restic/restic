@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/ENjO5SkN5azpBUa_i_cGnnAH868\"",
+ "etag": "\"-iA1DTNe4s-I6JZXPt1t1Ypy8IU/fHbW7QXwL-_RS9fcFDlHxb0u8fc\"",
  "discoveryVersion": "v1",
  "id": "compute:beta",
  "name": "compute",
  "version": "beta",
- "revision": "20171107",
+ "revision": "20171228",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -103,14 +103,14 @@
     },
     "acceleratorType": {
      "type": "string",
-     "description": "Full or partial URL of the accelerator type resource to expose to this instance."
+     "description": "Full or partial URL of the accelerator type resource to attach to this instance. If you are creating an instance template, specify only the accelerator name."
     }
    }
   },
   "AcceleratorType": {
    "id": "AcceleratorType",
    "type": "object",
-   "description": "An Accelerator Type resource.",
+   "description": "An Accelerator Type resource. (== resource_for beta.acceleratorTypes ==) (== resource_for v1.acceleratorTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -514,7 +514,7 @@
   "Address": {
    "id": "Address",
    "type": "object",
-   "description": "A reserved address resource.",
+   "description": "A reserved address resource. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)",
    "properties": {
     "address": {
      "type": "string",
@@ -610,7 +610,7 @@
     },
     "subnetwork": {
      "type": "string",
-     "description": "For external addresses, this field should not be used.\n\nThe URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range."
+     "description": "The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with GCE_ENDPOINT/DNS_RESOLVER purposes."
     },
     "users": {
      "type": "array",
@@ -975,6 +975,13 @@
      "$ref": "CustomerEncryptionKey",
      "description": "Encrypts or decrypts a disk using a customer-supplied encryption key.\n\nIf you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.\n\nIf you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.\n\nIf you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.\n\nInstance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group."
     },
+    "guestOsFeatures": {
+     "type": "array",
+     "description": "A list of features to enable on the guest operating system. Applicable only for bootable images. Read  Enabling guest operating system features to see a list of available options.",
+     "items": {
+      "$ref": "GuestOsFeature"
+     }
+    },
     "index": {
      "type": "integer",
      "description": "[Output Only] A zero-based index to this disk, where 0 is reserved for the boot disk. If you have many disks attached to an instance, each disk would have a unique index number.",
@@ -1067,6 +1074,13 @@
     "diskType": {
      "type": "string",
      "description": "Specifies the disk type to use to create the instance. If not specified, the default is pd-standard, specified using the full URL. For example:\n\nhttps://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard \n\nOther values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:  \n- https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType \n- projects/project/zones/zone/diskTypes/diskType \n- zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL."
+    },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.",
+     "additionalProperties": {
+      "type": "string"
+     }
     },
     "sourceImage": {
      "type": "string",
@@ -1161,7 +1175,7 @@
   "Autoscaler": {
    "id": "Autoscaler",
    "type": "object",
-   "description": "Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.",
+   "description": "Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances. (== resource_for beta.autoscalers ==) (== resource_for v1.autoscalers ==) (== resource_for beta.regionAutoscalers ==) (== resource_for v1.regionAutoscalers ==)",
    "properties": {
     "autoscalingPolicy": {
      "$ref": "AutoscalingPolicy",
@@ -1770,6 +1784,10 @@
      "type": "string",
      "description": "Cloud Storage bucket name."
     },
+    "cdnPolicy": {
+     "$ref": "BackendBucketCdnPolicy",
+     "description": "Cloud CDN Coniguration for this BackendBucket."
+    },
     "creationTimestamp": {
      "type": "string",
      "description": "[Output Only] Creation timestamp in RFC3339 text format."
@@ -1800,6 +1818,25 @@
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
+    }
+   }
+  },
+  "BackendBucketCdnPolicy": {
+   "id": "BackendBucketCdnPolicy",
+   "type": "object",
+   "description": "Message containing Cloud CDN configuration for a backend bucket.",
+   "properties": {
+    "signedUrlCacheMaxAgeSec": {
+     "type": "string",
+     "description": "Number of seconds up to which the response to a signed URL request will be cached in the CDN. After this time period, the Signed URL will be revalidated before being served. Defaults to 1hr (3600s). If this field is set, Cloud CDN will internally act as though all responses from this bucket had a ?Cache-Control: public, max-age=[TTL]? header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.",
+     "format": "int64"
+    },
+    "signedUrlKeyNames": {
+     "type": "array",
+     "description": "[Output Only] Names of the keys currently configured for Cloud CDN Signed URL on this backend bucket.",
+     "items": {
+      "type": "string"
+     }
     }
    }
   },
@@ -1918,7 +1955,7 @@
   "BackendService": {
    "id": "BackendService",
    "type": "object",
-   "description": "A BackendService resource. This resource defines a group of backend virtual machines and their serving capacity.",
+   "description": "A BackendService resource. This resource defines a group of backend virtual machines and their serving capacity. (== resource_for v1.backendService ==) (== resource_for beta.backendService ==)",
    "properties": {
     "affinityCookieTtlSec": {
      "type": "integer",
@@ -2180,6 +2217,18 @@
     "cacheKeyPolicy": {
      "$ref": "CacheKeyPolicy",
      "description": "The CacheKeyPolicy for this CdnPolicy."
+    },
+    "signedUrlCacheMaxAgeSec": {
+     "type": "string",
+     "description": "Number of seconds up to which the response to a signed URL request will be cached in the CDN. After this time period, the Signed URL will be revalidated before being served. Defaults to 1hr (3600s). If this field is set, Cloud CDN will internally act as though all responses from this backend had a ?Cache-Control: public, max-age=[TTL]? header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.",
+     "format": "int64"
+    },
+    "signedUrlKeyNames": {
+     "type": "array",
+     "description": "[Output Only] Names of the keys currently configured for Cloud CDN Signed URL on this backend service.",
+     "items": {
+      "type": "string"
+     }
     }
    }
   },
@@ -2497,7 +2546,7 @@
   "Commitment": {
    "id": "Commitment",
    "type": "object",
-   "description": "Represents a Commitment resource. Creating a Commitment resource means that you are purchasing a committed use contract with an explicit start and end time. You can create commitments based on vCPUs and memory usage and receive discounted rates. For full details, read Signing Up for Committed Use Discounts.\n\nCommitted use discounts are subject to Google Cloud Platform's Service Specific Terms. By purchasing a committed use discount, you agree to these terms. Committed use discounts will not renew, so you must purchase a new commitment to continue receiving discounts.",
+   "description": "Represents a Commitment resource. Creating a Commitment resource means that you are purchasing a committed use contract with an explicit start and end time. You can create commitments based on vCPUs and memory usage and receive discounted rates. For full details, read Signing Up for Committed Use Discounts.\n\nCommitted use discounts are subject to Google Cloud Platform's Service Specific Terms. By purchasing a committed use discount, you agree to these terms. Committed use discounts will not renew, so you must purchase a new commitment to continue receiving discounts. (== resource_for beta.commitments ==) (== resource_for v1.commitments ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -3064,7 +3113,7 @@
   "Disk": {
    "id": "Disk",
    "type": "object",
-   "description": "A Disk resource.",
+   "description": "A Disk resource. (== resource_for beta.disks ==) (== resource_for v1.disks ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -3077,6 +3126,13 @@
     "diskEncryptionKey": {
      "$ref": "CustomerEncryptionKey",
      "description": "Encrypts the disk using a customer-supplied encryption key.\n\nAfter you encrypt a disk with a customer-supplied key, you must provide the same key if you use the disk later (e.g. to create a disk snapshot or an image, or to attach the disk to a virtual machine).\n\nCustomer-supplied encryption keys do not protect access to metadata of the disk.\n\nIf you do not provide an encryption key when creating the disk, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later."
+    },
+    "guestOsFeatures": {
+     "type": "array",
+     "description": "A list of features to enable on the guest operating system. Applicable only for bootable images. Read  Enabling guest operating system features to see a list of available options.",
+     "items": {
+      "$ref": "GuestOsFeature"
+     }
     },
     "id": {
      "type": "string",
@@ -3327,6 +3383,47 @@
     }
    }
   },
+  "DiskInstantiationConfig": {
+   "id": "DiskInstantiationConfig",
+   "type": "object",
+   "description": "A specification of the desired way to instantiate a disk in the instance template when its created from a source instance.",
+   "properties": {
+    "autoDelete": {
+     "type": "boolean",
+     "description": "Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance)."
+    },
+    "customImage": {
+     "type": "string",
+     "description": "The custom source image to be used to restore this disk when instantiating this instance template."
+    },
+    "deviceName": {
+     "type": "string",
+     "description": "Specifies the device name of the disk to which the configurations apply to."
+    },
+    "instantiateFrom": {
+     "type": "string",
+     "description": "Specifies whether to include the disk and what image to use.",
+     "enum": [
+      "ATTACH_READ_ONLY",
+      "BLANK",
+      "CUSTOM_IMAGE",
+      "DEFAULT",
+      "DO_NOT_INCLUDE",
+      "SOURCE_IMAGE",
+      "SOURCE_IMAGE_FAMILY"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   }
+  },
   "DiskList": {
    "id": "DiskList",
    "type": "object",
@@ -3456,7 +3553,7 @@
   "DiskType": {
    "id": "DiskType",
    "type": "object",
-   "description": "A DiskType resource.",
+   "description": "A DiskType resource. (== resource_for beta.diskTypes ==) (== resource_for v1.diskTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -4258,7 +4355,7 @@
   "ForwardingRule": {
    "id": "ForwardingRule",
    "type": "object",
-   "description": "A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.",
+   "description": "A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)",
    "properties": {
     "IPAddress": {
      "type": "string",
@@ -4736,7 +4833,7 @@
    "properties": {
     "type": {
      "type": "string",
-     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
+     "description": "The ID of a supported feature. Read  Enabling guest operating system features to see a list of available options.",
      "enum": [
       "FEATURE_TYPE_UNSPECIFIED",
       "MULTI_IP_SUBNET",
@@ -5459,7 +5556,7 @@
   "Image": {
    "id": "Image",
    "type": "object",
-   "description": "An Image resource.",
+   "description": "An Image resource. (== resource_for beta.images ==) (== resource_for v1.images ==)",
    "properties": {
     "archiveSizeBytes": {
      "type": "string",
@@ -5489,7 +5586,7 @@
     },
     "guestOsFeatures": {
      "type": "array",
-     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
+     "description": "A list of features to enable on the guest operating system. Applicable only for bootable images. Read  Enabling guest operating system features to see a list of available options.",
      "items": {
       "$ref": "GuestOsFeature"
      }
@@ -5602,6 +5699,18 @@
     "sourceImageId": {
      "type": "string",
      "description": "[Output Only] The ID value of the image used to create this image. This value may be used to determine whether the image was taken from the current or a previous instance of a given image name."
+    },
+    "sourceSnapshot": {
+     "type": "string",
+     "description": "URL of the source snapshot used to create this image. This can be a full or valid partial URL. You must provide exactly one of:  \n- this property, or  \n- the sourceImage property, or  \n- the rawDisk.source property, or  \n- the sourceDisk property   in order to create an image."
+    },
+    "sourceSnapshotEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source snapshot. Required if the source snapshot is protected by a customer-supplied encryption key."
+    },
+    "sourceSnapshotId": {
+     "type": "string",
+     "description": "[Output Only] The ID value of the snapshot used to create this image. This value may be used to determine whether the snapshot was taken from the current or a previous instance of a given snapshot name."
     },
     "sourceType": {
      "type": "string",
@@ -5745,7 +5854,7 @@
   "Instance": {
    "id": "Instance",
    "type": "object",
-   "description": "An Instance resource.",
+   "description": "An Instance resource. (== resource_for beta.instances ==) (== resource_for v1.instances ==)",
    "properties": {
     "canIpForward": {
      "type": "boolean",
@@ -6009,6 +6118,7 @@
   "InstanceGroup": {
    "id": "InstanceGroup",
    "type": "object",
+   "description": "InstanceGroups (== resource_for beta.instanceGroups ==) (== resource_for v1.instanceGroups ==) (== resource_for beta.regionInstanceGroups ==) (== resource_for v1.regionInstanceGroups ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -6304,7 +6414,7 @@
   "InstanceGroupManager": {
    "id": "InstanceGroupManager",
    "type": "object",
-   "description": "An Instance Group Manager resource.",
+   "description": "An Instance Group Manager resource. (== resource_for beta.instanceGroupManagers ==) (== resource_for v1.instanceGroupManagers ==) (== resource_for beta.regionInstanceGroupManagers ==) (== resource_for v1.regionInstanceGroupManagers ==)",
    "properties": {
     "autoHealingPolicies": {
      "type": "array",
@@ -6769,7 +6879,7 @@
     },
     "maxUnavailable": {
      "$ref": "FixedOrPercent",
-     "description": "The maximum number of instances that can be unavailable during the update process. An instance is considered available if all of the following conditions are satisfied:\n\n \n- The instance's status is RUNNING. \n- If there is a health check on the instance grourp, the instance's liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.\n\nAt least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable."
+     "description": "The maximum number of instances that can be unavailable during the update process. An instance is considered available if all of the following conditions are satisfied:\n\n \n- The instance's status is RUNNING. \n- If there is a health check on the instance group, the instance's liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.\n\nAt least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable."
     },
     "minReadySec": {
      "type": "integer",
@@ -7616,7 +7726,7 @@
   "InstanceTemplate": {
    "id": "InstanceTemplate",
    "type": "object",
-   "description": "An Instance Template resource.",
+   "description": "An Instance Template resource. (== resource_for beta.instanceTemplates ==) (== resource_for v1.instanceTemplates ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -7653,6 +7763,14 @@
     "selfLink": {
      "type": "string",
      "description": "[Output Only] The URL for this instance template. The server defines this URL."
+    },
+    "sourceInstance": {
+     "type": "string",
+     "description": "The source instance used to create the template. You can provide this as a partial or full URL to the resource. For example, the following are valid values:  \n- https://www.googleapis.com/compute/v1/projects/project/zones/zone/instances/instance \n- projects/project/zones/zone/instances/instance"
+    },
+    "sourceInstanceParams": {
+     "$ref": "SourceInstanceParams",
+     "description": "The source instance params to use to create this instance template."
     }
    }
   },
@@ -7986,7 +8104,7 @@
   "Interconnect": {
    "id": "Interconnect",
    "type": "object",
-   "description": "Represents an Interconnects resource. The Interconnects resource is a dedicated connection between Google's network and your on-premises network. For more information, see the  Dedicated overview page.",
+   "description": "Represents an Interconnects resource. The Interconnects resource is a dedicated connection between Google's network and your on-premises network. For more information, see the  Dedicated overview page. (== resource_for v1.interconnects ==) (== resource_for beta.interconnects ==)",
    "properties": {
     "adminEnabled": {
      "type": "boolean",
@@ -8055,6 +8173,18 @@
      "description": "[Output Only] Type of the resource. Always compute#interconnect for interconnects.",
      "default": "compute#interconnect"
     },
+    "labelFingerprint": {
+     "type": "string",
+     "description": "A fingerprint for the labels being applied to this Interconnect, which is essentially a hash of the labels set used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update labels. You must always provide an up-to-date fingerprint hash in order to update or change labels.\n\nTo see the latest fingerprint, make a get() request to retrieve an Interconnect.",
+     "format": "byte"
+    },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this Interconnect resource. These can be later modified by the setLabels method. Each label key/value must comply with RFC1035. Label values may be empty.",
+     "additionalProperties": {
+      "type": "string"
+     }
+    },
     "linkType": {
      "type": "string",
      "description": "Type of link requested. This field indicates speed of each of the links in the bundle, not the entire bundle. Only 10G per link is allowed for a dedicated interconnect. Options: Ethernet_10G_LR",
@@ -8118,7 +8248,7 @@
   "InterconnectAttachment": {
    "id": "InterconnectAttachment",
    "type": "object",
-   "description": "Represents an InterconnectAttachment (VLAN attachment) resource. For more information, see  Creating VLAN Attachments.",
+   "description": "Represents an InterconnectAttachment (VLAN attachment) resource. For more information, see  Creating VLAN Attachments. (== resource_for beta.interconnectAttachments ==) (== resource_for v1.interconnectAttachments ==)",
    "properties": {
     "cloudRouterIpAddress": {
      "type": "string",
@@ -8153,6 +8283,18 @@
      "type": "string",
      "description": "[Output Only] Type of the resource. Always compute#interconnectAttachment for interconnect attachments.",
      "default": "compute#interconnectAttachment"
+    },
+    "labelFingerprint": {
+     "type": "string",
+     "description": "A fingerprint for the labels being applied to this InterconnectAttachment, which is essentially a hash of the labels set used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update labels. You must always provide an up-to-date fingerprint hash in order to update or change labels.\n\nTo see the latest fingerprint, make a get() request to retrieve an InterconnectAttachment.",
+     "format": "byte"
+    },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this InterconnectAttachment resource. These can be later modified by the setLabels method. Each label key/value must comply with RFC1035. Label values may be empty.",
+     "additionalProperties": {
+      "type": "string"
+     }
     },
     "name": {
      "type": "string",
@@ -9301,7 +9443,7 @@
   "MachineType": {
    "id": "MachineType",
    "type": "object",
-   "description": "A Machine Type resource.",
+   "description": "A Machine Type resource. (== resource_for v1.machineTypes ==) (== resource_for beta.machineTypes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -9868,7 +10010,7 @@
   "Network": {
    "id": "Network",
    "type": "object",
-   "description": "Represents a Network resource. Read Networks and Firewalls for more information.",
+   "description": "Represents a Network resource. Read Networks and Firewalls for more information. (== resource_for v1.networks ==) (== resource_for beta.networks ==)",
    "properties": {
     "IPv4Range": {
      "type": "string",
@@ -10159,7 +10301,12 @@
     },
     "name": {
      "type": "string",
-     "description": "Name of the peering, which should conform to RFC1035."
+     "description": "Name of the peering, which should conform to RFC1035.",
+     "annotations": {
+      "required": [
+       "compute.networks.addPeering"
+      ]
+     }
     },
     "peerNetwork": {
      "type": "string",
@@ -10180,7 +10327,7 @@
   "Operation": {
    "id": "Operation",
    "type": "object",
-   "description": "An Operation resource, used to manage asynchronous API requests.",
+   "description": "An Operation resource, used to manage asynchronous API requests. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)",
    "properties": {
     "clientOperationId": {
      "type": "string",
@@ -10801,7 +10948,7 @@
   "Project": {
    "id": "Project",
    "type": "object",
-   "description": "A Project resource. Projects can only be created in the Google Cloud Platform Console. Unless marked otherwise, values can only be modified in the console.",
+   "description": "A Project resource. For an overview of projects, see  Cloud Platform Resource Hierarchy. (== resource_for v1.projects ==) (== resource_for beta.projects ==)",
    "properties": {
     "commonInstanceMetadata": {
      "$ref": "Metadata",
@@ -11065,7 +11212,7 @@
   "Region": {
    "id": "Region",
    "type": "object",
-   "description": "Region resource.",
+   "description": "Region resource. (== resource_for beta.regions ==) (== resource_for v1.regions ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -11878,7 +12025,7 @@
   "Route": {
    "id": "Route",
    "type": "object",
-   "description": "Represents a Route resource. A route specifies how certain packets should be handled by the network. Routes are associated with instances by tags and the set of routes for a particular instance is called its routing table.\n\nFor each packet leaving an instance, the system searches that instance's routing table for a single best matching route. Routes match packets by destination IP address, preferring smaller or more specific ranges over larger ones. If there is a tie, the system selects the route with the smallest priority value. If there is still a tie, it uses the layer three and four packet headers to select just one of the remaining matching routes. The packet is then forwarded as specified by the nextHop field of the winning route - either to another instance destination, an instance gateway, or a Google Compute Engine-operated gateway.\n\nPackets that do not match any route in the sending instance's routing table are dropped.",
+   "description": "Represents a Route resource. A route specifies how certain packets should be handled by the network. Routes are associated with instances by tags and the set of routes for a particular instance is called its routing table.\n\nFor each packet leaving an instance, the system searches that instance's routing table for a single best matching route. Routes match packets by destination IP address, preferring smaller or more specific ranges over larger ones. If there is a tie, the system selects the route with the smallest priority value. If there is still a tie, it uses the layer three and four packet headers to select just one of the remaining matching routes. The packet is then forwarded as specified by the nextHop field of the winning route - either to another instance destination, an instance gateway, or a Google Compute Engine-operated gateway.\n\nPackets that do not match any route in the sending instance's routing table are dropped. (== resource_for beta.routes ==) (== resource_for v1.routes ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -12244,6 +12391,21 @@
     }
    }
   },
+  "RouterAdvertisedIpRange": {
+   "id": "RouterAdvertisedIpRange",
+   "type": "object",
+   "description": "Description-tagged IP ranges for the router to advertise.",
+   "properties": {
+    "description": {
+     "type": "string",
+     "description": "User-specified description for the IP range."
+    },
+    "range": {
+     "type": "string",
+     "description": "The IP range to advertise. The value must be a CIDR-formatted string."
+    }
+   }
+  },
   "RouterAggregatedList": {
    "id": "RouterAggregatedList",
    "type": "object",
@@ -12361,6 +12523,38 @@
    "id": "RouterBgp",
    "type": "object",
    "properties": {
+    "advertiseMode": {
+     "type": "string",
+     "description": "User-specified flag to indicate which mode to use for advertisement.",
+     "enum": [
+      "CUSTOM",
+      "DEFAULT"
+     ],
+     "enumDescriptions": [
+      "",
+      ""
+     ]
+    },
+    "advertisedGroups": {
+     "type": "array",
+     "description": "User-specified list of prefix groups to advertise in custom mode. This field can only be populated if advertise_mode is CUSTOM and is advertised to all peers of the router. These groups will be advertised in addition to any specified prefixes. Leave this field blank to advertise no custom groups.",
+     "items": {
+      "type": "string",
+      "enum": [
+       "ALL_SUBNETS"
+      ],
+      "enumDescriptions": [
+       ""
+      ]
+     }
+    },
+    "advertisedIpRanges": {
+     "type": "array",
+     "description": "User-specified list of individual IP ranges to advertise in custom mode. This field can only be populated if advertise_mode is CUSTOM and is advertised to all peers of the router. These IP ranges will be advertised in addition to any specified groups. Leave this field blank to advertise no custom IP ranges.",
+     "items": {
+      "$ref": "RouterAdvertisedIpRange"
+     }
+    },
     "asn": {
      "type": "integer",
      "description": "Local BGP Autonomous System Number (ASN). Must be an RFC6996 private ASN, either 16-bit or 32-bit. The value will be fixed for this router resource. All VPN tunnels that link to this router will have the same local ASN.",
@@ -12372,6 +12566,38 @@
    "id": "RouterBgpPeer",
    "type": "object",
    "properties": {
+    "advertiseMode": {
+     "type": "string",
+     "description": "User-specified flag to indicate which mode to use for advertisement.",
+     "enum": [
+      "CUSTOM",
+      "DEFAULT"
+     ],
+     "enumDescriptions": [
+      "",
+      ""
+     ]
+    },
+    "advertisedGroups": {
+     "type": "array",
+     "description": "User-specified list of prefix groups to advertise in custom mode. This field can only be populated if advertise_mode is CUSTOM and overrides the list defined for the router (in Bgp message). These groups will be advertised in addition to any specified prefixes. Leave this field blank to advertise no custom groups.",
+     "items": {
+      "type": "string",
+      "enum": [
+       "ALL_SUBNETS"
+      ],
+      "enumDescriptions": [
+       ""
+      ]
+     }
+    },
+    "advertisedIpRanges": {
+     "type": "array",
+     "description": "User-specified list of individual IP ranges to advertise in custom mode. This field can only be populated if advertise_mode is CUSTOM and overrides the list defined for the router (in Bgp message). These IP ranges will be advertised in addition to any specified groups. Leave this field blank to advertise no custom IP ranges.",
+     "items": {
+      "$ref": "RouterAdvertisedIpRange"
+     }
+    },
     "advertisedRoutePriority": {
      "type": "integer",
      "description": "The priority of routes advertised to this BGP peer. In the case where there is more than one matching route of maximum length, the routes with lowest priority value win.",
@@ -13072,6 +13298,35 @@
    "type": "object",
    "description": "Represents a match condition that incoming traffic is evaluated against. Exactly one field must be specified.",
    "properties": {
+    "config": {
+     "$ref": "SecurityPolicyRuleMatcherConfig",
+     "description": "The configuration options available when specifying versioned_expr. This field must be specified if versioned_expr is specified and cannot be specified if versioned_expr is not specified."
+    },
+    "srcIpRanges": {
+     "type": "array",
+     "description": "CIDR IP address range. Only IPv4 is supported.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "versionedExpr": {
+     "type": "string",
+     "description": "Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.",
+     "enum": [
+      "SRC_IPS_V1",
+      "VERSIONED_EXPR_UNSPECIFIED"
+     ],
+     "enumDescriptions": [
+      "",
+      ""
+     ]
+    }
+   }
+  },
+  "SecurityPolicyRuleMatcherConfig": {
+   "id": "SecurityPolicyRuleMatcherConfig",
+   "type": "object",
+   "properties": {
     "srcIpRanges": {
      "type": "array",
      "description": "CIDR IP address range. Only IPv4 is supported.",
@@ -13129,10 +13384,26 @@
     }
    }
   },
+  "SignedUrlKey": {
+   "id": "SignedUrlKey",
+   "type": "object",
+   "description": "Represents a customer-supplied Signing Key used by Cloud CDN Signed URLs",
+   "properties": {
+    "keyName": {
+     "type": "string",
+     "description": "Name of the key. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
+     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
+    },
+    "keyValue": {
+     "type": "string",
+     "description": "128-bit key value used for signing the URL. The key value must be a valid RFC 4648 Section 5 base64url encoded string."
+    }
+   }
+  },
   "Snapshot": {
    "id": "Snapshot",
    "type": "object",
-   "description": "A persistent disk snapshot resource.",
+   "description": "A persistent disk snapshot resource. (== resource_for beta.snapshots ==) (== resource_for v1.snapshots ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -13358,10 +13629,24 @@
     }
    }
   },
+  "SourceInstanceParams": {
+   "id": "SourceInstanceParams",
+   "type": "object",
+   "description": "A specification of the parameters to use when creating the instance template from a source instance.",
+   "properties": {
+    "diskConfigs": {
+     "type": "array",
+     "description": "Attached disks configuration. If not provided, defaults are applied: For boot disk and any other R/W disks, new custom images will be created from each disk. For read-only disks, they will be attached in read-only mode. Local SSD disks will be created as blank volumes.",
+     "items": {
+      "$ref": "DiskInstantiationConfig"
+     }
+    }
+   }
+  },
   "SslCertificate": {
    "id": "SslCertificate",
    "type": "object",
-   "description": "An SslCertificate resource. This resource provides a mechanism to upload an SSL key and certificate to the load balancer to serve secure connections from the user.",
+   "description": "An SslCertificate resource. This resource provides a mechanism to upload an SSL key and certificate to the load balancer to serve secure connections from the user. (== resource_for beta.sslCertificates ==) (== resource_for v1.sslCertificates ==)",
    "properties": {
     "certificate": {
      "type": "string",
@@ -13512,10 +13797,312 @@
     }
    }
   },
+  "SslPoliciesList": {
+   "id": "SslPoliciesList",
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "[Output Only] Unique identifier for the resource; defined by the server."
+    },
+    "items": {
+     "type": "array",
+     "description": "A list of SslPolicy resources.",
+     "items": {
+      "$ref": "SslPolicy"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "[Output Only] Type of the resource. Always compute#sslPoliciesList for lists of sslPolicies.",
+     "default": "compute#sslPoliciesList"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+    },
+    "selfLink": {
+     "type": "string",
+     "description": "[Output Only] Server-defined URL for this resource."
+    },
+    "warning": {
+     "type": "object",
+     "description": "[Output Only] Informational warning message.",
+     "properties": {
+      "code": {
+       "type": "string",
+       "description": "[Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.",
+       "enum": [
+        "CLEANUP_FAILED",
+        "DEPRECATED_RESOURCE_USED",
+        "DEPRECATED_TYPE_USED",
+        "DISK_SIZE_LARGER_THAN_IMAGE_SIZE",
+        "EXPERIMENTAL_TYPE_USED",
+        "EXTERNAL_API_WARNING",
+        "FIELD_VALUE_OVERRIDEN",
+        "INJECTED_KERNELS_DEPRECATED",
+        "MISSING_TYPE_DEPENDENCY",
+        "NEXT_HOP_ADDRESS_NOT_ASSIGNED",
+        "NEXT_HOP_CANNOT_IP_FORWARD",
+        "NEXT_HOP_INSTANCE_NOT_FOUND",
+        "NEXT_HOP_INSTANCE_NOT_ON_NETWORK",
+        "NEXT_HOP_NOT_RUNNING",
+        "NOT_CRITICAL_ERROR",
+        "NO_RESULTS_ON_PAGE",
+        "REQUIRED_TOS_AGREEMENT",
+        "RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING",
+        "RESOURCE_NOT_DELETED",
+        "SCHEMA_VALIDATION_IGNORED",
+        "SINGLE_INSTANCE_PROPERTY_TEMPLATE",
+        "UNDECLARED_PROPERTIES",
+        "UNREACHABLE"
+       ],
+       "enumDescriptions": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      "data": {
+       "type": "array",
+       "description": "[Output Only] Metadata about this warning in key: value format. For example:\n\"data\": [ { \"key\": \"scope\", \"value\": \"zones/us-east1-d\" }",
+       "items": {
+        "type": "object",
+        "properties": {
+         "key": {
+          "type": "string",
+          "description": "[Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding)."
+         },
+         "value": {
+          "type": "string",
+          "description": "[Output Only] A warning data value corresponding to the key."
+         }
+        }
+       }
+      },
+      "message": {
+       "type": "string",
+       "description": "[Output Only] A human-readable description of the warning code."
+      }
+     }
+    }
+   }
+  },
+  "SslPoliciesListAvailableFeaturesResponse": {
+   "id": "SslPoliciesListAvailableFeaturesResponse",
+   "type": "object",
+   "properties": {
+    "features": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "SslPolicy": {
+   "id": "SslPolicy",
+   "type": "object",
+   "description": "A SSL policy specifies the server-side support for SSL features. This can be attached to a TargetHttpsProxy or a TargetSslProxy. This affects connections between clients and the HTTPS or SSL proxy load balancer. They do not affect the connection between the load balancers and the backends.",
+   "properties": {
+    "creationTimestamp": {
+     "type": "string",
+     "description": "[Output Only] Creation timestamp in RFC3339 text format."
+    },
+    "customFeatures": {
+     "type": "array",
+     "description": "List of features enabled when the selected profile is CUSTOM. The\n- method returns the set of features that can be specified in this list. This field must be empty if the profile is not CUSTOM.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "description": {
+     "type": "string",
+     "description": "An optional description of this resource. Provide this property when you create the resource."
+    },
+    "enabledFeatures": {
+     "type": "array",
+     "description": "[Output Only] The list of features enabled in the SSL policy.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "fingerprint": {
+     "type": "string",
+     "description": "Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a SslPolicy. An up-to-date fingerprint must be provided in order to update the SslPolicy.",
+     "format": "byte"
+    },
+    "id": {
+     "type": "string",
+     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
+     "format": "uint64"
+    },
+    "kind": {
+     "type": "string",
+     "description": "[Output only] Type of the resource. Always compute#sslPolicyfor SSL policies.",
+     "default": "compute#sslPolicy"
+    },
+    "minTlsVersion": {
+     "type": "string",
+     "description": "The minimum version of SSL protocol that can be used by the clients to establish a connection with the load balancer. This can be one of TLS_1_0, TLS_1_1, TLS_1_2, TLS_1_3.",
+     "enum": [
+      "TLS_1_0",
+      "TLS_1_1",
+      "TLS_1_2",
+      "TLS_1_3"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of the resource. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
+     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
+    },
+    "profile": {
+     "type": "string",
+     "description": "Profile specifies the set of SSL features that can be used by the load balancer when negotiating SSL with clients. This can be one of COMPATIBLE, MODERN, RESTRICTED, or CUSTOM. If using CUSTOM, the set of SSL features to enable must be specified in the customFeatures field.",
+     "enum": [
+      "COMPATIBLE",
+      "CUSTOM",
+      "MODERN",
+      "RESTRICTED"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    "selfLink": {
+     "type": "string",
+     "description": "[Output Only] Server-defined URL for the resource."
+    },
+    "warnings": {
+     "type": "array",
+     "description": "[Output Only] If potential misconfigurations are detected for this SSL policy, this field will be populated with warning messages.",
+     "items": {
+      "type": "object",
+      "properties": {
+       "code": {
+        "type": "string",
+        "description": "[Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.",
+        "enum": [
+         "CLEANUP_FAILED",
+         "DEPRECATED_RESOURCE_USED",
+         "DEPRECATED_TYPE_USED",
+         "DISK_SIZE_LARGER_THAN_IMAGE_SIZE",
+         "EXPERIMENTAL_TYPE_USED",
+         "EXTERNAL_API_WARNING",
+         "FIELD_VALUE_OVERRIDEN",
+         "INJECTED_KERNELS_DEPRECATED",
+         "MISSING_TYPE_DEPENDENCY",
+         "NEXT_HOP_ADDRESS_NOT_ASSIGNED",
+         "NEXT_HOP_CANNOT_IP_FORWARD",
+         "NEXT_HOP_INSTANCE_NOT_FOUND",
+         "NEXT_HOP_INSTANCE_NOT_ON_NETWORK",
+         "NEXT_HOP_NOT_RUNNING",
+         "NOT_CRITICAL_ERROR",
+         "NO_RESULTS_ON_PAGE",
+         "REQUIRED_TOS_AGREEMENT",
+         "RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING",
+         "RESOURCE_NOT_DELETED",
+         "SCHEMA_VALIDATION_IGNORED",
+         "SINGLE_INSTANCE_PROPERTY_TEMPLATE",
+         "UNDECLARED_PROPERTIES",
+         "UNREACHABLE"
+        ],
+        "enumDescriptions": [
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         "",
+         ""
+        ]
+       },
+       "data": {
+        "type": "array",
+        "description": "[Output Only] Metadata about this warning in key: value format. For example:\n\"data\": [ { \"key\": \"scope\", \"value\": \"zones/us-east1-d\" }",
+        "items": {
+         "type": "object",
+         "properties": {
+          "key": {
+           "type": "string",
+           "description": "[Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding)."
+          },
+          "value": {
+           "type": "string",
+           "description": "[Output Only] A warning data value corresponding to the key."
+          }
+         }
+        }
+       },
+       "message": {
+        "type": "string",
+        "description": "[Output Only] A human-readable description of the warning code."
+       }
+      }
+     }
+    }
+   }
+  },
+  "SslPolicyReference": {
+   "id": "SslPolicyReference",
+   "type": "object",
+   "properties": {
+    "sslPolicy": {
+     "type": "string",
+     "description": "URL of the SSL policy resource. Set this to empty string to clear any existing SSL policy associated with the target proxy resource."
+    }
+   }
+  },
   "Subnetwork": {
    "id": "Subnetwork",
    "type": "object",
-   "description": "A Subnetwork resource.",
+   "description": "A Subnetwork resource. (== resource_for beta.subnetworks ==) (== resource_for v1.subnetworks ==)",
    "properties": {
     "allowSubnetCidrRoutesOverlap": {
      "type": "boolean",
@@ -13991,7 +14578,7 @@
   "TargetHttpProxy": {
    "id": "TargetHttpProxy",
    "type": "object",
-   "description": "A TargetHttpProxy resource. This resource defines an HTTP proxy.",
+   "description": "A TargetHttpProxy resource. This resource defines an HTTP proxy. (== resource_for beta.targetHttpProxies ==) (== resource_for v1.targetHttpProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14138,6 +14725,26 @@
     }
    }
   },
+  "TargetHttpsProxiesSetQuicOverrideRequest": {
+   "id": "TargetHttpsProxiesSetQuicOverrideRequest",
+   "type": "object",
+   "properties": {
+    "quicOverride": {
+     "type": "string",
+     "description": "QUIC policy for the TargetHttpsProxy resource.",
+     "enum": [
+      "DISABLE",
+      "ENABLE",
+      "NONE"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
+    }
+   }
+  },
   "TargetHttpsProxiesSetSslCertificatesRequest": {
    "id": "TargetHttpsProxiesSetSslCertificatesRequest",
    "type": "object",
@@ -14154,7 +14761,7 @@
   "TargetHttpsProxy": {
    "id": "TargetHttpsProxy",
    "type": "object",
-   "description": "A TargetHttpsProxy resource. This resource defines an HTTPS proxy.",
+   "description": "A TargetHttpsProxy resource. This resource defines an HTTPS proxy. (== resource_for beta.targetHttpsProxies ==) (== resource_for v1.targetHttpsProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14179,6 +14786,20 @@
      "description": "Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
      "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
     },
+    "quicOverride": {
+     "type": "string",
+     "description": "Specifies the QUIC override policy for this TargetHttpsProxy resource. This determines whether the load balancer will attempt to negotiate QUIC with clients or not. Can specify one of NONE, ENABLE, or DISABLE. Specify ENABLE to always enable QUIC, Enables QUIC when set to ENABLE, and disables QUIC when set to DISABLE. If NONE is specified, uses the QUIC policy with no user overrides, which is equivalent to DISABLE. Not specifying this field is equivalent to specifying NONE.",
+     "enum": [
+      "DISABLE",
+      "ENABLE",
+      "NONE"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
+    },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
@@ -14189,6 +14810,10 @@
      "items": {
       "type": "string"
      }
+    },
+    "sslPolicy": {
+     "type": "string",
+     "description": "URL of SslPolicy resource that will be associated with the TargetHttpsProxy resource. If not set, the TargetHttpsProxy resource will not have any SSL policy configured."
     },
     "urlMap": {
      "type": "string",
@@ -14311,7 +14936,7 @@
   "TargetInstance": {
    "id": "TargetInstance",
    "type": "object",
-   "description": "A TargetInstance resource. This resource defines an endpoint instance that terminates traffic of certain protocols.",
+   "description": "A TargetInstance resource. This resource defines an endpoint instance that terminates traffic of certain protocols. (== resource_for beta.targetInstances ==) (== resource_for v1.targetInstances ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -14681,7 +15306,7 @@
   "TargetPool": {
    "id": "TargetPool",
    "type": "object",
-   "description": "A TargetPool resource. This resource defines a pool of instances, an associated HttpHealthCheck resource, and the fallback target pool.",
+   "description": "A TargetPool resource. This resource defines a pool of instances, an associated HttpHealthCheck resource, and the fallback target pool. (== resource_for beta.targetPools ==) (== resource_for v1.targetPools ==)",
    "properties": {
     "backupPool": {
      "type": "string",
@@ -15197,7 +15822,7 @@
   "TargetSslProxy": {
    "id": "TargetSslProxy",
    "type": "object",
-   "description": "A TargetSslProxy resource. This resource defines an SSL proxy.",
+   "description": "A TargetSslProxy resource. This resource defines an SSL proxy. (== resource_for beta.targetSslProxies ==) (== resource_for v1.targetSslProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -15248,6 +15873,10 @@
      "items": {
       "type": "string"
      }
+    },
+    "sslPolicy": {
+     "type": "string",
+     "description": "URL of SslPolicy resource that will be associated with the TargetSslProxy resource. If not set, the TargetSslProxy resource will not have any SSL policy configured."
     }
    }
   },
@@ -15394,7 +16023,7 @@
   "TargetTcpProxy": {
    "id": "TargetTcpProxy",
    "type": "object",
-   "description": "A TargetTcpProxy resource. This resource defines a TCP proxy.",
+   "description": "A TargetTcpProxy resource. This resource defines a TCP proxy. (== resource_for beta.targetTcpProxies ==) (== resource_for v1.targetTcpProxies ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -15556,7 +16185,7 @@
   "TargetVpnGateway": {
    "id": "TargetVpnGateway",
    "type": "object",
-   "description": "Represents a Target VPN gateway resource.",
+   "description": "Represents a Target VPN gateway resource. (== resource_for beta.targetVpnGateways ==) (== resource_for v1.targetVpnGateways ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -15582,6 +16211,18 @@
      "type": "string",
      "description": "[Output Only] Type of resource. Always compute#targetVpnGateway for target VPN gateways.",
      "default": "compute#targetVpnGateway"
+    },
+    "labelFingerprint": {
+     "type": "string",
+     "description": "A fingerprint for the labels being applied to this TargetVpnGateway, which is essentially a hash of the labels set used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update labels. You must always provide an up-to-date fingerprint hash in order to update or change labels.\n\nTo see the latest fingerprint, make a get() request to retrieve an TargetVpnGateway.",
+     "format": "byte"
+    },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this TargetVpnGateway resource. These can be later modified by the setLabels method. Each label key/value must comply with RFC1035. Label values may be empty.",
+     "additionalProperties": {
+      "type": "string"
+     }
     },
     "name": {
      "type": "string",
@@ -16292,6 +16933,7 @@
   "VpnTunnel": {
    "id": "VpnTunnel",
    "type": "object",
+   "description": "VPN tunnel resource. (== resource_for beta.vpnTunnels ==) (== resource_for v1.vpnTunnels ==)",
    "properties": {
     "creationTimestamp": {
      "type": "string",
@@ -16319,6 +16961,18 @@
      "type": "string",
      "description": "[Output Only] Type of resource. Always compute#vpnTunnel for VPN tunnels.",
      "default": "compute#vpnTunnel"
+    },
+    "labelFingerprint": {
+     "type": "string",
+     "description": "A fingerprint for the labels being applied to this VpnTunnel, which is essentially a hash of the labels set used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update labels. You must always provide an up-to-date fingerprint hash in order to update or change labels.\n\nTo see the latest fingerprint, make a get() request to retrieve a VpnTunnel.",
+     "format": "byte"
+    },
+    "labels": {
+     "type": "object",
+     "description": "Labels to apply to this VpnTunnel. These can be later modified by the setLabels method. Each label key/value pair must comply with RFC1035. Label values may be empty.",
+     "additionalProperties": {
+      "type": "string"
+     }
     },
     "localTrafficSelector": {
      "type": "array",
@@ -16866,7 +17520,7 @@
   "Zone": {
    "id": "Zone",
    "type": "object",
-   "description": "A Zone resource.",
+   "description": "A Zone resource. (== resource_for beta.zones ==) (== resource_for v1.zones ==)",
    "properties": {
     "availableCpuPlatforms": {
      "type": "array",
@@ -17920,6 +18574,46 @@
   },
   "backendBuckets": {
    "methods": {
+    "addSignedUrlKey": {
+     "id": "compute.backendBuckets.addSignedUrlKey",
+     "path": "{project}/global/backendBuckets/{backendBucket}/addSignedUrlKey",
+     "httpMethod": "POST",
+     "description": "Adds the given Signed URL Key to the backend bucket.",
+     "parameters": {
+      "backendBucket": {
+       "type": "string",
+       "description": "Name of the BackendBucket resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+       "required": true,
+       "location": "path"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "backendBucket"
+     ],
+     "request": {
+      "$ref": "SignedUrlKey"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "delete": {
      "id": "compute.backendBuckets.delete",
      "path": "{project}/global/backendBuckets/{backendBucket}",
@@ -17949,6 +18643,50 @@
      "parameterOrder": [
       "project",
       "backendBucket"
+     ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "deleteSignedUrlKey": {
+     "id": "compute.backendBuckets.deleteSignedUrlKey",
+     "path": "{project}/global/backendBuckets/{backendBucket}/deleteSignedUrlKey",
+     "httpMethod": "POST",
+     "description": "Deletes the given Signed URL Key from the backend bucket.",
+     "parameters": {
+      "backendBucket": {
+       "type": "string",
+       "description": "Name of the BackendBucket resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+       "required": true,
+       "location": "path"
+      },
+      "keyName": {
+       "type": "string",
+       "description": "The name of the Signed URL Key to delete.",
+       "required": true,
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "backendBucket",
+      "keyName"
      ],
      "response": {
       "$ref": "Operation"
@@ -18160,6 +18898,46 @@
   },
   "backendServices": {
    "methods": {
+    "addSignedUrlKey": {
+     "id": "compute.backendServices.addSignedUrlKey",
+     "path": "{project}/global/backendServices/{backendService}/addSignedUrlKey",
+     "httpMethod": "POST",
+     "description": "Adds the given Signed URL Key to the specified backend service.",
+     "parameters": {
+      "backendService": {
+       "type": "string",
+       "description": "Name of the BackendService resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+       "required": true,
+       "location": "path"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "backendService"
+     ],
+     "request": {
+      "$ref": "SignedUrlKey"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "aggregatedList": {
      "id": "compute.backendServices.aggregatedList",
      "path": "{project}/aggregated/backendServices",
@@ -18238,6 +19016,50 @@
      "parameterOrder": [
       "project",
       "backendService"
+     ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "deleteSignedUrlKey": {
+     "id": "compute.backendServices.deleteSignedUrlKey",
+     "path": "{project}/global/backendServices/{backendService}/deleteSignedUrlKey",
+     "httpMethod": "POST",
+     "description": "Deletes the given Signed URL Key from the specified backend service.",
+     "parameters": {
+      "backendService": {
+       "type": "string",
+       "description": "Name of the BackendService resource to which the Signed URL Key should be added. The name should conform to RFC1035.",
+       "required": true,
+       "location": "path"
+      },
+      "keyName": {
+       "type": "string",
+       "description": "The name of the Signed URL Key to delete.",
+       "required": true,
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "backendService",
+      "keyName"
      ],
      "response": {
       "$ref": "Operation"
@@ -19010,7 +19832,7 @@
      "id": "compute.disks.resize",
      "path": "{project}/zones/{zone}/disks/{disk}/resize",
      "httpMethod": "POST",
-     "description": "Resizes the specified persistent disk.",
+     "description": "Resizes the specified persistent disk. You can only increase the size of the disk.",
      "parameters": {
       "disk": {
        "type": "string",
@@ -22927,7 +23749,7 @@
      "id": "compute.instanceTemplates.delete",
      "path": "{project}/global/instanceTemplates/{instanceTemplate}",
      "httpMethod": "DELETE",
-     "description": "Deletes the specified instance template. If you delete an instance template that is being referenced from another instance group, the instance group will not be able to create or recreate virtual machine instances. Deleting an instance template is permanent and cannot be undone.",
+     "description": "Deletes the specified instance template. Deleting an instance template is permanent and cannot be undone. It's not possible to delete templates which are in use by an instance group.",
      "parameters": {
       "instanceTemplate": {
        "type": "string",
@@ -24786,6 +25608,55 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
+    "setLabels": {
+     "id": "compute.interconnectAttachments.setLabels",
+     "path": "{project}/regions/{region}/interconnectAttachments/{resource}/setLabels",
+     "httpMethod": "POST",
+     "description": "Sets the labels on an InterconnectAttachment. To learn more about labels, read the Labeling Resources documentation.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "The region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "resource"
+     ],
+     "request": {
+      "$ref": "RegionSetLabelsRequest"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "testIamPermissions": {
      "id": "compute.interconnectAttachments.testIamPermissions",
      "path": "{project}/regions/{region}/interconnectAttachments/{resource}/testIamPermissions",
@@ -25108,6 +25979,42 @@
      ],
      "request": {
       "$ref": "Interconnect"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "setLabels": {
+     "id": "compute.interconnects.setLabels",
+     "path": "{project}/global/interconnects/{resource}/setLabels",
+     "httpMethod": "POST",
+     "description": "Sets the labels on an Interconnect. To learn more about labels, read the Labeling Resources documentation.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "resource"
+     ],
+     "request": {
+      "$ref": "GlobalSetLabelsRequest"
      },
      "response": {
       "$ref": "Operation"
@@ -25708,7 +26615,7 @@
      "id": "compute.networks.patch",
      "path": "{project}/global/networks/{network}",
      "httpMethod": "PATCH",
-     "description": "Patches the specified network with the data included in the request.",
+     "description": "Patches the specified network with the data included in the request. Only the following fields can be modified: routingConfig.routingMode.",
      "parameters": {
       "network": {
        "type": "string",
@@ -29038,6 +29945,42 @@
   },
   "securityPolicies": {
    "methods": {
+    "addRule": {
+     "id": "compute.securityPolicies.addRule",
+     "path": "{project}/global/securityPolicies/{securityPolicy}/addRule",
+     "httpMethod": "POST",
+     "description": "Inserts a rule into a security policy.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "securityPolicy": {
+       "type": "string",
+       "description": "Name of the security policy to update.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "securityPolicy"
+     ],
+     "request": {
+      "$ref": "SecurityPolicyRule"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "delete": {
      "id": "compute.securityPolicies.delete",
      "path": "{project}/global/securityPolicies/{securityPolicy}",
@@ -29103,6 +30046,46 @@
      ],
      "response": {
       "$ref": "SecurityPolicy"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "getRule": {
+     "id": "compute.securityPolicies.getRule",
+     "path": "{project}/global/securityPolicies/{securityPolicy}/getRule",
+     "httpMethod": "GET",
+     "description": "Gets a rule at the specified priority.",
+     "parameters": {
+      "priority": {
+       "type": "integer",
+       "description": "The priority of the rule to get from the security policy.",
+       "format": "int32",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "securityPolicy": {
+       "type": "string",
+       "description": "Name of the security policy to which the queried rule belongs.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "securityPolicy"
+     ],
+     "response": {
+      "$ref": "SecurityPolicyRule"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -29225,6 +30208,87 @@
      "request": {
       "$ref": "SecurityPolicy"
      },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "patchRule": {
+     "id": "compute.securityPolicies.patchRule",
+     "path": "{project}/global/securityPolicies/{securityPolicy}/patchRule",
+     "httpMethod": "POST",
+     "description": "Patches a rule at the specified priority.",
+     "parameters": {
+      "priority": {
+       "type": "integer",
+       "description": "The priority of the rule to patch.",
+       "format": "int32",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "securityPolicy": {
+       "type": "string",
+       "description": "Name of the security policy to update.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "securityPolicy"
+     ],
+     "request": {
+      "$ref": "SecurityPolicyRule"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "removeRule": {
+     "id": "compute.securityPolicies.removeRule",
+     "path": "{project}/global/securityPolicies/{securityPolicy}/removeRule",
+     "httpMethod": "POST",
+     "description": "Deletes a rule at the specified priority.",
+     "parameters": {
+      "priority": {
+       "type": "integer",
+       "description": "The priority of the rule to remove from the security policy.",
+       "format": "int32",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "securityPolicy": {
+       "type": "string",
+       "description": "Name of the security policy to update.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "securityPolicy"
+     ],
      "response": {
       "$ref": "Operation"
      },
@@ -29629,6 +30693,288 @@
     "testIamPermissions": {
      "id": "compute.sslCertificates.testIamPermissions",
      "path": "{project}/global/sslCertificates/{resource}/testIamPermissions",
+     "httpMethod": "POST",
+     "description": "Returns permissions that a caller has on the specified resource.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "(?:[-a-z0-9_]{0,62}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "resource"
+     ],
+     "request": {
+      "$ref": "TestPermissionsRequest"
+     },
+     "response": {
+      "$ref": "TestPermissionsResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    }
+   }
+  },
+  "sslPolicies": {
+   "methods": {
+    "delete": {
+     "id": "compute.sslPolicies.delete",
+     "path": "{project}/global/sslPolicies/{sslPolicy}",
+     "httpMethod": "DELETE",
+     "description": "Deletes the specified SSL policy. The SSL policy resource can be deleted only if it is not in use by any TargetHttpsProxy or TargetSslProxy resources.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "sslPolicy": {
+       "type": "string",
+       "description": "Name of the SSL policy to delete. The name must be 1-63 characters long, and comply with RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "sslPolicy"
+     ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "get": {
+     "id": "compute.sslPolicies.get",
+     "path": "{project}/global/sslPolicies/{sslPolicy}",
+     "httpMethod": "GET",
+     "description": "List all of the ordered rules present in a single specified policy.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "sslPolicy": {
+       "type": "string",
+       "description": "Name of the SSL policy to update. The name must be 1-63 characters long, and comply with RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "sslPolicy"
+     ],
+     "response": {
+      "$ref": "SslPolicy"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "insert": {
+     "id": "compute.sslPolicies.insert",
+     "path": "{project}/global/sslPolicies",
+     "httpMethod": "POST",
+     "description": "Returns the specified SSL policy resource. Get a list of available SSL policies by making a list() request.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "project"
+     ],
+     "request": {
+      "$ref": "SslPolicy"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "list": {
+     "id": "compute.sslPolicies.list",
+     "path": "{project}/global/sslPolicies",
+     "httpMethod": "GET",
+     "description": "List all the SSL policies that have been configured for the specified project.",
+     "parameters": {
+      "filter": {
+       "type": "string",
+       "description": "Sets a filter {expression} for filtering listed resources. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use name ne example-instance.\n\nYou can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nTo filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+       "location": "query"
+      },
+      "maxResults": {
+       "type": "integer",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "default": "500",
+       "format": "uint32",
+       "minimum": "0",
+       "location": "query"
+      },
+      "orderBy": {
+       "type": "string",
+       "description": "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.\n\nYou can also sort results in descending order based on the creation timestamp using orderBy=\"creationTimestamp desc\". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.\n\nCurrently, only sorting by name or creationTimestamp desc is supported.",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project"
+     ],
+     "response": {
+      "$ref": "SslPoliciesList"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "listAvailableFeatures": {
+     "id": "compute.sslPolicies.listAvailableFeatures",
+     "path": "{project}/global/sslPolicies/listAvailableFeatures",
+     "httpMethod": "GET",
+     "description": "Lists all features that can be specified in the SSL policy when using custom profile.",
+     "parameters": {
+      "filter": {
+       "type": "string",
+       "description": "Sets a filter {expression} for filtering listed resources. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use name ne example-instance.\n\nYou can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nTo filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
+       "location": "query"
+      },
+      "maxResults": {
+       "type": "integer",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "default": "500",
+       "format": "uint32",
+       "minimum": "0",
+       "location": "query"
+      },
+      "orderBy": {
+       "type": "string",
+       "description": "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.\n\nYou can also sort results in descending order based on the creation timestamp using orderBy=\"creationTimestamp desc\". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.\n\nCurrently, only sorting by name or creationTimestamp desc is supported.",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project"
+     ],
+     "response": {
+      "$ref": "SslPoliciesListAvailableFeaturesResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "patch": {
+     "id": "compute.sslPolicies.patch",
+     "path": "{project}/global/sslPolicies/{sslPolicy}",
+     "httpMethod": "PATCH",
+     "description": "Patches the specified SSL policy with the data included in the request.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "sslPolicy": {
+       "type": "string",
+       "description": "Name of the SSL policy to update. The name must be 1-63 characters long, and comply with RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "sslPolicy"
+     ],
+     "request": {
+      "$ref": "SslPolicy"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "testIamPermissions": {
+     "id": "compute.sslPolicies.testIamPermissions",
+     "path": "{project}/global/sslPolicies/{resource}/testIamPermissions",
      "httpMethod": "POST",
      "description": "Returns permissions that a caller has on the specified resource.",
      "parameters": {
@@ -30574,6 +31920,46 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
+    "setQuicOverride": {
+     "id": "compute.targetHttpsProxies.setQuicOverride",
+     "path": "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setQuicOverride",
+     "httpMethod": "POST",
+     "description": "Sets the QUIC override policy for TargetHttpsProxy.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "targetHttpsProxy": {
+       "type": "string",
+       "description": "Name of the TargetHttpsProxy resource to set the QUIC override policy for. The name should conform to RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "targetHttpsProxy"
+     ],
+     "request": {
+      "$ref": "TargetHttpsProxiesSetQuicOverrideRequest"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "setSslCertificates": {
      "id": "compute.targetHttpsProxies.setSslCertificates",
      "path": "{project}/targetHttpsProxies/{targetHttpsProxy}/setSslCertificates",
@@ -30606,6 +31992,46 @@
      ],
      "request": {
       "$ref": "TargetHttpsProxiesSetSslCertificatesRequest"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "setSslPolicy": {
+     "id": "compute.targetHttpsProxies.setSslPolicy",
+     "path": "{project}/global/targetHttpsProxies/{targetHttpsProxy}/setSslPolicy",
+     "httpMethod": "POST",
+     "description": "Sets the SSL policy for TargetHttpsProxy. The SSL policy specifies the server-side support for SSL features. This affects connections between clients and the HTTPS proxy load balancer. They do not affect the connection between the load balancer and the backends.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "targetHttpsProxy": {
+       "type": "string",
+       "description": "Name of the TargetHttpsProxy resource whose SSL policy is to be set. The name must be 1-63 characters long, and comply with RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "targetHttpsProxy"
+     ],
+     "request": {
+      "$ref": "SslPolicyReference"
      },
      "response": {
       "$ref": "Operation"
@@ -31838,6 +33264,46 @@
       "https://www.googleapis.com/auth/compute"
      ]
     },
+    "setSslPolicy": {
+     "id": "compute.targetSslProxies.setSslPolicy",
+     "path": "{project}/global/targetSslProxies/{targetSslProxy}/setSslPolicy",
+     "httpMethod": "POST",
+     "description": "Sets the SSL policy for TargetSslProxy. The SSL policy specifies the server-side support for SSL features. This affects connections between clients and the SSL proxy load balancer. They do not affect the connection between the load balancer and the backends.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "targetSslProxy": {
+       "type": "string",
+       "description": "Name of the TargetSslProxy resource whose SSL policy is to be set. The name must be 1-63 characters long, and comply with RFC1035.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "targetSslProxy"
+     ],
+     "request": {
+      "$ref": "SslPolicyReference"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
     "testIamPermissions": {
      "id": "compute.targetSslProxies.testIamPermissions",
      "path": "{project}/global/targetSslProxies/{resource}/testIamPermissions",
@@ -32352,6 +33818,55 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "setLabels": {
+     "id": "compute.targetVpnGateways.setLabels",
+     "path": "{project}/regions/{region}/targetVpnGateways/{resource}/setLabels",
+     "httpMethod": "POST",
+     "description": "Sets the labels on a TargetVpnGateway. To learn more about labels, read the Labeling Resources documentation.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "The region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "resource"
+     ],
+     "request": {
+      "$ref": "RegionSetLabelsRequest"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -32990,6 +34505,55 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "setLabels": {
+     "id": "compute.vpnTunnels.setLabels",
+     "path": "{project}/regions/{region}/vpnTunnels/{resource}/setLabels",
+     "httpMethod": "POST",
+     "description": "Sets the labels on a VpnTunnel. To learn more about labels, read the Labeling Resources documentation.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "region": {
+       "type": "string",
+       "description": "The region for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "requestId": {
+       "type": "string",
+       "description": "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.\n\nFor example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.\n\nThe request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+       "location": "query"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "region",
+      "resource"
+     ],
+     "request": {
+      "$ref": "RegionSetLabelsRequest"
+     },
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {

@@ -18,6 +18,7 @@ package policy
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // SetDefinitionsClient is the to manage and control access to your resources, you can define customized policies and
 // assign them at a scope.
 type SetDefinitionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSetDefinitionsClient creates an instance of the SetDefinitionsClient client.
@@ -44,7 +45,7 @@ func NewSetDefinitionsClientWithBaseURI(baseURI string, subscriptionID string) S
 //
 // policySetDefinitionName is the name of the policy set definition to create. parameters is the policy set definition
 // properties.
-func (client SetDefinitionsClient) CreateOrUpdate(policySetDefinitionName string, parameters SetDefinition) (result SetDefinition, err error) {
+func (client SetDefinitionsClient) CreateOrUpdate(ctx context.Context, policySetDefinitionName string, parameters SetDefinition) (result SetDefinition, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.SetDefinitionProperties", Name: validation.Null, Rule: false,
@@ -52,7 +53,7 @@ func (client SetDefinitionsClient) CreateOrUpdate(policySetDefinitionName string
 		return result, validation.NewErrorWithValidationError(err, "policy.SetDefinitionsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(policySetDefinitionName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, policySetDefinitionName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client SetDefinitionsClient) CreateOrUpdate(policySetDefinitionName string
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client SetDefinitionsClient) CreateOrUpdatePreparer(policySetDefinitionName string, parameters SetDefinition) (*http.Request, error) {
+func (client SetDefinitionsClient) CreateOrUpdatePreparer(ctx context.Context, policySetDefinitionName string, parameters SetDefinition) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
 		"subscriptionId":          autorest.Encode("path", client.SubscriptionID),
@@ -92,14 +93,13 @@ func (client SetDefinitionsClient) CreateOrUpdatePreparer(policySetDefinitionNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -109,7 +109,7 @@ func (client SetDefinitionsClient) CreateOrUpdateResponder(resp *http.Response) 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -120,7 +120,7 @@ func (client SetDefinitionsClient) CreateOrUpdateResponder(resp *http.Response) 
 //
 // policySetDefinitionName is the name of the policy set definition to create. parameters is the policy set definition
 // properties. managementGroupID is the ID of the management group.
-func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroup(policySetDefinitionName string, parameters SetDefinition, managementGroupID string) (result SetDefinition, err error) {
+func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroup(ctx context.Context, policySetDefinitionName string, parameters SetDefinition, managementGroupID string) (result SetDefinition, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.SetDefinitionProperties", Name: validation.Null, Rule: false,
@@ -128,7 +128,7 @@ func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroup(policySetDefi
 		return result, validation.NewErrorWithValidationError(err, "policy.SetDefinitionsClient", "CreateOrUpdateAtManagementGroup")
 	}
 
-	req, err := client.CreateOrUpdateAtManagementGroupPreparer(policySetDefinitionName, parameters, managementGroupID)
+	req, err := client.CreateOrUpdateAtManagementGroupPreparer(ctx, policySetDefinitionName, parameters, managementGroupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "CreateOrUpdateAtManagementGroup", nil, "Failure preparing request")
 		return
@@ -150,7 +150,7 @@ func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroup(policySetDefi
 }
 
 // CreateOrUpdateAtManagementGroupPreparer prepares the CreateOrUpdateAtManagementGroup request.
-func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupPreparer(policySetDefinitionName string, parameters SetDefinition, managementGroupID string) (*http.Request, error) {
+func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupPreparer(ctx context.Context, policySetDefinitionName string, parameters SetDefinition, managementGroupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managementGroupId":       autorest.Encode("path", managementGroupID),
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
@@ -168,14 +168,13 @@ func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupPreparer(polic
 		autorest.WithPathParameters("/providers/Microsoft.Management/managementgroups/{managementGroupId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateAtManagementGroupSender sends the CreateOrUpdateAtManagementGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -185,7 +184,7 @@ func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupResponder(resp
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -195,8 +194,8 @@ func (client SetDefinitionsClient) CreateOrUpdateAtManagementGroupResponder(resp
 // Delete deletes a policy set definition.
 //
 // policySetDefinitionName is the name of the policy set definition to delete.
-func (client SetDefinitionsClient) Delete(policySetDefinitionName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(policySetDefinitionName)
+func (client SetDefinitionsClient) Delete(ctx context.Context, policySetDefinitionName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, policySetDefinitionName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -218,7 +217,7 @@ func (client SetDefinitionsClient) Delete(policySetDefinitionName string) (resul
 }
 
 // DeletePreparer prepares the Delete request.
-func (client SetDefinitionsClient) DeletePreparer(policySetDefinitionName string) (*http.Request, error) {
+func (client SetDefinitionsClient) DeletePreparer(ctx context.Context, policySetDefinitionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
 		"subscriptionId":          autorest.Encode("path", client.SubscriptionID),
@@ -234,14 +233,13 @@ func (client SetDefinitionsClient) DeletePreparer(policySetDefinitionName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -251,7 +249,7 @@ func (client SetDefinitionsClient) DeleteResponder(resp *http.Response) (result 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -261,8 +259,8 @@ func (client SetDefinitionsClient) DeleteResponder(resp *http.Response) (result 
 //
 // policySetDefinitionName is the name of the policy set definition to delete. managementGroupID is the ID of the
 // management group.
-func (client SetDefinitionsClient) DeleteAtManagementGroup(policySetDefinitionName string, managementGroupID string) (result autorest.Response, err error) {
-	req, err := client.DeleteAtManagementGroupPreparer(policySetDefinitionName, managementGroupID)
+func (client SetDefinitionsClient) DeleteAtManagementGroup(ctx context.Context, policySetDefinitionName string, managementGroupID string) (result autorest.Response, err error) {
+	req, err := client.DeleteAtManagementGroupPreparer(ctx, policySetDefinitionName, managementGroupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "DeleteAtManagementGroup", nil, "Failure preparing request")
 		return
@@ -284,7 +282,7 @@ func (client SetDefinitionsClient) DeleteAtManagementGroup(policySetDefinitionNa
 }
 
 // DeleteAtManagementGroupPreparer prepares the DeleteAtManagementGroup request.
-func (client SetDefinitionsClient) DeleteAtManagementGroupPreparer(policySetDefinitionName string, managementGroupID string) (*http.Request, error) {
+func (client SetDefinitionsClient) DeleteAtManagementGroupPreparer(ctx context.Context, policySetDefinitionName string, managementGroupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managementGroupId":       autorest.Encode("path", managementGroupID),
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
@@ -300,14 +298,13 @@ func (client SetDefinitionsClient) DeleteAtManagementGroupPreparer(policySetDefi
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/providers/Microsoft.Management/managementgroups/{managementGroupId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteAtManagementGroupSender sends the DeleteAtManagementGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) DeleteAtManagementGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -317,7 +314,7 @@ func (client SetDefinitionsClient) DeleteAtManagementGroupResponder(resp *http.R
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -326,8 +323,8 @@ func (client SetDefinitionsClient) DeleteAtManagementGroupResponder(resp *http.R
 // Get gets the policy set definition.
 //
 // policySetDefinitionName is the name of the policy set definition to get.
-func (client SetDefinitionsClient) Get(policySetDefinitionName string) (result SetDefinition, err error) {
-	req, err := client.GetPreparer(policySetDefinitionName)
+func (client SetDefinitionsClient) Get(ctx context.Context, policySetDefinitionName string) (result SetDefinition, err error) {
+	req, err := client.GetPreparer(ctx, policySetDefinitionName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -349,7 +346,7 @@ func (client SetDefinitionsClient) Get(policySetDefinitionName string) (result S
 }
 
 // GetPreparer prepares the Get request.
-func (client SetDefinitionsClient) GetPreparer(policySetDefinitionName string) (*http.Request, error) {
+func (client SetDefinitionsClient) GetPreparer(ctx context.Context, policySetDefinitionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
 		"subscriptionId":          autorest.Encode("path", client.SubscriptionID),
@@ -365,14 +362,13 @@ func (client SetDefinitionsClient) GetPreparer(policySetDefinitionName string) (
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -393,8 +389,8 @@ func (client SetDefinitionsClient) GetResponder(resp *http.Response) (result Set
 //
 // policySetDefinitionName is the name of the policy set definition to get. managementGroupID is the ID of the
 // management group.
-func (client SetDefinitionsClient) GetAtManagementGroup(policySetDefinitionName string, managementGroupID string) (result SetDefinition, err error) {
-	req, err := client.GetAtManagementGroupPreparer(policySetDefinitionName, managementGroupID)
+func (client SetDefinitionsClient) GetAtManagementGroup(ctx context.Context, policySetDefinitionName string, managementGroupID string) (result SetDefinition, err error) {
+	req, err := client.GetAtManagementGroupPreparer(ctx, policySetDefinitionName, managementGroupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "GetAtManagementGroup", nil, "Failure preparing request")
 		return
@@ -416,7 +412,7 @@ func (client SetDefinitionsClient) GetAtManagementGroup(policySetDefinitionName 
 }
 
 // GetAtManagementGroupPreparer prepares the GetAtManagementGroup request.
-func (client SetDefinitionsClient) GetAtManagementGroupPreparer(policySetDefinitionName string, managementGroupID string) (*http.Request, error) {
+func (client SetDefinitionsClient) GetAtManagementGroupPreparer(ctx context.Context, policySetDefinitionName string, managementGroupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managementGroupId":       autorest.Encode("path", managementGroupID),
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
@@ -432,14 +428,13 @@ func (client SetDefinitionsClient) GetAtManagementGroupPreparer(policySetDefinit
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/providers/Microsoft.Management/managementgroups/{managementGroupId}/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetAtManagementGroupSender sends the GetAtManagementGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) GetAtManagementGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -459,8 +454,8 @@ func (client SetDefinitionsClient) GetAtManagementGroupResponder(resp *http.Resp
 // GetBuiltIn gets the built in policy set definition.
 //
 // policySetDefinitionName is the name of the policy set definition to get.
-func (client SetDefinitionsClient) GetBuiltIn(policySetDefinitionName string) (result SetDefinition, err error) {
-	req, err := client.GetBuiltInPreparer(policySetDefinitionName)
+func (client SetDefinitionsClient) GetBuiltIn(ctx context.Context, policySetDefinitionName string) (result SetDefinition, err error) {
+	req, err := client.GetBuiltInPreparer(ctx, policySetDefinitionName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "GetBuiltIn", nil, "Failure preparing request")
 		return
@@ -482,7 +477,7 @@ func (client SetDefinitionsClient) GetBuiltIn(policySetDefinitionName string) (r
 }
 
 // GetBuiltInPreparer prepares the GetBuiltIn request.
-func (client SetDefinitionsClient) GetBuiltInPreparer(policySetDefinitionName string) (*http.Request, error) {
+func (client SetDefinitionsClient) GetBuiltInPreparer(ctx context.Context, policySetDefinitionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"policySetDefinitionName": autorest.Encode("path", policySetDefinitionName),
 	}
@@ -497,14 +492,13 @@ func (client SetDefinitionsClient) GetBuiltInPreparer(policySetDefinitionName st
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/providers/Microsoft.Authorization/policySetDefinitions/{policySetDefinitionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetBuiltInSender sends the GetBuiltIn request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) GetBuiltInSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -522,8 +516,9 @@ func (client SetDefinitionsClient) GetBuiltInResponder(resp *http.Response) (res
 }
 
 // List gets all the policy set definitions for a subscription.
-func (client SetDefinitionsClient) List() (result SetDefinitionListResult, err error) {
-	req, err := client.ListPreparer()
+func (client SetDefinitionsClient) List(ctx context.Context) (result SetDefinitionListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", nil, "Failure preparing request")
 		return
@@ -531,12 +526,12 @@ func (client SetDefinitionsClient) List() (result SetDefinitionListResult, err e
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.sdlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", resp, "Failure responding to request")
 	}
@@ -545,7 +540,7 @@ func (client SetDefinitionsClient) List() (result SetDefinitionListResult, err e
 }
 
 // ListPreparer prepares the List request.
-func (client SetDefinitionsClient) ListPreparer() (*http.Request, error) {
+func (client SetDefinitionsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -560,14 +555,13 @@ func (client SetDefinitionsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/policySetDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -584,78 +578,37 @@ func (client SetDefinitionsClient) ListResponder(resp *http.Response) (result Se
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client SetDefinitionsClient) ListNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
-	req, err := lastResults.SetDefinitionListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client SetDefinitionsClient) listNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
+	req, err := lastResults.setDefinitionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client SetDefinitionsClient) ListComplete(cancel <-chan struct{}) (<-chan SetDefinition, <-chan error) {
-	resultChan := make(chan SetDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SetDefinitionsClient) ListComplete(ctx context.Context) (result SetDefinitionListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListBuiltIn gets all the built in policy set definitions.
-func (client SetDefinitionsClient) ListBuiltIn() (result SetDefinitionListResult, err error) {
-	req, err := client.ListBuiltInPreparer()
+func (client SetDefinitionsClient) ListBuiltIn(ctx context.Context) (result SetDefinitionListResultPage, err error) {
+	result.fn = client.listBuiltInNextResults
+	req, err := client.ListBuiltInPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", nil, "Failure preparing request")
 		return
@@ -663,12 +616,12 @@ func (client SetDefinitionsClient) ListBuiltIn() (result SetDefinitionListResult
 
 	resp, err := client.ListBuiltInSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBuiltInResponder(resp)
+	result.sdlr, err = client.ListBuiltInResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", resp, "Failure responding to request")
 	}
@@ -677,7 +630,7 @@ func (client SetDefinitionsClient) ListBuiltIn() (result SetDefinitionListResult
 }
 
 // ListBuiltInPreparer prepares the ListBuiltIn request.
-func (client SetDefinitionsClient) ListBuiltInPreparer() (*http.Request, error) {
+func (client SetDefinitionsClient) ListBuiltInPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2017-06-01-preview"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -688,14 +641,13 @@ func (client SetDefinitionsClient) ListBuiltInPreparer() (*http.Request, error) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Authorization/policySetDefinitions"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBuiltInSender sends the ListBuiltIn request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) ListBuiltInSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -712,80 +664,39 @@ func (client SetDefinitionsClient) ListBuiltInResponder(resp *http.Response) (re
 	return
 }
 
-// ListBuiltInNextResults retrieves the next set of results, if any.
-func (client SetDefinitionsClient) ListBuiltInNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
-	req, err := lastResults.SetDefinitionListResultPreparer()
+// listBuiltInNextResults retrieves the next set of results, if any.
+func (client SetDefinitionsClient) listBuiltInNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
+	req, err := lastResults.setDefinitionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listBuiltInNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBuiltInSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listBuiltInNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBuiltInResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListBuiltIn", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listBuiltInNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBuiltInComplete gets all elements from the list without paging.
-func (client SetDefinitionsClient) ListBuiltInComplete(cancel <-chan struct{}) (<-chan SetDefinition, <-chan error) {
-	resultChan := make(chan SetDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBuiltIn()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBuiltInNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBuiltInComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SetDefinitionsClient) ListBuiltInComplete(ctx context.Context) (result SetDefinitionListResultIterator, err error) {
+	result.page, err = client.ListBuiltIn(ctx)
+	return
 }
 
 // ListByManagementGroup gets all the policy set definitions for a subscription at management group.
 //
 // managementGroupID is the ID of the management group.
-func (client SetDefinitionsClient) ListByManagementGroup(managementGroupID string) (result SetDefinitionListResult, err error) {
-	req, err := client.ListByManagementGroupPreparer(managementGroupID)
+func (client SetDefinitionsClient) ListByManagementGroup(ctx context.Context, managementGroupID string) (result SetDefinitionListResultPage, err error) {
+	result.fn = client.listByManagementGroupNextResults
+	req, err := client.ListByManagementGroupPreparer(ctx, managementGroupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", nil, "Failure preparing request")
 		return
@@ -793,12 +704,12 @@ func (client SetDefinitionsClient) ListByManagementGroup(managementGroupID strin
 
 	resp, err := client.ListByManagementGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sdlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByManagementGroupResponder(resp)
+	result.sdlr, err = client.ListByManagementGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", resp, "Failure responding to request")
 	}
@@ -807,7 +718,7 @@ func (client SetDefinitionsClient) ListByManagementGroup(managementGroupID strin
 }
 
 // ListByManagementGroupPreparer prepares the ListByManagementGroup request.
-func (client SetDefinitionsClient) ListByManagementGroupPreparer(managementGroupID string) (*http.Request, error) {
+func (client SetDefinitionsClient) ListByManagementGroupPreparer(ctx context.Context, managementGroupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"managementGroupId": autorest.Encode("path", managementGroupID),
 	}
@@ -822,14 +733,13 @@ func (client SetDefinitionsClient) ListByManagementGroupPreparer(managementGroup
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/providers/Microsoft.Management/managementgroups/{managementGroupId}/providers/Microsoft.Authorization/policySetDefinitions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByManagementGroupSender sends the ListByManagementGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client SetDefinitionsClient) ListByManagementGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -846,71 +756,29 @@ func (client SetDefinitionsClient) ListByManagementGroupResponder(resp *http.Res
 	return
 }
 
-// ListByManagementGroupNextResults retrieves the next set of results, if any.
-func (client SetDefinitionsClient) ListByManagementGroupNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
-	req, err := lastResults.SetDefinitionListResultPreparer()
+// listByManagementGroupNextResults retrieves the next set of results, if any.
+func (client SetDefinitionsClient) listByManagementGroupNextResults(lastResults SetDefinitionListResult) (result SetDefinitionListResult, err error) {
+	req, err := lastResults.setDefinitionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listByManagementGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByManagementGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listByManagementGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByManagementGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "ListByManagementGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "policy.SetDefinitionsClient", "listByManagementGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByManagementGroupComplete gets all elements from the list without paging.
-func (client SetDefinitionsClient) ListByManagementGroupComplete(managementGroupID string, cancel <-chan struct{}) (<-chan SetDefinition, <-chan error) {
-	resultChan := make(chan SetDefinition)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByManagementGroup(managementGroupID)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByManagementGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByManagementGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SetDefinitionsClient) ListByManagementGroupComplete(ctx context.Context, managementGroupID string) (result SetDefinitionListResultIterator, err error) {
+	result.page, err = client.ListByManagementGroup(ctx, managementGroupID)
+	return
 }

@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ArtifactSourceClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type ArtifactSourceClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewArtifactSourceClient creates an instance of the ArtifactSourceClient client.
@@ -42,8 +43,8 @@ func NewArtifactSourceClientWithBaseURI(baseURI string, subscriptionID string) A
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // artifact source.
-func (client ArtifactSourceClient) CreateOrUpdateResource(resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (result ArtifactSource, err error) {
-	req, err := client.CreateOrUpdateResourcePreparer(resourceGroupName, labName, name, artifactSource)
+func (client ArtifactSourceClient) CreateOrUpdateResource(ctx context.Context, resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (result ArtifactSource, err error) {
+	req, err := client.CreateOrUpdateResourcePreparer(ctx, resourceGroupName, labName, name, artifactSource)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "CreateOrUpdateResource", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ArtifactSourceClient) CreateOrUpdateResource(resourceGroupName stri
 }
 
 // CreateOrUpdateResourcePreparer prepares the CreateOrUpdateResource request.
-func (client ArtifactSourceClient) CreateOrUpdateResourcePreparer(resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (*http.Request, error) {
+func (client ArtifactSourceClient) CreateOrUpdateResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -85,14 +86,13 @@ func (client ArtifactSourceClient) CreateOrUpdateResourcePreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources/{name}", pathParameters),
 		autorest.WithJSON(artifactSource),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateResourceSender sends the CreateOrUpdateResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ArtifactSourceClient) CreateOrUpdateResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client ArtifactSourceClient) CreateOrUpdateResourceResponder(resp *http.Re
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // artifact source.
-func (client ArtifactSourceClient) DeleteResource(resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
-	req, err := client.DeleteResourcePreparer(resourceGroupName, labName, name)
+func (client ArtifactSourceClient) DeleteResource(ctx context.Context, resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
+	req, err := client.DeleteResourcePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "DeleteResource", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client ArtifactSourceClient) DeleteResource(resourceGroupName string, labN
 }
 
 // DeleteResourcePreparer prepares the DeleteResource request.
-func (client ArtifactSourceClient) DeleteResourcePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client ArtifactSourceClient) DeleteResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -154,14 +154,13 @@ func (client ArtifactSourceClient) DeleteResourcePreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteResourceSender sends the DeleteResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ArtifactSourceClient) DeleteResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,8 +180,8 @@ func (client ArtifactSourceClient) DeleteResourceResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // artifact source.
-func (client ArtifactSourceClient) GetResource(resourceGroupName string, labName string, name string) (result ArtifactSource, err error) {
-	req, err := client.GetResourcePreparer(resourceGroupName, labName, name)
+func (client ArtifactSourceClient) GetResource(ctx context.Context, resourceGroupName string, labName string, name string) (result ArtifactSource, err error) {
+	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "GetResource", nil, "Failure preparing request")
 		return
@@ -204,7 +203,7 @@ func (client ArtifactSourceClient) GetResource(resourceGroupName string, labName
 }
 
 // GetResourcePreparer prepares the GetResource request.
-func (client ArtifactSourceClient) GetResourcePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client ArtifactSourceClient) GetResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -222,14 +221,13 @@ func (client ArtifactSourceClient) GetResourcePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetResourceSender sends the GetResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ArtifactSourceClient) GetResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -250,8 +248,9 @@ func (client ArtifactSourceClient) GetResourceResponder(resp *http.Response) (re
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
 // on the operation.
-func (client ArtifactSourceClient) List(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationArtifactSource, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, filter, top, orderBy)
+func (client ArtifactSourceClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationArtifactSourcePage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderBy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", nil, "Failure preparing request")
 		return
@@ -259,12 +258,12 @@ func (client ArtifactSourceClient) List(resourceGroupName string, labName string
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcas.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcas, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", resp, "Failure responding to request")
 	}
@@ -273,7 +272,7 @@ func (client ArtifactSourceClient) List(resourceGroupName string, labName string
 }
 
 // ListPreparer prepares the List request.
-func (client ArtifactSourceClient) ListPreparer(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
+func (client ArtifactSourceClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -299,14 +298,13 @@ func (client ArtifactSourceClient) ListPreparer(resourceGroupName string, labNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ArtifactSourceClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -323,81 +321,39 @@ func (client ArtifactSourceClient) ListResponder(resp *http.Response) (result Re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ArtifactSourceClient) ListNextResults(lastResults ResponseWithContinuationArtifactSource) (result ResponseWithContinuationArtifactSource, err error) {
-	req, err := lastResults.ResponseWithContinuationArtifactSourcePreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ArtifactSourceClient) listNextResults(lastResults ResponseWithContinuationArtifactSource) (result ResponseWithContinuationArtifactSource, err error) {
+	req, err := lastResults.responseWithContinuationArtifactSourcePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ArtifactSourceClient) ListComplete(resourceGroupName string, labName string, filter string, top *int32, orderBy string, cancel <-chan struct{}) (<-chan ArtifactSource, <-chan error) {
-	resultChan := make(chan ArtifactSource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, filter, top, orderBy)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ArtifactSourceClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationArtifactSourceIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, filter, top, orderBy)
+	return
 }
 
 // PatchResource modify properties of artifact sources.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // artifact source.
-func (client ArtifactSourceClient) PatchResource(resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (result ArtifactSource, err error) {
-	req, err := client.PatchResourcePreparer(resourceGroupName, labName, name, artifactSource)
+func (client ArtifactSourceClient) PatchResource(ctx context.Context, resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (result ArtifactSource, err error) {
+	req, err := client.PatchResourcePreparer(ctx, resourceGroupName, labName, name, artifactSource)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ArtifactSourceClient", "PatchResource", nil, "Failure preparing request")
 		return
@@ -419,7 +375,7 @@ func (client ArtifactSourceClient) PatchResource(resourceGroupName string, labNa
 }
 
 // PatchResourcePreparer prepares the PatchResource request.
-func (client ArtifactSourceClient) PatchResourcePreparer(resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (*http.Request, error) {
+func (client ArtifactSourceClient) PatchResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, artifactSource ArtifactSource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -439,14 +395,13 @@ func (client ArtifactSourceClient) PatchResourcePreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources/{name}", pathParameters),
 		autorest.WithJSON(artifactSource),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchResourceSender sends the PatchResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ArtifactSourceClient) PatchResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

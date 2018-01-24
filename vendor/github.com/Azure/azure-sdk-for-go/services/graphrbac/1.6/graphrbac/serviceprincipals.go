@@ -18,15 +18,17 @@ package graphrbac
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/Azure/go-autorest/autorest/validation"
 	"net/http"
 )
 
 // ServicePrincipalsClient is the the Graph RBAC Management Client
 type ServicePrincipalsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServicePrincipalsClient creates an instance of the ServicePrincipalsClient client.
@@ -42,7 +44,7 @@ func NewServicePrincipalsClientWithBaseURI(baseURI string, tenantID string) Serv
 // Create creates a service principal in the directory.
 //
 // parameters is parameters to create a service principal.
-func (client ServicePrincipalsClient) Create(parameters ServicePrincipalCreateParameters) (result ServicePrincipal, err error) {
+func (client ServicePrincipalsClient) Create(ctx context.Context, parameters ServicePrincipalCreateParameters) (result ServicePrincipal, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.AppID", Name: validation.Null, Rule: true, Chain: nil},
@@ -50,7 +52,7 @@ func (client ServicePrincipalsClient) Create(parameters ServicePrincipalCreatePa
 		return result, validation.NewErrorWithValidationError(err, "graphrbac.ServicePrincipalsClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(parameters)
+	req, err := client.CreatePreparer(ctx, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "Create", nil, "Failure preparing request")
 		return
@@ -72,7 +74,7 @@ func (client ServicePrincipalsClient) Create(parameters ServicePrincipalCreatePa
 }
 
 // CreatePreparer prepares the Create request.
-func (client ServicePrincipalsClient) CreatePreparer(parameters ServicePrincipalCreateParameters) (*http.Request, error) {
+func (client ServicePrincipalsClient) CreatePreparer(ctx context.Context, parameters ServicePrincipalCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -89,13 +91,14 @@ func (client ServicePrincipalsClient) CreatePreparer(parameters ServicePrincipal
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -114,8 +117,8 @@ func (client ServicePrincipalsClient) CreateResponder(resp *http.Response) (resu
 // Delete deletes a service principal from the directory.
 //
 // objectID is the object ID of the service principal to delete.
-func (client ServicePrincipalsClient) Delete(objectID string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(objectID)
+func (client ServicePrincipalsClient) Delete(ctx context.Context, objectID string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, objectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -137,7 +140,7 @@ func (client ServicePrincipalsClient) Delete(objectID string) (result autorest.R
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServicePrincipalsClient) DeletePreparer(objectID string) (*http.Request, error) {
+func (client ServicePrincipalsClient) DeletePreparer(ctx context.Context, objectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -153,13 +156,14 @@ func (client ServicePrincipalsClient) DeletePreparer(objectID string) (*http.Req
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -177,8 +181,8 @@ func (client ServicePrincipalsClient) DeleteResponder(resp *http.Response) (resu
 // Get gets service principal information from the directory.
 //
 // objectID is the object ID of the service principal to get.
-func (client ServicePrincipalsClient) Get(objectID string) (result ServicePrincipal, err error) {
-	req, err := client.GetPreparer(objectID)
+func (client ServicePrincipalsClient) Get(ctx context.Context, objectID string) (result ServicePrincipal, err error) {
+	req, err := client.GetPreparer(ctx, objectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "Get", nil, "Failure preparing request")
 		return
@@ -200,7 +204,7 @@ func (client ServicePrincipalsClient) Get(objectID string) (result ServicePrinci
 }
 
 // GetPreparer prepares the Get request.
-func (client ServicePrincipalsClient) GetPreparer(objectID string) (*http.Request, error) {
+func (client ServicePrincipalsClient) GetPreparer(ctx context.Context, objectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -216,13 +220,14 @@ func (client ServicePrincipalsClient) GetPreparer(objectID string) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetResponder handles the response to the Get request. The method always
@@ -241,8 +246,14 @@ func (client ServicePrincipalsClient) GetResponder(resp *http.Response) (result 
 // List gets a list of service principals from the current tenant.
 //
 // filter is the filter to apply to the operation.
-func (client ServicePrincipalsClient) List(filter string) (result ServicePrincipalListResult, err error) {
-	req, err := client.ListPreparer(filter)
+func (client ServicePrincipalsClient) List(ctx context.Context, filter string) (result ServicePrincipalListResultPage, err error) {
+	result.fn = func(lastResult ServicePrincipalListResult) (ServicePrincipalListResult, error) {
+		if lastResult.OdataNextLink == nil || len(to.String(lastResult.OdataNextLink)) < 1 {
+			return ServicePrincipalListResult{}, nil
+		}
+		return client.ListNext(ctx, *lastResult.OdataNextLink)
+	}
+	req, err := client.ListPreparer(ctx, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "List", nil, "Failure preparing request")
 		return
@@ -250,12 +261,12 @@ func (client ServicePrincipalsClient) List(filter string) (result ServicePrincip
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.splr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.splr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "List", resp, "Failure responding to request")
 	}
@@ -264,7 +275,7 @@ func (client ServicePrincipalsClient) List(filter string) (result ServicePrincip
 }
 
 // ListPreparer prepares the List request.
-func (client ServicePrincipalsClient) ListPreparer(filter string) (*http.Request, error) {
+func (client ServicePrincipalsClient) ListPreparer(ctx context.Context, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"tenantID": autorest.Encode("path", client.TenantID),
 	}
@@ -282,13 +293,14 @@ func (client ServicePrincipalsClient) ListPreparer(filter string) (*http.Request
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListResponder handles the response to the List request. The method always
@@ -304,56 +316,17 @@ func (client ServicePrincipalsClient) ListResponder(resp *http.Response) (result
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ServicePrincipalsClient) ListComplete(filter string, cancel <-chan struct{}) (<-chan ServicePrincipal, <-chan error) {
-	resultChan := make(chan ServicePrincipal)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.OdataNextLink != nil {
-			list, err = client.ListNext(*list.OdataNextLink)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ServicePrincipalsClient) ListComplete(ctx context.Context, filter string) (result ServicePrincipalListResultIterator, err error) {
+	result.page, err = client.List(ctx, filter)
+	return
 }
 
 // ListKeyCredentials get the keyCredentials associated with the specified service principal.
 //
 // objectID is the object ID of the service principal for which to get keyCredentials.
-func (client ServicePrincipalsClient) ListKeyCredentials(objectID string) (result KeyCredentialListResult, err error) {
-	req, err := client.ListKeyCredentialsPreparer(objectID)
+func (client ServicePrincipalsClient) ListKeyCredentials(ctx context.Context, objectID string) (result KeyCredentialListResult, err error) {
+	req, err := client.ListKeyCredentialsPreparer(ctx, objectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListKeyCredentials", nil, "Failure preparing request")
 		return
@@ -375,7 +348,7 @@ func (client ServicePrincipalsClient) ListKeyCredentials(objectID string) (resul
 }
 
 // ListKeyCredentialsPreparer prepares the ListKeyCredentials request.
-func (client ServicePrincipalsClient) ListKeyCredentialsPreparer(objectID string) (*http.Request, error) {
+func (client ServicePrincipalsClient) ListKeyCredentialsPreparer(ctx context.Context, objectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -391,13 +364,14 @@ func (client ServicePrincipalsClient) ListKeyCredentialsPreparer(objectID string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}/keyCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListKeyCredentialsSender sends the ListKeyCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) ListKeyCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListKeyCredentialsResponder handles the response to the ListKeyCredentials request. The method always
@@ -416,8 +390,8 @@ func (client ServicePrincipalsClient) ListKeyCredentialsResponder(resp *http.Res
 // ListNext gets a list of service principals from the current tenant.
 //
 // nextLink is next link for the list operation.
-func (client ServicePrincipalsClient) ListNext(nextLink string) (result ServicePrincipalListResult, err error) {
-	req, err := client.ListNextPreparer(nextLink)
+func (client ServicePrincipalsClient) ListNext(ctx context.Context, nextLink string) (result ServicePrincipalListResult, err error) {
+	req, err := client.ListNextPreparer(ctx, nextLink)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListNext", nil, "Failure preparing request")
 		return
@@ -439,7 +413,7 @@ func (client ServicePrincipalsClient) ListNext(nextLink string) (result ServiceP
 }
 
 // ListNextPreparer prepares the ListNext request.
-func (client ServicePrincipalsClient) ListNextPreparer(nextLink string) (*http.Request, error) {
+func (client ServicePrincipalsClient) ListNextPreparer(ctx context.Context, nextLink string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nextLink": nextLink,
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -455,13 +429,14 @@ func (client ServicePrincipalsClient) ListNextPreparer(nextLink string) (*http.R
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/{nextLink}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListNextSender sends the ListNext request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) ListNextSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListNextResponder handles the response to the ListNext request. The method always
@@ -477,11 +452,76 @@ func (client ServicePrincipalsClient) ListNextResponder(resp *http.Response) (re
 	return
 }
 
+// ListOwners the owners are a set of non-admin users who are allowed to modify this object.
+//
+// objectID is the object ID of the service principal for which to get owners.
+func (client ServicePrincipalsClient) ListOwners(ctx context.Context, objectID string) (result DirectoryObjectListResult, err error) {
+	req, err := client.ListOwnersPreparer(ctx, objectID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListOwners", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.ListOwnersSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListOwners", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.ListOwnersResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListOwners", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// ListOwnersPreparer prepares the ListOwners request.
+func (client ServicePrincipalsClient) ListOwnersPreparer(ctx context.Context, objectID string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"objectId": autorest.Encode("path", objectID),
+		"tenantID": autorest.Encode("path", client.TenantID),
+	}
+
+	const APIVersion = "1.6"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}/owners", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// ListOwnersSender sends the ListOwners request. The method will close the
+// http.Response Body if it receives an error.
+func (client ServicePrincipalsClient) ListOwnersSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+}
+
+// ListOwnersResponder handles the response to the ListOwners request. The method always
+// closes the http.Response Body.
+func (client ServicePrincipalsClient) ListOwnersResponder(resp *http.Response) (result DirectoryObjectListResult, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // ListPasswordCredentials gets the passwordCredentials associated with a service principal.
 //
 // objectID is the object ID of the service principal.
-func (client ServicePrincipalsClient) ListPasswordCredentials(objectID string) (result PasswordCredentialListResult, err error) {
-	req, err := client.ListPasswordCredentialsPreparer(objectID)
+func (client ServicePrincipalsClient) ListPasswordCredentials(ctx context.Context, objectID string) (result PasswordCredentialListResult, err error) {
+	req, err := client.ListPasswordCredentialsPreparer(ctx, objectID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "ListPasswordCredentials", nil, "Failure preparing request")
 		return
@@ -503,7 +543,7 @@ func (client ServicePrincipalsClient) ListPasswordCredentials(objectID string) (
 }
 
 // ListPasswordCredentialsPreparer prepares the ListPasswordCredentials request.
-func (client ServicePrincipalsClient) ListPasswordCredentialsPreparer(objectID string) (*http.Request, error) {
+func (client ServicePrincipalsClient) ListPasswordCredentialsPreparer(ctx context.Context, objectID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -519,13 +559,14 @@ func (client ServicePrincipalsClient) ListPasswordCredentialsPreparer(objectID s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}/passwordCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListPasswordCredentialsSender sends the ListPasswordCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) ListPasswordCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListPasswordCredentialsResponder handles the response to the ListPasswordCredentials request. The method always
@@ -545,8 +586,8 @@ func (client ServicePrincipalsClient) ListPasswordCredentialsResponder(resp *htt
 //
 // objectID is the object ID for which to get service principal information. parameters is parameters to update the
 // keyCredentials of an existing service principal.
-func (client ServicePrincipalsClient) UpdateKeyCredentials(objectID string, parameters KeyCredentialsUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.UpdateKeyCredentialsPreparer(objectID, parameters)
+func (client ServicePrincipalsClient) UpdateKeyCredentials(ctx context.Context, objectID string, parameters KeyCredentialsUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.UpdateKeyCredentialsPreparer(ctx, objectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "UpdateKeyCredentials", nil, "Failure preparing request")
 		return
@@ -568,7 +609,7 @@ func (client ServicePrincipalsClient) UpdateKeyCredentials(objectID string, para
 }
 
 // UpdateKeyCredentialsPreparer prepares the UpdateKeyCredentials request.
-func (client ServicePrincipalsClient) UpdateKeyCredentialsPreparer(objectID string, parameters KeyCredentialsUpdateParameters) (*http.Request, error) {
+func (client ServicePrincipalsClient) UpdateKeyCredentialsPreparer(ctx context.Context, objectID string, parameters KeyCredentialsUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -586,13 +627,14 @@ func (client ServicePrincipalsClient) UpdateKeyCredentialsPreparer(objectID stri
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}/keyCredentials", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateKeyCredentialsSender sends the UpdateKeyCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) UpdateKeyCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdateKeyCredentialsResponder handles the response to the UpdateKeyCredentials request. The method always
@@ -611,8 +653,8 @@ func (client ServicePrincipalsClient) UpdateKeyCredentialsResponder(resp *http.R
 //
 // objectID is the object ID of the service principal. parameters is parameters to update the passwordCredentials of an
 // existing service principal.
-func (client ServicePrincipalsClient) UpdatePasswordCredentials(objectID string, parameters PasswordCredentialsUpdateParameters) (result autorest.Response, err error) {
-	req, err := client.UpdatePasswordCredentialsPreparer(objectID, parameters)
+func (client ServicePrincipalsClient) UpdatePasswordCredentials(ctx context.Context, objectID string, parameters PasswordCredentialsUpdateParameters) (result autorest.Response, err error) {
+	req, err := client.UpdatePasswordCredentialsPreparer(ctx, objectID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "graphrbac.ServicePrincipalsClient", "UpdatePasswordCredentials", nil, "Failure preparing request")
 		return
@@ -634,7 +676,7 @@ func (client ServicePrincipalsClient) UpdatePasswordCredentials(objectID string,
 }
 
 // UpdatePasswordCredentialsPreparer prepares the UpdatePasswordCredentials request.
-func (client ServicePrincipalsClient) UpdatePasswordCredentialsPreparer(objectID string, parameters PasswordCredentialsUpdateParameters) (*http.Request, error) {
+func (client ServicePrincipalsClient) UpdatePasswordCredentialsPreparer(ctx context.Context, objectID string, parameters PasswordCredentialsUpdateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"objectId": autorest.Encode("path", objectID),
 		"tenantID": autorest.Encode("path", client.TenantID),
@@ -652,13 +694,14 @@ func (client ServicePrincipalsClient) UpdatePasswordCredentialsPreparer(objectID
 		autorest.WithPathParameters("/{tenantID}/servicePrincipals/{objectId}/passwordCredentials", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdatePasswordCredentialsSender sends the UpdatePasswordCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServicePrincipalsClient) UpdatePasswordCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // UpdatePasswordCredentialsResponder handles the response to the UpdatePasswordCredentials request. The method always

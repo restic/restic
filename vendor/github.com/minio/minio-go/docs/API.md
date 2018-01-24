@@ -575,7 +575,7 @@ __minio.PutObjectOptions__
 | `opts.ContentDisposition` | _string_ | Content disposition of object, "inline" |
 | `opts.CacheControl` | _string_ | Used to specify directives for caching mechanisms in both requests and responses e.g "max-age=600"|
 | `opts.EncryptMaterials` | _encrypt.Materials_ | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
-
+| `opts.StorageClass` | _string_ | Specify storage class for the object. Supported values for Minio server are `REDUCED_REDUNDANCY` and `STANDARD` |
 
 __Example__
 

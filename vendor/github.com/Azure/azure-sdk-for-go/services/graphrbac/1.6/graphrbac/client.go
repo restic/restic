@@ -29,21 +29,21 @@ const (
 	DefaultBaseURI = "https://graph.windows.net"
 )
 
-// ManagementClient is the base client for Graphrbac.
-type ManagementClient struct {
+// BaseClient is the base client for Graphrbac.
+type BaseClient struct {
 	autorest.Client
 	BaseURI  string
 	TenantID string
 }
 
-// New creates an instance of the ManagementClient client.
-func New(tenantID string) ManagementClient {
+// New creates an instance of the BaseClient client.
+func New(tenantID string) BaseClient {
 	return NewWithBaseURI(DefaultBaseURI, tenantID)
 }
 
-// NewWithBaseURI creates an instance of the ManagementClient client.
-func NewWithBaseURI(baseURI string, tenantID string) ManagementClient {
-	return ManagementClient{
+// NewWithBaseURI creates an instance of the BaseClient client.
+func NewWithBaseURI(baseURI string, tenantID string) BaseClient {
+	return BaseClient{
 		Client:   autorest.NewClientWithUserAgent(UserAgent()),
 		BaseURI:  baseURI,
 		TenantID: tenantID,

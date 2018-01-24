@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,25 +26,25 @@ import (
 
 // ClusterVersionsClient is the azure Service Fabric Resource Provider API Client
 type ClusterVersionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterVersionsClient creates an instance of the ClusterVersionsClient client.
-func NewClusterVersionsClient(subscriptionID string) ClusterVersionsClient {
-	return NewClusterVersionsClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewClusterVersionsClient() ClusterVersionsClient {
+	return NewClusterVersionsClientWithBaseURI(DefaultBaseURI)
 }
 
 // NewClusterVersionsClientWithBaseURI creates an instance of the ClusterVersionsClient client.
-func NewClusterVersionsClientWithBaseURI(baseURI string, subscriptionID string) ClusterVersionsClient {
-	return ClusterVersionsClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewClusterVersionsClientWithBaseURI(baseURI string) ClusterVersionsClient {
+	return ClusterVersionsClient{NewWithBaseURI(baseURI)}
 }
 
 // Get get cluster code versions by location
 //
-// location is the location for the cluster code versions, this is different from cluster location clusterVersion is
-// the cluster code version
-func (client ClusterVersionsClient) Get(location string, clusterVersion string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.GetPreparer(location, clusterVersion)
+// location is the location for the cluster code versions, this is different from cluster location subscriptionID is
+// the customer subscription identifier clusterVersion is the cluster code version
+func (client ClusterVersionsClient) Get(ctx context.Context, location string, subscriptionID string, clusterVersion string) (result ClusterCodeVersionsListResult, err error) {
+	req, err := client.GetPreparer(ctx, location, subscriptionID, clusterVersion)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,11 +66,11 @@ func (client ClusterVersionsClient) Get(location string, clusterVersion string) 
 }
 
 // GetPreparer prepares the Get request.
-func (client ClusterVersionsClient) GetPreparer(location string, clusterVersion string) (*http.Request, error) {
+func (client ClusterVersionsClient) GetPreparer(ctx context.Context, location string, subscriptionID string, clusterVersion string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterVersion": autorest.Encode("path", clusterVersion),
 		"location":       autorest.Encode("path", location),
-		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId": autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -82,14 +83,13 @@ func (client ClusterVersionsClient) GetPreparer(location string, clusterVersion 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/clusterVersions/{clusterVersion}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -109,9 +109,10 @@ func (client ClusterVersionsClient) GetResponder(resp *http.Response) (result Cl
 // GetByEnvironment get cluster code versions by environment
 //
 // location is the location for the cluster code versions, this is different from cluster location environment is
-// cluster operating system, the default means all clusterVersion is the cluster code version
-func (client ClusterVersionsClient) GetByEnvironment(location string, environment string, clusterVersion string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.GetByEnvironmentPreparer(location, environment, clusterVersion)
+// cluster operating system, the default means all subscriptionID is the customer subscription identifier
+// clusterVersion is the cluster code version
+func (client ClusterVersionsClient) GetByEnvironment(ctx context.Context, location string, environment string, subscriptionID string, clusterVersion string) (result ClusterCodeVersionsListResult, err error) {
+	req, err := client.GetByEnvironmentPreparer(ctx, location, environment, subscriptionID, clusterVersion)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "GetByEnvironment", nil, "Failure preparing request")
 		return
@@ -133,12 +134,12 @@ func (client ClusterVersionsClient) GetByEnvironment(location string, environmen
 }
 
 // GetByEnvironmentPreparer prepares the GetByEnvironment request.
-func (client ClusterVersionsClient) GetByEnvironmentPreparer(location string, environment string, clusterVersion string) (*http.Request, error) {
+func (client ClusterVersionsClient) GetByEnvironmentPreparer(ctx context.Context, location string, environment string, subscriptionID string, clusterVersion string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"clusterVersion": autorest.Encode("path", clusterVersion),
 		"environment":    autorest.Encode("path", environment),
 		"location":       autorest.Encode("path", location),
-		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId": autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -151,14 +152,13 @@ func (client ClusterVersionsClient) GetByEnvironmentPreparer(location string, en
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/environments/{environment}/clusterVersions/{clusterVersion}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetByEnvironmentSender sends the GetByEnvironment request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) GetByEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -177,9 +177,10 @@ func (client ClusterVersionsClient) GetByEnvironmentResponder(resp *http.Respons
 
 // List list cluster code versions by location
 //
-// location is the location for the cluster code versions, this is different from cluster location
-func (client ClusterVersionsClient) List(location string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.ListPreparer(location)
+// location is the location for the cluster code versions, this is different from cluster location subscriptionID is
+// the customer subscription identifier
+func (client ClusterVersionsClient) List(ctx context.Context, location string, subscriptionID string) (result ClusterCodeVersionsListResult, err error) {
+	req, err := client.ListPreparer(ctx, location, subscriptionID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "List", nil, "Failure preparing request")
 		return
@@ -201,10 +202,10 @@ func (client ClusterVersionsClient) List(location string) (result ClusterCodeVer
 }
 
 // ListPreparer prepares the List request.
-func (client ClusterVersionsClient) ListPreparer(location string) (*http.Request, error) {
+func (client ClusterVersionsClient) ListPreparer(ctx context.Context, location string, subscriptionID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
-		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId": autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -217,14 +218,13 @@ func (client ClusterVersionsClient) ListPreparer(location string) (*http.Request
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/clusterVersions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -244,9 +244,9 @@ func (client ClusterVersionsClient) ListResponder(resp *http.Response) (result C
 // ListByEnvironment list cluster code versions by environment
 //
 // location is the location for the cluster code versions, this is different from cluster location environment is
-// cluster operating system, the default means all
-func (client ClusterVersionsClient) ListByEnvironment(location string, environment string) (result ClusterCodeVersionsListResult, err error) {
-	req, err := client.ListByEnvironmentPreparer(location, environment)
+// cluster operating system, the default means all subscriptionID is the customer subscription identifier
+func (client ClusterVersionsClient) ListByEnvironment(ctx context.Context, location string, environment string, subscriptionID string) (result ClusterCodeVersionsListResult, err error) {
+	req, err := client.ListByEnvironmentPreparer(ctx, location, environment, subscriptionID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterVersionsClient", "ListByEnvironment", nil, "Failure preparing request")
 		return
@@ -268,11 +268,11 @@ func (client ClusterVersionsClient) ListByEnvironment(location string, environme
 }
 
 // ListByEnvironmentPreparer prepares the ListByEnvironment request.
-func (client ClusterVersionsClient) ListByEnvironmentPreparer(location string, environment string) (*http.Request, error) {
+func (client ClusterVersionsClient) ListByEnvironmentPreparer(ctx context.Context, location string, environment string, subscriptionID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"environment":    autorest.Encode("path", environment),
 		"location":       autorest.Encode("path", location),
-		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
+		"subscriptionId": autorest.Encode("path", subscriptionID),
 	}
 
 	const APIVersion = "2017-07-01-preview"
@@ -285,14 +285,13 @@ func (client ClusterVersionsClient) ListByEnvironmentPreparer(location string, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.ServiceFabric/locations/{location}/environments/{environment}/clusterVersions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByEnvironmentSender sends the ListByEnvironment request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterVersionsClient) ListByEnvironmentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -22,6 +22,7 @@ package cdn
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -33,21 +34,21 @@ const (
 	DefaultBaseURI = "https://management.azure.com"
 )
 
-// ManagementClient is the base client for Cdn.
-type ManagementClient struct {
+// BaseClient is the base client for Cdn.
+type BaseClient struct {
 	autorest.Client
 	BaseURI        string
 	SubscriptionID string
 }
 
-// New creates an instance of the ManagementClient client.
-func New(subscriptionID string) ManagementClient {
+// New creates an instance of the BaseClient client.
+func New(subscriptionID string) BaseClient {
 	return NewWithBaseURI(DefaultBaseURI, subscriptionID)
 }
 
-// NewWithBaseURI creates an instance of the ManagementClient client.
-func NewWithBaseURI(baseURI string, subscriptionID string) ManagementClient {
-	return ManagementClient{
+// NewWithBaseURI creates an instance of the BaseClient client.
+func NewWithBaseURI(baseURI string, subscriptionID string) BaseClient {
+	return BaseClient{
 		Client:         autorest.NewClientWithUserAgent(UserAgent()),
 		BaseURI:        baseURI,
 		SubscriptionID: subscriptionID,
@@ -58,37 +59,37 @@ func NewWithBaseURI(baseURI string, subscriptionID string) ManagementClient {
 // unique, such as a CDN endpoint.
 //
 // checkNameAvailabilityInput is input to check.
-func (client ManagementClient) CheckNameAvailability(checkNameAvailabilityInput CheckNameAvailabilityInput) (result CheckNameAvailabilityOutput, err error) {
+func (client BaseClient) CheckNameAvailability(ctx context.Context, checkNameAvailabilityInput CheckNameAvailabilityInput) (result CheckNameAvailabilityOutput, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: checkNameAvailabilityInput,
 			Constraints: []validation.Constraint{{Target: "checkNameAvailabilityInput.Name", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "checkNameAvailabilityInput.Type", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cdn.ManagementClient", "CheckNameAvailability")
+		return result, validation.NewErrorWithValidationError(err, "cdn.BaseClient", "CheckNameAvailability")
 	}
 
-	req, err := client.CheckNameAvailabilityPreparer(checkNameAvailabilityInput)
+	req, err := client.CheckNameAvailabilityPreparer(ctx, checkNameAvailabilityInput)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.CheckNameAvailabilitySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", resp, "Failure sending request")
 		return
 	}
 
 	result, err = client.CheckNameAvailabilityResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "CheckNameAvailability", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "CheckNameAvailability", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // CheckNameAvailabilityPreparer prepares the CheckNameAvailability request.
-func (client ManagementClient) CheckNameAvailabilityPreparer(checkNameAvailabilityInput CheckNameAvailabilityInput) (*http.Request, error) {
+func (client BaseClient) CheckNameAvailabilityPreparer(ctx context.Context, checkNameAvailabilityInput CheckNameAvailabilityInput) (*http.Request, error) {
 	const APIVersion = "2016-10-02"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -101,20 +102,19 @@ func (client ManagementClient) CheckNameAvailabilityPreparer(checkNameAvailabili
 		autorest.WithPath("/providers/Microsoft.Cdn/checkNameAvailability"),
 		autorest.WithJSON(checkNameAvailabilityInput),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CheckNameAvailabilitySender sends the CheckNameAvailability request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) CheckNameAvailabilitySender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // CheckNameAvailabilityResponder handles the response to the CheckNameAvailability request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckNameAvailabilityOutput, err error) {
+func (client BaseClient) CheckNameAvailabilityResponder(resp *http.Response) (result CheckNameAvailabilityOutput, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -126,30 +126,31 @@ func (client ManagementClient) CheckNameAvailabilityResponder(resp *http.Respons
 }
 
 // ListOperations lists all of the available CDN REST API operations.
-func (client ManagementClient) ListOperations() (result OperationListResult, err error) {
-	req, err := client.ListOperationsPreparer()
+func (client BaseClient) ListOperations(ctx context.Context) (result OperationListResultPage, err error) {
+	result.fn = client.listOperationsNextResults
+	req, err := client.ListOperationsPreparer(ctx)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListOperations", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ListOperationsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", resp, "Failure sending request")
+		result.olr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListOperations", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListOperationsResponder(resp)
+	result.olr, err = client.ListOperationsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListOperations", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // ListOperationsPreparer prepares the ListOperations request.
-func (client ManagementClient) ListOperationsPreparer() (*http.Request, error) {
+func (client BaseClient) ListOperationsPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "2016-10-02"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -160,20 +161,19 @@ func (client ManagementClient) ListOperationsPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Cdn/operations"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListOperationsSender sends the ListOperations request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) ListOperationsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) ListOperationsSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListOperationsResponder handles the response to the ListOperations request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) ListOperationsResponder(resp *http.Response) (result OperationListResult, err error) {
+func (client BaseClient) ListOperationsResponder(resp *http.Response) (result OperationListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -184,100 +184,59 @@ func (client ManagementClient) ListOperationsResponder(resp *http.Response) (res
 	return
 }
 
-// ListOperationsNextResults retrieves the next set of results, if any.
-func (client ManagementClient) ListOperationsNextResults(lastResults OperationListResult) (result OperationListResult, err error) {
-	req, err := lastResults.OperationListResultPreparer()
+// listOperationsNextResults retrieves the next set of results, if any.
+func (client BaseClient) listOperationsNextResults(lastResults OperationListResult) (result OperationListResult, err error) {
+	req, err := lastResults.operationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.BaseClient", "listOperationsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListOperationsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.BaseClient", "listOperationsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListOperationsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListOperations", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "listOperationsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListOperationsComplete gets all elements from the list without paging.
-func (client ManagementClient) ListOperationsComplete(cancel <-chan struct{}) (<-chan Operation, <-chan error) {
-	resultChan := make(chan Operation)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListOperations()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListOperationsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListOperationsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) ListOperationsComplete(ctx context.Context) (result OperationListResultIterator, err error) {
+	result.page, err = client.ListOperations(ctx)
+	return
 }
 
 // ListResourceUsage check the quota and actual usage of the CDN profiles under the given subscription.
-func (client ManagementClient) ListResourceUsage() (result ResourceUsageListResult, err error) {
-	req, err := client.ListResourceUsagePreparer()
+func (client BaseClient) ListResourceUsage(ctx context.Context) (result ResourceUsageListResultPage, err error) {
+	result.fn = client.listResourceUsageNextResults
+	req, err := client.ListResourceUsagePreparer(ctx)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListResourceUsage", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ListResourceUsageSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", resp, "Failure sending request")
+		result.rulr.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListResourceUsage", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResourceUsageResponder(resp)
+	result.rulr, err = client.ListResourceUsageResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "ListResourceUsage", resp, "Failure responding to request")
 	}
 
 	return
 }
 
 // ListResourceUsagePreparer prepares the ListResourceUsage request.
-func (client ManagementClient) ListResourceUsagePreparer() (*http.Request, error) {
+func (client BaseClient) ListResourceUsagePreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -292,20 +251,19 @@ func (client ManagementClient) ListResourceUsagePreparer() (*http.Request, error
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Cdn/checkResourceUsage", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListResourceUsageSender sends the ListResourceUsage request. The method will close the
 // http.Response Body if it receives an error.
-func (client ManagementClient) ListResourceUsageSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+func (client BaseClient) ListResourceUsageSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
 // ListResourceUsageResponder handles the response to the ListResourceUsage request. The method always
 // closes the http.Response Body.
-func (client ManagementClient) ListResourceUsageResponder(resp *http.Response) (result ResourceUsageListResult, err error) {
+func (client BaseClient) ListResourceUsageResponder(resp *http.Response) (result ResourceUsageListResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -316,71 +274,29 @@ func (client ManagementClient) ListResourceUsageResponder(resp *http.Response) (
 	return
 }
 
-// ListResourceUsageNextResults retrieves the next set of results, if any.
-func (client ManagementClient) ListResourceUsageNextResults(lastResults ResourceUsageListResult) (result ResourceUsageListResult, err error) {
-	req, err := lastResults.ResourceUsageListResultPreparer()
+// listResourceUsageNextResults retrieves the next set of results, if any.
+func (client BaseClient) listResourceUsageNextResults(lastResults ResourceUsageListResult) (result ResourceUsageListResult, err error) {
+	req, err := lastResults.resourceUsageListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.BaseClient", "listResourceUsageNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListResourceUsageSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "cdn.BaseClient", "listResourceUsageNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResourceUsageResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "cdn.ManagementClient", "ListResourceUsage", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "cdn.BaseClient", "listResourceUsageNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListResourceUsageComplete gets all elements from the list without paging.
-func (client ManagementClient) ListResourceUsageComplete(cancel <-chan struct{}) (<-chan ResourceUsage, <-chan error) {
-	resultChan := make(chan ResourceUsage)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListResourceUsage()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListResourceUsageNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListResourceUsageComplete enumerates all values, automatically crossing page boundaries as required.
+func (client BaseClient) ListResourceUsageComplete(ctx context.Context) (result ResourceUsageListResultIterator, err error) {
+	result.page, err = client.ListResourceUsage(ctx)
+	return
 }

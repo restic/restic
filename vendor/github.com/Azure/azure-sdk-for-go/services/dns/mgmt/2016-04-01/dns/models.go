@@ -18,7 +18,9 @@ package dns
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 )
@@ -27,99 +29,99 @@ import (
 type HTTPStatusCode string
 
 const (
-	// Accepted specifies the accepted state for http status code.
+	// Accepted ...
 	Accepted HTTPStatusCode = "Accepted"
-	// Ambiguous specifies the ambiguous state for http status code.
+	// Ambiguous ...
 	Ambiguous HTTPStatusCode = "Ambiguous"
-	// BadGateway specifies the bad gateway state for http status code.
+	// BadGateway ...
 	BadGateway HTTPStatusCode = "BadGateway"
-	// BadRequest specifies the bad request state for http status code.
+	// BadRequest ...
 	BadRequest HTTPStatusCode = "BadRequest"
-	// Conflict specifies the conflict state for http status code.
+	// Conflict ...
 	Conflict HTTPStatusCode = "Conflict"
-	// Continue specifies the continue state for http status code.
+	// Continue ...
 	Continue HTTPStatusCode = "Continue"
-	// Created specifies the created state for http status code.
+	// Created ...
 	Created HTTPStatusCode = "Created"
-	// ExpectationFailed specifies the expectation failed state for http status code.
+	// ExpectationFailed ...
 	ExpectationFailed HTTPStatusCode = "ExpectationFailed"
-	// Forbidden specifies the forbidden state for http status code.
+	// Forbidden ...
 	Forbidden HTTPStatusCode = "Forbidden"
-	// Found specifies the found state for http status code.
+	// Found ...
 	Found HTTPStatusCode = "Found"
-	// GatewayTimeout specifies the gateway timeout state for http status code.
+	// GatewayTimeout ...
 	GatewayTimeout HTTPStatusCode = "GatewayTimeout"
-	// Gone specifies the gone state for http status code.
+	// Gone ...
 	Gone HTTPStatusCode = "Gone"
-	// HTTPVersionNotSupported specifies the http version not supported state for http status code.
+	// HTTPVersionNotSupported ...
 	HTTPVersionNotSupported HTTPStatusCode = "HttpVersionNotSupported"
-	// InternalServerError specifies the internal server error state for http status code.
+	// InternalServerError ...
 	InternalServerError HTTPStatusCode = "InternalServerError"
-	// LengthRequired specifies the length required state for http status code.
+	// LengthRequired ...
 	LengthRequired HTTPStatusCode = "LengthRequired"
-	// MethodNotAllowed specifies the method not allowed state for http status code.
+	// MethodNotAllowed ...
 	MethodNotAllowed HTTPStatusCode = "MethodNotAllowed"
-	// Moved specifies the moved state for http status code.
+	// Moved ...
 	Moved HTTPStatusCode = "Moved"
-	// MovedPermanently specifies the moved permanently state for http status code.
+	// MovedPermanently ...
 	MovedPermanently HTTPStatusCode = "MovedPermanently"
-	// MultipleChoices specifies the multiple choices state for http status code.
+	// MultipleChoices ...
 	MultipleChoices HTTPStatusCode = "MultipleChoices"
-	// NoContent specifies the no content state for http status code.
+	// NoContent ...
 	NoContent HTTPStatusCode = "NoContent"
-	// NonAuthoritativeInformation specifies the non authoritative information state for http status code.
+	// NonAuthoritativeInformation ...
 	NonAuthoritativeInformation HTTPStatusCode = "NonAuthoritativeInformation"
-	// NotAcceptable specifies the not acceptable state for http status code.
+	// NotAcceptable ...
 	NotAcceptable HTTPStatusCode = "NotAcceptable"
-	// NotFound specifies the not found state for http status code.
+	// NotFound ...
 	NotFound HTTPStatusCode = "NotFound"
-	// NotImplemented specifies the not implemented state for http status code.
+	// NotImplemented ...
 	NotImplemented HTTPStatusCode = "NotImplemented"
-	// NotModified specifies the not modified state for http status code.
+	// NotModified ...
 	NotModified HTTPStatusCode = "NotModified"
-	// OK specifies the ok state for http status code.
+	// OK ...
 	OK HTTPStatusCode = "OK"
-	// PartialContent specifies the partial content state for http status code.
+	// PartialContent ...
 	PartialContent HTTPStatusCode = "PartialContent"
-	// PaymentRequired specifies the payment required state for http status code.
+	// PaymentRequired ...
 	PaymentRequired HTTPStatusCode = "PaymentRequired"
-	// PreconditionFailed specifies the precondition failed state for http status code.
+	// PreconditionFailed ...
 	PreconditionFailed HTTPStatusCode = "PreconditionFailed"
-	// ProxyAuthenticationRequired specifies the proxy authentication required state for http status code.
+	// ProxyAuthenticationRequired ...
 	ProxyAuthenticationRequired HTTPStatusCode = "ProxyAuthenticationRequired"
-	// Redirect specifies the redirect state for http status code.
+	// Redirect ...
 	Redirect HTTPStatusCode = "Redirect"
-	// RedirectKeepVerb specifies the redirect keep verb state for http status code.
+	// RedirectKeepVerb ...
 	RedirectKeepVerb HTTPStatusCode = "RedirectKeepVerb"
-	// RedirectMethod specifies the redirect method state for http status code.
+	// RedirectMethod ...
 	RedirectMethod HTTPStatusCode = "RedirectMethod"
-	// RequestedRangeNotSatisfiable specifies the requested range not satisfiable state for http status code.
+	// RequestedRangeNotSatisfiable ...
 	RequestedRangeNotSatisfiable HTTPStatusCode = "RequestedRangeNotSatisfiable"
-	// RequestEntityTooLarge specifies the request entity too large state for http status code.
+	// RequestEntityTooLarge ...
 	RequestEntityTooLarge HTTPStatusCode = "RequestEntityTooLarge"
-	// RequestTimeout specifies the request timeout state for http status code.
+	// RequestTimeout ...
 	RequestTimeout HTTPStatusCode = "RequestTimeout"
-	// RequestURITooLong specifies the request uri too long state for http status code.
+	// RequestURITooLong ...
 	RequestURITooLong HTTPStatusCode = "RequestUriTooLong"
-	// ResetContent specifies the reset content state for http status code.
+	// ResetContent ...
 	ResetContent HTTPStatusCode = "ResetContent"
-	// SeeOther specifies the see other state for http status code.
+	// SeeOther ...
 	SeeOther HTTPStatusCode = "SeeOther"
-	// ServiceUnavailable specifies the service unavailable state for http status code.
+	// ServiceUnavailable ...
 	ServiceUnavailable HTTPStatusCode = "ServiceUnavailable"
-	// SwitchingProtocols specifies the switching protocols state for http status code.
+	// SwitchingProtocols ...
 	SwitchingProtocols HTTPStatusCode = "SwitchingProtocols"
-	// TemporaryRedirect specifies the temporary redirect state for http status code.
+	// TemporaryRedirect ...
 	TemporaryRedirect HTTPStatusCode = "TemporaryRedirect"
-	// Unauthorized specifies the unauthorized state for http status code.
+	// Unauthorized ...
 	Unauthorized HTTPStatusCode = "Unauthorized"
-	// UnsupportedMediaType specifies the unsupported media type state for http status code.
+	// UnsupportedMediaType ...
 	UnsupportedMediaType HTTPStatusCode = "UnsupportedMediaType"
-	// Unused specifies the unused state for http status code.
+	// Unused ...
 	Unused HTTPStatusCode = "Unused"
-	// UpgradeRequired specifies the upgrade required state for http status code.
+	// UpgradeRequired ...
 	UpgradeRequired HTTPStatusCode = "UpgradeRequired"
-	// UseProxy specifies the use proxy state for http status code.
+	// UseProxy ...
 	UseProxy HTTPStatusCode = "UseProxy"
 )
 
@@ -127,11 +129,11 @@ const (
 type OperationStatus string
 
 const (
-	// Failed specifies the failed state for operation status.
+	// Failed ...
 	Failed OperationStatus = "Failed"
-	// InProgress specifies the in progress state for operation status.
+	// InProgress ...
 	InProgress OperationStatus = "InProgress"
-	// Succeeded specifies the succeeded state for operation status.
+	// Succeeded ...
 	Succeeded OperationStatus = "Succeeded"
 )
 
@@ -139,42 +141,44 @@ const (
 type RecordType string
 
 const (
-	// A specifies the a state for record type.
+	// A ...
 	A RecordType = "A"
-	// AAAA specifies the aaaa state for record type.
+	// AAAA ...
 	AAAA RecordType = "AAAA"
-	// CNAME specifies the cname state for record type.
+	// CNAME ...
 	CNAME RecordType = "CNAME"
-	// MX specifies the mx state for record type.
+	// MX ...
 	MX RecordType = "MX"
-	// NS specifies the ns state for record type.
+	// NS ...
 	NS RecordType = "NS"
-	// PTR specifies the ptr state for record type.
+	// PTR ...
 	PTR RecordType = "PTR"
-	// SOA specifies the soa state for record type.
+	// SOA ...
 	SOA RecordType = "SOA"
-	// SRV specifies the srv state for record type.
+	// SRV ...
 	SRV RecordType = "SRV"
-	// TXT specifies the txt state for record type.
+	// TXT ...
 	TXT RecordType = "TXT"
 )
 
-// AaaaRecord is an AAAA record.
+// AaaaRecord an AAAA record.
 type AaaaRecord struct {
+	// Ipv6Address - The IPv6 address of this AAAA record.
 	Ipv6Address *string `json:"ipv6Address,omitempty"`
 }
 
-// ARecord is an A record.
+// ARecord an A record.
 type ARecord struct {
+	// Ipv4Address - The IPv4 address of this A record.
 	Ipv4Address *string `json:"ipv4Address,omitempty"`
 }
 
-// CloudError is
+// CloudError ...
 type CloudError struct {
 	Error *CloudErrorBody `json:"error,omitempty"`
 }
 
-// CloudErrorBody is
+// CloudErrorBody ...
 type CloudErrorBody struct {
 	Code    *string           `json:"code,omitempty"`
 	Message *string           `json:"message,omitempty"`
@@ -182,157 +186,551 @@ type CloudErrorBody struct {
 	Details *[]CloudErrorBody `json:"details,omitempty"`
 }
 
-// CnameRecord is a CNAME record.
+// CnameRecord a CNAME record.
 type CnameRecord struct {
+	// Cname - The canonical name for this CNAME record.
 	Cname *string `json:"cname,omitempty"`
 }
 
-// MxRecord is an MX record.
+// MxRecord an MX record.
 type MxRecord struct {
-	Preference *int32  `json:"preference,omitempty"`
-	Exchange   *string `json:"exchange,omitempty"`
+	// Preference - The preference value for this MX record.
+	Preference *int32 `json:"preference,omitempty"`
+	// Exchange - The domain name of the mail host for this MX record.
+	Exchange *string `json:"exchange,omitempty"`
 }
 
-// NsRecord is an NS record.
+// NsRecord an NS record.
 type NsRecord struct {
+	// Nsdname - The name server name for this NS record.
 	Nsdname *string `json:"nsdname,omitempty"`
 }
 
-// PtrRecord is a PTR record.
+// PtrRecord a PTR record.
 type PtrRecord struct {
+	// Ptrdname - The PTR target domain name for this PTR record.
 	Ptrdname *string `json:"ptrdname,omitempty"`
 }
 
-// RecordSet is describes a DNS record set (a collection of DNS records with the same name and type).
+// RecordSet describes a DNS record set (a collection of DNS records with the same name and type).
 type RecordSet struct {
-	autorest.Response    `json:"-"`
-	ID                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Type                 *string `json:"type,omitempty"`
-	Etag                 *string `json:"etag,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the record set.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the record set.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the record set.
+	Type *string `json:"type,omitempty"`
+	// Etag - The etag of the record set.
+	Etag *string `json:"etag,omitempty"`
+	// RecordSetProperties - The properties of the record set.
 	*RecordSetProperties `json:"properties,omitempty"`
 }
 
-// RecordSetListResult is the response to a record set List operation.
-type RecordSetListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]RecordSet `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for RecordSet struct.
+func (rs *RecordSet) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		rs.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		rs.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		rs.Type = &typeVar
+	}
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		rs.Etag = &etag
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties RecordSetProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		rs.RecordSetProperties = &properties
+	}
+
+	return nil
 }
 
-// RecordSetListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RecordSetListResult) RecordSetListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RecordSetListResult the response to a record set List operation.
+type RecordSetListResult struct {
+	autorest.Response `json:"-"`
+	// Value - Information about the record sets in the response.
+	Value *[]RecordSet `json:"value,omitempty"`
+	// NextLink - The continuation token for the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// RecordSetListResultIterator provides access to a complete listing of RecordSet values.
+type RecordSetListResultIterator struct {
+	i    int
+	page RecordSetListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RecordSetListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RecordSetListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RecordSetListResultIterator) Response() RecordSetListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RecordSetListResultIterator) Value() RecordSet {
+	if !iter.page.NotDone() {
+		return RecordSet{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rslr RecordSetListResult) IsEmpty() bool {
+	return rslr.Value == nil || len(*rslr.Value) == 0
+}
+
+// recordSetListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rslr RecordSetListResult) recordSetListResultPreparer() (*http.Request, error) {
+	if rslr.NextLink == nil || len(to.String(rslr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rslr.NextLink)))
 }
 
-// RecordSetProperties is represents the properties of the records in the record set.
+// RecordSetListResultPage contains a page of RecordSet values.
+type RecordSetListResultPage struct {
+	fn   func(RecordSetListResult) (RecordSetListResult, error)
+	rslr RecordSetListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RecordSetListResultPage) Next() error {
+	next, err := page.fn(page.rslr)
+	if err != nil {
+		return err
+	}
+	page.rslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RecordSetListResultPage) NotDone() bool {
+	return !page.rslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RecordSetListResultPage) Response() RecordSetListResult {
+	return page.rslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RecordSetListResultPage) Values() []RecordSet {
+	if page.rslr.IsEmpty() {
+		return nil
+	}
+	return *page.rslr.Value
+}
+
+// RecordSetProperties represents the properties of the records in the record set.
 type RecordSetProperties struct {
-	Metadata    *map[string]*string `json:"metadata,omitempty"`
-	TTL         *int64              `json:"TTL,omitempty"`
-	ARecords    *[]ARecord          `json:"ARecords,omitempty"`
-	AaaaRecords *[]AaaaRecord       `json:"AAAARecords,omitempty"`
-	MxRecords   *[]MxRecord         `json:"MXRecords,omitempty"`
-	NsRecords   *[]NsRecord         `json:"NSRecords,omitempty"`
-	PtrRecords  *[]PtrRecord        `json:"PTRRecords,omitempty"`
-	SrvRecords  *[]SrvRecord        `json:"SRVRecords,omitempty"`
-	TxtRecords  *[]TxtRecord        `json:"TXTRecords,omitempty"`
-	CnameRecord *CnameRecord        `json:"CNAMERecord,omitempty"`
-	SoaRecord   *SoaRecord          `json:"SOARecord,omitempty"`
+	// Metadata - The metadata attached to the record set.
+	Metadata *map[string]*string `json:"metadata,omitempty"`
+	// TTL - The TTL (time-to-live) of the records in the record set.
+	TTL *int64 `json:"TTL,omitempty"`
+	// ARecords - The list of A records in the record set.
+	ARecords *[]ARecord `json:"ARecords,omitempty"`
+	// AaaaRecords - The list of AAAA records in the record set.
+	AaaaRecords *[]AaaaRecord `json:"AAAARecords,omitempty"`
+	// MxRecords - The list of MX records in the record set.
+	MxRecords *[]MxRecord `json:"MXRecords,omitempty"`
+	// NsRecords - The list of NS records in the record set.
+	NsRecords *[]NsRecord `json:"NSRecords,omitempty"`
+	// PtrRecords - The list of PTR records in the record set.
+	PtrRecords *[]PtrRecord `json:"PTRRecords,omitempty"`
+	// SrvRecords - The list of SRV records in the record set.
+	SrvRecords *[]SrvRecord `json:"SRVRecords,omitempty"`
+	// TxtRecords - The list of TXT records in the record set.
+	TxtRecords *[]TxtRecord `json:"TXTRecords,omitempty"`
+	// CnameRecord - The CNAME record in the  record set.
+	CnameRecord *CnameRecord `json:"CNAMERecord,omitempty"`
+	// SoaRecord - The SOA record in the record set.
+	SoaRecord *SoaRecord `json:"SOARecord,omitempty"`
 }
 
-// RecordSetUpdateParameters is parameters supplied to update a record set.
+// RecordSetUpdateParameters parameters supplied to update a record set.
 type RecordSetUpdateParameters struct {
+	// RecordSet - Specifies information about the record set being updated.
 	RecordSet *RecordSet `json:"RecordSet,omitempty"`
 }
 
-// Resource is
+// Resource ...
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// SoaRecord is an SOA record.
+// SoaRecord an SOA record.
 type SoaRecord struct {
-	Host         *string `json:"host,omitempty"`
-	Email        *string `json:"email,omitempty"`
-	SerialNumber *int64  `json:"serialNumber,omitempty"`
-	RefreshTime  *int64  `json:"refreshTime,omitempty"`
-	RetryTime    *int64  `json:"retryTime,omitempty"`
-	ExpireTime   *int64  `json:"expireTime,omitempty"`
-	MinimumTTL   *int64  `json:"minimumTTL,omitempty"`
+	// Host - The domain name of the authoritative name server for this SOA record.
+	Host *string `json:"host,omitempty"`
+	// Email - The email contact for this SOA record.
+	Email *string `json:"email,omitempty"`
+	// SerialNumber - The serial number for this SOA record.
+	SerialNumber *int64 `json:"serialNumber,omitempty"`
+	// RefreshTime - The refresh value for this SOA record.
+	RefreshTime *int64 `json:"refreshTime,omitempty"`
+	// RetryTime - The retry time for this SOA record.
+	RetryTime *int64 `json:"retryTime,omitempty"`
+	// ExpireTime - The expire time for this SOA record.
+	ExpireTime *int64 `json:"expireTime,omitempty"`
+	// MinimumTTL - The minimum value for this SOA record. By convention this is used to determine the negative caching duration.
+	MinimumTTL *int64 `json:"minimumTTL,omitempty"`
 }
 
-// SrvRecord is an SRV record.
+// SrvRecord an SRV record.
 type SrvRecord struct {
-	Priority *int32  `json:"priority,omitempty"`
-	Weight   *int32  `json:"weight,omitempty"`
-	Port     *int32  `json:"port,omitempty"`
-	Target   *string `json:"target,omitempty"`
+	// Priority - The priority value for this SRV record.
+	Priority *int32 `json:"priority,omitempty"`
+	// Weight - The weight value for this SRV record.
+	Weight *int32 `json:"weight,omitempty"`
+	// Port - The port value for this SRV record.
+	Port *int32 `json:"port,omitempty"`
+	// Target - The target domain name for this SRV record.
+	Target *string `json:"target,omitempty"`
 }
 
-// SubResource is
+// SubResource ...
 type SubResource struct {
+	// ID - Resource Id.
 	ID *string `json:"id,omitempty"`
 }
 
-// TxtRecord is a TXT record.
+// TxtRecord a TXT record.
 type TxtRecord struct {
+	// Value - The text value of this TXT record.
 	Value *[]string `json:"value,omitempty"`
 }
 
-// Zone is describes a DNS zone.
+// Zone describes a DNS zone.
 type Zone struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Etag              *string             `json:"etag,omitempty"`
-	*ZoneProperties   `json:"properties,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Etag - The etag of the zone.
+	Etag *string `json:"etag,omitempty"`
+	// ZoneProperties - The properties of the zone.
+	*ZoneProperties `json:"properties,omitempty"`
 }
 
-// ZoneDeleteResult is the response to a Zone Delete operation.
+// UnmarshalJSON is the custom unmarshaler for Zone struct.
+func (z *Zone) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["etag"]
+	if v != nil {
+		var etag string
+		err = json.Unmarshal(*m["etag"], &etag)
+		if err != nil {
+			return err
+		}
+		z.Etag = &etag
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties ZoneProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		z.ZoneProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		z.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		z.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		z.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		z.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		z.Tags = &tags
+	}
+
+	return nil
+}
+
+// ZoneDeleteResult the response to a Zone Delete operation.
 type ZoneDeleteResult struct {
-	autorest.Response   `json:"-"`
-	AzureAsyncOperation *string         `json:"azureAsyncOperation,omitempty"`
-	Status              OperationStatus `json:"status,omitempty"`
-	StatusCode          HTTPStatusCode  `json:"statusCode,omitempty"`
-	RequestID           *string         `json:"requestId,omitempty"`
+	autorest.Response `json:"-"`
+	// AzureAsyncOperation - Users can perform a Get on Azure-AsyncOperation to get the status of their delete Zone operations.
+	AzureAsyncOperation *string `json:"azureAsyncOperation,omitempty"`
+	// Status - Possible values include: 'InProgress', 'Succeeded', 'Failed'
+	Status OperationStatus `json:"status,omitempty"`
+	// StatusCode - Possible values include: 'Continue', 'SwitchingProtocols', 'OK', 'Created', 'Accepted', 'NonAuthoritativeInformation', 'NoContent', 'ResetContent', 'PartialContent', 'MultipleChoices', 'Ambiguous', 'MovedPermanently', 'Moved', 'Found', 'Redirect', 'SeeOther', 'RedirectMethod', 'NotModified', 'UseProxy', 'Unused', 'TemporaryRedirect', 'RedirectKeepVerb', 'BadRequest', 'Unauthorized', 'PaymentRequired', 'Forbidden', 'NotFound', 'MethodNotAllowed', 'NotAcceptable', 'ProxyAuthenticationRequired', 'RequestTimeout', 'Conflict', 'Gone', 'LengthRequired', 'PreconditionFailed', 'RequestEntityTooLarge', 'RequestURITooLong', 'UnsupportedMediaType', 'RequestedRangeNotSatisfiable', 'ExpectationFailed', 'UpgradeRequired', 'InternalServerError', 'NotImplemented', 'BadGateway', 'ServiceUnavailable', 'GatewayTimeout', 'HTTPVersionNotSupported'
+	StatusCode HTTPStatusCode `json:"statusCode,omitempty"`
+	RequestID  *string        `json:"requestId,omitempty"`
 }
 
-// ZoneListResult is the response to a Zone List or ListAll operation.
+// ZoneListResult the response to a Zone List or ListAll operation.
 type ZoneListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Zone `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Information about the DNS zones.
+	Value *[]Zone `json:"value,omitempty"`
+	// NextLink - The continuation token for the next page of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ZoneListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ZoneListResult) ZoneListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ZoneListResultIterator provides access to a complete listing of Zone values.
+type ZoneListResultIterator struct {
+	i    int
+	page ZoneListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ZoneListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ZoneListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ZoneListResultIterator) Response() ZoneListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ZoneListResultIterator) Value() Zone {
+	if !iter.page.NotDone() {
+		return Zone{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (zlr ZoneListResult) IsEmpty() bool {
+	return zlr.Value == nil || len(*zlr.Value) == 0
+}
+
+// zoneListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (zlr ZoneListResult) zoneListResultPreparer() (*http.Request, error) {
+	if zlr.NextLink == nil || len(to.String(zlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(zlr.NextLink)))
 }
 
-// ZoneProperties is represents the properties of the zone.
+// ZoneListResultPage contains a page of Zone values.
+type ZoneListResultPage struct {
+	fn  func(ZoneListResult) (ZoneListResult, error)
+	zlr ZoneListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ZoneListResultPage) Next() error {
+	next, err := page.fn(page.zlr)
+	if err != nil {
+		return err
+	}
+	page.zlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ZoneListResultPage) NotDone() bool {
+	return !page.zlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ZoneListResultPage) Response() ZoneListResult {
+	return page.zlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ZoneListResultPage) Values() []Zone {
+	if page.zlr.IsEmpty() {
+		return nil
+	}
+	return *page.zlr.Value
+}
+
+// ZoneProperties represents the properties of the zone.
 type ZoneProperties struct {
-	MaxNumberOfRecordSets *int64    `json:"maxNumberOfRecordSets,omitempty"`
-	NumberOfRecordSets    *int64    `json:"numberOfRecordSets,omitempty"`
-	NameServers           *[]string `json:"nameServers,omitempty"`
+	// MaxNumberOfRecordSets - The maximum number of record sets that can be created in this DNS zone.  This is a read-only property and any attempt to set this value will be ignored.
+	MaxNumberOfRecordSets *int64 `json:"maxNumberOfRecordSets,omitempty"`
+	// NumberOfRecordSets - The current number of record sets in this DNS zone.  This is a read-only property and any attempt to set this value will be ignored.
+	NumberOfRecordSets *int64 `json:"numberOfRecordSets,omitempty"`
+	// NameServers - The name servers for this DNS zone. This is a read-only property and any attempt to set this value will be ignored.
+	NameServers *[]string `json:"nameServers,omitempty"`
+}
+
+// ZonesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type ZonesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ZonesDeleteFuture) Result(client ZonesClient) (zdr ZoneDeleteResult, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return zdr, autorest.NewError("dns.ZonesDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		zdr, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	zdr, err = client.DeleteResponder(resp)
+	return
 }

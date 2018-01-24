@@ -562,6 +562,13 @@ type AndroidRoboTest struct {
 	// Optional
 	RoboDirectives []*RoboDirective `json:"roboDirectives,omitempty"`
 
+	// StartingIntents: The intents used to launch the app for the crawl.
+	// If none are provided, then the main launcher activity is launched.
+	// If some are provided, then only those provided are launched (the
+	// main
+	// launcher activity must be provided explicitly).
+	StartingIntents []*RoboStartingIntent `json:"startingIntents,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "AppApk") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -1192,6 +1199,11 @@ func (s *GoogleCloudStorage) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// LauncherActivityIntent: Specifies an intent that starts the main
+// launcher activity.
+type LauncherActivityIntent struct {
+}
+
 // Locale: A location/region designation for language.
 type Locale struct {
 	// Id: The id for this locale.
@@ -1484,6 +1496,75 @@ func (s *RoboDirective) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// RoboStartingIntent: Message for specifying the start activities to
+// crawl
+type RoboStartingIntent struct {
+	LauncherActivity *LauncherActivityIntent `json:"launcherActivity,omitempty"`
+
+	StartActivity *StartActivityIntent `json:"startActivity,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "LauncherActivity") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "LauncherActivity") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RoboStartingIntent) MarshalJSON() ([]byte, error) {
+	type NoMethod RoboStartingIntent
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// StartActivityIntent: A starting intent specified by an action, uri,
+// and categories.
+type StartActivityIntent struct {
+	// Action: Action name.
+	// Required for START_ACTIVITY.
+	Action string `json:"action,omitempty"`
+
+	// Categories: Intent categories to set on the intent.
+	// Optional.
+	Categories []string `json:"categories,omitempty"`
+
+	// Uri: URI for the action.
+	// Optional.
+	Uri string `json:"uri,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Action") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Action") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *StartActivityIntent) MarshalJSON() ([]byte, error) {
+	type NoMethod StartActivityIntent
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // TestDetails: Additional details about the progress of the running
 // test.
 type TestDetails struct {
@@ -1747,6 +1828,7 @@ type TestMatrix struct {
 	//   "DEVICE_ADMIN_RECEIVER" - Device administrator applications are not
 	// allowed.
 	//   "TEST_ONLY_APK" - The APK is marked as "testOnly".
+	//   "MALFORMED_IPA" - The input IPA could not be parsed.
 	InvalidMatrixDetails string `json:"invalidMatrixDetails,omitempty"`
 
 	// ProjectId: The cloud project that owns the test matrix.

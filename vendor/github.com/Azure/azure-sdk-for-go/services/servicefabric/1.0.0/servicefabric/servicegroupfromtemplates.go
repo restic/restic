@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // ServiceGroupFromTemplatesClient is the client for the ServiceGroupFromTemplates methods of the Servicefabric
 // service.
 type ServiceGroupFromTemplatesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServiceGroupFromTemplatesClient creates an instance of the ServiceGroupFromTemplatesClient client.
@@ -42,8 +43,8 @@ func NewServiceGroupFromTemplatesClientWithBaseURI(baseURI string, timeout *int3
 // Create create service group from templates
 //
 // applicationName is the name of the application serviceDescriptionTemplate is the template of the service description
-func (client ServiceGroupFromTemplatesClient) Create(applicationName string, serviceDescriptionTemplate ServiceDescriptionTemplate) (result String, err error) {
-	req, err := client.CreatePreparer(applicationName, serviceDescriptionTemplate)
+func (client ServiceGroupFromTemplatesClient) Create(ctx context.Context, applicationName string, serviceDescriptionTemplate ServiceDescriptionTemplate) (result String, err error) {
+	req, err := client.CreatePreparer(ctx, applicationName, serviceDescriptionTemplate)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServiceGroupFromTemplatesClient", "Create", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ServiceGroupFromTemplatesClient) Create(applicationName string, ser
 }
 
 // CreatePreparer prepares the Create request.
-func (client ServiceGroupFromTemplatesClient) CreatePreparer(applicationName string, serviceDescriptionTemplate ServiceDescriptionTemplate) (*http.Request, error) {
+func (client ServiceGroupFromTemplatesClient) CreatePreparer(ctx context.Context, applicationName string, serviceDescriptionTemplate ServiceDescriptionTemplate) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 	}
@@ -85,14 +86,13 @@ func (client ServiceGroupFromTemplatesClient) CreatePreparer(applicationName str
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServiceGroups/$/CreateServiceGroupFromTemplate", pathParameters),
 		autorest.WithJSON(serviceDescriptionTemplate),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceGroupFromTemplatesClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

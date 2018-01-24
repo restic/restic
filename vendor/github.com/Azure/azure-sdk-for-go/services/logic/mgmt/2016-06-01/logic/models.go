@@ -18,6 +18,7 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -28,13 +29,13 @@ import (
 type AgreementType string
 
 const (
-	// AS2 specifies the as2 state for agreement type.
+	// AS2 ...
 	AS2 AgreementType = "AS2"
-	// Edifact specifies the edifact state for agreement type.
+	// Edifact ...
 	Edifact AgreementType = "Edifact"
-	// NotSpecified specifies the not specified state for agreement type.
+	// NotSpecified ...
 	NotSpecified AgreementType = "NotSpecified"
-	// X12 specifies the x12 state for agreement type.
+	// X12 ...
 	X12 AgreementType = "X12"
 )
 
@@ -42,19 +43,19 @@ const (
 type DayOfWeek string
 
 const (
-	// Friday specifies the friday state for day of week.
+	// Friday ...
 	Friday DayOfWeek = "Friday"
-	// Monday specifies the monday state for day of week.
+	// Monday ...
 	Monday DayOfWeek = "Monday"
-	// Saturday specifies the saturday state for day of week.
+	// Saturday ...
 	Saturday DayOfWeek = "Saturday"
-	// Sunday specifies the sunday state for day of week.
+	// Sunday ...
 	Sunday DayOfWeek = "Sunday"
-	// Thursday specifies the thursday state for day of week.
+	// Thursday ...
 	Thursday DayOfWeek = "Thursday"
-	// Tuesday specifies the tuesday state for day of week.
+	// Tuesday ...
 	Tuesday DayOfWeek = "Tuesday"
-	// Wednesday specifies the wednesday state for day of week.
+	// Wednesday ...
 	Wednesday DayOfWeek = "Wednesday"
 )
 
@@ -62,19 +63,19 @@ const (
 type DaysOfWeek string
 
 const (
-	// DaysOfWeekFriday specifies the days of week friday state for days of week.
+	// DaysOfWeekFriday ...
 	DaysOfWeekFriday DaysOfWeek = "Friday"
-	// DaysOfWeekMonday specifies the days of week monday state for days of week.
+	// DaysOfWeekMonday ...
 	DaysOfWeekMonday DaysOfWeek = "Monday"
-	// DaysOfWeekSaturday specifies the days of week saturday state for days of week.
+	// DaysOfWeekSaturday ...
 	DaysOfWeekSaturday DaysOfWeek = "Saturday"
-	// DaysOfWeekSunday specifies the days of week sunday state for days of week.
+	// DaysOfWeekSunday ...
 	DaysOfWeekSunday DaysOfWeek = "Sunday"
-	// DaysOfWeekThursday specifies the days of week thursday state for days of week.
+	// DaysOfWeekThursday ...
 	DaysOfWeekThursday DaysOfWeek = "Thursday"
-	// DaysOfWeekTuesday specifies the days of week tuesday state for days of week.
+	// DaysOfWeekTuesday ...
 	DaysOfWeekTuesday DaysOfWeek = "Tuesday"
-	// DaysOfWeekWednesday specifies the days of week wednesday state for days of week.
+	// DaysOfWeekWednesday ...
 	DaysOfWeekWednesday DaysOfWeek = "Wednesday"
 )
 
@@ -82,35 +83,35 @@ const (
 type EdifactCharacterSet string
 
 const (
-	// EdifactCharacterSetKECA specifies the edifact character set keca state for edifact character set.
+	// EdifactCharacterSetKECA ...
 	EdifactCharacterSetKECA EdifactCharacterSet = "KECA"
-	// EdifactCharacterSetNotSpecified specifies the edifact character set not specified state for edifact character set.
+	// EdifactCharacterSetNotSpecified ...
 	EdifactCharacterSetNotSpecified EdifactCharacterSet = "NotSpecified"
-	// EdifactCharacterSetUNOA specifies the edifact character set unoa state for edifact character set.
+	// EdifactCharacterSetUNOA ...
 	EdifactCharacterSetUNOA EdifactCharacterSet = "UNOA"
-	// EdifactCharacterSetUNOB specifies the edifact character set unob state for edifact character set.
+	// EdifactCharacterSetUNOB ...
 	EdifactCharacterSetUNOB EdifactCharacterSet = "UNOB"
-	// EdifactCharacterSetUNOC specifies the edifact character set unoc state for edifact character set.
+	// EdifactCharacterSetUNOC ...
 	EdifactCharacterSetUNOC EdifactCharacterSet = "UNOC"
-	// EdifactCharacterSetUNOD specifies the edifact character set unod state for edifact character set.
+	// EdifactCharacterSetUNOD ...
 	EdifactCharacterSetUNOD EdifactCharacterSet = "UNOD"
-	// EdifactCharacterSetUNOE specifies the edifact character set unoe state for edifact character set.
+	// EdifactCharacterSetUNOE ...
 	EdifactCharacterSetUNOE EdifactCharacterSet = "UNOE"
-	// EdifactCharacterSetUNOF specifies the edifact character set unof state for edifact character set.
+	// EdifactCharacterSetUNOF ...
 	EdifactCharacterSetUNOF EdifactCharacterSet = "UNOF"
-	// EdifactCharacterSetUNOG specifies the edifact character set unog state for edifact character set.
+	// EdifactCharacterSetUNOG ...
 	EdifactCharacterSetUNOG EdifactCharacterSet = "UNOG"
-	// EdifactCharacterSetUNOH specifies the edifact character set unoh state for edifact character set.
+	// EdifactCharacterSetUNOH ...
 	EdifactCharacterSetUNOH EdifactCharacterSet = "UNOH"
-	// EdifactCharacterSetUNOI specifies the edifact character set unoi state for edifact character set.
+	// EdifactCharacterSetUNOI ...
 	EdifactCharacterSetUNOI EdifactCharacterSet = "UNOI"
-	// EdifactCharacterSetUNOJ specifies the edifact character set unoj state for edifact character set.
+	// EdifactCharacterSetUNOJ ...
 	EdifactCharacterSetUNOJ EdifactCharacterSet = "UNOJ"
-	// EdifactCharacterSetUNOK specifies the edifact character set unok state for edifact character set.
+	// EdifactCharacterSetUNOK ...
 	EdifactCharacterSetUNOK EdifactCharacterSet = "UNOK"
-	// EdifactCharacterSetUNOX specifies the edifact character set unox state for edifact character set.
+	// EdifactCharacterSetUNOX ...
 	EdifactCharacterSetUNOX EdifactCharacterSet = "UNOX"
-	// EdifactCharacterSetUNOY specifies the edifact character set unoy state for edifact character set.
+	// EdifactCharacterSetUNOY ...
 	EdifactCharacterSetUNOY EdifactCharacterSet = "UNOY"
 )
 
@@ -118,12 +119,11 @@ const (
 type EdifactDecimalIndicator string
 
 const (
-	// EdifactDecimalIndicatorComma specifies the edifact decimal indicator comma state for edifact decimal indicator.
+	// EdifactDecimalIndicatorComma ...
 	EdifactDecimalIndicatorComma EdifactDecimalIndicator = "Comma"
-	// EdifactDecimalIndicatorDecimal specifies the edifact decimal indicator decimal state for edifact decimal indicator.
+	// EdifactDecimalIndicatorDecimal ...
 	EdifactDecimalIndicatorDecimal EdifactDecimalIndicator = "Decimal"
-	// EdifactDecimalIndicatorNotSpecified specifies the edifact decimal indicator not specified state for edifact decimal
-	// indicator.
+	// EdifactDecimalIndicatorNotSpecified ...
 	EdifactDecimalIndicatorNotSpecified EdifactDecimalIndicator = "NotSpecified"
 )
 
@@ -131,19 +131,19 @@ const (
 type EncryptionAlgorithm string
 
 const (
-	// EncryptionAlgorithmAES128 specifies the encryption algorithm aes128 state for encryption algorithm.
+	// EncryptionAlgorithmAES128 ...
 	EncryptionAlgorithmAES128 EncryptionAlgorithm = "AES128"
-	// EncryptionAlgorithmAES192 specifies the encryption algorithm aes192 state for encryption algorithm.
+	// EncryptionAlgorithmAES192 ...
 	EncryptionAlgorithmAES192 EncryptionAlgorithm = "AES192"
-	// EncryptionAlgorithmAES256 specifies the encryption algorithm aes256 state for encryption algorithm.
+	// EncryptionAlgorithmAES256 ...
 	EncryptionAlgorithmAES256 EncryptionAlgorithm = "AES256"
-	// EncryptionAlgorithmDES3 specifies the encryption algorithm des3 state for encryption algorithm.
+	// EncryptionAlgorithmDES3 ...
 	EncryptionAlgorithmDES3 EncryptionAlgorithm = "DES3"
-	// EncryptionAlgorithmNone specifies the encryption algorithm none state for encryption algorithm.
+	// EncryptionAlgorithmNone ...
 	EncryptionAlgorithmNone EncryptionAlgorithm = "None"
-	// EncryptionAlgorithmNotSpecified specifies the encryption algorithm not specified state for encryption algorithm.
+	// EncryptionAlgorithmNotSpecified ...
 	EncryptionAlgorithmNotSpecified EncryptionAlgorithm = "NotSpecified"
-	// EncryptionAlgorithmRC2 specifies the encryption algorithm rc2 state for encryption algorithm.
+	// EncryptionAlgorithmRC2 ...
 	EncryptionAlgorithmRC2 EncryptionAlgorithm = "RC2"
 )
 
@@ -151,19 +151,19 @@ const (
 type HashingAlgorithm string
 
 const (
-	// HashingAlgorithmMD5 specifies the hashing algorithm md5 state for hashing algorithm.
+	// HashingAlgorithmMD5 ...
 	HashingAlgorithmMD5 HashingAlgorithm = "MD5"
-	// HashingAlgorithmNone specifies the hashing algorithm none state for hashing algorithm.
+	// HashingAlgorithmNone ...
 	HashingAlgorithmNone HashingAlgorithm = "None"
-	// HashingAlgorithmNotSpecified specifies the hashing algorithm not specified state for hashing algorithm.
+	// HashingAlgorithmNotSpecified ...
 	HashingAlgorithmNotSpecified HashingAlgorithm = "NotSpecified"
-	// HashingAlgorithmSHA1 specifies the hashing algorithm sha1 state for hashing algorithm.
+	// HashingAlgorithmSHA1 ...
 	HashingAlgorithmSHA1 HashingAlgorithm = "SHA1"
-	// HashingAlgorithmSHA2256 specifies the hashing algorithm sha2256 state for hashing algorithm.
+	// HashingAlgorithmSHA2256 ...
 	HashingAlgorithmSHA2256 HashingAlgorithm = "SHA2256"
-	// HashingAlgorithmSHA2384 specifies the hashing algorithm sha2384 state for hashing algorithm.
+	// HashingAlgorithmSHA2384 ...
 	HashingAlgorithmSHA2384 HashingAlgorithm = "SHA2384"
-	// HashingAlgorithmSHA2512 specifies the hashing algorithm sha2512 state for hashing algorithm.
+	// HashingAlgorithmSHA2512 ...
 	HashingAlgorithmSHA2512 HashingAlgorithm = "SHA2512"
 )
 
@@ -171,14 +171,11 @@ const (
 type IntegrationAccountSkuName string
 
 const (
-	// IntegrationAccountSkuNameFree specifies the integration account sku name free state for integration account sku
-	// name.
+	// IntegrationAccountSkuNameFree ...
 	IntegrationAccountSkuNameFree IntegrationAccountSkuName = "Free"
-	// IntegrationAccountSkuNameNotSpecified specifies the integration account sku name not specified state for integration
-	// account sku name.
+	// IntegrationAccountSkuNameNotSpecified ...
 	IntegrationAccountSkuNameNotSpecified IntegrationAccountSkuName = "NotSpecified"
-	// IntegrationAccountSkuNameStandard specifies the integration account sku name standard state for integration account
-	// sku name.
+	// IntegrationAccountSkuNameStandard ...
 	IntegrationAccountSkuNameStandard IntegrationAccountSkuName = "Standard"
 )
 
@@ -186,11 +183,11 @@ const (
 type KeyType string
 
 const (
-	// KeyTypeNotSpecified specifies the key type not specified state for key type.
+	// KeyTypeNotSpecified ...
 	KeyTypeNotSpecified KeyType = "NotSpecified"
-	// KeyTypePrimary specifies the key type primary state for key type.
+	// KeyTypePrimary ...
 	KeyTypePrimary KeyType = "Primary"
-	// KeyTypeSecondary specifies the key type secondary state for key type.
+	// KeyTypeSecondary ...
 	KeyTypeSecondary KeyType = "Secondary"
 )
 
@@ -198,9 +195,9 @@ const (
 type MapType string
 
 const (
-	// MapTypeNotSpecified specifies the map type not specified state for map type.
+	// MapTypeNotSpecified ...
 	MapTypeNotSpecified MapType = "NotSpecified"
-	// MapTypeXslt specifies the map type xslt state for map type.
+	// MapTypeXslt ...
 	MapTypeXslt MapType = "Xslt"
 )
 
@@ -208,11 +205,11 @@ const (
 type MessageFilterType string
 
 const (
-	// MessageFilterTypeExclude specifies the message filter type exclude state for message filter type.
+	// MessageFilterTypeExclude ...
 	MessageFilterTypeExclude MessageFilterType = "Exclude"
-	// MessageFilterTypeInclude specifies the message filter type include state for message filter type.
+	// MessageFilterTypeInclude ...
 	MessageFilterTypeInclude MessageFilterType = "Include"
-	// MessageFilterTypeNotSpecified specifies the message filter type not specified state for message filter type.
+	// MessageFilterTypeNotSpecified ...
 	MessageFilterTypeNotSpecified MessageFilterType = "NotSpecified"
 )
 
@@ -220,23 +217,23 @@ const (
 type ParameterType string
 
 const (
-	// ParameterTypeArray specifies the parameter type array state for parameter type.
+	// ParameterTypeArray ...
 	ParameterTypeArray ParameterType = "Array"
-	// ParameterTypeBool specifies the parameter type bool state for parameter type.
+	// ParameterTypeBool ...
 	ParameterTypeBool ParameterType = "Bool"
-	// ParameterTypeFloat specifies the parameter type float state for parameter type.
+	// ParameterTypeFloat ...
 	ParameterTypeFloat ParameterType = "Float"
-	// ParameterTypeInt specifies the parameter type int state for parameter type.
+	// ParameterTypeInt ...
 	ParameterTypeInt ParameterType = "Int"
-	// ParameterTypeNotSpecified specifies the parameter type not specified state for parameter type.
+	// ParameterTypeNotSpecified ...
 	ParameterTypeNotSpecified ParameterType = "NotSpecified"
-	// ParameterTypeObject specifies the parameter type object state for parameter type.
+	// ParameterTypeObject ...
 	ParameterTypeObject ParameterType = "Object"
-	// ParameterTypeSecureObject specifies the parameter type secure object state for parameter type.
+	// ParameterTypeSecureObject ...
 	ParameterTypeSecureObject ParameterType = "SecureObject"
-	// ParameterTypeSecureString specifies the parameter type secure string state for parameter type.
+	// ParameterTypeSecureString ...
 	ParameterTypeSecureString ParameterType = "SecureString"
-	// ParameterTypeString specifies the parameter type string state for parameter type.
+	// ParameterTypeString ...
 	ParameterTypeString ParameterType = "String"
 )
 
@@ -244,9 +241,9 @@ const (
 type PartnerType string
 
 const (
-	// PartnerTypeB2B specifies the partner type b2b state for partner type.
+	// PartnerTypeB2B ...
 	PartnerTypeB2B PartnerType = "B2B"
-	// PartnerTypeNotSpecified specifies the partner type not specified state for partner type.
+	// PartnerTypeNotSpecified ...
 	PartnerTypeNotSpecified PartnerType = "NotSpecified"
 )
 
@@ -254,21 +251,21 @@ const (
 type RecurrenceFrequency string
 
 const (
-	// RecurrenceFrequencyDay specifies the recurrence frequency day state for recurrence frequency.
+	// RecurrenceFrequencyDay ...
 	RecurrenceFrequencyDay RecurrenceFrequency = "Day"
-	// RecurrenceFrequencyHour specifies the recurrence frequency hour state for recurrence frequency.
+	// RecurrenceFrequencyHour ...
 	RecurrenceFrequencyHour RecurrenceFrequency = "Hour"
-	// RecurrenceFrequencyMinute specifies the recurrence frequency minute state for recurrence frequency.
+	// RecurrenceFrequencyMinute ...
 	RecurrenceFrequencyMinute RecurrenceFrequency = "Minute"
-	// RecurrenceFrequencyMonth specifies the recurrence frequency month state for recurrence frequency.
+	// RecurrenceFrequencyMonth ...
 	RecurrenceFrequencyMonth RecurrenceFrequency = "Month"
-	// RecurrenceFrequencyNotSpecified specifies the recurrence frequency not specified state for recurrence frequency.
+	// RecurrenceFrequencyNotSpecified ...
 	RecurrenceFrequencyNotSpecified RecurrenceFrequency = "NotSpecified"
-	// RecurrenceFrequencySecond specifies the recurrence frequency second state for recurrence frequency.
+	// RecurrenceFrequencySecond ...
 	RecurrenceFrequencySecond RecurrenceFrequency = "Second"
-	// RecurrenceFrequencyWeek specifies the recurrence frequency week state for recurrence frequency.
+	// RecurrenceFrequencyWeek ...
 	RecurrenceFrequencyWeek RecurrenceFrequency = "Week"
-	// RecurrenceFrequencyYear specifies the recurrence frequency year state for recurrence frequency.
+	// RecurrenceFrequencyYear ...
 	RecurrenceFrequencyYear RecurrenceFrequency = "Year"
 )
 
@@ -276,9 +273,9 @@ const (
 type SchemaType string
 
 const (
-	// SchemaTypeNotSpecified specifies the schema type not specified state for schema type.
+	// SchemaTypeNotSpecified ...
 	SchemaTypeNotSpecified SchemaType = "NotSpecified"
-	// SchemaTypeXML specifies the schema type xml state for schema type.
+	// SchemaTypeXML ...
 	SchemaTypeXML SchemaType = "Xml"
 )
 
@@ -286,16 +283,15 @@ const (
 type SegmentTerminatorSuffix string
 
 const (
-	// SegmentTerminatorSuffixCR specifies the segment terminator suffix cr state for segment terminator suffix.
+	// SegmentTerminatorSuffixCR ...
 	SegmentTerminatorSuffixCR SegmentTerminatorSuffix = "CR"
-	// SegmentTerminatorSuffixCRLF specifies the segment terminator suffix crlf state for segment terminator suffix.
+	// SegmentTerminatorSuffixCRLF ...
 	SegmentTerminatorSuffixCRLF SegmentTerminatorSuffix = "CRLF"
-	// SegmentTerminatorSuffixLF specifies the segment terminator suffix lf state for segment terminator suffix.
+	// SegmentTerminatorSuffixLF ...
 	SegmentTerminatorSuffixLF SegmentTerminatorSuffix = "LF"
-	// SegmentTerminatorSuffixNone specifies the segment terminator suffix none state for segment terminator suffix.
+	// SegmentTerminatorSuffixNone ...
 	SegmentTerminatorSuffixNone SegmentTerminatorSuffix = "None"
-	// SegmentTerminatorSuffixNotSpecified specifies the segment terminator suffix not specified state for segment
-	// terminator suffix.
+	// SegmentTerminatorSuffixNotSpecified ...
 	SegmentTerminatorSuffixNotSpecified SegmentTerminatorSuffix = "NotSpecified"
 )
 
@@ -303,17 +299,17 @@ const (
 type SigningAlgorithm string
 
 const (
-	// SigningAlgorithmDefault specifies the signing algorithm default state for signing algorithm.
+	// SigningAlgorithmDefault ...
 	SigningAlgorithmDefault SigningAlgorithm = "Default"
-	// SigningAlgorithmNotSpecified specifies the signing algorithm not specified state for signing algorithm.
+	// SigningAlgorithmNotSpecified ...
 	SigningAlgorithmNotSpecified SigningAlgorithm = "NotSpecified"
-	// SigningAlgorithmSHA1 specifies the signing algorithm sha1 state for signing algorithm.
+	// SigningAlgorithmSHA1 ...
 	SigningAlgorithmSHA1 SigningAlgorithm = "SHA1"
-	// SigningAlgorithmSHA2256 specifies the signing algorithm sha2256 state for signing algorithm.
+	// SigningAlgorithmSHA2256 ...
 	SigningAlgorithmSHA2256 SigningAlgorithm = "SHA2256"
-	// SigningAlgorithmSHA2384 specifies the signing algorithm sha2384 state for signing algorithm.
+	// SigningAlgorithmSHA2384 ...
 	SigningAlgorithmSHA2384 SigningAlgorithm = "SHA2384"
-	// SigningAlgorithmSHA2512 specifies the signing algorithm sha2512 state for signing algorithm.
+	// SigningAlgorithmSHA2512 ...
 	SigningAlgorithmSHA2512 SigningAlgorithm = "SHA2512"
 )
 
@@ -321,17 +317,17 @@ const (
 type SkuName string
 
 const (
-	// SkuNameBasic specifies the sku name basic state for sku name.
+	// SkuNameBasic ...
 	SkuNameBasic SkuName = "Basic"
-	// SkuNameFree specifies the sku name free state for sku name.
+	// SkuNameFree ...
 	SkuNameFree SkuName = "Free"
-	// SkuNameNotSpecified specifies the sku name not specified state for sku name.
+	// SkuNameNotSpecified ...
 	SkuNameNotSpecified SkuName = "NotSpecified"
-	// SkuNamePremium specifies the sku name premium state for sku name.
+	// SkuNamePremium ...
 	SkuNamePremium SkuName = "Premium"
-	// SkuNameShared specifies the sku name shared state for sku name.
+	// SkuNameShared ...
 	SkuNameShared SkuName = "Shared"
-	// SkuNameStandard specifies the sku name standard state for sku name.
+	// SkuNameStandard ...
 	SkuNameStandard SkuName = "Standard"
 )
 
@@ -339,17 +335,13 @@ const (
 type TrailingSeparatorPolicy string
 
 const (
-	// TrailingSeparatorPolicyMandatory specifies the trailing separator policy mandatory state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyMandatory ...
 	TrailingSeparatorPolicyMandatory TrailingSeparatorPolicy = "Mandatory"
-	// TrailingSeparatorPolicyNotAllowed specifies the trailing separator policy not allowed state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyNotAllowed ...
 	TrailingSeparatorPolicyNotAllowed TrailingSeparatorPolicy = "NotAllowed"
-	// TrailingSeparatorPolicyNotSpecified specifies the trailing separator policy not specified state for trailing
-	// separator policy.
+	// TrailingSeparatorPolicyNotSpecified ...
 	TrailingSeparatorPolicyNotSpecified TrailingSeparatorPolicy = "NotSpecified"
-	// TrailingSeparatorPolicyOptional specifies the trailing separator policy optional state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyOptional ...
 	TrailingSeparatorPolicyOptional TrailingSeparatorPolicy = "Optional"
 )
 
@@ -357,13 +349,13 @@ const (
 type UsageIndicator string
 
 const (
-	// UsageIndicatorInformation specifies the usage indicator information state for usage indicator.
+	// UsageIndicatorInformation ...
 	UsageIndicatorInformation UsageIndicator = "Information"
-	// UsageIndicatorNotSpecified specifies the usage indicator not specified state for usage indicator.
+	// UsageIndicatorNotSpecified ...
 	UsageIndicatorNotSpecified UsageIndicator = "NotSpecified"
-	// UsageIndicatorProduction specifies the usage indicator production state for usage indicator.
+	// UsageIndicatorProduction ...
 	UsageIndicatorProduction UsageIndicator = "Production"
-	// UsageIndicatorTest specifies the usage indicator test state for usage indicator.
+	// UsageIndicatorTest ...
 	UsageIndicatorTest UsageIndicator = "Test"
 )
 
@@ -371,59 +363,41 @@ const (
 type WorkflowProvisioningState string
 
 const (
-	// WorkflowProvisioningStateAccepted specifies the workflow provisioning state accepted state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateAccepted ...
 	WorkflowProvisioningStateAccepted WorkflowProvisioningState = "Accepted"
-	// WorkflowProvisioningStateCanceled specifies the workflow provisioning state canceled state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateCanceled ...
 	WorkflowProvisioningStateCanceled WorkflowProvisioningState = "Canceled"
-	// WorkflowProvisioningStateCompleted specifies the workflow provisioning state completed state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateCompleted ...
 	WorkflowProvisioningStateCompleted WorkflowProvisioningState = "Completed"
-	// WorkflowProvisioningStateCreated specifies the workflow provisioning state created state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateCreated ...
 	WorkflowProvisioningStateCreated WorkflowProvisioningState = "Created"
-	// WorkflowProvisioningStateCreating specifies the workflow provisioning state creating state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateCreating ...
 	WorkflowProvisioningStateCreating WorkflowProvisioningState = "Creating"
-	// WorkflowProvisioningStateDeleted specifies the workflow provisioning state deleted state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateDeleted ...
 	WorkflowProvisioningStateDeleted WorkflowProvisioningState = "Deleted"
-	// WorkflowProvisioningStateDeleting specifies the workflow provisioning state deleting state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateDeleting ...
 	WorkflowProvisioningStateDeleting WorkflowProvisioningState = "Deleting"
-	// WorkflowProvisioningStateFailed specifies the workflow provisioning state failed state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateFailed ...
 	WorkflowProvisioningStateFailed WorkflowProvisioningState = "Failed"
-	// WorkflowProvisioningStateMoving specifies the workflow provisioning state moving state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateMoving ...
 	WorkflowProvisioningStateMoving WorkflowProvisioningState = "Moving"
-	// WorkflowProvisioningStateNotSpecified specifies the workflow provisioning state not specified state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateNotSpecified ...
 	WorkflowProvisioningStateNotSpecified WorkflowProvisioningState = "NotSpecified"
-	// WorkflowProvisioningStateReady specifies the workflow provisioning state ready state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateReady ...
 	WorkflowProvisioningStateReady WorkflowProvisioningState = "Ready"
-	// WorkflowProvisioningStateRegistered specifies the workflow provisioning state registered state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateRegistered ...
 	WorkflowProvisioningStateRegistered WorkflowProvisioningState = "Registered"
-	// WorkflowProvisioningStateRegistering specifies the workflow provisioning state registering state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateRegistering ...
 	WorkflowProvisioningStateRegistering WorkflowProvisioningState = "Registering"
-	// WorkflowProvisioningStateRunning specifies the workflow provisioning state running state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateRunning ...
 	WorkflowProvisioningStateRunning WorkflowProvisioningState = "Running"
-	// WorkflowProvisioningStateSucceeded specifies the workflow provisioning state succeeded state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateSucceeded ...
 	WorkflowProvisioningStateSucceeded WorkflowProvisioningState = "Succeeded"
-	// WorkflowProvisioningStateUnregistered specifies the workflow provisioning state unregistered state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateUnregistered ...
 	WorkflowProvisioningStateUnregistered WorkflowProvisioningState = "Unregistered"
-	// WorkflowProvisioningStateUnregistering specifies the workflow provisioning state unregistering state for workflow
-	// provisioning state.
+	// WorkflowProvisioningStateUnregistering ...
 	WorkflowProvisioningStateUnregistering WorkflowProvisioningState = "Unregistering"
-	// WorkflowProvisioningStateUpdating specifies the workflow provisioning state updating state for workflow provisioning
-	// state.
+	// WorkflowProvisioningStateUpdating ...
 	WorkflowProvisioningStateUpdating WorkflowProvisioningState = "Updating"
 )
 
@@ -431,17 +405,17 @@ const (
 type WorkflowState string
 
 const (
-	// WorkflowStateCompleted specifies the workflow state completed state for workflow state.
+	// WorkflowStateCompleted ...
 	WorkflowStateCompleted WorkflowState = "Completed"
-	// WorkflowStateDeleted specifies the workflow state deleted state for workflow state.
+	// WorkflowStateDeleted ...
 	WorkflowStateDeleted WorkflowState = "Deleted"
-	// WorkflowStateDisabled specifies the workflow state disabled state for workflow state.
+	// WorkflowStateDisabled ...
 	WorkflowStateDisabled WorkflowState = "Disabled"
-	// WorkflowStateEnabled specifies the workflow state enabled state for workflow state.
+	// WorkflowStateEnabled ...
 	WorkflowStateEnabled WorkflowState = "Enabled"
-	// WorkflowStateNotSpecified specifies the workflow state not specified state for workflow state.
+	// WorkflowStateNotSpecified ...
 	WorkflowStateNotSpecified WorkflowState = "NotSpecified"
-	// WorkflowStateSuspended specifies the workflow state suspended state for workflow state.
+	// WorkflowStateSuspended ...
 	WorkflowStateSuspended WorkflowState = "Suspended"
 )
 
@@ -449,31 +423,31 @@ const (
 type WorkflowStatus string
 
 const (
-	// WorkflowStatusAborted specifies the workflow status aborted state for workflow status.
+	// WorkflowStatusAborted ...
 	WorkflowStatusAborted WorkflowStatus = "Aborted"
-	// WorkflowStatusCancelled specifies the workflow status cancelled state for workflow status.
+	// WorkflowStatusCancelled ...
 	WorkflowStatusCancelled WorkflowStatus = "Cancelled"
-	// WorkflowStatusFailed specifies the workflow status failed state for workflow status.
+	// WorkflowStatusFailed ...
 	WorkflowStatusFailed WorkflowStatus = "Failed"
-	// WorkflowStatusFaulted specifies the workflow status faulted state for workflow status.
+	// WorkflowStatusFaulted ...
 	WorkflowStatusFaulted WorkflowStatus = "Faulted"
-	// WorkflowStatusIgnored specifies the workflow status ignored state for workflow status.
+	// WorkflowStatusIgnored ...
 	WorkflowStatusIgnored WorkflowStatus = "Ignored"
-	// WorkflowStatusNotSpecified specifies the workflow status not specified state for workflow status.
+	// WorkflowStatusNotSpecified ...
 	WorkflowStatusNotSpecified WorkflowStatus = "NotSpecified"
-	// WorkflowStatusPaused specifies the workflow status paused state for workflow status.
+	// WorkflowStatusPaused ...
 	WorkflowStatusPaused WorkflowStatus = "Paused"
-	// WorkflowStatusRunning specifies the workflow status running state for workflow status.
+	// WorkflowStatusRunning ...
 	WorkflowStatusRunning WorkflowStatus = "Running"
-	// WorkflowStatusSkipped specifies the workflow status skipped state for workflow status.
+	// WorkflowStatusSkipped ...
 	WorkflowStatusSkipped WorkflowStatus = "Skipped"
-	// WorkflowStatusSucceeded specifies the workflow status succeeded state for workflow status.
+	// WorkflowStatusSucceeded ...
 	WorkflowStatusSucceeded WorkflowStatus = "Succeeded"
-	// WorkflowStatusSuspended specifies the workflow status suspended state for workflow status.
+	// WorkflowStatusSuspended ...
 	WorkflowStatusSuspended WorkflowStatus = "Suspended"
-	// WorkflowStatusTimedOut specifies the workflow status timed out state for workflow status.
+	// WorkflowStatusTimedOut ...
 	WorkflowStatusTimedOut WorkflowStatus = "TimedOut"
-	// WorkflowStatusWaiting specifies the workflow status waiting state for workflow status.
+	// WorkflowStatusWaiting ...
 	WorkflowStatusWaiting WorkflowStatus = "Waiting"
 )
 
@@ -481,59 +455,41 @@ const (
 type WorkflowTriggerProvisioningState string
 
 const (
-	// WorkflowTriggerProvisioningStateAccepted specifies the workflow trigger provisioning state accepted state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateAccepted ...
 	WorkflowTriggerProvisioningStateAccepted WorkflowTriggerProvisioningState = "Accepted"
-	// WorkflowTriggerProvisioningStateCanceled specifies the workflow trigger provisioning state canceled state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateCanceled ...
 	WorkflowTriggerProvisioningStateCanceled WorkflowTriggerProvisioningState = "Canceled"
-	// WorkflowTriggerProvisioningStateCompleted specifies the workflow trigger provisioning state completed state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateCompleted ...
 	WorkflowTriggerProvisioningStateCompleted WorkflowTriggerProvisioningState = "Completed"
-	// WorkflowTriggerProvisioningStateCreated specifies the workflow trigger provisioning state created state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateCreated ...
 	WorkflowTriggerProvisioningStateCreated WorkflowTriggerProvisioningState = "Created"
-	// WorkflowTriggerProvisioningStateCreating specifies the workflow trigger provisioning state creating state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateCreating ...
 	WorkflowTriggerProvisioningStateCreating WorkflowTriggerProvisioningState = "Creating"
-	// WorkflowTriggerProvisioningStateDeleted specifies the workflow trigger provisioning state deleted state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateDeleted ...
 	WorkflowTriggerProvisioningStateDeleted WorkflowTriggerProvisioningState = "Deleted"
-	// WorkflowTriggerProvisioningStateDeleting specifies the workflow trigger provisioning state deleting state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateDeleting ...
 	WorkflowTriggerProvisioningStateDeleting WorkflowTriggerProvisioningState = "Deleting"
-	// WorkflowTriggerProvisioningStateFailed specifies the workflow trigger provisioning state failed state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateFailed ...
 	WorkflowTriggerProvisioningStateFailed WorkflowTriggerProvisioningState = "Failed"
-	// WorkflowTriggerProvisioningStateMoving specifies the workflow trigger provisioning state moving state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateMoving ...
 	WorkflowTriggerProvisioningStateMoving WorkflowTriggerProvisioningState = "Moving"
-	// WorkflowTriggerProvisioningStateNotSpecified specifies the workflow trigger provisioning state not specified state
-	// for workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateNotSpecified ...
 	WorkflowTriggerProvisioningStateNotSpecified WorkflowTriggerProvisioningState = "NotSpecified"
-	// WorkflowTriggerProvisioningStateReady specifies the workflow trigger provisioning state ready state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateReady ...
 	WorkflowTriggerProvisioningStateReady WorkflowTriggerProvisioningState = "Ready"
-	// WorkflowTriggerProvisioningStateRegistered specifies the workflow trigger provisioning state registered state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateRegistered ...
 	WorkflowTriggerProvisioningStateRegistered WorkflowTriggerProvisioningState = "Registered"
-	// WorkflowTriggerProvisioningStateRegistering specifies the workflow trigger provisioning state registering state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateRegistering ...
 	WorkflowTriggerProvisioningStateRegistering WorkflowTriggerProvisioningState = "Registering"
-	// WorkflowTriggerProvisioningStateRunning specifies the workflow trigger provisioning state running state for workflow
-	// trigger provisioning state.
+	// WorkflowTriggerProvisioningStateRunning ...
 	WorkflowTriggerProvisioningStateRunning WorkflowTriggerProvisioningState = "Running"
-	// WorkflowTriggerProvisioningStateSucceeded specifies the workflow trigger provisioning state succeeded state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateSucceeded ...
 	WorkflowTriggerProvisioningStateSucceeded WorkflowTriggerProvisioningState = "Succeeded"
-	// WorkflowTriggerProvisioningStateUnregistered specifies the workflow trigger provisioning state unregistered state
-	// for workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateUnregistered ...
 	WorkflowTriggerProvisioningStateUnregistered WorkflowTriggerProvisioningState = "Unregistered"
-	// WorkflowTriggerProvisioningStateUnregistering specifies the workflow trigger provisioning state unregistering state
-	// for workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateUnregistering ...
 	WorkflowTriggerProvisioningStateUnregistering WorkflowTriggerProvisioningState = "Unregistering"
-	// WorkflowTriggerProvisioningStateUpdating specifies the workflow trigger provisioning state updating state for
-	// workflow trigger provisioning state.
+	// WorkflowTriggerProvisioningStateUpdating ...
 	WorkflowTriggerProvisioningStateUpdating WorkflowTriggerProvisioningState = "Updating"
 )
 
@@ -541,13 +497,13 @@ const (
 type X12CharacterSet string
 
 const (
-	// X12CharacterSetBasic specifies the x12 character set basic state for x12 character set.
+	// X12CharacterSetBasic ...
 	X12CharacterSetBasic X12CharacterSet = "Basic"
-	// X12CharacterSetExtended specifies the x12 character set extended state for x12 character set.
+	// X12CharacterSetExtended ...
 	X12CharacterSetExtended X12CharacterSet = "Extended"
-	// X12CharacterSetNotSpecified specifies the x12 character set not specified state for x12 character set.
+	// X12CharacterSetNotSpecified ...
 	X12CharacterSetNotSpecified X12CharacterSet = "NotSpecified"
-	// X12CharacterSetUTF8 specifies the x12 character set utf8 state for x12 character set.
+	// X12CharacterSetUTF8 ...
 	X12CharacterSetUTF8 X12CharacterSet = "UTF8"
 )
 
@@ -555,11 +511,11 @@ const (
 type X12DateFormat string
 
 const (
-	// X12DateFormatCCYYMMDD specifies the x12 date format ccyymmdd state for x12 date format.
+	// X12DateFormatCCYYMMDD ...
 	X12DateFormatCCYYMMDD X12DateFormat = "CCYYMMDD"
-	// X12DateFormatNotSpecified specifies the x12 date format not specified state for x12 date format.
+	// X12DateFormatNotSpecified ...
 	X12DateFormatNotSpecified X12DateFormat = "NotSpecified"
-	// X12DateFormatYYMMDD specifies the x12 date format yymmdd state for x12 date format.
+	// X12DateFormatYYMMDD ...
 	X12DateFormatYYMMDD X12DateFormat = "YYMMDD"
 )
 
@@ -567,1316 +523,3854 @@ const (
 type X12TimeFormat string
 
 const (
-	// X12TimeFormatHHMM specifies the x12 time format hhmm state for x12 time format.
+	// X12TimeFormatHHMM ...
 	X12TimeFormatHHMM X12TimeFormat = "HHMM"
-	// X12TimeFormatHHMMSS specifies the x12 time format hhmmss state for x12 time format.
+	// X12TimeFormatHHMMSS ...
 	X12TimeFormatHHMMSS X12TimeFormat = "HHMMSS"
-	// X12TimeFormatHHMMSSd specifies the x12 time format hhmms sd state for x12 time format.
+	// X12TimeFormatHHMMSSd ...
 	X12TimeFormatHHMMSSd X12TimeFormat = "HHMMSSd"
-	// X12TimeFormatHHMMSSdd specifies the x12 time format hhmms sdd state for x12 time format.
+	// X12TimeFormatHHMMSSdd ...
 	X12TimeFormatHHMMSSdd X12TimeFormat = "HHMMSSdd"
-	// X12TimeFormatNotSpecified specifies the x12 time format not specified state for x12 time format.
+	// X12TimeFormatNotSpecified ...
 	X12TimeFormatNotSpecified X12TimeFormat = "NotSpecified"
 )
 
-// AgreementContent is the integration account agreement content.
+// AgreementContent the integration account agreement content.
 type AgreementContent struct {
-	AS2     *AS2AgreementContent     `json:"aS2,omitempty"`
-	X12     *X12AgreementContent     `json:"x12,omitempty"`
+	// AS2 - The AS2 agreement content.
+	AS2 *AS2AgreementContent `json:"aS2,omitempty"`
+	// X12 - The X12 agreement content.
+	X12 *X12AgreementContent `json:"x12,omitempty"`
+	// Edifact - The EDIFACT agreement content.
 	Edifact *EdifactAgreementContent `json:"edifact,omitempty"`
 }
 
-// AS2AcknowledgementConnectionSettings is the AS2 agreement acknowledegment connection settings.
+// AS2AcknowledgementConnectionSettings the AS2 agreement acknowledegment connection settings.
 type AS2AcknowledgementConnectionSettings struct {
+	// IgnoreCertificateNameMismatch - The value indicating whether to ignore mismatch in certificate name.
 	IgnoreCertificateNameMismatch *bool `json:"ignoreCertificateNameMismatch,omitempty"`
+	// SupportHTTPStatusCodeContinue - The value indicating whether to support HTTP status code 'CONTINUE'.
 	SupportHTTPStatusCodeContinue *bool `json:"supportHttpStatusCodeContinue,omitempty"`
-	KeepHTTPConnectionAlive       *bool `json:"keepHttpConnectionAlive,omitempty"`
-	UnfoldHTTPHeaders             *bool `json:"unfoldHttpHeaders,omitempty"`
+	// KeepHTTPConnectionAlive - The value indicating whether to keep the connection alive.
+	KeepHTTPConnectionAlive *bool `json:"keepHttpConnectionAlive,omitempty"`
+	// UnfoldHTTPHeaders - The value indicating whether to unfold the HTTP headers.
+	UnfoldHTTPHeaders *bool `json:"unfoldHttpHeaders,omitempty"`
 }
 
-// AS2AgreementContent is the integration account AS2 agreement content.
+// AS2AgreementContent the integration account AS2 agreement content.
 type AS2AgreementContent struct {
+	// ReceiveAgreement - The AS2 one-way receive agreement.
 	ReceiveAgreement *AS2OneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *AS2OneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The AS2 one-way send agreement.
+	SendAgreement *AS2OneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// AS2EnvelopeSettings is the AS2 agreement envelope settings.
+// AS2EnvelopeSettings the AS2 agreement envelope settings.
 type AS2EnvelopeSettings struct {
-	MessageContentType                      *string `json:"messageContentType,omitempty"`
-	TransmitFileNameInMimeHeader            *bool   `json:"transmitFileNameInMimeHeader,omitempty"`
-	FileNameTemplate                        *string `json:"fileNameTemplate,omitempty"`
-	SuspendMessageOnFileNameGenerationError *bool   `json:"suspendMessageOnFileNameGenerationError,omitempty"`
-	AutogenerateFileName                    *bool   `json:"autogenerateFileName,omitempty"`
+	// MessageContentType - The message content type.
+	MessageContentType *string `json:"messageContentType,omitempty"`
+	// TransmitFileNameInMimeHeader - The value indicating whether to transmit file name in mime header.
+	TransmitFileNameInMimeHeader *bool `json:"transmitFileNameInMimeHeader,omitempty"`
+	// FileNameTemplate - The template for file name.
+	FileNameTemplate *string `json:"fileNameTemplate,omitempty"`
+	// SuspendMessageOnFileNameGenerationError - The value indicating whether to suspend message on file name generation error.
+	SuspendMessageOnFileNameGenerationError *bool `json:"suspendMessageOnFileNameGenerationError,omitempty"`
+	// AutogenerateFileName - The value indicating whether to auto generate file name.
+	AutogenerateFileName *bool `json:"autogenerateFileName,omitempty"`
 }
 
-// AS2ErrorSettings is the AS2 agreement error settings.
+// AS2ErrorSettings the AS2 agreement error settings.
 type AS2ErrorSettings struct {
+	// SuspendDuplicateMessage - The value indicating whether to suspend duplicate message.
 	SuspendDuplicateMessage *bool `json:"suspendDuplicateMessage,omitempty"`
-	ResendIfMdnNotReceived  *bool `json:"resendIfMdnNotReceived,omitempty"`
+	// ResendIfMdnNotReceived - The value indicating whether to resend message If MDN is not received.
+	ResendIfMdnNotReceived *bool `json:"resendIfMdnNotReceived,omitempty"`
 }
 
-// AS2MdnSettings is the AS2 agreement mdn settings.
+// AS2MdnSettings the AS2 agreement mdn settings.
 type AS2MdnSettings struct {
-	NeedMdn                    *bool            `json:"needMdn,omitempty"`
-	SignMdn                    *bool            `json:"signMdn,omitempty"`
-	SendMdnAsynchronously      *bool            `json:"sendMdnAsynchronously,omitempty"`
-	ReceiptDeliveryURL         *string          `json:"receiptDeliveryUrl,omitempty"`
-	DispositionNotificationTo  *string          `json:"dispositionNotificationTo,omitempty"`
-	SignOutboundMdnIfOptional  *bool            `json:"signOutboundMdnIfOptional,omitempty"`
-	MdnText                    *string          `json:"mdnText,omitempty"`
-	SendInboundMdnToMessageBox *bool            `json:"sendInboundMdnToMessageBox,omitempty"`
-	MicHashingAlgorithm        HashingAlgorithm `json:"micHashingAlgorithm,omitempty"`
+	// NeedMdn - The value indicating whether to send or request a MDN.
+	NeedMdn *bool `json:"needMdn,omitempty"`
+	// SignMdn - The value indicating whether the MDN needs to be signed or not.
+	SignMdn *bool `json:"signMdn,omitempty"`
+	// SendMdnAsynchronously - The value indicating whether to send the asynchronous MDN.
+	SendMdnAsynchronously *bool `json:"sendMdnAsynchronously,omitempty"`
+	// ReceiptDeliveryURL - The receipt delivery URL.
+	ReceiptDeliveryURL *string `json:"receiptDeliveryUrl,omitempty"`
+	// DispositionNotificationTo - The disposition notification to header value.
+	DispositionNotificationTo *string `json:"dispositionNotificationTo,omitempty"`
+	// SignOutboundMdnIfOptional - The value indicating whether to sign the outbound MDN if optional.
+	SignOutboundMdnIfOptional *bool `json:"signOutboundMdnIfOptional,omitempty"`
+	// MdnText - The MDN text.
+	MdnText *string `json:"mdnText,omitempty"`
+	// SendInboundMdnToMessageBox - The value indicating whether to send inbound MDN to message box.
+	SendInboundMdnToMessageBox *bool `json:"sendInboundMdnToMessageBox,omitempty"`
+	// MicHashingAlgorithm - The signing or hashing algorithm. Possible values include: 'HashingAlgorithmNotSpecified', 'HashingAlgorithmNone', 'HashingAlgorithmMD5', 'HashingAlgorithmSHA1', 'HashingAlgorithmSHA2256', 'HashingAlgorithmSHA2384', 'HashingAlgorithmSHA2512'
+	MicHashingAlgorithm HashingAlgorithm `json:"micHashingAlgorithm,omitempty"`
 }
 
-// AS2MessageConnectionSettings is the AS2 agreement message connection settings.
+// AS2MessageConnectionSettings the AS2 agreement message connection settings.
 type AS2MessageConnectionSettings struct {
+	// IgnoreCertificateNameMismatch - The value indicating whether to ignore mismatch in certificate name.
 	IgnoreCertificateNameMismatch *bool `json:"ignoreCertificateNameMismatch,omitempty"`
+	// SupportHTTPStatusCodeContinue - The value indicating whether to support HTTP status code 'CONTINUE'.
 	SupportHTTPStatusCodeContinue *bool `json:"supportHttpStatusCodeContinue,omitempty"`
-	KeepHTTPConnectionAlive       *bool `json:"keepHttpConnectionAlive,omitempty"`
-	UnfoldHTTPHeaders             *bool `json:"unfoldHttpHeaders,omitempty"`
+	// KeepHTTPConnectionAlive - The value indicating whether to keep the connection alive.
+	KeepHTTPConnectionAlive *bool `json:"keepHttpConnectionAlive,omitempty"`
+	// UnfoldHTTPHeaders - The value indicating whether to unfold the HTTP headers.
+	UnfoldHTTPHeaders *bool `json:"unfoldHttpHeaders,omitempty"`
 }
 
-// AS2OneWayAgreement is the integration account AS2 oneway agreement.
+// AS2OneWayAgreement the integration account AS2 oneway agreement.
 type AS2OneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity    `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity    `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *AS2ProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The AS2 protocol settings.
+	ProtocolSettings *AS2ProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// AS2ProtocolSettings is the AS2 agreement protocol settings.
+// AS2ProtocolSettings the AS2 agreement protocol settings.
 type AS2ProtocolSettings struct {
-	MessageConnectionSettings         *AS2MessageConnectionSettings         `json:"messageConnectionSettings,omitempty"`
+	// MessageConnectionSettings - The message connection settings.
+	MessageConnectionSettings *AS2MessageConnectionSettings `json:"messageConnectionSettings,omitempty"`
+	// AcknowledgementConnectionSettings - The acknowledgement connection settings.
 	AcknowledgementConnectionSettings *AS2AcknowledgementConnectionSettings `json:"acknowledgementConnectionSettings,omitempty"`
-	MdnSettings                       *AS2MdnSettings                       `json:"mdnSettings,omitempty"`
-	SecuritySettings                  *AS2SecuritySettings                  `json:"securitySettings,omitempty"`
-	ValidationSettings                *AS2ValidationSettings                `json:"validationSettings,omitempty"`
-	EnvelopeSettings                  *AS2EnvelopeSettings                  `json:"envelopeSettings,omitempty"`
-	ErrorSettings                     *AS2ErrorSettings                     `json:"errorSettings,omitempty"`
+	// MdnSettings - The MDN settings.
+	MdnSettings *AS2MdnSettings `json:"mdnSettings,omitempty"`
+	// SecuritySettings - The security settings.
+	SecuritySettings *AS2SecuritySettings `json:"securitySettings,omitempty"`
+	// ValidationSettings - The validation settings.
+	ValidationSettings *AS2ValidationSettings `json:"validationSettings,omitempty"`
+	// EnvelopeSettings - The envelope settings.
+	EnvelopeSettings *AS2EnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// ErrorSettings - The error settings.
+	ErrorSettings *AS2ErrorSettings `json:"errorSettings,omitempty"`
 }
 
-// AS2SecuritySettings is the AS2 agreement security settings.
+// AS2SecuritySettings the AS2 agreement security settings.
 type AS2SecuritySettings struct {
-	OverrideGroupSigningCertificate     *bool   `json:"overrideGroupSigningCertificate,omitempty"`
-	SigningCertificateName              *string `json:"signingCertificateName,omitempty"`
-	EncryptionCertificateName           *string `json:"encryptionCertificateName,omitempty"`
-	EnableNrrForInboundEncodedMessages  *bool   `json:"enableNrrForInboundEncodedMessages,omitempty"`
-	EnableNrrForInboundDecodedMessages  *bool   `json:"enableNrrForInboundDecodedMessages,omitempty"`
-	EnableNrrForOutboundMdn             *bool   `json:"enableNrrForOutboundMdn,omitempty"`
-	EnableNrrForOutboundEncodedMessages *bool   `json:"enableNrrForOutboundEncodedMessages,omitempty"`
-	EnableNrrForOutboundDecodedMessages *bool   `json:"enableNrrForOutboundDecodedMessages,omitempty"`
-	EnableNrrForInboundMdn              *bool   `json:"enableNrrForInboundMdn,omitempty"`
-	Sha2AlgorithmFormat                 *string `json:"sha2AlgorithmFormat,omitempty"`
+	// OverrideGroupSigningCertificate - The value indicating whether to send or request a MDN.
+	OverrideGroupSigningCertificate *bool `json:"overrideGroupSigningCertificate,omitempty"`
+	// SigningCertificateName - The name of the signing certificate.
+	SigningCertificateName *string `json:"signingCertificateName,omitempty"`
+	// EncryptionCertificateName - The name of the encryption certificate.
+	EncryptionCertificateName *string `json:"encryptionCertificateName,omitempty"`
+	// EnableNrrForInboundEncodedMessages - The value indicating whether to enable NRR for inbound encoded messages.
+	EnableNrrForInboundEncodedMessages *bool `json:"enableNrrForInboundEncodedMessages,omitempty"`
+	// EnableNrrForInboundDecodedMessages - The value indicating whether to enable NRR for inbound decoded messages.
+	EnableNrrForInboundDecodedMessages *bool `json:"enableNrrForInboundDecodedMessages,omitempty"`
+	// EnableNrrForOutboundMdn - The value indicating whether to enable NRR for outbound MDN.
+	EnableNrrForOutboundMdn *bool `json:"enableNrrForOutboundMdn,omitempty"`
+	// EnableNrrForOutboundEncodedMessages - The value indicating whether to enable NRR for outbound encoded messages.
+	EnableNrrForOutboundEncodedMessages *bool `json:"enableNrrForOutboundEncodedMessages,omitempty"`
+	// EnableNrrForOutboundDecodedMessages - The value indicating whether to enable NRR for outbound decoded messages.
+	EnableNrrForOutboundDecodedMessages *bool `json:"enableNrrForOutboundDecodedMessages,omitempty"`
+	// EnableNrrForInboundMdn - The value indicating whether to enable NRR for inbound MDN.
+	EnableNrrForInboundMdn *bool `json:"enableNrrForInboundMdn,omitempty"`
+	// Sha2AlgorithmFormat - The Sha2 algorithm format. Valid values are Sha2, ShaHashSize, ShaHyphenHashSize, Sha2UnderscoreHashSize.
+	Sha2AlgorithmFormat *string `json:"sha2AlgorithmFormat,omitempty"`
 }
 
-// AS2ValidationSettings is the AS2 agreement validation settings.
+// AS2ValidationSettings the AS2 agreement validation settings.
 type AS2ValidationSettings struct {
-	OverrideMessageProperties               *bool               `json:"overrideMessageProperties,omitempty"`
-	EncryptMessage                          *bool               `json:"encryptMessage,omitempty"`
-	SignMessage                             *bool               `json:"signMessage,omitempty"`
-	CompressMessage                         *bool               `json:"compressMessage,omitempty"`
-	CheckDuplicateMessage                   *bool               `json:"checkDuplicateMessage,omitempty"`
-	InterchangeDuplicatesValidityDays       *int32              `json:"interchangeDuplicatesValidityDays,omitempty"`
-	CheckCertificateRevocationListOnSend    *bool               `json:"checkCertificateRevocationListOnSend,omitempty"`
-	CheckCertificateRevocationListOnReceive *bool               `json:"checkCertificateRevocationListOnReceive,omitempty"`
-	EncryptionAlgorithm                     EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
-	SigningAlgorithm                        SigningAlgorithm    `json:"signingAlgorithm,omitempty"`
+	// OverrideMessageProperties - The value indicating whether to override incoming message properties with those in agreement.
+	OverrideMessageProperties *bool `json:"overrideMessageProperties,omitempty"`
+	// EncryptMessage - The value indicating whether the message has to be encrypted.
+	EncryptMessage *bool `json:"encryptMessage,omitempty"`
+	// SignMessage - The value indicating whether the message has to be signed.
+	SignMessage *bool `json:"signMessage,omitempty"`
+	// CompressMessage - The value indicating whether the message has to be compressed.
+	CompressMessage *bool `json:"compressMessage,omitempty"`
+	// CheckDuplicateMessage - The value indicating whether to check for duplicate message.
+	CheckDuplicateMessage *bool `json:"checkDuplicateMessage,omitempty"`
+	// InterchangeDuplicatesValidityDays - The number of days to look back for duplicate interchange.
+	InterchangeDuplicatesValidityDays *int32 `json:"interchangeDuplicatesValidityDays,omitempty"`
+	// CheckCertificateRevocationListOnSend - The value indicating whether to check for certificate revocation list on send.
+	CheckCertificateRevocationListOnSend *bool `json:"checkCertificateRevocationListOnSend,omitempty"`
+	// CheckCertificateRevocationListOnReceive - The value indicating whether to check for certificate revocation list on receive.
+	CheckCertificateRevocationListOnReceive *bool `json:"checkCertificateRevocationListOnReceive,omitempty"`
+	// EncryptionAlgorithm - The encryption algorithm. Possible values include: 'EncryptionAlgorithmNotSpecified', 'EncryptionAlgorithmNone', 'EncryptionAlgorithmDES3', 'EncryptionAlgorithmRC2', 'EncryptionAlgorithmAES128', 'EncryptionAlgorithmAES192', 'EncryptionAlgorithmAES256'
+	EncryptionAlgorithm EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
+	// SigningAlgorithm - The signing algorithm. Possible values include: 'SigningAlgorithmNotSpecified', 'SigningAlgorithmDefault', 'SigningAlgorithmSHA1', 'SigningAlgorithmSHA2256', 'SigningAlgorithmSHA2384', 'SigningAlgorithmSHA2512'
+	SigningAlgorithm SigningAlgorithm `json:"signingAlgorithm,omitempty"`
 }
 
-// B2BPartnerContent is the B2B partner content.
+// B2BPartnerContent the B2B partner content.
 type B2BPartnerContent struct {
+	// BusinessIdentities - The list of partner business identities.
 	BusinessIdentities *[]BusinessIdentity `json:"businessIdentities,omitempty"`
 }
 
-// BusinessIdentity is the integration account partner's business identity.
+// BusinessIdentity the integration account partner's business identity.
 type BusinessIdentity struct {
+	// Qualifier - The business identity qualifier e.g. as2identity, ZZ, ZZZ, 31, 32
 	Qualifier *string `json:"qualifier,omitempty"`
-	Value     *string `json:"value,omitempty"`
+	// Value - The user defined business identity value.
+	Value *string `json:"value,omitempty"`
 }
 
-// CallbackURL is the callback url.
+// CallbackURL the callback url.
 type CallbackURL struct {
 	autorest.Response `json:"-"`
-	Value             *string `json:"value,omitempty"`
+	// Value - The URL value.
+	Value *string `json:"value,omitempty"`
 }
 
-// ContentHash is the content hash.
+// ContentHash the content hash.
 type ContentHash struct {
+	// Algorithm - The algorithm of the content hash.
 	Algorithm *string `json:"algorithm,omitempty"`
-	Value     *string `json:"value,omitempty"`
+	// Value - The value of the content hash.
+	Value *string `json:"value,omitempty"`
 }
 
-// ContentLink is the content link.
+// ContentLink the content link.
 type ContentLink struct {
-	URI            *string                 `json:"uri,omitempty"`
-	ContentVersion *string                 `json:"contentVersion,omitempty"`
-	ContentSize    *int64                  `json:"contentSize,omitempty"`
-	ContentHash    *ContentHash            `json:"contentHash,omitempty"`
-	Metadata       *map[string]interface{} `json:"metadata,omitempty"`
+	// URI - The content link URI.
+	URI *string `json:"uri,omitempty"`
+	// ContentVersion - The content version.
+	ContentVersion *string `json:"contentVersion,omitempty"`
+	// ContentSize - The content size.
+	ContentSize *int64 `json:"contentSize,omitempty"`
+	// ContentHash - The content hash.
+	ContentHash *ContentHash `json:"contentHash,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// Correlation is the correlation property.
+// Correlation the correlation property.
 type Correlation struct {
+	// ClientTrackingID - The client tracking id.
 	ClientTrackingID *string `json:"clientTrackingId,omitempty"`
 }
 
-// EdifactAcknowledgementSettings is the Edifact agreement acknowledgement settings.
+// EdifactAcknowledgementSettings the Edifact agreement acknowledgement settings.
 type EdifactAcknowledgementSettings struct {
-	NeedTechnicalAcknowledgement           *bool   `json:"needTechnicalAcknowledgement,omitempty"`
-	BatchTechnicalAcknowledgements         *bool   `json:"batchTechnicalAcknowledgements,omitempty"`
-	NeedFunctionalAcknowledgement          *bool   `json:"needFunctionalAcknowledgement,omitempty"`
-	BatchFunctionalAcknowledgements        *bool   `json:"batchFunctionalAcknowledgements,omitempty"`
-	NeedLoopForValidMessages               *bool   `json:"needLoopForValidMessages,omitempty"`
-	SendSynchronousAcknowledgement         *bool   `json:"sendSynchronousAcknowledgement,omitempty"`
-	AcknowledgementControlNumberPrefix     *string `json:"acknowledgementControlNumberPrefix,omitempty"`
-	AcknowledgementControlNumberSuffix     *string `json:"acknowledgementControlNumberSuffix,omitempty"`
-	AcknowledgementControlNumberLowerBound *int32  `json:"acknowledgementControlNumberLowerBound,omitempty"`
-	AcknowledgementControlNumberUpperBound *int32  `json:"acknowledgementControlNumberUpperBound,omitempty"`
-	RolloverAcknowledgementControlNumber   *bool   `json:"rolloverAcknowledgementControlNumber,omitempty"`
+	// NeedTechnicalAcknowledgement - The value indicating whether technical acknowledgement is needed.
+	NeedTechnicalAcknowledgement *bool `json:"needTechnicalAcknowledgement,omitempty"`
+	// BatchTechnicalAcknowledgements - The value indicating whether to batch the technical acknowledgements.
+	BatchTechnicalAcknowledgements *bool `json:"batchTechnicalAcknowledgements,omitempty"`
+	// NeedFunctionalAcknowledgement - The value indicating whether functional acknowledgement is needed.
+	NeedFunctionalAcknowledgement *bool `json:"needFunctionalAcknowledgement,omitempty"`
+	// BatchFunctionalAcknowledgements - The value indicating whether to batch functional acknowledgements.
+	BatchFunctionalAcknowledgements *bool `json:"batchFunctionalAcknowledgements,omitempty"`
+	// NeedLoopForValidMessages - The value indicating whether a loop is needed for valid messages.
+	NeedLoopForValidMessages *bool `json:"needLoopForValidMessages,omitempty"`
+	// SendSynchronousAcknowledgement - The value indicating whether to send synchronous acknowledgement.
+	SendSynchronousAcknowledgement *bool `json:"sendSynchronousAcknowledgement,omitempty"`
+	// AcknowledgementControlNumberPrefix - The acknowledgement control number prefix.
+	AcknowledgementControlNumberPrefix *string `json:"acknowledgementControlNumberPrefix,omitempty"`
+	// AcknowledgementControlNumberSuffix - The acknowledgement control number suffix.
+	AcknowledgementControlNumberSuffix *string `json:"acknowledgementControlNumberSuffix,omitempty"`
+	// AcknowledgementControlNumberLowerBound - The acknowledgement control number lower bound.
+	AcknowledgementControlNumberLowerBound *int32 `json:"acknowledgementControlNumberLowerBound,omitempty"`
+	// AcknowledgementControlNumberUpperBound - The acknowledgement control number upper bound.
+	AcknowledgementControlNumberUpperBound *int32 `json:"acknowledgementControlNumberUpperBound,omitempty"`
+	// RolloverAcknowledgementControlNumber - The value indicating whether to rollover acknowledgement control number.
+	RolloverAcknowledgementControlNumber *bool `json:"rolloverAcknowledgementControlNumber,omitempty"`
 }
 
-// EdifactAgreementContent is the Edifact agreement content.
+// EdifactAgreementContent the Edifact agreement content.
 type EdifactAgreementContent struct {
+	// ReceiveAgreement - The EDIFACT one-way receive agreement.
 	ReceiveAgreement *EdifactOneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *EdifactOneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The EDIFACT one-way send agreement.
+	SendAgreement *EdifactOneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// EdifactDelimiterOverride is the Edifact delimiter override settings.
+// EdifactDelimiterOverride the Edifact delimiter override settings.
 type EdifactDelimiterOverride struct {
-	MessageID                      *string                 `json:"messageId,omitempty"`
-	MessageVersion                 *string                 `json:"messageVersion,omitempty"`
-	MessageRelease                 *string                 `json:"messageRelease,omitempty"`
-	DataElementSeparator           *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator             *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator              *int32                  `json:"segmentTerminator,omitempty"`
-	RepetitionSeparator            *int32                  `json:"repetitionSeparator,omitempty"`
-	SegmentTerminatorSuffix        SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
-	DecimalPointIndicator          EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
-	ReleaseIndicator               *int32                  `json:"releaseIndicator,omitempty"`
-	MessageAssociationAssignedCode *string                 `json:"messageAssociationAssignedCode,omitempty"`
-	TargetNamespace                *string                 `json:"targetNamespace,omitempty"`
-}
-
-// EdifactEnvelopeOverride is the Edifact enevlope override settings.
-type EdifactEnvelopeOverride struct {
-	MessageID                      *string `json:"messageId,omitempty"`
-	MessageVersion                 *string `json:"messageVersion,omitempty"`
-	MessageRelease                 *string `json:"messageRelease,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message releaseversion.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// RepetitionSeparator - The repetition separator.
+	RepetitionSeparator *int32 `json:"repetitionSeparator,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// DecimalPointIndicator - The decimal point indicator. Possible values include: 'EdifactDecimalIndicatorNotSpecified', 'EdifactDecimalIndicatorComma', 'EdifactDecimalIndicatorDecimal'
+	DecimalPointIndicator EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
+	// ReleaseIndicator - The release indicator.
+	ReleaseIndicator *int32 `json:"releaseIndicator,omitempty"`
+	// MessageAssociationAssignedCode - The message association assigned code.
 	MessageAssociationAssignedCode *string `json:"messageAssociationAssignedCode,omitempty"`
-	TargetNamespace                *string `json:"targetNamespace,omitempty"`
-	FunctionalGroupID              *string `json:"functionalGroupId,omitempty"`
-	SenderApplicationQualifier     *string `json:"senderApplicationQualifier,omitempty"`
-	SenderApplicationID            *string `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationQualifier   *string `json:"receiverApplicationQualifier,omitempty"`
-	ReceiverApplicationID          *string `json:"receiverApplicationId,omitempty"`
-	ControllingAgencyCode          *string `json:"controllingAgencyCode,omitempty"`
-	GroupHeaderMessageVersion      *string `json:"groupHeaderMessageVersion,omitempty"`
-	GroupHeaderMessageRelease      *string `json:"groupHeaderMessageRelease,omitempty"`
-	AssociationAssignedCode        *string `json:"associationAssignedCode,omitempty"`
-	ApplicationPassword            *string `json:"applicationPassword,omitempty"`
+	// TargetNamespace - The target namespace on which this delimiter settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
 }
 
-// EdifactEnvelopeSettings is the Edifact agreement envelope settings.
+// EdifactEnvelopeOverride the Edifact enevlope override settings.
+type EdifactEnvelopeOverride struct {
+	// MessageID - The message id on which this envelope settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version on which this envelope settings has to be applied.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message release version on which this envelope settings has to be applied.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// MessageAssociationAssignedCode - The message association assigned code.
+	MessageAssociationAssignedCode *string `json:"messageAssociationAssignedCode,omitempty"`
+	// TargetNamespace - The target namespace on which this envelope settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// SenderApplicationQualifier - The sender application qualifier.
+	SenderApplicationQualifier *string `json:"senderApplicationQualifier,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationQualifier - The receiver application qualifier.
+	ReceiverApplicationQualifier *string `json:"receiverApplicationQualifier,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// ControllingAgencyCode - The controlling agency code.
+	ControllingAgencyCode *string `json:"controllingAgencyCode,omitempty"`
+	// GroupHeaderMessageVersion - The group header message version.
+	GroupHeaderMessageVersion *string `json:"groupHeaderMessageVersion,omitempty"`
+	// GroupHeaderMessageRelease - The group header message release.
+	GroupHeaderMessageRelease *string `json:"groupHeaderMessageRelease,omitempty"`
+	// AssociationAssignedCode - The association assigned code.
+	AssociationAssignedCode *string `json:"associationAssignedCode,omitempty"`
+	// ApplicationPassword - The application password.
+	ApplicationPassword *string `json:"applicationPassword,omitempty"`
+}
+
+// EdifactEnvelopeSettings the Edifact agreement envelope settings.
 type EdifactEnvelopeSettings struct {
-	GroupAssociationAssignedCode                 *string `json:"groupAssociationAssignedCode,omitempty"`
-	CommunicationAgreementID                     *string `json:"communicationAgreementId,omitempty"`
-	ApplyDelimiterStringAdvice                   *bool   `json:"applyDelimiterStringAdvice,omitempty"`
-	CreateGroupingSegments                       *bool   `json:"createGroupingSegments,omitempty"`
-	EnableDefaultGroupHeaders                    *bool   `json:"enableDefaultGroupHeaders,omitempty"`
-	RecipientReferencePasswordValue              *string `json:"recipientReferencePasswordValue,omitempty"`
-	RecipientReferencePasswordQualifier          *string `json:"recipientReferencePasswordQualifier,omitempty"`
-	ApplicationReferenceID                       *string `json:"applicationReferenceId,omitempty"`
-	ProcessingPriorityCode                       *string `json:"processingPriorityCode,omitempty"`
-	InterchangeControlNumberLowerBound           *int64  `json:"interchangeControlNumberLowerBound,omitempty"`
-	InterchangeControlNumberUpperBound           *int64  `json:"interchangeControlNumberUpperBound,omitempty"`
-	RolloverInterchangeControlNumber             *bool   `json:"rolloverInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberPrefix               *string `json:"interchangeControlNumberPrefix,omitempty"`
-	InterchangeControlNumberSuffix               *string `json:"interchangeControlNumberSuffix,omitempty"`
-	SenderReverseRoutingAddress                  *string `json:"senderReverseRoutingAddress,omitempty"`
-	ReceiverReverseRoutingAddress                *string `json:"receiverReverseRoutingAddress,omitempty"`
-	FunctionalGroupID                            *string `json:"functionalGroupId,omitempty"`
-	GroupControllingAgencyCode                   *string `json:"groupControllingAgencyCode,omitempty"`
-	GroupMessageVersion                          *string `json:"groupMessageVersion,omitempty"`
-	GroupMessageRelease                          *string `json:"groupMessageRelease,omitempty"`
-	GroupControlNumberLowerBound                 *int64  `json:"groupControlNumberLowerBound,omitempty"`
-	GroupControlNumberUpperBound                 *int64  `json:"groupControlNumberUpperBound,omitempty"`
-	RolloverGroupControlNumber                   *bool   `json:"rolloverGroupControlNumber,omitempty"`
-	GroupControlNumberPrefix                     *string `json:"groupControlNumberPrefix,omitempty"`
-	GroupControlNumberSuffix                     *string `json:"groupControlNumberSuffix,omitempty"`
-	GroupApplicationReceiverQualifier            *string `json:"groupApplicationReceiverQualifier,omitempty"`
-	GroupApplicationReceiverID                   *string `json:"groupApplicationReceiverId,omitempty"`
-	GroupApplicationSenderQualifier              *string `json:"groupApplicationSenderQualifier,omitempty"`
-	GroupApplicationSenderID                     *string `json:"groupApplicationSenderId,omitempty"`
-	GroupApplicationPassword                     *string `json:"groupApplicationPassword,omitempty"`
-	OverwriteExistingTransactionSetControlNumber *bool   `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
-	TransactionSetControlNumberPrefix            *string `json:"transactionSetControlNumberPrefix,omitempty"`
-	TransactionSetControlNumberSuffix            *string `json:"transactionSetControlNumberSuffix,omitempty"`
-	TransactionSetControlNumberLowerBound        *int64  `json:"transactionSetControlNumberLowerBound,omitempty"`
-	TransactionSetControlNumberUpperBound        *int64  `json:"transactionSetControlNumberUpperBound,omitempty"`
-	RolloverTransactionSetControlNumber          *bool   `json:"rolloverTransactionSetControlNumber,omitempty"`
-	IsTestInterchange                            *bool   `json:"isTestInterchange,omitempty"`
-	SenderInternalIdentification                 *string `json:"senderInternalIdentification,omitempty"`
-	SenderInternalSubIdentification              *string `json:"senderInternalSubIdentification,omitempty"`
-	ReceiverInternalIdentification               *string `json:"receiverInternalIdentification,omitempty"`
-	ReceiverInternalSubIdentification            *string `json:"receiverInternalSubIdentification,omitempty"`
+	// GroupAssociationAssignedCode - The group association assigned code.
+	GroupAssociationAssignedCode *string `json:"groupAssociationAssignedCode,omitempty"`
+	// CommunicationAgreementID - The communication agreement id.
+	CommunicationAgreementID *string `json:"communicationAgreementId,omitempty"`
+	// ApplyDelimiterStringAdvice - The value indicating whether to apply delimiter string advice.
+	ApplyDelimiterStringAdvice *bool `json:"applyDelimiterStringAdvice,omitempty"`
+	// CreateGroupingSegments - The value indicating whether to create grouping segments.
+	CreateGroupingSegments *bool `json:"createGroupingSegments,omitempty"`
+	// EnableDefaultGroupHeaders - The value indicating whether to enable default group headers.
+	EnableDefaultGroupHeaders *bool `json:"enableDefaultGroupHeaders,omitempty"`
+	// RecipientReferencePasswordValue - The recipient reference password value.
+	RecipientReferencePasswordValue *string `json:"recipientReferencePasswordValue,omitempty"`
+	// RecipientReferencePasswordQualifier - The recipient reference password qualifier.
+	RecipientReferencePasswordQualifier *string `json:"recipientReferencePasswordQualifier,omitempty"`
+	// ApplicationReferenceID - The application reference id.
+	ApplicationReferenceID *string `json:"applicationReferenceId,omitempty"`
+	// ProcessingPriorityCode - The processing priority code.
+	ProcessingPriorityCode *string `json:"processingPriorityCode,omitempty"`
+	// InterchangeControlNumberLowerBound - The interchange control number lower bound.
+	InterchangeControlNumberLowerBound *int64 `json:"interchangeControlNumberLowerBound,omitempty"`
+	// InterchangeControlNumberUpperBound - The interchange control number upper bound.
+	InterchangeControlNumberUpperBound *int64 `json:"interchangeControlNumberUpperBound,omitempty"`
+	// RolloverInterchangeControlNumber - The value indicating whether to rollover interchange control number.
+	RolloverInterchangeControlNumber *bool `json:"rolloverInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberPrefix - The interchange control number prefix.
+	InterchangeControlNumberPrefix *string `json:"interchangeControlNumberPrefix,omitempty"`
+	// InterchangeControlNumberSuffix - The interchange control number suffix.
+	InterchangeControlNumberSuffix *string `json:"interchangeControlNumberSuffix,omitempty"`
+	// SenderReverseRoutingAddress - The sender reverse routing address.
+	SenderReverseRoutingAddress *string `json:"senderReverseRoutingAddress,omitempty"`
+	// ReceiverReverseRoutingAddress - The receiver reverse routing address.
+	ReceiverReverseRoutingAddress *string `json:"receiverReverseRoutingAddress,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// GroupControllingAgencyCode - The group controlling agency code.
+	GroupControllingAgencyCode *string `json:"groupControllingAgencyCode,omitempty"`
+	// GroupMessageVersion - The group message version.
+	GroupMessageVersion *string `json:"groupMessageVersion,omitempty"`
+	// GroupMessageRelease - The group message release.
+	GroupMessageRelease *string `json:"groupMessageRelease,omitempty"`
+	// GroupControlNumberLowerBound - The group control number lower bound.
+	GroupControlNumberLowerBound *int64 `json:"groupControlNumberLowerBound,omitempty"`
+	// GroupControlNumberUpperBound - The group control number upper bound.
+	GroupControlNumberUpperBound *int64 `json:"groupControlNumberUpperBound,omitempty"`
+	// RolloverGroupControlNumber - The value indicating whether to rollover group control number.
+	RolloverGroupControlNumber *bool `json:"rolloverGroupControlNumber,omitempty"`
+	// GroupControlNumberPrefix - The group control number prefix.
+	GroupControlNumberPrefix *string `json:"groupControlNumberPrefix,omitempty"`
+	// GroupControlNumberSuffix - The group control number suffix.
+	GroupControlNumberSuffix *string `json:"groupControlNumberSuffix,omitempty"`
+	// GroupApplicationReceiverQualifier - The group application receiver qualifier.
+	GroupApplicationReceiverQualifier *string `json:"groupApplicationReceiverQualifier,omitempty"`
+	// GroupApplicationReceiverID - The group application receiver id.
+	GroupApplicationReceiverID *string `json:"groupApplicationReceiverId,omitempty"`
+	// GroupApplicationSenderQualifier - The group application sender qualifier.
+	GroupApplicationSenderQualifier *string `json:"groupApplicationSenderQualifier,omitempty"`
+	// GroupApplicationSenderID - The group application sender id.
+	GroupApplicationSenderID *string `json:"groupApplicationSenderId,omitempty"`
+	// GroupApplicationPassword - The group application password.
+	GroupApplicationPassword *string `json:"groupApplicationPassword,omitempty"`
+	// OverwriteExistingTransactionSetControlNumber - The value indicating whether to overwrite existing transaction set control number.
+	OverwriteExistingTransactionSetControlNumber *bool `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
+	// TransactionSetControlNumberPrefix - The transaction set control number prefix.
+	TransactionSetControlNumberPrefix *string `json:"transactionSetControlNumberPrefix,omitempty"`
+	// TransactionSetControlNumberSuffix - The transaction set control number suffix.
+	TransactionSetControlNumberSuffix *string `json:"transactionSetControlNumberSuffix,omitempty"`
+	// TransactionSetControlNumberLowerBound - The transaction set control number lower bound.
+	TransactionSetControlNumberLowerBound *int64 `json:"transactionSetControlNumberLowerBound,omitempty"`
+	// TransactionSetControlNumberUpperBound - The transaction set control number upper bound.
+	TransactionSetControlNumberUpperBound *int64 `json:"transactionSetControlNumberUpperBound,omitempty"`
+	// RolloverTransactionSetControlNumber - The value indicating whether to rollover transaction set control number.
+	RolloverTransactionSetControlNumber *bool `json:"rolloverTransactionSetControlNumber,omitempty"`
+	// IsTestInterchange - The value indicating whether the message is a test interchange.
+	IsTestInterchange *bool `json:"isTestInterchange,omitempty"`
+	// SenderInternalIdentification - The sender internal identification.
+	SenderInternalIdentification *string `json:"senderInternalIdentification,omitempty"`
+	// SenderInternalSubIdentification - The sender internal sub identification.
+	SenderInternalSubIdentification *string `json:"senderInternalSubIdentification,omitempty"`
+	// ReceiverInternalIdentification - The receiver internal identification.
+	ReceiverInternalIdentification *string `json:"receiverInternalIdentification,omitempty"`
+	// ReceiverInternalSubIdentification - The receiver internal sub identification.
+	ReceiverInternalSubIdentification *string `json:"receiverInternalSubIdentification,omitempty"`
 }
 
-// EdifactFramingSettings is the Edifact agreement framing settings.
+// EdifactFramingSettings the Edifact agreement framing settings.
 type EdifactFramingSettings struct {
-	ServiceCodeListDirectoryVersion *string                 `json:"serviceCodeListDirectoryVersion,omitempty"`
-	CharacterEncoding               *string                 `json:"characterEncoding,omitempty"`
-	ProtocolVersion                 *int32                  `json:"protocolVersion,omitempty"`
-	DataElementSeparator            *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator              *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator               *int32                  `json:"segmentTerminator,omitempty"`
-	ReleaseIndicator                *int32                  `json:"releaseIndicator,omitempty"`
-	RepetitionSeparator             *int32                  `json:"repetitionSeparator,omitempty"`
-	CharacterSet                    EdifactCharacterSet     `json:"characterSet,omitempty"`
-	DecimalPointIndicator           EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
-	SegmentTerminatorSuffix         SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// ServiceCodeListDirectoryVersion - The service code list directory version.
+	ServiceCodeListDirectoryVersion *string `json:"serviceCodeListDirectoryVersion,omitempty"`
+	// CharacterEncoding - The character encoding.
+	CharacterEncoding *string `json:"characterEncoding,omitempty"`
+	// ProtocolVersion - The protocol version.
+	ProtocolVersion *int32 `json:"protocolVersion,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// ReleaseIndicator - The release indicator.
+	ReleaseIndicator *int32 `json:"releaseIndicator,omitempty"`
+	// RepetitionSeparator - The repetition separator.
+	RepetitionSeparator *int32 `json:"repetitionSeparator,omitempty"`
+	// CharacterSet - The EDIFACT frame setting characterSet. Possible values include: 'EdifactCharacterSetNotSpecified', 'EdifactCharacterSetUNOB', 'EdifactCharacterSetUNOA', 'EdifactCharacterSetUNOC', 'EdifactCharacterSetUNOD', 'EdifactCharacterSetUNOE', 'EdifactCharacterSetUNOF', 'EdifactCharacterSetUNOG', 'EdifactCharacterSetUNOH', 'EdifactCharacterSetUNOI', 'EdifactCharacterSetUNOJ', 'EdifactCharacterSetUNOK', 'EdifactCharacterSetUNOX', 'EdifactCharacterSetUNOY', 'EdifactCharacterSetKECA'
+	CharacterSet EdifactCharacterSet `json:"characterSet,omitempty"`
+	// DecimalPointIndicator - The EDIFACT frame setting decimal indicator. Possible values include: 'EdifactDecimalIndicatorNotSpecified', 'EdifactDecimalIndicatorComma', 'EdifactDecimalIndicatorDecimal'
+	DecimalPointIndicator EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
+	// SegmentTerminatorSuffix - The EDIFACT frame setting segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
 }
 
-// EdifactMessageFilter is the Edifact message filter for odata query.
+// EdifactMessageFilter the Edifact message filter for odata query.
 type EdifactMessageFilter struct {
+	// MessageFilterType - The message filter type. Possible values include: 'MessageFilterTypeNotSpecified', 'MessageFilterTypeInclude', 'MessageFilterTypeExclude'
 	MessageFilterType MessageFilterType `json:"messageFilterType,omitempty"`
 }
 
-// EdifactMessageIdentifier is the Edifact message identifier.
+// EdifactMessageIdentifier the Edifact message identifier.
 type EdifactMessageIdentifier struct {
+	// MessageID - The message id on which this envelope settings has to be applied.
 	MessageID *string `json:"messageId,omitempty"`
 }
 
-// EdifactOneWayAgreement is the Edifact one way agreement.
+// EdifactOneWayAgreement the Edifact one way agreement.
 type EdifactOneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity        `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity        `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *EdifactProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The EDIFACT protocol settings.
+	ProtocolSettings *EdifactProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// EdifactProcessingSettings is the Edifact agreement protocol settings.
+// EdifactProcessingSettings the Edifact agreement protocol settings.
 type EdifactProcessingSettings struct {
-	MaskSecurityInfo                        *bool `json:"maskSecurityInfo,omitempty"`
-	PreserveInterchange                     *bool `json:"preserveInterchange,omitempty"`
-	SuspendInterchangeOnError               *bool `json:"suspendInterchangeOnError,omitempty"`
+	// MaskSecurityInfo - The value indicating whether to mask security information.
+	MaskSecurityInfo *bool `json:"maskSecurityInfo,omitempty"`
+	// PreserveInterchange - The value indicating whether to preserve interchange.
+	PreserveInterchange *bool `json:"preserveInterchange,omitempty"`
+	// SuspendInterchangeOnError - The value indicating whether to suspend interchange on error.
+	SuspendInterchangeOnError *bool `json:"suspendInterchangeOnError,omitempty"`
+	// CreateEmptyXMLTagsForTrailingSeparators - The value indicating whether to create empty xml tags for trailing separators.
 	CreateEmptyXMLTagsForTrailingSeparators *bool `json:"createEmptyXmlTagsForTrailingSeparators,omitempty"`
-	UseDotAsDecimalSeparator                *bool `json:"useDotAsDecimalSeparator,omitempty"`
+	// UseDotAsDecimalSeparator - The value indicating whether to use dot as decimal separator.
+	UseDotAsDecimalSeparator *bool `json:"useDotAsDecimalSeparator,omitempty"`
 }
 
-// EdifactProtocolSettings is the Edifact agreement protocol settings.
+// EdifactProtocolSettings the Edifact agreement protocol settings.
 type EdifactProtocolSettings struct {
-	ValidationSettings        *EdifactValidationSettings      `json:"validationSettings,omitempty"`
-	FramingSettings           *EdifactFramingSettings         `json:"framingSettings,omitempty"`
-	EnvelopeSettings          *EdifactEnvelopeSettings        `json:"envelopeSettings,omitempty"`
-	AcknowledgementSettings   *EdifactAcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
-	MessageFilter             *EdifactMessageFilter           `json:"messageFilter,omitempty"`
-	ProcessingSettings        *EdifactProcessingSettings      `json:"processingSettings,omitempty"`
-	EnvelopeOverrides         *[]EdifactEnvelopeOverride      `json:"envelopeOverrides,omitempty"`
-	MessageFilterList         *[]EdifactMessageIdentifier     `json:"messageFilterList,omitempty"`
-	SchemaReferences          *[]EdifactSchemaReference       `json:"schemaReferences,omitempty"`
-	ValidationOverrides       *[]EdifactValidationOverride    `json:"validationOverrides,omitempty"`
-	EdifactDelimiterOverrides *[]EdifactDelimiterOverride     `json:"edifactDelimiterOverrides,omitempty"`
+	// ValidationSettings - The EDIFACT validation settings.
+	ValidationSettings *EdifactValidationSettings `json:"validationSettings,omitempty"`
+	// FramingSettings - The EDIFACT framing settings.
+	FramingSettings *EdifactFramingSettings `json:"framingSettings,omitempty"`
+	// EnvelopeSettings - The EDIFACT envelope settings.
+	EnvelopeSettings *EdifactEnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// AcknowledgementSettings - The EDIFACT acknowledgement settings.
+	AcknowledgementSettings *EdifactAcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
+	// MessageFilter - The EDIFACT message filter.
+	MessageFilter *EdifactMessageFilter `json:"messageFilter,omitempty"`
+	// ProcessingSettings - The EDIFACT processing Settings.
+	ProcessingSettings *EdifactProcessingSettings `json:"processingSettings,omitempty"`
+	// EnvelopeOverrides - The EDIFACT envelope override settings.
+	EnvelopeOverrides *[]EdifactEnvelopeOverride `json:"envelopeOverrides,omitempty"`
+	// MessageFilterList - The EDIFACT message filter list.
+	MessageFilterList *[]EdifactMessageIdentifier `json:"messageFilterList,omitempty"`
+	// SchemaReferences - The EDIFACT schema references.
+	SchemaReferences *[]EdifactSchemaReference `json:"schemaReferences,omitempty"`
+	// ValidationOverrides - The EDIFACT validation override settings.
+	ValidationOverrides *[]EdifactValidationOverride `json:"validationOverrides,omitempty"`
+	// EdifactDelimiterOverrides - The EDIFACT delimiter override settings.
+	EdifactDelimiterOverrides *[]EdifactDelimiterOverride `json:"edifactDelimiterOverrides,omitempty"`
 }
 
-// EdifactSchemaReference is the Edifact schema reference.
+// EdifactSchemaReference the Edifact schema reference.
 type EdifactSchemaReference struct {
-	MessageID                  *string `json:"messageId,omitempty"`
-	MessageVersion             *string `json:"messageVersion,omitempty"`
-	MessageRelease             *string `json:"messageRelease,omitempty"`
-	SenderApplicationID        *string `json:"senderApplicationId,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message release version.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// SenderApplicationQualifier - The sender application qualifier.
 	SenderApplicationQualifier *string `json:"senderApplicationQualifier,omitempty"`
-	AssociationAssignedCode    *string `json:"associationAssignedCode,omitempty"`
-	SchemaName                 *string `json:"schemaName,omitempty"`
+	// AssociationAssignedCode - The association assigned code.
+	AssociationAssignedCode *string `json:"associationAssignedCode,omitempty"`
+	// SchemaName - The schema name.
+	SchemaName *string `json:"schemaName,omitempty"`
 }
 
-// EdifactValidationOverride is the Edifact validation override settings.
+// EdifactValidationOverride the Edifact validation override settings.
 type EdifactValidationOverride struct {
-	MessageID                              *string                 `json:"messageId,omitempty"`
-	EnforceCharacterSet                    *bool                   `json:"enforceCharacterSet,omitempty"`
-	ValidateEdiTypes                       *bool                   `json:"validateEdiTypes,omitempty"`
-	ValidateXsdTypes                       *bool                   `json:"validateXsdTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes  *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// MessageID - The message id on which the validation settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// EnforceCharacterSet - The value indicating whether to validate character Set.
+	EnforceCharacterSet *bool `json:"enforceCharacterSet,omitempty"`
+	// ValidateEdiTypes - The value indicating whether to validate EDI types.
+	ValidateEdiTypes *bool `json:"validateEdiTypes,omitempty"`
+	// ValidateXsdTypes - The value indicating whether to validate XSD types.
+	ValidateXsdTypes *bool `json:"validateXsdTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
 }
 
-// EdifactValidationSettings is the Edifact agreement validation settings.
+// EdifactValidationSettings the Edifact agreement validation settings.
 type EdifactValidationSettings struct {
-	ValidateCharacterSet                      *bool                   `json:"validateCharacterSet,omitempty"`
-	CheckDuplicateInterchangeControlNumber    *bool                   `json:"checkDuplicateInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberValidityDays      *int32                  `json:"interchangeControlNumberValidityDays,omitempty"`
-	CheckDuplicateGroupControlNumber          *bool                   `json:"checkDuplicateGroupControlNumber,omitempty"`
-	CheckDuplicateTransactionSetControlNumber *bool                   `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
-	ValidateEdiTypes                          *bool                   `json:"validateEdiTypes,omitempty"`
-	ValidateXsdTypes                          *bool                   `json:"validateXsdTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes    *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes     *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                   TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character set in the message.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// CheckDuplicateInterchangeControlNumber - The value indicating whether to check for duplicate interchange control number.
+	CheckDuplicateInterchangeControlNumber *bool `json:"checkDuplicateInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberValidityDays - The validity period of interchange control number.
+	InterchangeControlNumberValidityDays *int32 `json:"interchangeControlNumberValidityDays,omitempty"`
+	// CheckDuplicateGroupControlNumber - The value indicating whether to check for duplicate group control number.
+	CheckDuplicateGroupControlNumber *bool `json:"checkDuplicateGroupControlNumber,omitempty"`
+	// CheckDuplicateTransactionSetControlNumber - The value indicating whether to check for duplicate transaction set control number.
+	CheckDuplicateTransactionSetControlNumber *bool `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
+	// ValidateEdiTypes - The value indicating whether to Whether to validate EDI types.
+	ValidateEdiTypes *bool `json:"validateEdiTypes,omitempty"`
+	// ValidateXsdTypes - The value indicating whether to Whether to validate XSD types.
+	ValidateXsdTypes *bool `json:"validateXsdTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }
 
-// ErrorProperties is error properties indicate why the Logic service was not able to process the incoming request. The
+// ErrorProperties error properties indicate why the Logic service was not able to process the incoming request. The
 // reason is provided in the error message.
 type ErrorProperties struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - Error code.
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
 	Message *string `json:"message,omitempty"`
 }
 
-// ErrorResponse is error reponse indicates Logic service is not able to process the incoming request. The error
-// property contains the error details.
+// ErrorResponse error reponse indicates Logic service is not able to process the incoming request. The error property
+// contains the error details.
 type ErrorResponse struct {
+	// Error - The error properties.
 	Error *ErrorProperties `json:"error,omitempty"`
 }
 
-// GenerateUpgradedDefinitionParameters is the parameters to generate upgraded definition.
+// GenerateUpgradedDefinitionParameters the parameters to generate upgraded definition.
 type GenerateUpgradedDefinitionParameters struct {
+	// TargetSchemaVersion - The target schema version.
 	TargetSchemaVersion *string `json:"targetSchemaVersion,omitempty"`
 }
 
-// GetCallbackURLParameters is the callback url parameters.
+// GetCallbackURLParameters the callback url parameters.
 type GetCallbackURLParameters struct {
+	// NotAfter - The expiry time.
 	NotAfter *date.Time `json:"notAfter,omitempty"`
-	KeyType  KeyType    `json:"keyType,omitempty"`
-}
-
-// IntegrationAccount is the integration account.
-type IntegrationAccount struct {
-	autorest.Response `json:"-"`
-	ID                *string                 `json:"id,omitempty"`
-	Name              *string                 `json:"name,omitempty"`
-	Type              *string                 `json:"type,omitempty"`
-	Location          *string                 `json:"location,omitempty"`
-	Tags              *map[string]*string     `json:"tags,omitempty"`
-	Properties        *map[string]interface{} `json:"properties,omitempty"`
-	Sku               *IntegrationAccountSku  `json:"sku,omitempty"`
-}
-
-// IntegrationAccountAgreement is the integration account agreement.
-type IntegrationAccountAgreement struct {
-	autorest.Response                      `json:"-"`
-	ID                                     *string             `json:"id,omitempty"`
-	Name                                   *string             `json:"name,omitempty"`
-	Type                                   *string             `json:"type,omitempty"`
-	Location                               *string             `json:"location,omitempty"`
-	Tags                                   *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountAgreementProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountAgreementFilter is the integration account agreement filter for odata query.
-type IntegrationAccountAgreementFilter struct {
-	AgreementType AgreementType `json:"agreementType,omitempty"`
-}
-
-// IntegrationAccountAgreementListResult is the list of integration account agreements.
-type IntegrationAccountAgreementListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountAgreement `json:"value,omitempty"`
-	NextLink          *string                        `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountAgreementListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountAgreementListResult) IntegrationAccountAgreementListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountAgreementProperties is the integration account agreement properties.
-type IntegrationAccountAgreementProperties struct {
-	CreatedTime   *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime   *date.Time              `json:"changedTime,omitempty"`
-	Metadata      *map[string]interface{} `json:"metadata,omitempty"`
-	AgreementType AgreementType           `json:"agreementType,omitempty"`
-	HostPartner   *string                 `json:"hostPartner,omitempty"`
-	GuestPartner  *string                 `json:"guestPartner,omitempty"`
-	HostIdentity  *BusinessIdentity       `json:"hostIdentity,omitempty"`
-	GuestIdentity *BusinessIdentity       `json:"guestIdentity,omitempty"`
-	Content       *AgreementContent       `json:"content,omitempty"`
-}
-
-// IntegrationAccountCertificate is the integration account certificate.
-type IntegrationAccountCertificate struct {
-	autorest.Response                        `json:"-"`
-	ID                                       *string             `json:"id,omitempty"`
-	Name                                     *string             `json:"name,omitempty"`
-	Type                                     *string             `json:"type,omitempty"`
-	Location                                 *string             `json:"location,omitempty"`
-	Tags                                     *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountCertificateProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountCertificateListResult is the list of integration account certificates.
-type IntegrationAccountCertificateListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountCertificate `json:"value,omitempty"`
-	NextLink          *string                          `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountCertificateListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountCertificateListResult) IntegrationAccountCertificateListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountCertificateProperties is the integration account certificate properties.
-type IntegrationAccountCertificateProperties struct {
-	CreatedTime       *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime       *date.Time              `json:"changedTime,omitempty"`
-	Metadata          *map[string]interface{} `json:"metadata,omitempty"`
-	Key               *KeyVaultKeyReference   `json:"key,omitempty"`
-	PublicCertificate *string                 `json:"publicCertificate,omitempty"`
-}
-
-// IntegrationAccountListResult is the list of integration accounts.
-type IntegrationAccountListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccount `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountListResult) IntegrationAccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountMap is the integration account map.
-type IntegrationAccountMap struct {
-	autorest.Response                `json:"-"`
-	ID                               *string             `json:"id,omitempty"`
-	Name                             *string             `json:"name,omitempty"`
-	Type                             *string             `json:"type,omitempty"`
-	Location                         *string             `json:"location,omitempty"`
-	Tags                             *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountMapProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountMapFilter is the integration account map filter for odata query.
-type IntegrationAccountMapFilter struct {
-	MapType MapType `json:"mapType,omitempty"`
-}
-
-// IntegrationAccountMapListResult is the list of integration account maps.
-type IntegrationAccountMapListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountMap `json:"value,omitempty"`
-	NextLink          *string                  `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountMapListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountMapListResult) IntegrationAccountMapListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountMapProperties is the integration account map.
-type IntegrationAccountMapProperties struct {
-	MapType          MapType                                          `json:"mapType,omitempty"`
-	ParametersSchema *IntegrationAccountMapPropertiesParametersSchema `json:"parametersSchema,omitempty"`
-	CreatedTime      *date.Time                                       `json:"createdTime,omitempty"`
-	ChangedTime      *date.Time                                       `json:"changedTime,omitempty"`
-	Content          *string                                          `json:"content,omitempty"`
-	ContentType      *string                                          `json:"contentType,omitempty"`
-	ContentLink      *ContentLink                                     `json:"contentLink,omitempty"`
-	Metadata         *map[string]interface{}                          `json:"metadata,omitempty"`
-}
-
-// IntegrationAccountMapPropertiesParametersSchema is the parameters schema of integration account map.
-type IntegrationAccountMapPropertiesParametersSchema struct {
-	Ref *string `json:"ref,omitempty"`
-}
-
-// IntegrationAccountPartner is the integration account partner.
-type IntegrationAccountPartner struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string             `json:"id,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
-	Tags                                 *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountPartnerProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountPartnerFilter is the integration account partner filter for odata query.
-type IntegrationAccountPartnerFilter struct {
-	PartnerType PartnerType `json:"partnerType,omitempty"`
-}
-
-// IntegrationAccountPartnerListResult is the list of integration account partners.
-type IntegrationAccountPartnerListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountPartner `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountPartnerListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountPartnerListResult) IntegrationAccountPartnerListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountPartnerProperties is the integration account partner properties.
-type IntegrationAccountPartnerProperties struct {
-	PartnerType PartnerType             `json:"partnerType,omitempty"`
-	CreatedTime *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime *date.Time              `json:"changedTime,omitempty"`
-	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
-	Content     *PartnerContent         `json:"content,omitempty"`
-}
-
-// IntegrationAccountSchema is the integration account schema.
-type IntegrationAccountSchema struct {
-	autorest.Response                   `json:"-"`
-	ID                                  *string             `json:"id,omitempty"`
-	Name                                *string             `json:"name,omitempty"`
-	Type                                *string             `json:"type,omitempty"`
-	Location                            *string             `json:"location,omitempty"`
-	Tags                                *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountSchemaProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountSchemaFilter is the integration account schema filter for odata query.
-type IntegrationAccountSchemaFilter struct {
-	SchemaType SchemaType `json:"schemaType,omitempty"`
-}
-
-// IntegrationAccountSchemaListResult is the list of integration account schemas.
-type IntegrationAccountSchemaListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountSchema `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountSchemaListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountSchemaListResult) IntegrationAccountSchemaListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountSchemaProperties is the integration account schema properties.
-type IntegrationAccountSchemaProperties struct {
-	SchemaType      SchemaType              `json:"schemaType,omitempty"`
-	TargetNamespace *string                 `json:"targetNamespace,omitempty"`
-	DocumentName    *string                 `json:"documentName,omitempty"`
-	FileName        *string                 `json:"fileName,omitempty"`
-	CreatedTime     *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime     *date.Time              `json:"changedTime,omitempty"`
-	Metadata        *map[string]interface{} `json:"metadata,omitempty"`
-	Content         *string                 `json:"content,omitempty"`
-	ContentType     *string                 `json:"contentType,omitempty"`
-	ContentLink     *ContentLink            `json:"contentLink,omitempty"`
-}
-
-// IntegrationAccountSession is the integration account session.
-type IntegrationAccountSession struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string             `json:"id,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
-	Tags                                 *map[string]*string `json:"tags,omitempty"`
-	*IntegrationAccountSessionProperties `json:"properties,omitempty"`
-}
-
-// IntegrationAccountSessionFilter is the integration account session filter.
-type IntegrationAccountSessionFilter struct {
-	ChangedTime *date.Time `json:"changedTime,omitempty"`
-}
-
-// IntegrationAccountSessionListResult is the list of integration account sessions.
-type IntegrationAccountSessionListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountSession `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
-}
-
-// IntegrationAccountSessionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountSessionListResult) IntegrationAccountSessionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// IntegrationAccountSessionProperties is the integration account session properties.
-type IntegrationAccountSessionProperties struct {
-	CreatedTime *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime *date.Time              `json:"changedTime,omitempty"`
-	Content     *map[string]interface{} `json:"content,omitempty"`
-}
-
-// IntegrationAccountSku is the integration account sku.
-type IntegrationAccountSku struct {
-	Name IntegrationAccountSkuName `json:"name,omitempty"`
-}
-
-// KeyVaultKeyReference is the reference to the key vault key.
-type KeyVaultKeyReference struct {
-	KeyVault   *KeyVaultKeyReferenceKeyVault `json:"keyVault,omitempty"`
-	KeyName    *string                       `json:"keyName,omitempty"`
-	KeyVersion *string                       `json:"keyVersion,omitempty"`
-}
-
-// KeyVaultKeyReferenceKeyVault is the key vault reference.
-type KeyVaultKeyReferenceKeyVault struct {
-	ID   *string `json:"id,omitempty"`
-	Name *string `json:"name,omitempty"`
-	Type *string `json:"type,omitempty"`
-}
-
-// Operation is logic REST API operation
-type Operation struct {
-	Name    *string           `json:"name,omitempty"`
-	Display *OperationDisplay `json:"display,omitempty"`
-}
-
-// OperationDisplay is the object that represents the operation.
-type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
-	Operation *string `json:"operation,omitempty"`
-}
-
-// OperationListResult is result of the request to list Logic operations. It contains a list of operations and a URL
-// link to get the next set of results.
-type OperationListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
-}
-
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
-		return nil, nil
-	}
-	return autorest.Prepare(&http.Request{},
-		autorest.AsJSON(),
-		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
-}
-
-// PartnerContent is the integration account partner content.
-type PartnerContent struct {
-	B2b *B2BPartnerContent `json:"b2b,omitempty"`
-}
-
-// RecurrenceSchedule is the recurrence schedule.
-type RecurrenceSchedule struct {
-	Minutes            *[]int32                        `json:"minutes,omitempty"`
-	Hours              *[]int32                        `json:"hours,omitempty"`
-	WeekDays           *[]DaysOfWeek                   `json:"weekDays,omitempty"`
-	MonthDays          *[]int32                        `json:"monthDays,omitempty"`
-	MonthlyOccurrences *[]RecurrenceScheduleOccurrence `json:"monthlyOccurrences,omitempty"`
-}
-
-// RecurrenceScheduleOccurrence is the recurrence schedule occurence.
-type RecurrenceScheduleOccurrence struct {
-	Day        DayOfWeek `json:"day,omitempty"`
-	Occurrence *int32    `json:"occurrence,omitempty"`
-}
-
-// RegenerateActionParameter is the access key regenerate action content.
-type RegenerateActionParameter struct {
+	// KeyType - The key type. Possible values include: 'KeyTypeNotSpecified', 'KeyTypePrimary', 'KeyTypeSecondary'
 	KeyType KeyType `json:"keyType,omitempty"`
 }
 
-// Resource is the base resource type.
-type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+// IntegrationAccount the integration account.
+type IntegrationAccount struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - The integration account properties.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	// Sku - The sku.
+	Sku *IntegrationAccountSku `json:"sku,omitempty"`
 }
 
-// ResourceReference is the resource reference.
-type ResourceReference struct {
-	ID   *string `json:"id,omitempty"`
+// IntegrationAccountAgreement the integration account agreement.
+type IntegrationAccountAgreement struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountAgreementProperties - The integration account agreement properties.
+	*IntegrationAccountAgreementProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountAgreement struct.
+func (iaa *IntegrationAccountAgreement) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountAgreementProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iaa.IntegrationAccountAgreementProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iaa.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iaa.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iaa.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iaa.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iaa.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountAgreementFilter the integration account agreement filter for odata query.
+type IntegrationAccountAgreementFilter struct {
+	// AgreementType - The agreement type of integration account agreement. Possible values include: 'NotSpecified', 'AS2', 'X12', 'Edifact'
+	AgreementType AgreementType `json:"agreementType,omitempty"`
+}
+
+// IntegrationAccountAgreementListResult the list of integration account agreements.
+type IntegrationAccountAgreementListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account agreements.
+	Value *[]IntegrationAccountAgreement `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountAgreementListResultIterator provides access to a complete listing of IntegrationAccountAgreement
+// values.
+type IntegrationAccountAgreementListResultIterator struct {
+	i    int
+	page IntegrationAccountAgreementListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountAgreementListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountAgreementListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountAgreementListResultIterator) Response() IntegrationAccountAgreementListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountAgreementListResultIterator) Value() IntegrationAccountAgreement {
+	if !iter.page.NotDone() {
+		return IntegrationAccountAgreement{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaalr IntegrationAccountAgreementListResult) IsEmpty() bool {
+	return iaalr.Value == nil || len(*iaalr.Value) == 0
+}
+
+// integrationAccountAgreementListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaalr IntegrationAccountAgreementListResult) integrationAccountAgreementListResultPreparer() (*http.Request, error) {
+	if iaalr.NextLink == nil || len(to.String(iaalr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iaalr.NextLink)))
+}
+
+// IntegrationAccountAgreementListResultPage contains a page of IntegrationAccountAgreement values.
+type IntegrationAccountAgreementListResultPage struct {
+	fn    func(IntegrationAccountAgreementListResult) (IntegrationAccountAgreementListResult, error)
+	iaalr IntegrationAccountAgreementListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountAgreementListResultPage) Next() error {
+	next, err := page.fn(page.iaalr)
+	if err != nil {
+		return err
+	}
+	page.iaalr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountAgreementListResultPage) NotDone() bool {
+	return !page.iaalr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountAgreementListResultPage) Response() IntegrationAccountAgreementListResult {
+	return page.iaalr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountAgreementListResultPage) Values() []IntegrationAccountAgreement {
+	if page.iaalr.IsEmpty() {
+		return nil
+	}
+	return *page.iaalr.Value
+}
+
+// IntegrationAccountAgreementProperties the integration account agreement properties.
+type IntegrationAccountAgreementProperties struct {
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// AgreementType - The agreement type. Possible values include: 'NotSpecified', 'AS2', 'X12', 'Edifact'
+	AgreementType AgreementType `json:"agreementType,omitempty"`
+	// HostPartner - The integration account partner that is set as host partner for this agreement.
+	HostPartner *string `json:"hostPartner,omitempty"`
+	// GuestPartner - The integration account partner that is set as guest partner for this agreement.
+	GuestPartner *string `json:"guestPartner,omitempty"`
+	// HostIdentity - The business identity of the host partner.
+	HostIdentity *BusinessIdentity `json:"hostIdentity,omitempty"`
+	// GuestIdentity - The business identity of the guest partner.
+	GuestIdentity *BusinessIdentity `json:"guestIdentity,omitempty"`
+	// Content - The agreement content.
+	Content *AgreementContent `json:"content,omitempty"`
+}
+
+// IntegrationAccountCertificate the integration account certificate.
+type IntegrationAccountCertificate struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountCertificateProperties - The integration account certificate properties.
+	*IntegrationAccountCertificateProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountCertificate struct.
+func (iac *IntegrationAccountCertificate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountCertificateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iac.IntegrationAccountCertificateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iac.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iac.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iac.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iac.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iac.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountCertificateListResult the list of integration account certificates.
+type IntegrationAccountCertificateListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account certificates.
+	Value *[]IntegrationAccountCertificate `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountCertificateListResultIterator provides access to a complete listing of
+// IntegrationAccountCertificate values.
+type IntegrationAccountCertificateListResultIterator struct {
+	i    int
+	page IntegrationAccountCertificateListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountCertificateListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountCertificateListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountCertificateListResultIterator) Response() IntegrationAccountCertificateListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountCertificateListResultIterator) Value() IntegrationAccountCertificate {
+	if !iter.page.NotDone() {
+		return IntegrationAccountCertificate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaclr IntegrationAccountCertificateListResult) IsEmpty() bool {
+	return iaclr.Value == nil || len(*iaclr.Value) == 0
+}
+
+// integrationAccountCertificateListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaclr IntegrationAccountCertificateListResult) integrationAccountCertificateListResultPreparer() (*http.Request, error) {
+	if iaclr.NextLink == nil || len(to.String(iaclr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iaclr.NextLink)))
+}
+
+// IntegrationAccountCertificateListResultPage contains a page of IntegrationAccountCertificate values.
+type IntegrationAccountCertificateListResultPage struct {
+	fn    func(IntegrationAccountCertificateListResult) (IntegrationAccountCertificateListResult, error)
+	iaclr IntegrationAccountCertificateListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountCertificateListResultPage) Next() error {
+	next, err := page.fn(page.iaclr)
+	if err != nil {
+		return err
+	}
+	page.iaclr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountCertificateListResultPage) NotDone() bool {
+	return !page.iaclr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountCertificateListResultPage) Response() IntegrationAccountCertificateListResult {
+	return page.iaclr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountCertificateListResultPage) Values() []IntegrationAccountCertificate {
+	if page.iaclr.IsEmpty() {
+		return nil
+	}
+	return *page.iaclr.Value
+}
+
+// IntegrationAccountCertificateProperties the integration account certificate properties.
+type IntegrationAccountCertificateProperties struct {
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Key - The key details in the key vault.
+	Key *KeyVaultKeyReference `json:"key,omitempty"`
+	// PublicCertificate - The public certificate.
+	PublicCertificate *string `json:"publicCertificate,omitempty"`
+}
+
+// IntegrationAccountListResult the list of integration accounts.
+type IntegrationAccountListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration accounts.
+	Value *[]IntegrationAccount `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountListResultIterator provides access to a complete listing of IntegrationAccount values.
+type IntegrationAccountListResultIterator struct {
+	i    int
+	page IntegrationAccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountListResultIterator) Response() IntegrationAccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountListResultIterator) Value() IntegrationAccount {
+	if !iter.page.NotDone() {
+		return IntegrationAccount{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ialr IntegrationAccountListResult) IsEmpty() bool {
+	return ialr.Value == nil || len(*ialr.Value) == 0
+}
+
+// integrationAccountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ialr IntegrationAccountListResult) integrationAccountListResultPreparer() (*http.Request, error) {
+	if ialr.NextLink == nil || len(to.String(ialr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(ialr.NextLink)))
+}
+
+// IntegrationAccountListResultPage contains a page of IntegrationAccount values.
+type IntegrationAccountListResultPage struct {
+	fn   func(IntegrationAccountListResult) (IntegrationAccountListResult, error)
+	ialr IntegrationAccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountListResultPage) Next() error {
+	next, err := page.fn(page.ialr)
+	if err != nil {
+		return err
+	}
+	page.ialr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountListResultPage) NotDone() bool {
+	return !page.ialr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountListResultPage) Response() IntegrationAccountListResult {
+	return page.ialr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountListResultPage) Values() []IntegrationAccount {
+	if page.ialr.IsEmpty() {
+		return nil
+	}
+	return *page.ialr.Value
+}
+
+// IntegrationAccountMap the integration account map.
+type IntegrationAccountMap struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountMapProperties - The integration account map properties.
+	*IntegrationAccountMapProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountMap struct.
+func (iam *IntegrationAccountMap) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountMapProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iam.IntegrationAccountMapProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iam.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iam.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iam.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iam.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iam.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountMapFilter the integration account map filter for odata query.
+type IntegrationAccountMapFilter struct {
+	// MapType - The map type of integration account map. Possible values include: 'MapTypeNotSpecified', 'MapTypeXslt'
+	MapType MapType `json:"mapType,omitempty"`
+}
+
+// IntegrationAccountMapListResult the list of integration account maps.
+type IntegrationAccountMapListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account maps.
+	Value *[]IntegrationAccountMap `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountMapListResultIterator provides access to a complete listing of IntegrationAccountMap values.
+type IntegrationAccountMapListResultIterator struct {
+	i    int
+	page IntegrationAccountMapListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountMapListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountMapListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountMapListResultIterator) Response() IntegrationAccountMapListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountMapListResultIterator) Value() IntegrationAccountMap {
+	if !iter.page.NotDone() {
+		return IntegrationAccountMap{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iamlr IntegrationAccountMapListResult) IsEmpty() bool {
+	return iamlr.Value == nil || len(*iamlr.Value) == 0
+}
+
+// integrationAccountMapListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iamlr IntegrationAccountMapListResult) integrationAccountMapListResultPreparer() (*http.Request, error) {
+	if iamlr.NextLink == nil || len(to.String(iamlr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iamlr.NextLink)))
+}
+
+// IntegrationAccountMapListResultPage contains a page of IntegrationAccountMap values.
+type IntegrationAccountMapListResultPage struct {
+	fn    func(IntegrationAccountMapListResult) (IntegrationAccountMapListResult, error)
+	iamlr IntegrationAccountMapListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountMapListResultPage) Next() error {
+	next, err := page.fn(page.iamlr)
+	if err != nil {
+		return err
+	}
+	page.iamlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountMapListResultPage) NotDone() bool {
+	return !page.iamlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountMapListResultPage) Response() IntegrationAccountMapListResult {
+	return page.iamlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountMapListResultPage) Values() []IntegrationAccountMap {
+	if page.iamlr.IsEmpty() {
+		return nil
+	}
+	return *page.iamlr.Value
+}
+
+// IntegrationAccountMapProperties the integration account map.
+type IntegrationAccountMapProperties struct {
+	// MapType - The map type. Possible values include: 'MapTypeNotSpecified', 'MapTypeXslt'
+	MapType MapType `json:"mapType,omitempty"`
+	// ParametersSchema - The parameters schema of integration account map.
+	ParametersSchema *IntegrationAccountMapPropertiesParametersSchema `json:"parametersSchema,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Content - The content.
+	Content *string `json:"content,omitempty"`
+	// ContentType - The content type.
+	ContentType *string `json:"contentType,omitempty"`
+	// ContentLink - The content link.
+	ContentLink *ContentLink `json:"contentLink,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// IntegrationAccountMapPropertiesParametersSchema the parameters schema of integration account map.
+type IntegrationAccountMapPropertiesParametersSchema struct {
+	// Ref - The reference name.
+	Ref *string `json:"ref,omitempty"`
+}
+
+// IntegrationAccountPartner the integration account partner.
+type IntegrationAccountPartner struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountPartnerProperties - The integration account partner properties.
+	*IntegrationAccountPartnerProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountPartner struct.
+func (iap *IntegrationAccountPartner) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountPartnerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iap.IntegrationAccountPartnerProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iap.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iap.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iap.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iap.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iap.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountPartnerFilter the integration account partner filter for odata query.
+type IntegrationAccountPartnerFilter struct {
+	// PartnerType - The partner type of integration account partner. Possible values include: 'PartnerTypeNotSpecified', 'PartnerTypeB2B'
+	PartnerType PartnerType `json:"partnerType,omitempty"`
+}
+
+// IntegrationAccountPartnerListResult the list of integration account partners.
+type IntegrationAccountPartnerListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account partners.
+	Value *[]IntegrationAccountPartner `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountPartnerListResultIterator provides access to a complete listing of IntegrationAccountPartner
+// values.
+type IntegrationAccountPartnerListResultIterator struct {
+	i    int
+	page IntegrationAccountPartnerListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountPartnerListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountPartnerListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountPartnerListResultIterator) Response() IntegrationAccountPartnerListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountPartnerListResultIterator) Value() IntegrationAccountPartner {
+	if !iter.page.NotDone() {
+		return IntegrationAccountPartner{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaplr IntegrationAccountPartnerListResult) IsEmpty() bool {
+	return iaplr.Value == nil || len(*iaplr.Value) == 0
+}
+
+// integrationAccountPartnerListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaplr IntegrationAccountPartnerListResult) integrationAccountPartnerListResultPreparer() (*http.Request, error) {
+	if iaplr.NextLink == nil || len(to.String(iaplr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iaplr.NextLink)))
+}
+
+// IntegrationAccountPartnerListResultPage contains a page of IntegrationAccountPartner values.
+type IntegrationAccountPartnerListResultPage struct {
+	fn    func(IntegrationAccountPartnerListResult) (IntegrationAccountPartnerListResult, error)
+	iaplr IntegrationAccountPartnerListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountPartnerListResultPage) Next() error {
+	next, err := page.fn(page.iaplr)
+	if err != nil {
+		return err
+	}
+	page.iaplr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountPartnerListResultPage) NotDone() bool {
+	return !page.iaplr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountPartnerListResultPage) Response() IntegrationAccountPartnerListResult {
+	return page.iaplr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountPartnerListResultPage) Values() []IntegrationAccountPartner {
+	if page.iaplr.IsEmpty() {
+		return nil
+	}
+	return *page.iaplr.Value
+}
+
+// IntegrationAccountPartnerProperties the integration account partner properties.
+type IntegrationAccountPartnerProperties struct {
+	// PartnerType - The partner type. Possible values include: 'PartnerTypeNotSpecified', 'PartnerTypeB2B'
+	PartnerType PartnerType `json:"partnerType,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Content - The partner content.
+	Content *PartnerContent `json:"content,omitempty"`
+}
+
+// IntegrationAccountSchema the integration account schema.
+type IntegrationAccountSchema struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountSchemaProperties - The integration account schema properties.
+	*IntegrationAccountSchemaProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountSchema struct.
+func (ias *IntegrationAccountSchema) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountSchemaProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ias.IntegrationAccountSchemaProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ias.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ias.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ias.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ias.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ias.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountSchemaFilter the integration account schema filter for odata query.
+type IntegrationAccountSchemaFilter struct {
+	// SchemaType - The schema type of integration account schema. Possible values include: 'SchemaTypeNotSpecified', 'SchemaTypeXML'
+	SchemaType SchemaType `json:"schemaType,omitempty"`
+}
+
+// IntegrationAccountSchemaListResult the list of integration account schemas.
+type IntegrationAccountSchemaListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account schemas.
+	Value *[]IntegrationAccountSchema `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountSchemaListResultIterator provides access to a complete listing of IntegrationAccountSchema values.
+type IntegrationAccountSchemaListResultIterator struct {
+	i    int
+	page IntegrationAccountSchemaListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountSchemaListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountSchemaListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountSchemaListResultIterator) Response() IntegrationAccountSchemaListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountSchemaListResultIterator) Value() IntegrationAccountSchema {
+	if !iter.page.NotDone() {
+		return IntegrationAccountSchema{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaslr IntegrationAccountSchemaListResult) IsEmpty() bool {
+	return iaslr.Value == nil || len(*iaslr.Value) == 0
+}
+
+// integrationAccountSchemaListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaslr IntegrationAccountSchemaListResult) integrationAccountSchemaListResultPreparer() (*http.Request, error) {
+	if iaslr.NextLink == nil || len(to.String(iaslr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iaslr.NextLink)))
+}
+
+// IntegrationAccountSchemaListResultPage contains a page of IntegrationAccountSchema values.
+type IntegrationAccountSchemaListResultPage struct {
+	fn    func(IntegrationAccountSchemaListResult) (IntegrationAccountSchemaListResult, error)
+	iaslr IntegrationAccountSchemaListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountSchemaListResultPage) Next() error {
+	next, err := page.fn(page.iaslr)
+	if err != nil {
+		return err
+	}
+	page.iaslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountSchemaListResultPage) NotDone() bool {
+	return !page.iaslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountSchemaListResultPage) Response() IntegrationAccountSchemaListResult {
+	return page.iaslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountSchemaListResultPage) Values() []IntegrationAccountSchema {
+	if page.iaslr.IsEmpty() {
+		return nil
+	}
+	return *page.iaslr.Value
+}
+
+// IntegrationAccountSchemaProperties the integration account schema properties.
+type IntegrationAccountSchemaProperties struct {
+	// SchemaType - The schema type. Possible values include: 'SchemaTypeNotSpecified', 'SchemaTypeXML'
+	SchemaType SchemaType `json:"schemaType,omitempty"`
+	// TargetNamespace - The target namespace of the schema.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// DocumentName - The document name.
+	DocumentName *string `json:"documentName,omitempty"`
+	// FileName - The file name.
+	FileName *string `json:"fileName,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Content - The content.
+	Content *string `json:"content,omitempty"`
+	// ContentType - The content type.
+	ContentType *string `json:"contentType,omitempty"`
+	// ContentLink - The content link.
+	ContentLink *ContentLink `json:"contentLink,omitempty"`
+}
+
+// IntegrationAccountSession the integration account session.
+type IntegrationAccountSession struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountSessionProperties - The integration account session properties.
+	*IntegrationAccountSessionProperties `json:"properties,omitempty"`
+}
+
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountSession struct.
+func (ias *IntegrationAccountSession) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountSessionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ias.IntegrationAccountSessionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ias.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ias.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ias.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ias.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ias.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountSessionFilter the integration account session filter.
+type IntegrationAccountSessionFilter struct {
+	// ChangedTime - The changed time of integration account sessions.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+}
+
+// IntegrationAccountSessionListResult the list of integration account sessions.
+type IntegrationAccountSessionListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of integration account sessions.
+	Value *[]IntegrationAccountSession `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// IntegrationAccountSessionListResultIterator provides access to a complete listing of IntegrationAccountSession
+// values.
+type IntegrationAccountSessionListResultIterator struct {
+	i    int
+	page IntegrationAccountSessionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountSessionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountSessionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountSessionListResultIterator) Response() IntegrationAccountSessionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountSessionListResultIterator) Value() IntegrationAccountSession {
+	if !iter.page.NotDone() {
+		return IntegrationAccountSession{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaslr IntegrationAccountSessionListResult) IsEmpty() bool {
+	return iaslr.Value == nil || len(*iaslr.Value) == 0
+}
+
+// integrationAccountSessionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaslr IntegrationAccountSessionListResult) integrationAccountSessionListResultPreparer() (*http.Request, error) {
+	if iaslr.NextLink == nil || len(to.String(iaslr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(iaslr.NextLink)))
+}
+
+// IntegrationAccountSessionListResultPage contains a page of IntegrationAccountSession values.
+type IntegrationAccountSessionListResultPage struct {
+	fn    func(IntegrationAccountSessionListResult) (IntegrationAccountSessionListResult, error)
+	iaslr IntegrationAccountSessionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountSessionListResultPage) Next() error {
+	next, err := page.fn(page.iaslr)
+	if err != nil {
+		return err
+	}
+	page.iaslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountSessionListResultPage) NotDone() bool {
+	return !page.iaslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountSessionListResultPage) Response() IntegrationAccountSessionListResult {
+	return page.iaslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountSessionListResultPage) Values() []IntegrationAccountSession {
+	if page.iaslr.IsEmpty() {
+		return nil
+	}
+	return *page.iaslr.Value
+}
+
+// IntegrationAccountSessionProperties the integration account session properties.
+type IntegrationAccountSessionProperties struct {
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Content - The session content.
+	Content *map[string]interface{} `json:"content,omitempty"`
+}
+
+// IntegrationAccountSku the integration account sku.
+type IntegrationAccountSku struct {
+	// Name - The sku name. Possible values include: 'IntegrationAccountSkuNameNotSpecified', 'IntegrationAccountSkuNameFree', 'IntegrationAccountSkuNameStandard'
+	Name IntegrationAccountSkuName `json:"name,omitempty"`
+}
+
+// KeyVaultKeyReference the reference to the key vault key.
+type KeyVaultKeyReference struct {
+	// KeyVault - The key vault reference.
+	KeyVault *KeyVaultKeyReferenceKeyVault `json:"keyVault,omitempty"`
+	// KeyName - The private key name in key vault.
+	KeyName *string `json:"keyName,omitempty"`
+	// KeyVersion - The private key version in key vault.
+	KeyVersion *string `json:"keyVersion,omitempty"`
+}
+
+// KeyVaultKeyReferenceKeyVault the key vault reference.
+type KeyVaultKeyReferenceKeyVault struct {
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// RetryHistory is the retry history.
-type RetryHistory struct {
-	StartTime        *date.Time     `json:"startTime,omitempty"`
-	EndTime          *date.Time     `json:"endTime,omitempty"`
-	Code             *string        `json:"code,omitempty"`
-	ClientRequestID  *string        `json:"clientRequestId,omitempty"`
-	ServiceRequestID *string        `json:"serviceRequestId,omitempty"`
-	Error            *ErrorResponse `json:"error,omitempty"`
+// Operation logic REST API operation
+type Operation struct {
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - The object that represents the operation.
+	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// SetObject is
+// OperationDisplay the object that represents the operation.
+type OperationDisplay struct {
+	// Provider - Service provider: Microsoft.Logic
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: Profile, endpoint, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Read, write, delete, etc.
+	Operation *string `json:"operation,omitempty"`
+}
+
+// OperationListResult result of the request to list Logic operations. It contains a list of operations and a URL link
+// to get the next set of results.
+type OperationListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of Logic operations supported by the Logic resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(olr.NextLink)))
+}
+
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// PartnerContent the integration account partner content.
+type PartnerContent struct {
+	// B2b - The B2B partner content.
+	B2b *B2BPartnerContent `json:"b2b,omitempty"`
+}
+
+// RecurrenceSchedule the recurrence schedule.
+type RecurrenceSchedule struct {
+	// Minutes - The minutes.
+	Minutes *[]int32 `json:"minutes,omitempty"`
+	// Hours - The hours.
+	Hours *[]int32 `json:"hours,omitempty"`
+	// WeekDays - The days of the week.
+	WeekDays *[]DaysOfWeek `json:"weekDays,omitempty"`
+	// MonthDays - The month days.
+	MonthDays *[]int32 `json:"monthDays,omitempty"`
+	// MonthlyOccurrences - The monthly occurrences.
+	MonthlyOccurrences *[]RecurrenceScheduleOccurrence `json:"monthlyOccurrences,omitempty"`
+}
+
+// RecurrenceScheduleOccurrence the recurrence schedule occurence.
+type RecurrenceScheduleOccurrence struct {
+	// Day - The day of the week. Possible values include: 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+	Day DayOfWeek `json:"day,omitempty"`
+	// Occurrence - The occurrence.
+	Occurrence *int32 `json:"occurrence,omitempty"`
+}
+
+// RegenerateActionParameter the access key regenerate action content.
+type RegenerateActionParameter struct {
+	// KeyType - The key type. Possible values include: 'KeyTypeNotSpecified', 'KeyTypePrimary', 'KeyTypeSecondary'
+	KeyType KeyType `json:"keyType,omitempty"`
+}
+
+// Resource the base resource type.
+type Resource struct {
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// ResourceReference the resource reference.
+type ResourceReference struct {
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+}
+
+// RetryHistory the retry history.
+type RetryHistory struct {
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Code - Gets the status code.
+	Code *string `json:"code,omitempty"`
+	// ClientRequestID - Gets the client request Id.
+	ClientRequestID *string `json:"clientRequestId,omitempty"`
+	// ServiceRequestID - Gets the service request Id.
+	ServiceRequestID *string `json:"serviceRequestId,omitempty"`
+	// Error - Gets the error response.
+	Error *ErrorResponse `json:"error,omitempty"`
+}
+
+// SetObject ...
 type SetObject struct {
 	autorest.Response `json:"-"`
 	Value             *map[string]interface{} `json:"value,omitempty"`
 }
 
-// Sku is the sku type.
+// Sku the sku type.
 type Sku struct {
-	Name SkuName            `json:"name,omitempty"`
+	// Name - The name. Possible values include: 'SkuNameNotSpecified', 'SkuNameFree', 'SkuNameShared', 'SkuNameBasic', 'SkuNameStandard', 'SkuNamePremium'
+	Name SkuName `json:"name,omitempty"`
+	// Plan - The reference to plan.
 	Plan *ResourceReference `json:"plan,omitempty"`
 }
 
-// SubResource is the sub resource type.
+// SubResource the sub resource type.
 type SubResource struct {
+	// ID - The resource id.
 	ID *string `json:"id,omitempty"`
 }
 
-// Workflow is the workflow type.
+// Workflow the workflow type.
 type Workflow struct {
-	autorest.Response   `json:"-"`
-	ID                  *string             `json:"id,omitempty"`
-	Name                *string             `json:"name,omitempty"`
-	Type                *string             `json:"type,omitempty"`
-	Location            *string             `json:"location,omitempty"`
-	Tags                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// WorkflowProperties - The workflow properties.
 	*WorkflowProperties `json:"properties,omitempty"`
 }
 
-// WorkflowFilter is the workflow filter.
+// UnmarshalJSON is the custom unmarshaler for Workflow struct.
+func (w *Workflow) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		w.WorkflowProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		w.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		w.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		w.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		w.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		w.Tags = &tags
+	}
+
+	return nil
+}
+
+// WorkflowFilter the workflow filter.
 type WorkflowFilter struct {
+	// State - The state of workflows. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateCompleted', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
 	State WorkflowState `json:"state,omitempty"`
 }
 
-// WorkflowListResult is the list of workflows.
+// WorkflowListResult the list of workflows.
 type WorkflowListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Workflow `json:"value,omitempty"`
-	NextLink          *string     `json:"nextLink,omitempty"`
+	// Value - The list of workflows.
+	Value *[]Workflow `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowListResult) WorkflowListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowListResultIterator provides access to a complete listing of Workflow values.
+type WorkflowListResultIterator struct {
+	i    int
+	page WorkflowListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowListResultIterator) Response() WorkflowListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowListResultIterator) Value() Workflow {
+	if !iter.page.NotDone() {
+		return Workflow{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wlr WorkflowListResult) IsEmpty() bool {
+	return wlr.Value == nil || len(*wlr.Value) == 0
+}
+
+// workflowListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wlr WorkflowListResult) workflowListResultPreparer() (*http.Request, error) {
+	if wlr.NextLink == nil || len(to.String(wlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wlr.NextLink)))
 }
 
-// WorkflowOutputParameter is the workflow output parameter.
+// WorkflowListResultPage contains a page of Workflow values.
+type WorkflowListResultPage struct {
+	fn  func(WorkflowListResult) (WorkflowListResult, error)
+	wlr WorkflowListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowListResultPage) Next() error {
+	next, err := page.fn(page.wlr)
+	if err != nil {
+		return err
+	}
+	page.wlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowListResultPage) NotDone() bool {
+	return !page.wlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowListResultPage) Response() WorkflowListResult {
+	return page.wlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowListResultPage) Values() []Workflow {
+	if page.wlr.IsEmpty() {
+		return nil
+	}
+	return *page.wlr.Value
+}
+
+// WorkflowOutputParameter the workflow output parameter.
 type WorkflowOutputParameter struct {
-	Type        ParameterType           `json:"type,omitempty"`
-	Value       *map[string]interface{} `json:"value,omitempty"`
-	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
-	Description *string                 `json:"description,omitempty"`
-	Error       *map[string]interface{} `json:"error,omitempty"`
+	// Type - The type. Possible values include: 'ParameterTypeNotSpecified', 'ParameterTypeString', 'ParameterTypeSecureString', 'ParameterTypeInt', 'ParameterTypeFloat', 'ParameterTypeBool', 'ParameterTypeArray', 'ParameterTypeObject', 'ParameterTypeSecureObject'
+	Type ParameterType `json:"type,omitempty"`
+	// Value - The value.
+	Value *map[string]interface{} `json:"value,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Description - The description.
+	Description *string `json:"description,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
-// WorkflowParameter is the workflow parameters.
+// WorkflowParameter the workflow parameters.
 type WorkflowParameter struct {
-	Type        ParameterType           `json:"type,omitempty"`
-	Value       *map[string]interface{} `json:"value,omitempty"`
-	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
-	Description *string                 `json:"description,omitempty"`
+	// Type - The type. Possible values include: 'ParameterTypeNotSpecified', 'ParameterTypeString', 'ParameterTypeSecureString', 'ParameterTypeInt', 'ParameterTypeFloat', 'ParameterTypeBool', 'ParameterTypeArray', 'ParameterTypeObject', 'ParameterTypeSecureObject'
+	Type ParameterType `json:"type,omitempty"`
+	// Value - The value.
+	Value *map[string]interface{} `json:"value,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Description - The description.
+	Description *string `json:"description,omitempty"`
 }
 
-// WorkflowProperties is the workflow properties.
+// WorkflowProperties the workflow properties.
 type WorkflowProperties struct {
-	ProvisioningState  WorkflowProvisioningState      `json:"provisioningState,omitempty"`
-	CreatedTime        *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime        *date.Time                     `json:"changedTime,omitempty"`
-	State              WorkflowState                  `json:"state,omitempty"`
-	Version            *string                        `json:"version,omitempty"`
-	AccessEndpoint     *string                        `json:"accessEndpoint,omitempty"`
-	Sku                *Sku                           `json:"sku,omitempty"`
-	IntegrationAccount *ResourceReference             `json:"integrationAccount,omitempty"`
-	Definition         *map[string]interface{}        `json:"definition,omitempty"`
-	Parameters         *map[string]*WorkflowParameter `json:"parameters,omitempty"`
+	// ProvisioningState - Gets the provisioning state. Possible values include: 'WorkflowProvisioningStateNotSpecified', 'WorkflowProvisioningStateAccepted', 'WorkflowProvisioningStateRunning', 'WorkflowProvisioningStateReady', 'WorkflowProvisioningStateCreating', 'WorkflowProvisioningStateCreated', 'WorkflowProvisioningStateDeleting', 'WorkflowProvisioningStateDeleted', 'WorkflowProvisioningStateCanceled', 'WorkflowProvisioningStateFailed', 'WorkflowProvisioningStateSucceeded', 'WorkflowProvisioningStateMoving', 'WorkflowProvisioningStateUpdating', 'WorkflowProvisioningStateRegistering', 'WorkflowProvisioningStateRegistered', 'WorkflowProvisioningStateUnregistering', 'WorkflowProvisioningStateUnregistered', 'WorkflowProvisioningStateCompleted'
+	ProvisioningState WorkflowProvisioningState `json:"provisioningState,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - The state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateCompleted', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Version - Gets the version.
+	Version *string `json:"version,omitempty"`
+	// AccessEndpoint - Gets the access endpoint.
+	AccessEndpoint *string `json:"accessEndpoint,omitempty"`
+	// Sku - The sku.
+	Sku *Sku `json:"sku,omitempty"`
+	// IntegrationAccount - The integration account.
+	IntegrationAccount *ResourceReference `json:"integrationAccount,omitempty"`
+	// Definition - The definition.
+	Definition *map[string]interface{} `json:"definition,omitempty"`
+	// Parameters - The parameters.
+	Parameters *map[string]*WorkflowParameter `json:"parameters,omitempty"`
 }
 
-// WorkflowRun is the workflow run.
+// WorkflowRun the workflow run.
 type WorkflowRun struct {
-	autorest.Response      `json:"-"`
-	ID                     *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowRunProperties - The workflow run properties.
 	*WorkflowRunProperties `json:"properties,omitempty"`
-	Name                   *string `json:"name,omitempty"`
-	Type                   *string `json:"type,omitempty"`
+	// Name - Gets the workflow run name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow run type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowRunAction is the workflow run action.
+// UnmarshalJSON is the custom unmarshaler for WorkflowRun struct.
+func (wr *WorkflowRun) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowRunProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wr.WorkflowRunProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wr.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wr.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wr.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowRunAction the workflow run action.
 type WorkflowRunAction struct {
-	autorest.Response            `json:"-"`
-	ID                           *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowRunActionProperties - The workflow run action properties.
 	*WorkflowRunActionProperties `json:"properties,omitempty"`
-	Name                         *string `json:"name,omitempty"`
-	Type                         *string `json:"type,omitempty"`
+	// Name - Gets the workflow run action name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow run action type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowRunActionFilter is the workflow run action filter.
+// UnmarshalJSON is the custom unmarshaler for WorkflowRunAction struct.
+func (wra *WorkflowRunAction) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowRunActionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wra.WorkflowRunActionProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wra.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wra.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wra.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowRunActionFilter the workflow run action filter.
 type WorkflowRunActionFilter struct {
+	// Status - The status of workflow run action. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowRunActionListResult is the list of workflow run actions.
+// WorkflowRunActionListResult the list of workflow run actions.
 type WorkflowRunActionListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowRunAction `json:"value,omitempty"`
-	NextLink          *string              `json:"nextLink,omitempty"`
+	// Value - A list of workflow run actions.
+	Value *[]WorkflowRunAction `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowRunActionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowRunActionListResult) WorkflowRunActionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowRunActionListResultIterator provides access to a complete listing of WorkflowRunAction values.
+type WorkflowRunActionListResultIterator struct {
+	i    int
+	page WorkflowRunActionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowRunActionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowRunActionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowRunActionListResultIterator) Response() WorkflowRunActionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowRunActionListResultIterator) Value() WorkflowRunAction {
+	if !iter.page.NotDone() {
+		return WorkflowRunAction{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wralr WorkflowRunActionListResult) IsEmpty() bool {
+	return wralr.Value == nil || len(*wralr.Value) == 0
+}
+
+// workflowRunActionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wralr WorkflowRunActionListResult) workflowRunActionListResultPreparer() (*http.Request, error) {
+	if wralr.NextLink == nil || len(to.String(wralr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wralr.NextLink)))
 }
 
-// WorkflowRunActionProperties is the workflow run action properties.
+// WorkflowRunActionListResultPage contains a page of WorkflowRunAction values.
+type WorkflowRunActionListResultPage struct {
+	fn    func(WorkflowRunActionListResult) (WorkflowRunActionListResult, error)
+	wralr WorkflowRunActionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowRunActionListResultPage) Next() error {
+	next, err := page.fn(page.wralr)
+	if err != nil {
+		return err
+	}
+	page.wralr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowRunActionListResultPage) NotDone() bool {
+	return !page.wralr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowRunActionListResultPage) Response() WorkflowRunActionListResult {
+	return page.wralr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowRunActionListResultPage) Values() []WorkflowRunAction {
+	if page.wralr.IsEmpty() {
+		return nil
+	}
+	return *page.wralr.Value
+}
+
+// WorkflowRunActionProperties the workflow run action properties.
 type WorkflowRunActionProperties struct {
-	StartTime         *date.Time              `json:"startTime,omitempty"`
-	EndTime           *date.Time              `json:"endTime,omitempty"`
-	Status            WorkflowStatus          `json:"status,omitempty"`
-	Code              *string                 `json:"code,omitempty"`
-	Error             *map[string]interface{} `json:"error,omitempty"`
-	TrackingID        *string                 `json:"trackingId,omitempty"`
-	Correlation       *Correlation            `json:"correlation,omitempty"`
-	InputsLink        *ContentLink            `json:"inputsLink,omitempty"`
-	OutputsLink       *ContentLink            `json:"outputsLink,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// TrackingID - Gets the tracking id.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// Correlation - The correlation properties.
+	Correlation *Correlation `json:"correlation,omitempty"`
+	// InputsLink - Gets the link to inputs.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// OutputsLink - Gets the link to outputs.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
+	// TrackedProperties - Gets the tracked properties.
 	TrackedProperties *map[string]interface{} `json:"trackedProperties,omitempty"`
-	RetryHistory      *[]RetryHistory         `json:"retryHistory,omitempty"`
+	// RetryHistory - Gets the retry histories.
+	RetryHistory *[]RetryHistory `json:"retryHistory,omitempty"`
 }
 
-// WorkflowRunFilter is the workflow run filter.
+// WorkflowRunFilter the workflow run filter.
 type WorkflowRunFilter struct {
+	// Status - The status of workflow run. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowRunListResult is the list of workflow runs.
+// WorkflowRunListResult the list of workflow runs.
 type WorkflowRunListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowRun `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - A list of workflow runs.
+	Value *[]WorkflowRun `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowRunListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowRunListResult) WorkflowRunListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowRunListResultIterator provides access to a complete listing of WorkflowRun values.
+type WorkflowRunListResultIterator struct {
+	i    int
+	page WorkflowRunListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowRunListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowRunListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowRunListResultIterator) Response() WorkflowRunListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowRunListResultIterator) Value() WorkflowRun {
+	if !iter.page.NotDone() {
+		return WorkflowRun{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wrlr WorkflowRunListResult) IsEmpty() bool {
+	return wrlr.Value == nil || len(*wrlr.Value) == 0
+}
+
+// workflowRunListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wrlr WorkflowRunListResult) workflowRunListResultPreparer() (*http.Request, error) {
+	if wrlr.NextLink == nil || len(to.String(wrlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wrlr.NextLink)))
 }
 
-// WorkflowRunProperties is the workflow run properties.
+// WorkflowRunListResultPage contains a page of WorkflowRun values.
+type WorkflowRunListResultPage struct {
+	fn   func(WorkflowRunListResult) (WorkflowRunListResult, error)
+	wrlr WorkflowRunListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowRunListResultPage) Next() error {
+	next, err := page.fn(page.wrlr)
+	if err != nil {
+		return err
+	}
+	page.wrlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowRunListResultPage) NotDone() bool {
+	return !page.wrlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowRunListResultPage) Response() WorkflowRunListResult {
+	return page.wrlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowRunListResultPage) Values() []WorkflowRun {
+	if page.wrlr.IsEmpty() {
+		return nil
+	}
+	return *page.wrlr.Value
+}
+
+// WorkflowRunProperties the workflow run properties.
 type WorkflowRunProperties struct {
-	StartTime     *date.Time                           `json:"startTime,omitempty"`
-	EndTime       *date.Time                           `json:"endTime,omitempty"`
-	Status        WorkflowStatus                       `json:"status,omitempty"`
-	Code          *string                              `json:"code,omitempty"`
-	Error         *map[string]interface{}              `json:"error,omitempty"`
-	CorrelationID *string                              `json:"correlationId,omitempty"`
-	Correlation   *Correlation                         `json:"correlation,omitempty"`
-	Workflow      *ResourceReference                   `json:"workflow,omitempty"`
-	Trigger       *WorkflowRunTrigger                  `json:"trigger,omitempty"`
-	Outputs       *map[string]*WorkflowOutputParameter `json:"outputs,omitempty"`
-	Response      *WorkflowRunTrigger                  `json:"response,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// CorrelationID - Gets the correlation id.
+	CorrelationID *string `json:"correlationId,omitempty"`
+	// Correlation - The run correlation.
+	Correlation *Correlation `json:"correlation,omitempty"`
+	// Workflow - Gets the reference to workflow version.
+	Workflow *ResourceReference `json:"workflow,omitempty"`
+	// Trigger - Gets the fired trigger.
+	Trigger *WorkflowRunTrigger `json:"trigger,omitempty"`
+	// Outputs - Gets the outputs.
+	Outputs *map[string]*WorkflowOutputParameter `json:"outputs,omitempty"`
+	// Response - Gets the response of the flow run.
+	Response *WorkflowRunTrigger `json:"response,omitempty"`
 }
 
-// WorkflowRunTrigger is the workflow run trigger.
+// WorkflowRunTrigger the workflow run trigger.
 type WorkflowRunTrigger struct {
-	Name              *string                 `json:"name,omitempty"`
-	Inputs            *map[string]interface{} `json:"inputs,omitempty"`
-	InputsLink        *ContentLink            `json:"inputsLink,omitempty"`
-	Outputs           *map[string]interface{} `json:"outputs,omitempty"`
-	OutputsLink       *ContentLink            `json:"outputsLink,omitempty"`
-	StartTime         *date.Time              `json:"startTime,omitempty"`
-	EndTime           *date.Time              `json:"endTime,omitempty"`
-	TrackingID        *string                 `json:"trackingId,omitempty"`
-	Correlation       *Correlation            `json:"correlation,omitempty"`
-	Code              *string                 `json:"code,omitempty"`
-	Status            WorkflowStatus          `json:"status,omitempty"`
-	Error             *map[string]interface{} `json:"error,omitempty"`
+	// Name - Gets the name.
+	Name *string `json:"name,omitempty"`
+	// Inputs - Gets the inputs.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+	// InputsLink - Gets the link to inputs.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// Outputs - Gets the outputs.
+	Outputs *map[string]interface{} `json:"outputs,omitempty"`
+	// OutputsLink - Gets the link to outputs.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TrackingID - Gets the tracking id.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// Correlation - The run correlation.
+	Correlation *Correlation `json:"correlation,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// TrackedProperties - Gets the tracked properties.
 	TrackedProperties *map[string]interface{} `json:"trackedProperties,omitempty"`
 }
 
-// WorkflowTrigger is the workflow trigger.
+// WorkflowTrigger the workflow trigger.
 type WorkflowTrigger struct {
-	autorest.Response          `json:"-"`
-	ID                         *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowTriggerProperties - The workflow trigger properties.
 	*WorkflowTriggerProperties `json:"properties,omitempty"`
-	Name                       *string `json:"name,omitempty"`
-	Type                       *string `json:"type,omitempty"`
+	// Name - Gets the workflow trigger name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow trigger type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowTriggerCallbackURL is the workflow trigger callback URL.
+// UnmarshalJSON is the custom unmarshaler for WorkflowTrigger struct.
+func (wt *WorkflowTrigger) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowTriggerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wt.WorkflowTriggerProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wt.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wt.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wt.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowTriggerCallbackURL the workflow trigger callback URL.
 type WorkflowTriggerCallbackURL struct {
-	autorest.Response      `json:"-"`
-	Value                  *string                                `json:"value,omitempty"`
-	Method                 *string                                `json:"method,omitempty"`
-	BasePath               *string                                `json:"basePath,omitempty"`
-	RelativePath           *string                                `json:"relativePath,omitempty"`
-	RelativePathParameters *[]string                              `json:"relativePathParameters,omitempty"`
-	Queries                *WorkflowTriggerListCallbackURLQueries `json:"queries,omitempty"`
+	autorest.Response `json:"-"`
+	// Value - Gets the workflow trigger callback URL.
+	Value *string `json:"value,omitempty"`
+	// Method - Gets the workflow trigger callback URL HTTP method.
+	Method *string `json:"method,omitempty"`
+	// BasePath - Gets the workflow trigger callback URL base path.
+	BasePath *string `json:"basePath,omitempty"`
+	// RelativePath - Gets the workflow trigger callback URL relative path.
+	RelativePath *string `json:"relativePath,omitempty"`
+	// RelativePathParameters - Gets the workflow trigger callback URL relative path parameters.
+	RelativePathParameters *[]string `json:"relativePathParameters,omitempty"`
+	// Queries - Gets the workflow trigger callback URL query parameters.
+	Queries *WorkflowTriggerListCallbackURLQueries `json:"queries,omitempty"`
 }
 
-// WorkflowTriggerFilter is the workflow trigger filter.
+// WorkflowTriggerFilter the workflow trigger filter.
 type WorkflowTriggerFilter struct {
+	// State - The state of workflow trigger. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateCompleted', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
 	State WorkflowState `json:"state,omitempty"`
 }
 
-// WorkflowTriggerHistory is the workflow trigger history.
+// WorkflowTriggerHistory the workflow trigger history.
 type WorkflowTriggerHistory struct {
-	autorest.Response                 `json:"-"`
-	ID                                *string `json:"id,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// WorkflowTriggerHistoryProperties - Gets the workflow trigger history properties.
 	*WorkflowTriggerHistoryProperties `json:"properties,omitempty"`
-	Name                              *string `json:"name,omitempty"`
-	Type                              *string `json:"type,omitempty"`
+	// Name - Gets the workflow trigger history name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the workflow trigger history type.
+	Type *string `json:"type,omitempty"`
 }
 
-// WorkflowTriggerHistoryFilter is the workflow trigger history filter.
+// UnmarshalJSON is the custom unmarshaler for WorkflowTriggerHistory struct.
+func (wth *WorkflowTriggerHistory) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowTriggerHistoryProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wth.WorkflowTriggerHistoryProperties = &properties
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wth.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wth.Type = &typeVar
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wth.ID = &ID
+	}
+
+	return nil
+}
+
+// WorkflowTriggerHistoryFilter the workflow trigger history filter.
 type WorkflowTriggerHistoryFilter struct {
+	// Status - The status of workflow trigger history. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
 	Status WorkflowStatus `json:"status,omitempty"`
 }
 
-// WorkflowTriggerHistoryListResult is the list of workflow trigger histories.
+// WorkflowTriggerHistoryListResult the list of workflow trigger histories.
 type WorkflowTriggerHistoryListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowTriggerHistory `json:"value,omitempty"`
-	NextLink          *string                   `json:"nextLink,omitempty"`
+	// Value - A list of workflow trigger histories.
+	Value *[]WorkflowTriggerHistory `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowTriggerHistoryListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowTriggerHistoryListResult) WorkflowTriggerHistoryListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowTriggerHistoryListResultIterator provides access to a complete listing of WorkflowTriggerHistory values.
+type WorkflowTriggerHistoryListResultIterator struct {
+	i    int
+	page WorkflowTriggerHistoryListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowTriggerHistoryListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowTriggerHistoryListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowTriggerHistoryListResultIterator) Response() WorkflowTriggerHistoryListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowTriggerHistoryListResultIterator) Value() WorkflowTriggerHistory {
+	if !iter.page.NotDone() {
+		return WorkflowTriggerHistory{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wthlr WorkflowTriggerHistoryListResult) IsEmpty() bool {
+	return wthlr.Value == nil || len(*wthlr.Value) == 0
+}
+
+// workflowTriggerHistoryListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wthlr WorkflowTriggerHistoryListResult) workflowTriggerHistoryListResultPreparer() (*http.Request, error) {
+	if wthlr.NextLink == nil || len(to.String(wthlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wthlr.NextLink)))
 }
 
-// WorkflowTriggerHistoryProperties is the workflow trigger history properties.
+// WorkflowTriggerHistoryListResultPage contains a page of WorkflowTriggerHistory values.
+type WorkflowTriggerHistoryListResultPage struct {
+	fn    func(WorkflowTriggerHistoryListResult) (WorkflowTriggerHistoryListResult, error)
+	wthlr WorkflowTriggerHistoryListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowTriggerHistoryListResultPage) Next() error {
+	next, err := page.fn(page.wthlr)
+	if err != nil {
+		return err
+	}
+	page.wthlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowTriggerHistoryListResultPage) NotDone() bool {
+	return !page.wthlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowTriggerHistoryListResultPage) Response() WorkflowTriggerHistoryListResult {
+	return page.wthlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowTriggerHistoryListResultPage) Values() []WorkflowTriggerHistory {
+	if page.wthlr.IsEmpty() {
+		return nil
+	}
+	return *page.wthlr.Value
+}
+
+// WorkflowTriggerHistoryProperties the workflow trigger history properties.
 type WorkflowTriggerHistoryProperties struct {
-	StartTime   *date.Time              `json:"startTime,omitempty"`
-	EndTime     *date.Time              `json:"endTime,omitempty"`
-	Status      WorkflowStatus          `json:"status,omitempty"`
-	Code        *string                 `json:"code,omitempty"`
-	Error       *map[string]interface{} `json:"error,omitempty"`
-	TrackingID  *string                 `json:"trackingId,omitempty"`
-	Correlation *Correlation            `json:"correlation,omitempty"`
-	InputsLink  *ContentLink            `json:"inputsLink,omitempty"`
-	OutputsLink *ContentLink            `json:"outputsLink,omitempty"`
-	Fired       *bool                   `json:"fired,omitempty"`
-	Run         *ResourceReference      `json:"run,omitempty"`
+	// StartTime - Gets the start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - Gets the end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// Code - Gets the code.
+	Code *string `json:"code,omitempty"`
+	// Error - Gets the error.
+	Error *map[string]interface{} `json:"error,omitempty"`
+	// TrackingID - Gets the tracking id.
+	TrackingID *string `json:"trackingId,omitempty"`
+	// Correlation - The run correlation.
+	Correlation *Correlation `json:"correlation,omitempty"`
+	// InputsLink - Gets the link to input parameters.
+	InputsLink *ContentLink `json:"inputsLink,omitempty"`
+	// OutputsLink - Gets the link to output parameters.
+	OutputsLink *ContentLink `json:"outputsLink,omitempty"`
+	// Fired - Gets a value indicating whether trigger was fired.
+	Fired *bool `json:"fired,omitempty"`
+	// Run - Gets the reference to workflow run.
+	Run *ResourceReference `json:"run,omitempty"`
 }
 
-// WorkflowTriggerListCallbackURLQueries is gets the workflow trigger callback URL query parameters.
+// WorkflowTriggerListCallbackURLQueries gets the workflow trigger callback URL query parameters.
 type WorkflowTriggerListCallbackURLQueries struct {
+	// APIVersion - The api version.
 	APIVersion *string `json:"api-version,omitempty"`
-	Sp         *string `json:"sp,omitempty"`
-	Sv         *string `json:"sv,omitempty"`
-	Sig        *string `json:"sig,omitempty"`
+	// Sp - The SAS permissions.
+	Sp *string `json:"sp,omitempty"`
+	// Sv - The SAS version.
+	Sv *string `json:"sv,omitempty"`
+	// Sig - The SAS signature.
+	Sig *string `json:"sig,omitempty"`
 }
 
-// WorkflowTriggerListResult is the list of workflow triggers.
+// WorkflowTriggerListResult the list of workflow triggers.
 type WorkflowTriggerListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]WorkflowTrigger `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+	// Value - A list of workflow triggers.
+	Value *[]WorkflowTrigger `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// WorkflowTriggerListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowTriggerListResult) WorkflowTriggerListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowTriggerListResultIterator provides access to a complete listing of WorkflowTrigger values.
+type WorkflowTriggerListResultIterator struct {
+	i    int
+	page WorkflowTriggerListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowTriggerListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowTriggerListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowTriggerListResultIterator) Response() WorkflowTriggerListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowTriggerListResultIterator) Value() WorkflowTrigger {
+	if !iter.page.NotDone() {
+		return WorkflowTrigger{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wtlr WorkflowTriggerListResult) IsEmpty() bool {
+	return wtlr.Value == nil || len(*wtlr.Value) == 0
+}
+
+// workflowTriggerListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wtlr WorkflowTriggerListResult) workflowTriggerListResultPreparer() (*http.Request, error) {
+	if wtlr.NextLink == nil || len(to.String(wtlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wtlr.NextLink)))
 }
 
-// WorkflowTriggerProperties is the workflow trigger properties.
+// WorkflowTriggerListResultPage contains a page of WorkflowTrigger values.
+type WorkflowTriggerListResultPage struct {
+	fn   func(WorkflowTriggerListResult) (WorkflowTriggerListResult, error)
+	wtlr WorkflowTriggerListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowTriggerListResultPage) Next() error {
+	next, err := page.fn(page.wtlr)
+	if err != nil {
+		return err
+	}
+	page.wtlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowTriggerListResultPage) NotDone() bool {
+	return !page.wtlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowTriggerListResultPage) Response() WorkflowTriggerListResult {
+	return page.wtlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowTriggerListResultPage) Values() []WorkflowTrigger {
+	if page.wtlr.IsEmpty() {
+		return nil
+	}
+	return *page.wtlr.Value
+}
+
+// WorkflowTriggerProperties the workflow trigger properties.
 type WorkflowTriggerProperties struct {
+	// ProvisioningState - Gets the provisioning state. Possible values include: 'WorkflowTriggerProvisioningStateNotSpecified', 'WorkflowTriggerProvisioningStateAccepted', 'WorkflowTriggerProvisioningStateRunning', 'WorkflowTriggerProvisioningStateReady', 'WorkflowTriggerProvisioningStateCreating', 'WorkflowTriggerProvisioningStateCreated', 'WorkflowTriggerProvisioningStateDeleting', 'WorkflowTriggerProvisioningStateDeleted', 'WorkflowTriggerProvisioningStateCanceled', 'WorkflowTriggerProvisioningStateFailed', 'WorkflowTriggerProvisioningStateSucceeded', 'WorkflowTriggerProvisioningStateMoving', 'WorkflowTriggerProvisioningStateUpdating', 'WorkflowTriggerProvisioningStateRegistering', 'WorkflowTriggerProvisioningStateRegistered', 'WorkflowTriggerProvisioningStateUnregistering', 'WorkflowTriggerProvisioningStateUnregistered', 'WorkflowTriggerProvisioningStateCompleted'
 	ProvisioningState WorkflowTriggerProvisioningState `json:"provisioningState,omitempty"`
-	CreatedTime       *date.Time                       `json:"createdTime,omitempty"`
-	ChangedTime       *date.Time                       `json:"changedTime,omitempty"`
-	State             WorkflowState                    `json:"state,omitempty"`
-	Status            WorkflowStatus                   `json:"status,omitempty"`
-	LastExecutionTime *date.Time                       `json:"lastExecutionTime,omitempty"`
-	NextExecutionTime *date.Time                       `json:"nextExecutionTime,omitempty"`
-	Recurrence        *WorkflowTriggerRecurrence       `json:"recurrence,omitempty"`
-	Workflow          *ResourceReference               `json:"workflow,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - Gets the state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateCompleted', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Status - Gets the status. Possible values include: 'WorkflowStatusNotSpecified', 'WorkflowStatusPaused', 'WorkflowStatusRunning', 'WorkflowStatusWaiting', 'WorkflowStatusSucceeded', 'WorkflowStatusSkipped', 'WorkflowStatusSuspended', 'WorkflowStatusCancelled', 'WorkflowStatusFailed', 'WorkflowStatusFaulted', 'WorkflowStatusTimedOut', 'WorkflowStatusAborted', 'WorkflowStatusIgnored'
+	Status WorkflowStatus `json:"status,omitempty"`
+	// LastExecutionTime - Gets the last execution time.
+	LastExecutionTime *date.Time `json:"lastExecutionTime,omitempty"`
+	// NextExecutionTime - Gets the next execution time.
+	NextExecutionTime *date.Time `json:"nextExecutionTime,omitempty"`
+	// Recurrence - Gets the workflow trigger recurrence.
+	Recurrence *WorkflowTriggerRecurrence `json:"recurrence,omitempty"`
+	// Workflow - Gets the reference to workflow.
+	Workflow *ResourceReference `json:"workflow,omitempty"`
 }
 
-// WorkflowTriggerRecurrence is the workflow trigger recurrence.
+// WorkflowTriggerRecurrence the workflow trigger recurrence.
 type WorkflowTriggerRecurrence struct {
+	// Frequency - The frequency. Possible values include: 'RecurrenceFrequencyNotSpecified', 'RecurrenceFrequencySecond', 'RecurrenceFrequencyMinute', 'RecurrenceFrequencyHour', 'RecurrenceFrequencyDay', 'RecurrenceFrequencyWeek', 'RecurrenceFrequencyMonth', 'RecurrenceFrequencyYear'
 	Frequency RecurrenceFrequency `json:"frequency,omitempty"`
-	Interval  *int32              `json:"interval,omitempty"`
-	StartTime *date.Time          `json:"startTime,omitempty"`
-	EndTime   *date.Time          `json:"endTime,omitempty"`
-	TimeZone  *string             `json:"timeZone,omitempty"`
-	Schedule  *RecurrenceSchedule `json:"schedule,omitempty"`
+	// Interval - The interval.
+	Interval *int32 `json:"interval,omitempty"`
+	// StartTime - The start time.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The end time.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TimeZone - The time zone.
+	TimeZone *string `json:"timeZone,omitempty"`
+	// Schedule - The recurrence schedule.
+	Schedule *RecurrenceSchedule `json:"schedule,omitempty"`
 }
 
-// WorkflowVersion is the workflow version.
+// WorkflowVersion the workflow version.
 type WorkflowVersion struct {
-	autorest.Response          `json:"-"`
-	ID                         *string             `json:"id,omitempty"`
-	Name                       *string             `json:"name,omitempty"`
-	Type                       *string             `json:"type,omitempty"`
-	Location                   *string             `json:"location,omitempty"`
-	Tags                       *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - Gets the resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Gets the resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// WorkflowVersionProperties - The workflow version properties.
 	*WorkflowVersionProperties `json:"properties,omitempty"`
 }
 
-// WorkflowVersionListResult is the list of workflow versions.
-type WorkflowVersionListResult struct {
-	autorest.Response `json:"-"`
-	Value             *[]WorkflowVersion `json:"value,omitempty"`
-	NextLink          *string            `json:"nextLink,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for WorkflowVersion struct.
+func (wv *WorkflowVersion) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties WorkflowVersionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		wv.WorkflowVersionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		wv.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		wv.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		wv.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		wv.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		wv.Tags = &tags
+	}
+
+	return nil
 }
 
-// WorkflowVersionListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client WorkflowVersionListResult) WorkflowVersionListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// WorkflowVersionListResult the list of workflow versions.
+type WorkflowVersionListResult struct {
+	autorest.Response `json:"-"`
+	// Value - A list of workflow versions.
+	Value *[]WorkflowVersion `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// WorkflowVersionListResultIterator provides access to a complete listing of WorkflowVersion values.
+type WorkflowVersionListResultIterator struct {
+	i    int
+	page WorkflowVersionListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *WorkflowVersionListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter WorkflowVersionListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter WorkflowVersionListResultIterator) Response() WorkflowVersionListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter WorkflowVersionListResultIterator) Value() WorkflowVersion {
+	if !iter.page.NotDone() {
+		return WorkflowVersion{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (wvlr WorkflowVersionListResult) IsEmpty() bool {
+	return wvlr.Value == nil || len(*wvlr.Value) == 0
+}
+
+// workflowVersionListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (wvlr WorkflowVersionListResult) workflowVersionListResultPreparer() (*http.Request, error) {
+	if wvlr.NextLink == nil || len(to.String(wvlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(wvlr.NextLink)))
 }
 
-// WorkflowVersionProperties is the workflow version properties.
+// WorkflowVersionListResultPage contains a page of WorkflowVersion values.
+type WorkflowVersionListResultPage struct {
+	fn   func(WorkflowVersionListResult) (WorkflowVersionListResult, error)
+	wvlr WorkflowVersionListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *WorkflowVersionListResultPage) Next() error {
+	next, err := page.fn(page.wvlr)
+	if err != nil {
+		return err
+	}
+	page.wvlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page WorkflowVersionListResultPage) NotDone() bool {
+	return !page.wvlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page WorkflowVersionListResultPage) Response() WorkflowVersionListResult {
+	return page.wvlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page WorkflowVersionListResultPage) Values() []WorkflowVersion {
+	if page.wvlr.IsEmpty() {
+		return nil
+	}
+	return *page.wvlr.Value
+}
+
+// WorkflowVersionProperties the workflow version properties.
 type WorkflowVersionProperties struct {
-	CreatedTime        *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime        *date.Time                     `json:"changedTime,omitempty"`
-	State              WorkflowState                  `json:"state,omitempty"`
-	Version            *string                        `json:"version,omitempty"`
-	AccessEndpoint     *string                        `json:"accessEndpoint,omitempty"`
-	Sku                *Sku                           `json:"sku,omitempty"`
-	IntegrationAccount *ResourceReference             `json:"integrationAccount,omitempty"`
-	Definition         *map[string]interface{}        `json:"definition,omitempty"`
-	Parameters         *map[string]*WorkflowParameter `json:"parameters,omitempty"`
+	// CreatedTime - Gets the created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - Gets the changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// State - The state. Possible values include: 'WorkflowStateNotSpecified', 'WorkflowStateCompleted', 'WorkflowStateEnabled', 'WorkflowStateDisabled', 'WorkflowStateDeleted', 'WorkflowStateSuspended'
+	State WorkflowState `json:"state,omitempty"`
+	// Version - Gets the version.
+	Version *string `json:"version,omitempty"`
+	// AccessEndpoint - Gets the access endpoint.
+	AccessEndpoint *string `json:"accessEndpoint,omitempty"`
+	// Sku - The sku.
+	Sku *Sku `json:"sku,omitempty"`
+	// IntegrationAccount - The integration account.
+	IntegrationAccount *ResourceReference `json:"integrationAccount,omitempty"`
+	// Definition - The definition.
+	Definition *map[string]interface{} `json:"definition,omitempty"`
+	// Parameters - The parameters.
+	Parameters *map[string]*WorkflowParameter `json:"parameters,omitempty"`
 }
 
-// X12AcknowledgementSettings is the X12 agreement acknowledgement settings.
+// X12AcknowledgementSettings the X12 agreement acknowledgement settings.
 type X12AcknowledgementSettings struct {
-	NeedTechnicalAcknowledgement           *bool   `json:"needTechnicalAcknowledgement,omitempty"`
-	BatchTechnicalAcknowledgements         *bool   `json:"batchTechnicalAcknowledgements,omitempty"`
-	NeedFunctionalAcknowledgement          *bool   `json:"needFunctionalAcknowledgement,omitempty"`
-	FunctionalAcknowledgementVersion       *string `json:"functionalAcknowledgementVersion,omitempty"`
-	BatchFunctionalAcknowledgements        *bool   `json:"batchFunctionalAcknowledgements,omitempty"`
-	NeedImplementationAcknowledgement      *bool   `json:"needImplementationAcknowledgement,omitempty"`
-	ImplementationAcknowledgementVersion   *string `json:"implementationAcknowledgementVersion,omitempty"`
-	BatchImplementationAcknowledgements    *bool   `json:"batchImplementationAcknowledgements,omitempty"`
-	NeedLoopForValidMessages               *bool   `json:"needLoopForValidMessages,omitempty"`
-	SendSynchronousAcknowledgement         *bool   `json:"sendSynchronousAcknowledgement,omitempty"`
-	AcknowledgementControlNumberPrefix     *string `json:"acknowledgementControlNumberPrefix,omitempty"`
-	AcknowledgementControlNumberSuffix     *string `json:"acknowledgementControlNumberSuffix,omitempty"`
-	AcknowledgementControlNumberLowerBound *int32  `json:"acknowledgementControlNumberLowerBound,omitempty"`
-	AcknowledgementControlNumberUpperBound *int32  `json:"acknowledgementControlNumberUpperBound,omitempty"`
-	RolloverAcknowledgementControlNumber   *bool   `json:"rolloverAcknowledgementControlNumber,omitempty"`
+	// NeedTechnicalAcknowledgement - The value indicating whether technical acknowledgement is needed.
+	NeedTechnicalAcknowledgement *bool `json:"needTechnicalAcknowledgement,omitempty"`
+	// BatchTechnicalAcknowledgements - The value indicating whether to batch the technical acknowledgements.
+	BatchTechnicalAcknowledgements *bool `json:"batchTechnicalAcknowledgements,omitempty"`
+	// NeedFunctionalAcknowledgement - The value indicating whether functional acknowledgement is needed.
+	NeedFunctionalAcknowledgement *bool `json:"needFunctionalAcknowledgement,omitempty"`
+	// FunctionalAcknowledgementVersion - The functional acknowledgement version.
+	FunctionalAcknowledgementVersion *string `json:"functionalAcknowledgementVersion,omitempty"`
+	// BatchFunctionalAcknowledgements - The value indicating whether to batch functional acknowledgements.
+	BatchFunctionalAcknowledgements *bool `json:"batchFunctionalAcknowledgements,omitempty"`
+	// NeedImplementationAcknowledgement - The value indicating whether implementation acknowledgement is needed.
+	NeedImplementationAcknowledgement *bool `json:"needImplementationAcknowledgement,omitempty"`
+	// ImplementationAcknowledgementVersion - The implementation acknowledgement version.
+	ImplementationAcknowledgementVersion *string `json:"implementationAcknowledgementVersion,omitempty"`
+	// BatchImplementationAcknowledgements - The value indicating whether to batch implementation acknowledgements.
+	BatchImplementationAcknowledgements *bool `json:"batchImplementationAcknowledgements,omitempty"`
+	// NeedLoopForValidMessages - The value indicating whether a loop is needed for valid messages.
+	NeedLoopForValidMessages *bool `json:"needLoopForValidMessages,omitempty"`
+	// SendSynchronousAcknowledgement - The value indicating whether to send synchronous acknowledgement.
+	SendSynchronousAcknowledgement *bool `json:"sendSynchronousAcknowledgement,omitempty"`
+	// AcknowledgementControlNumberPrefix - The acknowledgement control number prefix.
+	AcknowledgementControlNumberPrefix *string `json:"acknowledgementControlNumberPrefix,omitempty"`
+	// AcknowledgementControlNumberSuffix - The acknowledgement control number suffix.
+	AcknowledgementControlNumberSuffix *string `json:"acknowledgementControlNumberSuffix,omitempty"`
+	// AcknowledgementControlNumberLowerBound - The acknowledgement control number lower bound.
+	AcknowledgementControlNumberLowerBound *int32 `json:"acknowledgementControlNumberLowerBound,omitempty"`
+	// AcknowledgementControlNumberUpperBound - The acknowledgement control number upper bound.
+	AcknowledgementControlNumberUpperBound *int32 `json:"acknowledgementControlNumberUpperBound,omitempty"`
+	// RolloverAcknowledgementControlNumber - The value indicating whether to rollover acknowledgement control number.
+	RolloverAcknowledgementControlNumber *bool `json:"rolloverAcknowledgementControlNumber,omitempty"`
 }
 
-// X12AgreementContent is the X12 agreement content.
+// X12AgreementContent the X12 agreement content.
 type X12AgreementContent struct {
+	// ReceiveAgreement - The X12 one-way receive agreement.
 	ReceiveAgreement *X12OneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *X12OneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The X12 one-way send agreement.
+	SendAgreement *X12OneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// X12DelimiterOverrides is the X12 delimiter override settings.
+// X12DelimiterOverrides the X12 delimiter override settings.
 type X12DelimiterOverrides struct {
-	ProtocolVersion            *string                 `json:"protocolVersion,omitempty"`
-	MessageID                  *string                 `json:"messageId,omitempty"`
-	DataElementSeparator       *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator         *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator          *int32                  `json:"segmentTerminator,omitempty"`
-	SegmentTerminatorSuffix    SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
-	ReplaceCharacter           *int32                  `json:"replaceCharacter,omitempty"`
-	ReplaceSeparatorsInPayload *bool                   `json:"replaceSeparatorsInPayload,omitempty"`
-	TargetNamespace            *string                 `json:"targetNamespace,omitempty"`
+	// ProtocolVersion - The protocol version.
+	ProtocolVersion *string `json:"protocolVersion,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// ReplaceCharacter - The replacement character.
+	ReplaceCharacter *int32 `json:"replaceCharacter,omitempty"`
+	// ReplaceSeparatorsInPayload - The value indicating whether to replace separators in payload.
+	ReplaceSeparatorsInPayload *bool `json:"replaceSeparatorsInPayload,omitempty"`
+	// TargetNamespace - The target namespace on which this delimiter settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
 }
 
-// X12EnvelopeOverride is the X12 envelope override settings.
+// X12EnvelopeOverride the X12 envelope override settings.
 type X12EnvelopeOverride struct {
-	TargetNamespace          *string       `json:"targetNamespace,omitempty"`
-	ProtocolVersion          *string       `json:"protocolVersion,omitempty"`
-	MessageID                *string       `json:"messageId,omitempty"`
-	ResponsibleAgencyCode    *string       `json:"responsibleAgencyCode,omitempty"`
-	HeaderVersion            *string       `json:"headerVersion,omitempty"`
-	SenderApplicationID      *string       `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationID    *string       `json:"receiverApplicationId,omitempty"`
-	FunctionalIdentifierCode *string       `json:"functionalIdentifierCode,omitempty"`
-	DateFormat               X12DateFormat `json:"dateFormat,omitempty"`
-	TimeFormat               X12TimeFormat `json:"timeFormat,omitempty"`
+	// TargetNamespace - The target namespace on which this envelope settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// ProtocolVersion - The protocol version on which this envelope settings has to be applied.
+	ProtocolVersion *string `json:"protocolVersion,omitempty"`
+	// MessageID - The message id on which this envelope settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// ResponsibleAgencyCode - The responsible agency code.
+	ResponsibleAgencyCode *string `json:"responsibleAgencyCode,omitempty"`
+	// HeaderVersion - The header version.
+	HeaderVersion *string `json:"headerVersion,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// FunctionalIdentifierCode - The functional identifier code.
+	FunctionalIdentifierCode *string `json:"functionalIdentifierCode,omitempty"`
+	// DateFormat - The date format. Possible values include: 'X12DateFormatNotSpecified', 'X12DateFormatCCYYMMDD', 'X12DateFormatYYMMDD'
+	DateFormat X12DateFormat `json:"dateFormat,omitempty"`
+	// TimeFormat - The time format. Possible values include: 'X12TimeFormatNotSpecified', 'X12TimeFormatHHMM', 'X12TimeFormatHHMMSS', 'X12TimeFormatHHMMSSdd', 'X12TimeFormatHHMMSSd'
+	TimeFormat X12TimeFormat `json:"timeFormat,omitempty"`
 }
 
-// X12EnvelopeSettings is the X12 agreement envelope settings.
+// X12EnvelopeSettings the X12 agreement envelope settings.
 type X12EnvelopeSettings struct {
-	ControlStandardsID                           *int32         `json:"controlStandardsId,omitempty"`
-	UseControlStandardsIDAsRepetitionCharacter   *bool          `json:"useControlStandardsIdAsRepetitionCharacter,omitempty"`
-	SenderApplicationID                          *string        `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationID                        *string        `json:"receiverApplicationId,omitempty"`
-	ControlVersionNumber                         *string        `json:"controlVersionNumber,omitempty"`
-	InterchangeControlNumberLowerBound           *int32         `json:"interchangeControlNumberLowerBound,omitempty"`
-	InterchangeControlNumberUpperBound           *int32         `json:"interchangeControlNumberUpperBound,omitempty"`
-	RolloverInterchangeControlNumber             *bool          `json:"rolloverInterchangeControlNumber,omitempty"`
-	EnableDefaultGroupHeaders                    *bool          `json:"enableDefaultGroupHeaders,omitempty"`
-	FunctionalGroupID                            *string        `json:"functionalGroupId,omitempty"`
-	GroupControlNumberLowerBound                 *int32         `json:"groupControlNumberLowerBound,omitempty"`
-	GroupControlNumberUpperBound                 *int32         `json:"groupControlNumberUpperBound,omitempty"`
-	RolloverGroupControlNumber                   *bool          `json:"rolloverGroupControlNumber,omitempty"`
-	GroupHeaderAgencyCode                        *string        `json:"groupHeaderAgencyCode,omitempty"`
-	GroupHeaderVersion                           *string        `json:"groupHeaderVersion,omitempty"`
-	TransactionSetControlNumberLowerBound        *int32         `json:"transactionSetControlNumberLowerBound,omitempty"`
-	TransactionSetControlNumberUpperBound        *int32         `json:"transactionSetControlNumberUpperBound,omitempty"`
-	RolloverTransactionSetControlNumber          *bool          `json:"rolloverTransactionSetControlNumber,omitempty"`
-	TransactionSetControlNumberPrefix            *string        `json:"transactionSetControlNumberPrefix,omitempty"`
-	TransactionSetControlNumberSuffix            *string        `json:"transactionSetControlNumberSuffix,omitempty"`
-	OverwriteExistingTransactionSetControlNumber *bool          `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
-	GroupHeaderDateFormat                        X12DateFormat  `json:"groupHeaderDateFormat,omitempty"`
-	GroupHeaderTimeFormat                        X12TimeFormat  `json:"groupHeaderTimeFormat,omitempty"`
-	UsageIndicator                               UsageIndicator `json:"usageIndicator,omitempty"`
+	// ControlStandardsID - The controls standards id.
+	ControlStandardsID *int32 `json:"controlStandardsId,omitempty"`
+	// UseControlStandardsIDAsRepetitionCharacter - The value indicating whether to use control standards id as repetition character.
+	UseControlStandardsIDAsRepetitionCharacter *bool `json:"useControlStandardsIdAsRepetitionCharacter,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// ControlVersionNumber - The control version number.
+	ControlVersionNumber *string `json:"controlVersionNumber,omitempty"`
+	// InterchangeControlNumberLowerBound - The interchange  control number lower bound.
+	InterchangeControlNumberLowerBound *int32 `json:"interchangeControlNumberLowerBound,omitempty"`
+	// InterchangeControlNumberUpperBound - The interchange  control number upper bound.
+	InterchangeControlNumberUpperBound *int32 `json:"interchangeControlNumberUpperBound,omitempty"`
+	// RolloverInterchangeControlNumber - The value indicating whether to rollover interchange control number.
+	RolloverInterchangeControlNumber *bool `json:"rolloverInterchangeControlNumber,omitempty"`
+	// EnableDefaultGroupHeaders - The value indicating whether to enable default group headers.
+	EnableDefaultGroupHeaders *bool `json:"enableDefaultGroupHeaders,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// GroupControlNumberLowerBound - The group control number lower bound.
+	GroupControlNumberLowerBound *int32 `json:"groupControlNumberLowerBound,omitempty"`
+	// GroupControlNumberUpperBound - The group control number upper bound.
+	GroupControlNumberUpperBound *int32 `json:"groupControlNumberUpperBound,omitempty"`
+	// RolloverGroupControlNumber - The value indicating whether to rollover group control number.
+	RolloverGroupControlNumber *bool `json:"rolloverGroupControlNumber,omitempty"`
+	// GroupHeaderAgencyCode - The group header agency code.
+	GroupHeaderAgencyCode *string `json:"groupHeaderAgencyCode,omitempty"`
+	// GroupHeaderVersion - The group header version.
+	GroupHeaderVersion *string `json:"groupHeaderVersion,omitempty"`
+	// TransactionSetControlNumberLowerBound - The transaction set control number lower bound.
+	TransactionSetControlNumberLowerBound *int32 `json:"transactionSetControlNumberLowerBound,omitempty"`
+	// TransactionSetControlNumberUpperBound - The transaction set control number upper bound.
+	TransactionSetControlNumberUpperBound *int32 `json:"transactionSetControlNumberUpperBound,omitempty"`
+	// RolloverTransactionSetControlNumber - The value indicating whether to rollover transaction set control number.
+	RolloverTransactionSetControlNumber *bool `json:"rolloverTransactionSetControlNumber,omitempty"`
+	// TransactionSetControlNumberPrefix - The transaction set control number prefix.
+	TransactionSetControlNumberPrefix *string `json:"transactionSetControlNumberPrefix,omitempty"`
+	// TransactionSetControlNumberSuffix - The transaction set control number suffix.
+	TransactionSetControlNumberSuffix *string `json:"transactionSetControlNumberSuffix,omitempty"`
+	// OverwriteExistingTransactionSetControlNumber - The value indicating whether to overwrite existing transaction set control number.
+	OverwriteExistingTransactionSetControlNumber *bool `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
+	// GroupHeaderDateFormat - The group header date format. Possible values include: 'X12DateFormatNotSpecified', 'X12DateFormatCCYYMMDD', 'X12DateFormatYYMMDD'
+	GroupHeaderDateFormat X12DateFormat `json:"groupHeaderDateFormat,omitempty"`
+	// GroupHeaderTimeFormat - The group header time format. Possible values include: 'X12TimeFormatNotSpecified', 'X12TimeFormatHHMM', 'X12TimeFormatHHMMSS', 'X12TimeFormatHHMMSSdd', 'X12TimeFormatHHMMSSd'
+	GroupHeaderTimeFormat X12TimeFormat `json:"groupHeaderTimeFormat,omitempty"`
+	// UsageIndicator - The usage indicator. Possible values include: 'UsageIndicatorNotSpecified', 'UsageIndicatorTest', 'UsageIndicatorInformation', 'UsageIndicatorProduction'
+	UsageIndicator UsageIndicator `json:"usageIndicator,omitempty"`
 }
 
-// X12FramingSettings is the X12 agreement framing settings.
+// X12FramingSettings the X12 agreement framing settings.
 type X12FramingSettings struct {
-	DataElementSeparator       *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator         *int32                  `json:"componentSeparator,omitempty"`
-	ReplaceSeparatorsInPayload *bool                   `json:"replaceSeparatorsInPayload,omitempty"`
-	ReplaceCharacter           *int32                  `json:"replaceCharacter,omitempty"`
-	SegmentTerminator          *int32                  `json:"segmentTerminator,omitempty"`
-	CharacterSet               X12CharacterSet         `json:"characterSet,omitempty"`
-	SegmentTerminatorSuffix    SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// ReplaceSeparatorsInPayload - The value indicating whether to replace separators in payload.
+	ReplaceSeparatorsInPayload *bool `json:"replaceSeparatorsInPayload,omitempty"`
+	// ReplaceCharacter - The replacement character.
+	ReplaceCharacter *int32 `json:"replaceCharacter,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// CharacterSet - The X12 character set. Possible values include: 'X12CharacterSetNotSpecified', 'X12CharacterSetBasic', 'X12CharacterSetExtended', 'X12CharacterSetUTF8'
+	CharacterSet X12CharacterSet `json:"characterSet,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
 }
 
-// X12MessageFilter is the X12 message filter for odata query.
+// X12MessageFilter the X12 message filter for odata query.
 type X12MessageFilter struct {
+	// MessageFilterType - The message filter type. Possible values include: 'MessageFilterTypeNotSpecified', 'MessageFilterTypeInclude', 'MessageFilterTypeExclude'
 	MessageFilterType MessageFilterType `json:"messageFilterType,omitempty"`
 }
 
-// X12MessageIdentifier is the X12 message identifier.
+// X12MessageIdentifier the X12 message identifier.
 type X12MessageIdentifier struct {
+	// MessageID - The message id.
 	MessageID *string `json:"messageId,omitempty"`
 }
 
-// X12OneWayAgreement is the X12 oneway agreement.
+// X12OneWayAgreement the X12 oneway agreement.
 type X12OneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity    `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity    `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *X12ProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The X12 protocol settings.
+	ProtocolSettings *X12ProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// X12ProcessingSettings is the X12 processing settings.
+// X12ProcessingSettings the X12 processing settings.
 type X12ProcessingSettings struct {
-	MaskSecurityInfo                        *bool `json:"maskSecurityInfo,omitempty"`
-	ConvertImpliedDecimal                   *bool `json:"convertImpliedDecimal,omitempty"`
-	PreserveInterchange                     *bool `json:"preserveInterchange,omitempty"`
-	SuspendInterchangeOnError               *bool `json:"suspendInterchangeOnError,omitempty"`
+	// MaskSecurityInfo - The value indicating whether to mask security information.
+	MaskSecurityInfo *bool `json:"maskSecurityInfo,omitempty"`
+	// ConvertImpliedDecimal - The value indicating whether to convert numerical type to implied decimal.
+	ConvertImpliedDecimal *bool `json:"convertImpliedDecimal,omitempty"`
+	// PreserveInterchange - The value indicating whether to preserve interchange.
+	PreserveInterchange *bool `json:"preserveInterchange,omitempty"`
+	// SuspendInterchangeOnError - The value indicating whether to suspend interchange on error.
+	SuspendInterchangeOnError *bool `json:"suspendInterchangeOnError,omitempty"`
+	// CreateEmptyXMLTagsForTrailingSeparators - The value indicating whether to create empty xml tags for trailing separators.
 	CreateEmptyXMLTagsForTrailingSeparators *bool `json:"createEmptyXmlTagsForTrailingSeparators,omitempty"`
-	UseDotAsDecimalSeparator                *bool `json:"useDotAsDecimalSeparator,omitempty"`
+	// UseDotAsDecimalSeparator - The value indicating whether to use dot as decimal separator.
+	UseDotAsDecimalSeparator *bool `json:"useDotAsDecimalSeparator,omitempty"`
 }
 
-// X12ProtocolSettings is the X12 agreement protocol settings.
+// X12ProtocolSettings the X12 agreement protocol settings.
 type X12ProtocolSettings struct {
-	ValidationSettings      *X12ValidationSettings      `json:"validationSettings,omitempty"`
-	FramingSettings         *X12FramingSettings         `json:"framingSettings,omitempty"`
-	EnvelopeSettings        *X12EnvelopeSettings        `json:"envelopeSettings,omitempty"`
+	// ValidationSettings - The X12 validation settings.
+	ValidationSettings *X12ValidationSettings `json:"validationSettings,omitempty"`
+	// FramingSettings - The X12 framing settings.
+	FramingSettings *X12FramingSettings `json:"framingSettings,omitempty"`
+	// EnvelopeSettings - The X12 envelope settings.
+	EnvelopeSettings *X12EnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// AcknowledgementSettings - The X12 acknowledgment settings.
 	AcknowledgementSettings *X12AcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
-	MessageFilter           *X12MessageFilter           `json:"messageFilter,omitempty"`
-	SecuritySettings        *X12SecuritySettings        `json:"securitySettings,omitempty"`
-	ProcessingSettings      *X12ProcessingSettings      `json:"processingSettings,omitempty"`
-	EnvelopeOverrides       *[]X12EnvelopeOverride      `json:"envelopeOverrides,omitempty"`
-	ValidationOverrides     *[]X12ValidationOverride    `json:"validationOverrides,omitempty"`
-	MessageFilterList       *[]X12MessageIdentifier     `json:"messageFilterList,omitempty"`
-	SchemaReferences        *[]X12SchemaReference       `json:"schemaReferences,omitempty"`
-	X12DelimiterOverrides   *[]X12DelimiterOverrides    `json:"x12DelimiterOverrides,omitempty"`
+	// MessageFilter - The X12 message filter.
+	MessageFilter *X12MessageFilter `json:"messageFilter,omitempty"`
+	// SecuritySettings - The X12 security settings.
+	SecuritySettings *X12SecuritySettings `json:"securitySettings,omitempty"`
+	// ProcessingSettings - The X12 processing settings.
+	ProcessingSettings *X12ProcessingSettings `json:"processingSettings,omitempty"`
+	// EnvelopeOverrides - The X12 envelope override settings.
+	EnvelopeOverrides *[]X12EnvelopeOverride `json:"envelopeOverrides,omitempty"`
+	// ValidationOverrides - The X12 validation override settings.
+	ValidationOverrides *[]X12ValidationOverride `json:"validationOverrides,omitempty"`
+	// MessageFilterList - The X12 message filter list.
+	MessageFilterList *[]X12MessageIdentifier `json:"messageFilterList,omitempty"`
+	// SchemaReferences - The X12 schema references.
+	SchemaReferences *[]X12SchemaReference `json:"schemaReferences,omitempty"`
+	// X12DelimiterOverrides - The X12 delimiter override settings.
+	X12DelimiterOverrides *[]X12DelimiterOverrides `json:"x12DelimiterOverrides,omitempty"`
 }
 
-// X12SchemaReference is the X12 schema reference.
+// X12SchemaReference the X12 schema reference.
 type X12SchemaReference struct {
-	MessageID           *string `json:"messageId,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// SenderApplicationID - The sender application id.
 	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
-	SchemaVersion       *string `json:"schemaVersion,omitempty"`
-	SchemaName          *string `json:"schemaName,omitempty"`
+	// SchemaVersion - The schema version.
+	SchemaVersion *string `json:"schemaVersion,omitempty"`
+	// SchemaName - The schema name.
+	SchemaName *string `json:"schemaName,omitempty"`
 }
 
-// X12SecuritySettings is the X12 agreement security settings.
+// X12SecuritySettings the X12 agreement security settings.
 type X12SecuritySettings struct {
+	// AuthorizationQualifier - The authorization qualifier.
 	AuthorizationQualifier *string `json:"authorizationQualifier,omitempty"`
-	AuthorizationValue     *string `json:"authorizationValue,omitempty"`
-	SecurityQualifier      *string `json:"securityQualifier,omitempty"`
-	PasswordValue          *string `json:"passwordValue,omitempty"`
+	// AuthorizationValue - The authorization value.
+	AuthorizationValue *string `json:"authorizationValue,omitempty"`
+	// SecurityQualifier - The security qualifier.
+	SecurityQualifier *string `json:"securityQualifier,omitempty"`
+	// PasswordValue - The password value.
+	PasswordValue *string `json:"passwordValue,omitempty"`
 }
 
-// X12ValidationOverride is the X12 validation override settings.
+// X12ValidationOverride the X12 validation override settings.
 type X12ValidationOverride struct {
-	MessageID                              *string                 `json:"messageId,omitempty"`
-	ValidateEdiTypes                       *bool                   `json:"validateEdiTypes,omitempty"`
-	ValidateXsdTypes                       *bool                   `json:"validateXsdTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	ValidateCharacterSet                   *bool                   `json:"validateCharacterSet,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes  *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// MessageID - The message id on which the validation settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// ValidateEdiTypes - The value indicating whether to validate EDI types.
+	ValidateEdiTypes *bool `json:"validateEdiTypes,omitempty"`
+	// ValidateXsdTypes - The value indicating whether to validate XSD types.
+	ValidateXsdTypes *bool `json:"validateXsdTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character Set.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }
 
-// X12ValidationSettings is the X12 agreement validation settings.
+// X12ValidationSettings the X12 agreement validation settings.
 type X12ValidationSettings struct {
-	ValidateCharacterSet                      *bool                   `json:"validateCharacterSet,omitempty"`
-	CheckDuplicateInterchangeControlNumber    *bool                   `json:"checkDuplicateInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberValidityDays      *int32                  `json:"interchangeControlNumberValidityDays,omitempty"`
-	CheckDuplicateGroupControlNumber          *bool                   `json:"checkDuplicateGroupControlNumber,omitempty"`
-	CheckDuplicateTransactionSetControlNumber *bool                   `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
-	ValidateEdiTypes                          *bool                   `json:"validateEdiTypes,omitempty"`
-	ValidateXsdTypes                          *bool                   `json:"validateXsdTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes    *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes     *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                   TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character set in the message.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// CheckDuplicateInterchangeControlNumber - The value indicating whether to check for duplicate interchange control number.
+	CheckDuplicateInterchangeControlNumber *bool `json:"checkDuplicateInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberValidityDays - The validity period of interchange control number.
+	InterchangeControlNumberValidityDays *int32 `json:"interchangeControlNumberValidityDays,omitempty"`
+	// CheckDuplicateGroupControlNumber - The value indicating whether to check for duplicate group control number.
+	CheckDuplicateGroupControlNumber *bool `json:"checkDuplicateGroupControlNumber,omitempty"`
+	// CheckDuplicateTransactionSetControlNumber - The value indicating whether to check for duplicate transaction set control number.
+	CheckDuplicateTransactionSetControlNumber *bool `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
+	// ValidateEdiTypes - The value indicating whether to Whether to validate EDI types.
+	ValidateEdiTypes *bool `json:"validateEdiTypes,omitempty"`
+	// ValidateXsdTypes - The value indicating whether to Whether to validate XSD types.
+	ValidateXsdTypes *bool `json:"validateXsdTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }

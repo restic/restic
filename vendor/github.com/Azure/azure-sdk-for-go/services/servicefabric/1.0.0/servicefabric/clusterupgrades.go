@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClusterUpgradesClient is the client for the ClusterUpgrades methods of the Servicefabric service.
 type ClusterUpgradesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterUpgradesClient creates an instance of the ClusterUpgradesClient client.
@@ -41,8 +42,8 @@ func NewClusterUpgradesClientWithBaseURI(baseURI string, timeout *int32) Cluster
 // Resume resume cluster upgrades
 //
 // resumeClusterUpgrade is the upgrade of the cluster
-func (client ClusterUpgradesClient) Resume(resumeClusterUpgrade ResumeClusterUpgrade) (result String, err error) {
-	req, err := client.ResumePreparer(resumeClusterUpgrade)
+func (client ClusterUpgradesClient) Resume(ctx context.Context, resumeClusterUpgrade ResumeClusterUpgrade) (result String, err error) {
+	req, err := client.ResumePreparer(ctx, resumeClusterUpgrade)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterUpgradesClient", "Resume", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ClusterUpgradesClient) Resume(resumeClusterUpgrade ResumeClusterUpg
 }
 
 // ResumePreparer prepares the Resume request.
-func (client ClusterUpgradesClient) ResumePreparer(resumeClusterUpgrade ResumeClusterUpgrade) (*http.Request, error) {
+func (client ClusterUpgradesClient) ResumePreparer(ctx context.Context, resumeClusterUpgrade ResumeClusterUpgrade) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -80,14 +81,13 @@ func (client ClusterUpgradesClient) ResumePreparer(resumeClusterUpgrade ResumeCl
 		autorest.WithPath("/$/MoveToNextUpgradeDomain"),
 		autorest.WithJSON(resumeClusterUpgrade),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResumeSender sends the Resume request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterUpgradesClient) ResumeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -105,8 +105,8 @@ func (client ClusterUpgradesClient) ResumeResponder(resp *http.Response) (result
 }
 
 // Rollback rollback cluster upgrades
-func (client ClusterUpgradesClient) Rollback() (result String, err error) {
-	req, err := client.RollbackPreparer()
+func (client ClusterUpgradesClient) Rollback(ctx context.Context) (result String, err error) {
+	req, err := client.RollbackPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterUpgradesClient", "Rollback", nil, "Failure preparing request")
 		return
@@ -128,7 +128,7 @@ func (client ClusterUpgradesClient) Rollback() (result String, err error) {
 }
 
 // RollbackPreparer prepares the Rollback request.
-func (client ClusterUpgradesClient) RollbackPreparer() (*http.Request, error) {
+func (client ClusterUpgradesClient) RollbackPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -142,14 +142,13 @@ func (client ClusterUpgradesClient) RollbackPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/RollbackUpgrade"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RollbackSender sends the Rollback request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterUpgradesClient) RollbackSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -169,8 +168,8 @@ func (client ClusterUpgradesClient) RollbackResponder(resp *http.Response) (resu
 // Start start cluster upgrades
 //
 // startClusterUpgrade is the description of the start cluster upgrade
-func (client ClusterUpgradesClient) Start(startClusterUpgrade StartClusterUpgrade) (result String, err error) {
-	req, err := client.StartPreparer(startClusterUpgrade)
+func (client ClusterUpgradesClient) Start(ctx context.Context, startClusterUpgrade StartClusterUpgrade) (result String, err error) {
+	req, err := client.StartPreparer(ctx, startClusterUpgrade)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterUpgradesClient", "Start", nil, "Failure preparing request")
 		return
@@ -192,7 +191,7 @@ func (client ClusterUpgradesClient) Start(startClusterUpgrade StartClusterUpgrad
 }
 
 // StartPreparer prepares the Start request.
-func (client ClusterUpgradesClient) StartPreparer(startClusterUpgrade StartClusterUpgrade) (*http.Request, error) {
+func (client ClusterUpgradesClient) StartPreparer(ctx context.Context, startClusterUpgrade StartClusterUpgrade) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -208,14 +207,13 @@ func (client ClusterUpgradesClient) StartPreparer(startClusterUpgrade StartClust
 		autorest.WithPath("/$/Upgrade"),
 		autorest.WithJSON(startClusterUpgrade),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterUpgradesClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -235,8 +233,8 @@ func (client ClusterUpgradesClient) StartResponder(resp *http.Response) (result 
 // Update update cluster upgrades
 //
 // updateClusterUpgrade is the description of the update cluster upgrade
-func (client ClusterUpgradesClient) Update(updateClusterUpgrade UpdateClusterUpgrade) (result String, err error) {
-	req, err := client.UpdatePreparer(updateClusterUpgrade)
+func (client ClusterUpgradesClient) Update(ctx context.Context, updateClusterUpgrade UpdateClusterUpgrade) (result String, err error) {
+	req, err := client.UpdatePreparer(ctx, updateClusterUpgrade)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterUpgradesClient", "Update", nil, "Failure preparing request")
 		return
@@ -258,7 +256,7 @@ func (client ClusterUpgradesClient) Update(updateClusterUpgrade UpdateClusterUpg
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ClusterUpgradesClient) UpdatePreparer(updateClusterUpgrade UpdateClusterUpgrade) (*http.Request, error) {
+func (client ClusterUpgradesClient) UpdatePreparer(ctx context.Context, updateClusterUpgrade UpdateClusterUpgrade) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -274,14 +272,13 @@ func (client ClusterUpgradesClient) UpdatePreparer(updateClusterUpgrade UpdateCl
 		autorest.WithPath("/$/UpdateUpgrade"),
 		autorest.WithJSON(updateClusterUpgrade),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterUpgradesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

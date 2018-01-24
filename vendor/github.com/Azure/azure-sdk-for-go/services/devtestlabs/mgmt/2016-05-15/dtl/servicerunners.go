@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ServiceRunnersClient is the the DevTest Labs Client.
 type ServiceRunnersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServiceRunnersClient creates an instance of the ServiceRunnersClient client.
@@ -42,8 +43,8 @@ func NewServiceRunnersClientWithBaseURI(baseURI string, subscriptionID string) S
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the service
 // runner. serviceRunner is a container for a managed identity to execute DevTest lab services.
-func (client ServiceRunnersClient) CreateOrUpdate(resourceGroupName string, labName string, name string, serviceRunner ServiceRunner) (result ServiceRunner, err error) {
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, labName, name, serviceRunner)
+func (client ServiceRunnersClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, labName string, name string, serviceRunner ServiceRunner) (result ServiceRunner, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, labName, name, serviceRunner)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ServiceRunnersClient) CreateOrUpdate(resourceGroupName string, labN
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ServiceRunnersClient) CreateOrUpdatePreparer(resourceGroupName string, labName string, name string, serviceRunner ServiceRunner) (*http.Request, error) {
+func (client ServiceRunnersClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, labName string, name string, serviceRunner ServiceRunner) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -85,14 +86,13 @@ func (client ServiceRunnersClient) CreateOrUpdatePreparer(resourceGroupName stri
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/servicerunners/{name}", pathParameters),
 		autorest.WithJSON(serviceRunner),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceRunnersClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -113,8 +113,8 @@ func (client ServiceRunnersClient) CreateOrUpdateResponder(resp *http.Response) 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the service
 // runner.
-func (client ServiceRunnersClient) Delete(resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, labName, name)
+func (client ServiceRunnersClient) Delete(ctx context.Context, resourceGroupName string, labName string, name string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "Delete", nil, "Failure preparing request")
 		return
@@ -136,7 +136,7 @@ func (client ServiceRunnersClient) Delete(resourceGroupName string, labName stri
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ServiceRunnersClient) DeletePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client ServiceRunnersClient) DeletePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -154,14 +154,13 @@ func (client ServiceRunnersClient) DeletePreparer(resourceGroupName string, labN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/servicerunners/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceRunnersClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,8 +180,8 @@ func (client ServiceRunnersClient) DeleteResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the service
 // runner.
-func (client ServiceRunnersClient) Get(resourceGroupName string, labName string, name string) (result ServiceRunner, err error) {
-	req, err := client.GetPreparer(resourceGroupName, labName, name)
+func (client ServiceRunnersClient) Get(ctx context.Context, resourceGroupName string, labName string, name string) (result ServiceRunner, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "Get", nil, "Failure preparing request")
 		return
@@ -204,7 +203,7 @@ func (client ServiceRunnersClient) Get(resourceGroupName string, labName string,
 }
 
 // GetPreparer prepares the Get request.
-func (client ServiceRunnersClient) GetPreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client ServiceRunnersClient) GetPreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -222,14 +221,13 @@ func (client ServiceRunnersClient) GetPreparer(resourceGroupName string, labName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/servicerunners/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceRunnersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -251,8 +249,9 @@ func (client ServiceRunnersClient) GetResponder(resp *http.Response) (result Ser
 // resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
 // to the operation. top is the maximum number of resources to return from the operation. orderby is the ordering
 // expression for the results, using OData notation.
-func (client ServiceRunnersClient) List(resourceGroupName string, labName string, filter string, top *int32, orderby string) (result ResponseWithContinuationServiceRunner, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, filter, top, orderby)
+func (client ServiceRunnersClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderby string) (result ResponseWithContinuationServiceRunnerPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", nil, "Failure preparing request")
 		return
@@ -260,12 +259,12 @@ func (client ServiceRunnersClient) List(resourceGroupName string, labName string
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcsr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcsr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", resp, "Failure responding to request")
 	}
@@ -274,7 +273,7 @@ func (client ServiceRunnersClient) List(resourceGroupName string, labName string
 }
 
 // ListPreparer prepares the List request.
-func (client ServiceRunnersClient) ListPreparer(resourceGroupName string, labName string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client ServiceRunnersClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -300,14 +299,13 @@ func (client ServiceRunnersClient) ListPreparer(resourceGroupName string, labNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/servicerunners", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceRunnersClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -324,71 +322,29 @@ func (client ServiceRunnersClient) ListResponder(resp *http.Response) (result Re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ServiceRunnersClient) ListNextResults(lastResults ResponseWithContinuationServiceRunner) (result ResponseWithContinuationServiceRunner, err error) {
-	req, err := lastResults.ResponseWithContinuationServiceRunnerPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ServiceRunnersClient) listNextResults(lastResults ResponseWithContinuationServiceRunner) (result ResponseWithContinuationServiceRunner, err error) {
+	req, err := lastResults.responseWithContinuationServiceRunnerPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.ServiceRunnersClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ServiceRunnersClient) ListComplete(resourceGroupName string, labName string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan ServiceRunner, <-chan error) {
-	resultChan := make(chan ServiceRunner)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ServiceRunnersClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderby string) (result ResponseWithContinuationServiceRunnerIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, filter, top, orderby)
+	return
 }

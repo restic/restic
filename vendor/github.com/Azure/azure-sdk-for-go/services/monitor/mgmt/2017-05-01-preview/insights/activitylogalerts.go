@@ -18,6 +18,7 @@ package insights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ActivityLogAlertsClient is the monitor Management Client
 type ActivityLogAlertsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewActivityLogAlertsClient creates an instance of the ActivityLogAlertsClient client.
@@ -43,7 +44,7 @@ func NewActivityLogAlertsClientWithBaseURI(baseURI string, subscriptionID string
 //
 // resourceGroupName is the name of the resource group. activityLogAlertName is the name of the activity log alert.
 // activityLogAlert is the activity log alert to create or use for the update.
-func (client ActivityLogAlertsClient) CreateOrUpdate(resourceGroupName string, activityLogAlertName string, activityLogAlert ActivityLogAlertResource) (result ActivityLogAlertResource, err error) {
+func (client ActivityLogAlertsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, activityLogAlertName string, activityLogAlert ActivityLogAlertResource) (result ActivityLogAlertResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: activityLogAlert,
 			Constraints: []validation.Constraint{{Target: "activityLogAlert.ActivityLogAlert", Name: validation.Null, Rule: false,
@@ -55,7 +56,7 @@ func (client ActivityLogAlertsClient) CreateOrUpdate(resourceGroupName string, a
 		return result, validation.NewErrorWithValidationError(err, "insights.ActivityLogAlertsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, activityLogAlertName, activityLogAlert)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, activityLogAlertName, activityLogAlert)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -77,7 +78,7 @@ func (client ActivityLogAlertsClient) CreateOrUpdate(resourceGroupName string, a
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ActivityLogAlertsClient) CreateOrUpdatePreparer(resourceGroupName string, activityLogAlertName string, activityLogAlert ActivityLogAlertResource) (*http.Request, error) {
+func (client ActivityLogAlertsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, activityLogAlertName string, activityLogAlert ActivityLogAlertResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"activityLogAlertName": autorest.Encode("path", activityLogAlertName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -96,14 +97,13 @@ func (client ActivityLogAlertsClient) CreateOrUpdatePreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/activityLogAlerts/{activityLogAlertName}", pathParameters),
 		autorest.WithJSON(activityLogAlert),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -123,8 +123,8 @@ func (client ActivityLogAlertsClient) CreateOrUpdateResponder(resp *http.Respons
 // Delete delete an activity log alert.
 //
 // resourceGroupName is the name of the resource group. activityLogAlertName is the name of the activity log alert.
-func (client ActivityLogAlertsClient) Delete(resourceGroupName string, activityLogAlertName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, activityLogAlertName)
+func (client ActivityLogAlertsClient) Delete(ctx context.Context, resourceGroupName string, activityLogAlertName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, activityLogAlertName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -146,7 +146,7 @@ func (client ActivityLogAlertsClient) Delete(resourceGroupName string, activityL
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ActivityLogAlertsClient) DeletePreparer(resourceGroupName string, activityLogAlertName string) (*http.Request, error) {
+func (client ActivityLogAlertsClient) DeletePreparer(ctx context.Context, resourceGroupName string, activityLogAlertName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"activityLogAlertName": autorest.Encode("path", activityLogAlertName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -163,14 +163,13 @@ func (client ActivityLogAlertsClient) DeletePreparer(resourceGroupName string, a
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/activityLogAlerts/{activityLogAlertName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -189,8 +188,8 @@ func (client ActivityLogAlertsClient) DeleteResponder(resp *http.Response) (resu
 // Get get an activity log alert.
 //
 // resourceGroupName is the name of the resource group. activityLogAlertName is the name of the activity log alert.
-func (client ActivityLogAlertsClient) Get(resourceGroupName string, activityLogAlertName string) (result ActivityLogAlertResource, err error) {
-	req, err := client.GetPreparer(resourceGroupName, activityLogAlertName)
+func (client ActivityLogAlertsClient) Get(ctx context.Context, resourceGroupName string, activityLogAlertName string) (result ActivityLogAlertResource, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, activityLogAlertName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "Get", nil, "Failure preparing request")
 		return
@@ -212,7 +211,7 @@ func (client ActivityLogAlertsClient) Get(resourceGroupName string, activityLogA
 }
 
 // GetPreparer prepares the Get request.
-func (client ActivityLogAlertsClient) GetPreparer(resourceGroupName string, activityLogAlertName string) (*http.Request, error) {
+func (client ActivityLogAlertsClient) GetPreparer(ctx context.Context, resourceGroupName string, activityLogAlertName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"activityLogAlertName": autorest.Encode("path", activityLogAlertName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -229,14 +228,13 @@ func (client ActivityLogAlertsClient) GetPreparer(resourceGroupName string, acti
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/activityLogAlerts/{activityLogAlertName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -256,8 +254,8 @@ func (client ActivityLogAlertsClient) GetResponder(resp *http.Response) (result 
 // ListByResourceGroup get a list of all activity log alerts in a resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client ActivityLogAlertsClient) ListByResourceGroup(resourceGroupName string) (result ActivityLogAlertList, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client ActivityLogAlertsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ActivityLogAlertList, err error) {
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -279,7 +277,7 @@ func (client ActivityLogAlertsClient) ListByResourceGroup(resourceGroupName stri
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ActivityLogAlertsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ActivityLogAlertsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -295,14 +293,13 @@ func (client ActivityLogAlertsClient) ListByResourceGroupPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/activityLogAlerts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -320,8 +317,8 @@ func (client ActivityLogAlertsClient) ListByResourceGroupResponder(resp *http.Re
 }
 
 // ListBySubscriptionID get a list of all activity log alerts in a subscription.
-func (client ActivityLogAlertsClient) ListBySubscriptionID() (result ActivityLogAlertList, err error) {
-	req, err := client.ListBySubscriptionIDPreparer()
+func (client ActivityLogAlertsClient) ListBySubscriptionID(ctx context.Context) (result ActivityLogAlertList, err error) {
+	req, err := client.ListBySubscriptionIDPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "ListBySubscriptionID", nil, "Failure preparing request")
 		return
@@ -343,7 +340,7 @@ func (client ActivityLogAlertsClient) ListBySubscriptionID() (result ActivityLog
 }
 
 // ListBySubscriptionIDPreparer prepares the ListBySubscriptionID request.
-func (client ActivityLogAlertsClient) ListBySubscriptionIDPreparer() (*http.Request, error) {
+func (client ActivityLogAlertsClient) ListBySubscriptionIDPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -358,14 +355,13 @@ func (client ActivityLogAlertsClient) ListBySubscriptionIDPreparer() (*http.Requ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/activityLogAlerts", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionIDSender sends the ListBySubscriptionID request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) ListBySubscriptionIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -386,8 +382,8 @@ func (client ActivityLogAlertsClient) ListBySubscriptionIDResponder(resp *http.R
 //
 // resourceGroupName is the name of the resource group. activityLogAlertName is the name of the activity log alert.
 // activityLogAlertPatch is parameters supplied to the operation.
-func (client ActivityLogAlertsClient) Update(resourceGroupName string, activityLogAlertName string, activityLogAlertPatch ActivityLogAlertPatchBody) (result ActivityLogAlertResource, err error) {
-	req, err := client.UpdatePreparer(resourceGroupName, activityLogAlertName, activityLogAlertPatch)
+func (client ActivityLogAlertsClient) Update(ctx context.Context, resourceGroupName string, activityLogAlertName string, activityLogAlertPatch ActivityLogAlertPatchBody) (result ActivityLogAlertResource, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, activityLogAlertName, activityLogAlertPatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActivityLogAlertsClient", "Update", nil, "Failure preparing request")
 		return
@@ -409,7 +405,7 @@ func (client ActivityLogAlertsClient) Update(resourceGroupName string, activityL
 }
 
 // UpdatePreparer prepares the Update request.
-func (client ActivityLogAlertsClient) UpdatePreparer(resourceGroupName string, activityLogAlertName string, activityLogAlertPatch ActivityLogAlertPatchBody) (*http.Request, error) {
+func (client ActivityLogAlertsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, activityLogAlertName string, activityLogAlertPatch ActivityLogAlertPatchBody) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"activityLogAlertName": autorest.Encode("path", activityLogAlertName),
 		"resourceGroupName":    autorest.Encode("path", resourceGroupName),
@@ -428,14 +424,13 @@ func (client ActivityLogAlertsClient) UpdatePreparer(resourceGroupName string, a
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/activityLogAlerts/{activityLogAlertName}", pathParameters),
 		autorest.WithJSON(activityLogAlertPatch),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActivityLogAlertsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

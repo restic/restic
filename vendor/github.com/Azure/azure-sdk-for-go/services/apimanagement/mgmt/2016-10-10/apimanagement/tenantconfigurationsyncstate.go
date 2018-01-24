@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // TenantConfigurationSyncStateClient is the apiManagement Client
 type TenantConfigurationSyncStateClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewTenantConfigurationSyncStateClient creates an instance of the TenantConfigurationSyncStateClient client.
@@ -43,7 +44,7 @@ func NewTenantConfigurationSyncStateClientWithBaseURI(baseURI string, subscripti
 // Get gets the status of the most recent synchronization between the configuration database and the Git repository.
 //
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
-func (client TenantConfigurationSyncStateClient) Get(resourceGroupName string, serviceName string) (result TenantConfigurationSyncStateContract, err error) {
+func (client TenantConfigurationSyncStateClient) Get(ctx context.Context, resourceGroupName string, serviceName string) (result TenantConfigurationSyncStateContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -52,7 +53,7 @@ func (client TenantConfigurationSyncStateClient) Get(resourceGroupName string, s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.TenantConfigurationSyncStateClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.TenantConfigurationSyncStateClient", "Get", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client TenantConfigurationSyncStateClient) Get(resourceGroupName string, s
 }
 
 // GetPreparer prepares the Get request.
-func (client TenantConfigurationSyncStateClient) GetPreparer(resourceGroupName string, serviceName string) (*http.Request, error) {
+func (client TenantConfigurationSyncStateClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -91,14 +92,13 @@ func (client TenantConfigurationSyncStateClient) GetPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/tenant/configuration/syncState", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client TenantConfigurationSyncStateClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

@@ -19,8 +19,8 @@ package webservices
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -30,9 +30,9 @@ import (
 type AssetType string
 
 const (
-	// AssetTypeModule specifies the asset type module state for asset type.
+	// AssetTypeModule ...
 	AssetTypeModule AssetType = "Module"
-	// AssetTypeResource specifies the asset type resource state for asset type.
+	// AssetTypeResource ...
 	AssetTypeResource AssetType = "Resource"
 )
 
@@ -40,39 +40,39 @@ const (
 type ColumnFormat string
 
 const (
-	// Byte specifies the byte state for column format.
+	// Byte ...
 	Byte ColumnFormat = "Byte"
-	// Char specifies the char state for column format.
+	// Char ...
 	Char ColumnFormat = "Char"
-	// Complex128 specifies the complex 128 state for column format.
+	// Complex128 ...
 	Complex128 ColumnFormat = "Complex128"
-	// Complex64 specifies the complex 64 state for column format.
+	// Complex64 ...
 	Complex64 ColumnFormat = "Complex64"
-	// DateTime specifies the date time state for column format.
+	// DateTime ...
 	DateTime ColumnFormat = "Date-time"
-	// DateTimeOffset specifies the date time offset state for column format.
+	// DateTimeOffset ...
 	DateTimeOffset ColumnFormat = "Date-timeOffset"
-	// Double specifies the double state for column format.
+	// Double ...
 	Double ColumnFormat = "Double"
-	// Duration specifies the duration state for column format.
+	// Duration ...
 	Duration ColumnFormat = "Duration"
-	// Float specifies the float state for column format.
+	// Float ...
 	Float ColumnFormat = "Float"
-	// Int16 specifies the int 16 state for column format.
+	// Int16 ...
 	Int16 ColumnFormat = "Int16"
-	// Int32 specifies the int 32 state for column format.
+	// Int32 ...
 	Int32 ColumnFormat = "Int32"
-	// Int64 specifies the int 64 state for column format.
+	// Int64 ...
 	Int64 ColumnFormat = "Int64"
-	// Int8 specifies the int 8 state for column format.
+	// Int8 ...
 	Int8 ColumnFormat = "Int8"
-	// Uint16 specifies the uint 16 state for column format.
+	// Uint16 ...
 	Uint16 ColumnFormat = "Uint16"
-	// Uint32 specifies the uint 32 state for column format.
+	// Uint32 ...
 	Uint32 ColumnFormat = "Uint32"
-	// Uint64 specifies the uint 64 state for column format.
+	// Uint64 ...
 	Uint64 ColumnFormat = "Uint64"
-	// Uint8 specifies the uint 8 state for column format.
+	// Uint8 ...
 	Uint8 ColumnFormat = "Uint8"
 )
 
@@ -80,13 +80,13 @@ const (
 type ColumnType string
 
 const (
-	// Boolean specifies the boolean state for column type.
+	// Boolean ...
 	Boolean ColumnType = "Boolean"
-	// Integer specifies the integer state for column type.
+	// Integer ...
 	Integer ColumnType = "Integer"
-	// Number specifies the number state for column type.
+	// Number ...
 	Number ColumnType = "Number"
-	// String specifies the string state for column type.
+	// String ...
 	String ColumnType = "String"
 )
 
@@ -94,11 +94,11 @@ const (
 type DiagnosticsLevel string
 
 const (
-	// All specifies the all state for diagnostics level.
+	// All ...
 	All DiagnosticsLevel = "All"
-	// Error specifies the error state for diagnostics level.
+	// Error ...
 	Error DiagnosticsLevel = "Error"
-	// None specifies the none state for diagnostics level.
+	// None ...
 	None DiagnosticsLevel = "None"
 )
 
@@ -106,7 +106,7 @@ const (
 type InputPortType string
 
 const (
-	// Dataset specifies the dataset state for input port type.
+	// Dataset ...
 	Dataset InputPortType = "Dataset"
 )
 
@@ -114,7 +114,7 @@ const (
 type OutputPortType string
 
 const (
-	// OutputPortTypeDataset specifies the output port type dataset state for output port type.
+	// OutputPortTypeDataset ...
 	OutputPortTypeDataset OutputPortType = "Dataset"
 )
 
@@ -122,37 +122,39 @@ const (
 type PackageType string
 
 const (
-	// PackageTypeGraph specifies the package type graph state for package type.
+	// PackageTypeGraph ...
 	PackageTypeGraph PackageType = "Graph"
+	// PackageTypeWebServiceProperties ...
+	PackageTypeWebServiceProperties PackageType = "WebServiceProperties"
 )
 
 // ParameterType enumerates the values for parameter type.
 type ParameterType string
 
 const (
-	// ParameterTypeBoolean specifies the parameter type boolean state for parameter type.
+	// ParameterTypeBoolean ...
 	ParameterTypeBoolean ParameterType = "Boolean"
-	// ParameterTypeColumnPicker specifies the parameter type column picker state for parameter type.
+	// ParameterTypeColumnPicker ...
 	ParameterTypeColumnPicker ParameterType = "ColumnPicker"
-	// ParameterTypeCredential specifies the parameter type credential state for parameter type.
+	// ParameterTypeCredential ...
 	ParameterTypeCredential ParameterType = "Credential"
-	// ParameterTypeDataGatewayName specifies the parameter type data gateway name state for parameter type.
+	// ParameterTypeDataGatewayName ...
 	ParameterTypeDataGatewayName ParameterType = "DataGatewayName"
-	// ParameterTypeDouble specifies the parameter type double state for parameter type.
+	// ParameterTypeDouble ...
 	ParameterTypeDouble ParameterType = "Double"
-	// ParameterTypeEnumerated specifies the parameter type enumerated state for parameter type.
+	// ParameterTypeEnumerated ...
 	ParameterTypeEnumerated ParameterType = "Enumerated"
-	// ParameterTypeFloat specifies the parameter type float state for parameter type.
+	// ParameterTypeFloat ...
 	ParameterTypeFloat ParameterType = "Float"
-	// ParameterTypeInt specifies the parameter type int state for parameter type.
+	// ParameterTypeInt ...
 	ParameterTypeInt ParameterType = "Int"
-	// ParameterTypeMode specifies the parameter type mode state for parameter type.
+	// ParameterTypeMode ...
 	ParameterTypeMode ParameterType = "Mode"
-	// ParameterTypeParameterRange specifies the parameter type parameter range state for parameter type.
+	// ParameterTypeParameterRange ...
 	ParameterTypeParameterRange ParameterType = "ParameterRange"
-	// ParameterTypeScript specifies the parameter type script state for parameter type.
+	// ParameterTypeScript ...
 	ParameterTypeScript ParameterType = "Script"
-	// ParameterTypeString specifies the parameter type string state for parameter type.
+	// ParameterTypeString ...
 	ParameterTypeString ParameterType = "String"
 )
 
@@ -160,185 +162,376 @@ const (
 type ProvisioningState string
 
 const (
-	// Failed specifies the failed state for provisioning state.
+	// Failed ...
 	Failed ProvisioningState = "Failed"
-	// Provisioning specifies the provisioning state for provisioning state.
+	// Provisioning ...
 	Provisioning ProvisioningState = "Provisioning"
-	// Succeeded specifies the succeeded state for provisioning state.
+	// Succeeded ...
 	Succeeded ProvisioningState = "Succeeded"
-	// Unknown specifies the unknown state for provisioning state.
+	// Unknown ...
 	Unknown ProvisioningState = "Unknown"
 )
 
-// AssetItem is information about an asset associated with the web service.
+// AssetItem information about an asset associated with the web service.
 type AssetItem struct {
-	Name         *string                 `json:"name,omitempty"`
-	ID           *string                 `json:"id,omitempty"`
-	Type         AssetType               `json:"type,omitempty"`
-	LocationInfo *BlobLocation           `json:"locationInfo,omitempty"`
-	InputPorts   *map[string]*InputPort  `json:"inputPorts,omitempty"`
-	OutputPorts  *map[string]*OutputPort `json:"outputPorts,omitempty"`
-	Metadata     *map[string]*string     `json:"metadata,omitempty"`
-	Parameters   *[]ModuleAssetParameter `json:"parameters,omitempty"`
+	// Name - Asset's friendly name.
+	Name *string `json:"name,omitempty"`
+	// ID - Asset's Id.
+	ID *string `json:"id,omitempty"`
+	// Type - Asset's type. Possible values include: 'AssetTypeModule', 'AssetTypeResource'
+	Type AssetType `json:"type,omitempty"`
+	// LocationInfo - Access information for the asset.
+	LocationInfo *BlobLocation `json:"locationInfo,omitempty"`
+	// InputPorts - Information about the asset's input ports.
+	InputPorts *map[string]*InputPort `json:"inputPorts,omitempty"`
+	// OutputPorts - Information about the asset's output ports.
+	OutputPorts *map[string]*OutputPort `json:"outputPorts,omitempty"`
+	// Metadata - If the asset is a custom module, this holds the module's metadata.
+	Metadata *map[string]*string `json:"metadata,omitempty"`
+	// Parameters - If the asset is a custom module, this holds the module's parameters.
+	Parameters *[]ModuleAssetParameter `json:"parameters,omitempty"`
 }
 
-// AsyncOperationErrorInfo is the error detail information for async operation
+// AsyncOperationErrorInfo the error detail information for async operation
 type AsyncOperationErrorInfo struct {
-	Code    *string                    `json:"code,omitempty"`
-	Target  *string                    `json:"target,omitempty"`
-	Message *string                    `json:"message,omitempty"`
+	// Code - The error code.
+	Code *string `json:"code,omitempty"`
+	// Target - The error target.
+	Target *string `json:"target,omitempty"`
+	// Message - The error message.
+	Message *string `json:"message,omitempty"`
+	// Details - An array containing error information.
 	Details *[]AsyncOperationErrorInfo `json:"details,omitempty"`
 }
 
-// AsyncOperationStatus is azure async operation status.
+// AsyncOperationStatus azure async operation status.
 type AsyncOperationStatus struct {
 	autorest.Response `json:"-"`
-	ID                *string                  `json:"id,omitempty"`
-	Name              *string                  `json:"name,omitempty"`
-	ProvisioningState ProvisioningState        `json:"provisioningState,omitempty"`
-	StartTime         *date.Time               `json:"startTime,omitempty"`
-	EndTime           *date.Time               `json:"endTime,omitempty"`
-	PercentComplete   *float64                 `json:"percentComplete,omitempty"`
-	ErrorInfo         *AsyncOperationErrorInfo `json:"errorInfo,omitempty"`
+	// ID - Async operation id.
+	ID *string `json:"id,omitempty"`
+	// Name - Async operation name.
+	Name *string `json:"name,omitempty"`
+	// ProvisioningState - Read Only: The provisioning state of the web service. Valid values are Unknown, Provisioning, Succeeded, and Failed. Possible values include: 'Unknown', 'Provisioning', 'Succeeded', 'Failed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// StartTime - The date time that the async operation started.
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The date time that the async operation finished.
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// PercentComplete - Async operation progress.
+	PercentComplete *float64 `json:"percentComplete,omitempty"`
+	// ErrorInfo - If the async operation fails, this structure contains the error details.
+	ErrorInfo *AsyncOperationErrorInfo `json:"errorInfo,omitempty"`
 }
 
-// BlobLocation is describes the access location for a blob.
+// BlobLocation describes the access location for a blob.
 type BlobLocation struct {
-	URI         *string `json:"uri,omitempty"`
+	// URI - The URI from which the blob is accessible from. For example, aml://abc for system assets or https://xyz for user assets or payload.
+	URI *string `json:"uri,omitempty"`
+	// Credentials - Access credentials for the blob, if applicable (e.g. blob specified by storage account connection string + blob URI)
 	Credentials *string `json:"credentials,omitempty"`
 }
 
-// ColumnSpecification is swagger 2.0 schema for a column within the data table representing a web service input or
+// ColumnSpecification swagger 2.0 schema for a column within the data table representing a web service input or
 // output. See Swagger specification: http://swagger.io/specification/
 type ColumnSpecification struct {
-	Type          ColumnType                `json:"type,omitempty"`
-	Format        ColumnFormat              `json:"format,omitempty"`
-	Enum          *[]map[string]interface{} `json:"enum,omitempty"`
-	XMsIsnullable *bool                     `json:"x-ms-isnullable,omitempty"`
-	XMsIsordered  *bool                     `json:"x-ms-isordered,omitempty"`
+	// Type - Data type of the column. Possible values include: 'Boolean', 'Integer', 'Number', 'String'
+	Type ColumnType `json:"type,omitempty"`
+	// Format - Additional format information for the data type. Possible values include: 'Byte', 'Char', 'Complex64', 'Complex128', 'DateTime', 'DateTimeOffset', 'Double', 'Duration', 'Float', 'Int8', 'Int16', 'Int32', 'Int64', 'Uint8', 'Uint16', 'Uint32', 'Uint64'
+	Format ColumnFormat `json:"format,omitempty"`
+	// Enum - If the data type is categorical, this provides the list of accepted categories.
+	Enum *[]map[string]interface{} `json:"enum,omitempty"`
+	// XMsIsnullable - Flag indicating if the type supports null values or not.
+	XMsIsnullable *bool `json:"x-ms-isnullable,omitempty"`
+	// XMsIsordered - Flag indicating whether the categories are treated as an ordered set or not, if this is a categorical column.
+	XMsIsordered *bool `json:"x-ms-isordered,omitempty"`
 }
 
-// CommitmentPlan is information about the machine learning commitment plan associated with the web service.
+// CommitmentPlan information about the machine learning commitment plan associated with the web service.
 type CommitmentPlan struct {
+	// ID - Specifies the Azure Resource Manager ID of the commitment plan associated with the web service.
 	ID *string `json:"id,omitempty"`
 }
 
-// DiagnosticsConfiguration is diagnostics settings for an Azure ML web service.
+// DiagnosticsConfiguration diagnostics settings for an Azure ML web service.
 type DiagnosticsConfiguration struct {
-	Level  DiagnosticsLevel `json:"level,omitempty"`
-	Expiry *date.Time       `json:"expiry,omitempty"`
+	// Level - Specifies the verbosity of the diagnostic output. Valid values are: None - disables tracing; Error - collects only error (stderr) traces; All - collects all traces (stdout and stderr). Possible values include: 'None', 'Error', 'All'
+	Level DiagnosticsLevel `json:"level,omitempty"`
+	// Expiry - Specifies the date and time when the logging will cease. If null, diagnostic collection is not time limited.
+	Expiry *date.Time `json:"expiry,omitempty"`
 }
 
-// ExampleRequest is sample input data for the service's input(s).
+// ExampleRequest sample input data for the service's input(s).
 type ExampleRequest struct {
-	Inputs           *map[string][][]map[string]interface{} `json:"inputs,omitempty"`
-	GlobalParameters *map[string]*map[string]interface{}    `json:"globalParameters,omitempty"`
+	// Inputs - Sample input data for the web service's input(s) given as an input name to sample input values matrix map.
+	Inputs *map[string][][]map[string]interface{} `json:"inputs,omitempty"`
+	// GlobalParameters - Sample input data for the web service's global parameters
+	GlobalParameters *map[string]*map[string]interface{} `json:"globalParameters,omitempty"`
 }
 
-// GraphEdge is defines an edge within the web service's graph.
+// GraphEdge defines an edge within the web service's graph.
 type GraphEdge struct {
+	// SourceNodeID - The source graph node's identifier.
 	SourceNodeID *string `json:"sourceNodeId,omitempty"`
+	// SourcePortID - The identifier of the source node's port that the edge connects from.
 	SourcePortID *string `json:"sourcePortId,omitempty"`
+	// TargetNodeID - The destination graph node's identifier.
 	TargetNodeID *string `json:"targetNodeId,omitempty"`
+	// TargetPortID - The identifier of the destination node's port that the edge connects into.
 	TargetPortID *string `json:"targetPortId,omitempty"`
 }
 
-// GraphNode is specifies a node in the web service graph. The node can either be an input, output or asset node, so
-// only one of the corresponding id properties is populated at any given time.
+// GraphNode specifies a node in the web service graph. The node can either be an input, output or asset node, so only
+// one of the corresponding id properties is populated at any given time.
 type GraphNode struct {
-	AssetID    *string                `json:"assetId,omitempty"`
-	InputID    *string                `json:"inputId,omitempty"`
-	OutputID   *string                `json:"outputId,omitempty"`
+	// AssetID - The id of the asset represented by this node.
+	AssetID *string `json:"assetId,omitempty"`
+	// InputID - The id of the input element represented by this node.
+	InputID *string `json:"inputId,omitempty"`
+	// OutputID - The id of the output element represented by this node.
+	OutputID *string `json:"outputId,omitempty"`
+	// Parameters - If applicable, parameters of the node. Global graph parameters map into these, with values set at runtime.
 	Parameters *map[string]*Parameter `json:"parameters,omitempty"`
 }
 
-// GraphPackage is defines the graph of modules making up the machine learning solution.
+// GraphPackage defines the graph of modules making up the machine learning solution.
 type GraphPackage struct {
-	Nodes           *map[string]*GraphNode      `json:"nodes,omitempty"`
-	Edges           *[]GraphEdge                `json:"edges,omitempty"`
+	// Nodes - The set of nodes making up the graph, provided as a nodeId to GraphNode map
+	Nodes *map[string]*GraphNode `json:"nodes,omitempty"`
+	// Edges - The list of edges making up the graph.
+	Edges *[]GraphEdge `json:"edges,omitempty"`
+	// GraphParameters - The collection of global parameters for the graph, given as a global parameter name to GraphParameter map. Each parameter here has a 1:1 match with the global parameters values map declared at the WebServiceProperties level.
 	GraphParameters *map[string]*GraphParameter `json:"graphParameters,omitempty"`
 }
 
-// GraphParameter is defines a global parameter in the graph.
+// GraphParameter defines a global parameter in the graph.
 type GraphParameter struct {
-	Description *string               `json:"description,omitempty"`
-	Type        ParameterType         `json:"type,omitempty"`
-	Links       *[]GraphParameterLink `json:"links,omitempty"`
+	// Description - Description of this graph parameter.
+	Description *string `json:"description,omitempty"`
+	// Type - Graph parameter's type. Possible values include: 'ParameterTypeString', 'ParameterTypeInt', 'ParameterTypeFloat', 'ParameterTypeEnumerated', 'ParameterTypeScript', 'ParameterTypeMode', 'ParameterTypeCredential', 'ParameterTypeBoolean', 'ParameterTypeDouble', 'ParameterTypeColumnPicker', 'ParameterTypeParameterRange', 'ParameterTypeDataGatewayName'
+	Type ParameterType `json:"type,omitempty"`
+	// Links - Association links for this parameter to nodes in the graph.
+	Links *[]GraphParameterLink `json:"links,omitempty"`
 }
 
-// GraphParameterLink is association link for a graph global parameter to a node in the graph.
+// GraphParameterLink association link for a graph global parameter to a node in the graph.
 type GraphParameterLink struct {
-	NodeID       *string `json:"nodeId,omitempty"`
+	// NodeID - The graph node's identifier
+	NodeID *string `json:"nodeId,omitempty"`
+	// ParameterKey - The identifier of the node parameter that the global parameter maps to.
 	ParameterKey *string `json:"parameterKey,omitempty"`
 }
 
-// InputPort is asset input port
+// InputPort asset input port
 type InputPort struct {
+	// Type - Port data type. Possible values include: 'Dataset'
 	Type InputPortType `json:"type,omitempty"`
 }
 
-// Keys is access keys for the web service calls.
+// Keys access keys for the web service calls.
 type Keys struct {
 	autorest.Response `json:"-"`
-	Primary           *string `json:"primary,omitempty"`
-	Secondary         *string `json:"secondary,omitempty"`
+	// Primary - The primary access key.
+	Primary *string `json:"primary,omitempty"`
+	// Secondary - The secondary access key.
+	Secondary *string `json:"secondary,omitempty"`
 }
 
-// MachineLearningWorkspace is information about the machine learning workspace containing the experiment that is
-// source for the web service.
+// MachineLearningWorkspace information about the machine learning workspace containing the experiment that is source
+// for the web service.
 type MachineLearningWorkspace struct {
+	// ID - Specifies the workspace ID of the machine learning workspace associated with the web service
 	ID *string `json:"id,omitempty"`
 }
 
-// ModeValueInfo is nested parameter definition.
+// ModeValueInfo nested parameter definition.
 type ModeValueInfo struct {
-	InterfaceString *string                 `json:"interfaceString,omitempty"`
-	Parameters      *[]ModuleAssetParameter `json:"parameters,omitempty"`
+	// InterfaceString - The interface string name for the nested parameter.
+	InterfaceString *string `json:"interfaceString,omitempty"`
+	// Parameters - The definition of the parameter.
+	Parameters *[]ModuleAssetParameter `json:"parameters,omitempty"`
 }
 
-// ModuleAssetParameter is parameter definition for a module asset.
+// ModuleAssetParameter parameter definition for a module asset.
 type ModuleAssetParameter struct {
-	Name           *string                    `json:"name,omitempty"`
-	ParameterType  *string                    `json:"parameterType,omitempty"`
+	// Name - Parameter name.
+	Name *string `json:"name,omitempty"`
+	// ParameterType - Parameter type.
+	ParameterType *string `json:"parameterType,omitempty"`
+	// ModeValuesInfo - Definitions for nested interface parameters if this is a complex module parameter.
 	ModeValuesInfo *map[string]*ModeValueInfo `json:"modeValuesInfo,omitempty"`
 }
 
-// OutputPort is asset output port
+// OutputPort asset output port
 type OutputPort struct {
+	// Type - Port data type. Possible values include: 'OutputPortTypeDataset'
 	Type OutputPortType `json:"type,omitempty"`
 }
 
-// PaginatedWebServicesList is paginated list of web services.
+// PaginatedWebServicesList paginated list of web services.
 type PaginatedWebServicesList struct {
 	autorest.Response `json:"-"`
-	Value             *[]WebService `json:"value,omitempty"`
-	NextLink          *string       `json:"nextLink,omitempty"`
+	// Value - An array of web service objects.
+	Value *[]WebService `json:"value,omitempty"`
+	// NextLink - A continuation link (absolute URI) to the next page of results in the list.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// PaginatedWebServicesListPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client PaginatedWebServicesList) PaginatedWebServicesListPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// PaginatedWebServicesListIterator provides access to a complete listing of WebService values.
+type PaginatedWebServicesListIterator struct {
+	i    int
+	page PaginatedWebServicesListPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *PaginatedWebServicesListIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter PaginatedWebServicesListIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter PaginatedWebServicesListIterator) Response() PaginatedWebServicesList {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter PaginatedWebServicesListIterator) Value() WebService {
+	if !iter.page.NotDone() {
+		return WebService{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (pwsl PaginatedWebServicesList) IsEmpty() bool {
+	return pwsl.Value == nil || len(*pwsl.Value) == 0
+}
+
+// paginatedWebServicesListPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (pwsl PaginatedWebServicesList) paginatedWebServicesListPreparer() (*http.Request, error) {
+	if pwsl.NextLink == nil || len(to.String(pwsl.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(pwsl.NextLink)))
 }
 
-// Parameter is web Service Parameter object for node and global parameter
+// PaginatedWebServicesListPage contains a page of WebService values.
+type PaginatedWebServicesListPage struct {
+	fn   func(PaginatedWebServicesList) (PaginatedWebServicesList, error)
+	pwsl PaginatedWebServicesList
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *PaginatedWebServicesListPage) Next() error {
+	next, err := page.fn(page.pwsl)
+	if err != nil {
+		return err
+	}
+	page.pwsl = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page PaginatedWebServicesListPage) NotDone() bool {
+	return !page.pwsl.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page PaginatedWebServicesListPage) Response() PaginatedWebServicesList {
+	return page.pwsl
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page PaginatedWebServicesListPage) Values() []WebService {
+	if page.pwsl.IsEmpty() {
+		return nil
+	}
+	return *page.pwsl.Value
+}
+
+// Parameter web Service Parameter object for node and global parameter
 type Parameter struct {
-	Value                 *map[string]interface{} `json:"value,omitempty"`
-	CertificateThumbprint *string                 `json:"certificateThumbprint,omitempty"`
+	// Value - The parameter value
+	Value *map[string]interface{} `json:"value,omitempty"`
+	// CertificateThumbprint - If the parameter value in 'value' field is encrypted, the thumbprint of the certificate should be put here.
+	CertificateThumbprint *string `json:"certificateThumbprint,omitempty"`
 }
 
-// Properties is the set of properties specific to the Azure ML web service resource.
-type Properties interface {
+// BasicProperties the set of properties specific to the Azure ML web service resource.
+type BasicProperties interface {
 	AsPropertiesForGraph() (*PropertiesForGraph, bool)
+	AsProperties() (*Properties, bool)
 }
 
-func unmarshalProperties(body []byte) (Properties, error) {
+// Properties the set of properties specific to the Azure ML web service resource.
+type Properties struct {
+	// Title - The title of the web service.
+	Title *string `json:"title,omitempty"`
+	// Description - The description of the web service.
+	Description *string `json:"description,omitempty"`
+	// CreatedOn - Read Only: The date and time when the web service was created.
+	CreatedOn *date.Time `json:"createdOn,omitempty"`
+	// ModifiedOn - Read Only: The date and time when the web service was last modified.
+	ModifiedOn *date.Time `json:"modifiedOn,omitempty"`
+	// ProvisioningState - Read Only: The provision state of the web service. Valid values are Unknown, Provisioning, Succeeded, and Failed. Possible values include: 'Unknown', 'Provisioning', 'Succeeded', 'Failed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// Keys - Contains the web service provisioning keys. If you do not specify provisioning keys, the Azure Machine Learning system generates them for you. Note: The keys are not returned from calls to GET operations.
+	Keys *Keys `json:"keys,omitempty"`
+	// ReadOnly - When set to true, indicates that the web service is read-only and can no longer be updated or patched, only removed. Default, is false. Note: Once set to true, you cannot change its value.
+	ReadOnly *bool `json:"readOnly,omitempty"`
+	// SwaggerLocation - Read Only: Contains the URI of the swagger spec associated with this web service.
+	SwaggerLocation *string `json:"swaggerLocation,omitempty"`
+	// ExposeSampleData - When set to true, sample data is included in the web service's swagger definition. The default value is true.
+	ExposeSampleData *bool `json:"exposeSampleData,omitempty"`
+	// RealtimeConfiguration - Contains the configuration settings for the web service endpoint.
+	RealtimeConfiguration *RealtimeConfiguration `json:"realtimeConfiguration,omitempty"`
+	// Diagnostics - Settings controlling the diagnostics traces collection for the web service.
+	Diagnostics *DiagnosticsConfiguration `json:"diagnostics,omitempty"`
+	// StorageAccount - Specifies the storage account that Azure Machine Learning uses to store information about the web service. Only the name of the storage account is returned from calls to GET operations. When updating the storage account information, you must ensure that all necessary assets are available in the new storage account or calls to your web service will fail.
+	StorageAccount *StorageAccount `json:"storageAccount,omitempty"`
+	// MachineLearningWorkspace - Specifies the Machine Learning workspace containing the experiment that is source for the web service.
+	MachineLearningWorkspace *MachineLearningWorkspace `json:"machineLearningWorkspace,omitempty"`
+	// CommitmentPlan - Contains the commitment plan associated with this web service. Set at creation time. Once set, this value cannot be changed. Note: The commitment plan is not returned from calls to GET operations.
+	CommitmentPlan *CommitmentPlan `json:"commitmentPlan,omitempty"`
+	// Input - Contains the Swagger 2.0 schema describing one or more of the web service's inputs. For more information, see the Swagger specification.
+	Input *ServiceInputOutputSpecification `json:"input,omitempty"`
+	// Output - Contains the Swagger 2.0 schema describing one or more of the web service's outputs. For more information, see the Swagger specification.
+	Output *ServiceInputOutputSpecification `json:"output,omitempty"`
+	// ExampleRequest - Defines sample input data for one or more of the service's inputs.
+	ExampleRequest *ExampleRequest `json:"exampleRequest,omitempty"`
+	// Assets - Contains user defined properties describing web service assets. Properties are expressed as Key/Value pairs.
+	Assets *map[string]*AssetItem `json:"assets,omitempty"`
+	// Parameters - The set of global parameters values defined for the web service, given as a global parameter name to default value map. If no default value is specified, the parameter is considered to be required.
+	Parameters *map[string]*Parameter `json:"parameters,omitempty"`
+	// PayloadsInBlobStorage - When set to true, indicates that the payload size is larger than 3 MB. Otherwise false. If the payload size exceed 3 MB, the payload is stored in a blob and the PayloadsLocation parameter contains the URI of the blob. Otherwise, this will be set to false and Assets, Input, Output, Package, Parameters, ExampleRequest are inline. The Payload sizes is determined by adding the size of the Assets, Input, Output, Package, Parameters, and the ExampleRequest.
+	PayloadsInBlobStorage *bool `json:"payloadsInBlobStorage,omitempty"`
+	// PayloadsLocation - The URI of the payload blob. This paramater contains a value only if the payloadsInBlobStorage parameter is set to true. Otherwise is set to null.
+	PayloadsLocation *BlobLocation `json:"payloadsLocation,omitempty"`
+	// PackageType - Possible values include: 'PackageTypeWebServiceProperties', 'PackageTypeGraph'
+	PackageType PackageType `json:"packageType,omitempty"`
+}
+
+func unmarshalBasicProperties(body []byte) (BasicProperties, error) {
 	var m map[string]interface{}
 	err := json.Unmarshal(body, &m)
 	if err != nil {
@@ -351,20 +544,22 @@ func unmarshalProperties(body []byte) (Properties, error) {
 		err := json.Unmarshal(body, &pfg)
 		return pfg, err
 	default:
-		return nil, errors.New("Unsupported type")
+		var p Properties
+		err := json.Unmarshal(body, &p)
+		return p, err
 	}
 }
-func unmarshalPropertiesArray(body []byte) ([]Properties, error) {
+func unmarshalBasicPropertiesArray(body []byte) ([]BasicProperties, error) {
 	var rawMessages []*json.RawMessage
 	err := json.Unmarshal(body, &rawMessages)
 	if err != nil {
 		return nil, err
 	}
 
-	pArray := make([]Properties, len(rawMessages))
+	pArray := make([]BasicProperties, len(rawMessages))
 
 	for index, rawMessage := range rawMessages {
-		p, err := unmarshalProperties(*rawMessage)
+		p, err := unmarshalBasicProperties(*rawMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -373,31 +568,80 @@ func unmarshalPropertiesArray(body []byte) ([]Properties, error) {
 	return pArray, nil
 }
 
-// PropertiesForGraph is properties specific to a Graph based web service.
+// MarshalJSON is the custom marshaler for Properties.
+func (p Properties) MarshalJSON() ([]byte, error) {
+	p.PackageType = PackageTypeWebServiceProperties
+	type Alias Properties
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(p),
+	})
+}
+
+// AsPropertiesForGraph is the BasicProperties implementation for Properties.
+func (p Properties) AsPropertiesForGraph() (*PropertiesForGraph, bool) {
+	return nil, false
+}
+
+// AsProperties is the BasicProperties implementation for Properties.
+func (p Properties) AsProperties() (*Properties, bool) {
+	return &p, true
+}
+
+// AsBasicProperties is the BasicProperties implementation for Properties.
+func (p Properties) AsBasicProperties() (BasicProperties, bool) {
+	return &p, true
+}
+
+// PropertiesForGraph properties specific to a Graph based web service.
 type PropertiesForGraph struct {
-	Title                    *string                          `json:"title,omitempty"`
-	Description              *string                          `json:"description,omitempty"`
-	CreatedOn                *date.Time                       `json:"createdOn,omitempty"`
-	ModifiedOn               *date.Time                       `json:"modifiedOn,omitempty"`
-	ProvisioningState        ProvisioningState                `json:"provisioningState,omitempty"`
-	Keys                     *Keys                            `json:"keys,omitempty"`
-	ReadOnly                 *bool                            `json:"readOnly,omitempty"`
-	SwaggerLocation          *string                          `json:"swaggerLocation,omitempty"`
-	ExposeSampleData         *bool                            `json:"exposeSampleData,omitempty"`
-	RealtimeConfiguration    *RealtimeConfiguration           `json:"realtimeConfiguration,omitempty"`
-	Diagnostics              *DiagnosticsConfiguration        `json:"diagnostics,omitempty"`
-	StorageAccount           *StorageAccount                  `json:"storageAccount,omitempty"`
-	MachineLearningWorkspace *MachineLearningWorkspace        `json:"machineLearningWorkspace,omitempty"`
-	CommitmentPlan           *CommitmentPlan                  `json:"commitmentPlan,omitempty"`
-	Input                    *ServiceInputOutputSpecification `json:"input,omitempty"`
-	Output                   *ServiceInputOutputSpecification `json:"output,omitempty"`
-	ExampleRequest           *ExampleRequest                  `json:"exampleRequest,omitempty"`
-	Assets                   *map[string]*AssetItem           `json:"assets,omitempty"`
-	Parameters               *map[string]*Parameter           `json:"parameters,omitempty"`
-	PayloadsInBlobStorage    *bool                            `json:"payloadsInBlobStorage,omitempty"`
-	PayloadsLocation         *BlobLocation                    `json:"payloadsLocation,omitempty"`
-	PackageType              PackageType                      `json:"packageType,omitempty"`
-	Package                  *GraphPackage                    `json:"package,omitempty"`
+	// Title - The title of the web service.
+	Title *string `json:"title,omitempty"`
+	// Description - The description of the web service.
+	Description *string `json:"description,omitempty"`
+	// CreatedOn - Read Only: The date and time when the web service was created.
+	CreatedOn *date.Time `json:"createdOn,omitempty"`
+	// ModifiedOn - Read Only: The date and time when the web service was last modified.
+	ModifiedOn *date.Time `json:"modifiedOn,omitempty"`
+	// ProvisioningState - Read Only: The provision state of the web service. Valid values are Unknown, Provisioning, Succeeded, and Failed. Possible values include: 'Unknown', 'Provisioning', 'Succeeded', 'Failed'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// Keys - Contains the web service provisioning keys. If you do not specify provisioning keys, the Azure Machine Learning system generates them for you. Note: The keys are not returned from calls to GET operations.
+	Keys *Keys `json:"keys,omitempty"`
+	// ReadOnly - When set to true, indicates that the web service is read-only and can no longer be updated or patched, only removed. Default, is false. Note: Once set to true, you cannot change its value.
+	ReadOnly *bool `json:"readOnly,omitempty"`
+	// SwaggerLocation - Read Only: Contains the URI of the swagger spec associated with this web service.
+	SwaggerLocation *string `json:"swaggerLocation,omitempty"`
+	// ExposeSampleData - When set to true, sample data is included in the web service's swagger definition. The default value is true.
+	ExposeSampleData *bool `json:"exposeSampleData,omitempty"`
+	// RealtimeConfiguration - Contains the configuration settings for the web service endpoint.
+	RealtimeConfiguration *RealtimeConfiguration `json:"realtimeConfiguration,omitempty"`
+	// Diagnostics - Settings controlling the diagnostics traces collection for the web service.
+	Diagnostics *DiagnosticsConfiguration `json:"diagnostics,omitempty"`
+	// StorageAccount - Specifies the storage account that Azure Machine Learning uses to store information about the web service. Only the name of the storage account is returned from calls to GET operations. When updating the storage account information, you must ensure that all necessary assets are available in the new storage account or calls to your web service will fail.
+	StorageAccount *StorageAccount `json:"storageAccount,omitempty"`
+	// MachineLearningWorkspace - Specifies the Machine Learning workspace containing the experiment that is source for the web service.
+	MachineLearningWorkspace *MachineLearningWorkspace `json:"machineLearningWorkspace,omitempty"`
+	// CommitmentPlan - Contains the commitment plan associated with this web service. Set at creation time. Once set, this value cannot be changed. Note: The commitment plan is not returned from calls to GET operations.
+	CommitmentPlan *CommitmentPlan `json:"commitmentPlan,omitempty"`
+	// Input - Contains the Swagger 2.0 schema describing one or more of the web service's inputs. For more information, see the Swagger specification.
+	Input *ServiceInputOutputSpecification `json:"input,omitempty"`
+	// Output - Contains the Swagger 2.0 schema describing one or more of the web service's outputs. For more information, see the Swagger specification.
+	Output *ServiceInputOutputSpecification `json:"output,omitempty"`
+	// ExampleRequest - Defines sample input data for one or more of the service's inputs.
+	ExampleRequest *ExampleRequest `json:"exampleRequest,omitempty"`
+	// Assets - Contains user defined properties describing web service assets. Properties are expressed as Key/Value pairs.
+	Assets *map[string]*AssetItem `json:"assets,omitempty"`
+	// Parameters - The set of global parameters values defined for the web service, given as a global parameter name to default value map. If no default value is specified, the parameter is considered to be required.
+	Parameters *map[string]*Parameter `json:"parameters,omitempty"`
+	// PayloadsInBlobStorage - When set to true, indicates that the payload size is larger than 3 MB. Otherwise false. If the payload size exceed 3 MB, the payload is stored in a blob and the PayloadsLocation parameter contains the URI of the blob. Otherwise, this will be set to false and Assets, Input, Output, Package, Parameters, ExampleRequest are inline. The Payload sizes is determined by adding the size of the Assets, Input, Output, Package, Parameters, and the ExampleRequest.
+	PayloadsInBlobStorage *bool `json:"payloadsInBlobStorage,omitempty"`
+	// PayloadsLocation - The URI of the payload blob. This paramater contains a value only if the payloadsInBlobStorage parameter is set to true. Otherwise is set to null.
+	PayloadsLocation *BlobLocation `json:"payloadsLocation,omitempty"`
+	// PackageType - Possible values include: 'PackageTypeWebServiceProperties', 'PackageTypeGraph'
+	PackageType PackageType `json:"packageType,omitempty"`
+	// Package - The definition of the graph package making up this web service.
+	Package *GraphPackage `json:"package,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for PropertiesForGraph.
@@ -411,59 +655,92 @@ func (pfg PropertiesForGraph) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// AsPropertiesForGraph is the Properties implementation for PropertiesForGraph.
+// AsPropertiesForGraph is the BasicProperties implementation for PropertiesForGraph.
 func (pfg PropertiesForGraph) AsPropertiesForGraph() (*PropertiesForGraph, bool) {
 	return &pfg, true
 }
 
-// RealtimeConfiguration is holds the available configuration options for an Azure ML web service endpoint.
+// AsProperties is the BasicProperties implementation for PropertiesForGraph.
+func (pfg PropertiesForGraph) AsProperties() (*Properties, bool) {
+	return nil, false
+}
+
+// AsBasicProperties is the BasicProperties implementation for PropertiesForGraph.
+func (pfg PropertiesForGraph) AsBasicProperties() (BasicProperties, bool) {
+	return &pfg, true
+}
+
+// RealtimeConfiguration holds the available configuration options for an Azure ML web service endpoint.
 type RealtimeConfiguration struct {
+	// MaxConcurrentCalls - Specifies the maximum concurrent calls that can be made to the web service. Minimum value: 4, Maximum value: 200.
 	MaxConcurrentCalls *int32 `json:"maxConcurrentCalls,omitempty"`
 }
 
-// Resource is azure resource.
+// Resource azure resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Specifies the resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Specifies the name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Location - Specifies the location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Type - Specifies the type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Tags - Contains resource tags defined as key/value pairs.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// ServiceInputOutputSpecification is the swagger 2.0 schema describing the service's inputs or outputs. See Swagger
+// ServiceInputOutputSpecification the swagger 2.0 schema describing the service's inputs or outputs. See Swagger
 // specification: http://swagger.io/specification/
 type ServiceInputOutputSpecification struct {
-	Title       *string                         `json:"title,omitempty"`
-	Description *string                         `json:"description,omitempty"`
-	Type        *string                         `json:"type,omitempty"`
-	Properties  *map[string]*TableSpecification `json:"properties,omitempty"`
+	// Title - The title of your Swagger schema.
+	Title *string `json:"title,omitempty"`
+	// Description - The description of the Swagger schema.
+	Description *string `json:"description,omitempty"`
+	// Type - The type of the entity described in swagger. Always 'object'.
+	Type *string `json:"type,omitempty"`
+	// Properties - Specifies a collection that contains the column schema for each input or output of the web service. For more information, see the Swagger specification.
+	Properties *map[string]*TableSpecification `json:"properties,omitempty"`
 }
 
-// StorageAccount is access information for a storage account.
+// StorageAccount access information for a storage account.
 type StorageAccount struct {
+	// Name - Specifies the name of the storage account.
 	Name *string `json:"name,omitempty"`
-	Key  *string `json:"key,omitempty"`
+	// Key - Specifies the key used to access the storage account.
+	Key *string `json:"key,omitempty"`
 }
 
-// TableSpecification is the swagger 2.0 schema describing a single service input or output. See Swagger specification:
+// TableSpecification the swagger 2.0 schema describing a single service input or output. See Swagger specification:
 // http://swagger.io/specification/
 type TableSpecification struct {
-	Title       *string                          `json:"title,omitempty"`
-	Description *string                          `json:"description,omitempty"`
-	Type        *string                          `json:"type,omitempty"`
-	Format      *string                          `json:"format,omitempty"`
-	Properties  *map[string]*ColumnSpecification `json:"properties,omitempty"`
+	// Title - Swagger schema title.
+	Title *string `json:"title,omitempty"`
+	// Description - Swagger schema description.
+	Description *string `json:"description,omitempty"`
+	// Type - The type of the entity described in swagger.
+	Type *string `json:"type,omitempty"`
+	// Format - The format, if 'type' is not 'object'
+	Format *string `json:"format,omitempty"`
+	// Properties - The set of columns within the data table.
+	Properties *map[string]*ColumnSpecification `json:"properties,omitempty"`
 }
 
-// WebService is instance of an Azure ML web service resource.
+// WebService instance of an Azure ML web service resource.
 type WebService struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Properties        Properties          `json:"properties,omitempty"`
+	// ID - Specifies the resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Specifies the name of the resource.
+	Name *string `json:"name,omitempty"`
+	// Location - Specifies the location of the resource.
+	Location *string `json:"location,omitempty"`
+	// Type - Specifies the type of the resource.
+	Type *string `json:"type,omitempty"`
+	// Tags - Contains resource tags defined as key/value pairs.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - Contains the property payload that describes the web service.
+	Properties BasicProperties `json:"properties,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for WebService struct.
@@ -477,7 +754,7 @@ func (ws *WebService) UnmarshalJSON(body []byte) error {
 
 	v = m["properties"]
 	if v != nil {
-		properties, err := unmarshalProperties(*m["properties"])
+		properties, err := unmarshalBasicProperties(*m["properties"])
 		if err != nil {
 			return err
 		}
@@ -535,4 +812,130 @@ func (ws *WebService) UnmarshalJSON(body []byte) error {
 	}
 
 	return nil
+}
+
+// WebServicesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type WebServicesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WebServicesCreateOrUpdateFuture) Result(client Client) (ws WebService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ws, autorest.NewError("webservices.WebServicesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ws, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ws, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// WebServicesCreateRegionalPropertiesFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type WebServicesCreateRegionalPropertiesFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WebServicesCreateRegionalPropertiesFuture) Result(client Client) (aos AsyncOperationStatus, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return aos, autorest.NewError("webservices.WebServicesCreateRegionalPropertiesFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		aos, err = client.CreateRegionalPropertiesResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	aos, err = client.CreateRegionalPropertiesResponder(resp)
+	return
+}
+
+// WebServicesPatchFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type WebServicesPatchFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WebServicesPatchFuture) Result(client Client) (ws WebService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ws, autorest.NewError("webservices.WebServicesPatchFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ws, err = client.PatchResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ws, err = client.PatchResponder(resp)
+	return
+}
+
+// WebServicesRemoveFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type WebServicesRemoveFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WebServicesRemoveFuture) Result(client Client) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("webservices.WebServicesRemoveFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.RemoveResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.RemoveResponder(resp)
+	return
 }

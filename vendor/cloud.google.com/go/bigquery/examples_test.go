@@ -395,10 +395,12 @@ func ExampleInferSchema() {
 
 func ExampleInferSchema_tags() {
 	type Item struct {
-		Name   string
-		Size   float64
-		Count  int    `bigquery:"number"`
-		Secret []byte `bigquery:"-"`
+		Name     string
+		Size     float64
+		Count    int    `bigquery:"number"`
+		Secret   []byte `bigquery:"-"`
+		Optional bigquery.NullBool
+		OptBytes []byte `bigquery:",nullable"`
 	}
 	schema, err := bigquery.InferSchema(Item{})
 	if err != nil {
@@ -406,12 +408,14 @@ func ExampleInferSchema_tags() {
 		// TODO: Handle error.
 	}
 	for _, fs := range schema {
-		fmt.Println(fs.Name, fs.Type)
+		fmt.Println(fs.Name, fs.Type, fs.Required)
 	}
 	// Output:
-	// Name STRING
-	// Size FLOAT
-	// number INTEGER
+	// Name STRING true
+	// Size FLOAT true
+	// number INTEGER true
+	// Optional BOOLEAN false
+	// OptBytes BYTES false
 }
 
 func ExampleTable_Create() {
@@ -752,6 +756,30 @@ func ExampleUploader_Put_struct() {
 	}
 	// Schema is inferred from the score type.
 	if err := u.Put(ctx, scores); err != nil {
+		// TODO: Handle error.
+	}
+}
+
+func ExampleUploader_Put_valuesSaver() {
+	ctx := context.Background()
+	client, err := bigquery.NewClient(ctx, "project-id")
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	u := client.Dataset("my_dataset").Table("my_table").Uploader()
+
+	var vss []*bigquery.ValuesSaver
+	for i, name := range []string{"n1", "n2", "n3"} {
+		// Assume schema holds the table's schema.
+		vss = append(vss, &bigquery.ValuesSaver{
+			Schema:   schema,
+			InsertID: name,
+			Row:      []bigquery.Value{name, int64(i)},
+		})
+	}
+
+	if err := u.Put(ctx, vss); err != nil {
 		// TODO: Handle error.
 	}
 }

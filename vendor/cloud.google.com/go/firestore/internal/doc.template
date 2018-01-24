@@ -16,7 +16,7 @@
 
 /*
 Package firestore provides a client for reading and writing to a Cloud Firestore
-database. 
+database.
 
 See https://cloud.google.com/firestore/docs for an introduction
 to Cloud Firestore and additional help on using the Firestore API.
@@ -80,16 +80,10 @@ document or creates a new one.
 
 [docref.Set]
 
-To update some fields of an existing document, use UpdateMap, UpdateStruct or
-UpdatePaths. For UpdateMap, the keys of the map specify which fields to change. The
-others are untouched.
+To update some fields of an existing document, use Update. It takes a list of
+paths to update and their corresponding values.
 
-[docref.UpdateMap]
-
-For UpdateStruct, you must explicitly provide the fields to update. The field names
-must match exactly.
-
-[docref.UpdateStruct]
+[docref.Update]
 
 Use DocumentRef.Delete to delete a document.
 

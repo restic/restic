@@ -16,9 +16,9 @@ package valuecollector
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
+	"cloud.google.com/go/internal/testutil"
 	"golang.org/x/debug"
 	cd "google.golang.org/api/clouddebugger/v2"
 )
@@ -66,7 +66,7 @@ func TestValueCollector(t *testing.T) {
 	}
 	for i, v := range variablesToAdd {
 		added := c.AddVariable(v)
-		if !reflect.DeepEqual(added, expectedResults[i]) {
+		if !testutil.Equal(added, expectedResults[i]) {
 			t.Errorf("AddVariable: got %+v want %+v", *added, *expectedResults[i])
 		}
 	}
@@ -162,11 +162,11 @@ func TestValueCollector(t *testing.T) {
 		&cd.Variable{Value: "1404"},
 		&cd.Variable{Value: "2400"},
 	}
-	if !reflect.DeepEqual(v, expectedValues) {
+	if !testutil.Equal(v, expectedValues) {
 		t.Errorf("ReadValues: got %v want %v", v, expectedValues)
 		// Do element-by-element comparisons, for more useful error messages.
 		for i := range v {
-			if i < len(expectedValues) && !reflect.DeepEqual(v[i], expectedValues[i]) {
+			if i < len(expectedValues) && !testutil.Equal(v[i], expectedValues[i]) {
 				t.Errorf("element %d: got %+v want %+v", i, *v[i], *expectedValues[i])
 			}
 		}

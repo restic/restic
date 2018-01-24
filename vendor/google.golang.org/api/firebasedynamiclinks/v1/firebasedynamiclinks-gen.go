@@ -295,6 +295,11 @@ type DeviceInfo struct {
 	// LanguageCode: Device language code setting.
 	LanguageCode string `json:"languageCode,omitempty"`
 
+	// LanguageCodeFromWebview: Device language code setting obtained by
+	// executing JavaScript code in
+	// WebView.
+	LanguageCodeFromWebview string `json:"languageCodeFromWebview,omitempty"`
+
 	// LanguageCodeRaw: Device language code raw setting.
 	// iOS does returns language code in different format than iOS
 	// WebView.

@@ -5,6 +5,8 @@
 // extraction and language detection. No training data is needed to use this API; just bring your text data. This API
 // uses advanced natural language processing techniques to deliver best in class predictions. Further documentation can
 // be found in https://docs.microsoft.com/en-us/azure/cognitive-services/text-analytics/overview
+//
+// Deprecated: Please instead use github.com/Azure/azure-sdk-for-go/services
 package textanalytics
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.

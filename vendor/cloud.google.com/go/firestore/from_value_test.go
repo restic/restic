@@ -166,6 +166,8 @@ func testSetFromProtoValue(t *testing.T, prefix string, r tester) {
 		{&u16, r.Int(1), uint16(1)},
 		{&u32, r.Int(1), uint32(1)},
 		{&b, r.Bool(true), true},
+		{&i, r.Float(1), int(1)},   // can put a float with no fractional part into an int
+		{pi, r.Int(1), float64(1)}, // can put an int into a float
 	} {
 		if err := r.Set(test.in, test.val); err != nil {
 			t.Errorf("%s: #%d: got error %v", prefix, i, err)
@@ -212,7 +214,7 @@ func TestSetFromProtoValueNoJSON(t *testing.T) {
 func TestSetFromProtoValueErrors(t *testing.T) {
 	c := &Client{}
 	ival := intval(3)
-	for _, test := range []struct {
+	for i, test := range []struct {
 		in  interface{}
 		val *pb.Value
 	}{
@@ -230,19 +232,22 @@ func TestSetFromProtoValueErrors(t *testing.T) {
 		{new(*latlng.LatLng), ival},
 		{new(time.Time), ival},
 		{new(string), ival},
-		{new(float64), ival},
 		{new([]byte), ival},
 		{new([]int), ival},
 		{new([1]int), ival},
 		{new(map[string]int), ival},
 		{new(*bool), ival},
 		{new(struct{}), ival},
-		{new(int), floatval(3)},
-		{new(uint16), floatval(3)},
+		{new(int), floatval(2.5)},                // float must be integral
+		{new(uint16), intval(-1)},                // uint cannot be negative
+		{new(int16), floatval(math.MaxFloat32)},  // doesn't fit
+		{new(uint16), floatval(math.MaxFloat32)}, // doesn't fit
+		{new(float32),
+			&pb.Value{&pb.Value_IntegerValue{math.MaxInt64}}}, // overflow
 	} {
 		err := setFromProtoValue(test.in, test.val, c)
 		if err == nil {
-			t.Errorf("%v, %v: got nil, want error", test.in, test.val)
+			t.Errorf("#%d: %v, %v: got nil, want error", i, test.in, test.val)
 		}
 	}
 }

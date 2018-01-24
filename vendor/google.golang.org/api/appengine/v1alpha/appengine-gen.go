@@ -311,6 +311,68 @@ func (s *CertificateRawData) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CreateVersionMetadataV1Alpha: Metadata for the given
+// google.longrunning.Operation during a
+// google.appengine.v1alpha.CreateVersionRequest.
+type CreateVersionMetadataV1Alpha struct {
+	// CloudBuildId: The Cloud Build ID if one was created as part of the
+	// version create. @OutputOnly
+	CloudBuildId string `json:"cloudBuildId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CloudBuildId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CloudBuildId") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateVersionMetadataV1Alpha) MarshalJSON() ([]byte, error) {
+	type NoMethod CreateVersionMetadataV1Alpha
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CreateVersionMetadataV1Beta: Metadata for the given
+// google.longrunning.Operation during a
+// google.appengine.v1beta.CreateVersionRequest.
+type CreateVersionMetadataV1Beta struct {
+	// CloudBuildId: The Cloud Build ID if one was created as part of the
+	// version create. @OutputOnly
+	CloudBuildId string `json:"cloudBuildId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CloudBuildId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CloudBuildId") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateVersionMetadataV1Beta) MarshalJSON() ([]byte, error) {
+	type NoMethod CreateVersionMetadataV1Beta
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DomainMapping: A domain serving an App Engine application.
 type DomainMapping struct {
 	// Id: Relative name of the domain serving the application. Example:
@@ -874,6 +936,8 @@ func (s *OperationMetadataV1) MarshalJSON() ([]byte, error) {
 // OperationMetadataV1Alpha: Metadata for the given
 // google.longrunning.Operation.
 type OperationMetadataV1Alpha struct {
+	CreateVersionMetadata *CreateVersionMetadataV1Alpha `json:"createVersionMetadata,omitempty"`
+
 	// EndTime: Time that this operation completed.@OutputOnly
 	EndTime string `json:"endTime,omitempty"`
 
@@ -899,20 +963,22 @@ type OperationMetadataV1Alpha struct {
 	// @OutputOnly
 	Warning []string `json:"warning,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "EndTime") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "CreateVersionMetadata") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "EndTime") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "CreateVersionMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -925,6 +991,8 @@ func (s *OperationMetadataV1Alpha) MarshalJSON() ([]byte, error) {
 // OperationMetadataV1Beta: Metadata for the given
 // google.longrunning.Operation.
 type OperationMetadataV1Beta struct {
+	CreateVersionMetadata *CreateVersionMetadataV1Beta `json:"createVersionMetadata,omitempty"`
+
 	// EndTime: Time that this operation completed.@OutputOnly
 	EndTime string `json:"endTime,omitempty"`
 
@@ -950,20 +1018,22 @@ type OperationMetadataV1Beta struct {
 	// @OutputOnly
 	Warning []string `json:"warning,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "EndTime") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "CreateVersionMetadata") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "EndTime") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "CreateVersionMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 

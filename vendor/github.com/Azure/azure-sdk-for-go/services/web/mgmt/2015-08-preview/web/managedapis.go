@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ManagedApisClient is the webSite Management Client
 type ManagedApisClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewManagedApisClient creates an instance of the ManagedApisClient client.
@@ -42,8 +43,8 @@ func NewManagedApisClientWithBaseURI(baseURI string, subscriptionID string) Mana
 //
 // location is the location. APIName is the managed API name. export is flag showing whether to export API definition
 // in format specified by Accept header.
-func (client ManagedApisClient) Get(location string, APIName string, export *bool) (result APIEntity, err error) {
-	req, err := client.GetPreparer(location, APIName, export)
+func (client ManagedApisClient) Get(ctx context.Context, location string, APIName string, export *bool) (result APIEntity, err error) {
+	req, err := client.GetPreparer(ctx, location, APIName, export)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "Get", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client ManagedApisClient) Get(location string, APIName string, export *boo
 }
 
 // GetPreparer prepares the Get request.
-func (client ManagedApisClient) GetPreparer(location string, APIName string, export *bool) (*http.Request, error) {
+func (client ManagedApisClient) GetPreparer(ctx context.Context, location string, APIName string, export *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"apiName":        autorest.Encode("path", APIName),
 		"location":       autorest.Encode("path", location),
@@ -85,14 +86,13 @@ func (client ManagedApisClient) GetPreparer(location string, APIName string, exp
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/locations/{location}/managedApis/{apiName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedApisClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -112,8 +112,9 @@ func (client ManagedApisClient) GetResponder(resp *http.Response) (result APIEnt
 // List gets a list of managed APIs.
 //
 // location is the location.
-func (client ManagedApisClient) List(location string) (result ApisCollection, err error) {
-	req, err := client.ListPreparer(location)
+func (client ManagedApisClient) List(ctx context.Context, location string) (result ApisCollectionPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, location)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", nil, "Failure preparing request")
 		return
@@ -121,12 +122,12 @@ func (client ManagedApisClient) List(location string) (result ApisCollection, er
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ac.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ac, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", resp, "Failure responding to request")
 	}
@@ -135,7 +136,7 @@ func (client ManagedApisClient) List(location string) (result ApisCollection, er
 }
 
 // ListPreparer prepares the List request.
-func (client ManagedApisClient) ListPreparer(location string) (*http.Request, error) {
+func (client ManagedApisClient) ListPreparer(ctx context.Context, location string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"location":       autorest.Encode("path", location),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -151,14 +152,13 @@ func (client ManagedApisClient) ListPreparer(location string) (*http.Request, er
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/locations/{location}/managedApis", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagedApisClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -175,71 +175,29 @@ func (client ManagedApisClient) ListResponder(resp *http.Response) (result ApisC
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ManagedApisClient) ListNextResults(lastResults ApisCollection) (result ApisCollection, err error) {
-	req, err := lastResults.ApisCollectionPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ManagedApisClient) listNextResults(lastResults ApisCollection) (result ApisCollection, err error) {
+	req, err := lastResults.apisCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedApisClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "web.ManagedApisClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "web.ManagedApisClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ManagedApisClient) ListComplete(location string, cancel <-chan struct{}) (<-chan APIEntity, <-chan error) {
-	resultChan := make(chan APIEntity)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(location)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ManagedApisClient) ListComplete(ctx context.Context, location string) (result ApisCollectionIterator, err error) {
+	result.page, err = client.List(ctx, location)
+	return
 }

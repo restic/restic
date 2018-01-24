@@ -18,6 +18,7 @@ package insights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // WebTestsClient is the composite Swagger for Application Insights Management Client
 type WebTestsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewWebTestsClient creates an instance of the WebTestsClient client.
@@ -44,7 +45,7 @@ func NewWebTestsClientWithBaseURI(baseURI string, subscriptionID string) WebTest
 // resourceGroupName is the name of the resource group. webTestName is the name of the Application Insights webtest
 // resource. webTestDefinition is properties that need to be specified to create or update an Application Insights web
 // test definition.
-func (client WebTestsClient) CreateOrUpdate(resourceGroupName string, webTestName string, webTestDefinition WebTest) (result WebTest, err error) {
+func (client WebTestsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, webTestName string, webTestDefinition WebTest) (result WebTest, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: webTestDefinition,
 			Constraints: []validation.Constraint{{Target: "webTestDefinition.WebTestProperties", Name: validation.Null, Rule: false,
@@ -55,7 +56,7 @@ func (client WebTestsClient) CreateOrUpdate(resourceGroupName string, webTestNam
 		return result, validation.NewErrorWithValidationError(err, "insights.WebTestsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, webTestName, webTestDefinition)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, webTestName, webTestDefinition)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -77,7 +78,7 @@ func (client WebTestsClient) CreateOrUpdate(resourceGroupName string, webTestNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client WebTestsClient) CreateOrUpdatePreparer(resourceGroupName string, webTestName string, webTestDefinition WebTest) (*http.Request, error) {
+func (client WebTestsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, webTestName string, webTestDefinition WebTest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -96,14 +97,13 @@ func (client WebTestsClient) CreateOrUpdatePreparer(resourceGroupName string, we
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/webtests/{webTestName}", pathParameters),
 		autorest.WithJSON(webTestDefinition),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -124,8 +124,8 @@ func (client WebTestsClient) CreateOrUpdateResponder(resp *http.Response) (resul
 //
 // resourceGroupName is the name of the resource group. webTestName is the name of the Application Insights webtest
 // resource.
-func (client WebTestsClient) Delete(resourceGroupName string, webTestName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, webTestName)
+func (client WebTestsClient) Delete(ctx context.Context, resourceGroupName string, webTestName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, webTestName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -147,7 +147,7 @@ func (client WebTestsClient) Delete(resourceGroupName string, webTestName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client WebTestsClient) DeletePreparer(resourceGroupName string, webTestName string) (*http.Request, error) {
+func (client WebTestsClient) DeletePreparer(ctx context.Context, resourceGroupName string, webTestName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -164,14 +164,13 @@ func (client WebTestsClient) DeletePreparer(resourceGroupName string, webTestNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/webtests/{webTestName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -181,7 +180,7 @@ func (client WebTestsClient) DeleteResponder(resp *http.Response) (result autore
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -191,8 +190,8 @@ func (client WebTestsClient) DeleteResponder(resp *http.Response) (result autore
 //
 // resourceGroupName is the name of the resource group. webTestName is the name of the Application Insights webtest
 // resource.
-func (client WebTestsClient) Get(resourceGroupName string, webTestName string) (result WebTest, err error) {
-	req, err := client.GetPreparer(resourceGroupName, webTestName)
+func (client WebTestsClient) Get(ctx context.Context, resourceGroupName string, webTestName string) (result WebTest, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, webTestName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "Get", nil, "Failure preparing request")
 		return
@@ -214,7 +213,7 @@ func (client WebTestsClient) Get(resourceGroupName string, webTestName string) (
 }
 
 // GetPreparer prepares the Get request.
-func (client WebTestsClient) GetPreparer(resourceGroupName string, webTestName string) (*http.Request, error) {
+func (client WebTestsClient) GetPreparer(ctx context.Context, resourceGroupName string, webTestName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -231,14 +230,13 @@ func (client WebTestsClient) GetPreparer(resourceGroupName string, webTestName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/webtests/{webTestName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -256,8 +254,9 @@ func (client WebTestsClient) GetResponder(resp *http.Response) (result WebTest, 
 }
 
 // List get all Application Insights web test alerts definitioned within a subscription.
-func (client WebTestsClient) List() (result WebTestListResult, err error) {
-	req, err := client.ListPreparer()
+func (client WebTestsClient) List(ctx context.Context) (result WebTestListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", nil, "Failure preparing request")
 		return
@@ -265,12 +264,12 @@ func (client WebTestsClient) List() (result WebTestListResult, err error) {
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.wtlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.wtlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", resp, "Failure responding to request")
 	}
@@ -279,7 +278,7 @@ func (client WebTestsClient) List() (result WebTestListResult, err error) {
 }
 
 // ListPreparer prepares the List request.
-func (client WebTestsClient) ListPreparer() (*http.Request, error) {
+func (client WebTestsClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -294,14 +293,13 @@ func (client WebTestsClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/webtests", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -318,80 +316,39 @@ func (client WebTestsClient) ListResponder(resp *http.Response) (result WebTestL
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client WebTestsClient) ListNextResults(lastResults WebTestListResult) (result WebTestListResult, err error) {
-	req, err := lastResults.WebTestListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client WebTestsClient) listNextResults(lastResults WebTestListResult) (result WebTestListResult, err error) {
+	req, err := lastResults.webTestListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client WebTestsClient) ListComplete(cancel <-chan struct{}) (<-chan WebTest, <-chan error) {
-	resultChan := make(chan WebTest)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WebTestsClient) ListComplete(ctx context.Context) (result WebTestListResultIterator, err error) {
+	result.page, err = client.List(ctx)
+	return
 }
 
 // ListByResourceGroup get all Application Insights web tests defined within a specified resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client WebTestsClient) ListByResourceGroup(resourceGroupName string) (result WebTestListResult, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client WebTestsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result WebTestListResultPage, err error) {
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -399,12 +356,12 @@ func (client WebTestsClient) ListByResourceGroup(resourceGroupName string) (resu
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.wtlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.wtlr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -413,7 +370,7 @@ func (client WebTestsClient) ListByResourceGroup(resourceGroupName string) (resu
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client WebTestsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client WebTestsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -429,14 +386,13 @@ func (client WebTestsClient) ListByResourceGroupPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/webtests", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -453,81 +409,39 @@ func (client WebTestsClient) ListByResourceGroupResponder(resp *http.Response) (
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client WebTestsClient) ListByResourceGroupNextResults(lastResults WebTestListResult) (result WebTestListResult, err error) {
-	req, err := lastResults.WebTestListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client WebTestsClient) listByResourceGroupNextResults(lastResults WebTestListResult) (result WebTestListResult, err error) {
+	req, err := lastResults.webTestListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "insights.WebTestsClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client WebTestsClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan WebTest, <-chan error) {
-	resultChan := make(chan WebTest)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client WebTestsClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result WebTestListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
 }
 
 // UpdateTags creates or updates an Application Insights web test definition.
 //
 // resourceGroupName is the name of the resource group. webTestName is the name of the Application Insights webtest
 // resource. webTestTags is updated tag information to set into the web test instance.
-func (client WebTestsClient) UpdateTags(resourceGroupName string, webTestName string, webTestTags TagsResource) (result WebTest, err error) {
-	req, err := client.UpdateTagsPreparer(resourceGroupName, webTestName, webTestTags)
+func (client WebTestsClient) UpdateTags(ctx context.Context, resourceGroupName string, webTestName string, webTestTags TagsResource) (result WebTest, err error) {
+	req, err := client.UpdateTagsPreparer(ctx, resourceGroupName, webTestName, webTestTags)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.WebTestsClient", "UpdateTags", nil, "Failure preparing request")
 		return
@@ -549,7 +463,7 @@ func (client WebTestsClient) UpdateTags(resourceGroupName string, webTestName st
 }
 
 // UpdateTagsPreparer prepares the UpdateTags request.
-func (client WebTestsClient) UpdateTagsPreparer(resourceGroupName string, webTestName string, webTestTags TagsResource) (*http.Request, error) {
+func (client WebTestsClient) UpdateTagsPreparer(ctx context.Context, resourceGroupName string, webTestName string, webTestTags TagsResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -568,14 +482,13 @@ func (client WebTestsClient) UpdateTagsPreparer(resourceGroupName string, webTes
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/webtests/{webTestName}", pathParameters),
 		autorest.WithJSON(webTestTags),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateTagsSender sends the UpdateTags request. The method will close the
 // http.Response Body if it receives an error.
 func (client WebTestsClient) UpdateTagsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

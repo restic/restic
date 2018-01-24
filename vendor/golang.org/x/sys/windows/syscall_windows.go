@@ -248,7 +248,7 @@ func NewCallbackCDecl(fn interface{}) uintptr {
 //sys	FindNextVolumeMountPoint(findVolumeMountPoint Handle, volumeMountPoint *uint16, bufferLength uint32) (err error) = FindNextVolumeMountPointW
 //sys	FindVolumeClose(findVolume Handle) (err error)
 //sys	FindVolumeMountPointClose(findVolumeMountPoint Handle) (err error)
-//sys	GetDriveType(rootPathName *uint16) (driveType uint32)
+//sys	GetDriveType(rootPathName *uint16) (driveType uint32) = GetDriveTypeW
 //sys	GetLogicalDrives() (drivesBitMask uint32, err error) [failretval==0]
 //sys	GetLogicalDriveStrings(bufferLength uint32, buffer *uint16) (n uint32, err error) [failretval==0] = GetLogicalDriveStringsW
 //sys	GetVolumeInformation(rootPathName *uint16, volumeNameBuffer *uint16, volumeNameSize uint32, volumeNameSerialNumber *uint32, maximumComponentLength *uint32, fileSystemFlags *uint32, fileSystemNameBuffer *uint16, fileSystemNameSize uint32) (err error) = GetVolumeInformationW

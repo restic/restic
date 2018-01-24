@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // OperationsClient is the the DevTest Labs Client.
 type OperationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewOperationsClient creates an instance of the OperationsClient client.
@@ -41,8 +42,8 @@ func NewOperationsClientWithBaseURI(baseURI string, subscriptionID string) Opera
 // Get get operation.
 //
 // locationName is the name of the location. name is the name of the operation.
-func (client OperationsClient) Get(locationName string, name string) (result OperationResult, err error) {
-	req, err := client.GetPreparer(locationName, name)
+func (client OperationsClient) Get(ctx context.Context, locationName string, name string) (result OperationResult, err error) {
+	req, err := client.GetPreparer(ctx, locationName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.OperationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client OperationsClient) Get(locationName string, name string) (result Ope
 }
 
 // GetPreparer prepares the Get request.
-func (client OperationsClient) GetPreparer(locationName string, name string) (*http.Request, error) {
+func (client OperationsClient) GetPreparer(ctx context.Context, locationName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"locationName":   autorest.Encode("path", locationName),
 		"name":           autorest.Encode("path", name),
@@ -81,14 +82,13 @@ func (client OperationsClient) GetPreparer(locationName string, name string) (*h
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.DevTestLab/locations/{locationName}/operations/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client OperationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

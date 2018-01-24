@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // NodesClient is the client for the Nodes methods of the Servicefabric service.
 type NodesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewNodesClient creates an instance of the NodesClient client.
@@ -41,8 +42,8 @@ func NewNodesClientWithBaseURI(baseURI string, timeout *int32) NodesClient {
 // Disable disable nodes
 //
 // nodeName is the name of the node disableNode is the node
-func (client NodesClient) Disable(nodeName string, disableNode DisableNode) (result String, err error) {
-	req, err := client.DisablePreparer(nodeName, disableNode)
+func (client NodesClient) Disable(ctx context.Context, nodeName string, disableNode DisableNode) (result String, err error) {
+	req, err := client.DisablePreparer(ctx, nodeName, disableNode)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodesClient", "Disable", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client NodesClient) Disable(nodeName string, disableNode DisableNode) (res
 }
 
 // DisablePreparer prepares the Disable request.
-func (client NodesClient) DisablePreparer(nodeName string, disableNode DisableNode) (*http.Request, error) {
+func (client NodesClient) DisablePreparer(ctx context.Context, nodeName string, disableNode DisableNode) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -84,14 +85,13 @@ func (client NodesClient) DisablePreparer(nodeName string, disableNode DisableNo
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/Deactivate", pathParameters),
 		autorest.WithJSON(disableNode),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DisableSender sends the Disable request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodesClient) DisableSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -111,8 +111,8 @@ func (client NodesClient) DisableResponder(resp *http.Response) (result String, 
 // Enable enable nodes
 //
 // nodeName is the name of the node
-func (client NodesClient) Enable(nodeName string) (result String, err error) {
-	req, err := client.EnablePreparer(nodeName)
+func (client NodesClient) Enable(ctx context.Context, nodeName string) (result String, err error) {
+	req, err := client.EnablePreparer(ctx, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodesClient", "Enable", nil, "Failure preparing request")
 		return
@@ -134,7 +134,7 @@ func (client NodesClient) Enable(nodeName string) (result String, err error) {
 }
 
 // EnablePreparer prepares the Enable request.
-func (client NodesClient) EnablePreparer(nodeName string) (*http.Request, error) {
+func (client NodesClient) EnablePreparer(ctx context.Context, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -152,14 +152,13 @@ func (client NodesClient) EnablePreparer(nodeName string) (*http.Request, error)
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/Activate", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // EnableSender sends the Enable request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodesClient) EnableSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -179,8 +178,8 @@ func (client NodesClient) EnableResponder(resp *http.Response) (result String, e
 // Get get nodes
 //
 // nodeName is the name of the node
-func (client NodesClient) Get(nodeName string) (result Node, err error) {
-	req, err := client.GetPreparer(nodeName)
+func (client NodesClient) Get(ctx context.Context, nodeName string) (result Node, err error) {
+	req, err := client.GetPreparer(ctx, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodesClient", "Get", nil, "Failure preparing request")
 		return
@@ -202,7 +201,7 @@ func (client NodesClient) Get(nodeName string) (result Node, err error) {
 }
 
 // GetPreparer prepares the Get request.
-func (client NodesClient) GetPreparer(nodeName string) (*http.Request, error) {
+func (client NodesClient) GetPreparer(ctx context.Context, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -220,14 +219,13 @@ func (client NodesClient) GetPreparer(nodeName string) (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -247,8 +245,8 @@ func (client NodesClient) GetResponder(resp *http.Response) (result Node, err er
 // List list nodes
 //
 // continuationToken is the token of the continuation
-func (client NodesClient) List(continuationToken string) (result NodeList, err error) {
-	req, err := client.ListPreparer(continuationToken)
+func (client NodesClient) List(ctx context.Context, continuationToken string) (result NodeList, err error) {
+	req, err := client.ListPreparer(ctx, continuationToken)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodesClient", "List", nil, "Failure preparing request")
 		return
@@ -270,7 +268,7 @@ func (client NodesClient) List(continuationToken string) (result NodeList, err e
 }
 
 // ListPreparer prepares the List request.
-func (client NodesClient) ListPreparer(continuationToken string) (*http.Request, error) {
+func (client NodesClient) ListPreparer(ctx context.Context, continuationToken string) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -287,14 +285,13 @@ func (client NodesClient) ListPreparer(continuationToken string) (*http.Request,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/Nodes"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

@@ -1,217 +1,55 @@
 {
-  "basePath": "",
-  "revision": "20171127",
-  "documentationLink": "https://cloud.google.com/ml/",
-  "id": "ml:v1",
-  "discoveryVersion": "v1",
-  "version_module": true,
   "schemas": {
-    "GoogleCloudMlV1__Version": {
+    "GoogleCloudMlV1__Location": {
       "type": "object",
       "properties": {
-        "lastUseTime": {
-          "description": "Output only. The time the version was last used for prediction.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "deploymentUri": {
-          "description": "Required. The Google Cloud Storage location of the trained model used to\ncreate the version. See the\n[overview of model\ndeployment](/ml-engine/docs/concepts/deployment-overview) for more\ninformation.\n\nWhen passing Version to\n[projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)\nthe model service uses the specified location as the source of the model.\nOnce deployed, the model version is hosted by the prediction service, so\nthis location is useful only as a historical record.\nThe total number of model files can't exceed 1000.",
-          "type": "string"
-        },
-        "autoScaling": {
-          "$ref": "GoogleCloudMlV1__AutoScaling",
-          "description": "Automatically scale the number of nodes used to serve the model in\nresponse to increases and decreases in traffic. Care should be\ntaken to ramp up traffic according to the model's ability to scale\nor you will start seeing increases in latency and 429 response codes."
-        },
-        "createTime": {
-          "description": "Output only. The time the version was created.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "labels": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Optional. One or more labels that you can add, to organize your model\nversions. Each label is a key-value pair, where both the key and the value\nare arbitrary strings that you supply.\nFor more information, see the documentation on\n\u003ca href=\"/ml-engine/docs/how-tos/resource-labels\"\u003eusing labels\u003c/a\u003e."
-        },
-        "errorMessage": {
-          "type": "string",
-          "description": "Output only. The details of a failure or a cancellation."
-        },
-        "runtimeVersion": {
-          "type": "string",
-          "description": "Optional. The Google Cloud ML runtime version to use for this deployment.\nIf not set, Google Cloud ML will choose a version."
-        },
-        "description": {
-          "description": "Optional. The description specified for the version when it was created.",
-          "type": "string"
-        },
-        "etag": {
-          "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a model from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform model updates in order to avoid race\nconditions: An `etag` is returned in the response to `GetVersion`, and\nsystems are expected to put that etag in the request to `UpdateVersion` to\nensure that their change will be applied to the model as intended.",
-          "format": "byte",
-          "type": "string"
-        },
-        "isDefault": {
-          "description": "Output only. If true, this version will be used to handle prediction\nrequests that do not specify a version.\n\nYou can change the default version by calling\n[projects.methods.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault).",
-          "type": "boolean"
-        },
-        "manualScaling": {
-          "$ref": "GoogleCloudMlV1__ManualScaling",
-          "description": "Manually select the number of nodes to use for serving the\nmodel. You should generally use `auto_scaling` with an appropriate\n`min_nodes` instead, but this option is available if you want more\npredictable billing. Beware that latency and error rates will increase\nif the traffic exceeds that capability of the system to serve it based\non the selected number of nodes."
-        },
-        "state": {
-          "type": "string",
-          "enumDescriptions": [
-            "The version state is unspecified.",
-            "The version is ready for prediction.",
-            "The version is in the process of creation.",
-            "The version failed to be created, possibly cancelled.\n`error_message` should contain the details of the failure.",
-            "The version is in the process of deletion."
-          ],
-          "enum": [
-            "UNKNOWN",
-            "READY",
-            "CREATING",
-            "FAILED",
-            "DELETING"
-          ],
-          "description": "Output only. The state of a version."
+        "capabilities": {
+          "description": "Capabilities available in the location.",
+          "type": "array",
+          "items": {
+            "$ref": "GoogleCloudMlV1__Capability"
+          }
         },
         "name": {
-          "description": "Required.The name specified for the version when it was created.\n\nThe version name must be unique within the model it is created in.",
           "type": "string"
         }
       },
-      "id": "GoogleCloudMlV1__Version",
-      "description": "Represents a version of the model.\n\nEach version is a trained model deployed in the cloud, ready to handle\nprediction requests. A model can have multiple versions. You can get\ninformation about all of the versions of a given model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).\n\nLINT.IfChange"
-    },
-    "GoogleCloudMlV1__ParameterSpec": {
-      "description": "Represents a single hyperparameter to optimize.",
-      "type": "object",
-      "properties": {
-        "minValue": {
-          "type": "number",
-          "description": "Required if type is `DOUBLE` or `INTEGER`. This field\nshould be unset if type is `CATEGORICAL`. This value should be integers if\ntype is INTEGER.",
-          "format": "double"
-        },
-        "discreteValues": {
-          "type": "array",
-          "items": {
-            "type": "number",
-            "format": "double"
-          },
-          "description": "Required if type is `DISCRETE`.\nA list of feasible points.\nThe list should be in strictly increasing order. For instance, this\nparameter might have possible settings of 1.5, 2.5, and 4.0. This list\nshould not contain more than 1,000 values."
-        },
-        "maxValue": {
-          "description": "Required if typeis `DOUBLE` or `INTEGER`. This field\nshould be unset if type is `CATEGORICAL`. This value should be integers if\ntype is `INTEGER`.",
-          "format": "double",
-          "type": "number"
-        },
-        "scaleType": {
-          "enum": [
-            "NONE",
-            "UNIT_LINEAR_SCALE",
-            "UNIT_LOG_SCALE",
-            "UNIT_REVERSE_LOG_SCALE"
-          ],
-          "description": "Optional. How the parameter should be scaled to the hypercube.\nLeave unset for categorical parameters.\nSome kind of scaling is strongly recommended for real or integral\nparameters (e.g., `UNIT_LINEAR_SCALE`).",
-          "type": "string",
-          "enumDescriptions": [
-            "By default, no scaling is applied.",
-            "Scales the feasible space to (0, 1) linearly.",
-            "Scales the feasible space logarithmically to (0, 1). The entire feasible\nspace must be strictly positive.",
-            "Scales the feasible space \"reverse\" logarithmically to (0, 1). The result\nis that values close to the top of the feasible space are spread out more\nthan points near the bottom. The entire feasible space must be strictly\npositive."
-          ]
-        },
-        "type": {
-          "enum": [
-            "PARAMETER_TYPE_UNSPECIFIED",
-            "DOUBLE",
-            "INTEGER",
-            "CATEGORICAL",
-            "DISCRETE"
-          ],
-          "description": "Required. The type of the parameter.",
-          "type": "string",
-          "enumDescriptions": [
-            "You must specify a valid type. Using this unspecified type will result in\nan error.",
-            "Type for real-valued parameters.",
-            "Type for integral parameters.",
-            "The parameter is categorical, with a value chosen from the categories\nfield.",
-            "The parameter is real valued, with a fixed set of feasible points. If\n`type==DISCRETE`, feasible_points must be provided, and\n{`min_value`, `max_value`} will be ignored."
-          ]
-        },
-        "parameterName": {
-          "description": "Required. The parameter name must be unique amongst all ParameterConfigs in\na HyperparameterSpec message. E.g., \"learning_rate\".",
-          "type": "string"
-        },
-        "categoricalValues": {
-          "description": "Required if type is `CATEGORICAL`. The list of possible categories.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "id": "GoogleCloudMlV1__ParameterSpec"
+      "id": "GoogleCloudMlV1__Location"
     },
     "GoogleCloudMlV1__PredictionInput": {
       "description": "Represents input parameters for a prediction job.",
       "type": "object",
       "properties": {
-        "region": {
-          "description": "Required. The Google Compute Engine region to run the prediction job in.",
-          "type": "string"
-        },
-        "versionName": {
-          "description": "Use this field if you want to specify a version of the model to use. The\nstring is formatted the same way as `model_version`, with the addition\nof the version information:\n\n`\"projects/\u003cvar\u003e[YOUR_PROJECT]\u003c/var\u003e/models/\u003cvar\u003eYOUR_MODEL/versions/\u003cvar\u003e[YOUR_VERSION]\u003c/var\u003e\"`",
-          "type": "string"
-        },
-        "modelName": {
-          "type": "string",
-          "description": "Use this field if you want to use the default version for the specified\nmodel. The string must use the following format:\n\n`\"projects/\u003cvar\u003e[YOUR_PROJECT]\u003c/var\u003e/models/\u003cvar\u003e[YOUR_MODEL]\u003c/var\u003e\"`"
-        },
-        "outputPath": {
-          "type": "string",
-          "description": "Required. The output Google Cloud Storage location."
-        },
-        "uri": {
-          "type": "string",
-          "description": "Use this field if you want to specify a Google Cloud Storage path for\nthe model to use."
-        },
-        "maxWorkerCount": {
-          "type": "string",
-          "description": "Optional. The maximum number of workers to be used for parallel processing.\nDefaults to 10 if not specified.",
-          "format": "int64"
-        },
         "signatureName": {
           "description": "Optional. The name of the signature defined in the SavedModel to use for\nthis job. Please refer to\n[SavedModel](https://tensorflow.github.io/serving/serving_basic.html)\nfor information about how to use signatures.\n\nDefaults to\n[DEFAULT_SERVING_SIGNATURE_DEF_KEY](https://www.tensorflow.org/api_docs/python/tf/saved_model/signature_constants)\n, which is \"serving_default\".",
           "type": "string"
         },
         "dataFormat": {
+          "description": "Required. The format of the input data files.",
           "type": "string",
           "enumDescriptions": [
             "Unspecified format.",
-            "The source file is a text file with instances separated by the\nnew-line character.",
-            "The source file is a TFRecord file.",
-            "The source file is a GZIP-compressed TFRecord file."
+            "Each line of the file is a JSON dictionary representing one record.",
+            "Deprecated. Use JSON instead.",
+            "INPUT ONLY. The source file is a TFRecord file.",
+            "INPUT ONLY. The source file is a GZIP-compressed TFRecord file."
           ],
           "enum": [
             "DATA_FORMAT_UNSPECIFIED",
+            "JSON",
             "TEXT",
             "TF_RECORD",
             "TF_RECORD_GZIP"
-          ],
-          "description": "Required. The format of the input data files."
+          ]
         },
         "runtimeVersion": {
           "description": "Optional. The Google Cloud ML runtime version to use for this batch\nprediction. If not set, Google Cloud ML will pick the runtime version used\nduring the CreateVersion request for this model version, or choose the\nlatest stable version when model version information is not available\nsuch as when the model is specified by uri.",
           "type": "string"
         },
         "batchSize": {
-          "type": "string",
           "description": "Optional. Number of records per batch, defaults to 64.\nThe service will buffer batch_size number of records in memory before\ninvoking one Tensorflow prediction call internally. So take the record\nsize and memory available into consideration when setting this parameter.",
-          "format": "int64"
+          "format": "int64",
+          "type": "string"
         },
         "inputPaths": {
           "description": "Required. The Google Cloud Storage location of the input data files.\nMay contain wildcards.",
@@ -219,6 +57,31 @@
           "items": {
             "type": "string"
           }
+        },
+        "region": {
+          "description": "Required. The Google Compute Engine region to run the prediction job in.\nSee the \u003ca href=\"/ml-engine/docs/regions\"\u003eavailable regions\u003c/a\u003e for\nML Engine services.",
+          "type": "string"
+        },
+        "versionName": {
+          "description": "Use this field if you want to specify a version of the model to use. The\nstring is formatted the same way as `model_version`, with the addition\nof the version information:\n\n`\"projects/\u003cvar\u003e[YOUR_PROJECT]\u003c/var\u003e/models/\u003cvar\u003eYOUR_MODEL/versions/\u003cvar\u003e[YOUR_VERSION]\u003c/var\u003e\"`",
+          "type": "string"
+        },
+        "modelName": {
+          "description": "Use this field if you want to use the default version for the specified\nmodel. The string must use the following format:\n\n`\"projects/\u003cvar\u003e[YOUR_PROJECT]\u003c/var\u003e/models/\u003cvar\u003e[YOUR_MODEL]\u003c/var\u003e\"`",
+          "type": "string"
+        },
+        "outputPath": {
+          "description": "Required. The output Google Cloud Storage location.",
+          "type": "string"
+        },
+        "maxWorkerCount": {
+          "description": "Optional. The maximum number of workers to be used for parallel processing.\nDefaults to 10 if not specified.",
+          "format": "int64",
+          "type": "string"
+        },
+        "uri": {
+          "description": "Use this field if you want to specify a Google Cloud Storage path for\nthe model to use.",
+          "type": "string"
         }
       },
       "id": "GoogleCloudMlV1__PredictionInput"
@@ -227,62 +90,36 @@
       "description": "Represents an expression text. Example:\n\n    title: \"User account presence\"\n    description: \"Determines whether the request has a user account\"\n    expression: \"size(request.user) \u003e 0\"",
       "type": "object",
       "properties": {
-        "title": {
-          "type": "string",
-          "description": "An optional title for the expression, i.e. a short string describing\nits purpose. This can be used e.g. in UIs which allow to enter the\nexpression."
-        },
-        "location": {
-          "type": "string",
-          "description": "An optional string indicating the location of the expression for error\nreporting, e.g. a file name and a position in the file."
-        },
         "description": {
-          "type": "string",
-          "description": "An optional description of the expression. This is a longer text which\ndescribes the expression, e.g. when hovered over it in a UI."
+          "description": "An optional description of the expression. This is a longer text which\ndescribes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
         },
         "expression": {
           "description": "Textual representation of an expression in\nCommon Expression Language syntax.\n\nThe application context of the containing message determines which\nwell-known feature set of CEL is supported.",
+          "type": "string"
+        },
+        "title": {
+          "description": "An optional title for the expression, i.e. a short string describing\nits purpose. This can be used e.g. in UIs which allow to enter the\nexpression.",
+          "type": "string"
+        },
+        "location": {
+          "description": "An optional string indicating the location of the expression for error\nreporting, e.g. a file name and a position in the file.",
           "type": "string"
         }
       },
       "id": "GoogleType__Expr"
     },
-    "GoogleIamV1__AuditLogConfig": {
-      "description": "Provides the configuration for logging a type of permissions.\nExample:\n\n    {\n      \"audit_log_configs\": [\n        {\n          \"log_type\": \"DATA_READ\",\n          \"exempted_members\": [\n            \"user:foo@gmail.com\"\n          ]\n        },\n        {\n          \"log_type\": \"DATA_WRITE\",\n        }\n      ]\n    }\n\nThis enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting\nfoo@gmail.com from DATA_READ logging.",
-      "type": "object",
-      "properties": {
-        "logType": {
-          "enum": [
-            "LOG_TYPE_UNSPECIFIED",
-            "ADMIN_READ",
-            "DATA_WRITE",
-            "DATA_READ"
-          ],
-          "description": "The log type that this config enables.",
-          "type": "string",
-          "enumDescriptions": [
-            "Default case. Should never be this.",
-            "Admin reads. Example: CloudIAM getIamPolicy",
-            "Data writes. Example: CloudSQL Users create",
-            "Data reads. Example: CloudSQL Users list"
-          ]
-        },
-        "exemptedMembers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Specifies the identities that do not cause logging for this type of\npermission.\nFollows the same format of Binding.members."
-        }
-      },
-      "id": "GoogleIamV1__AuditLogConfig"
-    },
     "GoogleCloudMlV1__OperationMetadata": {
       "description": "Represents the metadata of the long-running operation.",
       "type": "object",
       "properties": {
+        "modelName": {
+          "description": "Contains the name of the model associated with the operation.",
+          "type": "string"
+        },
         "version": {
-          "$ref": "GoogleCloudMlV1__Version",
-          "description": "Contains the version associated with the operation."
+          "description": "Contains the version associated with the operation.",
+          "$ref": "GoogleCloudMlV1__Version"
         },
         "endTime": {
           "description": "The time operation processing completed.",
@@ -290,6 +127,15 @@
           "type": "string"
         },
         "operationType": {
+          "enumDescriptions": [
+            "Unspecified operation type.",
+            "An operation to create a new version.",
+            "An operation to delete an existing version.",
+            "An operation to delete an existing model.",
+            "An operation to update an existing model.",
+            "An operation to update an existing version.",
+            "An operation to update project configuration."
+          ],
           "enum": [
             "OPERATION_TYPE_UNSPECIFIED",
             "CREATE_VERSION",
@@ -300,35 +146,21 @@
             "UPDATE_CONFIG"
           ],
           "description": "The operation type.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unspecified operation type.",
-            "An operation to create a new version.",
-            "An operation to delete an existing version.",
-            "An operation to delete an existing model.",
-            "An operation to update an existing model.",
-            "An operation to update an existing version.",
-            "An operation to update project configuration."
-          ]
+          "type": "string"
         },
         "startTime": {
-          "type": "string",
           "description": "The time operation processing started.",
-          "format": "google-datetime"
-        },
-        "isCancellationRequested": {
-          "type": "boolean",
-          "description": "Indicates whether a request to cancel this operation has been made."
+          "format": "google-datetime",
+          "type": "string"
         },
         "projectNumber": {
           "description": "Contains the project number associated with the operation.",
           "format": "int64",
           "type": "string"
         },
-        "createTime": {
-          "type": "string",
-          "description": "The time the operation was submitted.",
-          "format": "google-datetime"
+        "isCancellationRequested": {
+          "description": "Indicates whether a request to cancel this operation has been made.",
+          "type": "boolean"
         },
         "labels": {
           "additionalProperties": {
@@ -337,8 +169,9 @@
           "description": "The user labels, inherited from the model or the model version being\noperated on.",
           "type": "object"
         },
-        "modelName": {
-          "description": "Contains the name of the model associated with the operation.",
+        "createTime": {
+          "description": "The time the operation was submitted.",
+          "format": "google-datetime",
           "type": "string"
         }
       },
@@ -349,22 +182,22 @@
       "type": "object",
       "properties": {
         "maxParallelTrials": {
-          "type": "integer",
           "description": "Optional. The number of training trials to run concurrently.\nYou can reduce the time it takes to perform hyperparameter tuning by adding\ntrials in parallel. However, each trail only benefits from the information\ngained in completed trials. That means that a trial does not get access to\nthe results of trials running at the same time, which could reduce the\nquality of the overall optimization.\n\nEach trial will use the same scale tier and machine types.\n\nDefaults to one.",
-          "format": "int32"
+          "format": "int32",
+          "type": "integer"
         },
         "goal": {
-          "enum": [
-            "GOAL_TYPE_UNSPECIFIED",
-            "MAXIMIZE",
-            "MINIMIZE"
-          ],
           "description": "Required. The type of goal to use for tuning. Available types are\n`MAXIMIZE` and `MINIMIZE`.\n\nDefaults to `MAXIMIZE`.",
           "type": "string",
           "enumDescriptions": [
             "Goal Type will default to maximize.",
             "Maximize the goal metric.",
             "Minimize the goal metric."
+          ],
+          "enum": [
+            "GOAL_TYPE_UNSPECIFIED",
+            "MAXIMIZE",
+            "MINIMIZE"
           ]
         },
         "hyperparameterMetricTag": {
@@ -379,14 +212,32 @@
           }
         },
         "maxTrials": {
-          "type": "integer",
           "description": "Optional. How many training trials should be attempted to optimize\nthe specified hyperparameters.\n\nDefaults to one.",
-          "format": "int32"
+          "format": "int32",
+          "type": "integer"
         }
       },
       "id": "GoogleCloudMlV1__HyperparameterSpec"
     },
+    "GoogleCloudMlV1__ListLocationsResponse": {
+      "type": "object",
+      "properties": {
+        "nextPageToken": {
+          "description": "Optional. Pass this token as the `page_token` field of the request for a\nsubsequent call.",
+          "type": "string"
+        },
+        "locations": {
+          "description": "Locations where at least one type of CMLE capability is available.",
+          "type": "array",
+          "items": {
+            "$ref": "GoogleCloudMlV1__Location"
+          }
+        }
+      },
+      "id": "GoogleCloudMlV1__ListLocationsResponse"
+    },
     "GoogleCloudMlV1__ListJobsResponse": {
+      "description": "Response message for the ListJobs method.",
       "type": "object",
       "properties": {
         "nextPageToken": {
@@ -394,15 +245,14 @@
           "type": "string"
         },
         "jobs": {
+          "description": "The list of jobs.",
           "type": "array",
           "items": {
             "$ref": "GoogleCloudMlV1__Job"
-          },
-          "description": "The list of jobs."
+          }
         }
       },
-      "id": "GoogleCloudMlV1__ListJobsResponse",
-      "description": "Response message for the ListJobs method."
+      "id": "GoogleCloudMlV1__ListJobsResponse"
     },
     "GoogleCloudMlV1__SetDefaultVersionRequest": {
       "description": "Request message for the SetDefaultVersion request.",
@@ -414,74 +264,43 @@
       "description": "This resource represents a long-running operation that is the result of a\nnetwork API call.",
       "type": "object",
       "properties": {
-        "response": {
+        "error": {
+          "description": "The error result of the operation in case of failure or cancellation.",
+          "$ref": "GoogleRpc__Status"
+        },
+        "metadata": {
+          "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.  Any method that returns a\nlong-running operation should document the metadata type, if any.",
           "type": "object",
           "additionalProperties": {
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
-          },
-          "description": "The normal response of the operation in case of success.  If the original\nmethod returns no data on success, such as `Delete`, the response is\n`google.protobuf.Empty`.  If the original method is standard\n`Get`/`Create`/`Update`, the response should be the resource.  For other\nmethods, the response should have the type `XxxResponse`, where `Xxx`\nis the original method name.  For example, if the original method name\nis `TakeSnapshot()`, the inferred response type is\n`TakeSnapshotResponse`."
+          }
+        },
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable.",
+          "type": "boolean"
+        },
+        "response": {
+          "description": "The normal response of the operation in case of success.  If the original\nmethod returns no data on success, such as `Delete`, the response is\n`google.protobuf.Empty`.  If the original method is standard\n`Get`/`Create`/`Update`, the response should be the resource.  For other\nmethods, the response should have the type `XxxResponse`, where `Xxx`\nis the original method name.  For example, if the original method name\nis `TakeSnapshot()`, the inferred response type is\n`TakeSnapshotResponse`.",
+          "type": "object",
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          }
         },
         "name": {
           "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should have the format of `operations/some/unique/name`.",
           "type": "string"
-        },
-        "error": {
-          "$ref": "GoogleRpc__Status",
-          "description": "The error result of the operation in case of failure or cancellation."
-        },
-        "metadata": {
-          "additionalProperties": {
-            "type": "any",
-            "description": "Properties of the object. Contains field @type with type URL."
-          },
-          "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.  Any method that returns a\nlong-running operation should document the metadata type, if any.",
-          "type": "object"
-        },
-        "done": {
-          "type": "boolean",
-          "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable."
         }
       },
       "id": "GoogleLongrunning__Operation"
     },
-    "GoogleIamV1__AuditConfig": {
-      "description": "Specifies the audit configuration for a service.\nThe configuration determines which permission types are logged, and what\nidentities, if any, are exempted from logging.\nAn AuditConfig must have one or more AuditLogConfigs.\n\nIf there are AuditConfigs for both `allServices` and a specific service,\nthe union of the two AuditConfigs is used for that service: the log_types\nspecified in each AuditConfig are enabled, and the exempted_members in each\nAuditConfig are exempted.\n\nExample Policy with multiple AuditConfigs:\n\n    {\n      \"audit_configs\": [\n        {\n          \"service\": \"allServices\"\n          \"audit_log_configs\": [\n            {\n              \"log_type\": \"DATA_READ\",\n              \"exempted_members\": [\n                \"user:foo@gmail.com\"\n              ]\n            },\n            {\n              \"log_type\": \"DATA_WRITE\",\n            },\n            {\n              \"log_type\": \"ADMIN_READ\",\n            }\n          ]\n        },\n        {\n          \"service\": \"fooservice.googleapis.com\"\n          \"audit_log_configs\": [\n            {\n              \"log_type\": \"DATA_READ\",\n            },\n            {\n              \"log_type\": \"DATA_WRITE\",\n              \"exempted_members\": [\n                \"user:bar@gmail.com\"\n              ]\n            }\n          ]\n        }\n      ]\n    }\n\nFor fooservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ\nlogging. It also exempts foo@gmail.com from DATA_READ logging, and\nbar@gmail.com from DATA_WRITE logging.",
-      "type": "object",
-      "properties": {
-        "service": {
-          "description": "Specifies a service that will be enabled for audit logging.\nFor example, `storage.googleapis.com`, `cloudsql.googleapis.com`.\n`allServices` is a special value that covers all services.",
-          "type": "string"
-        },
-        "auditLogConfigs": {
-          "type": "array",
-          "items": {
-            "$ref": "GoogleIamV1__AuditLogConfig"
-          },
-          "description": "The configuration for logging of each type of permission.\nNext ID: 4"
-        },
-        "exemptedMembers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "id": "GoogleIamV1__AuditConfig"
-    },
     "GoogleCloudMlV1__Model": {
+      "description": "Represents a machine learning solution.\n\nA model can have multiple versions, each of which is a deployed, trained\nmodel ready to receive prediction requests. The model itself is just a\ncontainer.",
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Required. The name specified for the model when it was created.\n\nThe model name must be unique within the project it is created in."
-        },
-        "defaultVersion": {
-          "$ref": "GoogleCloudMlV1__Version",
-          "description": "Output only. The default version of the model. This version will be used to\nhandle prediction requests that do not specify a version.\n\nYou can change the default version by calling\n[projects.methods.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault)."
-        },
         "regions": {
-          "description": "Optional. The list of regions where the model is going to be deployed.\nCurrently only one region per model is supported.\nDefaults to 'us-central1' if nothing is set.\nNote:\n*   No matter where a model is deployed, it can always be accessed by\n    users from anywhere, both for online and batch prediction.\n*   The region for a batch prediction job is set by the region field when\n    submitting the batch prediction job and does not take its value from\n    this field.",
+          "description": "Optional. The list of regions where the model is going to be deployed.\nCurrently only one region per model is supported.\nDefaults to 'us-central1' if nothing is set.\nSee the \u003ca href=\"/ml-engine/docs/regions\"\u003eavailable regions\u003c/a\u003e for\nML Engine services.\nNote:\n*   No matter where a model is deployed, it can always be accessed by\n    users from anywhere, both for online and batch prediction.\n*   The region for a batch prediction job is set by the region field when\n    submitting the batch prediction job and does not take its value from\n    this field.",
           "type": "array",
           "items": {
             "type": "string"
@@ -496,9 +315,9 @@
           "type": "boolean"
         },
         "etag": {
-          "type": "string",
           "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a model from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform model updates in order to avoid race\nconditions: An `etag` is returned in the response to `GetModel`, and\nsystems are expected to put that etag in the request to `UpdateModel` to\nensure that their change will be applied to the model as intended.",
-          "format": "byte"
+          "format": "byte",
+          "type": "string"
         },
         "labels": {
           "additionalProperties": {
@@ -506,54 +325,61 @@
           },
           "description": "Optional. One or more labels that you can add, to organize your models.\nEach label is a key-value pair, where both the key and the value are\narbitrary strings that you supply.\nFor more information, see the documentation on\n\u003ca href=\"/ml-engine/docs/how-tos/resource-labels\"\u003eusing labels\u003c/a\u003e.",
           "type": "object"
+        },
+        "name": {
+          "description": "Required. The name specified for the model when it was created.\n\nThe model name must be unique within the project it is created in.",
+          "type": "string"
+        },
+        "defaultVersion": {
+          "$ref": "GoogleCloudMlV1__Version",
+          "description": "Output only. The default version of the model. This version will be used to\nhandle prediction requests that do not specify a version.\n\nYou can change the default version by calling\n[projects.methods.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault)."
         }
       },
-      "id": "GoogleCloudMlV1__Model",
-      "description": "Represents a machine learning solution.\n\nA model can have multiple versions, each of which is a deployed, trained\nmodel ready to receive prediction requests. The model itself is just a\ncontainer."
+      "id": "GoogleCloudMlV1__Model"
     },
     "GoogleProtobuf__Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:\n\n    service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }\n\nThe JSON representation for `Empty` is empty JSON object `{}`.",
       "type": "object",
       "properties": {},
-      "id": "GoogleProtobuf__Empty",
-      "description": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:\n\n    service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }\n\nThe JSON representation for `Empty` is empty JSON object `{}`."
+      "id": "GoogleProtobuf__Empty"
     },
     "GoogleIamV1__TestIamPermissionsRequest": {
       "description": "Request message for `TestIamPermissions` method.",
       "type": "object",
       "properties": {
         "permissions": {
+          "description": "The set of permissions to check for the `resource`. Permissions with\nwildcards (such as '*' or 'storage.*') are not allowed. For more\ninformation see\n[IAM Overview](https://cloud.google.com/iam/docs/overview#permissions).",
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "The set of permissions to check for the `resource`. Permissions with\nwildcards (such as '*' or 'storage.*') are not allowed. For more\ninformation see\n[IAM Overview](https://cloud.google.com/iam/docs/overview#permissions)."
+          }
         }
       },
       "id": "GoogleIamV1__TestIamPermissionsRequest"
-    },
-    "GoogleCloudMlV1__CancelJobRequest": {
-      "type": "object",
-      "properties": {},
-      "id": "GoogleCloudMlV1__CancelJobRequest",
-      "description": "Request message for the CancelJob method."
     },
     "GoogleCloudMlV1__ListVersionsResponse": {
       "description": "Response message for the ListVersions method.",
       "type": "object",
       "properties": {
-        "nextPageToken": {
-          "type": "string",
-          "description": "Optional. Pass this token as the `page_token` field of the request for a\nsubsequent call."
-        },
         "versions": {
           "description": "The list of versions.",
           "type": "array",
           "items": {
             "$ref": "GoogleCloudMlV1__Version"
           }
+        },
+        "nextPageToken": {
+          "description": "Optional. Pass this token as the `page_token` field of the request for a\nsubsequent call.",
+          "type": "string"
         }
       },
       "id": "GoogleCloudMlV1__ListVersionsResponse"
+    },
+    "GoogleCloudMlV1__CancelJobRequest": {
+      "description": "Request message for the CancelJob method.",
+      "type": "object",
+      "properties": {},
+      "id": "GoogleCloudMlV1__CancelJobRequest"
     },
     "GoogleRpc__Status": {
       "description": "The `Status` type defines a logical error model that is suitable for different\nprogramming environments, including REST APIs and RPC APIs. It is used by\n[gRPC](https://github.com/grpc). The error model is designed to be:\n\n- Simple to use and understand for most users\n- Flexible enough to meet unexpected needs\n\n# Overview\n\nThe `Status` message contains three pieces of data: error code, error message,\nand error details. The error code should be an enum value of\ngoogle.rpc.Code, but it may accept additional error codes if needed.  The\nerror message should be a developer-facing English message that helps\ndevelopers *understand* and *resolve* the error. If a localized user-facing\nerror message is needed, put the localized message in the error details or\nlocalize it in the client. The optional error details may contain arbitrary\ninformation about the error. There is a predefined set of error detail types\nin the package `google.rpc` that can be used for common error conditions.\n\n# Language mapping\n\nThe `Status` message is the logical representation of the error model, but it\nis not necessarily the actual wire format. When the `Status` message is\nexposed in different client libraries and different wire protocols, it can be\nmapped differently. For example, it will likely be mapped to some exceptions\nin Java, but more likely mapped to some error codes in C.\n\n# Other uses\n\nThe error model and the `Status` message can be used in a variety of\nenvironments, either with or without APIs, to provide a\nconsistent developer experience across different environments.\n\nExample uses of this error model include:\n\n- Partial errors. If a service needs to return partial errors to the client,\n    it may embed the `Status` in the normal response to indicate the partial\n    errors.\n\n- Workflow errors. A typical workflow has multiple steps. Each step may\n    have a `Status` message for error reporting.\n\n- Batch operations. If a client uses batch request and batch response, the\n    `Status` message should be used directly inside batch response, one for\n    each error sub-response.\n\n- Asynchronous operations. If an API call embeds asynchronous operation\n    results in its response, the status of those operations should be\n    represented directly using the `Status` message.\n\n- Logging. If some API errors are stored in logs, the message `Status` could\n    be used directly after any stripping needed for security/privacy reasons.",
@@ -565,24 +391,25 @@
           "type": "integer"
         },
         "message": {
-          "type": "string",
-          "description": "A developer-facing error message, which should be in English. Any\nuser-facing error message should be localized and sent in the\ngoogle.rpc.Status.details field, or localized by the client."
+          "description": "A developer-facing error message, which should be in English. Any\nuser-facing error message should be localized and sent in the\ngoogle.rpc.Status.details field, or localized by the client.",
+          "type": "string"
         },
         "details": {
+          "description": "A list of messages that carry the error details.  There is a common set of\nmessage types for APIs to use.",
           "type": "array",
           "items": {
+            "type": "object",
             "additionalProperties": {
-              "type": "any",
-              "description": "Properties of the object. Contains field @type with type URL."
-            },
-            "type": "object"
-          },
-          "description": "A list of messages that carry the error details.  There is a common set of\nmessage types for APIs to use."
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            }
+          }
         }
       },
       "id": "GoogleRpc__Status"
     },
     "GoogleCloudMlV1__AutoScaling": {
+      "description": "Options for automatically scaling a model.",
       "type": "object",
       "properties": {
         "minNodes": {
@@ -591,13 +418,46 @@
           "type": "integer"
         }
       },
-      "id": "GoogleCloudMlV1__AutoScaling",
-      "description": "Options for automatically scaling a model."
+      "id": "GoogleCloudMlV1__AutoScaling"
     },
-    "GoogleCloudMlV1__TrainingInput": {
-      "description": "Represents input parameters for a training job.",
+    "GoogleCloudMlV1__ListModelsResponse": {
+      "description": "Response message for the ListModels method.",
       "type": "object",
       "properties": {
+        "models": {
+          "description": "The list of models.",
+          "type": "array",
+          "items": {
+            "$ref": "GoogleCloudMlV1__Model"
+          }
+        },
+        "nextPageToken": {
+          "description": "Optional. Pass this token as the `page_token` field of the request for a\nsubsequent call.",
+          "type": "string"
+        }
+      },
+      "id": "GoogleCloudMlV1__ListModelsResponse"
+    },
+    "GoogleCloudMlV1__TrainingInput": {
+      "description": "Represents input parameters for a training job. When using the\ngcloud command to submit your training job, you can specify\nthe input parameters as command-line arguments and/or in a YAML configuration\nfile referenced from the --config command-line argument. For\ndetails, see the guide to\n\u003ca href=\"/ml-engine/docs/training-jobs\"\u003esubmitting a training job\u003c/a\u003e.",
+      "type": "object",
+      "properties": {
+        "packageUris": {
+          "description": "Required. The Google Cloud Storage location of the packages with\nthe training program and any additional dependencies.\nThe maximum number of package URIs is 100.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workerCount": {
+          "description": "Optional. The number of worker replicas to use for the training job. Each\nreplica in the cluster will be of the type specified in `worker_type`.\n\nThis value can only be used when `scale_tier` is set to `CUSTOM`. If you\nset this value, you must also set `worker_type`.",
+          "format": "int64",
+          "type": "string"
+        },
+        "masterType": {
+          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's master worker.\n\nThe following types are supported:\n\n\u003cdl\u003e\n  \u003cdt\u003estandard\u003c/dt\u003e\n  \u003cdd\u003e\n  A basic machine configuration suitable for training simple models with\n  small to moderate datasets.\n  \u003c/dd\u003e\n  \u003cdt\u003elarge_model\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with a lot of memory, specially suited for parameter servers\n  when your model is large (having many hidden layers or layers with very\n  large numbers of nodes).\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_s\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine suitable for the master and workers of the cluster when your\n  model requires more computation than the standard machine can handle\n  satisfactorily.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with roughly twice the number of cores and roughly double the\n  memory of \u003ccode suppresswarning=\"true\"\u003ecomplex_model_s\u003c/code\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_l\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with roughly twice the number of cores and roughly double the\n  memory of \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003estandard_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to \u003ccode suppresswarning=\"true\"\u003estandard\u003c/code\u003e that\n  also includes a single NVIDIA Tesla K80 GPU. See more about\n  \u003ca href=\"/ml-engine/docs/how-tos/using-gpus\"\u003e\n  using GPUs for training your model\u003c/a\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e that also includes\n  four NVIDIA Tesla K80 GPUs.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_l_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_l\u003c/code\u003e that also includes\n  eight NVIDIA Tesla K80 GPUs.\n  \u003c/dd\u003e\n  \u003cdt\u003estandard_p100\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to \u003ccode suppresswarning=\"true\"\u003estandard\u003c/code\u003e that\n  also includes a single NVIDIA Tesla P100 GPU. The availability of these\n  GPUs is in the Beta launch stage.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m_p100\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e that also includes\n  four NVIDIA Tesla P100 GPUs. The availability of these GPUs is in\n  the Beta launch stage.\n  \u003c/dd\u003e\n\u003c/dl\u003e\n\nYou must set this value when `scaleTier` is set to `CUSTOM`.",
+          "type": "string"
+        },
         "runtimeVersion": {
           "description": "Optional. The Google Cloud ML runtime version to use for training.  If not\nset, Google Cloud ML will choose the latest stable version.",
           "type": "string"
@@ -606,9 +466,9 @@
           "description": "Required. The Python module name to run after installing the packages.",
           "type": "string"
         },
-        "workerType": {
-          "type": "string",
-          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's worker nodes.\n\nThe supported values are the same as those described in the entry for\n`masterType`.\n\nThis value must be present when `scaleTier` is set to `CUSTOM` and\n`workerCount` is greater than zero."
+        "region": {
+          "description": "Required. The Google Compute Engine region to run the training job in.\nSee the \u003ca href=\"/ml-engine/docs/regions\"\u003eavailable regions\u003c/a\u003e for\nML Engine services.",
+          "type": "string"
         },
         "args": {
           "description": "Optional. Command line arguments to pass to the program.",
@@ -617,16 +477,15 @@
             "type": "string"
           }
         },
-        "region": {
-          "type": "string",
-          "description": "Required. The Google Compute Engine region to run the training job in."
+        "workerType": {
+          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's worker nodes.\n\nThe supported values are the same as those described in the entry for\n`masterType`.\n\nThis value must be present when `scaleTier` is set to `CUSTOM` and\n`workerCount` is greater than zero.",
+          "type": "string"
         },
         "parameterServerType": {
-          "type": "string",
-          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's parameter server.\n\nThe supported values are the same as those described in the entry for\n`master_type`.\n\nThis value must be present when `scaleTier` is set to `CUSTOM` and\n`parameter_server_count` is greater than zero."
+          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's parameter server.\n\nThe supported values are the same as those described in the entry for\n`master_type`.\n\nThis value must be present when `scaleTier` is set to `CUSTOM` and\n`parameter_server_count` is greater than zero.",
+          "type": "string"
         },
         "scaleTier": {
-          "type": "string",
           "enumDescriptions": [
             "A single worker instance. This tier is suitable for learning how to use\nCloud ML, and for experimenting with new models using small datasets.",
             "Many workers and a few parameter servers.",
@@ -643,101 +502,36 @@
             "BASIC_TPU",
             "CUSTOM"
           ],
-          "description": "Required. Specifies the machine types, the number of replicas for workers\nand parameter servers."
+          "description": "Required. Specifies the machine types, the number of replicas for workers\nand parameter servers.",
+          "type": "string"
         },
         "jobDir": {
-          "type": "string",
-          "description": "Optional. A Google Cloud Storage path in which to store training outputs\nand other data needed for training. This path is passed to your TensorFlow\nprogram as the 'job_dir' command-line argument. The benefit of specifying\nthis field is that Cloud ML validates the path for use in training."
+          "description": "Optional. A Google Cloud Storage path in which to store training outputs\nand other data needed for training. This path is passed to your TensorFlow\nprogram as the 'job_dir' command-line argument. The benefit of specifying\nthis field is that Cloud ML validates the path for use in training.",
+          "type": "string"
         },
         "hyperparameters": {
-          "$ref": "GoogleCloudMlV1__HyperparameterSpec",
-          "description": "Optional. The set of Hyperparameters to tune."
+          "description": "Optional. The set of Hyperparameters to tune.",
+          "$ref": "GoogleCloudMlV1__HyperparameterSpec"
         },
         "pythonVersion": {
-          "type": "string",
-          "description": "Optional. The version of Python used in training. If not set, the default\nversion is '2.7'."
+          "description": "Optional. The version of Python used in training. If not set, the default\nversion is '2.7'. Python '3.5' is available when `runtime_version` is set\nto '1.4' and above. Python '2.7' works with all supported runtime versions.",
+          "type": "string"
         },
         "parameterServerCount": {
-          "type": "string",
           "description": "Optional. The number of parameter server replicas to use for the training\njob. Each replica in the cluster will be of the type specified in\n`parameter_server_type`.\n\nThis value can only be used when `scale_tier` is set to `CUSTOM`.If you\nset this value, you must also set `parameter_server_type`.",
-          "format": "int64"
-        },
-        "packageUris": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Required. The Google Cloud Storage location of the packages with\nthe training program and any additional dependencies.\nThe maximum number of package URIs is 100."
-        },
-        "workerCount": {
-          "type": "string",
-          "description": "Optional. The number of worker replicas to use for the training job. Each\nreplica in the cluster will be of the type specified in `worker_type`.\n\nThis value can only be used when `scale_tier` is set to `CUSTOM`. If you\nset this value, you must also set `worker_type`.",
-          "format": "int64"
-        },
-        "masterType": {
-          "description": "Optional. Specifies the type of virtual machine to use for your training\njob's master worker.\n\nThe following types are supported:\n\n\u003cdl\u003e\n  \u003cdt\u003estandard\u003c/dt\u003e\n  \u003cdd\u003e\n  A basic machine configuration suitable for training simple models with\n  small to moderate datasets.\n  \u003c/dd\u003e\n  \u003cdt\u003elarge_model\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with a lot of memory, specially suited for parameter servers\n  when your model is large (having many hidden layers or layers with very\n  large numbers of nodes).\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_s\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine suitable for the master and workers of the cluster when your\n  model requires more computation than the standard machine can handle\n  satisfactorily.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with roughly twice the number of cores and roughly double the\n  memory of \u003ccode suppresswarning=\"true\"\u003ecomplex_model_s\u003c/code\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_l\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine with roughly twice the number of cores and roughly double the\n  memory of \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003estandard_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to \u003ccode suppresswarning=\"true\"\u003estandard\u003c/code\u003e that\n  also includes a single NVIDIA Tesla K80 GPU. See more about\n  \u003ca href=\"/ml-engine/docs/how-tos/using-gpus\"\u003e\n  using GPUs for training your model\u003c/a\u003e.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e that also includes\n  four NVIDIA Tesla K80 GPUs.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_l_gpu\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_l\u003c/code\u003e that also includes\n  eight NVIDIA Tesla K80 GPUs.\n  \u003c/dd\u003e\n  \u003cdt\u003estandard_p100\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to \u003ccode suppresswarning=\"true\"\u003estandard\u003c/code\u003e that\n  also includes a single NVIDIA Tesla P100 GPU. The availability of these\n  GPUs is in the Alpha launch stage.\n  \u003c/dd\u003e\n  \u003cdt\u003ecomplex_model_m_p100\u003c/dt\u003e\n  \u003cdd\u003e\n  A machine equivalent to\n  \u003ccode suppresswarning=\"true\"\u003ecomplex_model_m\u003c/code\u003e that also includes\n  four NVIDIA Tesla P100 GPUs. The availability of these GPUs is in\n  the Alpha launch stage.\n  \u003c/dd\u003e\n\u003c/dl\u003e\n\nYou must set this value when `scaleTier` is set to `CUSTOM`.",
+          "format": "int64",
           "type": "string"
         }
       },
       "id": "GoogleCloudMlV1__TrainingInput"
     },
-    "GoogleCloudMlV1__ListModelsResponse": {
-      "type": "object",
-      "properties": {
-        "nextPageToken": {
-          "type": "string",
-          "description": "Optional. Pass this token as the `page_token` field of the request for a\nsubsequent call."
-        },
-        "models": {
-          "type": "array",
-          "items": {
-            "$ref": "GoogleCloudMlV1__Model"
-          },
-          "description": "The list of models."
-        }
-      },
-      "id": "GoogleCloudMlV1__ListModelsResponse",
-      "description": "Response message for the ListModels method."
-    },
     "GoogleCloudMlV1__Job": {
+      "description": "Represents a training or prediction job.",
       "type": "object",
       "properties": {
-        "etag": {
-          "type": "string",
-          "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a job from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform job updates in order to avoid race\nconditions: An `etag` is returned in the response to `GetJob`, and\nsystems are expected to put that etag in the request to `UpdateJob` to\nensure that their change will be applied to the same version of the job.",
-          "format": "byte"
-        },
-        "trainingInput": {
-          "$ref": "GoogleCloudMlV1__TrainingInput",
-          "description": "Input parameters to create a training job."
-        },
-        "state": {
-          "enum": [
-            "STATE_UNSPECIFIED",
-            "QUEUED",
-            "PREPARING",
-            "RUNNING",
-            "SUCCEEDED",
-            "FAILED",
-            "CANCELLING",
-            "CANCELLED"
-          ],
-          "description": "Output only. The detailed state of a job.",
-          "type": "string",
-          "enumDescriptions": [
-            "The job state is unspecified.",
-            "The job has been just created and processing has not yet begun.",
-            "The service is preparing to run the job.",
-            "The job is in progress.",
-            "The job completed successfully.",
-            "The job failed.\n`error_message` should contain the details of the failure.",
-            "The job is being cancelled.\n`error_message` should describe the reason for the cancellation.",
-            "The job has been cancelled.\n`error_message` should describe the reason for the cancellation."
-          ]
-        },
         "jobId": {
-          "type": "string",
-          "description": "Required. The user-specified id of the job."
+          "description": "Required. The user-specified id of the job.",
+          "type": "string"
         },
         "endTime": {
           "description": "Output only. When the job processing was completed.",
@@ -754,32 +548,102 @@
           "description": "The current prediction job result."
         },
         "trainingOutput": {
-          "$ref": "GoogleCloudMlV1__TrainingOutput",
-          "description": "The current training job result."
-        },
-        "labels": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Optional. One or more labels that you can add, to organize your jobs.\nEach label is a key-value pair, where both the key and the value are\narbitrary strings that you supply.\nFor more information, see the documentation on\n\u003ca href=\"/ml-engine/docs/how-tos/resource-labels\"\u003eusing labels\u003c/a\u003e.",
-          "type": "object"
+          "description": "The current training job result.",
+          "$ref": "GoogleCloudMlV1__TrainingOutput"
         },
         "createTime": {
           "description": "Output only. When the job was created.",
           "format": "google-datetime",
           "type": "string"
         },
+        "labels": {
+          "description": "Optional. One or more labels that you can add, to organize your jobs.\nEach label is a key-value pair, where both the key and the value are\narbitrary strings that you supply.\nFor more information, see the documentation on\n\u003ca href=\"/ml-engine/docs/how-tos/resource-labels\"\u003eusing labels\u003c/a\u003e.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "predictionInput": {
-          "$ref": "GoogleCloudMlV1__PredictionInput",
-          "description": "Input parameters to create a prediction job."
+          "description": "Input parameters to create a prediction job.",
+          "$ref": "GoogleCloudMlV1__PredictionInput"
         },
         "errorMessage": {
           "description": "Output only. The details of a failure or a cancellation.",
           "type": "string"
+        },
+        "etag": {
+          "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a job from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform job updates in order to avoid race\nconditions: An `etag` is returned in the response to `GetJob`, and\nsystems are expected to put that etag in the request to `UpdateJob` to\nensure that their change will be applied to the same version of the job.",
+          "format": "byte",
+          "type": "string"
+        },
+        "trainingInput": {
+          "description": "Input parameters to create a training job.",
+          "$ref": "GoogleCloudMlV1__TrainingInput"
+        },
+        "state": {
+          "enumDescriptions": [
+            "The job state is unspecified.",
+            "The job has been just created and processing has not yet begun.",
+            "The service is preparing to run the job.",
+            "The job is in progress.",
+            "The job completed successfully.",
+            "The job failed.\n`error_message` should contain the details of the failure.",
+            "The job is being cancelled.\n`error_message` should describe the reason for the cancellation.",
+            "The job has been cancelled.\n`error_message` should describe the reason for the cancellation."
+          ],
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "QUEUED",
+            "PREPARING",
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELLING",
+            "CANCELLED"
+          ],
+          "description": "Output only. The detailed state of a job.",
+          "type": "string"
         }
       },
-      "id": "GoogleCloudMlV1__Job",
-      "description": "Represents a training or prediction job."
+      "id": "GoogleCloudMlV1__Job"
+    },
+    "GoogleCloudMlV1__Capability": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enumDescriptions": [
+            "",
+            "",
+            "",
+            ""
+          ],
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "TRAINING",
+            "BATCH_PREDICTION",
+            "ONLINE_PREDICTION"
+          ]
+        },
+        "availableAccelerators": {
+          "description": "Available accelerators for the capability.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ACCELERATOR_TYPE_UNSPECIFIED",
+              "NVIDIA_TESLA_K80",
+              "NVIDIA_TESLA_P100"
+            ]
+          },
+          "enumDescriptions": [
+            "Unspecified accelerator type. Default to no GPU.",
+            "Nvidia tesla k80 GPU.",
+            "Nvidia tesla P100 GPU."
+          ]
+        }
+      },
+      "id": "GoogleCloudMlV1__Capability"
     },
     "GoogleApi__HttpBody": {
       "description": "Message that represents an arbitrary HTTP body. It should only be used for\npayload formats that can't be represented as JSON, such as raw binary or\nan HTML page.\n\n\nThis message can be used both in streaming and non-streaming API methods in\nthe request as well as the response.\n\nIt can be used as a top-level request field, which is convenient if one\nwants to extract parameters from either the URL or HTTP template into the\nrequest fields and also want access to the raw HTTP body.\n\nExample:\n\n    message GetResourceRequest {\n      // A unique request id.\n      string request_id = 1;\n\n      // The raw HTTP body is bound to this field.\n      google.api.HttpBody http_body = 2;\n    }\n\n    service ResourceService {\n      rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);\n      rpc UpdateResource(google.api.HttpBody) returns (google.protobuf.Empty);\n    }\n\nExample with streaming methods:\n\n    service CaldavService {\n      rpc GetCalendar(stream google.api.HttpBody)\n        returns (stream google.api.HttpBody);\n      rpc UpdateCalendar(stream google.api.HttpBody)\n        returns (stream google.api.HttpBody);\n    }\n\nUse of this type only changes how the request and response bodies are\nhandled, all other features will continue to work unchanged.",
@@ -797,34 +661,35 @@
           }
         },
         "data": {
-          "type": "string",
           "description": "HTTP body binary data.",
-          "format": "byte"
+          "format": "byte",
+          "type": "string"
         },
         "contentType": {
-          "type": "string",
-          "description": "The HTTP Content-Type string representing the content type of the body."
+          "description": "The HTTP Content-Type string representing the content type of the body.",
+          "type": "string"
         }
       },
       "id": "GoogleApi__HttpBody"
     },
     "GoogleCloudMlV1__GetConfigResponse": {
+      "description": "Returns service account information associated with a project.",
       "type": "object",
       "properties": {
+        "serviceAccount": {
+          "description": "The service account Cloud ML uses to access resources in the project.",
+          "type": "string"
+        },
         "serviceAccountProject": {
           "description": "The project number for `service_account`.",
           "format": "int64",
           "type": "string"
-        },
-        "serviceAccount": {
-          "type": "string",
-          "description": "The service account Cloud ML uses to access resources in the project."
         }
       },
-      "id": "GoogleCloudMlV1__GetConfigResponse",
-      "description": "Returns service account information associated with a project."
+      "id": "GoogleCloudMlV1__GetConfigResponse"
     },
     "GoogleIamV1__TestIamPermissionsResponse": {
+      "description": "Response message for `TestIamPermissions` method.",
       "type": "object",
       "properties": {
         "permissions": {
@@ -835,55 +700,55 @@
           }
         }
       },
-      "id": "GoogleIamV1__TestIamPermissionsResponse",
-      "description": "Response message for `TestIamPermissions` method."
+      "id": "GoogleIamV1__TestIamPermissionsResponse"
     },
     "GoogleCloudMlV1__HyperparameterOutput": {
+      "description": "Represents the result of a single hyperparameter tuning trial from a\ntraining job. The TrainingOutput object that is returned on successful\ncompletion of a training job with hyperparameter tuning includes a list\nof HyperparameterOutput objects, one for each successful trial.",
       "type": "object",
       "properties": {
-        "allMetrics": {
-          "type": "array",
-          "items": {
-            "$ref": "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric"
-          },
-          "description": "All recorded object metrics for this trial. This field is not currently\npopulated."
-        },
-        "finalMetric": {
-          "$ref": "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric",
-          "description": "The final objective metric seen for this trial."
-        },
         "hyperparameters": {
+          "description": "The hyperparameters given to this trial.",
+          "type": "object",
           "additionalProperties": {
             "type": "string"
-          },
-          "description": "The hyperparameters given to this trial.",
-          "type": "object"
+          }
         },
         "trialId": {
           "description": "The trial id for these results.",
           "type": "string"
+        },
+        "allMetrics": {
+          "description": "All recorded object metrics for this trial. This field is not currently\npopulated.",
+          "type": "array",
+          "items": {
+            "$ref": "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric"
+          }
+        },
+        "finalMetric": {
+          "$ref": "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric",
+          "description": "The final objective metric seen for this trial."
         }
       },
-      "id": "GoogleCloudMlV1__HyperparameterOutput",
-      "description": "Represents the result of a single hyperparameter tuning trial from a\ntraining job. The TrainingOutput object that is returned on successful\ncompletion of a training job with hyperparameter tuning includes a list\nof HyperparameterOutput objects, one for each successful trial."
+      "id": "GoogleCloudMlV1__HyperparameterOutput"
     },
     "GoogleIamV1__SetIamPolicyRequest": {
+      "description": "Request message for `SetIamPolicy` method.",
       "type": "object",
       "properties": {
-        "policy": {
-          "$ref": "GoogleIamV1__Policy",
-          "description": "REQUIRED: The complete policy to be applied to the `resource`. The size of\nthe policy is limited to a few 10s of KB. An empty policy is a\nvalid policy but certain Cloud Platform services (such as Projects)\nmight reject them."
-        },
         "updateMask": {
           "description": "OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only\nthe fields in the mask will be modified. If no mask is provided, the\nfollowing default mask is used:\npaths: \"bindings, etag\"\nThis field is only used by Cloud IAM.",
           "format": "google-fieldmask",
           "type": "string"
+        },
+        "policy": {
+          "$ref": "GoogleIamV1__Policy",
+          "description": "REQUIRED: The complete policy to be applied to the `resource`. The size of\nthe policy is limited to a few 10s of KB. An empty policy is a\nvalid policy but certain Cloud Platform services (such as Projects)\nmight reject them."
         }
       },
-      "id": "GoogleIamV1__SetIamPolicyRequest",
-      "description": "Request message for `SetIamPolicy` method."
+      "id": "GoogleIamV1__SetIamPolicyRequest"
     },
     "GoogleCloudMlV1__PredictionOutput": {
+      "description": "Represents results of a prediction job.",
       "type": "object",
       "properties": {
         "errorCount": {
@@ -896,21 +761,20 @@
           "type": "string"
         },
         "nodeHours": {
-          "type": "number",
           "description": "Node hours used by the batch prediction job.",
-          "format": "double"
+          "format": "double",
+          "type": "number"
         },
         "predictionCount": {
-          "type": "string",
           "description": "The number of generated predictions.",
-          "format": "int64"
+          "format": "int64",
+          "type": "string"
         }
       },
-      "id": "GoogleCloudMlV1__PredictionOutput",
-      "description": "Represents results of a prediction job."
+      "id": "GoogleCloudMlV1__PredictionOutput"
     },
     "GoogleIamV1__Policy": {
-      "description": "Defines an Identity and Access Management (IAM) policy. It is used to\nspecify access control policies for Cloud Platform resources.\n\n\nA `Policy` consists of a list of `bindings`. A `Binding` binds a list of\n`members` to a `role`, where the members can be user accounts, Google groups,\nGoogle domains, and service accounts. A `role` is a named list of permissions\ndefined by IAM.\n\n**Example**\n\n    {\n      \"bindings\": [\n        {\n          \"role\": \"roles/owner\",\n          \"members\": [\n            \"user:mike@example.com\",\n            \"group:admins@example.com\",\n            \"domain:google.com\",\n            \"serviceAccount:my-other-app@appspot.gserviceaccount.com\",\n          ]\n        },\n        {\n          \"role\": \"roles/viewer\",\n          \"members\": [\"user:sean@example.com\"]\n        }\n      ]\n    }\n\nFor a description of IAM and its features, see the\n[IAM developer's guide](https://cloud.google.com/iam).",
+      "description": "Defines an Identity and Access Management (IAM) policy. It is used to\nspecify access control policies for Cloud Platform resources.\n\n\nA `Policy` consists of a list of `bindings`. A `Binding` binds a list of\n`members` to a `role`, where the members can be user accounts, Google groups,\nGoogle domains, and service accounts. A `role` is a named list of permissions\ndefined by IAM.\n\n**Example**\n\n    {\n      \"bindings\": [\n        {\n          \"role\": \"roles/owner\",\n          \"members\": [\n            \"user:mike@example.com\",\n            \"group:admins@example.com\",\n            \"domain:google.com\",\n            \"serviceAccount:my-other-app@appspot.gserviceaccount.com\",\n          ]\n        },\n        {\n          \"role\": \"roles/viewer\",\n          \"members\": [\"user:sean@example.com\"]\n        }\n      ]\n    }\n\nFor a description of IAM and its features, see the\n[IAM developer's guide](https://cloud.google.com/iam/docs).",
       "type": "object",
       "properties": {
         "bindings": {
@@ -920,66 +784,83 @@
             "$ref": "GoogleIamV1__Binding"
           }
         },
-        "iamOwned": {
-          "type": "boolean"
-        },
         "etag": {
-          "type": "string",
           "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a policy from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform policy updates in order to avoid race\nconditions: An `etag` is returned in the response to `getIamPolicy`, and\nsystems are expected to put that etag in the request to `setIamPolicy` to\nensure that their change will be applied to the same version of the policy.\n\nIf no `etag` is provided in the call to `setIamPolicy`, then the existing\npolicy is overwritten blindly.",
-          "format": "byte"
+          "format": "byte",
+          "type": "string"
         },
         "version": {
-          "type": "integer",
-          "description": "Version of the `Policy`. The default version is 0.",
-          "format": "int32"
-        },
-        "auditConfigs": {
-          "description": "Specifies cloud audit logging configuration for this policy.",
-          "type": "array",
-          "items": {
-            "$ref": "GoogleIamV1__AuditConfig"
-          }
+          "description": "Deprecated.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "id": "GoogleIamV1__Policy"
     },
     "GoogleLongrunning__ListOperationsResponse": {
+      "description": "The response message for Operations.ListOperations.",
       "type": "object",
       "properties": {
-        "nextPageToken": {
-          "type": "string",
-          "description": "The standard List next-page token."
-        },
         "operations": {
+          "description": "A list of operations that matches the specified filter in the request.",
           "type": "array",
           "items": {
             "$ref": "GoogleLongrunning__Operation"
-          },
-          "description": "A list of operations that matches the specified filter in the request."
+          }
+        },
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
         }
       },
-      "id": "GoogleLongrunning__ListOperationsResponse",
-      "description": "The response message for Operations.ListOperations."
+      "id": "GoogleLongrunning__ListOperationsResponse"
     },
     "GoogleCloudMlV1__ManualScaling": {
+      "description": "Options for manually scaling a model.",
       "type": "object",
       "properties": {
         "nodes": {
-          "type": "integer",
           "description": "The number of nodes to allocate for this model. These nodes are always up,\nstarting from the time the model is deployed, so the cost of operating\nthis model will be proportional to `nodes` * number of hours since\nlast billing cycle plus the cost for each prediction performed.",
-          "format": "int32"
+          "format": "int32",
+          "type": "integer"
         }
       },
-      "id": "GoogleCloudMlV1__ManualScaling",
-      "description": "Options for manually scaling a model."
+      "id": "GoogleCloudMlV1__ManualScaling"
+    },
+    "GoogleIamV1__Binding": {
+      "description": "Associates `members` with a `role`.",
+      "type": "object",
+      "properties": {
+        "members": {
+          "description": "Specifies the identities requesting access for a Cloud Platform resource.\n`members` can have the following values:\n\n* `allUsers`: A special identifier that represents anyone who is\n   on the internet; with or without a Google account.\n\n* `allAuthenticatedUsers`: A special identifier that represents anyone\n   who is authenticated with a Google account or a service account.\n\n* `user:{emailid}`: An email address that represents a specific Google\n   account. For example, `alice@gmail.com` or `joe@example.com`.\n\n\n* `serviceAccount:{emailid}`: An email address that represents a service\n   account. For example, `my-other-app@appspot.gserviceaccount.com`.\n\n* `group:{emailid}`: An email address that represents a Google group.\n   For example, `admins@example.com`.\n\n\n* `domain:{domain}`: A Google Apps domain name that represents all the\n   users of that domain. For example, `google.com` or `example.com`.\n\n",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "description": "Role that is assigned to `members`.\nFor example, `roles/viewer`, `roles/editor`, or `roles/owner`.\nRequired",
+          "type": "string"
+        },
+        "condition": {
+          "$ref": "GoogleType__Expr",
+          "description": "The condition that is associated with this binding.\nNOTE: an unsatisfied condition will not allow user access via current\nbinding. Different bindings, including their conditions, are examined\nindependently.\nThis field is only visible as GOOGLE_INTERNAL or CONDITION_TRUSTED_TESTER."
+        }
+      },
+      "id": "GoogleIamV1__Binding"
     },
     "GoogleCloudMlV1__TrainingOutput": {
       "description": "Represents results of a training job. Output only.",
       "type": "object",
       "properties": {
+        "completedTrialCount": {
+          "description": "The number of hyperparameter tuning trials that completed successfully.\nOnly set for hyperparameter tuning jobs.",
+          "format": "int64",
+          "type": "string"
+        },
         "isHyperparameterTuningJob": {
-          "type": "boolean",
-          "description": "Whether this job is a hyperparameter tuning job."
+          "description": "Whether this job is a hyperparameter tuning job.",
+          "type": "boolean"
         },
         "consumedMLUnits": {
           "description": "The amount of ML units consumed by the job.",
@@ -992,47 +873,20 @@
           "items": {
             "$ref": "GoogleCloudMlV1__HyperparameterOutput"
           }
-        },
-        "completedTrialCount": {
-          "description": "The number of hyperparameter tuning trials that completed successfully.\nOnly set for hyperparameter tuning jobs.",
-          "format": "int64",
-          "type": "string"
         }
       },
       "id": "GoogleCloudMlV1__TrainingOutput"
     },
-    "GoogleIamV1__Binding": {
-      "type": "object",
-      "properties": {
-        "condition": {
-          "$ref": "GoogleType__Expr",
-          "description": "The condition that is associated with this binding.\nNOTE: an unsatisfied condition will not allow user access via current\nbinding. Different bindings, including their conditions, are examined\nindependently.\nThis field is GOOGLE_INTERNAL."
-        },
-        "members": {
-          "description": "Specifies the identities requesting access for a Cloud Platform resource.\n`members` can have the following values:\n\n* `allUsers`: A special identifier that represents anyone who is\n   on the internet; with or without a Google account.\n\n* `allAuthenticatedUsers`: A special identifier that represents anyone\n   who is authenticated with a Google account or a service account.\n\n* `user:{emailid}`: An email address that represents a specific Google\n   account. For example, `alice@gmail.com` or `joe@example.com`.\n\n\n* `serviceAccount:{emailid}`: An email address that represents a service\n   account. For example, `my-other-app@appspot.gserviceaccount.com`.\n\n* `group:{emailid}`: An email address that represents a Google group.\n   For example, `admins@example.com`.\n\n\n* `domain:{domain}`: A Google Apps domain name that represents all the\n   users of that domain. For example, `google.com` or `example.com`.\n\n",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "role": {
-          "type": "string",
-          "description": "Role that is assigned to `members`.\nFor example, `roles/viewer`, `roles/editor`, or `roles/owner`.\nRequired"
-        }
-      },
-      "id": "GoogleIamV1__Binding",
-      "description": "Associates `members` with a `role`."
-    },
     "GoogleCloudMlV1__PredictRequest": {
+      "description": "Request for predictions to be issued against a trained model.",
       "type": "object",
       "properties": {
         "httpBody": {
-          "$ref": "GoogleApi__HttpBody",
-          "description": "\nRequired. The prediction request body."
+          "description": "\nRequired. The prediction request body.",
+          "$ref": "GoogleApi__HttpBody"
         }
       },
-      "id": "GoogleCloudMlV1__PredictRequest",
-      "description": "Request for predictions to be issued against a trained model."
+      "id": "GoogleCloudMlV1__PredictRequest"
     },
     "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric": {
       "description": "An observed value of a metric.",
@@ -1050,13 +904,162 @@
         }
       },
       "id": "GoogleCloudMlV1_HyperparameterOutput_HyperparameterMetric"
+    },
+    "GoogleCloudMlV1__Version": {
+      "description": "Represents a version of the model.\n\nEach version is a trained model deployed in the cloud, ready to handle\nprediction requests. A model can have multiple versions. You can get\ninformation about all of the versions of a given model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).\n\nLINT.IfChange",
+      "type": "object",
+      "properties": {
+        "deploymentUri": {
+          "description": "Required. The Google Cloud Storage location of the trained model used to\ncreate the version. See the\n[overview of model\ndeployment](/ml-engine/docs/concepts/deployment-overview) for more\ninformation.\n\nWhen passing Version to\n[projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)\nthe model service uses the specified location as the source of the model.\nOnce deployed, the model version is hosted by the prediction service, so\nthis location is useful only as a historical record.\nThe total number of model files can't exceed 1000.",
+          "type": "string"
+        },
+        "autoScaling": {
+          "$ref": "GoogleCloudMlV1__AutoScaling",
+          "description": "Automatically scale the number of nodes used to serve the model in\nresponse to increases and decreases in traffic. Care should be\ntaken to ramp up traffic according to the model's ability to scale\nor you will start seeing increases in latency and 429 response codes."
+        },
+        "createTime": {
+          "description": "Output only. The time the version was created.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. One or more labels that you can add, to organize your model\nversions. Each label is a key-value pair, where both the key and the value\nare arbitrary strings that you supply.\nFor more information, see the documentation on\n\u003ca href=\"/ml-engine/docs/how-tos/resource-labels\"\u003eusing labels\u003c/a\u003e.",
+          "type": "object"
+        },
+        "errorMessage": {
+          "description": "Output only. The details of a failure or a cancellation.",
+          "type": "string"
+        },
+        "runtimeVersion": {
+          "description": "Optional. The Google Cloud ML runtime version to use for this deployment.\nIf not set, Google Cloud ML will choose a version.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Optional. The description specified for the version when it was created.",
+          "type": "string"
+        },
+        "etag": {
+          "description": "`etag` is used for optimistic concurrency control as a way to help\nprevent simultaneous updates of a model from overwriting each other.\nIt is strongly suggested that systems make use of the `etag` in the\nread-modify-write cycle to perform model updates in order to avoid race\nconditions: An `etag` is returned in the response to `GetVersion`, and\nsystems are expected to put that etag in the request to `UpdateVersion` to\nensure that their change will be applied to the model as intended.",
+          "format": "byte",
+          "type": "string"
+        },
+        "isDefault": {
+          "description": "Output only. If true, this version will be used to handle prediction\nrequests that do not specify a version.\n\nYou can change the default version by calling\n[projects.methods.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault).",
+          "type": "boolean"
+        },
+        "state": {
+          "enumDescriptions": [
+            "The version state is unspecified.",
+            "The version is ready for prediction.",
+            "The version is in the process of creation.",
+            "The version failed to be created, possibly cancelled.\n`error_message` should contain the details of the failure.",
+            "The version is in the process of deletion."
+          ],
+          "enum": [
+            "UNKNOWN",
+            "READY",
+            "CREATING",
+            "FAILED",
+            "DELETING"
+          ],
+          "description": "Output only. The state of a version.",
+          "type": "string"
+        },
+        "manualScaling": {
+          "description": "Manually select the number of nodes to use for serving the\nmodel. You should generally use `auto_scaling` with an appropriate\n`min_nodes` instead, but this option is available if you want more\npredictable billing. Beware that latency and error rates will increase\nif the traffic exceeds that capability of the system to serve it based\non the selected number of nodes.",
+          "$ref": "GoogleCloudMlV1__ManualScaling"
+        },
+        "name": {
+          "description": "Required.The name specified for the version when it was created.\n\nThe version name must be unique within the model it is created in.",
+          "type": "string"
+        },
+        "lastUseTime": {
+          "description": "Output only. The time the version was last used for prediction.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "id": "GoogleCloudMlV1__Version"
+    },
+    "GoogleCloudMlV1__ParameterSpec": {
+      "description": "Represents a single hyperparameter to optimize.",
+      "type": "object",
+      "properties": {
+        "minValue": {
+          "description": "Required if type is `DOUBLE` or `INTEGER`. This field\nshould be unset if type is `CATEGORICAL`. This value should be integers if\ntype is INTEGER.",
+          "format": "double",
+          "type": "number"
+        },
+        "discreteValues": {
+          "description": "Required if type is `DISCRETE`.\nA list of feasible points.\nThe list should be in strictly increasing order. For instance, this\nparameter might have possible settings of 1.5, 2.5, and 4.0. This list\nshould not contain more than 1,000 values.",
+          "type": "array",
+          "items": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "scaleType": {
+          "enumDescriptions": [
+            "By default, no scaling is applied.",
+            "Scales the feasible space to (0, 1) linearly.",
+            "Scales the feasible space logarithmically to (0, 1). The entire feasible\nspace must be strictly positive.",
+            "Scales the feasible space \"reverse\" logarithmically to (0, 1). The result\nis that values close to the top of the feasible space are spread out more\nthan points near the bottom. The entire feasible space must be strictly\npositive."
+          ],
+          "enum": [
+            "NONE",
+            "UNIT_LINEAR_SCALE",
+            "UNIT_LOG_SCALE",
+            "UNIT_REVERSE_LOG_SCALE"
+          ],
+          "description": "Optional. How the parameter should be scaled to the hypercube.\nLeave unset for categorical parameters.\nSome kind of scaling is strongly recommended for real or integral\nparameters (e.g., `UNIT_LINEAR_SCALE`).",
+          "type": "string"
+        },
+        "maxValue": {
+          "description": "Required if typeis `DOUBLE` or `INTEGER`. This field\nshould be unset if type is `CATEGORICAL`. This value should be integers if\ntype is `INTEGER`.",
+          "format": "double",
+          "type": "number"
+        },
+        "type": {
+          "enumDescriptions": [
+            "You must specify a valid type. Using this unspecified type will result in\nan error.",
+            "Type for real-valued parameters.",
+            "Type for integral parameters.",
+            "The parameter is categorical, with a value chosen from the categories\nfield.",
+            "The parameter is real valued, with a fixed set of feasible points. If\n`type==DISCRETE`, feasible_points must be provided, and\n{`min_value`, `max_value`} will be ignored."
+          ],
+          "enum": [
+            "PARAMETER_TYPE_UNSPECIFIED",
+            "DOUBLE",
+            "INTEGER",
+            "CATEGORICAL",
+            "DISCRETE"
+          ],
+          "description": "Required. The type of the parameter.",
+          "type": "string"
+        },
+        "categoricalValues": {
+          "description": "Required if type is `CATEGORICAL`. The list of possible categories.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parameterName": {
+          "description": "Required. The parameter name must be unique amongst all ParameterConfigs in\na HyperparameterSpec message. E.g., \"learning_rate\".",
+          "type": "string"
+        }
+      },
+      "id": "GoogleCloudMlV1__ParameterSpec"
     }
   },
-  "icons": {
-    "x16": "http://www.google.com/images/icons/product/search-16.gif",
-    "x32": "http://www.google.com/images/icons/product/search-32.gif"
-  },
   "protocol": "rest",
+  "icons": {
+    "x32": "http://www.google.com/images/icons/product/search-32.gif",
+    "x16": "http://www.google.com/images/icons/product/search-16.gif"
+  },
   "canonicalName": "Cloud Machine Learning Engine",
   "auth": {
     "oauth2": {
@@ -1071,6 +1074,7 @@
   "ownerDomain": "google.com",
   "name": "ml",
   "batchPath": "batch",
+  "fullyEncodeReservedExpansion": true,
   "title": "Google Cloud Machine Learning Engine",
   "ownerName": "Google",
   "resources": {
@@ -1085,6 +1089,9 @@
             "name"
           ],
           "httpMethod": "GET",
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ],
           "parameters": {
             "name": {
               "location": "path",
@@ -1094,111 +1101,42 @@
               "pattern": "^projects/[^/]+$"
             }
           },
-          "scopes": [
-            "https://www.googleapis.com/auth/cloud-platform"
-          ],
           "flatPath": "v1/projects/{projectsId}:getConfig",
           "path": "v1/{+name}:getConfig",
           "id": "ml.projects.getConfig"
         },
         "predict": {
-          "description": "Performs prediction on the data in the request.\nCloud ML Engine implements a custom `predict` verb on top of an HTTP POST\nmethod. For details of the format, see the **guide to the\n[predict request format](/ml-engine/docs/v1/predict-request)**.",
-          "request": {
-            "$ref": "GoogleCloudMlV1__PredictRequest"
-          },
-          "response": {
-            "$ref": "GoogleApi__HttpBody"
-          },
+          "httpMethod": "POST",
           "parameterOrder": [
             "name"
           ],
-          "httpMethod": "POST",
+          "response": {
+            "$ref": "GoogleApi__HttpBody"
+          },
+          "parameters": {
+            "name": {
+              "location": "path",
+              "description": "Required. The resource name of a model or a version.\n\nAuthorization: requires the `predict` permission on the specified resource.",
+              "required": true,
+              "type": "string",
+              "pattern": "^projects/.+$"
+            }
+          },
           "scopes": [
             "https://www.googleapis.com/auth/cloud-platform"
           ],
-          "parameters": {
-            "name": {
-              "required": true,
-              "type": "string",
-              "pattern": "^projects/.+$",
-              "location": "path",
-              "description": "Required. The resource name of a model or a version.\n\nAuthorization: requires the `predict` permission on the specified resource."
-            }
-          },
           "flatPath": "v1/projects/{projectsId}:predict",
+          "id": "ml.projects.predict",
           "path": "v1/{+name}:predict",
-          "id": "ml.projects.predict"
+          "request": {
+            "$ref": "GoogleCloudMlV1__PredictRequest"
+          },
+          "description": "Performs prediction on the data in the request.\nCloud ML Engine implements a custom `predict` verb on top of an HTTP POST\nmethod. \u003cp\u003eFor details of the request and response format, see the **guide\nto the [predict request format](/ml-engine/docs/v1/predict-request)**."
         }
       },
       "resources": {
         "operations": {
           "methods": {
-            "list": {
-              "httpMethod": "GET",
-              "parameterOrder": [
-                "name"
-              ],
-              "response": {
-                "$ref": "GoogleLongrunning__ListOperationsResponse"
-              },
-              "parameters": {
-                "filter": {
-                  "location": "query",
-                  "description": "The standard list filter.",
-                  "type": "string"
-                },
-                "name": {
-                  "location": "path",
-                  "description": "The name of the operation's parent resource.",
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+$"
-                },
-                "pageToken": {
-                  "type": "string",
-                  "location": "query",
-                  "description": "The standard list page token."
-                },
-                "pageSize": {
-                  "type": "integer",
-                  "location": "query",
-                  "description": "The standard list page size.",
-                  "format": "int32"
-                }
-              },
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "flatPath": "v1/projects/{projectsId}/operations",
-              "id": "ml.projects.operations.list",
-              "path": "v1/{+name}/operations",
-              "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`. To\noverride the binding, API services can add a binding such as\n`\"/v1/{name=users/*}/operations\"` to their service configuration.\nFor backwards compatibility, the default name includes the operations\ncollection id, however overriding users must ensure the name binding\nis the parent resource, without the operations collection id."
-            },
-            "get": {
-              "response": {
-                "$ref": "GoogleLongrunning__Operation"
-              },
-              "parameterOrder": [
-                "name"
-              ],
-              "httpMethod": "GET",
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "parameters": {
-                "name": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/operations/[^/]+$",
-                  "location": "path",
-                  "description": "The name of the operation resource."
-                }
-              },
-              "flatPath": "v1/projects/{projectsId}/operations/{operationsId}",
-              "path": "v1/{+name}",
-              "id": "ml.projects.operations.get",
-              "description": "Gets the latest state of a long-running operation.  Clients can use this\nmethod to poll the operation result at intervals as recommended by the API\nservice."
-            },
             "cancel": {
               "httpMethod": "POST",
               "response": {
@@ -1209,11 +1147,11 @@
               ],
               "parameters": {
                 "name": {
-                  "location": "path",
                   "description": "The name of the operation resource to be cancelled.",
                   "required": true,
                   "type": "string",
-                  "pattern": "^projects/[^/]+/operations/[^/]+$"
+                  "pattern": "^projects/[^/]+/operations/[^/]+$",
+                  "location": "path"
                 }
               },
               "scopes": [
@@ -1225,92 +1163,227 @@
               "description": "Starts asynchronous cancellation on a long-running operation.  The server\nmakes a best effort to cancel the operation, but success is not\nguaranteed.  If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`.  Clients can use\nOperations.GetOperation or\nother methods to check whether the cancellation succeeded or whether the\noperation completed despite cancellation. On successful cancellation,\nthe operation is not deleted; instead, it becomes an operation with\nan Operation.error value with a google.rpc.Status.code of 1,\ncorresponding to `Code.CANCELLED`."
             },
             "delete": {
-              "httpMethod": "DELETE",
+              "flatPath": "v1/projects/{projectsId}/operations/{operationsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.operations.delete",
+              "description": "Deletes a long-running operation. This method indicates that the client is\nno longer interested in the operation result. It does not cancel the\noperation. If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`.",
               "response": {
                 "$ref": "GoogleProtobuf__Empty"
               },
               "parameterOrder": [
                 "name"
               ],
+              "httpMethod": "DELETE",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
               "parameters": {
                 "name": {
+                  "description": "The name of the operation resource to be deleted.",
                   "required": true,
                   "type": "string",
                   "pattern": "^projects/[^/]+/operations/[^/]+$",
+                  "location": "path"
+                }
+              }
+            },
+            "list": {
+              "httpMethod": "GET",
+              "response": {
+                "$ref": "GoogleLongrunning__ListOperationsResponse"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "filter": {
+                  "location": "query",
+                  "description": "The standard list filter.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "The name of the operation's parent resource.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+$",
+                  "location": "path"
+                },
+                "pageToken": {
+                  "description": "The standard list page token.",
+                  "type": "string",
+                  "location": "query"
+                },
+                "pageSize": {
+                  "description": "The standard list page size.",
+                  "format": "int32",
+                  "type": "integer",
+                  "location": "query"
+                }
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "flatPath": "v1/projects/{projectsId}/operations",
+              "id": "ml.projects.operations.list",
+              "path": "v1/{+name}/operations",
+              "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`. To\noverride the binding, API services can add a binding such as\n`\"/v1/{name=users/*}/operations\"` to their service configuration.\nFor backwards compatibility, the default name includes the operations\ncollection id, however overriding users must ensure the name binding\nis the parent resource, without the operations collection id."
+            },
+            "get": {
+              "description": "Gets the latest state of a long-running operation.  Clients can use this\nmethod to poll the operation result at intervals as recommended by the API\nservice.",
+              "httpMethod": "GET",
+              "response": {
+                "$ref": "GoogleLongrunning__Operation"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
                   "location": "path",
-                  "description": "The name of the operation resource to be deleted."
+                  "description": "The name of the operation resource.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/operations/[^/]+$"
                 }
               },
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ],
               "flatPath": "v1/projects/{projectsId}/operations/{operationsId}",
-              "id": "ml.projects.operations.delete",
-              "path": "v1/{+name}",
-              "description": "Deletes a long-running operation. This method indicates that the client is\nno longer interested in the operation result. It does not cancel the\noperation. If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`."
+              "id": "ml.projects.operations.get",
+              "path": "v1/{+name}"
             }
           }
         },
         "models": {
           "methods": {
-            "getIamPolicy": {
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:getIamPolicy",
-              "path": "v1/{+resource}:getIamPolicy",
-              "id": "ml.projects.models.getIamPolicy",
-              "description": "Gets the access control policy for a resource.\nReturns an empty policy if the resource exists and does not have a policy\nset.",
+            "list": {
+              "response": {
+                "$ref": "GoogleCloudMlV1__ListModelsResponse"
+              },
+              "parameterOrder": [
+                "parent"
+              ],
+              "httpMethod": "GET",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The number of models to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
+                  "format": "int32",
+                  "type": "integer",
+                  "location": "query"
+                },
+                "parent": {
+                  "description": "Required. The name of the project whose models are to be listed.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+$",
+                  "location": "path"
+                },
+                "filter": {
+                  "location": "query",
+                  "description": "Optional. Specifies the subset of models to retrieve.",
+                  "type": "string"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call.",
+                  "type": "string",
+                  "location": "query"
+                }
+              },
+              "flatPath": "v1/projects/{projectsId}/models",
+              "path": "v1/{+parent}/models",
+              "id": "ml.projects.models.list",
+              "description": "Lists the models in a project.\n\nEach project can contain multiple models, and each model can have multiple\nversions.\n\nIf there are no models that match the request parameters, the list request\nreturns an empty response body: {}."
+            },
+            "setIamPolicy": {
+              "description": "Sets the access control policy on the specified resource. Replaces any\nexisting policy.",
+              "request": {
+                "$ref": "GoogleIamV1__SetIamPolicyRequest"
+              },
               "response": {
                 "$ref": "GoogleIamV1__Policy"
               },
               "parameterOrder": [
                 "resource"
               ],
-              "httpMethod": "GET",
+              "httpMethod": "POST",
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ],
               "parameters": {
                 "resource": {
                   "location": "path",
-                  "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
+                  "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
                   "required": true,
                   "type": "string",
                   "pattern": "^projects/[^/]+/models/[^/]+$"
                 }
-              }
+              },
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:setIamPolicy",
+              "path": "v1/{+resource}:setIamPolicy",
+              "id": "ml.projects.models.setIamPolicy"
             },
-            "get": {
+            "create": {
+              "description": "Creates a model which will later contain one or more versions.\n\nYou must add at least one version before you can request predictions from\nthe model. Add versions by calling\n[projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create).",
+              "request": {
+                "$ref": "GoogleCloudMlV1__Model"
+              },
               "response": {
                 "$ref": "GoogleCloudMlV1__Model"
               },
               "parameterOrder": [
-                "name"
+                "parent"
               ],
-              "httpMethod": "GET",
+              "httpMethod": "POST",
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ],
               "parameters": {
-                "name": {
+                "parent": {
+                  "description": "Required. The project name.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+$",
+                  "location": "path"
+                }
+              },
+              "flatPath": "v1/projects/{projectsId}/models",
+              "path": "v1/{+parent}/models",
+              "id": "ml.projects.models.create"
+            },
+            "getIamPolicy": {
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:getIamPolicy",
+              "id": "ml.projects.models.getIamPolicy",
+              "path": "v1/{+resource}:getIamPolicy",
+              "description": "Gets the access control policy for a resource.\nReturns an empty policy if the resource exists and does not have a policy\nset.",
+              "httpMethod": "GET",
+              "response": {
+                "$ref": "GoogleIamV1__Policy"
+              },
+              "parameterOrder": [
+                "resource"
+              ],
+              "parameters": {
+                "resource": {
+                  "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
                   "required": true,
                   "type": "string",
                   "pattern": "^projects/[^/]+/models/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The name of the model."
+                  "location": "path"
                 }
               },
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
-              "path": "v1/{+name}",
-              "id": "ml.projects.models.get",
-              "description": "Gets information about a model, including its name, the description (if\nset), and the default version (if at least one version of the model has\nbeen deployed)."
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
             },
             "patch": {
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
-              "path": "v1/{+name}",
-              "id": "ml.projects.models.patch",
+              "description": "Updates a specific model resource.\n\nCurrently the only supported fields to update are `description` and\n`default_version.name`.",
               "request": {
                 "$ref": "GoogleCloudMlV1__Model"
               },
-              "description": "Updates a specific model resource.\n\nCurrently the only supported fields to update are `description` and\n`default_version.name`.",
               "response": {
                 "$ref": "GoogleLongrunning__Operation"
               },
@@ -1318,12 +1391,15 @@
                 "name"
               ],
               "httpMethod": "PATCH",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
               "parameters": {
                 "updateMask": {
-                  "location": "query",
                   "description": "Required. Specifies the path, relative to `Model`, of the field to update.\n\nFor example, to change the description of a model to \"foo\" and set its\ndefault version to \"version_1\", the `update_mask` parameter would be\nspecified as `description`, `default_version.name`, and the `PATCH`\nrequest body would specify the new value, as follows:\n    {\n      \"description\": \"foo\",\n      \"defaultVersion\": {\n        \"name\":\"version_1\"\n      }\n    }\nIn this example, the model is blindly overwritten since no etag is given.\n\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your model resource.\n\nCurrently the supported update masks are `description`,\n`default_version.name`, `labels`, and `etag`.",
                   "format": "google-fieldmask",
-                  "type": "string"
+                  "type": "string",
+                  "location": "query"
                 },
                 "name": {
                   "location": "path",
@@ -1333,11 +1409,43 @@
                   "pattern": "^projects/[^/]+/models/[^/]+$"
                 }
               },
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.models.patch"
+            },
+            "get": {
+              "description": "Gets information about a model, including its name, the description (if\nset), and the default version (if at least one version of the model has\nbeen deployed).",
+              "response": {
+                "$ref": "GoogleCloudMlV1__Model"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "httpMethod": "GET",
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
-              ]
+              ],
+              "parameters": {
+                "name": {
+                  "location": "path",
+                  "description": "Required. The name of the model.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/models/[^/]+$"
+                }
+              },
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.models.get"
             },
             "testIamPermissions": {
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:testIamPermissions",
+              "path": "v1/{+resource}:testIamPermissions",
+              "id": "ml.projects.models.testIamPermissions",
+              "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+              "request": {
+                "$ref": "GoogleIamV1__TestIamPermissionsRequest"
+              },
               "response": {
                 "$ref": "GoogleIamV1__TestIamPermissionsResponse"
               },
@@ -1345,25 +1453,18 @@
                 "resource"
               ],
               "httpMethod": "POST",
-              "parameters": {
-                "resource": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/models/[^/]+$",
-                  "location": "path",
-                  "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field."
-                }
-              },
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ],
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:testIamPermissions",
-              "path": "v1/{+resource}:testIamPermissions",
-              "id": "ml.projects.models.testIamPermissions",
-              "request": {
-                "$ref": "GoogleIamV1__TestIamPermissionsRequest"
-              },
-              "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning."
+              "parameters": {
+                "resource": {
+                  "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/models/[^/]+$",
+                  "location": "path"
+                }
+              }
             },
             "delete": {
               "description": "Deletes a model.\n\nYou can only delete a model if there are no versions in it. You can delete\nversions by calling\n[projects.models.versions.delete](/ml-engine/reference/rest/v1/projects.models.versions/delete).",
@@ -1379,165 +1480,46 @@
               ],
               "parameters": {
                 "name": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/models/[^/]+$",
                   "location": "path",
-                  "description": "Required. The name of the model."
-                }
-              },
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
-              "path": "v1/{+name}",
-              "id": "ml.projects.models.delete"
-            },
-            "list": {
-              "description": "Lists the models in a project.\n\nEach project can contain multiple models, and each model can have multiple\nversions.",
-              "response": {
-                "$ref": "GoogleCloudMlV1__ListModelsResponse"
-              },
-              "parameterOrder": [
-                "parent"
-              ],
-              "httpMethod": "GET",
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "parameters": {
-                "pageToken": {
-                  "location": "query",
-                  "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call.",
-                  "type": "string"
-                },
-                "pageSize": {
-                  "type": "integer",
-                  "location": "query",
-                  "description": "Optional. The number of models to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
-                  "format": "int32"
-                },
-                "parent": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The name of the project whose models are to be listed."
-                },
-                "filter": {
-                  "type": "string",
-                  "location": "query",
-                  "description": "Optional. Specifies the subset of models to retrieve."
-                }
-              },
-              "flatPath": "v1/projects/{projectsId}/models",
-              "path": "v1/{+parent}/models",
-              "id": "ml.projects.models.list"
-            },
-            "create": {
-              "response": {
-                "$ref": "GoogleCloudMlV1__Model"
-              },
-              "parameterOrder": [
-                "parent"
-              ],
-              "httpMethod": "POST",
-              "parameters": {
-                "parent": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The project name."
-                }
-              },
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "flatPath": "v1/projects/{projectsId}/models",
-              "path": "v1/{+parent}/models",
-              "id": "ml.projects.models.create",
-              "request": {
-                "$ref": "GoogleCloudMlV1__Model"
-              },
-              "description": "Creates a model which will later contain one or more versions.\n\nYou must add at least one version before you can request predictions from\nthe model. Add versions by calling\n[projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)."
-            },
-            "setIamPolicy": {
-              "request": {
-                "$ref": "GoogleIamV1__SetIamPolicyRequest"
-              },
-              "description": "Sets the access control policy on the specified resource. Replaces any\nexisting policy.",
-              "response": {
-                "$ref": "GoogleIamV1__Policy"
-              },
-              "parameterOrder": [
-                "resource"
-              ],
-              "httpMethod": "POST",
-              "parameters": {
-                "resource": {
-                  "location": "path",
-                  "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
+                  "description": "Required. The name of the model.",
                   "required": true,
                   "type": "string",
                   "pattern": "^projects/[^/]+/models/[^/]+$"
                 }
               },
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "flatPath": "v1/projects/{projectsId}/models/{modelsId}:setIamPolicy",
-              "path": "v1/{+resource}:setIamPolicy",
-              "id": "ml.projects.models.setIamPolicy"
+              "flatPath": "v1/projects/{projectsId}/models/{modelsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.models.delete"
             }
           },
           "resources": {
             "versions": {
               "methods": {
-                "delete": {
-                  "description": "Deletes a model version.\n\nEach model can have multiple versions deployed and in use at any given\ntime. Use this method to remove a single version.\n\nNote: You cannot delete the version that is set as the default version\nof the model unless it is the only remaining version.",
-                  "response": {
-                    "$ref": "GoogleLongrunning__Operation"
-                  },
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "httpMethod": "DELETE",
-                  "parameters": {
-                    "name": {
-                      "location": "path",
-                      "description": "Required. The name of the version. You can get the names of all the\nversions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).",
-                      "required": true,
-                      "type": "string",
-                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$"
-                    }
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
-                  "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
-                  "path": "v1/{+name}",
-                  "id": "ml.projects.models.versions.delete"
-                },
                 "list": {
+                  "description": "Gets basic information about all the versions of a model.\n\nIf you expect that a model has many versions, or if you need to handle\nonly a limited number of results at a time, you can request that the list\nbe retrieved in batches (called pages).\n\nIf there are no versions that match the request parameters, the list\nrequest returns an empty response body: {}.",
+                  "httpMethod": "GET",
                   "response": {
                     "$ref": "GoogleCloudMlV1__ListVersionsResponse"
                   },
                   "parameterOrder": [
                     "parent"
                   ],
-                  "httpMethod": "GET",
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
                   "parameters": {
+                    "filter": {
+                      "location": "query",
+                      "description": "Optional. Specifies the subset of versions to retrieve.",
+                      "type": "string"
+                    },
                     "pageToken": {
                       "location": "query",
                       "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call.",
                       "type": "string"
                     },
                     "pageSize": {
-                      "type": "integer",
                       "location": "query",
                       "description": "Optional. The number of versions to retrieve per \"page\" of results. If\nthere are more remaining results than this number, the response message\nwill contain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
-                      "format": "int32"
+                      "format": "int32",
+                      "type": "integer"
                     },
                     "parent": {
                       "location": "path",
@@ -1545,17 +1527,14 @@
                       "required": true,
                       "type": "string",
                       "pattern": "^projects/[^/]+/models/[^/]+$"
-                    },
-                    "filter": {
-                      "location": "query",
-                      "description": "Optional. Specifies the subset of versions to retrieve.",
-                      "type": "string"
                     }
                   },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ],
                   "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions",
-                  "path": "v1/{+parent}/versions",
                   "id": "ml.projects.models.versions.list",
-                  "description": "Gets basic information about all the versions of a model.\n\nIf you expect that a model has a lot of versions, or if you need to handle\nonly a limited number of results at a time, you can request that the list\nbe retrieved in batches (called pages):"
+                  "path": "v1/{+parent}/versions"
                 },
                 "create": {
                   "response": {
@@ -1567,11 +1546,11 @@
                   "httpMethod": "POST",
                   "parameters": {
                     "parent": {
-                      "location": "path",
                       "description": "Required. The name of the model.",
                       "required": true,
                       "type": "string",
-                      "pattern": "^projects/[^/]+/models/[^/]+$"
+                      "pattern": "^projects/[^/]+/models/[^/]+$",
+                      "location": "path"
                     }
                   },
                   "scopes": [
@@ -1584,31 +1563,6 @@
                     "$ref": "GoogleCloudMlV1__Version"
                   },
                   "description": "Creates a new version of a model from a trained TensorFlow model.\n\nIf the version created in the cloud by this call is the first deployed\nversion of the specified model, it will be made the default version of the\nmodel. When you add a version to a model that already has one or more\nversions, the default version does not automatically change. If you want a\nnew version to be the default, you must call\n[projects.models.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault)."
-                },
-                "get": {
-                  "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
-                  "path": "v1/{+name}",
-                  "id": "ml.projects.models.versions.get",
-                  "description": "Gets information about a model version.\n\nModels can have multiple versions. You can call\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list)\nto get the same information that this method returns for all of the\nversions of a model.",
-                  "response": {
-                    "$ref": "GoogleCloudMlV1__Version"
-                  },
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "httpMethod": "GET",
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
-                  "parameters": {
-                    "name": {
-                      "location": "path",
-                      "description": "Required. The name of the version.",
-                      "required": true,
-                      "type": "string",
-                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$"
-                    }
-                  }
                 },
                 "patch": {
                   "description": "Updates the specified Version resource.\n\nCurrently the only supported field to update is `description`.",
@@ -1626,271 +1580,174 @@
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
                   "parameters": {
-                    "name": {
-                      "required": true,
-                      "type": "string",
-                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$",
-                      "location": "path",
-                      "description": "Required. The name of the model."
-                    },
                     "updateMask": {
                       "location": "query",
-                      "description": "Required. Specifies the path, relative to `Version`, of the field to\nupdate. Must be present and non-empty.\n\nFor example, to change the description of a version to \"foo\", the\n`update_mask` parameter would be specified as `description`, and the\n`PATCH` request body would specify the new value, as follows:\n    {\n      \"description\": \"foo\"\n    }\nIn this example, the version is blindly overwritten since no etag is given.\n\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your version resource.\n\nCurrently the only supported update masks are `description`, `labels`, and\n`etag`.",
+                      "description": "Required. Specifies the path, relative to `Version`, of the field to\nupdate. Must be present and non-empty.\n\nFor example, to change the description of a version to \"foo\", the\n`update_mask` parameter would be specified as `description`, and the\n`PATCH` request body would specify the new value, as follows:\n    {\n      \"description\": \"foo\"\n    }\nIn this example, the version is blindly overwritten since no etag is given.\n\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your version resource.\n\nCurrently the only supported update masks are `description`, `labels`, and\n`etag`, and `expire_time`.",
                       "format": "google-fieldmask",
                       "type": "string"
+                    },
+                    "name": {
+                      "location": "path",
+                      "description": "Required. The name of the model.",
+                      "required": true,
+                      "type": "string",
+                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$"
                     }
                   },
                   "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
                   "path": "v1/{+name}",
                   "id": "ml.projects.models.versions.patch"
                 },
-                "setDefault": {
-                  "httpMethod": "POST",
-                  "parameterOrder": [
-                    "name"
-                  ],
+                "get": {
+                  "description": "Gets information about a model version.\n\nModels can have multiple versions. You can call\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list)\nto get the same information that this method returns for all of the\nversions of a model.",
+                  "httpMethod": "GET",
                   "response": {
                     "$ref": "GoogleCloudMlV1__Version"
                   },
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "location": "path",
+                      "description": "Required. The name of the version.",
+                      "required": true,
+                      "type": "string",
+                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$"
+                    }
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ],
+                  "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
+                  "id": "ml.projects.models.versions.get",
+                  "path": "v1/{+name}"
+                },
+                "setDefault": {
+                  "description": "Designates a version to be the default for the model.\n\nThe default version is used for prediction requests made against the model\nthat don't specify a version.\n\nThe first version to be created for a model is automatically set as the\ndefault. You must make any subsequent changes to the default version\nsetting manually using this method.",
+                  "request": {
+                    "$ref": "GoogleCloudMlV1__SetDefaultVersionRequest"
+                  },
+                  "response": {
+                    "$ref": "GoogleCloudMlV1__Version"
+                  },
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "httpMethod": "POST",
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
                   "parameters": {
                     "name": {
+                      "location": "path",
+                      "description": "Required. The name of the version to make the default for the model. You\ncan get the names of all the versions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).",
                       "required": true,
                       "type": "string",
-                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$",
-                      "location": "path",
-                      "description": "Required. The name of the version to make the default for the model. You\ncan get the names of all the versions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list)."
+                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$"
                     }
                   },
                   "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}:setDefault",
-                  "id": "ml.projects.models.versions.setDefault",
                   "path": "v1/{+name}:setDefault",
-                  "description": "Designates a version to be the default for the model.\n\nThe default version is used for prediction requests made against the model\nthat don't specify a version.\n\nThe first version to be created for a model is automatically set as the\ndefault. You must make any subsequent changes to the default version\nsetting manually using this method.",
-                  "request": {
-                    "$ref": "GoogleCloudMlV1__SetDefaultVersionRequest"
-                  }
+                  "id": "ml.projects.models.versions.setDefault"
+                },
+                "delete": {
+                  "description": "Deletes a model version.\n\nEach model can have multiple versions deployed and in use at any given\ntime. Use this method to remove a single version.\n\nNote: You cannot delete the version that is set as the default version\nof the model unless it is the only remaining version.",
+                  "response": {
+                    "$ref": "GoogleLongrunning__Operation"
+                  },
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "httpMethod": "DELETE",
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the version. You can get the names of all the\nversions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).",
+                      "required": true,
+                      "type": "string",
+                      "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$",
+                      "location": "path"
+                    }
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ],
+                  "flatPath": "v1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
+                  "path": "v1/{+name}",
+                  "id": "ml.projects.models.versions.delete"
                 }
               }
             }
           }
         },
-        "jobs": {
+        "locations": {
           "methods": {
-            "list": {
-              "flatPath": "v1/projects/{projectsId}/jobs",
-              "path": "v1/{+parent}/jobs",
-              "id": "ml.projects.jobs.list",
-              "description": "Lists the jobs in the project.",
-              "response": {
-                "$ref": "GoogleCloudMlV1__ListJobsResponse"
-              },
-              "parameterOrder": [
-                "parent"
-              ],
+            "get": {
+              "flatPath": "v1/projects/{projectsId}/locations/{locationsId}",
+              "id": "ml.projects.locations.get",
+              "path": "v1/{+name}",
+              "description": "Get the complete list of CMLE capabilities in a location, along with their\nlocation-specific properties.",
               "httpMethod": "GET",
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "parameters": {
-                "parent": {
-                  "location": "path",
-                  "description": "Required. The name of the project for which to list jobs.",
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+$"
-                },
-                "filter": {
-                  "type": "string",
-                  "location": "query",
-                  "description": "Optional. Specifies the subset of jobs to retrieve."
-                },
-                "pageToken": {
-                  "type": "string",
-                  "location": "query",
-                  "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call."
-                },
-                "pageSize": {
-                  "location": "query",
-                  "description": "Optional. The number of jobs to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
-                  "format": "int32",
-                  "type": "integer"
-                }
-              }
-            },
-            "setIamPolicy": {
               "response": {
-                "$ref": "GoogleIamV1__Policy"
+                "$ref": "GoogleCloudMlV1__Location"
               },
-              "parameterOrder": [
-                "resource"
-              ],
-              "httpMethod": "POST",
-              "parameters": {
-                "resource": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
-                  "location": "path",
-                  "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field."
-                }
-              },
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:setIamPolicy",
-              "path": "v1/{+resource}:setIamPolicy",
-              "id": "ml.projects.jobs.setIamPolicy",
-              "request": {
-                "$ref": "GoogleIamV1__SetIamPolicyRequest"
-              },
-              "description": "Sets the access control policy on the specified resource. Replaces any\nexisting policy."
-            },
-            "create": {
-              "httpMethod": "POST",
-              "parameterOrder": [
-                "parent"
-              ],
-              "response": {
-                "$ref": "GoogleCloudMlV1__Job"
-              },
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "parameters": {
-                "parent": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The project name."
-                }
-              },
-              "flatPath": "v1/projects/{projectsId}/jobs",
-              "id": "ml.projects.jobs.create",
-              "path": "v1/{+parent}/jobs",
-              "description": "Creates a training or a batch prediction job.",
-              "request": {
-                "$ref": "GoogleCloudMlV1__Job"
-              }
-            },
-            "cancel": {
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:cancel",
-              "id": "ml.projects.jobs.cancel",
-              "path": "v1/{+name}:cancel",
-              "request": {
-                "$ref": "GoogleCloudMlV1__CancelJobRequest"
-              },
-              "description": "Cancels a running job.",
-              "httpMethod": "POST",
               "parameterOrder": [
                 "name"
               ],
-              "response": {
-                "$ref": "GoogleProtobuf__Empty"
-              },
               "parameters": {
                 "name": {
+                  "location": "path",
+                  "description": "Required. The name of the location.",
                   "required": true,
                   "type": "string",
-                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The name of the job to cancel."
+                  "pattern": "^projects/[^/]+/locations/[^/]+$"
                 }
               },
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ]
             },
-            "getIamPolicy": {
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:getIamPolicy",
-              "path": "v1/{+resource}:getIamPolicy",
-              "id": "ml.projects.jobs.getIamPolicy",
-              "description": "Gets the access control policy for a resource.\nReturns an empty policy if the resource exists and does not have a policy\nset.",
+            "list": {
+              "description": "List all locations that provides at least one type of CMLE capability.",
               "response": {
-                "$ref": "GoogleIamV1__Policy"
+                "$ref": "GoogleCloudMlV1__ListLocationsResponse"
               },
               "parameterOrder": [
-                "resource"
+                "parent"
               ],
               "httpMethod": "GET",
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
               "parameters": {
-                "resource": {
-                  "location": "path",
-                  "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/jobs/[^/]+$"
-                }
-              }
-            },
-            "patch": {
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}",
-              "path": "v1/{+name}",
-              "id": "ml.projects.jobs.patch",
-              "description": "Updates a specific job resource.\n\nCurrently the only supported fields to update are `labels`.",
-              "request": {
-                "$ref": "GoogleCloudMlV1__Job"
-              },
-              "response": {
-                "$ref": "GoogleCloudMlV1__Job"
-              },
-              "parameterOrder": [
-                "name"
-              ],
-              "httpMethod": "PATCH",
-              "scopes": [
-                "https://www.googleapis.com/auth/cloud-platform"
-              ],
-              "parameters": {
-                "name": {
-                  "required": true,
-                  "type": "string",
-                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The job name."
+                "pageSize": {
+                  "description": "Optional. The number of locations to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
+                  "format": "int32",
+                  "type": "integer",
+                  "location": "query"
                 },
-                "updateMask": {
-                  "type": "string",
-                  "location": "query",
-                  "description": "Required. Specifies the path, relative to `Job`, of the field to update.\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your job resource.\n\nFor example, to change the labels of a job, the `update_mask` parameter\nwould be specified as `labels`, `etag`, and the\n`PATCH` request body would specify the new value, as follows:\n    {\n      \"labels\": {\n         \"owner\": \"Google\",\n         \"color\": \"Blue\"\n      }\n      \"etag\": \"33a64df551425fcc55e4d42a148795d9f25f89d4\"\n    }\nIf `etag` matches the one on the server, the labels of the job will be\nreplaced with the given ones, and the server end `etag` will be\nrecalculated.\n\nCurrently the only supported update masks are `labels` and `etag`.",
-                  "format": "google-fieldmask"
-                }
-              }
-            },
-            "get": {
-              "description": "Describes a job.",
-              "httpMethod": "GET",
-              "parameterOrder": [
-                "name"
-              ],
-              "response": {
-                "$ref": "GoogleCloudMlV1__Job"
-              },
-              "parameters": {
-                "name": {
+                "parent": {
+                  "location": "path",
+                  "description": "Required. The name of the project for which available locations are to be\nlisted (since some locations might be whitelisted for specific projects).",
                   "required": true,
                   "type": "string",
-                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
-                  "location": "path",
-                  "description": "Required. The name of the job to get the description of."
+                  "pattern": "^projects/[^/]+$"
+                },
+                "pageToken": {
+                  "location": "query",
+                  "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call.",
+                  "type": "string"
                 }
               },
               "scopes": [
                 "https://www.googleapis.com/auth/cloud-platform"
               ],
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}",
-              "id": "ml.projects.jobs.get",
-              "path": "v1/{+name}"
-            },
+              "flatPath": "v1/projects/{projectsId}/locations",
+              "path": "v1/{+parent}/locations",
+              "id": "ml.projects.locations.list"
+            }
+          }
+        },
+        "jobs": {
+          "methods": {
             "testIamPermissions": {
-              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:testIamPermissions",
-              "path": "v1/{+resource}:testIamPermissions",
-              "id": "ml.projects.jobs.testIamPermissions",
               "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
               "request": {
                 "$ref": "GoogleIamV1__TestIamPermissionsRequest"
@@ -1913,7 +1770,219 @@
                   "type": "string",
                   "pattern": "^projects/[^/]+/jobs/[^/]+$"
                 }
+              },
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:testIamPermissions",
+              "path": "v1/{+resource}:testIamPermissions",
+              "id": "ml.projects.jobs.testIamPermissions"
+            },
+            "list": {
+              "response": {
+                "$ref": "GoogleCloudMlV1__ListJobsResponse"
+              },
+              "parameterOrder": [
+                "parent"
+              ],
+              "httpMethod": "GET",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "location": "query",
+                  "description": "Optional. The number of jobs to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
+                  "format": "int32",
+                  "type": "integer"
+                },
+                "parent": {
+                  "location": "path",
+                  "description": "Required. The name of the project for which to list jobs.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+$"
+                },
+                "filter": {
+                  "location": "query",
+                  "description": "Optional. Specifies the subset of jobs to retrieve.\nYou can filter on the value of one or more attributes of the job object.\nFor example, retrieve jobs with a job identifier that starts with 'census':\n\u003cp\u003e\u003ccode\u003egcloud ml-engine jobs list --filter='jobId:census*'\u003c/code\u003e\n\u003cp\u003eList all failed jobs with names that start with 'rnn':\n\u003cp\u003e\u003ccode\u003egcloud ml-engine jobs list --filter='jobId:rnn*\nAND state:FAILED'\u003c/code\u003e\n\u003cp\u003eFor more examples, see the guide to\n\u003ca href=\"/ml-engine/docs/monitor-training\"\u003emonitoring jobs\u003c/a\u003e.",
+                  "type": "string"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token to request the next page of results.\n\nYou get the token from the `next_page_token` field of the response from\nthe previous call.",
+                  "type": "string",
+                  "location": "query"
+                }
+              },
+              "flatPath": "v1/projects/{projectsId}/jobs",
+              "path": "v1/{+parent}/jobs",
+              "id": "ml.projects.jobs.list",
+              "description": "Lists the jobs in the project.\n\nIf there are no jobs that match the request parameters, the list\nrequest returns an empty response body: {}."
+            },
+            "setIamPolicy": {
+              "response": {
+                "$ref": "GoogleIamV1__Policy"
+              },
+              "parameterOrder": [
+                "resource"
+              ],
+              "httpMethod": "POST",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "parameters": {
+                "resource": {
+                  "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
+                  "location": "path"
+                }
+              },
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:setIamPolicy",
+              "path": "v1/{+resource}:setIamPolicy",
+              "id": "ml.projects.jobs.setIamPolicy",
+              "description": "Sets the access control policy on the specified resource. Replaces any\nexisting policy.",
+              "request": {
+                "$ref": "GoogleIamV1__SetIamPolicyRequest"
               }
+            },
+            "create": {
+              "flatPath": "v1/projects/{projectsId}/jobs",
+              "path": "v1/{+parent}/jobs",
+              "id": "ml.projects.jobs.create",
+              "description": "Creates a training or a batch prediction job.",
+              "request": {
+                "$ref": "GoogleCloudMlV1__Job"
+              },
+              "response": {
+                "$ref": "GoogleCloudMlV1__Job"
+              },
+              "parameterOrder": [
+                "parent"
+              ],
+              "httpMethod": "POST",
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The project name.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+$",
+                  "location": "path"
+                }
+              }
+            },
+            "cancel": {
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:cancel",
+              "path": "v1/{+name}:cancel",
+              "id": "ml.projects.jobs.cancel",
+              "request": {
+                "$ref": "GoogleCloudMlV1__CancelJobRequest"
+              },
+              "description": "Cancels a running job.",
+              "response": {
+                "$ref": "GoogleProtobuf__Empty"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "httpMethod": "POST",
+              "parameters": {
+                "name": {
+                  "location": "path",
+                  "description": "Required. The name of the job to cancel.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/jobs/[^/]+$"
+                }
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "getIamPolicy": {
+              "description": "Gets the access control policy for a resource.\nReturns an empty policy if the resource exists and does not have a policy\nset.",
+              "httpMethod": "GET",
+              "response": {
+                "$ref": "GoogleIamV1__Policy"
+              },
+              "parameterOrder": [
+                "resource"
+              ],
+              "parameters": {
+                "resource": {
+                  "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/jobs/[^/]+$",
+                  "location": "path"
+                }
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}:getIamPolicy",
+              "id": "ml.projects.jobs.getIamPolicy",
+              "path": "v1/{+resource}:getIamPolicy"
+            },
+            "patch": {
+              "response": {
+                "$ref": "GoogleCloudMlV1__Job"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "httpMethod": "PATCH",
+              "parameters": {
+                "updateMask": {
+                  "location": "query",
+                  "description": "Required. Specifies the path, relative to `Job`, of the field to update.\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your job resource.\n\nFor example, to change the labels of a job, the `update_mask` parameter\nwould be specified as `labels`, `etag`, and the\n`PATCH` request body would specify the new value, as follows:\n    {\n      \"labels\": {\n         \"owner\": \"Google\",\n         \"color\": \"Blue\"\n      }\n      \"etag\": \"33a64df551425fcc55e4d42a148795d9f25f89d4\"\n    }\nIf `etag` matches the one on the server, the labels of the job will be\nreplaced with the given ones, and the server end `etag` will be\nrecalculated.\n\nCurrently the only supported update masks are `labels` and `etag`.",
+                  "format": "google-fieldmask",
+                  "type": "string"
+                },
+                "name": {
+                  "location": "path",
+                  "description": "Required. The job name.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/jobs/[^/]+$"
+                }
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.jobs.patch",
+              "request": {
+                "$ref": "GoogleCloudMlV1__Job"
+              },
+              "description": "Updates a specific job resource.\n\nCurrently the only supported fields to update are `labels`."
+            },
+            "get": {
+              "description": "Describes a job.",
+              "response": {
+                "$ref": "GoogleCloudMlV1__Job"
+              },
+              "parameterOrder": [
+                "name"
+              ],
+              "httpMethod": "GET",
+              "parameters": {
+                "name": {
+                  "location": "path",
+                  "description": "Required. The name of the job to get the description of.",
+                  "required": true,
+                  "type": "string",
+                  "pattern": "^projects/[^/]+/jobs/[^/]+$"
+                }
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ],
+              "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}",
+              "path": "v1/{+name}",
+              "id": "ml.projects.jobs.get"
             }
           }
         }
@@ -1921,62 +1990,72 @@
     }
   },
   "parameters": {
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "type": "string",
+      "location": "query"
+    },
     "pp": {
       "location": "query",
       "description": "Pretty-print response.",
       "type": "boolean",
       "default": "true"
     },
-    "oauth_token": {
-      "type": "string",
-      "location": "query",
-      "description": "OAuth 2.0 token for the current user."
-    },
     "bearer_token": {
       "location": "query",
       "description": "OAuth bearer token.",
       "type": "string"
     },
-    "upload_protocol": {
+    "oauth_token": {
       "location": "query",
-      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "description": "OAuth 2.0 token for the current user.",
       "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "type": "string",
+      "location": "query"
     },
     "prettyPrint": {
-      "type": "boolean",
-      "default": "true",
       "location": "query",
-      "description": "Returns response with indentations and line breaks."
+      "description": "Returns response with indentations and line breaks.",
+      "type": "boolean",
+      "default": "true"
     },
     "fields": {
-      "location": "query",
       "description": "Selector specifying which fields to include in a partial response.",
-      "type": "string"
+      "type": "string",
+      "location": "query"
     },
     "uploadType": {
       "location": "query",
       "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
       "type": "string"
     },
+    "callback": {
+      "description": "JSONP",
+      "type": "string",
+      "location": "query"
+    },
     "$.xgafv": {
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
       "location": "query",
       "enum": [
         "1",
         "2"
       ],
       "description": "V1 error format.",
-      "type": "string",
-      "enumDescriptions": [
-        "v1 error format",
-        "v2 error format"
-      ]
-    },
-    "callback": {
-      "type": "string",
-      "location": "query",
-      "description": "JSONP"
+      "type": "string"
     },
     "alt": {
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
       "location": "query",
       "description": "Data format for response.",
       "default": "json",
@@ -1985,12 +2064,7 @@
         "media",
         "proto"
       ],
-      "type": "string",
-      "enumDescriptions": [
-        "Responses with Content-Type of application/json",
-        "Media download with context-dependent Content-Type",
-        "Responses with Content-Type of application/x-protobuf"
-      ]
+      "type": "string"
     },
     "access_token": {
       "location": "query",
@@ -1998,19 +2072,20 @@
       "type": "string"
     },
     "key": {
-      "location": "query",
       "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
-      "type": "string"
-    },
-    "quotaUser": {
       "type": "string",
-      "location": "query",
-      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters."
+      "location": "query"
     }
   },
   "version": "v1",
   "baseUrl": "https://ml.googleapis.com/",
-  "kind": "discovery#restDescription",
+  "servicePath": "",
   "description": "An API to enable creating and using machine learning models.",
-  "servicePath": ""
+  "kind": "discovery#restDescription",
+  "basePath": "",
+  "documentationLink": "https://cloud.google.com/ml/",
+  "id": "ml:v1",
+  "revision": "20180114",
+  "discoveryVersion": "v1",
+  "version_module": true
 }

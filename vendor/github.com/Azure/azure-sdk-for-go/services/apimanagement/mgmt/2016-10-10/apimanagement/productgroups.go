@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ProductGroupsClient is the apiManagement Client
 type ProductGroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewProductGroupsClient creates an instance of the ProductGroupsClient client.
@@ -44,7 +45,7 @@ func NewProductGroupsClientWithBaseURI(baseURI string, subscriptionID string) Pr
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // productID is product identifier. Must be unique in the current API Management service instance. groupID is group
 // identifier. Must be unique in the current API Management service instance.
-func (client ProductGroupsClient) Create(resourceGroupName string, serviceName string, productID string, groupID string) (result autorest.Response, err error) {
+func (client ProductGroupsClient) Create(ctx context.Context, resourceGroupName string, serviceName string, productID string, groupID string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -61,7 +62,7 @@ func (client ProductGroupsClient) Create(resourceGroupName string, serviceName s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.ProductGroupsClient", "Create")
 	}
 
-	req, err := client.CreatePreparer(resourceGroupName, serviceName, productID, groupID)
+	req, err := client.CreatePreparer(ctx, resourceGroupName, serviceName, productID, groupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "Create", nil, "Failure preparing request")
 		return
@@ -83,7 +84,7 @@ func (client ProductGroupsClient) Create(resourceGroupName string, serviceName s
 }
 
 // CreatePreparer prepares the Create request.
-func (client ProductGroupsClient) CreatePreparer(resourceGroupName string, serviceName string, productID string, groupID string) (*http.Request, error) {
+func (client ProductGroupsClient) CreatePreparer(ctx context.Context, resourceGroupName string, serviceName string, productID string, groupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"productId":         autorest.Encode("path", productID),
@@ -102,14 +103,13 @@ func (client ProductGroupsClient) CreatePreparer(resourceGroupName string, servi
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/products/{productId}/groups/{groupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProductGroupsClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -130,7 +130,7 @@ func (client ProductGroupsClient) CreateResponder(resp *http.Response) (result a
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service.
 // productID is product identifier. Must be unique in the current API Management service instance. groupID is group
 // identifier. Must be unique in the current API Management service instance.
-func (client ProductGroupsClient) Delete(resourceGroupName string, serviceName string, productID string, groupID string) (result ErrorBodyContract, err error) {
+func (client ProductGroupsClient) Delete(ctx context.Context, resourceGroupName string, serviceName string, productID string, groupID string) (result ErrorBodyContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -147,7 +147,7 @@ func (client ProductGroupsClient) Delete(resourceGroupName string, serviceName s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.ProductGroupsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, serviceName, productID, groupID)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName, productID, groupID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -169,7 +169,7 @@ func (client ProductGroupsClient) Delete(resourceGroupName string, serviceName s
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ProductGroupsClient) DeletePreparer(resourceGroupName string, serviceName string, productID string, groupID string) (*http.Request, error) {
+func (client ProductGroupsClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string, productID string, groupID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"groupId":           autorest.Encode("path", groupID),
 		"productId":         autorest.Encode("path", productID),
@@ -188,14 +188,13 @@ func (client ProductGroupsClient) DeletePreparer(resourceGroupName string, servi
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/products/{productId}/groups/{groupId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProductGroupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -223,7 +222,7 @@ func (client ProductGroupsClient) DeleteResponder(resp *http.Response) (result E
 // | description | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith |
 // | type        | eq, ne                 | N/A                                         | top is number of records to
 // return. skip is number of records to skip.
-func (client ProductGroupsClient) ListByProducts(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result GroupCollection, err error) {
+func (client ProductGroupsClient) ListByProducts(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result GroupCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -242,7 +241,8 @@ func (client ProductGroupsClient) ListByProducts(resourceGroupName string, servi
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.ProductGroupsClient", "ListByProducts")
 	}
 
-	req, err := client.ListByProductsPreparer(resourceGroupName, serviceName, productID, filter, top, skip)
+	result.fn = client.listByProductsNextResults
+	req, err := client.ListByProductsPreparer(ctx, resourceGroupName, serviceName, productID, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", nil, "Failure preparing request")
 		return
@@ -250,12 +250,12 @@ func (client ProductGroupsClient) ListByProducts(resourceGroupName string, servi
 
 	resp, err := client.ListByProductsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.gc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByProductsResponder(resp)
+	result.gc, err = client.ListByProductsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", resp, "Failure responding to request")
 	}
@@ -264,7 +264,7 @@ func (client ProductGroupsClient) ListByProducts(resourceGroupName string, servi
 }
 
 // ListByProductsPreparer prepares the ListByProducts request.
-func (client ProductGroupsClient) ListByProductsPreparer(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client ProductGroupsClient) ListByProductsPreparer(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"productId":         autorest.Encode("path", productID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -291,14 +291,13 @@ func (client ProductGroupsClient) ListByProductsPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/products/{productId}/groups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByProductsSender sends the ListByProducts request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProductGroupsClient) ListByProductsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -315,71 +314,29 @@ func (client ProductGroupsClient) ListByProductsResponder(resp *http.Response) (
 	return
 }
 
-// ListByProductsNextResults retrieves the next set of results, if any.
-func (client ProductGroupsClient) ListByProductsNextResults(lastResults GroupCollection) (result GroupCollection, err error) {
-	req, err := lastResults.GroupCollectionPreparer()
+// listByProductsNextResults retrieves the next set of results, if any.
+func (client ProductGroupsClient) listByProductsNextResults(lastResults GroupCollection) (result GroupCollection, err error) {
+	req, err := lastResults.groupCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "listByProductsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByProductsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "listByProductsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByProductsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "ListByProducts", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.ProductGroupsClient", "listByProductsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByProductsComplete gets all elements from the list without paging.
-func (client ProductGroupsClient) ListByProductsComplete(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan GroupContract, <-chan error) {
-	resultChan := make(chan GroupContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByProducts(resourceGroupName, serviceName, productID, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByProductsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByProductsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProductGroupsClient) ListByProductsComplete(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result GroupCollectionIterator, err error) {
+	result.page, err = client.ListByProducts(ctx, resourceGroupName, serviceName, productID, filter, top, skip)
+	return
 }

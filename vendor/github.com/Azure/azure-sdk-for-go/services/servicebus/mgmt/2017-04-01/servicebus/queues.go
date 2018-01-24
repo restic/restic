@@ -18,6 +18,7 @@ package servicebus
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // QueuesClient is the azure Service Bus client
 type QueuesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewQueuesClient creates an instance of the QueuesClient client.
@@ -43,7 +44,7 @@ func NewQueuesClientWithBaseURI(baseURI string, subscriptionID string) QueuesCli
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. parameters is parameters supplied to create or update a queue resource.
-func (client QueuesClient) CreateOrUpdate(resourceGroupName string, namespaceName string, queueName string, parameters SBQueue) (result SBQueue, err error) {
+func (client QueuesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, parameters SBQueue) (result SBQueue, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -56,7 +57,7 @@ func (client QueuesClient) CreateOrUpdate(resourceGroupName string, namespaceNam
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, namespaceName, queueName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, namespaceName, queueName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -78,7 +79,7 @@ func (client QueuesClient) CreateOrUpdate(resourceGroupName string, namespaceNam
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client QueuesClient) CreateOrUpdatePreparer(resourceGroupName string, namespaceName string, queueName string, parameters SBQueue) (*http.Request, error) {
+func (client QueuesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, parameters SBQueue) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"queueName":         autorest.Encode("path", queueName),
@@ -98,14 +99,13 @@ func (client QueuesClient) CreateOrUpdatePreparer(resourceGroupName string, name
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -127,7 +127,7 @@ func (client QueuesClient) CreateOrUpdateResponder(resp *http.Response) (result 
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. authorizationRuleName is the authorizationrule name. parameters is the shared access
 // authorization rule.
-func (client QueuesClient) CreateOrUpdateAuthorizationRule(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters SBAuthorizationRule) (result SBAuthorizationRule, err error) {
+func (client QueuesClient) CreateOrUpdateAuthorizationRule(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters SBAuthorizationRule) (result SBAuthorizationRule, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -139,11 +139,14 @@ func (client QueuesClient) CreateOrUpdateAuthorizationRule(resourceGroupName str
 			Constraints: []validation.Constraint{{Target: "queueName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
 		{TargetValue: authorizationRuleName,
 			Constraints: []validation.Constraint{{Target: "authorizationRuleName", Name: validation.MaxLength, Rule: 50, Chain: nil},
-				{Target: "authorizationRuleName", Name: validation.MinLength, Rule: 1, Chain: nil}}}}); err != nil {
+				{Target: "authorizationRuleName", Name: validation.MinLength, Rule: 1, Chain: nil}}},
+		{TargetValue: parameters,
+			Constraints: []validation.Constraint{{Target: "parameters.SBAuthorizationRuleProperties", Name: validation.Null, Rule: false,
+				Chain: []validation.Constraint{{Target: "parameters.SBAuthorizationRuleProperties.Rights", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "CreateOrUpdateAuthorizationRule")
 	}
 
-	req, err := client.CreateOrUpdateAuthorizationRulePreparer(resourceGroupName, namespaceName, queueName, authorizationRuleName, parameters)
+	req, err := client.CreateOrUpdateAuthorizationRulePreparer(ctx, resourceGroupName, namespaceName, queueName, authorizationRuleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "CreateOrUpdateAuthorizationRule", nil, "Failure preparing request")
 		return
@@ -165,7 +168,7 @@ func (client QueuesClient) CreateOrUpdateAuthorizationRule(resourceGroupName str
 }
 
 // CreateOrUpdateAuthorizationRulePreparer prepares the CreateOrUpdateAuthorizationRule request.
-func (client QueuesClient) CreateOrUpdateAuthorizationRulePreparer(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters SBAuthorizationRule) (*http.Request, error) {
+func (client QueuesClient) CreateOrUpdateAuthorizationRulePreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters SBAuthorizationRule) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
 		"namespaceName":         autorest.Encode("path", namespaceName),
@@ -186,14 +189,13 @@ func (client QueuesClient) CreateOrUpdateAuthorizationRulePreparer(resourceGroup
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules/{authorizationRuleName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateAuthorizationRuleSender sends the CreateOrUpdateAuthorizationRule request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) CreateOrUpdateAuthorizationRuleSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -214,7 +216,7 @@ func (client QueuesClient) CreateOrUpdateAuthorizationRuleResponder(resp *http.R
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name.
-func (client QueuesClient) Delete(resourceGroupName string, namespaceName string, queueName string) (result autorest.Response, err error) {
+func (client QueuesClient) Delete(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -227,7 +229,7 @@ func (client QueuesClient) Delete(resourceGroupName string, namespaceName string
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, namespaceName, queueName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, namespaceName, queueName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -249,7 +251,7 @@ func (client QueuesClient) Delete(resourceGroupName string, namespaceName string
 }
 
 // DeletePreparer prepares the Delete request.
-func (client QueuesClient) DeletePreparer(resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
+func (client QueuesClient) DeletePreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"queueName":         autorest.Encode("path", queueName),
@@ -267,14 +269,13 @@ func (client QueuesClient) DeletePreparer(resourceGroupName string, namespaceNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -284,7 +285,7 @@ func (client QueuesClient) DeleteResponder(resp *http.Response) (result autorest
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -294,7 +295,7 @@ func (client QueuesClient) DeleteResponder(resp *http.Response) (result autorest
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. authorizationRuleName is the authorizationrule name.
-func (client QueuesClient) DeleteAuthorizationRule(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result autorest.Response, err error) {
+func (client QueuesClient) DeleteAuthorizationRule(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -310,7 +311,7 @@ func (client QueuesClient) DeleteAuthorizationRule(resourceGroupName string, nam
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "DeleteAuthorizationRule")
 	}
 
-	req, err := client.DeleteAuthorizationRulePreparer(resourceGroupName, namespaceName, queueName, authorizationRuleName)
+	req, err := client.DeleteAuthorizationRulePreparer(ctx, resourceGroupName, namespaceName, queueName, authorizationRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "DeleteAuthorizationRule", nil, "Failure preparing request")
 		return
@@ -332,7 +333,7 @@ func (client QueuesClient) DeleteAuthorizationRule(resourceGroupName string, nam
 }
 
 // DeleteAuthorizationRulePreparer prepares the DeleteAuthorizationRule request.
-func (client QueuesClient) DeleteAuthorizationRulePreparer(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
+func (client QueuesClient) DeleteAuthorizationRulePreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
 		"namespaceName":         autorest.Encode("path", namespaceName),
@@ -351,14 +352,13 @@ func (client QueuesClient) DeleteAuthorizationRulePreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules/{authorizationRuleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteAuthorizationRuleSender sends the DeleteAuthorizationRule request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) DeleteAuthorizationRuleSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -368,7 +368,7 @@ func (client QueuesClient) DeleteAuthorizationRuleResponder(resp *http.Response)
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -378,7 +378,7 @@ func (client QueuesClient) DeleteAuthorizationRuleResponder(resp *http.Response)
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name.
-func (client QueuesClient) Get(resourceGroupName string, namespaceName string, queueName string) (result SBQueue, err error) {
+func (client QueuesClient) Get(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (result SBQueue, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -391,7 +391,7 @@ func (client QueuesClient) Get(resourceGroupName string, namespaceName string, q
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, namespaceName, queueName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, namespaceName, queueName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "Get", nil, "Failure preparing request")
 		return
@@ -413,7 +413,7 @@ func (client QueuesClient) Get(resourceGroupName string, namespaceName string, q
 }
 
 // GetPreparer prepares the Get request.
-func (client QueuesClient) GetPreparer(resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
+func (client QueuesClient) GetPreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"queueName":         autorest.Encode("path", queueName),
@@ -431,14 +431,13 @@ func (client QueuesClient) GetPreparer(resourceGroupName string, namespaceName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -459,7 +458,7 @@ func (client QueuesClient) GetResponder(resp *http.Response) (result SBQueue, er
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. authorizationRuleName is the authorizationrule name.
-func (client QueuesClient) GetAuthorizationRule(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result SBAuthorizationRule, err error) {
+func (client QueuesClient) GetAuthorizationRule(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result SBAuthorizationRule, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -475,7 +474,7 @@ func (client QueuesClient) GetAuthorizationRule(resourceGroupName string, namesp
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "GetAuthorizationRule")
 	}
 
-	req, err := client.GetAuthorizationRulePreparer(resourceGroupName, namespaceName, queueName, authorizationRuleName)
+	req, err := client.GetAuthorizationRulePreparer(ctx, resourceGroupName, namespaceName, queueName, authorizationRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "GetAuthorizationRule", nil, "Failure preparing request")
 		return
@@ -497,7 +496,7 @@ func (client QueuesClient) GetAuthorizationRule(resourceGroupName string, namesp
 }
 
 // GetAuthorizationRulePreparer prepares the GetAuthorizationRule request.
-func (client QueuesClient) GetAuthorizationRulePreparer(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
+func (client QueuesClient) GetAuthorizationRulePreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
 		"namespaceName":         autorest.Encode("path", namespaceName),
@@ -516,14 +515,13 @@ func (client QueuesClient) GetAuthorizationRulePreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules/{authorizationRuleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetAuthorizationRuleSender sends the GetAuthorizationRule request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) GetAuthorizationRuleSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -544,7 +542,7 @@ func (client QueuesClient) GetAuthorizationRuleResponder(resp *http.Response) (r
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name.
-func (client QueuesClient) ListAuthorizationRules(resourceGroupName string, namespaceName string, queueName string) (result SBAuthorizationRuleListResult, err error) {
+func (client QueuesClient) ListAuthorizationRules(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (result SBAuthorizationRuleListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -557,7 +555,8 @@ func (client QueuesClient) ListAuthorizationRules(resourceGroupName string, name
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "ListAuthorizationRules")
 	}
 
-	req, err := client.ListAuthorizationRulesPreparer(resourceGroupName, namespaceName, queueName)
+	result.fn = client.listAuthorizationRulesNextResults
+	req, err := client.ListAuthorizationRulesPreparer(ctx, resourceGroupName, namespaceName, queueName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", nil, "Failure preparing request")
 		return
@@ -565,12 +564,12 @@ func (client QueuesClient) ListAuthorizationRules(resourceGroupName string, name
 
 	resp, err := client.ListAuthorizationRulesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sarlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListAuthorizationRulesResponder(resp)
+	result.sarlr, err = client.ListAuthorizationRulesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", resp, "Failure responding to request")
 	}
@@ -579,7 +578,7 @@ func (client QueuesClient) ListAuthorizationRules(resourceGroupName string, name
 }
 
 // ListAuthorizationRulesPreparer prepares the ListAuthorizationRules request.
-func (client QueuesClient) ListAuthorizationRulesPreparer(resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
+func (client QueuesClient) ListAuthorizationRulesPreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"queueName":         autorest.Encode("path", queueName),
@@ -597,14 +596,13 @@ func (client QueuesClient) ListAuthorizationRulesPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAuthorizationRulesSender sends the ListAuthorizationRules request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) ListAuthorizationRulesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -621,79 +619,37 @@ func (client QueuesClient) ListAuthorizationRulesResponder(resp *http.Response) 
 	return
 }
 
-// ListAuthorizationRulesNextResults retrieves the next set of results, if any.
-func (client QueuesClient) ListAuthorizationRulesNextResults(lastResults SBAuthorizationRuleListResult) (result SBAuthorizationRuleListResult, err error) {
-	req, err := lastResults.SBAuthorizationRuleListResultPreparer()
+// listAuthorizationRulesNextResults retrieves the next set of results, if any.
+func (client QueuesClient) listAuthorizationRulesNextResults(lastResults SBAuthorizationRuleListResult) (result SBAuthorizationRuleListResult, err error) {
+	req, err := lastResults.sBAuthorizationRuleListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listAuthorizationRulesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListAuthorizationRulesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listAuthorizationRulesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListAuthorizationRulesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListAuthorizationRules", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listAuthorizationRulesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListAuthorizationRulesComplete gets all elements from the list without paging.
-func (client QueuesClient) ListAuthorizationRulesComplete(resourceGroupName string, namespaceName string, queueName string, cancel <-chan struct{}) (<-chan SBAuthorizationRule, <-chan error) {
-	resultChan := make(chan SBAuthorizationRule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListAuthorizationRules(resourceGroupName, namespaceName, queueName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListAuthorizationRulesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAuthorizationRulesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client QueuesClient) ListAuthorizationRulesComplete(ctx context.Context, resourceGroupName string, namespaceName string, queueName string) (result SBAuthorizationRuleListResultIterator, err error) {
+	result.page, err = client.ListAuthorizationRules(ctx, resourceGroupName, namespaceName, queueName)
+	return
 }
 
 // ListByNamespace gets the queues within a namespace.
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
-func (client QueuesClient) ListByNamespace(resourceGroupName string, namespaceName string) (result SBQueueListResult, err error) {
+func (client QueuesClient) ListByNamespace(ctx context.Context, resourceGroupName string, namespaceName string) (result SBQueueListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -704,7 +660,8 @@ func (client QueuesClient) ListByNamespace(resourceGroupName string, namespaceNa
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "ListByNamespace")
 	}
 
-	req, err := client.ListByNamespacePreparer(resourceGroupName, namespaceName)
+	result.fn = client.listByNamespaceNextResults
+	req, err := client.ListByNamespacePreparer(ctx, resourceGroupName, namespaceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", nil, "Failure preparing request")
 		return
@@ -712,12 +669,12 @@ func (client QueuesClient) ListByNamespace(resourceGroupName string, namespaceNa
 
 	resp, err := client.ListByNamespaceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sqlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByNamespaceResponder(resp)
+	result.sqlr, err = client.ListByNamespaceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", resp, "Failure responding to request")
 	}
@@ -726,7 +683,7 @@ func (client QueuesClient) ListByNamespace(resourceGroupName string, namespaceNa
 }
 
 // ListByNamespacePreparer prepares the ListByNamespace request.
-func (client QueuesClient) ListByNamespacePreparer(resourceGroupName string, namespaceName string) (*http.Request, error) {
+func (client QueuesClient) ListByNamespacePreparer(ctx context.Context, resourceGroupName string, namespaceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"namespaceName":     autorest.Encode("path", namespaceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -743,14 +700,13 @@ func (client QueuesClient) ListByNamespacePreparer(resourceGroupName string, nam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByNamespaceSender sends the ListByNamespace request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) ListByNamespaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -767,80 +723,38 @@ func (client QueuesClient) ListByNamespaceResponder(resp *http.Response) (result
 	return
 }
 
-// ListByNamespaceNextResults retrieves the next set of results, if any.
-func (client QueuesClient) ListByNamespaceNextResults(lastResults SBQueueListResult) (result SBQueueListResult, err error) {
-	req, err := lastResults.SBQueueListResultPreparer()
+// listByNamespaceNextResults retrieves the next set of results, if any.
+func (client QueuesClient) listByNamespaceNextResults(lastResults SBQueueListResult) (result SBQueueListResult, err error) {
+	req, err := lastResults.sBQueueListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listByNamespaceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByNamespaceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listByNamespaceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByNamespaceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListByNamespace", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "listByNamespaceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByNamespaceComplete gets all elements from the list without paging.
-func (client QueuesClient) ListByNamespaceComplete(resourceGroupName string, namespaceName string, cancel <-chan struct{}) (<-chan SBQueue, <-chan error) {
-	resultChan := make(chan SBQueue)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByNamespace(resourceGroupName, namespaceName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByNamespaceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByNamespaceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client QueuesClient) ListByNamespaceComplete(ctx context.Context, resourceGroupName string, namespaceName string) (result SBQueueListResultIterator, err error) {
+	result.page, err = client.ListByNamespace(ctx, resourceGroupName, namespaceName)
+	return
 }
 
 // ListKeys primary and secondary connection strings to the queue.
 //
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. authorizationRuleName is the authorizationrule name.
-func (client QueuesClient) ListKeys(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result AccessKeys, err error) {
+func (client QueuesClient) ListKeys(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (result AccessKeys, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -856,7 +770,7 @@ func (client QueuesClient) ListKeys(resourceGroupName string, namespaceName stri
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "ListKeys")
 	}
 
-	req, err := client.ListKeysPreparer(resourceGroupName, namespaceName, queueName, authorizationRuleName)
+	req, err := client.ListKeysPreparer(ctx, resourceGroupName, namespaceName, queueName, authorizationRuleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "ListKeys", nil, "Failure preparing request")
 		return
@@ -878,7 +792,7 @@ func (client QueuesClient) ListKeys(resourceGroupName string, namespaceName stri
 }
 
 // ListKeysPreparer prepares the ListKeys request.
-func (client QueuesClient) ListKeysPreparer(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
+func (client QueuesClient) ListKeysPreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
 		"namespaceName":         autorest.Encode("path", namespaceName),
@@ -897,14 +811,13 @@ func (client QueuesClient) ListKeysPreparer(resourceGroupName string, namespaceN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules/{authorizationRuleName}/ListKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListKeysSender sends the ListKeys request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) ListKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -926,7 +839,7 @@ func (client QueuesClient) ListKeysResponder(resp *http.Response) (result Access
 // resourceGroupName is name of the Resource group within the Azure subscription. namespaceName is the namespace name
 // queueName is the queue name. authorizationRuleName is the authorizationrule name. parameters is parameters supplied
 // to regenerate the authorization rule.
-func (client QueuesClient) RegenerateKeys(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters RegenerateAccessKeyParameters) (result AccessKeys, err error) {
+func (client QueuesClient) RegenerateKeys(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters RegenerateAccessKeyParameters) (result AccessKeys, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -942,7 +855,7 @@ func (client QueuesClient) RegenerateKeys(resourceGroupName string, namespaceNam
 		return result, validation.NewErrorWithValidationError(err, "servicebus.QueuesClient", "RegenerateKeys")
 	}
 
-	req, err := client.RegenerateKeysPreparer(resourceGroupName, namespaceName, queueName, authorizationRuleName, parameters)
+	req, err := client.RegenerateKeysPreparer(ctx, resourceGroupName, namespaceName, queueName, authorizationRuleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicebus.QueuesClient", "RegenerateKeys", nil, "Failure preparing request")
 		return
@@ -964,7 +877,7 @@ func (client QueuesClient) RegenerateKeys(resourceGroupName string, namespaceNam
 }
 
 // RegenerateKeysPreparer prepares the RegenerateKeys request.
-func (client QueuesClient) RegenerateKeysPreparer(resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters RegenerateAccessKeyParameters) (*http.Request, error) {
+func (client QueuesClient) RegenerateKeysPreparer(ctx context.Context, resourceGroupName string, namespaceName string, queueName string, authorizationRuleName string, parameters RegenerateAccessKeyParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"authorizationRuleName": autorest.Encode("path", authorizationRuleName),
 		"namespaceName":         autorest.Encode("path", namespaceName),
@@ -985,14 +898,13 @@ func (client QueuesClient) RegenerateKeysPreparer(resourceGroupName string, name
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceBus/namespaces/{namespaceName}/queues/{queueName}/authorizationRules/{authorizationRuleName}/regenerateKeys", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateKeysSender sends the RegenerateKeys request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueuesClient) RegenerateKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

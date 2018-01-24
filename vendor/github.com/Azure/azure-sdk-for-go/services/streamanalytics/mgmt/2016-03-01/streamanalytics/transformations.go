@@ -18,6 +18,7 @@ package streamanalytics
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // TransformationsClient is the stream Analytics Client
 type TransformationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewTransformationsClient creates an instance of the TransformationsClient client.
@@ -48,8 +49,8 @@ func NewTransformationsClientWithBaseURI(baseURI string, subscriptionID string) 
 // this value to always overwrite the current transformation. Specify the last-seen ETag value to prevent accidentally
 // overwritting concurrent changes. ifNoneMatch is set to '*' to allow a new transformation to be created, but to
 // prevent updating an existing transformation. Other values will result in a 412 Pre-condition Failed response.
-func (client TransformationsClient) CreateOrReplace(transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string, ifNoneMatch string) (result Transformation, err error) {
-	req, err := client.CreateOrReplacePreparer(transformation, resourceGroupName, jobName, transformationName, ifMatch, ifNoneMatch)
+func (client TransformationsClient) CreateOrReplace(ctx context.Context, transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string, ifNoneMatch string) (result Transformation, err error) {
+	req, err := client.CreateOrReplacePreparer(ctx, transformation, resourceGroupName, jobName, transformationName, ifMatch, ifNoneMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.TransformationsClient", "CreateOrReplace", nil, "Failure preparing request")
 		return
@@ -71,7 +72,7 @@ func (client TransformationsClient) CreateOrReplace(transformation Transformatio
 }
 
 // CreateOrReplacePreparer prepares the CreateOrReplace request.
-func (client TransformationsClient) CreateOrReplacePreparer(transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string, ifNoneMatch string) (*http.Request, error) {
+func (client TransformationsClient) CreateOrReplacePreparer(ctx context.Context, transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string, ifNoneMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":            autorest.Encode("path", jobName),
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
@@ -99,14 +100,13 @@ func (client TransformationsClient) CreateOrReplacePreparer(transformation Trans
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-None-Match", autorest.String(ifNoneMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrReplaceSender sends the CreateOrReplace request. The method will close the
 // http.Response Body if it receives an error.
 func (client TransformationsClient) CreateOrReplaceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -128,8 +128,8 @@ func (client TransformationsClient) CreateOrReplaceResponder(resp *http.Response
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. jobName is the name of the streaming job. transformationName is the name
 // of the transformation.
-func (client TransformationsClient) Get(resourceGroupName string, jobName string, transformationName string) (result Transformation, err error) {
-	req, err := client.GetPreparer(resourceGroupName, jobName, transformationName)
+func (client TransformationsClient) Get(ctx context.Context, resourceGroupName string, jobName string, transformationName string) (result Transformation, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, jobName, transformationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.TransformationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -151,7 +151,7 @@ func (client TransformationsClient) Get(resourceGroupName string, jobName string
 }
 
 // GetPreparer prepares the Get request.
-func (client TransformationsClient) GetPreparer(resourceGroupName string, jobName string, transformationName string) (*http.Request, error) {
+func (client TransformationsClient) GetPreparer(ctx context.Context, resourceGroupName string, jobName string, transformationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":            autorest.Encode("path", jobName),
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
@@ -169,14 +169,13 @@ func (client TransformationsClient) GetPreparer(resourceGroupName string, jobNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.StreamAnalytics/streamingjobs/{jobName}/transformations/{transformationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client TransformationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -204,8 +203,8 @@ func (client TransformationsClient) GetResponder(resp *http.Response) (result Tr
 // transformationName is the name of the transformation. ifMatch is the ETag of the transformation. Omit this value to
 // always overwrite the current transformation. Specify the last-seen ETag value to prevent accidentally overwritting
 // concurrent changes.
-func (client TransformationsClient) Update(transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string) (result Transformation, err error) {
-	req, err := client.UpdatePreparer(transformation, resourceGroupName, jobName, transformationName, ifMatch)
+func (client TransformationsClient) Update(ctx context.Context, transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string) (result Transformation, err error) {
+	req, err := client.UpdatePreparer(ctx, transformation, resourceGroupName, jobName, transformationName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "streamanalytics.TransformationsClient", "Update", nil, "Failure preparing request")
 		return
@@ -227,7 +226,7 @@ func (client TransformationsClient) Update(transformation Transformation, resour
 }
 
 // UpdatePreparer prepares the Update request.
-func (client TransformationsClient) UpdatePreparer(transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string) (*http.Request, error) {
+func (client TransformationsClient) UpdatePreparer(ctx context.Context, transformation Transformation, resourceGroupName string, jobName string, transformationName string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"jobName":            autorest.Encode("path", jobName),
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
@@ -251,14 +250,13 @@ func (client TransformationsClient) UpdatePreparer(transformation Transformation
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client TransformationsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

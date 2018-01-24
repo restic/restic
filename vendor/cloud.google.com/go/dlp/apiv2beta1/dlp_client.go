@@ -1,10 +1,10 @@
-// Copyright 2017, Google Inc. All rights reserved.
+// Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,10 +35,10 @@ import (
 
 // CallOptions contains the retry settings for each method of Client.
 type CallOptions struct {
-	DeidentifyContent      []gax.CallOption
-	AnalyzeDataSourceRisk  []gax.CallOption
 	InspectContent         []gax.CallOption
 	RedactContent          []gax.CallOption
+	DeidentifyContent      []gax.CallOption
+	AnalyzeDataSourceRisk  []gax.CallOption
 	CreateInspectOperation []gax.CallOption
 	ListInspectFindings    []gax.CallOption
 	ListInfoTypes          []gax.CallOption
@@ -68,10 +68,10 @@ func defaultCallOptions() *CallOptions {
 		},
 	}
 	return &CallOptions{
-		DeidentifyContent:      retry[[2]string{"default", "idempotent"}],
-		AnalyzeDataSourceRisk:  retry[[2]string{"default", "idempotent"}],
 		InspectContent:         retry[[2]string{"default", "non_idempotent"}],
 		RedactContent:          retry[[2]string{"default", "non_idempotent"}],
+		DeidentifyContent:      retry[[2]string{"default", "idempotent"}],
+		AnalyzeDataSourceRisk:  retry[[2]string{"default", "idempotent"}],
 		CreateInspectOperation: retry[[2]string{"default", "non_idempotent"}],
 		ListInspectFindings:    retry[[2]string{"default", "idempotent"}],
 		ListInfoTypes:          retry[[2]string{"default", "idempotent"}],
@@ -95,8 +95,8 @@ type Client struct {
 	// The call options for this service.
 	CallOptions *CallOptions
 
-	// The metadata to be sent with each request.
-	Metadata metadata.MD
+	// The x-goog-* metadata to be sent with each request.
+	xGoogMetadata metadata.MD
 }
 
 // NewClient creates a new dlp service client.
@@ -150,57 +150,13 @@ func (c *Client) Close() error {
 func (c *Client) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", version.Go()}, keyval...)
 	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
-	c.Metadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
-}
-
-// ResultPath returns the path for the result resource.
-func ResultPath(result string) string {
-	return "" +
-		"inspect/results/" +
-		result +
-		""
-}
-
-// DeidentifyContent de-identifies potentially sensitive info from a list of strings.
-// This method has limits on input size and output size.
-func (c *Client) DeidentifyContent(ctx context.Context, req *dlppb.DeidentifyContentRequest, opts ...gax.CallOption) (*dlppb.DeidentifyContentResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
-	opts = append(c.CallOptions.DeidentifyContent[0:len(c.CallOptions.DeidentifyContent):len(c.CallOptions.DeidentifyContent)], opts...)
-	var resp *dlppb.DeidentifyContentResponse
-	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
-		var err error
-		resp, err = c.client.DeidentifyContent(ctx, req, settings.GRPC...)
-		return err
-	}, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// AnalyzeDataSourceRisk schedules a job to compute risk analysis metrics over content in a Google
-// Cloud Platform repository.
-func (c *Client) AnalyzeDataSourceRisk(ctx context.Context, req *dlppb.AnalyzeDataSourceRiskRequest, opts ...gax.CallOption) (*AnalyzeDataSourceRiskOperation, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
-	opts = append(c.CallOptions.AnalyzeDataSourceRisk[0:len(c.CallOptions.AnalyzeDataSourceRisk):len(c.CallOptions.AnalyzeDataSourceRisk)], opts...)
-	var resp *longrunningpb.Operation
-	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
-		var err error
-		resp, err = c.client.AnalyzeDataSourceRisk(ctx, req, settings.GRPC...)
-		return err
-	}, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &AnalyzeDataSourceRiskOperation{
-		lro: longrunning.InternalNewOperation(c.LROClient, resp),
-	}, nil
+	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
 }
 
 // InspectContent finds potentially sensitive info in a list of strings.
 // This method has limits on input size, processing time, and output size.
 func (c *Client) InspectContent(ctx context.Context, req *dlppb.InspectContentRequest, opts ...gax.CallOption) (*dlppb.InspectContentResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.InspectContent[0:len(c.CallOptions.InspectContent):len(c.CallOptions.InspectContent)], opts...)
 	var resp *dlppb.InspectContentResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -217,7 +173,7 @@ func (c *Client) InspectContent(ctx context.Context, req *dlppb.InspectContentRe
 // RedactContent redacts potentially sensitive info from a list of strings.
 // This method has limits on input size, processing time, and output size.
 func (c *Client) RedactContent(ctx context.Context, req *dlppb.RedactContentRequest, opts ...gax.CallOption) (*dlppb.RedactContentResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.RedactContent[0:len(c.CallOptions.RedactContent):len(c.CallOptions.RedactContent)], opts...)
 	var resp *dlppb.RedactContentResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -231,10 +187,46 @@ func (c *Client) RedactContent(ctx context.Context, req *dlppb.RedactContentRequ
 	return resp, nil
 }
 
+// DeidentifyContent de-identifies potentially sensitive info from a list of strings.
+// This method has limits on input size and output size.
+func (c *Client) DeidentifyContent(ctx context.Context, req *dlppb.DeidentifyContentRequest, opts ...gax.CallOption) (*dlppb.DeidentifyContentResponse, error) {
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
+	opts = append(c.CallOptions.DeidentifyContent[0:len(c.CallOptions.DeidentifyContent):len(c.CallOptions.DeidentifyContent)], opts...)
+	var resp *dlppb.DeidentifyContentResponse
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.DeidentifyContent(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// AnalyzeDataSourceRisk schedules a job to compute risk analysis metrics over content in a Google
+// Cloud Platform repository.
+func (c *Client) AnalyzeDataSourceRisk(ctx context.Context, req *dlppb.AnalyzeDataSourceRiskRequest, opts ...gax.CallOption) (*AnalyzeDataSourceRiskOperation, error) {
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
+	opts = append(c.CallOptions.AnalyzeDataSourceRisk[0:len(c.CallOptions.AnalyzeDataSourceRisk):len(c.CallOptions.AnalyzeDataSourceRisk)], opts...)
+	var resp *longrunningpb.Operation
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.AnalyzeDataSourceRisk(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &AnalyzeDataSourceRiskOperation{
+		lro: longrunning.InternalNewOperation(c.LROClient, resp),
+	}, nil
+}
+
 // CreateInspectOperation schedules a job scanning content in a Google Cloud Platform data
 // repository.
 func (c *Client) CreateInspectOperation(ctx context.Context, req *dlppb.CreateInspectOperationRequest, opts ...gax.CallOption) (*CreateInspectOperationHandle, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.CreateInspectOperation[0:len(c.CallOptions.CreateInspectOperation):len(c.CallOptions.CreateInspectOperation)], opts...)
 	var resp *longrunningpb.Operation
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -252,7 +244,7 @@ func (c *Client) CreateInspectOperation(ctx context.Context, req *dlppb.CreateIn
 
 // ListInspectFindings returns list of results for given inspect operation result set id.
 func (c *Client) ListInspectFindings(ctx context.Context, req *dlppb.ListInspectFindingsRequest, opts ...gax.CallOption) (*dlppb.ListInspectFindingsResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListInspectFindings[0:len(c.CallOptions.ListInspectFindings):len(c.CallOptions.ListInspectFindings)], opts...)
 	var resp *dlppb.ListInspectFindingsResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -268,7 +260,7 @@ func (c *Client) ListInspectFindings(ctx context.Context, req *dlppb.ListInspect
 
 // ListInfoTypes returns sensitive information types for given category.
 func (c *Client) ListInfoTypes(ctx context.Context, req *dlppb.ListInfoTypesRequest, opts ...gax.CallOption) (*dlppb.ListInfoTypesResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListInfoTypes[0:len(c.CallOptions.ListInfoTypes):len(c.CallOptions.ListInfoTypes)], opts...)
 	var resp *dlppb.ListInfoTypesResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
@@ -284,7 +276,7 @@ func (c *Client) ListInfoTypes(ctx context.Context, req *dlppb.ListInfoTypesRequ
 
 // ListRootCategories returns the list of root categories of sensitive information.
 func (c *Client) ListRootCategories(ctx context.Context, req *dlppb.ListRootCategoriesRequest, opts ...gax.CallOption) (*dlppb.ListRootCategoriesResponse, error) {
-	ctx = insertMetadata(ctx, c.Metadata)
+	ctx = insertMetadata(ctx, c.xGoogMetadata)
 	opts = append(c.CallOptions.ListRootCategories[0:len(c.CallOptions.ListRootCategories):len(c.CallOptions.ListRootCategories)], opts...)
 	var resp *dlppb.ListRootCategoriesResponse
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {

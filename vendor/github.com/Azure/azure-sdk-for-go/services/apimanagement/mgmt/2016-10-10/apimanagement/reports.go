@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ReportsClient is the apiManagement Client
 type ReportsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewReportsClient creates an instance of the ReportsClient client.
@@ -47,7 +48,7 @@ func NewReportsClientWithBaseURI(baseURI string, subscriptionID string) ReportsC
 // aggregation. Interval must be multiple of 15 minutes and may not be zero. The value should be in ISO  8601 format
 // (http://en.wikipedia.org/wiki/ISO_8601#Durations).This code can be used to convert TimSpan to a valid interval
 // string: XmlConvert.ToString(new TimeSpan(hours, minutes, secconds))
-func (client ReportsClient) ListByService(resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string) (result ReportCollection, err error) {
+func (client ReportsClient) ListByService(ctx context.Context, resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string) (result ReportCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -62,7 +63,8 @@ func (client ReportsClient) ListByService(resourceGroupName string, serviceName 
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.ReportsClient", "ListByService")
 	}
 
-	req, err := client.ListByServicePreparer(resourceGroupName, serviceName, aggregation, filter, top, skip, interval)
+	result.fn = client.listByServiceNextResults
+	req, err := client.ListByServicePreparer(ctx, resourceGroupName, serviceName, aggregation, filter, top, skip, interval)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", nil, "Failure preparing request")
 		return
@@ -70,12 +72,12 @@ func (client ReportsClient) ListByService(resourceGroupName string, serviceName 
 
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServiceResponder(resp)
+	result.rc, err = client.ListByServiceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", resp, "Failure responding to request")
 	}
@@ -84,7 +86,7 @@ func (client ReportsClient) ListByService(resourceGroupName string, serviceName 
 }
 
 // ListByServicePreparer prepares the ListByService request.
-func (client ReportsClient) ListByServicePreparer(resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string) (*http.Request, error) {
+func (client ReportsClient) ListByServicePreparer(ctx context.Context, resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"aggregation":       autorest.Encode("path", aggregation),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -114,14 +116,13 @@ func (client ReportsClient) ListByServicePreparer(resourceGroupName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/reports/{aggregation}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServiceSender sends the ListByService request. The method will close the
 // http.Response Body if it receives an error.
 func (client ReportsClient) ListByServiceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -138,71 +139,29 @@ func (client ReportsClient) ListByServiceResponder(resp *http.Response) (result 
 	return
 }
 
-// ListByServiceNextResults retrieves the next set of results, if any.
-func (client ReportsClient) ListByServiceNextResults(lastResults ReportCollection) (result ReportCollection, err error) {
-	req, err := lastResults.ReportCollectionPreparer()
+// listByServiceNextResults retrieves the next set of results, if any.
+func (client ReportsClient) listByServiceNextResults(lastResults ReportCollection) (result ReportCollection, err error) {
+	req, err := lastResults.reportCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "listByServiceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServiceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "listByServiceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServiceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "ListByService", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.ReportsClient", "listByServiceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServiceComplete gets all elements from the list without paging.
-func (client ReportsClient) ListByServiceComplete(resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string, cancel <-chan struct{}) (<-chan ReportRecordContract, <-chan error) {
-	resultChan := make(chan ReportRecordContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByService(resourceGroupName, serviceName, aggregation, filter, top, skip, interval)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServiceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServiceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ReportsClient) ListByServiceComplete(ctx context.Context, resourceGroupName string, serviceName string, aggregation ReportsAggregation, filter string, top *int32, skip *int32, interval *string) (result ReportCollectionIterator, err error) {
+	result.page, err = client.ListByService(ctx, resourceGroupName, serviceName, aggregation, filter, top, skip, interval)
+	return
 }

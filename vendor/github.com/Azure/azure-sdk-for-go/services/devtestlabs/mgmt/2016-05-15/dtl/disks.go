@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DisksClient is the the DevTest Labs Client.
 type DisksClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDisksClient creates an instance of the DisksClient client.
@@ -40,48 +41,27 @@ func NewDisksClientWithBaseURI(baseURI string, subscriptionID string) DisksClien
 }
 
 // Attach attach and create the lease of the disk to the virtual machine. This operation can take a while to complete.
-// This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel
-// will be used to cancel polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the disk. attachDiskProperties is properties of the disk to attach.
-func (client DisksClient) Attach(resourceGroupName string, labName string, userName string, name string, attachDiskProperties AttachDiskProperties, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.AttachPreparer(resourceGroupName, labName, userName, name, attachDiskProperties, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Attach", nil, "Failure preparing request")
-			return
-		}
+func (client DisksClient) Attach(ctx context.Context, resourceGroupName string, labName string, userName string, name string, attachDiskProperties AttachDiskProperties) (result DisksAttachFuture, err error) {
+	req, err := client.AttachPreparer(ctx, resourceGroupName, labName, userName, name, attachDiskProperties)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Attach", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.AttachSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Attach", resp, "Failure sending request")
-			return
-		}
+	result, err = client.AttachSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Attach", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.AttachResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Attach", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // AttachPreparer prepares the Attach request.
-func (client DisksClient) AttachPreparer(resourceGroupName string, labName string, userName string, name string, attachDiskProperties AttachDiskProperties, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) AttachPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, attachDiskProperties AttachDiskProperties) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -102,16 +82,22 @@ func (client DisksClient) AttachPreparer(resourceGroupName string, labName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks/{name}/attach", pathParameters),
 		autorest.WithJSON(attachDiskProperties),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // AttachSender sends the Attach request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) AttachSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) AttachSender(req *http.Request) (future DisksAttachFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // AttachResponder handles the response to the Attach request. The method always
@@ -126,58 +112,34 @@ func (client DisksClient) AttachResponder(resp *http.Response) (result autorest.
 	return
 }
 
-// CreateOrUpdate create or replace an existing disk. This operation can take a while to complete. This method may poll
-// for completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// CreateOrUpdate create or replace an existing disk. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the disk. disk is a Disk.
-func (client DisksClient) CreateOrUpdate(resourceGroupName string, labName string, userName string, name string, disk Disk, cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk, 1)
-	errChan := make(chan error, 1)
+func (client DisksClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, labName string, userName string, name string, disk Disk) (result DisksCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: disk,
 			Constraints: []validation.Constraint{{Target: "disk.DiskProperties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "dtl.DisksClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "dtl.DisksClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result Disk
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, labName, userName, name, disk, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, labName, userName, name, disk)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client DisksClient) CreateOrUpdatePreparer(resourceGroupName string, labName string, userName string, name string, disk Disk, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, disk Disk) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -198,16 +160,22 @@ func (client DisksClient) CreateOrUpdatePreparer(resourceGroupName string, labNa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks/{name}", pathParameters),
 		autorest.WithJSON(disk),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) CreateOrUpdateSender(req *http.Request) (future DisksCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -223,49 +191,28 @@ func (client DisksClient) CreateOrUpdateResponder(resp *http.Response) (result D
 	return
 }
 
-// Delete delete disk. This operation can take a while to complete. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Delete delete disk. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the disk.
-func (client DisksClient) Delete(resourceGroupName string, labName string, userName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, labName, userName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client DisksClient) Delete(ctx context.Context, resourceGroupName string, labName string, userName string, name string) (result DisksDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, labName, userName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client DisksClient) DeletePreparer(resourceGroupName string, labName string, userName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) DeletePreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -284,16 +231,22 @@ func (client DisksClient) DeletePreparer(resourceGroupName string, labName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) DeleteSender(req *http.Request) (future DisksDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -309,48 +262,28 @@ func (client DisksClient) DeleteResponder(resp *http.Response) (result autorest.
 }
 
 // Detach detach and break the lease of the disk attached to the virtual machine. This operation can take a while to
-// complete. This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The
-// channel will be used to cancel polling and any outstanding HTTP requests.
+// complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the disk. detachDiskProperties is properties of the disk to detach.
-func (client DisksClient) Detach(resourceGroupName string, labName string, userName string, name string, detachDiskProperties DetachDiskProperties, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DetachPreparer(resourceGroupName, labName, userName, name, detachDiskProperties, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Detach", nil, "Failure preparing request")
-			return
-		}
+func (client DisksClient) Detach(ctx context.Context, resourceGroupName string, labName string, userName string, name string, detachDiskProperties DetachDiskProperties) (result DisksDetachFuture, err error) {
+	req, err := client.DetachPreparer(ctx, resourceGroupName, labName, userName, name, detachDiskProperties)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Detach", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DetachSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Detach", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DetachSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Detach", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DetachResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Detach", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DetachPreparer prepares the Detach request.
-func (client DisksClient) DetachPreparer(resourceGroupName string, labName string, userName string, name string, detachDiskProperties DetachDiskProperties, cancel <-chan struct{}) (*http.Request, error) {
+func (client DisksClient) DetachPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, detachDiskProperties DetachDiskProperties) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -371,16 +304,22 @@ func (client DisksClient) DetachPreparer(resourceGroupName string, labName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks/{name}/detach", pathParameters),
 		autorest.WithJSON(detachDiskProperties),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DetachSender sends the Detach request. The method will close the
 // http.Response Body if it receives an error.
-func (client DisksClient) DetachSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client DisksClient) DetachSender(req *http.Request) (future DisksDetachFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // DetachResponder handles the response to the Detach request. The method always
@@ -400,8 +339,8 @@ func (client DisksClient) DetachResponder(resp *http.Response) (result autorest.
 // resourceGroupName is the name of the resource group. labName is the name of the lab. userName is the name of the
 // user profile. name is the name of the disk. expand is specify the $expand query. Example:
 // 'properties($select=diskType)'
-func (client DisksClient) Get(resourceGroupName string, labName string, userName string, name string, expand string) (result Disk, err error) {
-	req, err := client.GetPreparer(resourceGroupName, labName, userName, name, expand)
+func (client DisksClient) Get(ctx context.Context, resourceGroupName string, labName string, userName string, name string, expand string) (result Disk, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, labName, userName, name, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "Get", nil, "Failure preparing request")
 		return
@@ -423,7 +362,7 @@ func (client DisksClient) Get(resourceGroupName string, labName string, userName
 }
 
 // GetPreparer prepares the Get request.
-func (client DisksClient) GetPreparer(resourceGroupName string, labName string, userName string, name string, expand string) (*http.Request, error) {
+func (client DisksClient) GetPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, name string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -445,14 +384,13 @@ func (client DisksClient) GetPreparer(resourceGroupName string, labName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisksClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -475,8 +413,9 @@ func (client DisksClient) GetResponder(resp *http.Response) (result Disk, err er
 // user profile. expand is specify the $expand query. Example: 'properties($select=diskType)' filter is the filter to
 // apply to the operation. top is the maximum number of resources to return from the operation. orderby is the ordering
 // expression for the results, using OData notation.
-func (client DisksClient) List(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDisk, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, userName, expand, filter, top, orderby)
+func (client DisksClient) List(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDiskPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, userName, expand, filter, top, orderby)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "List", nil, "Failure preparing request")
 		return
@@ -484,12 +423,12 @@ func (client DisksClient) List(resourceGroupName string, labName string, userNam
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcd.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcd, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "List", resp, "Failure responding to request")
 	}
@@ -498,7 +437,7 @@ func (client DisksClient) List(resourceGroupName string, labName string, userNam
 }
 
 // ListPreparer prepares the List request.
-func (client DisksClient) ListPreparer(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
+func (client DisksClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -528,14 +467,13 @@ func (client DisksClient) ListPreparer(resourceGroupName string, labName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/users/{userName}/disks", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DisksClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -552,71 +490,29 @@ func (client DisksClient) ListResponder(resp *http.Response) (result ResponseWit
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DisksClient) ListNextResults(lastResults ResponseWithContinuationDisk) (result ResponseWithContinuationDisk, err error) {
-	req, err := lastResults.ResponseWithContinuationDiskPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DisksClient) listNextResults(lastResults ResponseWithContinuationDisk) (result ResponseWithContinuationDisk, err error) {
+	req, err := lastResults.responseWithContinuationDiskPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.DisksClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.DisksClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.DisksClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.DisksClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.DisksClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DisksClient) ListComplete(resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string, cancel <-chan struct{}) (<-chan Disk, <-chan error) {
-	resultChan := make(chan Disk)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, userName, expand, filter, top, orderby)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DisksClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, userName string, expand string, filter string, top *int32, orderby string) (result ResponseWithContinuationDiskIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, userName, expand, filter, top, orderby)
+	return
 }

@@ -18,6 +18,7 @@ package logic
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -28,13 +29,13 @@ import (
 type AgreementType string
 
 const (
-	// AS2 specifies the as2 state for agreement type.
+	// AS2 ...
 	AS2 AgreementType = "AS2"
-	// Edifact specifies the edifact state for agreement type.
+	// Edifact ...
 	Edifact AgreementType = "Edifact"
-	// NotSpecified specifies the not specified state for agreement type.
+	// NotSpecified ...
 	NotSpecified AgreementType = "NotSpecified"
-	// X12 specifies the x12 state for agreement type.
+	// X12 ...
 	X12 AgreementType = "X12"
 )
 
@@ -42,35 +43,35 @@ const (
 type EdifactCharacterSet string
 
 const (
-	// EdifactCharacterSetKECA specifies the edifact character set keca state for edifact character set.
+	// EdifactCharacterSetKECA ...
 	EdifactCharacterSetKECA EdifactCharacterSet = "KECA"
-	// EdifactCharacterSetNotSpecified specifies the edifact character set not specified state for edifact character set.
+	// EdifactCharacterSetNotSpecified ...
 	EdifactCharacterSetNotSpecified EdifactCharacterSet = "NotSpecified"
-	// EdifactCharacterSetUNOA specifies the edifact character set unoa state for edifact character set.
+	// EdifactCharacterSetUNOA ...
 	EdifactCharacterSetUNOA EdifactCharacterSet = "UNOA"
-	// EdifactCharacterSetUNOB specifies the edifact character set unob state for edifact character set.
+	// EdifactCharacterSetUNOB ...
 	EdifactCharacterSetUNOB EdifactCharacterSet = "UNOB"
-	// EdifactCharacterSetUNOC specifies the edifact character set unoc state for edifact character set.
+	// EdifactCharacterSetUNOC ...
 	EdifactCharacterSetUNOC EdifactCharacterSet = "UNOC"
-	// EdifactCharacterSetUNOD specifies the edifact character set unod state for edifact character set.
+	// EdifactCharacterSetUNOD ...
 	EdifactCharacterSetUNOD EdifactCharacterSet = "UNOD"
-	// EdifactCharacterSetUNOE specifies the edifact character set unoe state for edifact character set.
+	// EdifactCharacterSetUNOE ...
 	EdifactCharacterSetUNOE EdifactCharacterSet = "UNOE"
-	// EdifactCharacterSetUNOF specifies the edifact character set unof state for edifact character set.
+	// EdifactCharacterSetUNOF ...
 	EdifactCharacterSetUNOF EdifactCharacterSet = "UNOF"
-	// EdifactCharacterSetUNOG specifies the edifact character set unog state for edifact character set.
+	// EdifactCharacterSetUNOG ...
 	EdifactCharacterSetUNOG EdifactCharacterSet = "UNOG"
-	// EdifactCharacterSetUNOH specifies the edifact character set unoh state for edifact character set.
+	// EdifactCharacterSetUNOH ...
 	EdifactCharacterSetUNOH EdifactCharacterSet = "UNOH"
-	// EdifactCharacterSetUNOI specifies the edifact character set unoi state for edifact character set.
+	// EdifactCharacterSetUNOI ...
 	EdifactCharacterSetUNOI EdifactCharacterSet = "UNOI"
-	// EdifactCharacterSetUNOJ specifies the edifact character set unoj state for edifact character set.
+	// EdifactCharacterSetUNOJ ...
 	EdifactCharacterSetUNOJ EdifactCharacterSet = "UNOJ"
-	// EdifactCharacterSetUNOK specifies the edifact character set unok state for edifact character set.
+	// EdifactCharacterSetUNOK ...
 	EdifactCharacterSetUNOK EdifactCharacterSet = "UNOK"
-	// EdifactCharacterSetUNOX specifies the edifact character set unox state for edifact character set.
+	// EdifactCharacterSetUNOX ...
 	EdifactCharacterSetUNOX EdifactCharacterSet = "UNOX"
-	// EdifactCharacterSetUNOY specifies the edifact character set unoy state for edifact character set.
+	// EdifactCharacterSetUNOY ...
 	EdifactCharacterSetUNOY EdifactCharacterSet = "UNOY"
 )
 
@@ -78,12 +79,11 @@ const (
 type EdifactDecimalIndicator string
 
 const (
-	// EdifactDecimalIndicatorComma specifies the edifact decimal indicator comma state for edifact decimal indicator.
+	// EdifactDecimalIndicatorComma ...
 	EdifactDecimalIndicatorComma EdifactDecimalIndicator = "Comma"
-	// EdifactDecimalIndicatorDecimal specifies the edifact decimal indicator decimal state for edifact decimal indicator.
+	// EdifactDecimalIndicatorDecimal ...
 	EdifactDecimalIndicatorDecimal EdifactDecimalIndicator = "Decimal"
-	// EdifactDecimalIndicatorNotSpecified specifies the edifact decimal indicator not specified state for edifact decimal
-	// indicator.
+	// EdifactDecimalIndicatorNotSpecified ...
 	EdifactDecimalIndicatorNotSpecified EdifactDecimalIndicator = "NotSpecified"
 )
 
@@ -91,19 +91,19 @@ const (
 type EncryptionAlgorithm string
 
 const (
-	// EncryptionAlgorithmAES128 specifies the encryption algorithm aes128 state for encryption algorithm.
+	// EncryptionAlgorithmAES128 ...
 	EncryptionAlgorithmAES128 EncryptionAlgorithm = "AES128"
-	// EncryptionAlgorithmAES192 specifies the encryption algorithm aes192 state for encryption algorithm.
+	// EncryptionAlgorithmAES192 ...
 	EncryptionAlgorithmAES192 EncryptionAlgorithm = "AES192"
-	// EncryptionAlgorithmAES256 specifies the encryption algorithm aes256 state for encryption algorithm.
+	// EncryptionAlgorithmAES256 ...
 	EncryptionAlgorithmAES256 EncryptionAlgorithm = "AES256"
-	// EncryptionAlgorithmDES3 specifies the encryption algorithm des3 state for encryption algorithm.
+	// EncryptionAlgorithmDES3 ...
 	EncryptionAlgorithmDES3 EncryptionAlgorithm = "DES3"
-	// EncryptionAlgorithmNone specifies the encryption algorithm none state for encryption algorithm.
+	// EncryptionAlgorithmNone ...
 	EncryptionAlgorithmNone EncryptionAlgorithm = "None"
-	// EncryptionAlgorithmNotSpecified specifies the encryption algorithm not specified state for encryption algorithm.
+	// EncryptionAlgorithmNotSpecified ...
 	EncryptionAlgorithmNotSpecified EncryptionAlgorithm = "NotSpecified"
-	// EncryptionAlgorithmRC2 specifies the encryption algorithm rc2 state for encryption algorithm.
+	// EncryptionAlgorithmRC2 ...
 	EncryptionAlgorithmRC2 EncryptionAlgorithm = "RC2"
 )
 
@@ -111,15 +111,15 @@ const (
 type HashingAlgorithm string
 
 const (
-	// HashingAlgorithmNone specifies the hashing algorithm none state for hashing algorithm.
+	// HashingAlgorithmNone ...
 	HashingAlgorithmNone HashingAlgorithm = "None"
-	// HashingAlgorithmNotSpecified specifies the hashing algorithm not specified state for hashing algorithm.
+	// HashingAlgorithmNotSpecified ...
 	HashingAlgorithmNotSpecified HashingAlgorithm = "NotSpecified"
-	// HashingAlgorithmSHA2256 specifies the hashing algorithm sha2256 state for hashing algorithm.
+	// HashingAlgorithmSHA2256 ...
 	HashingAlgorithmSHA2256 HashingAlgorithm = "SHA2256"
-	// HashingAlgorithmSHA2384 specifies the hashing algorithm sha2384 state for hashing algorithm.
+	// HashingAlgorithmSHA2384 ...
 	HashingAlgorithmSHA2384 HashingAlgorithm = "SHA2384"
-	// HashingAlgorithmSHA2512 specifies the hashing algorithm sha2512 state for hashing algorithm.
+	// HashingAlgorithmSHA2512 ...
 	HashingAlgorithmSHA2512 HashingAlgorithm = "SHA2512"
 )
 
@@ -127,9 +127,9 @@ const (
 type MapType string
 
 const (
-	// MapTypeNotSpecified specifies the map type not specified state for map type.
+	// MapTypeNotSpecified ...
 	MapTypeNotSpecified MapType = "NotSpecified"
-	// MapTypeXslt specifies the map type xslt state for map type.
+	// MapTypeXslt ...
 	MapTypeXslt MapType = "Xslt"
 )
 
@@ -137,11 +137,11 @@ const (
 type MessageFilterType string
 
 const (
-	// MessageFilterTypeExclude specifies the message filter type exclude state for message filter type.
+	// MessageFilterTypeExclude ...
 	MessageFilterTypeExclude MessageFilterType = "Exclude"
-	// MessageFilterTypeInclude specifies the message filter type include state for message filter type.
+	// MessageFilterTypeInclude ...
 	MessageFilterTypeInclude MessageFilterType = "Include"
-	// MessageFilterTypeNotSpecified specifies the message filter type not specified state for message filter type.
+	// MessageFilterTypeNotSpecified ...
 	MessageFilterTypeNotSpecified MessageFilterType = "NotSpecified"
 )
 
@@ -149,9 +149,9 @@ const (
 type PartnerType string
 
 const (
-	// PartnerTypeB2B specifies the partner type b2b state for partner type.
+	// PartnerTypeB2B ...
 	PartnerTypeB2B PartnerType = "B2B"
-	// PartnerTypeNotSpecified specifies the partner type not specified state for partner type.
+	// PartnerTypeNotSpecified ...
 	PartnerTypeNotSpecified PartnerType = "NotSpecified"
 )
 
@@ -159,9 +159,9 @@ const (
 type SchemaType string
 
 const (
-	// SchemaTypeNotSpecified specifies the schema type not specified state for schema type.
+	// SchemaTypeNotSpecified ...
 	SchemaTypeNotSpecified SchemaType = "NotSpecified"
-	// SchemaTypeXML specifies the schema type xml state for schema type.
+	// SchemaTypeXML ...
 	SchemaTypeXML SchemaType = "Xml"
 )
 
@@ -169,16 +169,15 @@ const (
 type SegmentTerminatorSuffix string
 
 const (
-	// SegmentTerminatorSuffixCR specifies the segment terminator suffix cr state for segment terminator suffix.
+	// SegmentTerminatorSuffixCR ...
 	SegmentTerminatorSuffixCR SegmentTerminatorSuffix = "CR"
-	// SegmentTerminatorSuffixCRLF specifies the segment terminator suffix crlf state for segment terminator suffix.
+	// SegmentTerminatorSuffixCRLF ...
 	SegmentTerminatorSuffixCRLF SegmentTerminatorSuffix = "CRLF"
-	// SegmentTerminatorSuffixLF specifies the segment terminator suffix lf state for segment terminator suffix.
+	// SegmentTerminatorSuffixLF ...
 	SegmentTerminatorSuffixLF SegmentTerminatorSuffix = "LF"
-	// SegmentTerminatorSuffixNone specifies the segment terminator suffix none state for segment terminator suffix.
+	// SegmentTerminatorSuffixNone ...
 	SegmentTerminatorSuffixNone SegmentTerminatorSuffix = "None"
-	// SegmentTerminatorSuffixNotSpecified specifies the segment terminator suffix not specified state for segment
-	// terminator suffix.
+	// SegmentTerminatorSuffixNotSpecified ...
 	SegmentTerminatorSuffixNotSpecified SegmentTerminatorSuffix = "NotSpecified"
 )
 
@@ -186,17 +185,17 @@ const (
 type SkuName string
 
 const (
-	// SkuNameBasic specifies the sku name basic state for sku name.
+	// SkuNameBasic ...
 	SkuNameBasic SkuName = "Basic"
-	// SkuNameFree specifies the sku name free state for sku name.
+	// SkuNameFree ...
 	SkuNameFree SkuName = "Free"
-	// SkuNameNotSpecified specifies the sku name not specified state for sku name.
+	// SkuNameNotSpecified ...
 	SkuNameNotSpecified SkuName = "NotSpecified"
-	// SkuNamePremium specifies the sku name premium state for sku name.
+	// SkuNamePremium ...
 	SkuNamePremium SkuName = "Premium"
-	// SkuNameShared specifies the sku name shared state for sku name.
+	// SkuNameShared ...
 	SkuNameShared SkuName = "Shared"
-	// SkuNameStandard specifies the sku name standard state for sku name.
+	// SkuNameStandard ...
 	SkuNameStandard SkuName = "Standard"
 )
 
@@ -204,17 +203,13 @@ const (
 type TrailingSeparatorPolicy string
 
 const (
-	// TrailingSeparatorPolicyMandatory specifies the trailing separator policy mandatory state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyMandatory ...
 	TrailingSeparatorPolicyMandatory TrailingSeparatorPolicy = "Mandatory"
-	// TrailingSeparatorPolicyNotAllowed specifies the trailing separator policy not allowed state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyNotAllowed ...
 	TrailingSeparatorPolicyNotAllowed TrailingSeparatorPolicy = "NotAllowed"
-	// TrailingSeparatorPolicyNotSpecified specifies the trailing separator policy not specified state for trailing
-	// separator policy.
+	// TrailingSeparatorPolicyNotSpecified ...
 	TrailingSeparatorPolicyNotSpecified TrailingSeparatorPolicy = "NotSpecified"
-	// TrailingSeparatorPolicyOptional specifies the trailing separator policy optional state for trailing separator
-	// policy.
+	// TrailingSeparatorPolicyOptional ...
 	TrailingSeparatorPolicyOptional TrailingSeparatorPolicy = "Optional"
 )
 
@@ -222,13 +217,13 @@ const (
 type UsageIndicator string
 
 const (
-	// UsageIndicatorInformation specifies the usage indicator information state for usage indicator.
+	// UsageIndicatorInformation ...
 	UsageIndicatorInformation UsageIndicator = "Information"
-	// UsageIndicatorNotSpecified specifies the usage indicator not specified state for usage indicator.
+	// UsageIndicatorNotSpecified ...
 	UsageIndicatorNotSpecified UsageIndicator = "NotSpecified"
-	// UsageIndicatorProduction specifies the usage indicator production state for usage indicator.
+	// UsageIndicatorProduction ...
 	UsageIndicatorProduction UsageIndicator = "Production"
-	// UsageIndicatorTest specifies the usage indicator test state for usage indicator.
+	// UsageIndicatorTest ...
 	UsageIndicatorTest UsageIndicator = "Test"
 )
 
@@ -236,13 +231,13 @@ const (
 type X12CharacterSet string
 
 const (
-	// X12CharacterSetBasic specifies the x12 character set basic state for x12 character set.
+	// X12CharacterSetBasic ...
 	X12CharacterSetBasic X12CharacterSet = "Basic"
-	// X12CharacterSetExtended specifies the x12 character set extended state for x12 character set.
+	// X12CharacterSetExtended ...
 	X12CharacterSetExtended X12CharacterSet = "Extended"
-	// X12CharacterSetNotSpecified specifies the x12 character set not specified state for x12 character set.
+	// X12CharacterSetNotSpecified ...
 	X12CharacterSetNotSpecified X12CharacterSet = "NotSpecified"
-	// X12CharacterSetUTF8 specifies the x12 character set utf8 state for x12 character set.
+	// X12CharacterSetUTF8 ...
 	X12CharacterSetUTF8 X12CharacterSet = "UTF8"
 )
 
@@ -250,11 +245,11 @@ const (
 type X12DateFormat string
 
 const (
-	// X12DateFormatCCYYMMDD specifies the x12 date format ccyymmdd state for x12 date format.
+	// X12DateFormatCCYYMMDD ...
 	X12DateFormatCCYYMMDD X12DateFormat = "CCYYMMDD"
-	// X12DateFormatNotSpecified specifies the x12 date format not specified state for x12 date format.
+	// X12DateFormatNotSpecified ...
 	X12DateFormatNotSpecified X12DateFormat = "NotSpecified"
-	// X12DateFormatYYMMDD specifies the x12 date format yymmdd state for x12 date format.
+	// X12DateFormatYYMMDD ...
 	X12DateFormatYYMMDD X12DateFormat = "YYMMDD"
 )
 
@@ -262,808 +257,2078 @@ const (
 type X12TimeFormat string
 
 const (
-	// X12TimeFormatHHMM specifies the x12 time format hhmm state for x12 time format.
+	// X12TimeFormatHHMM ...
 	X12TimeFormatHHMM X12TimeFormat = "HHMM"
-	// X12TimeFormatHHMMSS specifies the x12 time format hhmmss state for x12 time format.
+	// X12TimeFormatHHMMSS ...
 	X12TimeFormatHHMMSS X12TimeFormat = "HHMMSS"
-	// X12TimeFormatHHMMSSd specifies the x12 time format hhmms sd state for x12 time format.
+	// X12TimeFormatHHMMSSd ...
 	X12TimeFormatHHMMSSd X12TimeFormat = "HHMMSSd"
-	// X12TimeFormatHHMMSSdd specifies the x12 time format hhmms sdd state for x12 time format.
+	// X12TimeFormatHHMMSSdd ...
 	X12TimeFormatHHMMSSdd X12TimeFormat = "HHMMSSdd"
-	// X12TimeFormatNotSpecified specifies the x12 time format not specified state for x12 time format.
+	// X12TimeFormatNotSpecified ...
 	X12TimeFormatNotSpecified X12TimeFormat = "NotSpecified"
 )
 
-// AgreementContent is
+// AgreementContent ...
 type AgreementContent struct {
-	AS2     *AS2AgreementContent     `json:"AS2,omitempty"`
-	X12     *X12AgreementContent     `json:"X12,omitempty"`
+	// AS2 - The AS2 agreement content.
+	AS2 *AS2AgreementContent `json:"AS2,omitempty"`
+	// X12 - The X12 agreement content.
+	X12 *X12AgreementContent `json:"X12,omitempty"`
+	// Edifact - The EDIFACT agreement content.
 	Edifact *EdifactAgreementContent `json:"Edifact,omitempty"`
 }
 
-// AS2AcknowledgementConnectionSettings is
+// AS2AcknowledgementConnectionSettings ...
 type AS2AcknowledgementConnectionSettings struct {
+	// IgnoreCertificateNameMismatch - The value indicating whether to ignore mismatch in certificate name.
 	IgnoreCertificateNameMismatch *bool `json:"ignoreCertificateNameMismatch,omitempty"`
+	// SupportHTTPStatusCodeContinue - The value indicating whether to support HTTP status code 'CONTINUE'.
 	SupportHTTPStatusCodeContinue *bool `json:"supportHttpStatusCodeContinue,omitempty"`
-	KeepHTTPConnectionAlive       *bool `json:"keepHttpConnectionAlive,omitempty"`
-	UnfoldHTTPHeaders             *bool `json:"unfoldHttpHeaders,omitempty"`
+	// KeepHTTPConnectionAlive - The value indicating whether to keep the connection alive.
+	KeepHTTPConnectionAlive *bool `json:"keepHttpConnectionAlive,omitempty"`
+	// UnfoldHTTPHeaders - The value indicating whether to unfold the HTTP headers.
+	UnfoldHTTPHeaders *bool `json:"unfoldHttpHeaders,omitempty"`
 }
 
-// AS2AgreementContent is
+// AS2AgreementContent ...
 type AS2AgreementContent struct {
+	// ReceiveAgreement - The AS2 one-way receive agreement.
 	ReceiveAgreement *AS2OneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *AS2OneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The AS2 one-way send agreement.
+	SendAgreement *AS2OneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// AS2EnvelopeSettings is
+// AS2EnvelopeSettings ...
 type AS2EnvelopeSettings struct {
-	MessageContentType                      *string `json:"messageContentType,omitempty"`
-	TransmitFileNameInMimeHeader            *bool   `json:"transmitFileNameInMimeHeader,omitempty"`
-	FileNameTemplate                        *string `json:"fileNameTemplate,omitempty"`
-	SuspendMessageOnFileNameGenerationError *bool   `json:"SuspendMessageOnFileNameGenerationError,omitempty"`
-	AutogenerateFileName                    *bool   `json:"AutogenerateFileName,omitempty"`
+	// MessageContentType - The message content type.
+	MessageContentType *string `json:"messageContentType,omitempty"`
+	// TransmitFileNameInMimeHeader - The value indicating whether to transmit file name in mime header.
+	TransmitFileNameInMimeHeader *bool `json:"transmitFileNameInMimeHeader,omitempty"`
+	// FileNameTemplate - The template for file name.
+	FileNameTemplate *string `json:"fileNameTemplate,omitempty"`
+	// SuspendMessageOnFileNameGenerationError - The value indicating whether to suspend message on file name generation error.
+	SuspendMessageOnFileNameGenerationError *bool `json:"SuspendMessageOnFileNameGenerationError,omitempty"`
+	// AutogenerateFileName - The value indicating whether to auto generate file name.
+	AutogenerateFileName *bool `json:"AutogenerateFileName,omitempty"`
 }
 
-// AS2ErrorSettings is
+// AS2ErrorSettings ...
 type AS2ErrorSettings struct {
+	// SuspendDuplicateMessage - The value indicating whether to suspend duplicate message.
 	SuspendDuplicateMessage *bool `json:"SuspendDuplicateMessage,omitempty"`
-	ResendIfMdnNotReceived  *bool `json:"ResendIfMdnNotReceived,omitempty"`
+	// ResendIfMdnNotReceived - The value indicating whether to resend message If MDN is not received.
+	ResendIfMdnNotReceived *bool `json:"ResendIfMdnNotReceived,omitempty"`
 }
 
-// AS2MdnSettings is
+// AS2MdnSettings ...
 type AS2MdnSettings struct {
-	NeedMdn                    *bool            `json:"needMdn,omitempty"`
-	SignMdn                    *bool            `json:"signMdn,omitempty"`
-	SendMdnAsynchronously      *bool            `json:"sendMdnAsynchronously,omitempty"`
-	ReceiptDeliveryURL         *string          `json:"receiptDeliveryUrl,omitempty"`
-	DispositionNotificationTo  *string          `json:"dispositionNotificationTo,omitempty"`
-	SignOutboundMdnIfOptional  *bool            `json:"signOutboundMdnIfOptional,omitempty"`
-	MdnText                    *string          `json:"mdnText,omitempty"`
-	SendInboundMdnToMessageBox *bool            `json:"sendInboundMdnToMessageBox,omitempty"`
-	MicHashingAlgorithm        HashingAlgorithm `json:"micHashingAlgorithm,omitempty"`
+	// NeedMdn - The value indicating whether to send or request a MDN.
+	NeedMdn *bool `json:"needMdn,omitempty"`
+	// SignMdn - The value indicating whether the MDN needs to be signed or not.
+	SignMdn *bool `json:"signMdn,omitempty"`
+	// SendMdnAsynchronously - The value indicating whether to send the asynchronous MDN.
+	SendMdnAsynchronously *bool `json:"sendMdnAsynchronously,omitempty"`
+	// ReceiptDeliveryURL - The receipt delivery URL.
+	ReceiptDeliveryURL *string `json:"receiptDeliveryUrl,omitempty"`
+	// DispositionNotificationTo - The disposition notification to header value.
+	DispositionNotificationTo *string `json:"dispositionNotificationTo,omitempty"`
+	// SignOutboundMdnIfOptional - The value indicating whether to sign the outbound MDN if optional.
+	SignOutboundMdnIfOptional *bool `json:"signOutboundMdnIfOptional,omitempty"`
+	// MdnText - The MDN text.
+	MdnText *string `json:"mdnText,omitempty"`
+	// SendInboundMdnToMessageBox - The value indicating whether to send inbound MDN to message box.
+	SendInboundMdnToMessageBox *bool `json:"sendInboundMdnToMessageBox,omitempty"`
+	// MicHashingAlgorithm - The signing or hashing algorithm. Possible values include: 'HashingAlgorithmNotSpecified', 'HashingAlgorithmNone', 'HashingAlgorithmSHA2256', 'HashingAlgorithmSHA2384', 'HashingAlgorithmSHA2512'
+	MicHashingAlgorithm HashingAlgorithm `json:"micHashingAlgorithm,omitempty"`
 }
 
-// AS2MessageConnectionSettings is
+// AS2MessageConnectionSettings ...
 type AS2MessageConnectionSettings struct {
+	// IgnoreCertificateNameMismatch - The value indicating whether to ignore mismatch in certificate name.
 	IgnoreCertificateNameMismatch *bool `json:"ignoreCertificateNameMismatch,omitempty"`
+	// SupportHTTPStatusCodeContinue - The value indicating whether to support HTTP status code 'CONTINUE'.
 	SupportHTTPStatusCodeContinue *bool `json:"supportHttpStatusCodeContinue,omitempty"`
-	KeepHTTPConnectionAlive       *bool `json:"keepHttpConnectionAlive,omitempty"`
-	UnfoldHTTPHeaders             *bool `json:"unfoldHttpHeaders,omitempty"`
+	// KeepHTTPConnectionAlive - The value indicating whether to keep the connection alive.
+	KeepHTTPConnectionAlive *bool `json:"keepHttpConnectionAlive,omitempty"`
+	// UnfoldHTTPHeaders - The value indicating whether to unfold the HTTP headers.
+	UnfoldHTTPHeaders *bool `json:"unfoldHttpHeaders,omitempty"`
 }
 
-// AS2OneWayAgreement is
+// AS2OneWayAgreement ...
 type AS2OneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity    `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity    `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *AS2ProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The AS2 protocol settings.
+	ProtocolSettings *AS2ProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// AS2ProtocolSettings is
+// AS2ProtocolSettings ...
 type AS2ProtocolSettings struct {
-	MessageConnectionSettings         *AS2MessageConnectionSettings         `json:"messageConnectionSettings,omitempty"`
+	// MessageConnectionSettings - The message connection settings.
+	MessageConnectionSettings *AS2MessageConnectionSettings `json:"messageConnectionSettings,omitempty"`
+	// AcknowledgementConnectionSettings - The acknowledgement connection settings.
 	AcknowledgementConnectionSettings *AS2AcknowledgementConnectionSettings `json:"acknowledgementConnectionSettings,omitempty"`
-	MdnSettings                       *AS2MdnSettings                       `json:"mdnSettings,omitempty"`
-	SecuritySettings                  *AS2SecuritySettings                  `json:"securitySettings,omitempty"`
-	ValidationSettings                *AS2ValidationSettings                `json:"validationSettings,omitempty"`
-	EnvelopeSettings                  *AS2EnvelopeSettings                  `json:"envelopeSettings,omitempty"`
-	ErrorSettings                     *AS2ErrorSettings                     `json:"errorSettings,omitempty"`
+	// MdnSettings - The MDN settings.
+	MdnSettings *AS2MdnSettings `json:"mdnSettings,omitempty"`
+	// SecuritySettings - The security settings.
+	SecuritySettings *AS2SecuritySettings `json:"securitySettings,omitempty"`
+	// ValidationSettings - The validation settings.
+	ValidationSettings *AS2ValidationSettings `json:"validationSettings,omitempty"`
+	// EnvelopeSettings - The envelope settings.
+	EnvelopeSettings *AS2EnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// ErrorSettings - The error settings.
+	ErrorSettings *AS2ErrorSettings `json:"errorSettings,omitempty"`
 }
 
-// AS2SecuritySettings is
+// AS2SecuritySettings ...
 type AS2SecuritySettings struct {
-	OverrideGroupSigningCertificate     *bool   `json:"overrideGroupSigningCertificate,omitempty"`
-	SigningCertificateName              *string `json:"signingCertificateName,omitempty"`
-	EncryptionCertificateName           *string `json:"encryptionCertificateName,omitempty"`
-	EnableNrrForInboundEncodedMessages  *bool   `json:"enableNrrForInboundEncodedMessages,omitempty"`
-	EnableNrrForInboundDecodedMessages  *bool   `json:"enableNrrForInboundDecodedMessages,omitempty"`
-	EnableNrrForOutboundMdn             *bool   `json:"enableNrrForOutboundMdn,omitempty"`
-	EnableNrrForOutboundEncodedMessages *bool   `json:"enableNrrForOutboundEncodedMessages,omitempty"`
-	EnableNrrForOutboundDecodedMessages *bool   `json:"enableNrrForOutboundDecodedMessages,omitempty"`
-	EnableNrrForInboundMdn              *bool   `json:"enableNrrForInboundMdn,omitempty"`
+	// OverrideGroupSigningCertificate - The value indicating whether to send or request a MDN.
+	OverrideGroupSigningCertificate *bool `json:"overrideGroupSigningCertificate,omitempty"`
+	// SigningCertificateName - The name of the signing certificate.
+	SigningCertificateName *string `json:"signingCertificateName,omitempty"`
+	// EncryptionCertificateName - The name of the encryption certificate.
+	EncryptionCertificateName *string `json:"encryptionCertificateName,omitempty"`
+	// EnableNrrForInboundEncodedMessages - The value indicating whether to enable NRR for inbound encoded messages.
+	EnableNrrForInboundEncodedMessages *bool `json:"enableNrrForInboundEncodedMessages,omitempty"`
+	// EnableNrrForInboundDecodedMessages - The value indicating whether to enable NRR for inbound decoded messages.
+	EnableNrrForInboundDecodedMessages *bool `json:"enableNrrForInboundDecodedMessages,omitempty"`
+	// EnableNrrForOutboundMdn - The value indicating whether to enable NRR for outbound MDN.
+	EnableNrrForOutboundMdn *bool `json:"enableNrrForOutboundMdn,omitempty"`
+	// EnableNrrForOutboundEncodedMessages - The value indicating whether to enable NRR for outbound encoded messages.
+	EnableNrrForOutboundEncodedMessages *bool `json:"enableNrrForOutboundEncodedMessages,omitempty"`
+	// EnableNrrForOutboundDecodedMessages - The value indicating whether to enable NRR for outbound decoded messages.
+	EnableNrrForOutboundDecodedMessages *bool `json:"enableNrrForOutboundDecodedMessages,omitempty"`
+	// EnableNrrForInboundMdn - The value indicating whether to enable NRR for inbound MDN.
+	EnableNrrForInboundMdn *bool `json:"enableNrrForInboundMdn,omitempty"`
 }
 
-// AS2ValidationSettings is
+// AS2ValidationSettings ...
 type AS2ValidationSettings struct {
-	OverrideMessageProperties               *bool               `json:"overrideMessageProperties,omitempty"`
-	EncryptMessage                          *bool               `json:"encryptMessage,omitempty"`
-	SignMessage                             *bool               `json:"signMessage,omitempty"`
-	CompressMessage                         *bool               `json:"compressMessage,omitempty"`
-	CheckDuplicateMessage                   *bool               `json:"checkDuplicateMessage,omitempty"`
-	InterchangeDuplicatesValidityDays       *int32              `json:"interchangeDuplicatesValidityDays,omitempty"`
-	CheckCertificateRevocationListOnSend    *bool               `json:"checkCertificateRevocationListOnSend,omitempty"`
-	CheckCertificateRevocationListOnReceive *bool               `json:"checkCertificateRevocationListOnReceive,omitempty"`
-	EncryptionAlgorithm                     EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
+	// OverrideMessageProperties - The value indicating whether to override incoming message properties with those in agreement.
+	OverrideMessageProperties *bool `json:"overrideMessageProperties,omitempty"`
+	// EncryptMessage - The value indicating whether the message has to be encrypted.
+	EncryptMessage *bool `json:"encryptMessage,omitempty"`
+	// SignMessage - The value indicating whether the message has to be signed.
+	SignMessage *bool `json:"signMessage,omitempty"`
+	// CompressMessage - The value indicating whether the message has to be compressed.
+	CompressMessage *bool `json:"compressMessage,omitempty"`
+	// CheckDuplicateMessage - The value indicating whether to check for duplicate message.
+	CheckDuplicateMessage *bool `json:"checkDuplicateMessage,omitempty"`
+	// InterchangeDuplicatesValidityDays - The number of days to look back for duplicate interchange.
+	InterchangeDuplicatesValidityDays *int32 `json:"interchangeDuplicatesValidityDays,omitempty"`
+	// CheckCertificateRevocationListOnSend - The value indicating whether to check for certificate revocation list on send.
+	CheckCertificateRevocationListOnSend *bool `json:"checkCertificateRevocationListOnSend,omitempty"`
+	// CheckCertificateRevocationListOnReceive - The value indicating whether to check for certificate revocation list on receive.
+	CheckCertificateRevocationListOnReceive *bool `json:"checkCertificateRevocationListOnReceive,omitempty"`
+	// EncryptionAlgorithm - The encryption algorithm. Possible values include: 'EncryptionAlgorithmNotSpecified', 'EncryptionAlgorithmNone', 'EncryptionAlgorithmDES3', 'EncryptionAlgorithmRC2', 'EncryptionAlgorithmAES128', 'EncryptionAlgorithmAES192', 'EncryptionAlgorithmAES256'
+	EncryptionAlgorithm EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
 }
 
-// B2BPartnerContent is
+// B2BPartnerContent ...
 type B2BPartnerContent struct {
+	// BusinessIdentities - The list of partner business identities.
 	BusinessIdentities *[]BusinessIdentity `json:"businessIdentities,omitempty"`
 }
 
-// BusinessIdentity is
+// BusinessIdentity ...
 type BusinessIdentity struct {
+	// Qualifier - The business identity qualifier.
 	Qualifier *string `json:"Qualifier,omitempty"`
-	Value     *string `json:"Value,omitempty"`
+	// Value - The business identity value.
+	Value *string `json:"Value,omitempty"`
 }
 
-// CallbackURL is
+// CallbackURL ...
 type CallbackURL struct {
 	autorest.Response `json:"-"`
-	Value             *string `json:"value,omitempty"`
+	// Value - The URL value.
+	Value *string `json:"value,omitempty"`
 }
 
-// EdifactAcknowledgementSettings is
+// EdifactAcknowledgementSettings ...
 type EdifactAcknowledgementSettings struct {
-	NeedTechnicalAcknowledgement           *bool   `json:"needTechnicalAcknowledgement,omitempty"`
-	BatchTechnicalAcknowledgements         *bool   `json:"batchTechnicalAcknowledgements,omitempty"`
-	NeedFunctionalAcknowledgement          *bool   `json:"needFunctionalAcknowledgement,omitempty"`
-	BatchFunctionalAcknowledgements        *bool   `json:"batchFunctionalAcknowledgements,omitempty"`
-	NeedLoopForValidMessages               *bool   `json:"needLoopForValidMessages,omitempty"`
-	SendSynchronousAcknowledgement         *bool   `json:"sendSynchronousAcknowledgement,omitempty"`
-	AcknowledgementControlNumberPrefix     *string `json:"acknowledgementControlNumberPrefix,omitempty"`
-	AcknowledgementControlNumberSuffix     *string `json:"acknowledgementControlNumberSuffix,omitempty"`
-	AcknowledgementControlNumberLowerBound *int32  `json:"acknowledgementControlNumberLowerBound,omitempty"`
-	AcknowledgementControlNumberUpperBound *int32  `json:"acknowledgementControlNumberUpperBound,omitempty"`
-	RolloverAcknowledgementControlNumber   *bool   `json:"rolloverAcknowledgementControlNumber,omitempty"`
+	// NeedTechnicalAcknowledgement - The value indicating whether technical acknowledgement is needed.
+	NeedTechnicalAcknowledgement *bool `json:"needTechnicalAcknowledgement,omitempty"`
+	// BatchTechnicalAcknowledgements - The value indicating whether to batch the technical acknowledgements.
+	BatchTechnicalAcknowledgements *bool `json:"batchTechnicalAcknowledgements,omitempty"`
+	// NeedFunctionalAcknowledgement - The value indicating whether functional acknowledgement is needed.
+	NeedFunctionalAcknowledgement *bool `json:"needFunctionalAcknowledgement,omitempty"`
+	// BatchFunctionalAcknowledgements - The value indicating whether to batch functional acknowledgements.
+	BatchFunctionalAcknowledgements *bool `json:"batchFunctionalAcknowledgements,omitempty"`
+	// NeedLoopForValidMessages - The value indicating whether a loop is needed for valid messages.
+	NeedLoopForValidMessages *bool `json:"needLoopForValidMessages,omitempty"`
+	// SendSynchronousAcknowledgement - The value indicating whether to send synchronous acknowledgement.
+	SendSynchronousAcknowledgement *bool `json:"sendSynchronousAcknowledgement,omitempty"`
+	// AcknowledgementControlNumberPrefix - The acknowledgement control number prefix.
+	AcknowledgementControlNumberPrefix *string `json:"acknowledgementControlNumberPrefix,omitempty"`
+	// AcknowledgementControlNumberSuffix - The acknowledgement control number suffix.
+	AcknowledgementControlNumberSuffix *string `json:"acknowledgementControlNumberSuffix,omitempty"`
+	// AcknowledgementControlNumberLowerBound - The acknowledgement control number lower bound.
+	AcknowledgementControlNumberLowerBound *int32 `json:"acknowledgementControlNumberLowerBound,omitempty"`
+	// AcknowledgementControlNumberUpperBound - The acknowledgement control number upper bound.
+	AcknowledgementControlNumberUpperBound *int32 `json:"acknowledgementControlNumberUpperBound,omitempty"`
+	// RolloverAcknowledgementControlNumber - The value indicating whether to rollover acknowledgement control number.
+	RolloverAcknowledgementControlNumber *bool `json:"rolloverAcknowledgementControlNumber,omitempty"`
 }
 
-// EdifactAgreementContent is
+// EdifactAgreementContent ...
 type EdifactAgreementContent struct {
+	// ReceiveAgreement - The EDIFACT one-way receive agreement.
 	ReceiveAgreement *EdifactOneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *EdifactOneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The EDIFACT one-way send agreement.
+	SendAgreement *EdifactOneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// EdifactDelimiterOverride is
+// EdifactDelimiterOverride ...
 type EdifactDelimiterOverride struct {
-	MessageID                      *string                 `json:"messageId,omitempty"`
-	MessageVersion                 *string                 `json:"messageVersion,omitempty"`
-	MessageRelease                 *string                 `json:"messageRelease,omitempty"`
-	DataElementSeparator           *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator             *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator              *int32                  `json:"segmentTerminator,omitempty"`
-	RepetitionSeparator            *int32                  `json:"repetitionSeparator,omitempty"`
-	SegmentTerminatorSuffix        SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
-	DecimalPointIndicator          EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
-	ReleaseIndicator               *int32                  `json:"releaseIndicator,omitempty"`
-	MessageAssociationAssignedCode *string                 `json:"messageAssociationAssignedCode,omitempty"`
-	TargetNamespace                *string                 `json:"targetNamespace,omitempty"`
-}
-
-// EdifactEnvelopeOverride is
-type EdifactEnvelopeOverride struct {
-	MessageID                      *string `json:"messageId,omitempty"`
-	MessageVersion                 *string `json:"messageVersion,omitempty"`
-	MessageRelease                 *string `json:"messageRelease,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message releaseversion.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// RepetitionSeparator - The repetition separator.
+	RepetitionSeparator *int32 `json:"repetitionSeparator,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// DecimalPointIndicator - The decimal point indicator. Possible values include: 'EdifactDecimalIndicatorNotSpecified', 'EdifactDecimalIndicatorComma', 'EdifactDecimalIndicatorDecimal'
+	DecimalPointIndicator EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
+	// ReleaseIndicator - The release indicator.
+	ReleaseIndicator *int32 `json:"releaseIndicator,omitempty"`
+	// MessageAssociationAssignedCode - The message association assigned code.
 	MessageAssociationAssignedCode *string `json:"messageAssociationAssignedCode,omitempty"`
-	TargetNamespace                *string `json:"targetNamespace,omitempty"`
-	FunctionalGroupID              *string `json:"functionalGroupId,omitempty"`
-	SenderApplicationQualifier     *string `json:"senderApplicationQualifier,omitempty"`
-	SenderApplicationID            *string `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationQualifier   *string `json:"receiverApplicationQualifier,omitempty"`
-	ReceiverApplicationID          *string `json:"receiverApplicationId,omitempty"`
-	ControllingAgencyCode          *string `json:"controllingAgencyCode,omitempty"`
-	GroupHeaderMessageVersion      *string `json:"groupHeaderMessageVersion,omitempty"`
-	GroupHeaderMessageRelease      *string `json:"groupHeaderMessageRelease,omitempty"`
-	AssociationAssignedCode        *string `json:"associationAssignedCode,omitempty"`
-	ApplicationPassword            *string `json:"applicationPassword,omitempty"`
+	// TargetNamespace - The target namespace on which this delimiter settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
 }
 
-// EdifactEnvelopeSettings is
+// EdifactEnvelopeOverride ...
+type EdifactEnvelopeOverride struct {
+	// MessageID - The message id on which this envelope settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version on which this envelope settings has to be applied.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message release version on which this envelope settings has to be applied.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// MessageAssociationAssignedCode - The message association assigned code.
+	MessageAssociationAssignedCode *string `json:"messageAssociationAssignedCode,omitempty"`
+	// TargetNamespace - The target namespace on which this envelope settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// SenderApplicationQualifier - The sender application qualifier.
+	SenderApplicationQualifier *string `json:"senderApplicationQualifier,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationQualifier - The receiver application qualifier.
+	ReceiverApplicationQualifier *string `json:"receiverApplicationQualifier,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// ControllingAgencyCode - The controlling agency code.
+	ControllingAgencyCode *string `json:"controllingAgencyCode,omitempty"`
+	// GroupHeaderMessageVersion - The group header message version.
+	GroupHeaderMessageVersion *string `json:"groupHeaderMessageVersion,omitempty"`
+	// GroupHeaderMessageRelease - The group header message release.
+	GroupHeaderMessageRelease *string `json:"groupHeaderMessageRelease,omitempty"`
+	// AssociationAssignedCode - The association assigned code.
+	AssociationAssignedCode *string `json:"associationAssignedCode,omitempty"`
+	// ApplicationPassword - The application password.
+	ApplicationPassword *string `json:"applicationPassword,omitempty"`
+}
+
+// EdifactEnvelopeSettings ...
 type EdifactEnvelopeSettings struct {
-	GroupAssociationAssignedCode                 *string `json:"groupAssociationAssignedCode,omitempty"`
-	CommunicationAgreementID                     *string `json:"communicationAgreementId,omitempty"`
-	ApplyDelimiterStringAdvice                   *bool   `json:"applyDelimiterStringAdvice,omitempty"`
-	CreateGroupingSegments                       *bool   `json:"createGroupingSegments,omitempty"`
-	EnableDefaultGroupHeaders                    *bool   `json:"enableDefaultGroupHeaders,omitempty"`
-	RecipientReferencePasswordValue              *string `json:"recipientReferencePasswordValue,omitempty"`
-	RecipientReferencePasswordQualifier          *string `json:"recipientReferencePasswordQualifier,omitempty"`
-	ApplicationReferenceID                       *string `json:"applicationReferenceId,omitempty"`
-	ProcessingPriorityCode                       *string `json:"processingPriorityCode,omitempty"`
-	InterchangeControlNumberLowerBound           *int64  `json:"interchangeControlNumberLowerBound,omitempty"`
-	InterchangeControlNumberUpperBound           *int64  `json:"interchangeControlNumberUpperBound,omitempty"`
-	RolloverInterchangeControlNumber             *bool   `json:"rolloverInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberPrefix               *string `json:"interchangeControlNumberPrefix,omitempty"`
-	InterchangeControlNumberSuffix               *string `json:"interchangeControlNumberSuffix,omitempty"`
-	SenderReverseRoutingAddress                  *string `json:"senderReverseRoutingAddress,omitempty"`
-	ReceiverReverseRoutingAddress                *string `json:"receiverReverseRoutingAddress,omitempty"`
-	FunctionalGroupID                            *string `json:"functionalGroupId,omitempty"`
-	GroupControllingAgencyCode                   *string `json:"groupControllingAgencyCode,omitempty"`
-	GroupMessageVersion                          *string `json:"groupMessageVersion,omitempty"`
-	GroupMessageRelease                          *string `json:"groupMessageRelease,omitempty"`
-	GroupControlNumberLowerBound                 *int64  `json:"groupControlNumberLowerBound,omitempty"`
-	GroupControlNumberUpperBound                 *int64  `json:"groupControlNumberUpperBound,omitempty"`
-	RolloverGroupControlNumber                   *bool   `json:"rolloverGroupControlNumber,omitempty"`
-	GroupControlNumberPrefix                     *string `json:"groupControlNumberPrefix,omitempty"`
-	GroupControlNumberSuffix                     *string `json:"groupControlNumberSuffix,omitempty"`
-	GroupApplicationReceiverQualifier            *string `json:"groupApplicationReceiverQualifier,omitempty"`
-	GroupApplicationReceiverID                   *string `json:"groupApplicationReceiverId,omitempty"`
-	GroupApplicationSenderQualifier              *string `json:"groupApplicationSenderQualifier,omitempty"`
-	GroupApplicationSenderID                     *string `json:"groupApplicationSenderId,omitempty"`
-	GroupApplicationPassword                     *string `json:"groupApplicationPassword,omitempty"`
-	OverwriteExistingTransactionSetControlNumber *bool   `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
-	TransactionSetControlNumberPrefix            *string `json:"transactionSetControlNumberPrefix,omitempty"`
-	TransactionSetControlNumberSuffix            *string `json:"transactionSetControlNumberSuffix,omitempty"`
-	TransactionSetControlNumberLowerBound        *int64  `json:"transactionSetControlNumberLowerBound,omitempty"`
-	TransactionSetControlNumberUpperBound        *int64  `json:"transactionSetControlNumberUpperBound,omitempty"`
-	RolloverTransactionSetControlNumber          *bool   `json:"rolloverTransactionSetControlNumber,omitempty"`
-	IsTestInterchange                            *bool   `json:"isTestInterchange,omitempty"`
-	SenderInternalIdentification                 *string `json:"senderInternalIdentification,omitempty"`
-	SenderInternalSubIdentification              *string `json:"senderInternalSubIdentification,omitempty"`
-	ReceiverInternalIdentification               *string `json:"receiverInternalIdentification,omitempty"`
-	ReceiverInternalSubIdentification            *string `json:"receiverInternalSubIdentification,omitempty"`
+	// GroupAssociationAssignedCode - The group association assigned code.
+	GroupAssociationAssignedCode *string `json:"groupAssociationAssignedCode,omitempty"`
+	// CommunicationAgreementID - The communication agreement id.
+	CommunicationAgreementID *string `json:"communicationAgreementId,omitempty"`
+	// ApplyDelimiterStringAdvice - The value indicating whether to apply delimiter string advice.
+	ApplyDelimiterStringAdvice *bool `json:"applyDelimiterStringAdvice,omitempty"`
+	// CreateGroupingSegments - The value indicating whether to create grouping segments.
+	CreateGroupingSegments *bool `json:"createGroupingSegments,omitempty"`
+	// EnableDefaultGroupHeaders - The value indicating whether to enable default group headers.
+	EnableDefaultGroupHeaders *bool `json:"enableDefaultGroupHeaders,omitempty"`
+	// RecipientReferencePasswordValue - The recipient reference password value.
+	RecipientReferencePasswordValue *string `json:"recipientReferencePasswordValue,omitempty"`
+	// RecipientReferencePasswordQualifier - The recipient reference password qualifier.
+	RecipientReferencePasswordQualifier *string `json:"recipientReferencePasswordQualifier,omitempty"`
+	// ApplicationReferenceID - The application reference id.
+	ApplicationReferenceID *string `json:"applicationReferenceId,omitempty"`
+	// ProcessingPriorityCode - The processing priority code.
+	ProcessingPriorityCode *string `json:"processingPriorityCode,omitempty"`
+	// InterchangeControlNumberLowerBound - The interchange control number lower bound.
+	InterchangeControlNumberLowerBound *int64 `json:"interchangeControlNumberLowerBound,omitempty"`
+	// InterchangeControlNumberUpperBound - The interchange control number upper bound.
+	InterchangeControlNumberUpperBound *int64 `json:"interchangeControlNumberUpperBound,omitempty"`
+	// RolloverInterchangeControlNumber - The value indicating whether to rollover interchange control number.
+	RolloverInterchangeControlNumber *bool `json:"rolloverInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberPrefix - The interchange control number prefix.
+	InterchangeControlNumberPrefix *string `json:"interchangeControlNumberPrefix,omitempty"`
+	// InterchangeControlNumberSuffix - The interchange control number suffix.
+	InterchangeControlNumberSuffix *string `json:"interchangeControlNumberSuffix,omitempty"`
+	// SenderReverseRoutingAddress - The sender reverse routing address.
+	SenderReverseRoutingAddress *string `json:"senderReverseRoutingAddress,omitempty"`
+	// ReceiverReverseRoutingAddress - The receiver reverse routing address.
+	ReceiverReverseRoutingAddress *string `json:"receiverReverseRoutingAddress,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// GroupControllingAgencyCode - The group controlling agency code.
+	GroupControllingAgencyCode *string `json:"groupControllingAgencyCode,omitempty"`
+	// GroupMessageVersion - The group message version.
+	GroupMessageVersion *string `json:"groupMessageVersion,omitempty"`
+	// GroupMessageRelease - The group message release.
+	GroupMessageRelease *string `json:"groupMessageRelease,omitempty"`
+	// GroupControlNumberLowerBound - The group control number lower bound.
+	GroupControlNumberLowerBound *int64 `json:"groupControlNumberLowerBound,omitempty"`
+	// GroupControlNumberUpperBound - The group control number upper bound.
+	GroupControlNumberUpperBound *int64 `json:"groupControlNumberUpperBound,omitempty"`
+	// RolloverGroupControlNumber - The value indicating whether to rollover group control number.
+	RolloverGroupControlNumber *bool `json:"rolloverGroupControlNumber,omitempty"`
+	// GroupControlNumberPrefix - The group control number prefix.
+	GroupControlNumberPrefix *string `json:"groupControlNumberPrefix,omitempty"`
+	// GroupControlNumberSuffix - The group control number suffix.
+	GroupControlNumberSuffix *string `json:"groupControlNumberSuffix,omitempty"`
+	// GroupApplicationReceiverQualifier - The group application receiver qualifier.
+	GroupApplicationReceiverQualifier *string `json:"groupApplicationReceiverQualifier,omitempty"`
+	// GroupApplicationReceiverID - The group application receiver id.
+	GroupApplicationReceiverID *string `json:"groupApplicationReceiverId,omitempty"`
+	// GroupApplicationSenderQualifier - The group application sender qualifier.
+	GroupApplicationSenderQualifier *string `json:"groupApplicationSenderQualifier,omitempty"`
+	// GroupApplicationSenderID - The group application sender id.
+	GroupApplicationSenderID *string `json:"groupApplicationSenderId,omitempty"`
+	// GroupApplicationPassword - The group application password.
+	GroupApplicationPassword *string `json:"groupApplicationPassword,omitempty"`
+	// OverwriteExistingTransactionSetControlNumber - The value indicating whether to overwrite existing transaction set control number.
+	OverwriteExistingTransactionSetControlNumber *bool `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
+	// TransactionSetControlNumberPrefix - The transaction set control number prefix.
+	TransactionSetControlNumberPrefix *string `json:"transactionSetControlNumberPrefix,omitempty"`
+	// TransactionSetControlNumberSuffix - The transaction set control number suffix.
+	TransactionSetControlNumberSuffix *string `json:"transactionSetControlNumberSuffix,omitempty"`
+	// TransactionSetControlNumberLowerBound - The transaction set control number lower bound.
+	TransactionSetControlNumberLowerBound *int64 `json:"transactionSetControlNumberLowerBound,omitempty"`
+	// TransactionSetControlNumberUpperBound - The transaction set control number upper bound.
+	TransactionSetControlNumberUpperBound *int64 `json:"transactionSetControlNumberUpperBound,omitempty"`
+	// RolloverTransactionSetControlNumber - The value indicating whether to rollover transaction set control number.
+	RolloverTransactionSetControlNumber *bool `json:"rolloverTransactionSetControlNumber,omitempty"`
+	// IsTestInterchange - The value indicating whether the message is a test interchange.
+	IsTestInterchange *bool `json:"isTestInterchange,omitempty"`
+	// SenderInternalIdentification - The sender internal identification.
+	SenderInternalIdentification *string `json:"senderInternalIdentification,omitempty"`
+	// SenderInternalSubIdentification - The sender internal sub identification.
+	SenderInternalSubIdentification *string `json:"senderInternalSubIdentification,omitempty"`
+	// ReceiverInternalIdentification - The receiver internal identification.
+	ReceiverInternalIdentification *string `json:"receiverInternalIdentification,omitempty"`
+	// ReceiverInternalSubIdentification - The receiver internal sub identification.
+	ReceiverInternalSubIdentification *string `json:"receiverInternalSubIdentification,omitempty"`
 }
 
-// EdifactFramingSettings is
+// EdifactFramingSettings ...
 type EdifactFramingSettings struct {
-	ServiceCodeListDirectoryVersion *string                 `json:"serviceCodeListDirectoryVersion,omitempty"`
-	CharacterEncoding               *string                 `json:"characterEncoding,omitempty"`
-	ProtocolVersion                 *int32                  `json:"protocolVersion,omitempty"`
-	DataElementSeparator            *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator              *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator               *int32                  `json:"segmentTerminator,omitempty"`
-	ReleaseIndicator                *int32                  `json:"releaseIndicator,omitempty"`
-	RepetitionSeparator             *int32                  `json:"repetitionSeparator,omitempty"`
-	CharacterSet                    EdifactCharacterSet     `json:"characterSet,omitempty"`
-	DecimalPointIndicator           EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
-	SegmentTerminatorSuffix         SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// ServiceCodeListDirectoryVersion - The service code list directory version.
+	ServiceCodeListDirectoryVersion *string `json:"serviceCodeListDirectoryVersion,omitempty"`
+	// CharacterEncoding - The character encoding.
+	CharacterEncoding *string `json:"characterEncoding,omitempty"`
+	// ProtocolVersion - The protocol version.
+	ProtocolVersion *int32 `json:"protocolVersion,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// ReleaseIndicator - The release indicator.
+	ReleaseIndicator *int32 `json:"releaseIndicator,omitempty"`
+	// RepetitionSeparator - The repetition separator.
+	RepetitionSeparator *int32 `json:"repetitionSeparator,omitempty"`
+	// CharacterSet - The EDIFACT frame setting characterSet. Possible values include: 'EdifactCharacterSetNotSpecified', 'EdifactCharacterSetUNOB', 'EdifactCharacterSetUNOA', 'EdifactCharacterSetUNOC', 'EdifactCharacterSetUNOD', 'EdifactCharacterSetUNOE', 'EdifactCharacterSetUNOF', 'EdifactCharacterSetUNOG', 'EdifactCharacterSetUNOH', 'EdifactCharacterSetUNOI', 'EdifactCharacterSetUNOJ', 'EdifactCharacterSetUNOK', 'EdifactCharacterSetUNOX', 'EdifactCharacterSetUNOY', 'EdifactCharacterSetKECA'
+	CharacterSet EdifactCharacterSet `json:"characterSet,omitempty"`
+	// DecimalPointIndicator - The EDIFACT frame setting decimal indicator. Possible values include: 'EdifactDecimalIndicatorNotSpecified', 'EdifactDecimalIndicatorComma', 'EdifactDecimalIndicatorDecimal'
+	DecimalPointIndicator EdifactDecimalIndicator `json:"decimalPointIndicator,omitempty"`
+	// SegmentTerminatorSuffix - The EDIFACT frame setting segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
 }
 
-// EdifactMessageFilter is
+// EdifactMessageFilter ...
 type EdifactMessageFilter struct {
+	// MessageFilterType - The message filter type. Possible values include: 'MessageFilterTypeNotSpecified', 'MessageFilterTypeInclude', 'MessageFilterTypeExclude'
 	MessageFilterType MessageFilterType `json:"messageFilterType,omitempty"`
 }
 
-// EdifactMessageIdentifier is
+// EdifactMessageIdentifier ...
 type EdifactMessageIdentifier struct {
+	// MessageID - The message id on which this envelope settings has to be applied.
 	MessageID *string `json:"messageId,omitempty"`
 }
 
-// EdifactOneWayAgreement is
+// EdifactOneWayAgreement ...
 type EdifactOneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity        `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity        `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *EdifactProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The EDIFACT protocol settings.
+	ProtocolSettings *EdifactProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// EdifactProcessingSettings is
+// EdifactProcessingSettings ...
 type EdifactProcessingSettings struct {
-	MaskSecurityInfo                        *bool `json:"maskSecurityInfo,omitempty"`
-	PreserveInterchange                     *bool `json:"preserveInterchange,omitempty"`
-	SuspendInterchangeOnError               *bool `json:"suspendInterchangeOnError,omitempty"`
+	// MaskSecurityInfo - The value indicating whether to mask security information.
+	MaskSecurityInfo *bool `json:"maskSecurityInfo,omitempty"`
+	// PreserveInterchange - The value indicating whether to preserve interchange.
+	PreserveInterchange *bool `json:"preserveInterchange,omitempty"`
+	// SuspendInterchangeOnError - The value indicating whether to suspend interchange on error.
+	SuspendInterchangeOnError *bool `json:"suspendInterchangeOnError,omitempty"`
+	// CreateEmptyXMLTagsForTrailingSeparators - The value indicating whether to create empty xml tags for trailing separators.
 	CreateEmptyXMLTagsForTrailingSeparators *bool `json:"createEmptyXmlTagsForTrailingSeparators,omitempty"`
-	UseDotAsDecimalSeparator                *bool `json:"useDotAsDecimalSeparator,omitempty"`
+	// UseDotAsDecimalSeparator - The value indicating whether to use dot as decimal separator.
+	UseDotAsDecimalSeparator *bool `json:"useDotAsDecimalSeparator,omitempty"`
 }
 
-// EdifactProtocolSettings is
+// EdifactProtocolSettings ...
 type EdifactProtocolSettings struct {
-	ValidationSettings        *EdifactValidationSettings      `json:"validationSettings,omitempty"`
-	FramingSettings           *EdifactFramingSettings         `json:"framingSettings,omitempty"`
-	EnvelopeSettings          *EdifactEnvelopeSettings        `json:"envelopeSettings,omitempty"`
-	AcknowledgementSettings   *EdifactAcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
-	MessageFilter             *EdifactMessageFilter           `json:"messageFilter,omitempty"`
-	ProcessingSettings        *EdifactProcessingSettings      `json:"processingSettings,omitempty"`
-	EnvelopeOverrides         *[]EdifactEnvelopeOverride      `json:"envelopeOverrides,omitempty"`
-	MessageFilterList         *[]EdifactMessageIdentifier     `json:"messageFilterList,omitempty"`
-	SchemaReferences          *[]EdifactSchemaReference       `json:"schemaReferences,omitempty"`
-	ValidationOverrides       *[]EdifactValidationOverride    `json:"validationOverrides,omitempty"`
-	EdifactDelimiterOverrides *[]EdifactDelimiterOverride     `json:"edifactDelimiterOverrides,omitempty"`
+	// ValidationSettings - The EDIFACT validation settings.
+	ValidationSettings *EdifactValidationSettings `json:"validationSettings,omitempty"`
+	// FramingSettings - The EDIFACT framing settings.
+	FramingSettings *EdifactFramingSettings `json:"framingSettings,omitempty"`
+	// EnvelopeSettings - The EDIFACT envelope settings.
+	EnvelopeSettings *EdifactEnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// AcknowledgementSettings - The EDIFACT acknowledgement settings.
+	AcknowledgementSettings *EdifactAcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
+	// MessageFilter - The EDIFACT message filter.
+	MessageFilter *EdifactMessageFilter `json:"messageFilter,omitempty"`
+	// ProcessingSettings - The EDIFACT processing Settings.
+	ProcessingSettings *EdifactProcessingSettings `json:"processingSettings,omitempty"`
+	// EnvelopeOverrides - The EDIFACT envelope override settings.
+	EnvelopeOverrides *[]EdifactEnvelopeOverride `json:"envelopeOverrides,omitempty"`
+	// MessageFilterList - The EDIFACT message filter list.
+	MessageFilterList *[]EdifactMessageIdentifier `json:"messageFilterList,omitempty"`
+	// SchemaReferences - The EDIFACT schema references.
+	SchemaReferences *[]EdifactSchemaReference `json:"schemaReferences,omitempty"`
+	// ValidationOverrides - The EDIFACT validation override settings.
+	ValidationOverrides *[]EdifactValidationOverride `json:"validationOverrides,omitempty"`
+	// EdifactDelimiterOverrides - The EDIFACT delimiter override settings.
+	EdifactDelimiterOverrides *[]EdifactDelimiterOverride `json:"edifactDelimiterOverrides,omitempty"`
 }
 
-// EdifactSchemaReference is
+// EdifactSchemaReference ...
 type EdifactSchemaReference struct {
-	MessageID                  *string `json:"messageId,omitempty"`
-	MessageVersion             *string `json:"messageVersion,omitempty"`
-	MessageRelease             *string `json:"messageRelease,omitempty"`
-	SenderApplicationID        *string `json:"senderApplicationId,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// MessageVersion - The message version.
+	MessageVersion *string `json:"messageVersion,omitempty"`
+	// MessageRelease - The message release version.
+	MessageRelease *string `json:"messageRelease,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// SenderApplicationQualifier - The sender application qualifier.
 	SenderApplicationQualifier *string `json:"senderApplicationQualifier,omitempty"`
-	AssociationAssignedCode    *string `json:"associationAssignedCode,omitempty"`
-	SchemaName                 *string `json:"schemaName,omitempty"`
+	// AssociationAssignedCode - The association assigned code.
+	AssociationAssignedCode *string `json:"associationAssignedCode,omitempty"`
+	// SchemaName - The schema name.
+	SchemaName *string `json:"schemaName,omitempty"`
 }
 
-// EdifactValidationOverride is
+// EdifactValidationOverride ...
 type EdifactValidationOverride struct {
-	MessageID                              *string                 `json:"messageId,omitempty"`
-	EnforceCharacterSet                    *bool                   `json:"enforceCharacterSet,omitempty"`
-	ValidateEDITypes                       *bool                   `json:"validateEDITypes,omitempty"`
-	ValidateXSDTypes                       *bool                   `json:"validateXSDTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes  *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// MessageID - The message id on which the validation settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// EnforceCharacterSet - The value indicating whether to validate character Set.
+	EnforceCharacterSet *bool `json:"enforceCharacterSet,omitempty"`
+	// ValidateEDITypes - The value indicating whether to validate EDI types.
+	ValidateEDITypes *bool `json:"validateEDITypes,omitempty"`
+	// ValidateXSDTypes - The value indicating whether to validate XSD types.
+	ValidateXSDTypes *bool `json:"validateXSDTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
 }
 
-// EdifactValidationSettings is
+// EdifactValidationSettings ...
 type EdifactValidationSettings struct {
-	ValidateCharacterSet                      *bool                   `json:"validateCharacterSet,omitempty"`
-	CheckDuplicateInterchangeControlNumber    *bool                   `json:"checkDuplicateInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberValidityDays      *int32                  `json:"interchangeControlNumberValidityDays,omitempty"`
-	CheckDuplicateGroupControlNumber          *bool                   `json:"checkDuplicateGroupControlNumber,omitempty"`
-	CheckDuplicateTransactionSetControlNumber *bool                   `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
-	ValidateEDITypes                          *bool                   `json:"validateEDITypes,omitempty"`
-	ValidateXSDTypes                          *bool                   `json:"validateXSDTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes    *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes     *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                   TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character set in the message.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// CheckDuplicateInterchangeControlNumber - The value indicating whether to check for duplicate interchange control number.
+	CheckDuplicateInterchangeControlNumber *bool `json:"checkDuplicateInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberValidityDays - The validity period of interchange control number.
+	InterchangeControlNumberValidityDays *int32 `json:"interchangeControlNumberValidityDays,omitempty"`
+	// CheckDuplicateGroupControlNumber - The value indicating whether to check for duplicate group control number.
+	CheckDuplicateGroupControlNumber *bool `json:"checkDuplicateGroupControlNumber,omitempty"`
+	// CheckDuplicateTransactionSetControlNumber - The value indicating whether to check for duplicate transaction set control number.
+	CheckDuplicateTransactionSetControlNumber *bool `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
+	// ValidateEDITypes - The value indicating whether to Whether to validate EDI types.
+	ValidateEDITypes *bool `json:"validateEDITypes,omitempty"`
+	// ValidateXSDTypes - The value indicating whether to Whether to validate XSD types.
+	ValidateXSDTypes *bool `json:"validateXSDTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }
 
-// IntegrationAccount is
+// IntegrationAccount ...
 type IntegrationAccount struct {
 	autorest.Response `json:"-"`
-	ID                *string                 `json:"id,omitempty"`
-	Name              *string                 `json:"name,omitempty"`
-	Type              *string                 `json:"type,omitempty"`
-	Location          *string                 `json:"location,omitempty"`
-	Tags              *map[string]*string     `json:"tags,omitempty"`
-	Properties        *map[string]interface{} `json:"properties,omitempty"`
-	Sku               *IntegrationAccountSku  `json:"sku,omitempty"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Properties - The integration account properties.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	// Sku - The sku.
+	Sku *IntegrationAccountSku `json:"sku,omitempty"`
 }
 
-// IntegrationAccountAgreement is
+// IntegrationAccountAgreement ...
 type IntegrationAccountAgreement struct {
-	autorest.Response                      `json:"-"`
-	ID                                     *string             `json:"id,omitempty"`
-	Name                                   *string             `json:"name,omitempty"`
-	Type                                   *string             `json:"type,omitempty"`
-	Location                               *string             `json:"location,omitempty"`
-	Tags                                   *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountAgreementProperties - The integration account agreement properties.
 	*IntegrationAccountAgreementProperties `json:"properties,omitempty"`
 }
 
-// IntegrationAccountAgreementFilter is
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountAgreement struct.
+func (iaa *IntegrationAccountAgreement) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountAgreementProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iaa.IntegrationAccountAgreementProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iaa.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iaa.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iaa.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iaa.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iaa.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountAgreementFilter ...
 type IntegrationAccountAgreementFilter struct {
+	// AgreementType - The agreement type of integration account agreement. Possible values include: 'NotSpecified', 'AS2', 'X12', 'Edifact'
 	AgreementType AgreementType `json:"agreementType,omitempty"`
 }
 
-// IntegrationAccountAgreementListResult is
+// IntegrationAccountAgreementListResult ...
 type IntegrationAccountAgreementListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountAgreement `json:"value,omitempty"`
-	NextLink          *string                        `json:"nextLink,omitempty"`
+	// Value - The list of integration account agreements.
+	Value *[]IntegrationAccountAgreement `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountAgreementListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountAgreementListResult) IntegrationAccountAgreementListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountAgreementListResultIterator provides access to a complete listing of IntegrationAccountAgreement
+// values.
+type IntegrationAccountAgreementListResultIterator struct {
+	i    int
+	page IntegrationAccountAgreementListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountAgreementListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountAgreementListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountAgreementListResultIterator) Response() IntegrationAccountAgreementListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountAgreementListResultIterator) Value() IntegrationAccountAgreement {
+	if !iter.page.NotDone() {
+		return IntegrationAccountAgreement{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaalr IntegrationAccountAgreementListResult) IsEmpty() bool {
+	return iaalr.Value == nil || len(*iaalr.Value) == 0
+}
+
+// integrationAccountAgreementListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaalr IntegrationAccountAgreementListResult) integrationAccountAgreementListResultPreparer() (*http.Request, error) {
+	if iaalr.NextLink == nil || len(to.String(iaalr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(iaalr.NextLink)))
 }
 
-// IntegrationAccountAgreementProperties is
+// IntegrationAccountAgreementListResultPage contains a page of IntegrationAccountAgreement values.
+type IntegrationAccountAgreementListResultPage struct {
+	fn    func(IntegrationAccountAgreementListResult) (IntegrationAccountAgreementListResult, error)
+	iaalr IntegrationAccountAgreementListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountAgreementListResultPage) Next() error {
+	next, err := page.fn(page.iaalr)
+	if err != nil {
+		return err
+	}
+	page.iaalr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountAgreementListResultPage) NotDone() bool {
+	return !page.iaalr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountAgreementListResultPage) Response() IntegrationAccountAgreementListResult {
+	return page.iaalr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountAgreementListResultPage) Values() []IntegrationAccountAgreement {
+	if page.iaalr.IsEmpty() {
+		return nil
+	}
+	return *page.iaalr.Value
+}
+
+// IntegrationAccountAgreementProperties ...
 type IntegrationAccountAgreementProperties struct {
-	CreatedTime   *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime   *date.Time              `json:"changedTime,omitempty"`
-	Metadata      *map[string]interface{} `json:"metadata,omitempty"`
-	AgreementType AgreementType           `json:"agreementType,omitempty"`
-	HostPartner   *string                 `json:"hostPartner,omitempty"`
-	GuestPartner  *string                 `json:"guestPartner,omitempty"`
-	HostIdentity  *BusinessIdentity       `json:"hostIdentity,omitempty"`
-	GuestIdentity *BusinessIdentity       `json:"guestIdentity,omitempty"`
-	Content       *AgreementContent       `json:"content,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// AgreementType - The agreement type. Possible values include: 'NotSpecified', 'AS2', 'X12', 'Edifact'
+	AgreementType AgreementType `json:"agreementType,omitempty"`
+	// HostPartner - The host partner.
+	HostPartner *string `json:"hostPartner,omitempty"`
+	// GuestPartner - The guest partner.
+	GuestPartner *string `json:"guestPartner,omitempty"`
+	// HostIdentity - The host identity.
+	HostIdentity *BusinessIdentity `json:"hostIdentity,omitempty"`
+	// GuestIdentity - The guest identity.
+	GuestIdentity *BusinessIdentity `json:"guestIdentity,omitempty"`
+	// Content - The agreement content.
+	Content *AgreementContent `json:"content,omitempty"`
 }
 
-// IntegrationAccountCertificate is
+// IntegrationAccountCertificate ...
 type IntegrationAccountCertificate struct {
-	autorest.Response                        `json:"-"`
-	ID                                       *string             `json:"id,omitempty"`
-	Name                                     *string             `json:"name,omitempty"`
-	Type                                     *string             `json:"type,omitempty"`
-	Location                                 *string             `json:"location,omitempty"`
-	Tags                                     *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountCertificateProperties - The integration account certificate properties.
 	*IntegrationAccountCertificateProperties `json:"properties,omitempty"`
 }
 
-// IntegrationAccountCertificateListResult is
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountCertificate struct.
+func (iac *IntegrationAccountCertificate) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountCertificateProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iac.IntegrationAccountCertificateProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iac.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iac.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iac.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iac.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iac.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountCertificateListResult ...
 type IntegrationAccountCertificateListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountCertificate `json:"value,omitempty"`
-	NextLink          *string                          `json:"nextLink,omitempty"`
+	// Value - The list of integration account certificates.
+	Value *[]IntegrationAccountCertificate `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountCertificateListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountCertificateListResult) IntegrationAccountCertificateListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountCertificateListResultIterator provides access to a complete listing of
+// IntegrationAccountCertificate values.
+type IntegrationAccountCertificateListResultIterator struct {
+	i    int
+	page IntegrationAccountCertificateListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountCertificateListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountCertificateListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountCertificateListResultIterator) Response() IntegrationAccountCertificateListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountCertificateListResultIterator) Value() IntegrationAccountCertificate {
+	if !iter.page.NotDone() {
+		return IntegrationAccountCertificate{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaclr IntegrationAccountCertificateListResult) IsEmpty() bool {
+	return iaclr.Value == nil || len(*iaclr.Value) == 0
+}
+
+// integrationAccountCertificateListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaclr IntegrationAccountCertificateListResult) integrationAccountCertificateListResultPreparer() (*http.Request, error) {
+	if iaclr.NextLink == nil || len(to.String(iaclr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(iaclr.NextLink)))
 }
 
-// IntegrationAccountCertificateProperties is
+// IntegrationAccountCertificateListResultPage contains a page of IntegrationAccountCertificate values.
+type IntegrationAccountCertificateListResultPage struct {
+	fn    func(IntegrationAccountCertificateListResult) (IntegrationAccountCertificateListResult, error)
+	iaclr IntegrationAccountCertificateListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountCertificateListResultPage) Next() error {
+	next, err := page.fn(page.iaclr)
+	if err != nil {
+		return err
+	}
+	page.iaclr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountCertificateListResultPage) NotDone() bool {
+	return !page.iaclr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountCertificateListResultPage) Response() IntegrationAccountCertificateListResult {
+	return page.iaclr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountCertificateListResultPage) Values() []IntegrationAccountCertificate {
+	if page.iaclr.IsEmpty() {
+		return nil
+	}
+	return *page.iaclr.Value
+}
+
+// IntegrationAccountCertificateProperties ...
 type IntegrationAccountCertificateProperties struct {
-	CreatedTime       *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime       *date.Time              `json:"changedTime,omitempty"`
-	Metadata          *map[string]interface{} `json:"metadata,omitempty"`
-	Key               *KeyVaultKeyReference   `json:"key,omitempty"`
-	PublicCertificate *string                 `json:"publicCertificate,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Key - The key details in the key vault.
+	Key *KeyVaultKeyReference `json:"key,omitempty"`
+	// PublicCertificate - The public certificate.
+	PublicCertificate *string `json:"publicCertificate,omitempty"`
 }
 
-// IntegrationAccountContentHash is
+// IntegrationAccountContentHash ...
 type IntegrationAccountContentHash struct {
+	// Algorithm - The conetnt hash algorithm.
 	Algorithm *string `json:"algorithm,omitempty"`
-	Value     *string `json:"value,omitempty"`
+	// Value - The content hash value.
+	Value *string `json:"value,omitempty"`
 }
 
-// IntegrationAccountContentLink is
+// IntegrationAccountContentLink ...
 type IntegrationAccountContentLink struct {
-	URI            *string                        `json:"uri,omitempty"`
-	ContentVersion *string                        `json:"contentVersion,omitempty"`
-	ContentSize    *int64                         `json:"contentSize,omitempty"`
-	ContentHash    *IntegrationAccountContentHash `json:"contentHash,omitempty"`
-	Metadata       *map[string]interface{}        `json:"metadata,omitempty"`
+	// URI - The content link URI.
+	URI *string `json:"uri,omitempty"`
+	// ContentVersion - The content version.
+	ContentVersion *string `json:"contentVersion,omitempty"`
+	// ContentSize - The content size.
+	ContentSize *int64 `json:"contentSize,omitempty"`
+	// ContentHash - The content hash.
+	ContentHash *IntegrationAccountContentHash `json:"contentHash,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// IntegrationAccountListResult is
+// IntegrationAccountListResult ...
 type IntegrationAccountListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccount `json:"value,omitempty"`
-	NextLink          *string               `json:"nextLink,omitempty"`
+	// Value - The list of integration accounts.
+	Value *[]IntegrationAccount `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountListResult) IntegrationAccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountListResultIterator provides access to a complete listing of IntegrationAccount values.
+type IntegrationAccountListResultIterator struct {
+	i    int
+	page IntegrationAccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountListResultIterator) Response() IntegrationAccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountListResultIterator) Value() IntegrationAccount {
+	if !iter.page.NotDone() {
+		return IntegrationAccount{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (ialr IntegrationAccountListResult) IsEmpty() bool {
+	return ialr.Value == nil || len(*ialr.Value) == 0
+}
+
+// integrationAccountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (ialr IntegrationAccountListResult) integrationAccountListResultPreparer() (*http.Request, error) {
+	if ialr.NextLink == nil || len(to.String(ialr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(ialr.NextLink)))
 }
 
-// IntegrationAccountMap is
+// IntegrationAccountListResultPage contains a page of IntegrationAccount values.
+type IntegrationAccountListResultPage struct {
+	fn   func(IntegrationAccountListResult) (IntegrationAccountListResult, error)
+	ialr IntegrationAccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountListResultPage) Next() error {
+	next, err := page.fn(page.ialr)
+	if err != nil {
+		return err
+	}
+	page.ialr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountListResultPage) NotDone() bool {
+	return !page.ialr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountListResultPage) Response() IntegrationAccountListResult {
+	return page.ialr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountListResultPage) Values() []IntegrationAccount {
+	if page.ialr.IsEmpty() {
+		return nil
+	}
+	return *page.ialr.Value
+}
+
+// IntegrationAccountMap ...
 type IntegrationAccountMap struct {
-	autorest.Response                `json:"-"`
-	ID                               *string             `json:"id,omitempty"`
-	Name                             *string             `json:"name,omitempty"`
-	Type                             *string             `json:"type,omitempty"`
-	Location                         *string             `json:"location,omitempty"`
-	Tags                             *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountMapProperties - The integration account map properties.
 	*IntegrationAccountMapProperties `json:"properties,omitempty"`
 }
 
-// IntegrationAccountMapFilter is
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountMap struct.
+func (iam *IntegrationAccountMap) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountMapProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iam.IntegrationAccountMapProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iam.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iam.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iam.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iam.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iam.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountMapFilter ...
 type IntegrationAccountMapFilter struct {
+	// SchemaType - The map type of integration account map. Possible values include: 'MapTypeNotSpecified', 'MapTypeXslt'
 	SchemaType MapType `json:"schemaType,omitempty"`
 }
 
-// IntegrationAccountMapListResult is
+// IntegrationAccountMapListResult ...
 type IntegrationAccountMapListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountMap `json:"value,omitempty"`
-	NextLink          *string                  `json:"nextLink,omitempty"`
+	// Value - The list of integration account maps.
+	Value *[]IntegrationAccountMap `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountMapListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountMapListResult) IntegrationAccountMapListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountMapListResultIterator provides access to a complete listing of IntegrationAccountMap values.
+type IntegrationAccountMapListResultIterator struct {
+	i    int
+	page IntegrationAccountMapListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountMapListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountMapListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountMapListResultIterator) Response() IntegrationAccountMapListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountMapListResultIterator) Value() IntegrationAccountMap {
+	if !iter.page.NotDone() {
+		return IntegrationAccountMap{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iamlr IntegrationAccountMapListResult) IsEmpty() bool {
+	return iamlr.Value == nil || len(*iamlr.Value) == 0
+}
+
+// integrationAccountMapListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iamlr IntegrationAccountMapListResult) integrationAccountMapListResultPreparer() (*http.Request, error) {
+	if iamlr.NextLink == nil || len(to.String(iamlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(iamlr.NextLink)))
 }
 
-// IntegrationAccountMapProperties is
+// IntegrationAccountMapListResultPage contains a page of IntegrationAccountMap values.
+type IntegrationAccountMapListResultPage struct {
+	fn    func(IntegrationAccountMapListResult) (IntegrationAccountMapListResult, error)
+	iamlr IntegrationAccountMapListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountMapListResultPage) Next() error {
+	next, err := page.fn(page.iamlr)
+	if err != nil {
+		return err
+	}
+	page.iamlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountMapListResultPage) NotDone() bool {
+	return !page.iamlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountMapListResultPage) Response() IntegrationAccountMapListResult {
+	return page.iamlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountMapListResultPage) Values() []IntegrationAccountMap {
+	if page.iamlr.IsEmpty() {
+		return nil
+	}
+	return *page.iamlr.Value
+}
+
+// IntegrationAccountMapProperties ...
 type IntegrationAccountMapProperties struct {
-	MapType     MapType                        `json:"mapType,omitempty"`
-	CreatedTime *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime *date.Time                     `json:"changedTime,omitempty"`
-	Content     *map[string]interface{}        `json:"content,omitempty"`
-	ContentType *string                        `json:"contentType,omitempty"`
+	// MapType - The map type. Possible values include: 'MapTypeNotSpecified', 'MapTypeXslt'
+	MapType MapType `json:"mapType,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Content - The content.
+	Content *map[string]interface{} `json:"content,omitempty"`
+	// ContentType - The content type.
+	ContentType *string `json:"contentType,omitempty"`
+	// ContentLink - The content link.
 	ContentLink *IntegrationAccountContentLink `json:"contentLink,omitempty"`
-	Metadata    *map[string]interface{}        `json:"metadata,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// IntegrationAccountPartner is
+// IntegrationAccountPartner ...
 type IntegrationAccountPartner struct {
-	autorest.Response                    `json:"-"`
-	ID                                   *string             `json:"id,omitempty"`
-	Name                                 *string             `json:"name,omitempty"`
-	Type                                 *string             `json:"type,omitempty"`
-	Location                             *string             `json:"location,omitempty"`
-	Tags                                 *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountPartnerProperties - The integration account partner properties.
 	*IntegrationAccountPartnerProperties `json:"properties,omitempty"`
 }
 
-// IntegrationAccountPartnerFilter is
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountPartner struct.
+func (iap *IntegrationAccountPartner) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountPartnerProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		iap.IntegrationAccountPartnerProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		iap.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		iap.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		iap.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		iap.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		iap.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountPartnerFilter ...
 type IntegrationAccountPartnerFilter struct {
+	// PartnerType - The partner type of integration account partner. Possible values include: 'PartnerTypeNotSpecified', 'PartnerTypeB2B'
 	PartnerType PartnerType `json:"partnerType,omitempty"`
 }
 
-// IntegrationAccountPartnerListResult is
+// IntegrationAccountPartnerListResult ...
 type IntegrationAccountPartnerListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountPartner `json:"value,omitempty"`
-	NextLink          *string                      `json:"nextLink,omitempty"`
+	// Value - The list of integration account partners.
+	Value *[]IntegrationAccountPartner `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountPartnerListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountPartnerListResult) IntegrationAccountPartnerListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountPartnerListResultIterator provides access to a complete listing of IntegrationAccountPartner
+// values.
+type IntegrationAccountPartnerListResultIterator struct {
+	i    int
+	page IntegrationAccountPartnerListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountPartnerListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountPartnerListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountPartnerListResultIterator) Response() IntegrationAccountPartnerListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountPartnerListResultIterator) Value() IntegrationAccountPartner {
+	if !iter.page.NotDone() {
+		return IntegrationAccountPartner{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaplr IntegrationAccountPartnerListResult) IsEmpty() bool {
+	return iaplr.Value == nil || len(*iaplr.Value) == 0
+}
+
+// integrationAccountPartnerListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaplr IntegrationAccountPartnerListResult) integrationAccountPartnerListResultPreparer() (*http.Request, error) {
+	if iaplr.NextLink == nil || len(to.String(iaplr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(iaplr.NextLink)))
 }
 
-// IntegrationAccountPartnerProperties is
+// IntegrationAccountPartnerListResultPage contains a page of IntegrationAccountPartner values.
+type IntegrationAccountPartnerListResultPage struct {
+	fn    func(IntegrationAccountPartnerListResult) (IntegrationAccountPartnerListResult, error)
+	iaplr IntegrationAccountPartnerListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountPartnerListResultPage) Next() error {
+	next, err := page.fn(page.iaplr)
+	if err != nil {
+		return err
+	}
+	page.iaplr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountPartnerListResultPage) NotDone() bool {
+	return !page.iaplr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountPartnerListResultPage) Response() IntegrationAccountPartnerListResult {
+	return page.iaplr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountPartnerListResultPage) Values() []IntegrationAccountPartner {
+	if page.iaplr.IsEmpty() {
+		return nil
+	}
+	return *page.iaplr.Value
+}
+
+// IntegrationAccountPartnerProperties ...
 type IntegrationAccountPartnerProperties struct {
-	PartnerType PartnerType             `json:"partnerType,omitempty"`
-	CreatedTime *date.Time              `json:"createdTime,omitempty"`
-	ChangedTime *date.Time              `json:"changedTime,omitempty"`
-	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
-	Content     *PartnerContent         `json:"content,omitempty"`
+	// PartnerType - The partner type. Possible values include: 'PartnerTypeNotSpecified', 'PartnerTypeB2B'
+	PartnerType PartnerType `json:"partnerType,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	// Content - The partner content.
+	Content *PartnerContent `json:"content,omitempty"`
 }
 
-// IntegrationAccountResource is
+// IntegrationAccountResource ...
 type IntegrationAccountResource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// IntegrationAccountSchema is
+// IntegrationAccountSchema ...
 type IntegrationAccountSchema struct {
-	autorest.Response                   `json:"-"`
-	ID                                  *string             `json:"id,omitempty"`
-	Name                                *string             `json:"name,omitempty"`
-	Type                                *string             `json:"type,omitempty"`
-	Location                            *string             `json:"location,omitempty"`
-	Tags                                *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource location.
+	Location *string `json:"location,omitempty"`
+	// Tags - The resource tags.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// IntegrationAccountSchemaProperties - The integration account schema properties.
 	*IntegrationAccountSchemaProperties `json:"properties,omitempty"`
 }
 
-// IntegrationAccountSchemaFilter is
+// UnmarshalJSON is the custom unmarshaler for IntegrationAccountSchema struct.
+func (ias *IntegrationAccountSchema) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties IntegrationAccountSchemaProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		ias.IntegrationAccountSchemaProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		ias.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		ias.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		ias.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		ias.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		ias.Tags = &tags
+	}
+
+	return nil
+}
+
+// IntegrationAccountSchemaFilter ...
 type IntegrationAccountSchemaFilter struct {
+	// SchemaType - The schema type of integration account schema. Possible values include: 'SchemaTypeNotSpecified', 'SchemaTypeXML'
 	SchemaType SchemaType `json:"schemaType,omitempty"`
 }
 
-// IntegrationAccountSchemaListResult is
+// IntegrationAccountSchemaListResult ...
 type IntegrationAccountSchemaListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]IntegrationAccountSchema `json:"value,omitempty"`
-	NextLink          *string                     `json:"nextLink,omitempty"`
+	// Value - The list of integration account schemas.
+	Value *[]IntegrationAccountSchema `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// IntegrationAccountSchemaListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client IntegrationAccountSchemaListResult) IntegrationAccountSchemaListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// IntegrationAccountSchemaListResultIterator provides access to a complete listing of IntegrationAccountSchema values.
+type IntegrationAccountSchemaListResultIterator struct {
+	i    int
+	page IntegrationAccountSchemaListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *IntegrationAccountSchemaListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter IntegrationAccountSchemaListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter IntegrationAccountSchemaListResultIterator) Response() IntegrationAccountSchemaListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter IntegrationAccountSchemaListResultIterator) Value() IntegrationAccountSchema {
+	if !iter.page.NotDone() {
+		return IntegrationAccountSchema{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (iaslr IntegrationAccountSchemaListResult) IsEmpty() bool {
+	return iaslr.Value == nil || len(*iaslr.Value) == 0
+}
+
+// integrationAccountSchemaListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (iaslr IntegrationAccountSchemaListResult) integrationAccountSchemaListResultPreparer() (*http.Request, error) {
+	if iaslr.NextLink == nil || len(to.String(iaslr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(iaslr.NextLink)))
 }
 
-// IntegrationAccountSchemaProperties is
+// IntegrationAccountSchemaListResultPage contains a page of IntegrationAccountSchema values.
+type IntegrationAccountSchemaListResultPage struct {
+	fn    func(IntegrationAccountSchemaListResult) (IntegrationAccountSchemaListResult, error)
+	iaslr IntegrationAccountSchemaListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *IntegrationAccountSchemaListResultPage) Next() error {
+	next, err := page.fn(page.iaslr)
+	if err != nil {
+		return err
+	}
+	page.iaslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page IntegrationAccountSchemaListResultPage) NotDone() bool {
+	return !page.iaslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page IntegrationAccountSchemaListResultPage) Response() IntegrationAccountSchemaListResult {
+	return page.iaslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page IntegrationAccountSchemaListResultPage) Values() []IntegrationAccountSchema {
+	if page.iaslr.IsEmpty() {
+		return nil
+	}
+	return *page.iaslr.Value
+}
+
+// IntegrationAccountSchemaProperties ...
 type IntegrationAccountSchemaProperties struct {
-	SchemaType      SchemaType                     `json:"schemaType,omitempty"`
-	TargetNamespace *string                        `json:"targetNamespace,omitempty"`
-	CreatedTime     *date.Time                     `json:"createdTime,omitempty"`
-	ChangedTime     *date.Time                     `json:"changedTime,omitempty"`
-	Content         *map[string]interface{}        `json:"content,omitempty"`
-	ContentType     *string                        `json:"contentType,omitempty"`
-	ContentLink     *IntegrationAccountContentLink `json:"contentLink,omitempty"`
-	Metadata        *map[string]interface{}        `json:"metadata,omitempty"`
+	// SchemaType - The schema type. Possible values include: 'SchemaTypeNotSpecified', 'SchemaTypeXML'
+	SchemaType SchemaType `json:"schemaType,omitempty"`
+	// TargetNamespace - The target namespace.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// CreatedTime - The created time.
+	CreatedTime *date.Time `json:"createdTime,omitempty"`
+	// ChangedTime - The changed time.
+	ChangedTime *date.Time `json:"changedTime,omitempty"`
+	// Content - The content.
+	Content *map[string]interface{} `json:"content,omitempty"`
+	// ContentType - The content type.
+	ContentType *string `json:"contentType,omitempty"`
+	// ContentLink - The content link.
+	ContentLink *IntegrationAccountContentLink `json:"contentLink,omitempty"`
+	// Metadata - The metadata.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// IntegrationAccountSku is
+// IntegrationAccountSku ...
 type IntegrationAccountSku struct {
+	// Name - The sku name. Possible values include: 'SkuNameNotSpecified', 'SkuNameFree', 'SkuNameShared', 'SkuNameBasic', 'SkuNameStandard', 'SkuNamePremium'
 	Name SkuName `json:"name,omitempty"`
 }
 
-// KeyVaultKeyReference is
+// KeyVaultKeyReference ...
 type KeyVaultKeyReference struct {
-	KeyVault   *KeyVaultKeyReferenceKeyVault `json:"keyVault,omitempty"`
-	KeyName    *string                       `json:"keyName,omitempty"`
-	KeyVersion *string                       `json:"keyVersion,omitempty"`
+	// KeyVault - The key vault reference.
+	KeyVault *KeyVaultKeyReferenceKeyVault `json:"keyVault,omitempty"`
+	// KeyName - The private key name in key vault.
+	KeyName *string `json:"keyName,omitempty"`
+	// KeyVersion - The private key version in key vault.
+	KeyVersion *string `json:"keyVersion,omitempty"`
 }
 
-// KeyVaultKeyReferenceKeyVault is the key vault reference.
+// KeyVaultKeyReferenceKeyVault the key vault reference.
 type KeyVaultKeyReferenceKeyVault struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - The resource id.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - The resource type.
 	Type *string `json:"type,omitempty"`
 }
 
-// ListCallbackURLParameters is
+// ListCallbackURLParameters ...
 type ListCallbackURLParameters struct {
+	// NotAfter - The expiry time.
 	NotAfter *date.Time `json:"NotAfter,omitempty"`
 }
 
-// PartnerContent is
+// PartnerContent ...
 type PartnerContent struct {
+	// B2b - The B2B partner content.
 	B2b *B2BPartnerContent `json:"b2b,omitempty"`
 }
 
-// X12AcknowledgementSettings is
+// X12AcknowledgementSettings ...
 type X12AcknowledgementSettings struct {
-	NeedTechnicalAcknowledgement           *bool   `json:"needTechnicalAcknowledgement,omitempty"`
-	BatchTechnicalAcknowledgements         *bool   `json:"batchTechnicalAcknowledgements,omitempty"`
-	NeedFunctionalAcknowledgement          *bool   `json:"needFunctionalAcknowledgement,omitempty"`
-	FunctionalAcknowledgementVersion       *string `json:"functionalAcknowledgementVersion,omitempty"`
-	BatchFunctionalAcknowledgements        *bool   `json:"batchFunctionalAcknowledgements,omitempty"`
-	NeedImplementationAcknowledgement      *bool   `json:"needImplementationAcknowledgement,omitempty"`
-	ImplementationAcknowledgementVersion   *string `json:"implementationAcknowledgementVersion,omitempty"`
-	BatchImplementationAcknowledgements    *bool   `json:"batchImplementationAcknowledgements,omitempty"`
-	NeedLoopForValidMessages               *bool   `json:"needLoopForValidMessages,omitempty"`
-	SendSynchronousAcknowledgement         *bool   `json:"sendSynchronousAcknowledgement,omitempty"`
-	AcknowledgementControlNumberPrefix     *string `json:"acknowledgementControlNumberPrefix,omitempty"`
-	AcknowledgementControlNumberSuffix     *string `json:"acknowledgementControlNumberSuffix,omitempty"`
-	AcknowledgementControlNumberLowerBound *int32  `json:"acknowledgementControlNumberLowerBound,omitempty"`
-	AcknowledgementControlNumberUpperBound *int32  `json:"acknowledgementControlNumberUpperBound,omitempty"`
-	RolloverAcknowledgementControlNumber   *bool   `json:"rolloverAcknowledgementControlNumber,omitempty"`
+	// NeedTechnicalAcknowledgement - The value indicating whether technical acknowledgement is needed.
+	NeedTechnicalAcknowledgement *bool `json:"needTechnicalAcknowledgement,omitempty"`
+	// BatchTechnicalAcknowledgements - The value indicating whether to batch the technical acknowledgements.
+	BatchTechnicalAcknowledgements *bool `json:"batchTechnicalAcknowledgements,omitempty"`
+	// NeedFunctionalAcknowledgement - The value indicating whether functional acknowledgement is needed.
+	NeedFunctionalAcknowledgement *bool `json:"needFunctionalAcknowledgement,omitempty"`
+	// FunctionalAcknowledgementVersion - The functional acknowledgement version.
+	FunctionalAcknowledgementVersion *string `json:"functionalAcknowledgementVersion,omitempty"`
+	// BatchFunctionalAcknowledgements - The value indicating whether to batch functional acknowledgements.
+	BatchFunctionalAcknowledgements *bool `json:"batchFunctionalAcknowledgements,omitempty"`
+	// NeedImplementationAcknowledgement - The value indicating whether implementation acknowledgement is needed.
+	NeedImplementationAcknowledgement *bool `json:"needImplementationAcknowledgement,omitempty"`
+	// ImplementationAcknowledgementVersion - The implementation acknowledgement version.
+	ImplementationAcknowledgementVersion *string `json:"implementationAcknowledgementVersion,omitempty"`
+	// BatchImplementationAcknowledgements - The value indicating whether to batch implementation acknowledgements.
+	BatchImplementationAcknowledgements *bool `json:"batchImplementationAcknowledgements,omitempty"`
+	// NeedLoopForValidMessages - The value indicating whether a loop is needed for valid messages.
+	NeedLoopForValidMessages *bool `json:"needLoopForValidMessages,omitempty"`
+	// SendSynchronousAcknowledgement - The value indicating whether to send synchronous acknowledgement.
+	SendSynchronousAcknowledgement *bool `json:"sendSynchronousAcknowledgement,omitempty"`
+	// AcknowledgementControlNumberPrefix - The acknowledgement control number prefix.
+	AcknowledgementControlNumberPrefix *string `json:"acknowledgementControlNumberPrefix,omitempty"`
+	// AcknowledgementControlNumberSuffix - The acknowledgement control number suffix.
+	AcknowledgementControlNumberSuffix *string `json:"acknowledgementControlNumberSuffix,omitempty"`
+	// AcknowledgementControlNumberLowerBound - The acknowledgement control number lower bound.
+	AcknowledgementControlNumberLowerBound *int32 `json:"acknowledgementControlNumberLowerBound,omitempty"`
+	// AcknowledgementControlNumberUpperBound - The acknowledgement control number upper bound.
+	AcknowledgementControlNumberUpperBound *int32 `json:"acknowledgementControlNumberUpperBound,omitempty"`
+	// RolloverAcknowledgementControlNumber - The value indicating whether to rollover acknowledgement control number.
+	RolloverAcknowledgementControlNumber *bool `json:"rolloverAcknowledgementControlNumber,omitempty"`
 }
 
-// X12AgreementContent is
+// X12AgreementContent ...
 type X12AgreementContent struct {
+	// ReceiveAgreement - The X12 one-way receive agreement.
 	ReceiveAgreement *X12OneWayAgreement `json:"receiveAgreement,omitempty"`
-	SendAgreement    *X12OneWayAgreement `json:"sendAgreement,omitempty"`
+	// SendAgreement - The X12 one-way send agreement.
+	SendAgreement *X12OneWayAgreement `json:"sendAgreement,omitempty"`
 }
 
-// X12DelimiterOverrides is
+// X12DelimiterOverrides ...
 type X12DelimiterOverrides struct {
-	ProtocolVersion            *string                 `json:"protocolVersion,omitempty"`
-	MessageID                  *string                 `json:"messageId,omitempty"`
-	DataElementSeparator       *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator         *int32                  `json:"componentSeparator,omitempty"`
-	SegmentTerminator          *int32                  `json:"segmentTerminator,omitempty"`
-	SegmentTerminatorSuffix    SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
-	ReplaceCharacter           *int32                  `json:"replaceCharacter,omitempty"`
-	ReplaceSeparatorsInPayload *bool                   `json:"replaceSeparatorsInPayload,omitempty"`
-	TargetNamespace            *string                 `json:"targetNamespace,omitempty"`
+	// ProtocolVersion - The protocol version.
+	ProtocolVersion *string `json:"protocolVersion,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// ReplaceCharacter - The replacement character.
+	ReplaceCharacter *int32 `json:"replaceCharacter,omitempty"`
+	// ReplaceSeparatorsInPayload - The value indicating whether to replace separators in payload.
+	ReplaceSeparatorsInPayload *bool `json:"replaceSeparatorsInPayload,omitempty"`
+	// TargetNamespace - The target namespace on which this delimiter settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
 }
 
-// X12EnvelopeOverride is
+// X12EnvelopeOverride ...
 type X12EnvelopeOverride struct {
-	TargetNamespace          *string       `json:"targetNamespace,omitempty"`
-	ProtocolVersion          *string       `json:"protocolVersion,omitempty"`
-	MessageID                *string       `json:"messageId,omitempty"`
-	ResponsibleAgencyCode    *int32        `json:"responsibleAgencyCode,omitempty"`
-	HeaderVersion            *string       `json:"headerVersion,omitempty"`
-	SenderApplicationID      *string       `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationID    *string       `json:"receiverApplicationId,omitempty"`
-	FunctionalIdentifierCode *string       `json:"functionalIdentifierCode,omitempty"`
-	DateFormat               X12DateFormat `json:"dateFormat,omitempty"`
-	TimeFormat               X12TimeFormat `json:"timeFormat,omitempty"`
+	// TargetNamespace - The target namespace on which this envelope settings has to be applied.
+	TargetNamespace *string `json:"targetNamespace,omitempty"`
+	// ProtocolVersion - The protocol version on which this envelope settings has to be applied.
+	ProtocolVersion *string `json:"protocolVersion,omitempty"`
+	// MessageID - The message id on which this envelope settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// ResponsibleAgencyCode - The responsible agency code.
+	ResponsibleAgencyCode *int32 `json:"responsibleAgencyCode,omitempty"`
+	// HeaderVersion - The header version.
+	HeaderVersion *string `json:"headerVersion,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// FunctionalIdentifierCode - The functional identifier code.
+	FunctionalIdentifierCode *string `json:"functionalIdentifierCode,omitempty"`
+	// DateFormat - The date format. Possible values include: 'X12DateFormatNotSpecified', 'X12DateFormatCCYYMMDD', 'X12DateFormatYYMMDD'
+	DateFormat X12DateFormat `json:"dateFormat,omitempty"`
+	// TimeFormat - The time format. Possible values include: 'X12TimeFormatNotSpecified', 'X12TimeFormatHHMM', 'X12TimeFormatHHMMSS', 'X12TimeFormatHHMMSSdd', 'X12TimeFormatHHMMSSd'
+	TimeFormat X12TimeFormat `json:"timeFormat,omitempty"`
 }
 
-// X12EnvelopeSettings is
+// X12EnvelopeSettings ...
 type X12EnvelopeSettings struct {
-	ControlStandardsID                           *int32         `json:"controlStandardsId,omitempty"`
-	UseControlStandardsIDAsRepetitionCharacter   *bool          `json:"useControlStandardsIdAsRepetitionCharacter,omitempty"`
-	SenderApplicationID                          *string        `json:"senderApplicationId,omitempty"`
-	ReceiverApplicationID                        *string        `json:"receiverApplicationId,omitempty"`
-	ControlVersionNumber                         *string        `json:"controlVersionNumber,omitempty"`
-	InterchangeControlNumberLowerBound           *int32         `json:"interchangeControlNumberLowerBound,omitempty"`
-	InterchangeControlNumberUpperBound           *int32         `json:"interchangeControlNumberUpperBound,omitempty"`
-	RolloverInterchangeControlNumber             *bool          `json:"rolloverInterchangeControlNumber,omitempty"`
-	EnableDefaultGroupHeaders                    *bool          `json:"enableDefaultGroupHeaders,omitempty"`
-	FunctionalGroupID                            *string        `json:"functionalGroupId,omitempty"`
-	GroupControlNumberLowerBound                 *int32         `json:"groupControlNumberLowerBound,omitempty"`
-	GroupControlNumberUpperBound                 *int32         `json:"groupControlNumberUpperBound,omitempty"`
-	RolloverGroupControlNumber                   *bool          `json:"rolloverGroupControlNumber,omitempty"`
-	GroupHeaderAgencyCode                        *string        `json:"groupHeaderAgencyCode,omitempty"`
-	GroupHeaderVersion                           *string        `json:"groupHeaderVersion,omitempty"`
-	TransactionSetControlNumberLowerBound        *int32         `json:"transactionSetControlNumberLowerBound,omitempty"`
-	TransactionSetControlNumberUpperBound        *int32         `json:"transactionSetControlNumberUpperBound,omitempty"`
-	RolloverTransactionSetControlNumber          *bool          `json:"rolloverTransactionSetControlNumber,omitempty"`
-	TransactionSetControlNumberPrefix            *string        `json:"transactionSetControlNumberPrefix,omitempty"`
-	TransactionSetControlNumberSuffix            *string        `json:"transactionSetControlNumberSuffix,omitempty"`
-	OverwriteExistingTransactionSetControlNumber *bool          `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
-	GroupHeaderDateFormat                        X12DateFormat  `json:"groupHeaderDateFormat,omitempty"`
-	GroupHeaderTimeFormat                        X12TimeFormat  `json:"groupHeaderTimeFormat,omitempty"`
-	UsageIndicator                               UsageIndicator `json:"usageIndicator,omitempty"`
+	// ControlStandardsID - The controls standards id.
+	ControlStandardsID *int32 `json:"controlStandardsId,omitempty"`
+	// UseControlStandardsIDAsRepetitionCharacter - The value indicating whether to use control standards id as repetition character.
+	UseControlStandardsIDAsRepetitionCharacter *bool `json:"useControlStandardsIdAsRepetitionCharacter,omitempty"`
+	// SenderApplicationID - The sender application id.
+	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
+	// ReceiverApplicationID - The receiver application id.
+	ReceiverApplicationID *string `json:"receiverApplicationId,omitempty"`
+	// ControlVersionNumber - The control version number.
+	ControlVersionNumber *string `json:"controlVersionNumber,omitempty"`
+	// InterchangeControlNumberLowerBound - The interchange  control number lower bound.
+	InterchangeControlNumberLowerBound *int32 `json:"interchangeControlNumberLowerBound,omitempty"`
+	// InterchangeControlNumberUpperBound - The interchange  control number upper bound.
+	InterchangeControlNumberUpperBound *int32 `json:"interchangeControlNumberUpperBound,omitempty"`
+	// RolloverInterchangeControlNumber - The value indicating whether to rollover interchange control number.
+	RolloverInterchangeControlNumber *bool `json:"rolloverInterchangeControlNumber,omitempty"`
+	// EnableDefaultGroupHeaders - The value indicating whether to enable default group headers.
+	EnableDefaultGroupHeaders *bool `json:"enableDefaultGroupHeaders,omitempty"`
+	// FunctionalGroupID - The functional group id.
+	FunctionalGroupID *string `json:"functionalGroupId,omitempty"`
+	// GroupControlNumberLowerBound - The group control number lower bound.
+	GroupControlNumberLowerBound *int32 `json:"groupControlNumberLowerBound,omitempty"`
+	// GroupControlNumberUpperBound - The group control number upper bound.
+	GroupControlNumberUpperBound *int32 `json:"groupControlNumberUpperBound,omitempty"`
+	// RolloverGroupControlNumber - The value indicating whether to rollover group control number.
+	RolloverGroupControlNumber *bool `json:"rolloverGroupControlNumber,omitempty"`
+	// GroupHeaderAgencyCode - The group header agency code.
+	GroupHeaderAgencyCode *string `json:"groupHeaderAgencyCode,omitempty"`
+	// GroupHeaderVersion - The group header version.
+	GroupHeaderVersion *string `json:"groupHeaderVersion,omitempty"`
+	// TransactionSetControlNumberLowerBound - The transaction set control number lower bound.
+	TransactionSetControlNumberLowerBound *int32 `json:"transactionSetControlNumberLowerBound,omitempty"`
+	// TransactionSetControlNumberUpperBound - The transaction set control number upper bound.
+	TransactionSetControlNumberUpperBound *int32 `json:"transactionSetControlNumberUpperBound,omitempty"`
+	// RolloverTransactionSetControlNumber - The value indicating whether to rollover transaction set control number.
+	RolloverTransactionSetControlNumber *bool `json:"rolloverTransactionSetControlNumber,omitempty"`
+	// TransactionSetControlNumberPrefix - The transaction set control number prefix.
+	TransactionSetControlNumberPrefix *string `json:"transactionSetControlNumberPrefix,omitempty"`
+	// TransactionSetControlNumberSuffix - The transaction set control number suffix.
+	TransactionSetControlNumberSuffix *string `json:"transactionSetControlNumberSuffix,omitempty"`
+	// OverwriteExistingTransactionSetControlNumber - The value indicating whether to overwrite existing transaction set control number.
+	OverwriteExistingTransactionSetControlNumber *bool `json:"overwriteExistingTransactionSetControlNumber,omitempty"`
+	// GroupHeaderDateFormat - The group header date format. Possible values include: 'X12DateFormatNotSpecified', 'X12DateFormatCCYYMMDD', 'X12DateFormatYYMMDD'
+	GroupHeaderDateFormat X12DateFormat `json:"groupHeaderDateFormat,omitempty"`
+	// GroupHeaderTimeFormat - The group header time format. Possible values include: 'X12TimeFormatNotSpecified', 'X12TimeFormatHHMM', 'X12TimeFormatHHMMSS', 'X12TimeFormatHHMMSSdd', 'X12TimeFormatHHMMSSd'
+	GroupHeaderTimeFormat X12TimeFormat `json:"groupHeaderTimeFormat,omitempty"`
+	// UsageIndicator - The usage indicator. Possible values include: 'UsageIndicatorNotSpecified', 'UsageIndicatorTest', 'UsageIndicatorInformation', 'UsageIndicatorProduction'
+	UsageIndicator UsageIndicator `json:"usageIndicator,omitempty"`
 }
 
-// X12FramingSettings is
+// X12FramingSettings ...
 type X12FramingSettings struct {
-	DataElementSeparator       *int32                  `json:"dataElementSeparator,omitempty"`
-	ComponentSeparator         *int32                  `json:"componentSeparator,omitempty"`
-	ReplaceSeparatorsInPayload *bool                   `json:"replaceSeparatorsInPayload,omitempty"`
-	ReplaceCharacter           *int32                  `json:"replaceCharacter,omitempty"`
-	SegmentTerminator          *int32                  `json:"segmentTerminator,omitempty"`
-	CharacterSet               X12CharacterSet         `json:"characterSet,omitempty"`
-	SegmentTerminatorSuffix    SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
+	// DataElementSeparator - The data element separator.
+	DataElementSeparator *int32 `json:"dataElementSeparator,omitempty"`
+	// ComponentSeparator - The component separator.
+	ComponentSeparator *int32 `json:"componentSeparator,omitempty"`
+	// ReplaceSeparatorsInPayload - The value indicating whether to replace separators in payload.
+	ReplaceSeparatorsInPayload *bool `json:"replaceSeparatorsInPayload,omitempty"`
+	// ReplaceCharacter - The replacement character.
+	ReplaceCharacter *int32 `json:"replaceCharacter,omitempty"`
+	// SegmentTerminator - The segment terminator.
+	SegmentTerminator *int32 `json:"segmentTerminator,omitempty"`
+	// CharacterSet - The X12 character set. Possible values include: 'X12CharacterSetNotSpecified', 'X12CharacterSetBasic', 'X12CharacterSetExtended', 'X12CharacterSetUTF8'
+	CharacterSet X12CharacterSet `json:"characterSet,omitempty"`
+	// SegmentTerminatorSuffix - The segment terminator suffix. Possible values include: 'SegmentTerminatorSuffixNotSpecified', 'SegmentTerminatorSuffixNone', 'SegmentTerminatorSuffixCR', 'SegmentTerminatorSuffixLF', 'SegmentTerminatorSuffixCRLF'
+	SegmentTerminatorSuffix SegmentTerminatorSuffix `json:"segmentTerminatorSuffix,omitempty"`
 }
 
-// X12MessageFilter is
+// X12MessageFilter ...
 type X12MessageFilter struct {
+	// MessageFilterType - The message filter type. Possible values include: 'MessageFilterTypeNotSpecified', 'MessageFilterTypeInclude', 'MessageFilterTypeExclude'
 	MessageFilterType MessageFilterType `json:"messageFilterType,omitempty"`
 }
 
-// X12MessageIdentifier is
+// X12MessageIdentifier ...
 type X12MessageIdentifier struct {
+	// MessageID - The message id.
 	MessageID *string `json:"messageId,omitempty"`
 }
 
-// X12OneWayAgreement is
+// X12OneWayAgreement ...
 type X12OneWayAgreement struct {
-	SenderBusinessIdentity   *BusinessIdentity    `json:"senderBusinessIdentity,omitempty"`
-	ReceiverBusinessIdentity *BusinessIdentity    `json:"receiverBusinessIdentity,omitempty"`
-	ProtocolSettings         *X12ProtocolSettings `json:"protocolSettings,omitempty"`
+	// SenderBusinessIdentity - The sender business identity
+	SenderBusinessIdentity *BusinessIdentity `json:"senderBusinessIdentity,omitempty"`
+	// ReceiverBusinessIdentity - The receiver business identity
+	ReceiverBusinessIdentity *BusinessIdentity `json:"receiverBusinessIdentity,omitempty"`
+	// ProtocolSettings - The X12 protocol settings.
+	ProtocolSettings *X12ProtocolSettings `json:"protocolSettings,omitempty"`
 }
 
-// X12ProcessingSettings is
+// X12ProcessingSettings ...
 type X12ProcessingSettings struct {
-	MaskSecurityInfo                        *bool `json:"maskSecurityInfo,omitempty"`
-	ConvertImpliedDecimal                   *bool `json:"convertImpliedDecimal,omitempty"`
-	PreserveInterchange                     *bool `json:"preserveInterchange,omitempty"`
-	SuspendInterchangeOnError               *bool `json:"suspendInterchangeOnError,omitempty"`
+	// MaskSecurityInfo - The value indicating whether to mask security information.
+	MaskSecurityInfo *bool `json:"maskSecurityInfo,omitempty"`
+	// ConvertImpliedDecimal - The value indicating whether to convert numerical type to implied decimal.
+	ConvertImpliedDecimal *bool `json:"convertImpliedDecimal,omitempty"`
+	// PreserveInterchange - The value indicating whether to preserve interchange.
+	PreserveInterchange *bool `json:"preserveInterchange,omitempty"`
+	// SuspendInterchangeOnError - The value indicating whether to suspend interchange on error.
+	SuspendInterchangeOnError *bool `json:"suspendInterchangeOnError,omitempty"`
+	// CreateEmptyXMLTagsForTrailingSeparators - The value indicating whether to create empty xml tags for trailing separators.
 	CreateEmptyXMLTagsForTrailingSeparators *bool `json:"createEmptyXmlTagsForTrailingSeparators,omitempty"`
-	UseDotAsDecimalSeparator                *bool `json:"useDotAsDecimalSeparator,omitempty"`
+	// UseDotAsDecimalSeparator - The value indicating whether to use dot as decimal separator.
+	UseDotAsDecimalSeparator *bool `json:"useDotAsDecimalSeparator,omitempty"`
 }
 
-// X12ProtocolSettings is
+// X12ProtocolSettings ...
 type X12ProtocolSettings struct {
-	ValidationSettings      *X12ValidationSettings      `json:"validationSettings,omitempty"`
-	FramingSettings         *X12FramingSettings         `json:"framingSettings,omitempty"`
-	EnvelopeSettings        *X12EnvelopeSettings        `json:"envelopeSettings,omitempty"`
+	// ValidationSettings - The X12 validation settings.
+	ValidationSettings *X12ValidationSettings `json:"validationSettings,omitempty"`
+	// FramingSettings - The X12 framing settings.
+	FramingSettings *X12FramingSettings `json:"framingSettings,omitempty"`
+	// EnvelopeSettings - The X12 envelope settings.
+	EnvelopeSettings *X12EnvelopeSettings `json:"envelopeSettings,omitempty"`
+	// AcknowledgementSettings - The X12 acknowledgment settings.
 	AcknowledgementSettings *X12AcknowledgementSettings `json:"acknowledgementSettings,omitempty"`
-	MessageFilter           *X12MessageFilter           `json:"messageFilter,omitempty"`
-	SecuritySettings        *X12SecuritySettings        `json:"securitySettings,omitempty"`
-	ProcessingSettings      *X12ProcessingSettings      `json:"processingSettings,omitempty"`
-	EnvelopeOverrides       *[]X12EnvelopeOverride      `json:"envelopeOverrides,omitempty"`
-	ValidationOverrides     *[]X12ValidationOverride    `json:"validationOverrides,omitempty"`
-	MessageFilterList       *[]X12MessageIdentifier     `json:"messageFilterList,omitempty"`
-	SchemaReferences        *[]X12SchemaReference       `json:"schemaReferences,omitempty"`
-	X12DelimiterOverrides   *[]X12DelimiterOverrides    `json:"x12DelimiterOverrides,omitempty"`
+	// MessageFilter - The X12 message filter.
+	MessageFilter *X12MessageFilter `json:"messageFilter,omitempty"`
+	// SecuritySettings - The X12 security settings.
+	SecuritySettings *X12SecuritySettings `json:"securitySettings,omitempty"`
+	// ProcessingSettings - The X12 processing settings.
+	ProcessingSettings *X12ProcessingSettings `json:"processingSettings,omitempty"`
+	// EnvelopeOverrides - The X12 envelope override settings.
+	EnvelopeOverrides *[]X12EnvelopeOverride `json:"envelopeOverrides,omitempty"`
+	// ValidationOverrides - The X12 validation override settings.
+	ValidationOverrides *[]X12ValidationOverride `json:"validationOverrides,omitempty"`
+	// MessageFilterList - The X12 message filter list.
+	MessageFilterList *[]X12MessageIdentifier `json:"messageFilterList,omitempty"`
+	// SchemaReferences - The X12 schema references.
+	SchemaReferences *[]X12SchemaReference `json:"schemaReferences,omitempty"`
+	// X12DelimiterOverrides - The X12 delimiter override settings.
+	X12DelimiterOverrides *[]X12DelimiterOverrides `json:"x12DelimiterOverrides,omitempty"`
 }
 
-// X12SchemaReference is
+// X12SchemaReference ...
 type X12SchemaReference struct {
-	MessageID           *string `json:"messageId,omitempty"`
+	// MessageID - The message id.
+	MessageID *string `json:"messageId,omitempty"`
+	// SenderApplicationID - The sender application id.
 	SenderApplicationID *string `json:"senderApplicationId,omitempty"`
-	SchemaVersion       *string `json:"schemaVersion,omitempty"`
-	SchemaName          *string `json:"schemaName,omitempty"`
+	// SchemaVersion - The schema version.
+	SchemaVersion *string `json:"schemaVersion,omitempty"`
+	// SchemaName - The schema name.
+	SchemaName *string `json:"schemaName,omitempty"`
 }
 
-// X12SecuritySettings is
+// X12SecuritySettings ...
 type X12SecuritySettings struct {
+	// AuthorizationQualifier - The authorization qualifier.
 	AuthorizationQualifier *string `json:"authorizationQualifier,omitempty"`
-	AuthorizationValue     *string `json:"authorizationValue,omitempty"`
-	SecurityQualifier      *string `json:"securityQualifier,omitempty"`
-	PasswordValue          *string `json:"passwordValue,omitempty"`
+	// AuthorizationValue - The authorization value.
+	AuthorizationValue *string `json:"authorizationValue,omitempty"`
+	// SecurityQualifier - The security qualifier.
+	SecurityQualifier *string `json:"securityQualifier,omitempty"`
+	// PasswordValue - The password value.
+	PasswordValue *string `json:"passwordValue,omitempty"`
 }
 
-// X12ValidationOverride is
+// X12ValidationOverride ...
 type X12ValidationOverride struct {
-	MessageID                              *string                 `json:"messageId,omitempty"`
-	ValidateEDITypes                       *bool                   `json:"validateEDITypes,omitempty"`
-	ValidateXSDTypes                       *bool                   `json:"validateXSDTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	ValidateCharacterSet                   *bool                   `json:"validateCharacterSet,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes  *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// MessageID - The message id on which the validation settings has to be applied.
+	MessageID *string `json:"messageId,omitempty"`
+	// ValidateEDITypes - The value indicating whether to validate EDI types.
+	ValidateEDITypes *bool `json:"validateEDITypes,omitempty"`
+	// ValidateXSDTypes - The value indicating whether to validate XSD types.
+	ValidateXSDTypes *bool `json:"validateXSDTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character Set.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }
 
-// X12ValidationSettings is
+// X12ValidationSettings ...
 type X12ValidationSettings struct {
-	ValidateCharacterSet                      *bool                   `json:"validateCharacterSet,omitempty"`
-	CheckDuplicateInterchangeControlNumber    *bool                   `json:"checkDuplicateInterchangeControlNumber,omitempty"`
-	InterchangeControlNumberValidityDays      *int32                  `json:"interchangeControlNumberValidityDays,omitempty"`
-	CheckDuplicateGroupControlNumber          *bool                   `json:"checkDuplicateGroupControlNumber,omitempty"`
-	CheckDuplicateTransactionSetControlNumber *bool                   `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
-	ValidateEDITypes                          *bool                   `json:"validateEDITypes,omitempty"`
-	ValidateXSDTypes                          *bool                   `json:"validateXSDTypes,omitempty"`
-	AllowLeadingAndTrailingSpacesAndZeroes    *bool                   `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrimLeadingAndTrailingSpacesAndZeroes     *bool                   `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
-	TrailingSeparatorPolicy                   TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
+	// ValidateCharacterSet - The value indicating whether to validate character set in the message.
+	ValidateCharacterSet *bool `json:"validateCharacterSet,omitempty"`
+	// CheckDuplicateInterchangeControlNumber - The value indicating whether to check for duplicate interchange control number.
+	CheckDuplicateInterchangeControlNumber *bool `json:"checkDuplicateInterchangeControlNumber,omitempty"`
+	// InterchangeControlNumberValidityDays - The validity period of interchange control number.
+	InterchangeControlNumberValidityDays *int32 `json:"interchangeControlNumberValidityDays,omitempty"`
+	// CheckDuplicateGroupControlNumber - The value indicating whether to check for duplicate group control number.
+	CheckDuplicateGroupControlNumber *bool `json:"checkDuplicateGroupControlNumber,omitempty"`
+	// CheckDuplicateTransactionSetControlNumber - The value indicating whether to check for duplicate transaction set control number.
+	CheckDuplicateTransactionSetControlNumber *bool `json:"checkDuplicateTransactionSetControlNumber,omitempty"`
+	// ValidateEDITypes - The value indicating whether to Whether to validate EDI types.
+	ValidateEDITypes *bool `json:"validateEDITypes,omitempty"`
+	// ValidateXSDTypes - The value indicating whether to Whether to validate XSD types.
+	ValidateXSDTypes *bool `json:"validateXSDTypes,omitempty"`
+	// AllowLeadingAndTrailingSpacesAndZeroes - The value indicating whether to allow leading and trailing spaces and zeroes.
+	AllowLeadingAndTrailingSpacesAndZeroes *bool `json:"allowLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrimLeadingAndTrailingSpacesAndZeroes - The value indicating whether to trim leading and trailing spaces and zeroes.
+	TrimLeadingAndTrailingSpacesAndZeroes *bool `json:"trimLeadingAndTrailingSpacesAndZeroes,omitempty"`
+	// TrailingSeparatorPolicy - The trailing separator policy. Possible values include: 'TrailingSeparatorPolicyNotSpecified', 'TrailingSeparatorPolicyNotAllowed', 'TrailingSeparatorPolicyOptional', 'TrailingSeparatorPolicyMandatory'
+	TrailingSeparatorPolicy TrailingSeparatorPolicy `json:"trailingSeparatorPolicy,omitempty"`
 }

@@ -18,6 +18,7 @@ package search
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // QueryKeysClient is the client that can be used to manage Azure Search services and API keys.
 type QueryKeysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewQueryKeysClient creates an instance of the QueryKeysClient client.
@@ -42,8 +43,8 @@ func NewQueryKeysClientWithBaseURI(baseURI string, subscriptionID string) QueryK
 //
 // resourceGroupName is the name of the resource group within the current subscription. serviceName is the name of the
 // Search service for which to list query keys.
-func (client QueryKeysClient) List(resourceGroupName string, serviceName string) (result ListQueryKeysResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, serviceName)
+func (client QueryKeysClient) List(ctx context.Context, resourceGroupName string, serviceName string) (result ListQueryKeysResult, err error) {
+	req, err := client.ListPreparer(ctx, resourceGroupName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "search.QueryKeysClient", "List", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client QueryKeysClient) List(resourceGroupName string, serviceName string)
 }
 
 // ListPreparer prepares the List request.
-func (client QueryKeysClient) ListPreparer(resourceGroupName string, serviceName string) (*http.Request, error) {
+func (client QueryKeysClient) ListPreparer(ctx context.Context, resourceGroupName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -82,14 +83,13 @@ func (client QueryKeysClient) ListPreparer(resourceGroupName string, serviceName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Search/searchServices/{serviceName}/listQueryKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client QueryKeysClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

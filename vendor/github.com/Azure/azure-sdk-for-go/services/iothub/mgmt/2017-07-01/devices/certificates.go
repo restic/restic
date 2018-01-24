@@ -18,6 +18,7 @@ package devices
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // CertificatesClient is the use this API to manage the IoT hubs in your Azure subscription.
 type CertificatesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCertificatesClient creates an instance of the CertificatesClient client.
@@ -44,14 +45,14 @@ func NewCertificatesClientWithBaseURI(baseURI string, subscriptionID string) Cer
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub. certificateName is the name of the certificate certificateDescription is the certificate body. ifMatch is eTag
 // of the Certificate. Do not specify for creating a brand new certificate. Required to update an existing certificate.
-func (client CertificatesClient) CreateOrUpdate(resourceGroupName string, resourceName string, certificateName string, certificateDescription CertificateBodyDescription, ifMatch string) (result CertificateDescription, err error) {
+func (client CertificatesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, certificateDescription CertificateBodyDescription, ifMatch string) (result CertificateDescription, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[A-Za-z0-9-._]{1,64}$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "devices.CertificatesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, resourceName, certificateName, certificateDescription, ifMatch)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, resourceName, certificateName, certificateDescription, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -73,7 +74,7 @@ func (client CertificatesClient) CreateOrUpdate(resourceGroupName string, resour
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client CertificatesClient) CreateOrUpdatePreparer(resourceGroupName string, resourceName string, certificateName string, certificateDescription CertificateBodyDescription, ifMatch string) (*http.Request, error) {
+func (client CertificatesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, certificateDescription CertificateBodyDescription, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"certificateName":   autorest.Encode("path", certificateName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -97,14 +98,13 @@ func (client CertificatesClient) CreateOrUpdatePreparer(resourceGroupName string
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -114,7 +114,7 @@ func (client CertificatesClient) CreateOrUpdateResponder(resp *http.Response) (r
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -125,14 +125,14 @@ func (client CertificatesClient) CreateOrUpdateResponder(resp *http.Response) (r
 //
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub. certificateName is the name of the certificate ifMatch is eTag of the Certificate.
-func (client CertificatesClient) Delete(resourceGroupName string, resourceName string, certificateName string, ifMatch string) (result autorest.Response, err error) {
+func (client CertificatesClient) Delete(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[A-Za-z0-9-._]{1,64}$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "devices.CertificatesClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, resourceName, certificateName, ifMatch)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, resourceName, certificateName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -154,7 +154,7 @@ func (client CertificatesClient) Delete(resourceGroupName string, resourceName s
 }
 
 // DeletePreparer prepares the Delete request.
-func (client CertificatesClient) DeletePreparer(resourceGroupName string, resourceName string, certificateName string, ifMatch string) (*http.Request, error) {
+func (client CertificatesClient) DeletePreparer(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"certificateName":   autorest.Encode("path", certificateName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -173,14 +173,13 @@ func (client CertificatesClient) DeletePreparer(resourceGroupName string, resour
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Devices/IotHubs/{resourceName}/certificates/{certificateName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -201,14 +200,14 @@ func (client CertificatesClient) DeleteResponder(resp *http.Response) (result au
 //
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub. certificateName is the name of the certificate ifMatch is eTag of the Certificate.
-func (client CertificatesClient) GenerateVerificationCode(resourceGroupName string, resourceName string, certificateName string, ifMatch string) (result CertificateWithNonceDescription, err error) {
+func (client CertificatesClient) GenerateVerificationCode(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, ifMatch string) (result CertificateWithNonceDescription, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[A-Za-z0-9-._]{1,64}$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "devices.CertificatesClient", "GenerateVerificationCode")
 	}
 
-	req, err := client.GenerateVerificationCodePreparer(resourceGroupName, resourceName, certificateName, ifMatch)
+	req, err := client.GenerateVerificationCodePreparer(ctx, resourceGroupName, resourceName, certificateName, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "GenerateVerificationCode", nil, "Failure preparing request")
 		return
@@ -230,7 +229,7 @@ func (client CertificatesClient) GenerateVerificationCode(resourceGroupName stri
 }
 
 // GenerateVerificationCodePreparer prepares the GenerateVerificationCode request.
-func (client CertificatesClient) GenerateVerificationCodePreparer(resourceGroupName string, resourceName string, certificateName string, ifMatch string) (*http.Request, error) {
+func (client CertificatesClient) GenerateVerificationCodePreparer(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"certificateName":   autorest.Encode("path", certificateName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -249,14 +248,13 @@ func (client CertificatesClient) GenerateVerificationCodePreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Devices/IotHubs/{resourceName}/certificates/{certificateName}/generateVerificationCode", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateVerificationCodeSender sends the GenerateVerificationCode request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GenerateVerificationCodeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -277,14 +275,14 @@ func (client CertificatesClient) GenerateVerificationCodeResponder(resp *http.Re
 //
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub. certificateName is the name of the certificate
-func (client CertificatesClient) Get(resourceGroupName string, resourceName string, certificateName string) (result CertificateDescription, err error) {
+func (client CertificatesClient) Get(ctx context.Context, resourceGroupName string, resourceName string, certificateName string) (result CertificateDescription, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[A-Za-z0-9-._]{1,64}$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "devices.CertificatesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, resourceName, certificateName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName, certificateName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "Get", nil, "Failure preparing request")
 		return
@@ -306,7 +304,7 @@ func (client CertificatesClient) Get(resourceGroupName string, resourceName stri
 }
 
 // GetPreparer prepares the Get request.
-func (client CertificatesClient) GetPreparer(resourceGroupName string, resourceName string, certificateName string) (*http.Request, error) {
+func (client CertificatesClient) GetPreparer(ctx context.Context, resourceGroupName string, resourceName string, certificateName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"certificateName":   autorest.Encode("path", certificateName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -324,14 +322,13 @@ func (client CertificatesClient) GetPreparer(resourceGroupName string, resourceN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Devices/IotHubs/{resourceName}/certificates/{certificateName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -352,8 +349,8 @@ func (client CertificatesClient) GetResponder(resp *http.Response) (result Certi
 //
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub.
-func (client CertificatesClient) ListByIotHub(resourceGroupName string, resourceName string) (result CertificateListDescription, err error) {
-	req, err := client.ListByIotHubPreparer(resourceGroupName, resourceName)
+func (client CertificatesClient) ListByIotHub(ctx context.Context, resourceGroupName string, resourceName string) (result CertificateListDescription, err error) {
+	req, err := client.ListByIotHubPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "ListByIotHub", nil, "Failure preparing request")
 		return
@@ -375,7 +372,7 @@ func (client CertificatesClient) ListByIotHub(resourceGroupName string, resource
 }
 
 // ListByIotHubPreparer prepares the ListByIotHub request.
-func (client CertificatesClient) ListByIotHubPreparer(resourceGroupName string, resourceName string) (*http.Request, error) {
+func (client CertificatesClient) ListByIotHubPreparer(ctx context.Context, resourceGroupName string, resourceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"resourceName":      autorest.Encode("path", resourceName),
@@ -392,14 +389,13 @@ func (client CertificatesClient) ListByIotHubPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Devices/IotHubs/{resourceName}/certificates", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByIotHubSender sends the ListByIotHub request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) ListByIotHubSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -422,14 +418,14 @@ func (client CertificatesClient) ListByIotHubResponder(resp *http.Response) (res
 // resourceGroupName is the name of the resource group that contains the IoT hub. resourceName is the name of the IoT
 // hub. certificateName is the name of the certificate certificateVerificationBody is the name of the certificate
 // ifMatch is eTag of the Certificate.
-func (client CertificatesClient) Verify(resourceGroupName string, resourceName string, certificateName string, certificateVerificationBody CertificateVerificationDescription, ifMatch string) (result CertificateDescription, err error) {
+func (client CertificatesClient) Verify(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, certificateVerificationBody CertificateVerificationDescription, ifMatch string) (result CertificateDescription, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: certificateName,
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.Pattern, Rule: `^[A-Za-z0-9-._]{1,64}$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "devices.CertificatesClient", "Verify")
 	}
 
-	req, err := client.VerifyPreparer(resourceGroupName, resourceName, certificateName, certificateVerificationBody, ifMatch)
+	req, err := client.VerifyPreparer(ctx, resourceGroupName, resourceName, certificateName, certificateVerificationBody, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "devices.CertificatesClient", "Verify", nil, "Failure preparing request")
 		return
@@ -451,7 +447,7 @@ func (client CertificatesClient) Verify(resourceGroupName string, resourceName s
 }
 
 // VerifyPreparer prepares the Verify request.
-func (client CertificatesClient) VerifyPreparer(resourceGroupName string, resourceName string, certificateName string, certificateVerificationBody CertificateVerificationDescription, ifMatch string) (*http.Request, error) {
+func (client CertificatesClient) VerifyPreparer(ctx context.Context, resourceGroupName string, resourceName string, certificateName string, certificateVerificationBody CertificateVerificationDescription, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"certificateName":   autorest.Encode("path", certificateName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -472,14 +468,13 @@ func (client CertificatesClient) VerifyPreparer(resourceGroupName string, resour
 		autorest.WithJSON(certificateVerificationBody),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // VerifySender sends the Verify request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificatesClient) VerifySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

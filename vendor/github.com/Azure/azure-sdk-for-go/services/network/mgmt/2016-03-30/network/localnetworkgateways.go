@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // LocalNetworkGatewaysClient is the network Client
 type LocalNetworkGatewaysClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLocalNetworkGatewaysClient creates an instance of the LocalNetworkGatewaysClient client.
@@ -39,49 +40,29 @@ func NewLocalNetworkGatewaysClientWithBaseURI(baseURI string, subscriptionID str
 }
 
 // CreateOrUpdate the Put LocalNetworkGateway operation creates/updates a local network gateway in the specified
-// resource group through Network resource provider. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// resource group through Network resource provider.
 //
 // resourceGroupName is the name of the resource group. localNetworkGatewayName is the name of the local network
 // gateway. parameters is parameters supplied to the Begin Create or update Local Network Gateway operation through
 // Network resource provider.
-func (client LocalNetworkGatewaysClient) CreateOrUpdate(resourceGroupName string, localNetworkGatewayName string, parameters LocalNetworkGateway, cancel <-chan struct{}) (<-chan LocalNetworkGateway, <-chan error) {
-	resultChan := make(chan LocalNetworkGateway, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result LocalNetworkGateway
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, localNetworkGatewayName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client LocalNetworkGatewaysClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, localNetworkGatewayName string, parameters LocalNetworkGateway) (result LocalNetworkGatewaysCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, localNetworkGatewayName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client LocalNetworkGatewaysClient) CreateOrUpdatePreparer(resourceGroupName string, localNetworkGatewayName string, parameters LocalNetworkGateway, cancel <-chan struct{}) (*http.Request, error) {
+func (client LocalNetworkGatewaysClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, localNetworkGatewayName string, parameters LocalNetworkGateway) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"localNetworkGatewayName": autorest.Encode("path", localNetworkGatewayName),
 		"resourceGroupName":       autorest.Encode("path", resourceGroupName),
@@ -100,16 +81,22 @@ func (client LocalNetworkGatewaysClient) CreateOrUpdatePreparer(resourceGroupNam
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/localNetworkGateways/{localNetworkGatewayName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client LocalNetworkGatewaysClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LocalNetworkGatewaysClient) CreateOrUpdateSender(req *http.Request) (future LocalNetworkGatewaysCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -118,7 +105,7 @@ func (client LocalNetworkGatewaysClient) CreateOrUpdateResponder(resp *http.Resp
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
@@ -126,48 +113,28 @@ func (client LocalNetworkGatewaysClient) CreateOrUpdateResponder(resp *http.Resp
 }
 
 // Delete the Delete LocalNetworkGateway operation deletes the specifed local network Gateway through Network resource
-// provider. This method may poll for completion. Polling can be canceled by passing the cancel channel argument. The
-// channel will be used to cancel polling and any outstanding HTTP requests.
+// provider.
 //
 // resourceGroupName is the name of the resource group. localNetworkGatewayName is the name of the local network
 // gateway.
-func (client LocalNetworkGatewaysClient) Delete(resourceGroupName string, localNetworkGatewayName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, localNetworkGatewayName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client LocalNetworkGatewaysClient) Delete(ctx context.Context, resourceGroupName string, localNetworkGatewayName string) (result LocalNetworkGatewaysDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, localNetworkGatewayName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LocalNetworkGatewaysClient) DeletePreparer(resourceGroupName string, localNetworkGatewayName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client LocalNetworkGatewaysClient) DeletePreparer(ctx context.Context, resourceGroupName string, localNetworkGatewayName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"localNetworkGatewayName": autorest.Encode("path", localNetworkGatewayName),
 		"resourceGroupName":       autorest.Encode("path", resourceGroupName),
@@ -184,16 +151,22 @@ func (client LocalNetworkGatewaysClient) DeletePreparer(resourceGroupName string
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/localNetworkGateways/{localNetworkGatewayName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client LocalNetworkGatewaysClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LocalNetworkGatewaysClient) DeleteSender(req *http.Request) (future LocalNetworkGatewaysDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -202,7 +175,7 @@ func (client LocalNetworkGatewaysClient) DeleteResponder(resp *http.Response) (r
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusOK, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -213,8 +186,8 @@ func (client LocalNetworkGatewaysClient) DeleteResponder(resp *http.Response) (r
 //
 // resourceGroupName is the name of the resource group. localNetworkGatewayName is the name of the local network
 // gateway.
-func (client LocalNetworkGatewaysClient) Get(resourceGroupName string, localNetworkGatewayName string) (result LocalNetworkGateway, err error) {
-	req, err := client.GetPreparer(resourceGroupName, localNetworkGatewayName)
+func (client LocalNetworkGatewaysClient) Get(ctx context.Context, resourceGroupName string, localNetworkGatewayName string) (result LocalNetworkGateway, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, localNetworkGatewayName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "Get", nil, "Failure preparing request")
 		return
@@ -236,7 +209,7 @@ func (client LocalNetworkGatewaysClient) Get(resourceGroupName string, localNetw
 }
 
 // GetPreparer prepares the Get request.
-func (client LocalNetworkGatewaysClient) GetPreparer(resourceGroupName string, localNetworkGatewayName string) (*http.Request, error) {
+func (client LocalNetworkGatewaysClient) GetPreparer(ctx context.Context, resourceGroupName string, localNetworkGatewayName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"localNetworkGatewayName": autorest.Encode("path", localNetworkGatewayName),
 		"resourceGroupName":       autorest.Encode("path", resourceGroupName),
@@ -253,14 +226,13 @@ func (client LocalNetworkGatewaysClient) GetPreparer(resourceGroupName string, l
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/localNetworkGateways/{localNetworkGatewayName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LocalNetworkGatewaysClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -280,8 +252,9 @@ func (client LocalNetworkGatewaysClient) GetResponder(resp *http.Response) (resu
 // List the List LocalNetworkGateways opertion retrieves all the local network gateways stored.
 //
 // resourceGroupName is the name of the resource group.
-func (client LocalNetworkGatewaysClient) List(resourceGroupName string) (result LocalNetworkGatewayListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName)
+func (client LocalNetworkGatewaysClient) List(ctx context.Context, resourceGroupName string) (result LocalNetworkGatewayListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", nil, "Failure preparing request")
 		return
@@ -289,12 +262,12 @@ func (client LocalNetworkGatewaysClient) List(resourceGroupName string) (result 
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lnglr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.lnglr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", resp, "Failure responding to request")
 	}
@@ -303,7 +276,7 @@ func (client LocalNetworkGatewaysClient) List(resourceGroupName string) (result 
 }
 
 // ListPreparer prepares the List request.
-func (client LocalNetworkGatewaysClient) ListPreparer(resourceGroupName string) (*http.Request, error) {
+func (client LocalNetworkGatewaysClient) ListPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -319,14 +292,13 @@ func (client LocalNetworkGatewaysClient) ListPreparer(resourceGroupName string) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/localNetworkGateways", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LocalNetworkGatewaysClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -343,71 +315,29 @@ func (client LocalNetworkGatewaysClient) ListResponder(resp *http.Response) (res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client LocalNetworkGatewaysClient) ListNextResults(lastResults LocalNetworkGatewayListResult) (result LocalNetworkGatewayListResult, err error) {
-	req, err := lastResults.LocalNetworkGatewayListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client LocalNetworkGatewaysClient) listNextResults(lastResults LocalNetworkGatewayListResult) (result LocalNetworkGatewayListResult, err error) {
+	req, err := lastResults.localNetworkGatewayListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LocalNetworkGatewaysClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client LocalNetworkGatewaysClient) ListComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan LocalNetworkGateway, <-chan error) {
-	resultChan := make(chan LocalNetworkGateway)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LocalNetworkGatewaysClient) ListComplete(ctx context.Context, resourceGroupName string) (result LocalNetworkGatewayListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName)
+	return
 }

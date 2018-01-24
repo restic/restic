@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // NodeStatesClient is the client for the NodeStates methods of the Servicefabric service.
 type NodeStatesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewNodeStatesClient creates an instance of the NodeStatesClient client.
@@ -41,8 +42,8 @@ func NewNodeStatesClientWithBaseURI(baseURI string, timeout *int32) NodeStatesCl
 // Remove remove node states
 //
 // nodeName is the name of the node
-func (client NodeStatesClient) Remove(nodeName string) (result String, err error) {
-	req, err := client.RemovePreparer(nodeName)
+func (client NodeStatesClient) Remove(ctx context.Context, nodeName string) (result String, err error) {
+	req, err := client.RemovePreparer(ctx, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.NodeStatesClient", "Remove", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client NodeStatesClient) Remove(nodeName string) (result String, err error
 }
 
 // RemovePreparer prepares the Remove request.
-func (client NodeStatesClient) RemovePreparer(nodeName string) (*http.Request, error) {
+func (client NodeStatesClient) RemovePreparer(ctx context.Context, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -82,14 +83,13 @@ func (client NodeStatesClient) RemovePreparer(nodeName string) (*http.Request, e
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/RemoveNodeState", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RemoveSender sends the Remove request. The method will close the
 // http.Response Body if it receives an error.
 func (client NodeStatesClient) RemoveSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

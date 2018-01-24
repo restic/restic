@@ -27,173 +27,390 @@ import (
 type RecordType string
 
 const (
-	// A specifies the a state for record type.
+	// A ...
 	A RecordType = "A"
-	// AAAA specifies the aaaa state for record type.
+	// AAAA ...
 	AAAA RecordType = "AAAA"
-	// CNAME specifies the cname state for record type.
+	// CNAME ...
 	CNAME RecordType = "CNAME"
-	// MX specifies the mx state for record type.
+	// MX ...
 	MX RecordType = "MX"
-	// NS specifies the ns state for record type.
+	// NS ...
 	NS RecordType = "NS"
-	// PTR specifies the ptr state for record type.
+	// PTR ...
 	PTR RecordType = "PTR"
-	// SOA specifies the soa state for record type.
+	// SOA ...
 	SOA RecordType = "SOA"
-	// SRV specifies the srv state for record type.
+	// SRV ...
 	SRV RecordType = "SRV"
-	// TXT specifies the txt state for record type.
+	// TXT ...
 	TXT RecordType = "TXT"
 )
 
-// AaaaRecord is an AAAA record.
+// AaaaRecord an AAAA record.
 type AaaaRecord struct {
+	// Ipv6Address - Gets or sets the IPv6 address of this AAAA record in string notation.
 	Ipv6Address *string `json:"ipv6Address,omitempty"`
 }
 
-// ARecord is an A record.
+// ARecord an A record.
 type ARecord struct {
+	// Ipv4Address - Gets or sets the IPv4 address of this A record in string notation.
 	Ipv4Address *string `json:"ipv4Address,omitempty"`
 }
 
-// CnameRecord is a CNAME record.
+// CnameRecord a CNAME record.
 type CnameRecord struct {
+	// Cname - Gets or sets the canonical name for this record without a terminating dot.
 	Cname *string `json:"cname,omitempty"`
 }
 
-// MxRecord is an MX record.
+// MxRecord an MX record.
 type MxRecord struct {
-	Preference *int32  `json:"preference,omitempty"`
-	Exchange   *string `json:"exchange,omitempty"`
+	// Preference - Gets or sets the preference metric for this record.
+	Preference *int32 `json:"preference,omitempty"`
+	// Exchange - Gets or sets the domain name of the mail host, without a terminating dot.
+	Exchange *string `json:"exchange,omitempty"`
 }
 
-// NsRecord is an NS record.
+// NsRecord an NS record.
 type NsRecord struct {
+	// Nsdname - Gets or sets the name server name for this record, without a terminating dot.
 	Nsdname *string `json:"nsdname,omitempty"`
 }
 
-// PtrRecord is a PTR record.
+// PtrRecord a PTR record.
 type PtrRecord struct {
+	// Ptrdname - Gets or sets the PTR target domain name for this record without a terminating dot.
 	Ptrdname *string `json:"ptrdname,omitempty"`
 }
 
-// RecordSet is describes a DNS RecordSet (a set of DNS records with the same name and type).
+// RecordSet describes a DNS RecordSet (a set of DNS records with the same name and type).
 type RecordSet struct {
 	autorest.Response `json:"-"`
-	ID                *string              `json:"id,omitempty"`
-	Name              *string              `json:"name,omitempty"`
-	Type              *string              `json:"type,omitempty"`
-	Location          *string              `json:"location,omitempty"`
-	Tags              *map[string]*string  `json:"tags,omitempty"`
-	Etag              *string              `json:"etag,omitempty"`
-	Properties        *RecordSetProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Etag - Gets or sets the ETag of the RecordSet.
+	Etag *string `json:"etag,omitempty"`
+	// Properties - Gets or sets the properties of the RecordSet.
+	Properties *RecordSetProperties `json:"properties,omitempty"`
 }
 
-// RecordSetListResult is the response to a RecordSet List operation.
+// RecordSetListResult the response to a RecordSet List operation.
 type RecordSetListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]RecordSet `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - Gets or sets information about the RecordSets in the response.
+	Value *[]RecordSet `json:"value,omitempty"`
+	// NextLink - Gets or sets the continuation token for the next page.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// RecordSetListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client RecordSetListResult) RecordSetListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// RecordSetListResultIterator provides access to a complete listing of RecordSet values.
+type RecordSetListResultIterator struct {
+	i    int
+	page RecordSetListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *RecordSetListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter RecordSetListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter RecordSetListResultIterator) Response() RecordSetListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter RecordSetListResultIterator) Value() RecordSet {
+	if !iter.page.NotDone() {
+		return RecordSet{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (rslr RecordSetListResult) IsEmpty() bool {
+	return rslr.Value == nil || len(*rslr.Value) == 0
+}
+
+// recordSetListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (rslr RecordSetListResult) recordSetListResultPreparer() (*http.Request, error) {
+	if rslr.NextLink == nil || len(to.String(rslr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(rslr.NextLink)))
 }
 
-// RecordSetProperties is represents the properties of the records in the RecordSet.
+// RecordSetListResultPage contains a page of RecordSet values.
+type RecordSetListResultPage struct {
+	fn   func(RecordSetListResult) (RecordSetListResult, error)
+	rslr RecordSetListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *RecordSetListResultPage) Next() error {
+	next, err := page.fn(page.rslr)
+	if err != nil {
+		return err
+	}
+	page.rslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page RecordSetListResultPage) NotDone() bool {
+	return !page.rslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page RecordSetListResultPage) Response() RecordSetListResult {
+	return page.rslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page RecordSetListResultPage) Values() []RecordSet {
+	if page.rslr.IsEmpty() {
+		return nil
+	}
+	return *page.rslr.Value
+}
+
+// RecordSetProperties represents the properties of the records in the RecordSet.
 type RecordSetProperties struct {
-	TTL         *int64        `json:"TTL,omitempty"`
-	ARecords    *[]ARecord    `json:"ARecords,omitempty"`
+	// TTL - Gets or sets the TTL of the records in the RecordSet.
+	TTL *int64 `json:"TTL,omitempty"`
+	// ARecords - Gets or sets the list of A records in the RecordSet.
+	ARecords *[]ARecord `json:"ARecords,omitempty"`
+	// AAAARecords - Gets or sets the list of AAAA records in the RecordSet.
 	AAAARecords *[]AaaaRecord `json:"AAAARecords,omitempty"`
-	MXRecords   *[]MxRecord   `json:"MXRecords,omitempty"`
-	NSRecords   *[]NsRecord   `json:"NSRecords,omitempty"`
-	PTRRecords  *[]PtrRecord  `json:"PTRRecords,omitempty"`
-	SRVRecords  *[]SrvRecord  `json:"SRVRecords,omitempty"`
-	TXTRecords  *[]TxtRecord  `json:"TXTRecords,omitempty"`
-	CNAMERecord *CnameRecord  `json:"CNAMERecord,omitempty"`
-	SOARecord   *SoaRecord    `json:"SOARecord,omitempty"`
+	// MXRecords - Gets or sets the list of MX records in the RecordSet.
+	MXRecords *[]MxRecord `json:"MXRecords,omitempty"`
+	// NSRecords - Gets or sets the list of NS records in the RecordSet.
+	NSRecords *[]NsRecord `json:"NSRecords,omitempty"`
+	// PTRRecords - Gets or sets the list of PTR records in the RecordSet.
+	PTRRecords *[]PtrRecord `json:"PTRRecords,omitempty"`
+	// SRVRecords - Gets or sets the list of SRV records in the RecordSet.
+	SRVRecords *[]SrvRecord `json:"SRVRecords,omitempty"`
+	// TXTRecords - Gets or sets the list of TXT records in the RecordSet.
+	TXTRecords *[]TxtRecord `json:"TXTRecords,omitempty"`
+	// CNAMERecord - Gets or sets the CNAME record in the RecordSet.
+	CNAMERecord *CnameRecord `json:"CNAMERecord,omitempty"`
+	// SOARecord - Gets or sets the SOA record in the RecordSet.
+	SOARecord *SoaRecord `json:"SOARecord,omitempty"`
 }
 
-// Resource is
+// Resource ...
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// SoaRecord is an SOA record.
+// SoaRecord an SOA record.
 type SoaRecord struct {
-	Host         *string `json:"host,omitempty"`
-	Email        *string `json:"email,omitempty"`
-	SerialNumber *int64  `json:"serialNumber,omitempty"`
-	RefreshTime  *int64  `json:"refreshTime,omitempty"`
-	RetryTime    *int64  `json:"retryTime,omitempty"`
-	ExpireTime   *int64  `json:"expireTime,omitempty"`
-	MinimumTTL   *int64  `json:"minimumTTL,omitempty"`
+	// Host - Gets or sets the domain name of the authoritative name server, without a temrinating dot.
+	Host *string `json:"host,omitempty"`
+	// Email - Gets or sets the email for this record.
+	Email *string `json:"email,omitempty"`
+	// SerialNumber - Gets or sets the serial number for this record.
+	SerialNumber *int64 `json:"serialNumber,omitempty"`
+	// RefreshTime - Gets or sets the refresh value for this record.
+	RefreshTime *int64 `json:"refreshTime,omitempty"`
+	// RetryTime - Gets or sets the retry time for this record.
+	RetryTime *int64 `json:"retryTime,omitempty"`
+	// ExpireTime - Gets or sets the expire time for this record.
+	ExpireTime *int64 `json:"expireTime,omitempty"`
+	// MinimumTTL - Gets or sets the minimum TTL value for this record.
+	MinimumTTL *int64 `json:"minimumTTL,omitempty"`
 }
 
-// SrvRecord is an SRV record.
+// SrvRecord an SRV record.
 type SrvRecord struct {
-	Priority *int32  `json:"priority,omitempty"`
-	Weight   *int32  `json:"weight,omitempty"`
-	Port     *int32  `json:"port,omitempty"`
-	Target   *string `json:"target,omitempty"`
+	// Priority - Gets or sets the priority metric for this record.
+	Priority *int32 `json:"priority,omitempty"`
+	// Weight - Gets or sets the weight metric for this this record.
+	Weight *int32 `json:"weight,omitempty"`
+	// Port - Gets or sets the port of the service for this record.
+	Port *int32 `json:"port,omitempty"`
+	// Target - Gets or sets the domain name of the target for this record, without a terminating dot.
+	Target *string `json:"target,omitempty"`
 }
 
-// SubResource is
+// SubResource ...
 type SubResource struct {
+	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 }
 
-// TxtRecord is a TXT record.
+// TxtRecord a TXT record.
 type TxtRecord struct {
+	// Value - Gets or sets the text value of this record.
 	Value *[]string `json:"value,omitempty"`
 }
 
-// Zone is describes a DNS zone.
+// Zone describes a DNS zone.
 type Zone struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	Etag              *string             `json:"etag,omitempty"`
-	Properties        *ZoneProperties     `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// Etag - Gets or sets the ETag of the zone that is being updated, as received from a Get operation.
+	Etag *string `json:"etag,omitempty"`
+	// Properties - Gets or sets the properties of the zone.
+	Properties *ZoneProperties `json:"properties,omitempty"`
 }
 
-// ZoneListResult is the response to a Zone List or ListAll operation.
+// ZoneListResult the response to a Zone List or ListAll operation.
 type ZoneListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Zone `json:"value,omitempty"`
-	NextLink          *string `json:"nextLink,omitempty"`
+	// Value - Gets or sets information about the zones in the response.
+	Value *[]Zone `json:"value,omitempty"`
+	// NextLink - Gets or sets the continuation token for the next page.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ZoneListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ZoneListResult) ZoneListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ZoneListResultIterator provides access to a complete listing of Zone values.
+type ZoneListResultIterator struct {
+	i    int
+	page ZoneListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ZoneListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ZoneListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ZoneListResultIterator) Response() ZoneListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ZoneListResultIterator) Value() Zone {
+	if !iter.page.NotDone() {
+		return Zone{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (zlr ZoneListResult) IsEmpty() bool {
+	return zlr.Value == nil || len(*zlr.Value) == 0
+}
+
+// zoneListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (zlr ZoneListResult) zoneListResultPreparer() (*http.Request, error) {
+	if zlr.NextLink == nil || len(to.String(zlr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(zlr.NextLink)))
 }
 
-// ZoneProperties is represents the properties of the zone.
+// ZoneListResultPage contains a page of Zone values.
+type ZoneListResultPage struct {
+	fn  func(ZoneListResult) (ZoneListResult, error)
+	zlr ZoneListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ZoneListResultPage) Next() error {
+	next, err := page.fn(page.zlr)
+	if err != nil {
+		return err
+	}
+	page.zlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ZoneListResultPage) NotDone() bool {
+	return !page.zlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ZoneListResultPage) Response() ZoneListResult {
+	return page.zlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ZoneListResultPage) Values() []Zone {
+	if page.zlr.IsEmpty() {
+		return nil
+	}
+	return *page.zlr.Value
+}
+
+// ZoneProperties represents the properties of the zone.
 type ZoneProperties struct {
+	// MaxNumberOfRecordSets - Gets or sets the maximum number of record sets that can be created in this zone.
 	MaxNumberOfRecordSets *int64 `json:"maxNumberOfRecordSets,omitempty"`
-	NumberOfRecordSets    *int64 `json:"numberOfRecordSets,omitempty"`
+	// NumberOfRecordSets - Gets or sets the current number of record sets in this zone.
+	NumberOfRecordSets *int64 `json:"numberOfRecordSets,omitempty"`
 }

@@ -18,6 +18,7 @@ package datafactory
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // LinkedServicesClient is the the Azure Data Factory V2 management API provides a RESTful set of web services that
 // interact with Azure Data Factory V2 services.
 type LinkedServicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLinkedServicesClient creates an instance of the LinkedServicesClient client.
@@ -45,7 +46,7 @@ func NewLinkedServicesClientWithBaseURI(baseURI string, subscriptionID string) L
 // resourceGroupName is the resource group name. factoryName is the factory name. linkedServiceName is the linked
 // service name. linkedService is linked service resource definition. ifMatch is eTag of the linkedService entity.
 // Should only be specified for update, for which it should match existing entity or can be * for unconditional update.
-func (client LinkedServicesClient) CreateOrUpdate(resourceGroupName string, factoryName string, linkedServiceName string, linkedService LinkedServiceResource, ifMatch string) (result LinkedServiceResource, err error) {
+func (client LinkedServicesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string, linkedService LinkedServiceResource, ifMatch string) (result LinkedServiceResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -69,7 +70,7 @@ func (client LinkedServicesClient) CreateOrUpdate(resourceGroupName string, fact
 		return result, validation.NewErrorWithValidationError(err, "datafactory.LinkedServicesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, factoryName, linkedServiceName, linkedService, ifMatch)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, factoryName, linkedServiceName, linkedService, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -91,7 +92,7 @@ func (client LinkedServicesClient) CreateOrUpdate(resourceGroupName string, fact
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client LinkedServicesClient) CreateOrUpdatePreparer(resourceGroupName string, factoryName string, linkedServiceName string, linkedService LinkedServiceResource, ifMatch string) (*http.Request, error) {
+func (client LinkedServicesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string, linkedService LinkedServiceResource, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"linkedServiceName": autorest.Encode("path", linkedServiceName),
@@ -115,14 +116,13 @@ func (client LinkedServicesClient) CreateOrUpdatePreparer(resourceGroupName stri
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServicesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -143,7 +143,7 @@ func (client LinkedServicesClient) CreateOrUpdateResponder(resp *http.Response) 
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. linkedServiceName is the linked
 // service name.
-func (client LinkedServicesClient) Delete(resourceGroupName string, factoryName string, linkedServiceName string) (result autorest.Response, err error) {
+func (client LinkedServicesClient) Delete(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -160,7 +160,7 @@ func (client LinkedServicesClient) Delete(resourceGroupName string, factoryName 
 		return result, validation.NewErrorWithValidationError(err, "datafactory.LinkedServicesClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, factoryName, linkedServiceName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, factoryName, linkedServiceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -182,7 +182,7 @@ func (client LinkedServicesClient) Delete(resourceGroupName string, factoryName 
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LinkedServicesClient) DeletePreparer(resourceGroupName string, factoryName string, linkedServiceName string) (*http.Request, error) {
+func (client LinkedServicesClient) DeletePreparer(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"linkedServiceName": autorest.Encode("path", linkedServiceName),
@@ -200,14 +200,13 @@ func (client LinkedServicesClient) DeletePreparer(resourceGroupName string, fact
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/linkedservices/{linkedServiceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServicesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -227,7 +226,7 @@ func (client LinkedServicesClient) DeleteResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. linkedServiceName is the linked
 // service name.
-func (client LinkedServicesClient) Get(resourceGroupName string, factoryName string, linkedServiceName string) (result LinkedServiceResource, err error) {
+func (client LinkedServicesClient) Get(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string) (result LinkedServiceResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -244,7 +243,7 @@ func (client LinkedServicesClient) Get(resourceGroupName string, factoryName str
 		return result, validation.NewErrorWithValidationError(err, "datafactory.LinkedServicesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, factoryName, linkedServiceName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, factoryName, linkedServiceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "Get", nil, "Failure preparing request")
 		return
@@ -266,7 +265,7 @@ func (client LinkedServicesClient) Get(resourceGroupName string, factoryName str
 }
 
 // GetPreparer prepares the Get request.
-func (client LinkedServicesClient) GetPreparer(resourceGroupName string, factoryName string, linkedServiceName string) (*http.Request, error) {
+func (client LinkedServicesClient) GetPreparer(ctx context.Context, resourceGroupName string, factoryName string, linkedServiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"linkedServiceName": autorest.Encode("path", linkedServiceName),
@@ -284,14 +283,13 @@ func (client LinkedServicesClient) GetPreparer(resourceGroupName string, factory
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/linkedservices/{linkedServiceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServicesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -311,7 +309,7 @@ func (client LinkedServicesClient) GetResponder(resp *http.Response) (result Lin
 // ListByFactory lists linked services.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name.
-func (client LinkedServicesClient) ListByFactory(resourceGroupName string, factoryName string) (result LinkedServiceListResponse, err error) {
+func (client LinkedServicesClient) ListByFactory(ctx context.Context, resourceGroupName string, factoryName string) (result LinkedServiceListResponsePage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -324,7 +322,8 @@ func (client LinkedServicesClient) ListByFactory(resourceGroupName string, facto
 		return result, validation.NewErrorWithValidationError(err, "datafactory.LinkedServicesClient", "ListByFactory")
 	}
 
-	req, err := client.ListByFactoryPreparer(resourceGroupName, factoryName)
+	result.fn = client.listByFactoryNextResults
+	req, err := client.ListByFactoryPreparer(ctx, resourceGroupName, factoryName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", nil, "Failure preparing request")
 		return
@@ -332,12 +331,12 @@ func (client LinkedServicesClient) ListByFactory(resourceGroupName string, facto
 
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lslr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByFactoryResponder(resp)
+	result.lslr, err = client.ListByFactoryResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", resp, "Failure responding to request")
 	}
@@ -346,7 +345,7 @@ func (client LinkedServicesClient) ListByFactory(resourceGroupName string, facto
 }
 
 // ListByFactoryPreparer prepares the ListByFactory request.
-func (client LinkedServicesClient) ListByFactoryPreparer(resourceGroupName string, factoryName string) (*http.Request, error) {
+func (client LinkedServicesClient) ListByFactoryPreparer(ctx context.Context, resourceGroupName string, factoryName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -363,14 +362,13 @@ func (client LinkedServicesClient) ListByFactoryPreparer(resourceGroupName strin
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/linkedservices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByFactorySender sends the ListByFactory request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServicesClient) ListByFactorySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -387,71 +385,29 @@ func (client LinkedServicesClient) ListByFactoryResponder(resp *http.Response) (
 	return
 }
 
-// ListByFactoryNextResults retrieves the next set of results, if any.
-func (client LinkedServicesClient) ListByFactoryNextResults(lastResults LinkedServiceListResponse) (result LinkedServiceListResponse, err error) {
-	req, err := lastResults.LinkedServiceListResponsePreparer()
+// listByFactoryNextResults retrieves the next set of results, if any.
+func (client LinkedServicesClient) listByFactoryNextResults(lastResults LinkedServiceListResponse) (result LinkedServiceListResponse, err error) {
+	req, err := lastResults.linkedServiceListResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "listByFactoryNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "listByFactoryNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByFactoryResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "ListByFactory", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "datafactory.LinkedServicesClient", "listByFactoryNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByFactoryComplete gets all elements from the list without paging.
-func (client LinkedServicesClient) ListByFactoryComplete(resourceGroupName string, factoryName string, cancel <-chan struct{}) (<-chan LinkedServiceResource, <-chan error) {
-	resultChan := make(chan LinkedServiceResource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByFactory(resourceGroupName, factoryName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByFactoryNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByFactoryComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LinkedServicesClient) ListByFactoryComplete(ctx context.Context, resourceGroupName string, factoryName string) (result LinkedServiceListResponseIterator, err error) {
+	result.page, err = client.ListByFactory(ctx, resourceGroupName, factoryName)
+	return
 }

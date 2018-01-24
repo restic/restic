@@ -183,7 +183,7 @@ type Cluster struct {
 	// project must be unique. Names of deleted clusters can be reused.
 	ClusterName string `json:"clusterName,omitempty"`
 
-	// ClusterUuid: Output-only. A cluster UUID (Unique Universal
+	// ClusterUuid: Output only. A cluster UUID (Unique Universal
 	// Identifier). Cloud Dataproc generates this value when it creates the
 	// cluster.
 	ClusterUuid string `json:"clusterUuid,omitempty"`
@@ -209,10 +209,10 @@ type Cluster struct {
 	// cluster belongs to.
 	ProjectId string `json:"projectId,omitempty"`
 
-	// Status: Output-only. Cluster status.
+	// Status: Output only. Cluster status.
 	Status *ClusterStatus `json:"status,omitempty"`
 
-	// StatusHistory: Output-only. The previous cluster status.
+	// StatusHistory: Output only. The previous cluster status.
 	StatusHistory []*ClusterStatus `json:"statusHistory,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -347,28 +347,28 @@ func (s *ClusterMetrics) MarshalJSON() ([]byte, error) {
 
 // ClusterOperationMetadata: Metadata describing the operation.
 type ClusterOperationMetadata struct {
-	// ClusterName: Output-only. Name of the cluster for the operation.
+	// ClusterName: Output only. Name of the cluster for the operation.
 	ClusterName string `json:"clusterName,omitempty"`
 
-	// ClusterUuid: Output-only. Cluster UUID for the operation.
+	// ClusterUuid: Output only. Cluster UUID for the operation.
 	ClusterUuid string `json:"clusterUuid,omitempty"`
 
-	// Description: Output-only. Short description of operation.
+	// Description: Output only. Short description of operation.
 	Description string `json:"description,omitempty"`
 
-	// Labels: Output-only. Labels associated with the operation
+	// Labels: Output only. Labels associated with the operation
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// OperationType: Output-only. The operation type.
+	// OperationType: Output only. The operation type.
 	OperationType string `json:"operationType,omitempty"`
 
-	// Status: Output-only. Current operation status.
+	// Status: Output only. Current operation status.
 	Status *ClusterOperationStatus `json:"status,omitempty"`
 
-	// StatusHistory: Output-only. The previous operation status.
+	// StatusHistory: Output only. The previous operation status.
 	StatusHistory []*ClusterOperationStatus `json:"statusHistory,omitempty"`
 
-	// Warnings: Output-only. Errors encountered during operation execution.
+	// Warnings: Output only. Errors encountered during operation execution.
 	Warnings []string `json:"warnings,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ClusterName") to
@@ -396,15 +396,15 @@ func (s *ClusterOperationMetadata) MarshalJSON() ([]byte, error) {
 
 // ClusterOperationStatus: The status of the operation.
 type ClusterOperationStatus struct {
-	// Details: Output-only.A message containing any operation metadata
+	// Details: Output only. A message containing any operation metadata
 	// details.
 	Details string `json:"details,omitempty"`
 
-	// InnerState: Output-only. A message containing the detailed operation
+	// InnerState: Output only. A message containing the detailed operation
 	// state.
 	InnerState string `json:"innerState,omitempty"`
 
-	// State: Output-only. A message containing the operation state.
+	// State: Output only. A message containing the operation state.
 	//
 	// Possible values:
 	//   "UNKNOWN" - Unused.
@@ -413,7 +413,7 @@ type ClusterOperationStatus struct {
 	//   "DONE" - The operation is done; either cancelled or completed.
 	State string `json:"state,omitempty"`
 
-	// StateStartTime: Output-only. The time this state was entered.
+	// StateStartTime: Output only. The time this state was entered.
 	StateStartTime string `json:"stateStartTime,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Details") to
@@ -441,10 +441,10 @@ func (s *ClusterOperationStatus) MarshalJSON() ([]byte, error) {
 
 // ClusterStatus: The status of a cluster and its instances.
 type ClusterStatus struct {
-	// Detail: Output-only. Optional details of cluster's state.
+	// Detail: Output only. Optional details of cluster's state.
 	Detail string `json:"detail,omitempty"`
 
-	// State: Output-only. The cluster's state.
+	// State: Output only. The cluster's state.
 	//
 	// Possible values:
 	//   "UNKNOWN" - The cluster state is unknown.
@@ -459,14 +459,14 @@ type ClusterStatus struct {
 	// and process jobs.
 	State string `json:"state,omitempty"`
 
-	// StateStartTime: Output-only. Time when this state was entered.
+	// StateStartTime: Output only. Time when this state was entered.
 	StateStartTime string `json:"stateStartTime,omitempty"`
 
-	// Substate: Output-only. Additional state information that includes
+	// Substate: Output only. Additional state information that includes
 	// status reported by the agent.
 	//
 	// Possible values:
-	//   "UNSPECIFIED"
+	//   "UNSPECIFIED" - The cluster substate is unknown.
 	//   "UNHEALTHY" - The cluster is known to be in an unhealthy state (for
 	// example, critical daemons are not running or HDFS capacity is
 	// exhausted).Applies to RUNNING state.
@@ -505,7 +505,7 @@ type DiagnoseClusterRequest struct {
 
 // DiagnoseClusterResults: The location of diagnostic output.
 type DiagnoseClusterResults struct {
-	// OutputUri: Output-only. The Google Cloud Storage URI of the
+	// OutputUri: Output only. The Google Cloud Storage URI of the
 	// diagnostic output. The output report is a plain text file with a
 	// summary of collected diagnostics.
 	OutputUri string `json:"outputUri,omitempty"`
@@ -838,7 +838,7 @@ type InstanceGroupConfig struct {
 	// DiskConfig: Optional. Disk option config settings.
 	DiskConfig *DiskConfig `json:"diskConfig,omitempty"`
 
-	// ImageUri: Output-only. The Google Compute Engine image resource used
+	// ImageUri: Output only. The Google Compute Engine image resource used
 	// for cluster instances. Inferred from SoftwareConfig.image_version.
 	ImageUri string `json:"imageUri,omitempty"`
 
@@ -863,7 +863,7 @@ type InstanceGroupConfig struct {
 	// n1-standard-2
 	MachineTypeUri string `json:"machineTypeUri,omitempty"`
 
-	// ManagedGroupConfig: Output-only. The config for Google Compute Engine
+	// ManagedGroupConfig: Output only. The config for Google Compute Engine
 	// Instance Group Manager that manages this group. This is only used for
 	// preemptible instance groups.
 	ManagedGroupConfig *ManagedGroupConfig `json:"managedGroupConfig,omitempty"`
@@ -897,13 +897,13 @@ func (s *InstanceGroupConfig) MarshalJSON() ([]byte, error) {
 
 // Job: A Cloud Dataproc job resource.
 type Job struct {
-	// DriverControlFilesUri: Output-only. If present, the location of
+	// DriverControlFilesUri: Output only. If present, the location of
 	// miscellaneous control files which may be used as part of job setup
 	// and handling. If not present, control files may be placed in the same
 	// location as driver_output_uri.
 	DriverControlFilesUri string `json:"driverControlFilesUri,omitempty"`
 
-	// DriverOutputResourceUri: Output-only. A URI pointing to the location
+	// DriverOutputResourceUri: Output only. A URI pointing to the location
 	// of the stdout of the job's driver program.
 	DriverOutputResourceUri string `json:"driverOutputResourceUri,omitempty"`
 
@@ -946,15 +946,15 @@ type Job struct {
 	// SparkSqlJob: Job is a SparkSql job.
 	SparkSqlJob *SparkSqlJob `json:"sparkSqlJob,omitempty"`
 
-	// Status: Output-only. The job status. Additional application-specific
+	// Status: Output only. The job status. Additional application-specific
 	// status information may be contained in the <code>type_job</code> and
 	// <code>yarn_applications</code> fields.
 	Status *JobStatus `json:"status,omitempty"`
 
-	// StatusHistory: Output-only. The previous job status.
+	// StatusHistory: Output only. The previous job status.
 	StatusHistory []*JobStatus `json:"statusHistory,omitempty"`
 
-	// YarnApplications: Output-only. The collection of YARN applications
+	// YarnApplications: Output only. The collection of YARN applications
 	// spun up by this job.Beta Feature: This report is available for
 	// testing purposes only. It may be changed before final release.
 	YarnApplications []*YarnApplication `json:"yarnApplications,omitempty"`
@@ -994,7 +994,7 @@ type JobPlacement struct {
 	// submitted.
 	ClusterName string `json:"clusterName,omitempty"`
 
-	// ClusterUuid: Output-only. A cluster UUID generated by the Cloud
+	// ClusterUuid: Output only. A cluster UUID generated by the Cloud
 	// Dataproc service when the job is submitted.
 	ClusterUuid string `json:"clusterUuid,omitempty"`
 
@@ -1058,9 +1058,7 @@ func (s *JobReference) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// JobScheduling: Job scheduling options.Beta Feature: These options are
-// available for testing purposes only. They may be changed before final
-// release.
+// JobScheduling: Job scheduling options.
 type JobScheduling struct {
 	// MaxFailuresPerHour: Optional. Maximum number of times per hour a
 	// driver may be restarted as a result of driver terminating with
@@ -1095,11 +1093,11 @@ func (s *JobScheduling) MarshalJSON() ([]byte, error) {
 
 // JobStatus: Cloud Dataproc job status.
 type JobStatus struct {
-	// Details: Output-only. Optional job state details, such as an error
+	// Details: Output only. Optional job state details, such as an error
 	// description if the state is <code>ERROR</code>.
 	Details string `json:"details,omitempty"`
 
-	// State: Output-only. A state message specifying the overall job state.
+	// State: Output only. A state message specifying the overall job state.
 	//
 	// Possible values:
 	//   "STATE_UNSPECIFIED" - The job state is unknown.
@@ -1121,14 +1119,14 @@ type JobStatus struct {
 	// only.
 	State string `json:"state,omitempty"`
 
-	// StateStartTime: Output-only. The time when this state was entered.
+	// StateStartTime: Output only. The time when this state was entered.
 	StateStartTime string `json:"stateStartTime,omitempty"`
 
-	// Substate: Output-only. Additional state information, which includes
+	// Substate: Output only. Additional state information, which includes
 	// status reported by the agent.
 	//
 	// Possible values:
-	//   "UNSPECIFIED"
+	//   "UNSPECIFIED" - The job substate is unknown.
 	//   "SUBMITTED" - The Job is submitted to the agent.Applies to RUNNING
 	// state.
 	//   "QUEUED" - The Job has been received and is awaiting execution (it
@@ -1165,10 +1163,10 @@ func (s *JobStatus) MarshalJSON() ([]byte, error) {
 
 // ListClustersResponse: The list of all clusters in a project.
 type ListClustersResponse struct {
-	// Clusters: Output-only. The clusters in the project.
+	// Clusters: Output only. The clusters in the project.
 	Clusters []*Cluster `json:"clusters,omitempty"`
 
-	// NextPageToken: Output-only. This token is included in the response if
+	// NextPageToken: Output only. This token is included in the response if
 	// there are more results to fetch. To fetch additional results, provide
 	// this value as the page_token in a subsequent ListClustersRequest.
 	NextPageToken string `json:"nextPageToken,omitempty"`
@@ -1202,7 +1200,7 @@ func (s *ListClustersResponse) MarshalJSON() ([]byte, error) {
 
 // ListJobsResponse: A list of jobs in a project.
 type ListJobsResponse struct {
-	// Jobs: Output-only. Jobs list.
+	// Jobs: Output only. Jobs list.
 	Jobs []*Job `json:"jobs,omitempty"`
 
 	// NextPageToken: Optional. This token is included in the response if
@@ -1309,11 +1307,11 @@ func (s *LoggingConfig) MarshalJSON() ([]byte, error) {
 // ManagedGroupConfig: Specifies the resources used to actively manage
 // an instance group.
 type ManagedGroupConfig struct {
-	// InstanceGroupManagerName: Output-only. The name of the Instance Group
+	// InstanceGroupManagerName: Output only. The name of the Instance Group
 	// Manager for this group.
 	InstanceGroupManagerName string `json:"instanceGroupManagerName,omitempty"`
 
-	// InstanceTemplateName: Output-only. The name of the Instance Template
+	// InstanceTemplateName: Output only. The name of the Instance Template
 	// used for the Managed Instance Group.
 	InstanceTemplateName string `json:"instanceTemplateName,omitempty"`
 
@@ -2776,6 +2774,19 @@ func (r *ProjectsRegionsClustersService) Patch(projectId string, region string, 
 	return c
 }
 
+// GracefulDecommissionTimeout sets the optional parameter
+// "gracefulDecommissionTimeout": Timeout for graceful YARN
+// decomissioning. Graceful decommissioning allows removing nodes from
+// the cluster without interrupting jobs in progress. Timeout specifies
+// how long to wait for jobs in progress to finish before forcefully
+// removing nodes (and potentially interrupting jobs). Default timeout
+// is 0 (for forceful decommission), and the maximum allowed timeout is
+// 1 day.Only supported on Dataproc image versions 1.2 and higher.
+func (c *ProjectsRegionsClustersPatchCall) GracefulDecommissionTimeout(gracefulDecommissionTimeout string) *ProjectsRegionsClustersPatchCall {
+	c.urlParams_.Set("gracefulDecommissionTimeout", gracefulDecommissionTimeout)
+	return c
+}
+
 // UpdateMask sets the optional parameter "updateMask": Required.
 // Specifies the path, relative to Cluster, of the field to update. For
 // example, to change the number of workers in a cluster to 5, the
@@ -2917,6 +2928,12 @@ func (c *ProjectsRegionsClustersPatchCall) Do(opts ...googleapi.CallOption) (*Op
 	//       "description": "Required. The cluster name.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "gracefulDecommissionTimeout": {
+	//       "description": "Optional. Timeout for graceful YARN decomissioning. Graceful decommissioning allows removing nodes from the cluster without interrupting jobs in progress. Timeout specifies how long to wait for jobs in progress to finish before forcefully removing nodes (and potentially interrupting jobs). Default timeout is 0 (for forceful decommission), and the maximum allowed timeout is 1 day.Only supported on Dataproc image versions 1.2 and higher.",
+	//       "format": "google-duration",
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "projectId": {

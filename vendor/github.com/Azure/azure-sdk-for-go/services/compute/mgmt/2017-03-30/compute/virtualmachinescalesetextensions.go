@@ -18,6 +18,7 @@ package compute
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // VirtualMachineScaleSetExtensionsClient is the compute Client
 type VirtualMachineScaleSetExtensionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewVirtualMachineScaleSetExtensionsClient creates an instance of the VirtualMachineScaleSetExtensionsClient client.
@@ -39,50 +40,29 @@ func NewVirtualMachineScaleSetExtensionsClientWithBaseURI(baseURI string, subscr
 	return VirtualMachineScaleSetExtensionsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate the operation to create or update an extension. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// CreateOrUpdate the operation to create or update an extension.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set where the
 // extension should be create or updated. vmssExtensionName is the name of the VM scale set extension.
 // extensionParameters is parameters supplied to the Create VM scale set Extension operation.
-func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdate(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, extensionParameters VirtualMachineScaleSetExtension, cancel <-chan struct{}) (<-chan VirtualMachineScaleSetExtension, <-chan error) {
-	resultChan := make(chan VirtualMachineScaleSetExtension, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result VirtualMachineScaleSetExtension
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, VMScaleSetName, vmssExtensionName, extensionParameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string, extensionParameters VirtualMachineScaleSetExtension) (result VirtualMachineScaleSetExtensionsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, VMScaleSetName, vmssExtensionName, extensionParameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdatePreparer(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, extensionParameters VirtualMachineScaleSetExtension, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string, extensionParameters VirtualMachineScaleSetExtension) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -102,16 +82,22 @@ func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdatePreparer(reso
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/extensions/{vmssExtensionName}", pathParameters),
 		autorest.WithJSON(extensionParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdateSender(req *http.Request) (future VirtualMachineScaleSetExtensionsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -127,48 +113,28 @@ func (client VirtualMachineScaleSetExtensionsClient) CreateOrUpdateResponder(res
 	return
 }
 
-// Delete the operation to delete the extension. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete the operation to delete the extension.
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set where the
 // extension should be deleted. vmssExtensionName is the name of the VM scale set extension.
-func (client VirtualMachineScaleSetExtensionsClient) Delete(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, cancel <-chan struct{}) (<-chan OperationStatusResponse, <-chan error) {
-	resultChan := make(chan OperationStatusResponse, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result OperationStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, VMScaleSetName, vmssExtensionName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client VirtualMachineScaleSetExtensionsClient) Delete(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string) (result VirtualMachineScaleSetExtensionsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, VMScaleSetName, vmssExtensionName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client VirtualMachineScaleSetExtensionsClient) DeletePreparer(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client VirtualMachineScaleSetExtensionsClient) DeletePreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -186,16 +152,22 @@ func (client VirtualMachineScaleSetExtensionsClient) DeletePreparer(resourceGrou
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/extensions/{vmssExtensionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client VirtualMachineScaleSetExtensionsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client VirtualMachineScaleSetExtensionsClient) DeleteSender(req *http.Request) (future VirtualMachineScaleSetExtensionsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -216,8 +188,8 @@ func (client VirtualMachineScaleSetExtensionsClient) DeleteResponder(resp *http.
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set containing the
 // extension. vmssExtensionName is the name of the VM scale set extension. expand is the expand expression to apply on
 // the operation.
-func (client VirtualMachineScaleSetExtensionsClient) Get(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, expand string) (result VirtualMachineScaleSetExtension, err error) {
-	req, err := client.GetPreparer(resourceGroupName, VMScaleSetName, vmssExtensionName, expand)
+func (client VirtualMachineScaleSetExtensionsClient) Get(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string, expand string) (result VirtualMachineScaleSetExtension, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, VMScaleSetName, vmssExtensionName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -239,7 +211,7 @@ func (client VirtualMachineScaleSetExtensionsClient) Get(resourceGroupName strin
 }
 
 // GetPreparer prepares the Get request.
-func (client VirtualMachineScaleSetExtensionsClient) GetPreparer(resourceGroupName string, VMScaleSetName string, vmssExtensionName string, expand string) (*http.Request, error) {
+func (client VirtualMachineScaleSetExtensionsClient) GetPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string, vmssExtensionName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -260,14 +232,13 @@ func (client VirtualMachineScaleSetExtensionsClient) GetPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/extensions/{vmssExtensionName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetExtensionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -288,8 +259,9 @@ func (client VirtualMachineScaleSetExtensionsClient) GetResponder(resp *http.Res
 //
 // resourceGroupName is the name of the resource group. VMScaleSetName is the name of the VM scale set containing the
 // extension.
-func (client VirtualMachineScaleSetExtensionsClient) List(resourceGroupName string, VMScaleSetName string) (result VirtualMachineScaleSetExtensionListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, VMScaleSetName)
+func (client VirtualMachineScaleSetExtensionsClient) List(ctx context.Context, resourceGroupName string, VMScaleSetName string) (result VirtualMachineScaleSetExtensionListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, VMScaleSetName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", nil, "Failure preparing request")
 		return
@@ -297,12 +269,12 @@ func (client VirtualMachineScaleSetExtensionsClient) List(resourceGroupName stri
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.vmsselr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.vmsselr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", resp, "Failure responding to request")
 	}
@@ -311,7 +283,7 @@ func (client VirtualMachineScaleSetExtensionsClient) List(resourceGroupName stri
 }
 
 // ListPreparer prepares the List request.
-func (client VirtualMachineScaleSetExtensionsClient) ListPreparer(resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
+func (client VirtualMachineScaleSetExtensionsClient) ListPreparer(ctx context.Context, resourceGroupName string, VMScaleSetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -328,14 +300,13 @@ func (client VirtualMachineScaleSetExtensionsClient) ListPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/extensions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client VirtualMachineScaleSetExtensionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -352,71 +323,29 @@ func (client VirtualMachineScaleSetExtensionsClient) ListResponder(resp *http.Re
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client VirtualMachineScaleSetExtensionsClient) ListNextResults(lastResults VirtualMachineScaleSetExtensionListResult) (result VirtualMachineScaleSetExtensionListResult, err error) {
-	req, err := lastResults.VirtualMachineScaleSetExtensionListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client VirtualMachineScaleSetExtensionsClient) listNextResults(lastResults VirtualMachineScaleSetExtensionListResult) (result VirtualMachineScaleSetExtensionListResult, err error) {
+	req, err := lastResults.virtualMachineScaleSetExtensionListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client VirtualMachineScaleSetExtensionsClient) ListComplete(resourceGroupName string, VMScaleSetName string, cancel <-chan struct{}) (<-chan VirtualMachineScaleSetExtension, <-chan error) {
-	resultChan := make(chan VirtualMachineScaleSetExtension)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, VMScaleSetName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client VirtualMachineScaleSetExtensionsClient) ListComplete(ctx context.Context, resourceGroupName string, VMScaleSetName string) (result VirtualMachineScaleSetExtensionListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, VMScaleSetName)
+	return
 }

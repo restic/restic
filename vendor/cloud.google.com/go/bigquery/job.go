@@ -271,7 +271,7 @@ func (j *Job) read(ctx context.Context, waitForQuery func(context.Context, strin
 	}
 	dt := bqToTable(destTable, j.c)
 	it := newRowIterator(ctx, dt, pf)
-	it.schema = schema
+	it.Schema = schema
 	return it, nil
 }
 

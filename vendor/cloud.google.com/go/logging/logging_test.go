@@ -38,6 +38,8 @@ import (
 	"google.golang.org/api/option"
 	mrpb "google.golang.org/genproto/googleapis/api/monitoredres"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const testLogIDPrefix = "GO-LOGGING-CLIENT/TEST-LOG"
@@ -91,16 +93,16 @@ func TestMain(m *testing.M) {
 		}
 		logging.SetNow(testNow)
 
-		newClients = func(ctx context.Context, projectID string) (*logging.Client, *logadmin.Client) {
+		newClients = func(ctx context.Context, parent string) (*logging.Client, *logadmin.Client) {
 			conn, err := grpc.Dial(addr, grpc.WithInsecure())
 			if err != nil {
 				log.Fatalf("dialing %q: %v", addr, err)
 			}
-			c, err := logging.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+			c, err := logging.NewClient(ctx, parent, option.WithGRPCConn(conn))
 			if err != nil {
 				log.Fatalf("creating client for fake at %q: %v", addr, err)
 			}
-			ac, err := logadmin.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+			ac, err := logadmin.NewClient(ctx, parent, option.WithGRPCConn(conn))
 			if err != nil {
 				log.Fatalf("creating client for fake at %q: %v", addr, err)
 			}
@@ -120,12 +122,12 @@ func TestMain(m *testing.M) {
 			log.Fatal("The project key must be set. See CONTRIBUTING.md for details")
 		}
 		log.Printf("running integration tests with project %s", testProjectID)
-		newClients = func(ctx context.Context, projectID string) (*logging.Client, *logadmin.Client) {
-			c, err := logging.NewClient(ctx, projectID, option.WithTokenSource(ts))
+		newClients = func(ctx context.Context, parent string) (*logging.Client, *logadmin.Client) {
+			c, err := logging.NewClient(ctx, parent, option.WithTokenSource(ts))
 			if err != nil {
 				log.Fatalf("creating prod client: %v", err)
 			}
-			ac, err := logadmin.NewClient(ctx, projectID, option.WithTokenSource(ts))
+			ac, err := logadmin.NewClient(ctx, parent, option.WithTokenSource(ts))
 			if err != nil {
 				log.Fatalf("creating prod client: %v", err)
 			}
@@ -289,8 +291,12 @@ func countLogEntries(ctx context.Context, filter string) int {
 }
 
 func allTestLogEntries(ctx context.Context) ([]*logging.Entry, error) {
+	return allEntries(ctx, aclient, testFilter)
+}
+
+func allEntries(ctx context.Context, aclient *logadmin.Client, filter string) ([]*logging.Entry, error) {
 	var es []*logging.Entry
-	it := aclient.Entries(ctx, logadmin.Filter(testFilter))
+	it := aclient.Entries(ctx, logadmin.Filter(filter))
 	for {
 		e, err := cleanNext(it)
 		switch err {
@@ -469,6 +475,52 @@ func TestLogsAndDelete(t *testing.T) {
 		}
 	}
 	t.Logf("deleted %d logs", nDeleted)
+}
+
+func TestNonProjectParent(t *testing.T) {
+	ctx := context.Background()
+	initLogs(ctx)
+	const orgID = "433637338589" // org ID for google.com
+	parent := "organizations/" + orgID
+	c, a := newClients(ctx, parent)
+	lg := c.Logger(testLogID)
+	err := lg.LogSync(ctx, logging.Entry{Payload: "hello"})
+	if integrationTest {
+		// We don't have permission to log to the organization.
+		if got, want := status.Code(err), codes.PermissionDenied; got != want {
+			t.Errorf("got code %s, want %s", got, want)
+		}
+		return
+	}
+	// Continue test against fake.
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []*logging.Entry{{
+		Timestamp: testNow().UTC(),
+		Payload:   "hello",
+		LogName:   parent + "/logs/" + testLogID,
+		Resource: &mrpb.MonitoredResource{
+			Type:   "organization",
+			Labels: map[string]string{"organization_id": orgID},
+		},
+	}}
+	var got []*logging.Entry
+	ok := waitFor(func() bool {
+		got, err = allEntries(ctx, a, fmt.Sprintf(`logName = "%s/logs/%s"`, parent,
+			strings.Replace(testLogID, "/", "%2F", -1)))
+		if err != nil {
+			t.Log("fetching log entries: ", err)
+			return false
+		}
+		return len(got) == len(want)
+	})
+	if !ok {
+		t.Fatalf("timed out; got: %d, want: %d\n", len(got), len(want))
+	}
+	if msg, ok := compareEntries(got, want); !ok {
+		t.Error(msg)
+	}
 }
 
 // waitFor calls f repeatedly with exponential backoff, blocking until it returns true.

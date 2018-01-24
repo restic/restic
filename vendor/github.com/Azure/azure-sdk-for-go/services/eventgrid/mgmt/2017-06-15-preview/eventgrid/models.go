@@ -18,14 +18,17 @@ package eventgrid
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"net/http"
 )
 
 // EndpointType enumerates the values for endpoint type.
 type EndpointType string
 
 const (
-	// WebHook specifies the web hook state for endpoint type.
+	// WebHook ...
 	WebHook EndpointType = "WebHook"
 )
 
@@ -33,17 +36,17 @@ const (
 type EventSubscriptionProvisioningState string
 
 const (
-	// Canceled specifies the canceled state for event subscription provisioning state.
+	// Canceled ...
 	Canceled EventSubscriptionProvisioningState = "Canceled"
-	// Creating specifies the creating state for event subscription provisioning state.
+	// Creating ...
 	Creating EventSubscriptionProvisioningState = "Creating"
-	// Deleting specifies the deleting state for event subscription provisioning state.
+	// Deleting ...
 	Deleting EventSubscriptionProvisioningState = "Deleting"
-	// Failed specifies the failed state for event subscription provisioning state.
+	// Failed ...
 	Failed EventSubscriptionProvisioningState = "Failed"
-	// Succeeded specifies the succeeded state for event subscription provisioning state.
+	// Succeeded ...
 	Succeeded EventSubscriptionProvisioningState = "Succeeded"
-	// Updating specifies the updating state for event subscription provisioning state.
+	// Updating ...
 	Updating EventSubscriptionProvisioningState = "Updating"
 )
 
@@ -51,11 +54,11 @@ const (
 type OperationOrigin string
 
 const (
-	// System specifies the system state for operation origin.
+	// System ...
 	System OperationOrigin = "System"
-	// User specifies the user state for operation origin.
+	// User ...
 	User OperationOrigin = "User"
-	// UserAndSystem specifies the user and system state for operation origin.
+	// UserAndSystem ...
 	UserAndSystem OperationOrigin = "UserAndSystem"
 )
 
@@ -63,9 +66,9 @@ const (
 type ResourceRegionType string
 
 const (
-	// GlobalResource specifies the global resource state for resource region type.
+	// GlobalResource ...
 	GlobalResource ResourceRegionType = "GlobalResource"
-	// RegionalResource specifies the regional resource state for resource region type.
+	// RegionalResource ...
 	RegionalResource ResourceRegionType = "RegionalResource"
 )
 
@@ -73,17 +76,17 @@ const (
 type TopicProvisioningState string
 
 const (
-	// TopicProvisioningStateCanceled specifies the topic provisioning state canceled state for topic provisioning state.
+	// TopicProvisioningStateCanceled ...
 	TopicProvisioningStateCanceled TopicProvisioningState = "Canceled"
-	// TopicProvisioningStateCreating specifies the topic provisioning state creating state for topic provisioning state.
+	// TopicProvisioningStateCreating ...
 	TopicProvisioningStateCreating TopicProvisioningState = "Creating"
-	// TopicProvisioningStateDeleting specifies the topic provisioning state deleting state for topic provisioning state.
+	// TopicProvisioningStateDeleting ...
 	TopicProvisioningStateDeleting TopicProvisioningState = "Deleting"
-	// TopicProvisioningStateFailed specifies the topic provisioning state failed state for topic provisioning state.
+	// TopicProvisioningStateFailed ...
 	TopicProvisioningStateFailed TopicProvisioningState = "Failed"
-	// TopicProvisioningStateSucceeded specifies the topic provisioning state succeeded state for topic provisioning state.
+	// TopicProvisioningStateSucceeded ...
 	TopicProvisioningStateSucceeded TopicProvisioningState = "Succeeded"
-	// TopicProvisioningStateUpdating specifies the topic provisioning state updating state for topic provisioning state.
+	// TopicProvisioningStateUpdating ...
 	TopicProvisioningStateUpdating TopicProvisioningState = "Updating"
 )
 
@@ -91,197 +94,680 @@ const (
 type TopicTypeProvisioningState string
 
 const (
-	// TopicTypeProvisioningStateCanceled specifies the topic type provisioning state canceled state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateCanceled ...
 	TopicTypeProvisioningStateCanceled TopicTypeProvisioningState = "Canceled"
-	// TopicTypeProvisioningStateCreating specifies the topic type provisioning state creating state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateCreating ...
 	TopicTypeProvisioningStateCreating TopicTypeProvisioningState = "Creating"
-	// TopicTypeProvisioningStateDeleting specifies the topic type provisioning state deleting state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateDeleting ...
 	TopicTypeProvisioningStateDeleting TopicTypeProvisioningState = "Deleting"
-	// TopicTypeProvisioningStateFailed specifies the topic type provisioning state failed state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateFailed ...
 	TopicTypeProvisioningStateFailed TopicTypeProvisioningState = "Failed"
-	// TopicTypeProvisioningStateSucceeded specifies the topic type provisioning state succeeded state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateSucceeded ...
 	TopicTypeProvisioningStateSucceeded TopicTypeProvisioningState = "Succeeded"
-	// TopicTypeProvisioningStateUpdating specifies the topic type provisioning state updating state for topic type
-	// provisioning state.
+	// TopicTypeProvisioningStateUpdating ...
 	TopicTypeProvisioningStateUpdating TopicTypeProvisioningState = "Updating"
 )
 
-// EventSubscription is event Subscription
+// EventSubscription event Subscription
 type EventSubscription struct {
-	autorest.Response            `json:"-"`
-	ID                           *string `json:"id,omitempty"`
-	Name                         *string `json:"name,omitempty"`
-	Type                         *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
+	Type *string `json:"type,omitempty"`
+	// EventSubscriptionProperties - Properties of the event subscription
 	*EventSubscriptionProperties `json:"properties,omitempty"`
 }
 
-// EventSubscriptionDestination is information about the destination for an event subscription
+// UnmarshalJSON is the custom unmarshaler for EventSubscription struct.
+func (es *EventSubscription) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EventSubscriptionProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		es.EventSubscriptionProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		es.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		es.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		es.Type = &typeVar
+	}
+
+	return nil
+}
+
+// EventSubscriptionDestination information about the destination for an event subscription
 type EventSubscriptionDestination struct {
-	EndpointType                            EndpointType `json:"endpointType,omitempty"`
+	// EndpointType - Type of the endpoint for the event subscription destination. Possible values include: 'WebHook'
+	EndpointType EndpointType `json:"endpointType,omitempty"`
+	// EventSubscriptionDestinationProperties - Properties of the event subscription destination
 	*EventSubscriptionDestinationProperties `json:"properties,omitempty"`
 }
 
-// EventSubscriptionDestinationProperties is properties of the event subscription destination
+// UnmarshalJSON is the custom unmarshaler for EventSubscriptionDestination struct.
+func (esd *EventSubscriptionDestination) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["endpointType"]
+	if v != nil {
+		var endpointType EndpointType
+		err = json.Unmarshal(*m["endpointType"], &endpointType)
+		if err != nil {
+			return err
+		}
+		esd.EndpointType = endpointType
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties EventSubscriptionDestinationProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		esd.EventSubscriptionDestinationProperties = &properties
+	}
+
+	return nil
+}
+
+// EventSubscriptionDestinationProperties properties of the event subscription destination
 type EventSubscriptionDestinationProperties struct {
-	EndpointURL     *string `json:"endpointUrl,omitempty"`
+	// EndpointURL - The URL that represents the endpoint of the destination of an event subscription.
+	EndpointURL *string `json:"endpointUrl,omitempty"`
+	// EndpointBaseURL - The base URL that represents the endpoint of the destination of an event subscription.
 	EndpointBaseURL *string `json:"endpointBaseUrl,omitempty"`
 }
 
-// EventSubscriptionFilter is filter for the Event Subscription
+// EventSubscriptionFilter filter for the Event Subscription
 type EventSubscriptionFilter struct {
-	SubjectBeginsWith      *string   `json:"subjectBeginsWith,omitempty"`
-	SubjectEndsWith        *string   `json:"subjectEndsWith,omitempty"`
-	IncludedEventTypes     *[]string `json:"includedEventTypes,omitempty"`
-	IsSubjectCaseSensitive *bool     `json:"isSubjectCaseSensitive,omitempty"`
+	// SubjectBeginsWith - An optional string to filter events for an event subscription based on a resource path prefix.
+	// The format of this depends on the publisher of the events.
+	// Wildcard characters are not supported in this path.
+	SubjectBeginsWith *string `json:"subjectBeginsWith,omitempty"`
+	// SubjectEndsWith - An optional string to filter events for an event subscription based on a resource path suffix.
+	// Wildcard characters are not supported in this path.
+	SubjectEndsWith *string `json:"subjectEndsWith,omitempty"`
+	// IncludedEventTypes - A list of applicable event types that need to be part of the event subscription.
+	// If it is desired to subscribe to all event types, the string "all" needs to be specified as an element in this list.
+	IncludedEventTypes *[]string `json:"includedEventTypes,omitempty"`
+	// IsSubjectCaseSensitive - Specifies if the SubjectBeginsWith and SubjectEndsWith properties of the filter
+	// should be compared in a case sensitive manner.
+	IsSubjectCaseSensitive *bool `json:"isSubjectCaseSensitive,omitempty"`
 }
 
-// EventSubscriptionFullURL is full endpoint url of an event subscription
+// EventSubscriptionFullURL full endpoint url of an event subscription
 type EventSubscriptionFullURL struct {
 	autorest.Response `json:"-"`
-	EndpointURL       *string `json:"endpointUrl,omitempty"`
+	// EndpointURL - The URL that represents the endpoint of the destination of an event subscription.
+	EndpointURL *string `json:"endpointUrl,omitempty"`
 }
 
-// EventSubscriptionProperties is properties of the Event Subscription
+// EventSubscriptionProperties properties of the Event Subscription
 type EventSubscriptionProperties struct {
-	Topic             *string                            `json:"topic,omitempty"`
+	// Topic - Name of the topic of the event subscription.
+	Topic *string `json:"topic,omitempty"`
+	// ProvisioningState - Provisioning state of the event subscription. Possible values include: 'Creating', 'Updating', 'Deleting', 'Succeeded', 'Canceled', 'Failed'
 	ProvisioningState EventSubscriptionProvisioningState `json:"provisioningState,omitempty"`
-	Destination       *EventSubscriptionDestination      `json:"destination,omitempty"`
-	Filter            *EventSubscriptionFilter           `json:"filter,omitempty"`
-	Labels            *[]string                          `json:"labels,omitempty"`
+	// Destination - Information about the destination where events have to be delivered for the event subscription.
+	Destination *EventSubscriptionDestination `json:"destination,omitempty"`
+	// Filter - Information about the filter for the event subscription.
+	Filter *EventSubscriptionFilter `json:"filter,omitempty"`
+	// Labels - List of user defined labels.
+	Labels *[]string `json:"labels,omitempty"`
 }
 
-// EventSubscriptionsListResult is result of the List EventSubscriptions operation
+// EventSubscriptionsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EventSubscriptionsCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EventSubscriptionsCreateFuture) Result(client EventSubscriptionsClient) (es EventSubscription, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return es, autorest.NewError("eventgrid.EventSubscriptionsCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		es, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	es, err = client.CreateResponder(resp)
+	return
+}
+
+// EventSubscriptionsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EventSubscriptionsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EventSubscriptionsDeleteFuture) Result(client EventSubscriptionsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("eventgrid.EventSubscriptionsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// EventSubscriptionsListResult result of the List EventSubscriptions operation
 type EventSubscriptionsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]EventSubscription `json:"value,omitempty"`
+	// Value - A collection of EventSubscriptions
+	Value *[]EventSubscription `json:"value,omitempty"`
 }
 
-// EventSubscriptionUpdateParameters is properties of the Event Subscription update
+// EventSubscriptionsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type EventSubscriptionsUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future EventSubscriptionsUpdateFuture) Result(client EventSubscriptionsClient) (es EventSubscription, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return es, autorest.NewError("eventgrid.EventSubscriptionsUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		es, err = client.UpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	es, err = client.UpdateResponder(resp)
+	return
+}
+
+// EventSubscriptionUpdateParameters properties of the Event Subscription update
 type EventSubscriptionUpdateParameters struct {
+	// Destination - Information about the destination where events have to be delivered for the event subscription.
 	Destination *EventSubscriptionDestination `json:"destination,omitempty"`
-	Filter      *EventSubscriptionFilter      `json:"filter,omitempty"`
-	Labels      *[]string                     `json:"labels,omitempty"`
+	// Filter - Information about the filter for the event subscription.
+	Filter *EventSubscriptionFilter `json:"filter,omitempty"`
+	// Labels - List of user defined labels.
+	Labels *[]string `json:"labels,omitempty"`
 }
 
-// EventType is event Type for a subject under a topic
+// EventType event Type for a subject under a topic
 type EventType struct {
-	ID                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Type                 *string `json:"type,omitempty"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
+	Type *string `json:"type,omitempty"`
+	// EventTypeProperties - Properties of the event type.
 	*EventTypeProperties `json:"properties,omitempty"`
 }
 
-// EventTypeProperties is properties of the event type
-type EventTypeProperties struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	Description *string `json:"description,omitempty"`
-	SchemaURL   *string `json:"schemaUrl,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for EventType struct.
+func (et *EventType) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties EventTypeProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		et.EventTypeProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		et.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		et.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		et.Type = &typeVar
+	}
+
+	return nil
 }
 
-// EventTypesListResult is result of the List Event Types operation
+// EventTypeProperties properties of the event type
+type EventTypeProperties struct {
+	// DisplayName - Display name of the event type.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - Description of the event type.
+	Description *string `json:"description,omitempty"`
+	// SchemaURL - Url of the schema for this event type.
+	SchemaURL *string `json:"schemaUrl,omitempty"`
+}
+
+// EventTypesListResult result of the List Event Types operation
 type EventTypesListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]EventType `json:"value,omitempty"`
+	// Value - A collection of event types
+	Value *[]EventType `json:"value,omitempty"`
 }
 
-// Operation is represents an operation returned by the GetOperations request
+// Operation represents an operation returned by the GetOperations request
 type Operation struct {
-	Name       *string                 `json:"name,omitempty"`
-	Display    *OperationInfo          `json:"display,omitempty"`
-	Origin     OperationOrigin         `json:"origin,omitempty"`
+	// Name - Name of the operation
+	Name *string `json:"name,omitempty"`
+	// Display - Display name of the operation
+	Display *OperationInfo `json:"display,omitempty"`
+	// Origin - Origin of the operation. Possible values include: 'User', 'System', 'UserAndSystem'
+	Origin OperationOrigin `json:"origin,omitempty"`
+	// Properties - Properties of the operation
 	Properties *map[string]interface{} `json:"properties,omitempty"`
 }
 
-// OperationInfo is information about an operation
+// OperationInfo information about an operation
 type OperationInfo struct {
-	Provider    *string `json:"provider,omitempty"`
-	Resource    *string `json:"resource,omitempty"`
-	Operation   *string `json:"operation,omitempty"`
+	// Provider - Name of the provider
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Name of the resource type
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Name of the operation
+	Operation *string `json:"operation,omitempty"`
+	// Description - Description of the operation
 	Description *string `json:"description,omitempty"`
 }
 
-// OperationsListResult is result of the List Operations operation
+// OperationsListResult result of the List Operations operation
 type OperationsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
+	// Value - A collection of operations
+	Value *[]Operation `json:"value,omitempty"`
 }
 
-// Resource is definition of a Resource
+// Resource definition of a Resource
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
 }
 
-// Topic is eventGrid Topic
+// Topic eventGrid Topic
 type Topic struct {
 	autorest.Response `json:"-"`
-	ID                *string             `json:"id,omitempty"`
-	Name              *string             `json:"name,omitempty"`
-	Type              *string             `json:"type,omitempty"`
-	Location          *string             `json:"location,omitempty"`
-	Tags              *map[string]*string `json:"tags,omitempty"`
-	*TopicProperties  `json:"properties,omitempty"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
+	Type *string `json:"type,omitempty"`
+	// Location - Location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags of the resource
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// TopicProperties - Properties of the topic
+	*TopicProperties `json:"properties,omitempty"`
 }
 
-// TopicProperties is properties of the Topic
+// UnmarshalJSON is the custom unmarshaler for Topic struct.
+func (t *Topic) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties TopicProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		t.TopicProperties = &properties
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		t.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		t.Tags = &tags
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		t.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		t.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		t.Type = &typeVar
+	}
+
+	return nil
+}
+
+// TopicProperties properties of the Topic
 type TopicProperties struct {
+	// ProvisioningState - Provisioning state of the topic. Possible values include: 'TopicProvisioningStateCreating', 'TopicProvisioningStateUpdating', 'TopicProvisioningStateDeleting', 'TopicProvisioningStateSucceeded', 'TopicProvisioningStateCanceled', 'TopicProvisioningStateFailed'
 	ProvisioningState TopicProvisioningState `json:"provisioningState,omitempty"`
-	Endpoint          *string                `json:"endpoint,omitempty"`
+	// Endpoint - Endpoint for the topic.
+	Endpoint *string `json:"endpoint,omitempty"`
 }
 
-// TopicRegenerateKeyRequest is topic regenerate share access key key request
+// TopicRegenerateKeyRequest topic regenerate share access key key request
 type TopicRegenerateKeyRequest struct {
+	// KeyName - Key name to regenerate key1 or key2
 	KeyName *string `json:"keyName,omitempty"`
 }
 
-// TopicSharedAccessKeys is shared access keys of the Topic
+// TopicsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type TopicsCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future TopicsCreateOrUpdateFuture) Result(client TopicsClient) (t Topic, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return t, autorest.NewError("eventgrid.TopicsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		t, err = client.CreateOrUpdateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	t, err = client.CreateOrUpdateResponder(resp)
+	return
+}
+
+// TopicsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type TopicsDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future TopicsDeleteFuture) Result(client TopicsClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("eventgrid.TopicsDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// TopicSharedAccessKeys shared access keys of the Topic
 type TopicSharedAccessKeys struct {
 	autorest.Response `json:"-"`
-	Key1              *string `json:"key1,omitempty"`
-	Key2              *string `json:"key2,omitempty"`
+	// Key1 - Shared access key1 for the topic.
+	Key1 *string `json:"key1,omitempty"`
+	// Key2 - Shared access key2 for the topic.
+	Key2 *string `json:"key2,omitempty"`
 }
 
-// TopicsListResult is result of the List Topics operation
+// TopicsListResult result of the List Topics operation
 type TopicsListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Topic `json:"value,omitempty"`
+	// Value - A collection of Topics
+	Value *[]Topic `json:"value,omitempty"`
 }
 
-// TopicTypeInfo is properties of a topic type info.
+// TopicTypeInfo properties of a topic type info.
 type TopicTypeInfo struct {
-	autorest.Response    `json:"-"`
-	ID                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Type                 *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
+	Type *string `json:"type,omitempty"`
+	// TopicTypeProperties - Properties of the topic type info
 	*TopicTypeProperties `json:"properties,omitempty"`
 }
 
-// TopicTypeProperties is properties of a topic type.
-type TopicTypeProperties struct {
-	Provider           *string                    `json:"provider,omitempty"`
-	DisplayName        *string                    `json:"displayName,omitempty"`
-	Description        *string                    `json:"description,omitempty"`
-	ResourceRegionType ResourceRegionType         `json:"resourceRegionType,omitempty"`
-	ProvisioningState  TopicTypeProvisioningState `json:"provisioningState,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for TopicTypeInfo struct.
+func (tti *TopicTypeInfo) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties TopicTypeProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		tti.TopicTypeProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		tti.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		tti.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		tti.Type = &typeVar
+	}
+
+	return nil
 }
 
-// TopicTypesListResult is result of the List Topic Types operation
+// TopicTypeProperties properties of a topic type.
+type TopicTypeProperties struct {
+	// Provider - Namespace of the provider of the topic type.
+	Provider *string `json:"provider,omitempty"`
+	// DisplayName - Display Name for the topic type.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Description - Description of the topic type.
+	Description *string `json:"description,omitempty"`
+	// ResourceRegionType - Region type of the resource. Possible values include: 'RegionalResource', 'GlobalResource'
+	ResourceRegionType ResourceRegionType `json:"resourceRegionType,omitempty"`
+	// ProvisioningState - Provisioning state of the topic type. Possible values include: 'TopicTypeProvisioningStateCreating', 'TopicTypeProvisioningStateUpdating', 'TopicTypeProvisioningStateDeleting', 'TopicTypeProvisioningStateSucceeded', 'TopicTypeProvisioningStateCanceled', 'TopicTypeProvisioningStateFailed'
+	ProvisioningState TopicTypeProvisioningState `json:"provisioningState,omitempty"`
+}
+
+// TopicTypesListResult result of the List Topic Types operation
 type TopicTypesListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]TopicTypeInfo `json:"value,omitempty"`
+	// Value - A collection of topic types
+	Value *[]TopicTypeInfo `json:"value,omitempty"`
 }
 
-// TrackedResource is definition of a Tracked Resource
+// TrackedResource definition of a Tracked Resource
 type TrackedResource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - Fully qualified identifier of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - Name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - Type of the resource
+	Type *string `json:"type,omitempty"`
+	// Location - Location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags of the resource
+	Tags *map[string]*string `json:"tags,omitempty"`
 }

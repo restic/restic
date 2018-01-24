@@ -18,81 +18,240 @@ package marketplaceordering
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
 )
 
-// AgreementProperties is agreement Terms definition
+// AgreementProperties agreement Terms definition
 type AgreementProperties struct {
-	Publisher         *string    `json:"publisher,omitempty"`
-	Product           *string    `json:"product,omitempty"`
-	Plan              *string    `json:"plan,omitempty"`
-	LicenseTextLink   *string    `json:"licenseTextLink,omitempty"`
-	PrivacyPolicyLink *string    `json:"privacyPolicyLink,omitempty"`
-	RetrieveDatetime  *date.Time `json:"retrieveDatetime,omitempty"`
-	Signature         *string    `json:"signature,omitempty"`
-	Accepted          *bool      `json:"accepted,omitempty"`
+	// Publisher - Publisher identifier string of image being deployed.
+	Publisher *string `json:"publisher,omitempty"`
+	// Product - Offer identifier string of image being deployed.
+	Product *string `json:"product,omitempty"`
+	// Plan - Plan identifier string of image being deployed.
+	Plan *string `json:"plan,omitempty"`
+	// LicenseTextLink - Link to HTML with Microsoft and Publisher terms.
+	LicenseTextLink *string `json:"licenseTextLink,omitempty"`
+	// PrivacyPolicyLink - Link to the privacy policy of the publisher.
+	PrivacyPolicyLink *string `json:"privacyPolicyLink,omitempty"`
+	// RetrieveDatetime - Date and time in UTC of when the terms were accepted. This is empty if Accepted is false.
+	RetrieveDatetime *date.Time `json:"retrieveDatetime,omitempty"`
+	// Signature - Terms signature.
+	Signature *string `json:"signature,omitempty"`
+	// Accepted - If any version of the terms have been accepted, otherwise false.
+	Accepted *bool `json:"accepted,omitempty"`
 }
 
-// AgreementTerms is terms properties for provided Publisher/Offer/Plan tuple
+// AgreementTerms terms properties for provided Publisher/Offer/Plan tuple
 type AgreementTerms struct {
-	autorest.Response    `json:"-"`
-	ID                   *string `json:"id,omitempty"`
-	Name                 *string `json:"name,omitempty"`
-	Type                 *string `json:"type,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
+	Type *string `json:"type,omitempty"`
+	// AgreementProperties - Represents the properties of the resource.
 	*AgreementProperties `json:"properties,omitempty"`
 }
 
-// ErrorResponse is error reponse indicates Microsoft.MarketplaceOrdering service is not able to process the incoming
+// UnmarshalJSON is the custom unmarshaler for AgreementTerms struct.
+func (at *AgreementTerms) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AgreementProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		at.AgreementProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		at.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		at.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		at.Type = &typeVar
+	}
+
+	return nil
+}
+
+// ErrorResponse error reponse indicates Microsoft.MarketplaceOrdering service is not able to process the incoming
 // request. The reason is provided in the error message.
 type ErrorResponse struct {
+	// Error - The details of the error.
 	Error *ErrorResponseError `json:"error,omitempty"`
 }
 
-// ErrorResponseError is the details of the error.
+// ErrorResponseError the details of the error.
 type ErrorResponseError struct {
-	Code    *string `json:"code,omitempty"`
+	// Code - Error code.
+	Code *string `json:"code,omitempty"`
+	// Message - Error message indicating why the operation failed.
 	Message *string `json:"message,omitempty"`
 }
 
-// Operation is microsoft.MarketplaceOrdering REST API operation
+// Operation microsoft.MarketplaceOrdering REST API operation
 type Operation struct {
-	Name    *string           `json:"name,omitempty"`
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - The object that represents the operation.
 	Display *OperationDisplay `json:"display,omitempty"`
 }
 
-// OperationDisplay is the object that represents the operation.
+// OperationDisplay the object that represents the operation.
 type OperationDisplay struct {
-	Provider  *string `json:"provider,omitempty"`
-	Resource  *string `json:"resource,omitempty"`
+	// Provider - Service provider: Microsoft.MarketplaceOrdering
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed: Agreement, virtualmachine, etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Operation type: Get Agreement, Sign Agreement, Cancel Agreement etc.
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult is result of the request to list MarketplaceOrdering operations. It contains a list of
-// operations and a URL link to get the next set of results.
+// OperationListResult result of the request to list MarketplaceOrdering operations. It contains a list of operations
+// and a URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Operation `json:"value,omitempty"`
-	NextLink          *string      `json:"nextLink,omitempty"`
+	// Value - List of Microsoft.MarketplaceOrdering operations supported by the Microsoft.MarketplaceOrdering resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - URL to get the next set of operation list results if there are any.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// OperationListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client OperationListResult) OperationListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(olr.NextLink)))
 }
 
-// Resource is ARM resource.
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// Resource ARM resource.
 type Resource struct {
-	ID   *string `json:"id,omitempty"`
+	// ID - Resource ID.
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name.
 	Name *string `json:"name,omitempty"`
+	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 }

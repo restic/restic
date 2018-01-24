@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ServiceGroupMembersClient is the client for the ServiceGroupMembers methods of the Servicefabric service.
 type ServiceGroupMembersClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewServiceGroupMembersClient creates an instance of the ServiceGroupMembersClient client.
@@ -41,8 +42,8 @@ func NewServiceGroupMembersClientWithBaseURI(baseURI string, timeout *int32) Ser
 // Get get service group members
 //
 // applicationName is the name of the application serviceName is the name of the service
-func (client ServiceGroupMembersClient) Get(applicationName string, serviceName string) (result ServiceGroupMember, err error) {
-	req, err := client.GetPreparer(applicationName, serviceName)
+func (client ServiceGroupMembersClient) Get(ctx context.Context, applicationName string, serviceName string) (result ServiceGroupMember, err error) {
+	req, err := client.GetPreparer(ctx, applicationName, serviceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ServiceGroupMembersClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ServiceGroupMembersClient) Get(applicationName string, serviceName 
 }
 
 // GetPreparer prepares the Get request.
-func (client ServiceGroupMembersClient) GetPreparer(applicationName string, serviceName string) (*http.Request, error) {
+func (client ServiceGroupMembersClient) GetPreparer(ctx context.Context, applicationName string, serviceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": applicationName,
 		"serviceName":     serviceName,
@@ -83,14 +84,13 @@ func (client ServiceGroupMembersClient) GetPreparer(applicationName string, serv
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices/{serviceName}/$/GetServiceGroupMembers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ServiceGroupMembersClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

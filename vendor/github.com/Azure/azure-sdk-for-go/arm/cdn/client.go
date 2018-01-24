@@ -2,6 +2,8 @@
 //
 // Use these APIs to manage Azure CDN resources through the Azure Resource Manager. You must make sure that requests
 // made to these resources are secure.
+//
+// Deprecated: Please instead use github.com/Azure/azure-sdk-for-go/services/cdn/mgmt/2017-04-02/cdn
 package cdn
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.

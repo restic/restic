@@ -18,6 +18,7 @@ package web
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // RecommendationsClient is the webSite Management Client
 type RecommendationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewRecommendationsClient creates an instance of the RecommendationsClient client.
@@ -42,7 +43,7 @@ func NewRecommendationsClientWithBaseURI(baseURI string, subscriptionID string) 
 // DisableAllForWebApp disable all recommendations for an app.
 //
 // resourceGroupName is name of the resource group to which the resource belongs. siteName is name of the app.
-func (client RecommendationsClient) DisableAllForWebApp(resourceGroupName string, siteName string) (result autorest.Response, err error) {
+func (client RecommendationsClient) DisableAllForWebApp(ctx context.Context, resourceGroupName string, siteName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -51,7 +52,7 @@ func (client RecommendationsClient) DisableAllForWebApp(resourceGroupName string
 		return result, validation.NewErrorWithValidationError(err, "web.RecommendationsClient", "DisableAllForWebApp")
 	}
 
-	req, err := client.DisableAllForWebAppPreparer(resourceGroupName, siteName)
+	req, err := client.DisableAllForWebAppPreparer(ctx, resourceGroupName, siteName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "DisableAllForWebApp", nil, "Failure preparing request")
 		return
@@ -73,7 +74,7 @@ func (client RecommendationsClient) DisableAllForWebApp(resourceGroupName string
 }
 
 // DisableAllForWebAppPreparer prepares the DisableAllForWebApp request.
-func (client RecommendationsClient) DisableAllForWebAppPreparer(resourceGroupName string, siteName string) (*http.Request, error) {
+func (client RecommendationsClient) DisableAllForWebAppPreparer(ctx context.Context, resourceGroupName string, siteName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"siteName":          autorest.Encode("path", siteName),
@@ -90,14 +91,13 @@ func (client RecommendationsClient) DisableAllForWebAppPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/recommendations/disable", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DisableAllForWebAppSender sends the DisableAllForWebApp request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) DisableAllForWebAppSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -118,7 +118,7 @@ func (client RecommendationsClient) DisableAllForWebAppResponder(resp *http.Resp
 // resourceGroupName is name of the resource group to which the resource belongs. siteName is name of the app. name is
 // name of the recommendation. updateSeen is specify <code>true</code> to update the last-seen timestamp of the
 // recommendation object.
-func (client RecommendationsClient) GetRuleDetailsByWebApp(resourceGroupName string, siteName string, name string, updateSeen *bool) (result RecommendationRule, err error) {
+func (client RecommendationsClient) GetRuleDetailsByWebApp(ctx context.Context, resourceGroupName string, siteName string, name string, updateSeen *bool) (result RecommendationRule, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -127,7 +127,7 @@ func (client RecommendationsClient) GetRuleDetailsByWebApp(resourceGroupName str
 		return result, validation.NewErrorWithValidationError(err, "web.RecommendationsClient", "GetRuleDetailsByWebApp")
 	}
 
-	req, err := client.GetRuleDetailsByWebAppPreparer(resourceGroupName, siteName, name, updateSeen)
+	req, err := client.GetRuleDetailsByWebAppPreparer(ctx, resourceGroupName, siteName, name, updateSeen)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "GetRuleDetailsByWebApp", nil, "Failure preparing request")
 		return
@@ -149,7 +149,7 @@ func (client RecommendationsClient) GetRuleDetailsByWebApp(resourceGroupName str
 }
 
 // GetRuleDetailsByWebAppPreparer prepares the GetRuleDetailsByWebApp request.
-func (client RecommendationsClient) GetRuleDetailsByWebAppPreparer(resourceGroupName string, siteName string, name string, updateSeen *bool) (*http.Request, error) {
+func (client RecommendationsClient) GetRuleDetailsByWebAppPreparer(ctx context.Context, resourceGroupName string, siteName string, name string, updateSeen *bool) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -170,14 +170,13 @@ func (client RecommendationsClient) GetRuleDetailsByWebAppPreparer(resourceGroup
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/recommendations/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetRuleDetailsByWebAppSender sends the GetRuleDetailsByWebApp request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) GetRuleDetailsByWebAppSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -200,8 +199,8 @@ func (client RecommendationsClient) GetRuleDetailsByWebAppResponder(resp *http.R
 // <code>false</code>, which returns all recommendations. filter is filter is specified by using OData syntax. Example:
 // $filter=channels eq 'Api' or channel eq 'Notification' and startTime eq '2014-01-01T00:00:00Z' and endTime eq
 // '2014-12-31T23:59:59Z' and timeGrain eq duration'[PT1H|PT1M|P1D]
-func (client RecommendationsClient) List(featured *bool, filter string) (result ListRecommendation, err error) {
-	req, err := client.ListPreparer(featured, filter)
+func (client RecommendationsClient) List(ctx context.Context, featured *bool, filter string) (result ListRecommendation, err error) {
+	req, err := client.ListPreparer(ctx, featured, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "List", nil, "Failure preparing request")
 		return
@@ -223,7 +222,7 @@ func (client RecommendationsClient) List(featured *bool, filter string) (result 
 }
 
 // ListPreparer prepares the List request.
-func (client RecommendationsClient) ListPreparer(featured *bool, filter string) (*http.Request, error) {
+func (client RecommendationsClient) ListPreparer(ctx context.Context, featured *bool, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -244,14 +243,13 @@ func (client RecommendationsClient) ListPreparer(featured *bool, filter string) 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/recommendations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -273,7 +271,7 @@ func (client RecommendationsClient) ListResponder(resp *http.Response) (result L
 // resourceGroupName is name of the resource group to which the resource belongs. siteName is name of the app. filter
 // is filter is specified by using OData syntax. Example: $filter=channels eq 'Api' or channel eq 'Notification' and
 // startTime eq '2014-01-01T00:00:00Z' and endTime eq '2014-12-31T23:59:59Z' and timeGrain eq duration'[PT1H|PT1M|P1D]
-func (client RecommendationsClient) ListHistoryForWebApp(resourceGroupName string, siteName string, filter string) (result ListRecommendation, err error) {
+func (client RecommendationsClient) ListHistoryForWebApp(ctx context.Context, resourceGroupName string, siteName string, filter string) (result ListRecommendation, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -282,7 +280,7 @@ func (client RecommendationsClient) ListHistoryForWebApp(resourceGroupName strin
 		return result, validation.NewErrorWithValidationError(err, "web.RecommendationsClient", "ListHistoryForWebApp")
 	}
 
-	req, err := client.ListHistoryForWebAppPreparer(resourceGroupName, siteName, filter)
+	req, err := client.ListHistoryForWebAppPreparer(ctx, resourceGroupName, siteName, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "ListHistoryForWebApp", nil, "Failure preparing request")
 		return
@@ -304,7 +302,7 @@ func (client RecommendationsClient) ListHistoryForWebApp(resourceGroupName strin
 }
 
 // ListHistoryForWebAppPreparer prepares the ListHistoryForWebApp request.
-func (client RecommendationsClient) ListHistoryForWebAppPreparer(resourceGroupName string, siteName string, filter string) (*http.Request, error) {
+func (client RecommendationsClient) ListHistoryForWebAppPreparer(ctx context.Context, resourceGroupName string, siteName string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"siteName":          autorest.Encode("path", siteName),
@@ -324,14 +322,13 @@ func (client RecommendationsClient) ListHistoryForWebAppPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/recommendationHistory", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListHistoryForWebAppSender sends the ListHistoryForWebApp request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) ListHistoryForWebAppSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -354,7 +351,7 @@ func (client RecommendationsClient) ListHistoryForWebAppResponder(resp *http.Res
 // is specify <code>true</code> to return only the most critical recommendations. The default is <code>false</code>,
 // which returns all recommendations. filter is return only channels specified in the filter. Filter is specified by
 // using OData syntax. Example: $filter=channels eq 'Api' or channel eq 'Notification'
-func (client RecommendationsClient) ListRecommendedRulesForWebApp(resourceGroupName string, siteName string, featured *bool, filter string) (result ListRecommendation, err error) {
+func (client RecommendationsClient) ListRecommendedRulesForWebApp(ctx context.Context, resourceGroupName string, siteName string, featured *bool, filter string) (result ListRecommendation, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -363,7 +360,7 @@ func (client RecommendationsClient) ListRecommendedRulesForWebApp(resourceGroupN
 		return result, validation.NewErrorWithValidationError(err, "web.RecommendationsClient", "ListRecommendedRulesForWebApp")
 	}
 
-	req, err := client.ListRecommendedRulesForWebAppPreparer(resourceGroupName, siteName, featured, filter)
+	req, err := client.ListRecommendedRulesForWebAppPreparer(ctx, resourceGroupName, siteName, featured, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "ListRecommendedRulesForWebApp", nil, "Failure preparing request")
 		return
@@ -385,7 +382,7 @@ func (client RecommendationsClient) ListRecommendedRulesForWebApp(resourceGroupN
 }
 
 // ListRecommendedRulesForWebAppPreparer prepares the ListRecommendedRulesForWebApp request.
-func (client RecommendationsClient) ListRecommendedRulesForWebAppPreparer(resourceGroupName string, siteName string, featured *bool, filter string) (*http.Request, error) {
+func (client RecommendationsClient) ListRecommendedRulesForWebAppPreparer(ctx context.Context, resourceGroupName string, siteName string, featured *bool, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"siteName":          autorest.Encode("path", siteName),
@@ -408,14 +405,13 @@ func (client RecommendationsClient) ListRecommendedRulesForWebAppPreparer(resour
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/recommendations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListRecommendedRulesForWebAppSender sends the ListRecommendedRulesForWebApp request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) ListRecommendedRulesForWebAppSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -433,8 +429,8 @@ func (client RecommendationsClient) ListRecommendedRulesForWebAppResponder(resp 
 }
 
 // ResetAllFilters reset all recommendation opt-out settings for a subscription.
-func (client RecommendationsClient) ResetAllFilters() (result autorest.Response, err error) {
-	req, err := client.ResetAllFiltersPreparer()
+func (client RecommendationsClient) ResetAllFilters(ctx context.Context) (result autorest.Response, err error) {
+	req, err := client.ResetAllFiltersPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "ResetAllFilters", nil, "Failure preparing request")
 		return
@@ -456,7 +452,7 @@ func (client RecommendationsClient) ResetAllFilters() (result autorest.Response,
 }
 
 // ResetAllFiltersPreparer prepares the ResetAllFilters request.
-func (client RecommendationsClient) ResetAllFiltersPreparer() (*http.Request, error) {
+func (client RecommendationsClient) ResetAllFiltersPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -471,14 +467,13 @@ func (client RecommendationsClient) ResetAllFiltersPreparer() (*http.Request, er
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/recommendations/reset", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResetAllFiltersSender sends the ResetAllFilters request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) ResetAllFiltersSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -497,7 +492,7 @@ func (client RecommendationsClient) ResetAllFiltersResponder(resp *http.Response
 // ResetAllFiltersForWebApp reset all recommendation opt-out settings for an app.
 //
 // resourceGroupName is name of the resource group to which the resource belongs. siteName is name of the app.
-func (client RecommendationsClient) ResetAllFiltersForWebApp(resourceGroupName string, siteName string) (result autorest.Response, err error) {
+func (client RecommendationsClient) ResetAllFiltersForWebApp(ctx context.Context, resourceGroupName string, siteName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -506,7 +501,7 @@ func (client RecommendationsClient) ResetAllFiltersForWebApp(resourceGroupName s
 		return result, validation.NewErrorWithValidationError(err, "web.RecommendationsClient", "ResetAllFiltersForWebApp")
 	}
 
-	req, err := client.ResetAllFiltersForWebAppPreparer(resourceGroupName, siteName)
+	req, err := client.ResetAllFiltersForWebAppPreparer(ctx, resourceGroupName, siteName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "web.RecommendationsClient", "ResetAllFiltersForWebApp", nil, "Failure preparing request")
 		return
@@ -528,7 +523,7 @@ func (client RecommendationsClient) ResetAllFiltersForWebApp(resourceGroupName s
 }
 
 // ResetAllFiltersForWebAppPreparer prepares the ResetAllFiltersForWebApp request.
-func (client RecommendationsClient) ResetAllFiltersForWebAppPreparer(resourceGroupName string, siteName string) (*http.Request, error) {
+func (client RecommendationsClient) ResetAllFiltersForWebAppPreparer(ctx context.Context, resourceGroupName string, siteName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"siteName":          autorest.Encode("path", siteName),
@@ -545,14 +540,13 @@ func (client RecommendationsClient) ResetAllFiltersForWebAppPreparer(resourceGro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/sites/{siteName}/recommendations/reset", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ResetAllFiltersForWebAppSender sends the ResetAllFiltersForWebApp request. The method will close the
 // http.Response Body if it receives an error.
 func (client RecommendationsClient) ResetAllFiltersForWebAppSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

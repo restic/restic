@@ -18,6 +18,7 @@ package batch
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // CertificateClient is the client for the Certificate methods of the Batch service.
 type CertificateClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCertificateClient creates an instance of the CertificateClient client.
@@ -48,7 +49,7 @@ func NewCertificateClientWithBaseURI(baseURI string, subscriptionID string) Cert
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. certificateName is the identifier for the certificate. This must be made up of algorithm and
 // thumbprint separated by a dash, and must match the certificate data in the request. For example SHA1-a3d1c5.
-func (client CertificateClient) CancelDeletion(resourceGroupName string, accountName string, certificateName string) (result Certificate, err error) {
+func (client CertificateClient) CancelDeletion(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (result Certificate, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -61,7 +62,7 @@ func (client CertificateClient) CancelDeletion(resourceGroupName string, account
 		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "CancelDeletion")
 	}
 
-	req, err := client.CancelDeletionPreparer(resourceGroupName, accountName, certificateName)
+	req, err := client.CancelDeletionPreparer(ctx, resourceGroupName, accountName, certificateName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "CancelDeletion", nil, "Failure preparing request")
 		return
@@ -83,7 +84,7 @@ func (client CertificateClient) CancelDeletion(resourceGroupName string, account
 }
 
 // CancelDeletionPreparer prepares the CancelDeletion request.
-func (client CertificateClient) CancelDeletionPreparer(resourceGroupName string, accountName string, certificateName string) (*http.Request, error) {
+func (client CertificateClient) CancelDeletionPreparer(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"certificateName":   autorest.Encode("path", certificateName),
@@ -101,14 +102,13 @@ func (client CertificateClient) CancelDeletionPreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/certificates/{certificateName}/cancelDelete", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CancelDeletionSender sends the CancelDeletion request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificateClient) CancelDeletionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -125,9 +125,7 @@ func (client CertificateClient) CancelDeletionResponder(resp *http.Response) (re
 	return
 }
 
-// Create creates a new certificate inside the specified account. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Create creates a new certificate inside the specified account.
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. certificateName is the identifier for the certificate. This must be made up of algorithm and
@@ -136,9 +134,7 @@ func (client CertificateClient) CancelDeletionResponder(resp *http.Response) (re
 // certificate to update. A value of "*" can be used to apply the operation only if the certificate already exists. If
 // omitted, this operation will always be applied. ifNoneMatch is set to '*' to allow a new certificate to be created,
 // but to prevent updating an existing certificate. Other values will be ignored.
-func (client CertificateClient) Create(resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (<-chan Certificate, <-chan error) {
-	resultChan := make(chan Certificate, 1)
-	errChan := make(chan error, 1)
+func (client CertificateClient) Create(ctx context.Context, resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string, ifNoneMatch string) (result CertificateCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -151,46 +147,26 @@ func (client CertificateClient) Create(resourceGroupName string, accountName str
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.CertificateCreateOrUpdateProperties", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.CertificateCreateOrUpdateProperties.Data", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result Certificate
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, accountName, certificateName, parameters, ifMatch, ifNoneMatch, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, accountName, certificateName, parameters, ifMatch, ifNoneMatch)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client CertificateClient) CreatePreparer(resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string, ifNoneMatch string, cancel <-chan struct{}) (*http.Request, error) {
+func (client CertificateClient) CreatePreparer(ctx context.Context, resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string, ifNoneMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"certificateName":   autorest.Encode("path", certificateName),
@@ -218,16 +194,22 @@ func (client CertificateClient) CreatePreparer(resourceGroupName string, account
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-None-Match", autorest.String(ifNoneMatch)))
 	}
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client CertificateClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client CertificateClient) CreateSender(req *http.Request) (future CertificateCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -243,15 +225,12 @@ func (client CertificateClient) CreateResponder(resp *http.Response) (result Cer
 	return
 }
 
-// Delete deletes the specified certificate. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the specified certificate.
 //
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. certificateName is the identifier for the certificate. This must be made up of algorithm and
 // thumbprint separated by a dash, and must match the certificate data in the request. For example SHA1-a3d1c5.
-func (client CertificateClient) Delete(resourceGroupName string, accountName string, certificateName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client CertificateClient) Delete(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (result CertificateDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -261,46 +240,26 @@ func (client CertificateClient) Delete(resourceGroupName string, accountName str
 			Constraints: []validation.Constraint{{Target: "certificateName", Name: validation.MaxLength, Rule: 45, Chain: nil},
 				{Target: "certificateName", Name: validation.MinLength, Rule: 5, Chain: nil},
 				{Target: "certificateName", Name: validation.Pattern, Rule: `^[\w]+-[\w]+$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, accountName, certificateName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, accountName, certificateName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client CertificateClient) DeletePreparer(resourceGroupName string, accountName string, certificateName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client CertificateClient) DeletePreparer(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"certificateName":   autorest.Encode("path", certificateName),
@@ -318,16 +277,22 @@ func (client CertificateClient) DeletePreparer(resourceGroupName string, account
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/certificates/{certificateName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client CertificateClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client CertificateClient) DeleteSender(req *http.Request) (future CertificateDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -336,7 +301,7 @@ func (client CertificateClient) DeleteResponder(resp *http.Response) (result aut
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -347,7 +312,7 @@ func (client CertificateClient) DeleteResponder(resp *http.Response) (result aut
 // resourceGroupName is the name of the resource group that contains the Batch account. accountName is the name of the
 // Batch account. certificateName is the identifier for the certificate. This must be made up of algorithm and
 // thumbprint separated by a dash, and must match the certificate data in the request. For example SHA1-a3d1c5.
-func (client CertificateClient) Get(resourceGroupName string, accountName string, certificateName string) (result Certificate, err error) {
+func (client CertificateClient) Get(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (result Certificate, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -360,7 +325,7 @@ func (client CertificateClient) Get(resourceGroupName string, accountName string
 		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, accountName, certificateName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, accountName, certificateName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Get", nil, "Failure preparing request")
 		return
@@ -382,7 +347,7 @@ func (client CertificateClient) Get(resourceGroupName string, accountName string
 }
 
 // GetPreparer prepares the Get request.
-func (client CertificateClient) GetPreparer(resourceGroupName string, accountName string, certificateName string) (*http.Request, error) {
+func (client CertificateClient) GetPreparer(ctx context.Context, resourceGroupName string, accountName string, certificateName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"certificateName":   autorest.Encode("path", certificateName),
@@ -400,14 +365,13 @@ func (client CertificateClient) GetPreparer(resourceGroupName string, accountNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/certificates/{certificateName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificateClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -431,7 +395,7 @@ func (client CertificateClient) GetResponder(resp *http.Response) (result Certif
 // separated list of properties that should be returned. e.g. "properties/provisioningState". Only top level properties
 // under properties/ are valid for selection. filter is oData filter expression. Valid properties for filtering are
 // "properties/provisioningState", "properties/provisioningStateTransitionTime", "name".
-func (client CertificateClient) ListByBatchAccount(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListCertificatesResult, err error) {
+func (client CertificateClient) ListByBatchAccount(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListCertificatesResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -440,7 +404,8 @@ func (client CertificateClient) ListByBatchAccount(resourceGroupName string, acc
 		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "ListByBatchAccount")
 	}
 
-	req, err := client.ListByBatchAccountPreparer(resourceGroupName, accountName, maxresults, selectParameter, filter)
+	result.fn = client.listByBatchAccountNextResults
+	req, err := client.ListByBatchAccountPreparer(ctx, resourceGroupName, accountName, maxresults, selectParameter, filter)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", nil, "Failure preparing request")
 		return
@@ -448,12 +413,12 @@ func (client CertificateClient) ListByBatchAccount(resourceGroupName string, acc
 
 	resp, err := client.ListByBatchAccountSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lcr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByBatchAccountResponder(resp)
+	result.lcr, err = client.ListByBatchAccountResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", resp, "Failure responding to request")
 	}
@@ -462,7 +427,7 @@ func (client CertificateClient) ListByBatchAccount(resourceGroupName string, acc
 }
 
 // ListByBatchAccountPreparer prepares the ListByBatchAccount request.
-func (client CertificateClient) ListByBatchAccountPreparer(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (*http.Request, error) {
+func (client CertificateClient) ListByBatchAccountPreparer(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -488,14 +453,13 @@ func (client CertificateClient) ListByBatchAccountPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Batch/batchAccounts/{accountName}/certificates", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByBatchAccountSender sends the ListByBatchAccount request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificateClient) ListByBatchAccountSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -512,73 +476,31 @@ func (client CertificateClient) ListByBatchAccountResponder(resp *http.Response)
 	return
 }
 
-// ListByBatchAccountNextResults retrieves the next set of results, if any.
-func (client CertificateClient) ListByBatchAccountNextResults(lastResults ListCertificatesResult) (result ListCertificatesResult, err error) {
-	req, err := lastResults.ListCertificatesResultPreparer()
+// listByBatchAccountNextResults retrieves the next set of results, if any.
+func (client CertificateClient) listByBatchAccountNextResults(lastResults ListCertificatesResult) (result ListCertificatesResult, err error) {
+	req, err := lastResults.listCertificatesResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "batch.CertificateClient", "listByBatchAccountNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByBatchAccountSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "batch.CertificateClient", "listByBatchAccountNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByBatchAccountResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "ListByBatchAccount", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "listByBatchAccountNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByBatchAccountComplete gets all elements from the list without paging.
-func (client CertificateClient) ListByBatchAccountComplete(resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string, cancel <-chan struct{}) (<-chan Certificate, <-chan error) {
-	resultChan := make(chan Certificate)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByBatchAccount(resourceGroupName, accountName, maxresults, selectParameter, filter)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByBatchAccountNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByBatchAccountComplete enumerates all values, automatically crossing page boundaries as required.
+func (client CertificateClient) ListByBatchAccountComplete(ctx context.Context, resourceGroupName string, accountName string, maxresults *int32, selectParameter string, filter string) (result ListCertificatesResultIterator, err error) {
+	result.page, err = client.ListByBatchAccount(ctx, resourceGroupName, accountName, maxresults, selectParameter, filter)
+	return
 }
 
 // Update updates the properties of an existing certificate.
@@ -588,7 +510,7 @@ func (client CertificateClient) ListByBatchAccountComplete(resourceGroupName str
 // thumbprint separated by a dash, and must match the certificate data in the request. For example SHA1-a3d1c5.
 // parameters is certificate entity to update. ifMatch is the entity state (ETag) version of the certificate to update.
 // This value can be omitted or set to "*" to apply the operation unconditionally.
-func (client CertificateClient) Update(resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string) (result Certificate, err error) {
+func (client CertificateClient) Update(ctx context.Context, resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string) (result Certificate, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: accountName,
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 24, Chain: nil},
@@ -601,7 +523,7 @@ func (client CertificateClient) Update(resourceGroupName string, accountName str
 		return result, validation.NewErrorWithValidationError(err, "batch.CertificateClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, accountName, certificateName, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, accountName, certificateName, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "batch.CertificateClient", "Update", nil, "Failure preparing request")
 		return
@@ -623,7 +545,7 @@ func (client CertificateClient) Update(resourceGroupName string, accountName str
 }
 
 // UpdatePreparer prepares the Update request.
-func (client CertificateClient) UpdatePreparer(resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string) (*http.Request, error) {
+func (client CertificateClient) UpdatePreparer(ctx context.Context, resourceGroupName string, accountName string, certificateName string, parameters CertificateCreateOrUpdateParameters, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"accountName":       autorest.Encode("path", accountName),
 		"certificateName":   autorest.Encode("path", certificateName),
@@ -647,14 +569,13 @@ func (client CertificateClient) UpdatePreparer(resourceGroupName string, account
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client CertificateClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

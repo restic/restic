@@ -18,7 +18,9 @@ package batch
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"net/http"
@@ -28,9 +30,9 @@ import (
 type AccountKeyType string
 
 const (
-	// Primary specifies the primary state for account key type.
+	// Primary ...
 	Primary AccountKeyType = "Primary"
-	// Secondary specifies the secondary state for account key type.
+	// Secondary ...
 	Secondary AccountKeyType = "Secondary"
 )
 
@@ -38,11 +40,11 @@ const (
 type PackageState string
 
 const (
-	// Active specifies the active state for package state.
+	// Active ...
 	Active PackageState = "active"
-	// Pending specifies the pending state for package state.
+	// Pending ...
 	Pending PackageState = "pending"
-	// Unmapped specifies the unmapped state for package state.
+	// Unmapped ...
 	Unmapped PackageState = "unmapped"
 )
 
@@ -50,9 +52,9 @@ const (
 type PoolAllocationMode string
 
 const (
-	// BatchService specifies the batch service state for pool allocation mode.
+	// BatchService ...
 	BatchService PoolAllocationMode = "BatchService"
-	// UserSubscription specifies the user subscription state for pool allocation mode.
+	// UserSubscription ...
 	UserSubscription PoolAllocationMode = "UserSubscription"
 )
 
@@ -60,75 +62,351 @@ const (
 type ProvisioningState string
 
 const (
-	// Cancelled specifies the cancelled state for provisioning state.
+	// Cancelled ...
 	Cancelled ProvisioningState = "Cancelled"
-	// Creating specifies the creating state for provisioning state.
+	// Creating ...
 	Creating ProvisioningState = "Creating"
-	// Deleting specifies the deleting state for provisioning state.
+	// Deleting ...
 	Deleting ProvisioningState = "Deleting"
-	// Failed specifies the failed state for provisioning state.
+	// Failed ...
 	Failed ProvisioningState = "Failed"
-	// Invalid specifies the invalid state for provisioning state.
+	// Invalid ...
 	Invalid ProvisioningState = "Invalid"
-	// Succeeded specifies the succeeded state for provisioning state.
+	// Succeeded ...
 	Succeeded ProvisioningState = "Succeeded"
 )
 
-// Account is contains information about an Azure Batch account.
+// Account contains information about an Azure Batch account.
 type Account struct {
-	autorest.Response  `json:"-"`
-	ID                 *string             `json:"id,omitempty"`
-	Name               *string             `json:"name,omitempty"`
-	Type               *string             `json:"type,omitempty"`
-	Location           *string             `json:"location,omitempty"`
-	Tags               *map[string]*string `json:"tags,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountProperties - The properties associated with the account.
 	*AccountProperties `json:"properties,omitempty"`
 }
 
-// AccountBaseProperties is the properties of a Batch account.
-type AccountBaseProperties struct {
-	AutoStorage        *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
-	PoolAllocationMode PoolAllocationMode         `json:"poolAllocationMode,omitempty"`
-	KeyVaultReference  *KeyVaultReference         `json:"keyVaultReference,omitempty"`
+// UnmarshalJSON is the custom unmarshaler for Account struct.
+func (a *Account) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		a.AccountProperties = &properties
+	}
+
+	v = m["id"]
+	if v != nil {
+		var ID string
+		err = json.Unmarshal(*m["id"], &ID)
+		if err != nil {
+			return err
+		}
+		a.ID = &ID
+	}
+
+	v = m["name"]
+	if v != nil {
+		var name string
+		err = json.Unmarshal(*m["name"], &name)
+		if err != nil {
+			return err
+		}
+		a.Name = &name
+	}
+
+	v = m["type"]
+	if v != nil {
+		var typeVar string
+		err = json.Unmarshal(*m["type"], &typeVar)
+		if err != nil {
+			return err
+		}
+		a.Type = &typeVar
+	}
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		a.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		a.Tags = &tags
+	}
+
+	return nil
 }
 
-// AccountCreateParameters is parameters supplied to the Create operation.
+// AccountBaseProperties the properties of a Batch account.
+type AccountBaseProperties struct {
+	// AutoStorage - The properties related to auto storage account.
+	AutoStorage *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
+	// PoolAllocationMode - The pool allocation mode also affects how clients may authenticate to the Batch Service API. If the mode is BatchService, clients may authenticate using access keys or Azure Active Directory. If the mode is UserSubscription, clients must use Azure Active Directory. The default is BatchService. Possible values include: 'BatchService', 'UserSubscription'
+	PoolAllocationMode PoolAllocationMode `json:"poolAllocationMode,omitempty"`
+	// KeyVaultReference - A reference to the Azure key vault associated with the Batch account.
+	KeyVaultReference *KeyVaultReference `json:"keyVaultReference,omitempty"`
+}
+
+// AccountCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountCreateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountCreateFuture) Result(client AccountClient) (a Account, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return a, autorest.NewError("batch.AccountCreateFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		a, err = client.CreateResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	a, err = client.CreateResponder(resp)
+	return
+}
+
+// AccountCreateParameters parameters supplied to the Create operation.
 type AccountCreateParameters struct {
-	Location               *string             `json:"location,omitempty"`
-	Tags                   *map[string]*string `json:"tags,omitempty"`
+	// Location - The region in which to create the account.
+	Location *string `json:"location,omitempty"`
+	// Tags - The user specified tags associated with the account.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountBaseProperties - The properties of the Batch account.
 	*AccountBaseProperties `json:"properties,omitempty"`
 }
 
-// AccountKeys is a set of Azure Batch account keys.
+// UnmarshalJSON is the custom unmarshaler for AccountCreateParameters struct.
+func (acp *AccountCreateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["location"]
+	if v != nil {
+		var location string
+		err = json.Unmarshal(*m["location"], &location)
+		if err != nil {
+			return err
+		}
+		acp.Location = &location
+	}
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		acp.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountBaseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		acp.AccountBaseProperties = &properties
+	}
+
+	return nil
+}
+
+// AccountDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type AccountDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future AccountDeleteFuture) Result(client AccountClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		return
+	}
+	if !done {
+		return ar, autorest.NewError("batch.AccountDeleteFuture", "Result", "asynchronous operation has not completed")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		return
+	}
+	var resp *http.Response
+	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	return
+}
+
+// AccountKeys a set of Azure Batch account keys.
 type AccountKeys struct {
 	autorest.Response `json:"-"`
-	Primary           *string `json:"primary,omitempty"`
-	Secondary         *string `json:"secondary,omitempty"`
+	// Primary - The primary key associated with the account.
+	Primary *string `json:"primary,omitempty"`
+	// Secondary - The secondary key associated with the account.
+	Secondary *string `json:"secondary,omitempty"`
 }
 
-// AccountListResult is values returned by the List operation.
+// AccountListResult values returned by the List operation.
 type AccountListResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Account `json:"value,omitempty"`
-	NextLink          *string    `json:"nextLink,omitempty"`
+	// Value - The collection of returned Batch accounts.
+	Value *[]Account `json:"value,omitempty"`
+	// NextLink - The continuation token.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AccountListResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client AccountListResult) AccountListResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// AccountListResultIterator provides access to a complete listing of Account values.
+type AccountListResultIterator struct {
+	i    int
+	page AccountListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *AccountListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter AccountListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter AccountListResultIterator) Response() AccountListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter AccountListResultIterator) Value() Account {
+	if !iter.page.NotDone() {
+		return Account{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (alr AccountListResult) IsEmpty() bool {
+	return alr.Value == nil || len(*alr.Value) == 0
+}
+
+// accountListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (alr AccountListResult) accountListResultPreparer() (*http.Request, error) {
+	if alr.NextLink == nil || len(to.String(alr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(alr.NextLink)))
 }
 
-// AccountProperties is account specific properties.
+// AccountListResultPage contains a page of Account values.
+type AccountListResultPage struct {
+	fn  func(AccountListResult) (AccountListResult, error)
+	alr AccountListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *AccountListResultPage) Next() error {
+	next, err := page.fn(page.alr)
+	if err != nil {
+		return err
+	}
+	page.alr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page AccountListResultPage) NotDone() bool {
+	return !page.alr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page AccountListResultPage) Response() AccountListResult {
+	return page.alr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page AccountListResultPage) Values() []Account {
+	if page.alr.IsEmpty() {
+		return nil
+	}
+	return *page.alr.Value
+}
+
+// AccountProperties account specific properties.
 type AccountProperties struct {
-	AccountEndpoint              *string                `json:"accountEndpoint,omitempty"`
-	ProvisioningState            ProvisioningState      `json:"provisioningState,omitempty"`
+	// AccountEndpoint - The endpoint used by this account to interact with the Batch services.
+	AccountEndpoint *string `json:"accountEndpoint,omitempty"`
+	// ProvisioningState - The provisioned state of the resource. Possible values include: 'Invalid', 'Creating', 'Deleting', 'Succeeded', 'Failed', 'Cancelled'
+	ProvisioningState ProvisioningState `json:"provisioningState,omitempty"`
+	// PoolAllocationMode - Possible values include: 'BatchService', 'UserSubscription'
 	PoolAllocationMode           PoolAllocationMode     `json:"poolAllocationMode,omitempty"`
 	KeyVaultReference            *KeyVaultReference     `json:"keyVaultReference,omitempty"`
 	AutoStorage                  *AutoStorageProperties `json:"autoStorage,omitempty"`
@@ -137,117 +415,269 @@ type AccountProperties struct {
 	ActiveJobAndJobScheduleQuota *int32                 `json:"activeJobAndJobScheduleQuota,omitempty"`
 }
 
-// AccountRegenerateKeyParameters is parameters supplied to the RegenerateKey operation.
+// AccountRegenerateKeyParameters parameters supplied to the RegenerateKey operation.
 type AccountRegenerateKeyParameters struct {
+	// KeyName - The type of account key to regenerate. Possible values include: 'Primary', 'Secondary'
 	KeyName AccountKeyType `json:"keyName,omitempty"`
 }
 
-// AccountUpdateBaseProperties is the properties for a Batch account update.
+// AccountUpdateBaseProperties the properties for a Batch account update.
 type AccountUpdateBaseProperties struct {
+	// AutoStorage - The properties related to auto storage account.
 	AutoStorage *AutoStorageBaseProperties `json:"autoStorage,omitempty"`
 }
 
-// AccountUpdateParameters is parameters supplied to the Update operation.
+// AccountUpdateParameters parameters supplied to the Update operation.
 type AccountUpdateParameters struct {
-	Tags                         *map[string]*string `json:"tags,omitempty"`
+	// Tags - The user specified tags associated with the account.
+	Tags *map[string]*string `json:"tags,omitempty"`
+	// AccountUpdateBaseProperties - The properties of the account.
 	*AccountUpdateBaseProperties `json:"properties,omitempty"`
 }
 
-// ActivateApplicationPackageParameters is parameters for an ApplicationOperations.ActivateApplicationPackage request.
+// UnmarshalJSON is the custom unmarshaler for AccountUpdateParameters struct.
+func (aup *AccountUpdateParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	var v *json.RawMessage
+
+	v = m["tags"]
+	if v != nil {
+		var tags map[string]*string
+		err = json.Unmarshal(*m["tags"], &tags)
+		if err != nil {
+			return err
+		}
+		aup.Tags = &tags
+	}
+
+	v = m["properties"]
+	if v != nil {
+		var properties AccountUpdateBaseProperties
+		err = json.Unmarshal(*m["properties"], &properties)
+		if err != nil {
+			return err
+		}
+		aup.AccountUpdateBaseProperties = &properties
+	}
+
+	return nil
+}
+
+// ActivateApplicationPackageParameters parameters for an ApplicationOperations.ActivateApplicationPackage request.
 type ActivateApplicationPackageParameters struct {
+	// Format - The format of the application package binary file.
 	Format *string `json:"format,omitempty"`
 }
 
-// AddApplicationParameters is parameters for an ApplicationOperations.AddApplication request.
+// AddApplicationParameters parameters for an ApplicationOperations.AddApplication request.
 type AddApplicationParameters struct {
-	AllowUpdates *bool   `json:"allowUpdates,omitempty"`
-	DisplayName  *string `json:"displayName,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// Application is contains information about an application in a Batch account.
+// Application contains information about an application in a Batch account.
 type Application struct {
 	autorest.Response `json:"-"`
-	ID                *string               `json:"id,omitempty"`
-	DisplayName       *string               `json:"displayName,omitempty"`
-	Packages          *[]ApplicationPackage `json:"packages,omitempty"`
-	AllowUpdates      *bool                 `json:"allowUpdates,omitempty"`
-	DefaultVersion    *string               `json:"defaultVersion,omitempty"`
+	// ID - A string that uniquely identifies the application within the account.
+	ID *string `json:"id,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
+	// Packages - The list of packages under this application.
+	Packages *[]ApplicationPackage `json:"packages,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DefaultVersion - The package to use if a client requests the application but does not specify a version.
+	DefaultVersion *string `json:"defaultVersion,omitempty"`
 }
 
-// ApplicationPackage is an application package which represents a particular version of an application.
+// ApplicationPackage an application package which represents a particular version of an application.
 type ApplicationPackage struct {
-	autorest.Response  `json:"-"`
-	ID                 *string      `json:"id,omitempty"`
-	Version            *string      `json:"version,omitempty"`
-	State              PackageState `json:"state,omitempty"`
-	Format             *string      `json:"format,omitempty"`
-	StorageURL         *string      `json:"storageUrl,omitempty"`
-	StorageURLExpiry   *date.Time   `json:"storageUrlExpiry,omitempty"`
-	LastActivationTime *date.Time   `json:"lastActivationTime,omitempty"`
+	autorest.Response `json:"-"`
+	// ID - The ID of the application.
+	ID *string `json:"id,omitempty"`
+	// Version - The version of the application package.
+	Version *string `json:"version,omitempty"`
+	// State - The current state of the application package. Possible values include: 'Pending', 'Active', 'Unmapped'
+	State PackageState `json:"state,omitempty"`
+	// Format - The format of the application package, if the package is active.
+	Format *string `json:"format,omitempty"`
+	// StorageURL - The storage URL at which the application package is stored.
+	StorageURL *string `json:"storageUrl,omitempty"`
+	// StorageURLExpiry - The UTC time at which the storage URL will expire.
+	StorageURLExpiry *date.Time `json:"storageUrlExpiry,omitempty"`
+	// LastActivationTime - The time at which the package was last activated, if the package is active.
+	LastActivationTime *date.Time `json:"lastActivationTime,omitempty"`
 }
 
-// AutoStorageBaseProperties is the properties related to auto storage account.
+// AutoStorageBaseProperties the properties related to auto storage account.
 type AutoStorageBaseProperties struct {
+	// StorageAccountID - The resource ID of the storage account to be used for auto storage account.
 	StorageAccountID *string `json:"storageAccountId,omitempty"`
 }
 
-// AutoStorageProperties is contains information about the auto storage account associated with a Batch account.
+// AutoStorageProperties contains information about the auto storage account associated with a Batch account.
 type AutoStorageProperties struct {
-	StorageAccountID *string    `json:"storageAccountId,omitempty"`
-	LastKeySync      *date.Time `json:"lastKeySync,omitempty"`
+	// StorageAccountID - The resource ID of the storage account to be used for auto storage account.
+	StorageAccountID *string `json:"storageAccountId,omitempty"`
+	// LastKeySync - The UTC time at which storage keys were last synchronized with the Batch account.
+	LastKeySync *date.Time `json:"lastKeySync,omitempty"`
 }
 
-// CloudError is an error response from the Batch service.
+// CloudError an error response from the Batch service.
 type CloudError struct {
-	Code    *string       `json:"code,omitempty"`
-	Message *string       `json:"message,omitempty"`
-	Target  *string       `json:"target,omitempty"`
+	// Code - An identifier for the error. Codes are invariant and are intended to be consumed programmatically.
+	Code *string `json:"code,omitempty"`
+	// Message - A message describing the error, intended to be suitable for display in a user interface.
+	Message *string `json:"message,omitempty"`
+	// Target - The target of the particular error. For example, the name of the property in error.
+	Target *string `json:"target,omitempty"`
+	// Details - A list of additional details about the error.
 	Details *[]CloudError `json:"details,omitempty"`
 }
 
-// KeyVaultReference is identifies the Azure key vault associated with a Batch account.
+// KeyVaultReference identifies the Azure key vault associated with a Batch account.
 type KeyVaultReference struct {
-	ID  *string `json:"id,omitempty"`
+	// ID - The resource ID of the Azure key vault associated with the Batch account.
+	ID *string `json:"id,omitempty"`
+	// URL - The Url of the Azure key vault associated with the Batch account.
 	URL *string `json:"url,omitempty"`
 }
 
-// ListApplicationsResult is response to an ApplicationOperations.ListApplications request.
+// ListApplicationsResult response to an ApplicationOperations.ListApplications request.
 type ListApplicationsResult struct {
 	autorest.Response `json:"-"`
-	Value             *[]Application `json:"value,omitempty"`
-	NextLink          *string        `json:"nextLink,omitempty"`
+	// Value - The list of applications.
+	Value *[]Application `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of results.
+	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ListApplicationsResultPreparer prepares a request to retrieve the next set of results. It returns
-// nil if no more results exist.
-func (client ListApplicationsResult) ListApplicationsResultPreparer() (*http.Request, error) {
-	if client.NextLink == nil || len(to.String(client.NextLink)) <= 0 {
+// ListApplicationsResultIterator provides access to a complete listing of Application values.
+type ListApplicationsResultIterator struct {
+	i    int
+	page ListApplicationsResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ListApplicationsResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ListApplicationsResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ListApplicationsResultIterator) Response() ListApplicationsResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ListApplicationsResultIterator) Value() Application {
+	if !iter.page.NotDone() {
+		return Application{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (lar ListApplicationsResult) IsEmpty() bool {
+	return lar.Value == nil || len(*lar.Value) == 0
+}
+
+// listApplicationsResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (lar ListApplicationsResult) listApplicationsResultPreparer() (*http.Request, error) {
+	if lar.NextLink == nil || len(to.String(lar.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(client.NextLink)))
+		autorest.WithBaseURL(to.String(lar.NextLink)))
 }
 
-// LocationQuota is quotas associated with a Batch region for a particular subscription.
+// ListApplicationsResultPage contains a page of Application values.
+type ListApplicationsResultPage struct {
+	fn  func(ListApplicationsResult) (ListApplicationsResult, error)
+	lar ListApplicationsResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ListApplicationsResultPage) Next() error {
+	next, err := page.fn(page.lar)
+	if err != nil {
+		return err
+	}
+	page.lar = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ListApplicationsResultPage) NotDone() bool {
+	return !page.lar.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ListApplicationsResultPage) Response() ListApplicationsResult {
+	return page.lar
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ListApplicationsResultPage) Values() []Application {
+	if page.lar.IsEmpty() {
+		return nil
+	}
+	return *page.lar.Value
+}
+
+// LocationQuota quotas associated with a Batch region for a particular subscription.
 type LocationQuota struct {
 	autorest.Response `json:"-"`
-	AccountQuota      *int32 `json:"accountQuota,omitempty"`
+	// AccountQuota - The number of Batch accounts that may be created under the subscription in the specified region.
+	AccountQuota *int32 `json:"accountQuota,omitempty"`
 }
 
-// Resource is a definition of an Azure resource.
+// Resource a definition of an Azure resource.
 type Resource struct {
-	ID       *string             `json:"id,omitempty"`
-	Name     *string             `json:"name,omitempty"`
-	Type     *string             `json:"type,omitempty"`
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	// ID - The ID of the resource
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the resource
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the resource
+	Type *string `json:"type,omitempty"`
+	// Location - The location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - The tags of the resource
+	Tags *map[string]*string `json:"tags,omitempty"`
 }
 
-// UpdateApplicationParameters is parameters for an ApplicationOperations.UpdateApplication request.
+// UpdateApplicationParameters parameters for an ApplicationOperations.UpdateApplication request.
 type UpdateApplicationParameters struct {
-	AllowUpdates   *bool   `json:"allowUpdates,omitempty"`
+	// AllowUpdates - A value indicating whether packages within the application may be overwritten using the same version string.
+	AllowUpdates *bool `json:"allowUpdates,omitempty"`
+	// DefaultVersion - The package to use if a client requests the application but does not specify a version.
 	DefaultVersion *string `json:"defaultVersion,omitempty"`
-	DisplayName    *string `json:"displayName,omitempty"`
+	// DisplayName - The display name for the application.
+	DisplayName *string `json:"displayName,omitempty"`
 }

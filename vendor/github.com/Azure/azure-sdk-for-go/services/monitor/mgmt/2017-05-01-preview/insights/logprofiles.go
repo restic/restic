@@ -18,6 +18,7 @@ package insights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // LogProfilesClient is the monitor Management Client
 type LogProfilesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLogProfilesClient creates an instance of the LogProfilesClient client.
@@ -42,7 +43,7 @@ func NewLogProfilesClientWithBaseURI(baseURI string, subscriptionID string) LogP
 // CreateOrUpdate create or update a log profile in Azure Monitoring REST API.
 //
 // logProfileName is the name of the log profile. parameters is parameters supplied to the operation.
-func (client LogProfilesClient) CreateOrUpdate(logProfileName string, parameters LogProfileResource) (result LogProfileResource, err error) {
+func (client LogProfilesClient) CreateOrUpdate(ctx context.Context, logProfileName string, parameters LogProfileResource) (result LogProfileResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.LogProfileProperties", Name: validation.Null, Rule: true,
@@ -57,7 +58,7 @@ func (client LogProfilesClient) CreateOrUpdate(logProfileName string, parameters
 		return result, validation.NewErrorWithValidationError(err, "insights.LogProfilesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(logProfileName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, logProfileName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.LogProfilesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -79,7 +80,7 @@ func (client LogProfilesClient) CreateOrUpdate(logProfileName string, parameters
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client LogProfilesClient) CreateOrUpdatePreparer(logProfileName string, parameters LogProfileResource) (*http.Request, error) {
+func (client LogProfilesClient) CreateOrUpdatePreparer(ctx context.Context, logProfileName string, parameters LogProfileResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"logProfileName": autorest.Encode("path", logProfileName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -97,14 +98,13 @@ func (client LogProfilesClient) CreateOrUpdatePreparer(logProfileName string, pa
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/logprofiles/{logProfileName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogProfilesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -124,8 +124,8 @@ func (client LogProfilesClient) CreateOrUpdateResponder(resp *http.Response) (re
 // Delete deletes the log profile.
 //
 // logProfileName is the name of the log profile.
-func (client LogProfilesClient) Delete(logProfileName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(logProfileName)
+func (client LogProfilesClient) Delete(ctx context.Context, logProfileName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, logProfileName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.LogProfilesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -147,7 +147,7 @@ func (client LogProfilesClient) Delete(logProfileName string) (result autorest.R
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LogProfilesClient) DeletePreparer(logProfileName string) (*http.Request, error) {
+func (client LogProfilesClient) DeletePreparer(ctx context.Context, logProfileName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"logProfileName": autorest.Encode("path", logProfileName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -163,14 +163,13 @@ func (client LogProfilesClient) DeletePreparer(logProfileName string) (*http.Req
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/logprofiles/{logProfileName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogProfilesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -189,8 +188,8 @@ func (client LogProfilesClient) DeleteResponder(resp *http.Response) (result aut
 // Get gets the log profile.
 //
 // logProfileName is the name of the log profile.
-func (client LogProfilesClient) Get(logProfileName string) (result LogProfileResource, err error) {
-	req, err := client.GetPreparer(logProfileName)
+func (client LogProfilesClient) Get(ctx context.Context, logProfileName string) (result LogProfileResource, err error) {
+	req, err := client.GetPreparer(ctx, logProfileName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.LogProfilesClient", "Get", nil, "Failure preparing request")
 		return
@@ -212,7 +211,7 @@ func (client LogProfilesClient) Get(logProfileName string) (result LogProfileRes
 }
 
 // GetPreparer prepares the Get request.
-func (client LogProfilesClient) GetPreparer(logProfileName string) (*http.Request, error) {
+func (client LogProfilesClient) GetPreparer(ctx context.Context, logProfileName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"logProfileName": autorest.Encode("path", logProfileName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -228,14 +227,13 @@ func (client LogProfilesClient) GetPreparer(logProfileName string) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/logprofiles/{logProfileName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogProfilesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -253,8 +251,8 @@ func (client LogProfilesClient) GetResponder(resp *http.Response) (result LogPro
 }
 
 // List list the log profiles.
-func (client LogProfilesClient) List() (result LogProfileCollection, err error) {
-	req, err := client.ListPreparer()
+func (client LogProfilesClient) List(ctx context.Context) (result LogProfileCollection, err error) {
+	req, err := client.ListPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.LogProfilesClient", "List", nil, "Failure preparing request")
 		return
@@ -276,7 +274,7 @@ func (client LogProfilesClient) List() (result LogProfileCollection, err error) 
 }
 
 // ListPreparer prepares the List request.
-func (client LogProfilesClient) ListPreparer() (*http.Request, error) {
+func (client LogProfilesClient) ListPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -291,14 +289,13 @@ func (client LogProfilesClient) ListPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/logprofiles", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogProfilesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -318,8 +315,8 @@ func (client LogProfilesClient) ListResponder(resp *http.Response) (result LogPr
 // Update updates an existing LogProfilesResource. To update other fields use the CreateOrUpdate method.
 //
 // logProfileName is the name of the log profile. logProfilesResource is parameters supplied to the operation.
-func (client LogProfilesClient) Update(logProfileName string, logProfilesResource LogProfileResourcePatch) (result LogProfileResource, err error) {
-	req, err := client.UpdatePreparer(logProfileName, logProfilesResource)
+func (client LogProfilesClient) Update(ctx context.Context, logProfileName string, logProfilesResource LogProfileResourcePatch) (result LogProfileResource, err error) {
+	req, err := client.UpdatePreparer(ctx, logProfileName, logProfilesResource)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.LogProfilesClient", "Update", nil, "Failure preparing request")
 		return
@@ -341,7 +338,7 @@ func (client LogProfilesClient) Update(logProfileName string, logProfilesResourc
 }
 
 // UpdatePreparer prepares the Update request.
-func (client LogProfilesClient) UpdatePreparer(logProfileName string, logProfilesResource LogProfileResourcePatch) (*http.Request, error) {
+func (client LogProfilesClient) UpdatePreparer(ctx context.Context, logProfileName string, logProfilesResource LogProfileResourcePatch) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"logProfileName": autorest.Encode("path", logProfileName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -359,14 +356,13 @@ func (client LogProfilesClient) UpdatePreparer(logProfileName string, logProfile
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/logprofiles/{logProfileName}", pathParameters),
 		autorest.WithJSON(logProfilesResource),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client LogProfilesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

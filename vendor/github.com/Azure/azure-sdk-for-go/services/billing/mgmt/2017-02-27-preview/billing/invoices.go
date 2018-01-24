@@ -18,6 +18,7 @@ package billing
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -28,7 +29,7 @@ import (
 // subscription types which were not purchased directly through the Azure web portal are not supported through this
 // preview API.
 type InvoicesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewInvoicesClient creates an instance of the InvoicesClient client.
@@ -45,8 +46,8 @@ func NewInvoicesClientWithBaseURI(baseURI string, subscriptionID string) Invoice
 // automatically.
 //
 // invoiceName is the name of an invoice resource.
-func (client InvoicesClient) Get(invoiceName string) (result Invoice, err error) {
-	req, err := client.GetPreparer(invoiceName)
+func (client InvoicesClient) Get(ctx context.Context, invoiceName string) (result Invoice, err error) {
+	req, err := client.GetPreparer(ctx, invoiceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "Get", nil, "Failure preparing request")
 		return
@@ -68,7 +69,7 @@ func (client InvoicesClient) Get(invoiceName string) (result Invoice, err error)
 }
 
 // GetPreparer prepares the Get request.
-func (client InvoicesClient) GetPreparer(invoiceName string) (*http.Request, error) {
+func (client InvoicesClient) GetPreparer(ctx context.Context, invoiceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"invoiceName":    autorest.Encode("path", invoiceName),
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
@@ -84,14 +85,13 @@ func (client InvoicesClient) GetPreparer(invoiceName string) (*http.Request, err
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Billing/invoices/{invoiceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client InvoicesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -110,8 +110,8 @@ func (client InvoicesClient) GetResponder(resp *http.Response) (result Invoice, 
 
 // GetLatest gets the most recent invoice. When getting a single invoice, the downloadUrl property is expanded
 // automatically.
-func (client InvoicesClient) GetLatest() (result Invoice, err error) {
-	req, err := client.GetLatestPreparer()
+func (client InvoicesClient) GetLatest(ctx context.Context) (result Invoice, err error) {
+	req, err := client.GetLatestPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "GetLatest", nil, "Failure preparing request")
 		return
@@ -133,7 +133,7 @@ func (client InvoicesClient) GetLatest() (result Invoice, err error) {
 }
 
 // GetLatestPreparer prepares the GetLatest request.
-func (client InvoicesClient) GetLatestPreparer() (*http.Request, error) {
+func (client InvoicesClient) GetLatestPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -148,14 +148,13 @@ func (client InvoicesClient) GetLatestPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Billing/invoices/latest", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetLatestSender sends the GetLatest request. The method will close the
 // http.Response Body if it receives an error.
 func (client InvoicesClient) GetLatestSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -183,7 +182,7 @@ func (client InvoicesClient) GetLatestResponder(resp *http.Response) (result Inv
 // operation returned a partial result. If a previous response contains a nextLink element, the value of the nextLink
 // element will include a skiptoken parameter that specifies a starting point to use for subsequent calls. top is may
 // be used to limit the number of results to the most recent N invoices.
-func (client InvoicesClient) List(expand string, filter string, skiptoken string, top *int32) (result InvoicesListResult, err error) {
+func (client InvoicesClient) List(ctx context.Context, expand string, filter string, skiptoken string, top *int32) (result InvoicesListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: top,
 			Constraints: []validation.Constraint{{Target: "top", Name: validation.Null, Rule: false,
@@ -193,7 +192,8 @@ func (client InvoicesClient) List(expand string, filter string, skiptoken string
 		return result, validation.NewErrorWithValidationError(err, "billing.InvoicesClient", "List")
 	}
 
-	req, err := client.ListPreparer(expand, filter, skiptoken, top)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, expand, filter, skiptoken, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", nil, "Failure preparing request")
 		return
@@ -201,12 +201,12 @@ func (client InvoicesClient) List(expand string, filter string, skiptoken string
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ilr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ilr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", resp, "Failure responding to request")
 	}
@@ -215,7 +215,7 @@ func (client InvoicesClient) List(expand string, filter string, skiptoken string
 }
 
 // ListPreparer prepares the List request.
-func (client InvoicesClient) ListPreparer(expand string, filter string, skiptoken string, top *int32) (*http.Request, error) {
+func (client InvoicesClient) ListPreparer(ctx context.Context, expand string, filter string, skiptoken string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -242,14 +242,13 @@ func (client InvoicesClient) ListPreparer(expand string, filter string, skiptoke
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Billing/invoices", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client InvoicesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -266,71 +265,29 @@ func (client InvoicesClient) ListResponder(resp *http.Response) (result Invoices
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client InvoicesClient) ListNextResults(lastResults InvoicesListResult) (result InvoicesListResult, err error) {
-	req, err := lastResults.InvoicesListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client InvoicesClient) listNextResults(lastResults InvoicesListResult) (result InvoicesListResult, err error) {
+	req, err := lastResults.invoicesListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "billing.InvoicesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "billing.InvoicesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "billing.InvoicesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client InvoicesClient) ListComplete(expand string, filter string, skiptoken string, top *int32, cancel <-chan struct{}) (<-chan Invoice, <-chan error) {
-	resultChan := make(chan Invoice)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(expand, filter, skiptoken, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client InvoicesClient) ListComplete(ctx context.Context, expand string, filter string, skiptoken string, top *int32) (result InvoicesListResultIterator, err error) {
+	result.page, err = client.List(ctx, expand, filter, skiptoken, top)
+	return
 }

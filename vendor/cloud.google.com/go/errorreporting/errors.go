@@ -61,6 +61,7 @@ type Config struct {
 type Entry struct {
 	Error error
 	Req   *http.Request // if error is associated with a request.
+	Stack []byte        // if user does not provide a stack trace, runtime.Stack will be called
 }
 
 // Client represents a Google Cloud Error Reporting client.
@@ -139,13 +140,21 @@ func (c *Client) Close() error {
 // Report writes an error report. It doesn't block. Errors in
 // writing the error report can be handled via Client.OnError.
 func (c *Client) Report(e Entry) {
-	req := c.makeReportErrorEventRequest(e.Req, e.Error.Error())
+	var stack string
+	if e.Stack != nil {
+		stack = string(e.Stack)
+	}
+	req := c.makeReportErrorEventRequest(e.Req, e.Error.Error(), stack)
 	c.bundler.Add(req, 1)
 }
 
 // ReportSync writes an error report. It blocks until the entry is written.
 func (c *Client) ReportSync(ctx context.Context, e Entry) error {
-	req := c.makeReportErrorEventRequest(e.Req, e.Error.Error())
+	var stack string
+	if e.Stack != nil {
+		stack = string(e.Stack)
+	}
+	req := c.makeReportErrorEventRequest(e.Req, e.Error.Error(), stack)
 	_, err := c.apiClient.ReportErrorEvent(ctx, req)
 	return err
 }
@@ -159,11 +168,13 @@ func (c *Client) Flush() {
 	c.bundler.Flush()
 }
 
-func (c *Client) makeReportErrorEventRequest(r *http.Request, msg string) *erpb.ReportErrorEventRequest {
-	// limit the stack trace to 16k.
-	var buf [16 * 1024]byte
-	stack := buf[0:runtime.Stack(buf[:], false)]
-	message := msg + "\n" + chopStack(stack)
+func (c *Client) makeReportErrorEventRequest(r *http.Request, msg string, stack string) *erpb.ReportErrorEventRequest {
+	if stack == "" {
+		// limit the stack trace to 16k.
+		var buf [16 * 1024]byte
+		stack = chopStack(buf[0:runtime.Stack(buf[:], false)])
+	}
+	message := msg + "\n" + stack
 
 	var errorContext *erpb.ErrorContext
 	if r != nil {

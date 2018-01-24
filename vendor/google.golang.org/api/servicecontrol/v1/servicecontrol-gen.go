@@ -420,8 +420,9 @@ type CheckError struct {
 	//
 	// Possible values:
 	//   "ERROR_CODE_UNSPECIFIED" - This is never used in `CheckResponse`.
-	//   "NOT_FOUND" - The consumer's project id was not found.
-	// Same as google.rpc.Code.NOT_FOUND.
+	//   "NOT_FOUND" - The consumer's project id, network container, or
+	// resource container was
+	// not found. Same as google.rpc.Code.NOT_FOUND.
 	//   "PERMISSION_DENIED" - The consumer doesn't have access to the
 	// specified resource.
 	// Same as google.rpc.Code.PERMISSION_DENIED.
@@ -488,6 +489,14 @@ type CheckError struct {
 	// Detail: Free-form text providing details on the error cause of the
 	// error.
 	Detail string `json:"detail,omitempty"`
+
+	// Subject: Subject to whom this error applies. See the specific code
+	// enum for more
+	// details on this field. For example:
+	//     - “project:<project-id or project-number>”
+	//     - “folder:<folder-id>”
+	//     - “organization:<organization-id>”
+	Subject string `json:"subject,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Code") to
 	// unconditionally include in API requests. By default, fields with

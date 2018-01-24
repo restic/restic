@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // CostInsightClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type CostInsightClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewCostInsightClient creates an instance of the CostInsightClient client.
@@ -42,8 +43,8 @@ func NewCostInsightClientWithBaseURI(baseURI string, subscriptionID string) Cost
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the cost
 // insight.
-func (client CostInsightClient) GetResource(resourceGroupName string, labName string, name string) (result CostInsight, err error) {
-	req, err := client.GetResourcePreparer(resourceGroupName, labName, name)
+func (client CostInsightClient) GetResource(ctx context.Context, resourceGroupName string, labName string, name string) (result CostInsight, err error) {
+	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "GetResource", nil, "Failure preparing request")
 		return
@@ -65,7 +66,7 @@ func (client CostInsightClient) GetResource(resourceGroupName string, labName st
 }
 
 // GetResourcePreparer prepares the GetResource request.
-func (client CostInsightClient) GetResourcePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client CostInsightClient) GetResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -83,14 +84,13 @@ func (client CostInsightClient) GetResourcePreparer(resourceGroupName string, la
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/costinsights/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetResourceSender sends the GetResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client CostInsightClient) GetResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,9 @@ func (client CostInsightClient) GetResourceResponder(resp *http.Response) (resul
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
 // on the operation.
-func (client CostInsightClient) List(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationCostInsight, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, filter, top, orderBy)
+func (client CostInsightClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationCostInsightPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderBy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", nil, "Failure preparing request")
 		return
@@ -120,12 +121,12 @@ func (client CostInsightClient) List(resourceGroupName string, labName string, f
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcci.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcci, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", resp, "Failure responding to request")
 	}
@@ -134,7 +135,7 @@ func (client CostInsightClient) List(resourceGroupName string, labName string, f
 }
 
 // ListPreparer prepares the List request.
-func (client CostInsightClient) ListPreparer(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
+func (client CostInsightClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -160,14 +161,13 @@ func (client CostInsightClient) ListPreparer(resourceGroupName string, labName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/costinsights", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client CostInsightClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -184,118 +184,55 @@ func (client CostInsightClient) ListResponder(resp *http.Response) (result Respo
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client CostInsightClient) ListNextResults(lastResults ResponseWithContinuationCostInsight) (result ResponseWithContinuationCostInsight, err error) {
-	req, err := lastResults.ResponseWithContinuationCostInsightPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client CostInsightClient) listNextResults(lastResults ResponseWithContinuationCostInsight) (result ResponseWithContinuationCostInsight, err error) {
+	req, err := lastResults.responseWithContinuationCostInsightPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.CostInsightClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.CostInsightClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "listNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client CostInsightClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationCostInsightIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, filter, top, orderBy)
+	return
+}
+
+// RefreshData refresh Lab's Cost Insight Data. This operation can take a while to complete.
+//
+// resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the cost
+// insight.
+func (client CostInsightClient) RefreshData(ctx context.Context, resourceGroupName string, labName string, name string) (result CostInsightRefreshDataFuture, err error) {
+	req, err := client.RefreshDataPreparer(ctx, resourceGroupName, labName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "RefreshData", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.RefreshDataSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "RefreshData", result.Response(), "Failure sending request")
+		return
 	}
 
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client CostInsightClient) ListComplete(resourceGroupName string, labName string, filter string, top *int32, orderBy string, cancel <-chan struct{}) (<-chan CostInsight, <-chan error) {
-	resultChan := make(chan CostInsight)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, filter, top, orderBy)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
-}
-
-// RefreshData refresh Lab's Cost Insight Data. This operation can take a while to complete. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
-//
-// resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the cost
-// insight.
-func (client CostInsightClient) RefreshData(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.RefreshDataPreparer(resourceGroupName, labName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "RefreshData", nil, "Failure preparing request")
-			return
-		}
-
-		resp, err := client.RefreshDataSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "RefreshData", resp, "Failure sending request")
-			return
-		}
-
-		result, err = client.RefreshDataResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.CostInsightClient", "RefreshData", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
-}
-
 // RefreshDataPreparer prepares the RefreshData request.
-func (client CostInsightClient) RefreshDataPreparer(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client CostInsightClient) RefreshDataPreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -313,16 +250,22 @@ func (client CostInsightClient) RefreshDataPreparer(resourceGroupName string, la
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/costinsights/{name}/refreshData", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RefreshDataSender sends the RefreshData request. The method will close the
 // http.Response Body if it receives an error.
-func (client CostInsightClient) RefreshDataSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client CostInsightClient) RefreshDataSender(req *http.Request) (future CostInsightRefreshDataFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // RefreshDataResponder handles the response to the RefreshData request. The method always

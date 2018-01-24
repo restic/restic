@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/QsthGWG9JYScjn9llsqMMChWCIQ\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/IPcVNse7nmUQLqz58rbBGkdlX1c\"",
  "discoveryVersion": "v1",
  "id": "youtube:v3",
  "name": "youtube",
  "canonicalName": "YouTube",
  "version": "v3",
- "revision": "20171129",
+ "revision": "20171215",
  "title": "YouTube Data API",
  "description": "Supports core YouTube features, such as uploading videos, creating and managing playlists, searching for content, and much more.",
  "ownerDomain": "google.com",
@@ -6191,19 +6191,6 @@
    "type": "object",
    "description": "A video resource represents a YouTube video.",
    "properties": {
-    "accessToken": {
-     "type": "string",
-     "description": "The access token to uniquely identify a revocable unlisted video.",
-     "annotations": {
-      "required": [
-       "youtube.videos.getRating",
-       "youtube.videos.list",
-       "youtube.videos.rate",
-       "youtube.videos.reportAbuse",
-       "youtube.videos.update"
-      ]
-     }
-    },
     "ageGating": {
      "$ref": "VideoAgeGating",
      "description": "Age restriction details related to a video. This data can only be retrieved by the video owner."

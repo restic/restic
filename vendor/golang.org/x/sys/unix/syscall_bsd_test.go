@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"runtime"
 	"testing"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -47,6 +48,28 @@ func TestGetfsstat(t *testing.T) {
 		} else {
 			t.Logf("mount: %s", mount)
 		}
+	}
+}
+
+func TestSelect(t *testing.T) {
+	err := unix.Select(0, nil, nil, nil, &unix.Timeval{Sec: 0, Usec: 0})
+	if err != nil {
+		t.Fatalf("Select: %v", err)
+	}
+
+	dur := 250 * time.Millisecond
+	tv := unix.NsecToTimeval(int64(dur))
+	start := time.Now()
+	err = unix.Select(0, nil, nil, nil, &tv)
+	took := time.Since(start)
+	if err != nil {
+		t.Fatalf("Select: %v", err)
+	}
+
+	// On some BSDs the actual timeout might also be slightly less than the requested.
+	// Add an acceptable margin to avoid flaky tests.
+	if took < dur*2/3 {
+		t.Errorf("Select: timeout should have been at least %v, got %v", dur, took)
 	}
 }
 

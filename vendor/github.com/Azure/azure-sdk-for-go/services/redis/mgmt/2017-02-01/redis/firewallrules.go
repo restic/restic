@@ -18,6 +18,7 @@ package redis
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // FirewallRulesClient is the REST API for Azure Redis Cache Service.
 type FirewallRulesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewFirewallRulesClient creates an instance of the FirewallRulesClient client.
@@ -43,7 +44,7 @@ func NewFirewallRulesClientWithBaseURI(baseURI string, subscriptionID string) Fi
 //
 // resourceGroupName is the name of the resource group. cacheName is the name of the Redis cache. ruleName is the name
 // of the firewall rule. parameters is parameters supplied to the create or update redis firewall rule operation.
-func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, cacheName string, ruleName string, parameters FirewallRule) (result FirewallRule, err error) {
+func (client FirewallRulesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, cacheName string, ruleName string, parameters FirewallRule) (result FirewallRule, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.FirewallRuleProperties", Name: validation.Null, Rule: true,
@@ -53,7 +54,7 @@ func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, cache
 		return result, validation.NewErrorWithValidationError(err, "redis.FirewallRulesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, cacheName, ruleName, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, cacheName, ruleName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -75,7 +76,7 @@ func (client FirewallRulesClient) CreateOrUpdate(resourceGroupName string, cache
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client FirewallRulesClient) CreateOrUpdatePreparer(resourceGroupName string, cacheName string, ruleName string, parameters FirewallRule) (*http.Request, error) {
+func (client FirewallRulesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, cacheName string, ruleName string, parameters FirewallRule) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"cacheName":         autorest.Encode("path", cacheName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -95,14 +96,13 @@ func (client FirewallRulesClient) CreateOrUpdatePreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{cacheName}/firewallRules/{ruleName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -123,8 +123,8 @@ func (client FirewallRulesClient) CreateOrUpdateResponder(resp *http.Response) (
 //
 // resourceGroupName is the name of the resource group. cacheName is the name of the Redis cache. ruleName is the name
 // of the firewall rule.
-func (client FirewallRulesClient) Delete(resourceGroupName string, cacheName string, ruleName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, cacheName, ruleName)
+func (client FirewallRulesClient) Delete(ctx context.Context, resourceGroupName string, cacheName string, ruleName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, cacheName, ruleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -146,7 +146,7 @@ func (client FirewallRulesClient) Delete(resourceGroupName string, cacheName str
 }
 
 // DeletePreparer prepares the Delete request.
-func (client FirewallRulesClient) DeletePreparer(resourceGroupName string, cacheName string, ruleName string) (*http.Request, error) {
+func (client FirewallRulesClient) DeletePreparer(ctx context.Context, resourceGroupName string, cacheName string, ruleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"cacheName":         autorest.Encode("path", cacheName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -164,14 +164,13 @@ func (client FirewallRulesClient) DeletePreparer(resourceGroupName string, cache
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{cacheName}/firewallRules/{ruleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -191,8 +190,8 @@ func (client FirewallRulesClient) DeleteResponder(resp *http.Response) (result a
 //
 // resourceGroupName is the name of the resource group. cacheName is the name of the Redis cache. ruleName is the name
 // of the firewall rule.
-func (client FirewallRulesClient) Get(resourceGroupName string, cacheName string, ruleName string) (result FirewallRule, err error) {
-	req, err := client.GetPreparer(resourceGroupName, cacheName, ruleName)
+func (client FirewallRulesClient) Get(ctx context.Context, resourceGroupName string, cacheName string, ruleName string) (result FirewallRule, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, cacheName, ruleName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "Get", nil, "Failure preparing request")
 		return
@@ -214,7 +213,7 @@ func (client FirewallRulesClient) Get(resourceGroupName string, cacheName string
 }
 
 // GetPreparer prepares the Get request.
-func (client FirewallRulesClient) GetPreparer(resourceGroupName string, cacheName string, ruleName string) (*http.Request, error) {
+func (client FirewallRulesClient) GetPreparer(ctx context.Context, resourceGroupName string, cacheName string, ruleName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"cacheName":         autorest.Encode("path", cacheName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -232,14 +231,13 @@ func (client FirewallRulesClient) GetPreparer(resourceGroupName string, cacheNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{cacheName}/firewallRules/{ruleName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -259,8 +257,9 @@ func (client FirewallRulesClient) GetResponder(resp *http.Response) (result Fire
 // ListByRedisResource gets all firewall rules in the specified redis cache.
 //
 // resourceGroupName is the name of the resource group. cacheName is the name of the Redis cache.
-func (client FirewallRulesClient) ListByRedisResource(resourceGroupName string, cacheName string) (result FirewallRuleListResult, err error) {
-	req, err := client.ListByRedisResourcePreparer(resourceGroupName, cacheName)
+func (client FirewallRulesClient) ListByRedisResource(ctx context.Context, resourceGroupName string, cacheName string) (result FirewallRuleListResultPage, err error) {
+	result.fn = client.listByRedisResourceNextResults
+	req, err := client.ListByRedisResourcePreparer(ctx, resourceGroupName, cacheName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", nil, "Failure preparing request")
 		return
@@ -268,12 +267,12 @@ func (client FirewallRulesClient) ListByRedisResource(resourceGroupName string, 
 
 	resp, err := client.ListByRedisResourceSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.frlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByRedisResourceResponder(resp)
+	result.frlr, err = client.ListByRedisResourceResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", resp, "Failure responding to request")
 	}
@@ -282,7 +281,7 @@ func (client FirewallRulesClient) ListByRedisResource(resourceGroupName string, 
 }
 
 // ListByRedisResourcePreparer prepares the ListByRedisResource request.
-func (client FirewallRulesClient) ListByRedisResourcePreparer(resourceGroupName string, cacheName string) (*http.Request, error) {
+func (client FirewallRulesClient) ListByRedisResourcePreparer(ctx context.Context, resourceGroupName string, cacheName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"cacheName":         autorest.Encode("path", cacheName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -299,14 +298,13 @@ func (client FirewallRulesClient) ListByRedisResourcePreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{cacheName}/firewallRules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByRedisResourceSender sends the ListByRedisResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client FirewallRulesClient) ListByRedisResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -323,71 +321,29 @@ func (client FirewallRulesClient) ListByRedisResourceResponder(resp *http.Respon
 	return
 }
 
-// ListByRedisResourceNextResults retrieves the next set of results, if any.
-func (client FirewallRulesClient) ListByRedisResourceNextResults(lastResults FirewallRuleListResult) (result FirewallRuleListResult, err error) {
-	req, err := lastResults.FirewallRuleListResultPreparer()
+// listByRedisResourceNextResults retrieves the next set of results, if any.
+func (client FirewallRulesClient) listByRedisResourceNextResults(lastResults FirewallRuleListResult) (result FirewallRuleListResult, err error) {
+	req, err := lastResults.firewallRuleListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "listByRedisResourceNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByRedisResourceSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "listByRedisResourceNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByRedisResourceResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "ListByRedisResource", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "redis.FirewallRulesClient", "listByRedisResourceNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByRedisResourceComplete gets all elements from the list without paging.
-func (client FirewallRulesClient) ListByRedisResourceComplete(resourceGroupName string, cacheName string, cancel <-chan struct{}) (<-chan FirewallRule, <-chan error) {
-	resultChan := make(chan FirewallRule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByRedisResource(resourceGroupName, cacheName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByRedisResourceNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByRedisResourceComplete enumerates all values, automatically crossing page boundaries as required.
+func (client FirewallRulesClient) ListByRedisResourceComplete(ctx context.Context, resourceGroupName string, cacheName string) (result FirewallRuleListResultIterator, err error) {
+	result.page, err = client.ListByRedisResource(ctx, resourceGroupName, cacheName)
+	return
 }

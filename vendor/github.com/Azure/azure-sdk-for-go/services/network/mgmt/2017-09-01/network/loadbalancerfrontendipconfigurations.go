@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // LoadBalancerFrontendIPConfigurationsClient is the network Client
 type LoadBalancerFrontendIPConfigurationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLoadBalancerFrontendIPConfigurationsClient creates an instance of the LoadBalancerFrontendIPConfigurationsClient
@@ -44,8 +45,8 @@ func NewLoadBalancerFrontendIPConfigurationsClientWithBaseURI(baseURI string, su
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is the name of the load balancer.
 // frontendIPConfigurationName is the name of the frontend IP configuration.
-func (client LoadBalancerFrontendIPConfigurationsClient) Get(resourceGroupName string, loadBalancerName string, frontendIPConfigurationName string) (result FrontendIPConfiguration, err error) {
-	req, err := client.GetPreparer(resourceGroupName, loadBalancerName, frontendIPConfigurationName)
+func (client LoadBalancerFrontendIPConfigurationsClient) Get(ctx context.Context, resourceGroupName string, loadBalancerName string, frontendIPConfigurationName string) (result FrontendIPConfiguration, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, loadBalancerName, frontendIPConfigurationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -67,7 +68,7 @@ func (client LoadBalancerFrontendIPConfigurationsClient) Get(resourceGroupName s
 }
 
 // GetPreparer prepares the Get request.
-func (client LoadBalancerFrontendIPConfigurationsClient) GetPreparer(resourceGroupName string, loadBalancerName string, frontendIPConfigurationName string) (*http.Request, error) {
+func (client LoadBalancerFrontendIPConfigurationsClient) GetPreparer(ctx context.Context, resourceGroupName string, loadBalancerName string, frontendIPConfigurationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"frontendIPConfigurationName": autorest.Encode("path", frontendIPConfigurationName),
 		"loadBalancerName":            autorest.Encode("path", loadBalancerName),
@@ -85,14 +86,13 @@ func (client LoadBalancerFrontendIPConfigurationsClient) GetPreparer(resourceGro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/frontendIPConfigurations/{frontendIPConfigurationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoadBalancerFrontendIPConfigurationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -112,8 +112,9 @@ func (client LoadBalancerFrontendIPConfigurationsClient) GetResponder(resp *http
 // List gets all the load balancer frontend IP configurations.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is the name of the load balancer.
-func (client LoadBalancerFrontendIPConfigurationsClient) List(resourceGroupName string, loadBalancerName string) (result LoadBalancerFrontendIPConfigurationListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, loadBalancerName)
+func (client LoadBalancerFrontendIPConfigurationsClient) List(ctx context.Context, resourceGroupName string, loadBalancerName string) (result LoadBalancerFrontendIPConfigurationListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, loadBalancerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", nil, "Failure preparing request")
 		return
@@ -121,12 +122,12 @@ func (client LoadBalancerFrontendIPConfigurationsClient) List(resourceGroupName 
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lbficlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.lbficlr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", resp, "Failure responding to request")
 	}
@@ -135,7 +136,7 @@ func (client LoadBalancerFrontendIPConfigurationsClient) List(resourceGroupName 
 }
 
 // ListPreparer prepares the List request.
-func (client LoadBalancerFrontendIPConfigurationsClient) ListPreparer(resourceGroupName string, loadBalancerName string) (*http.Request, error) {
+func (client LoadBalancerFrontendIPConfigurationsClient) ListPreparer(ctx context.Context, resourceGroupName string, loadBalancerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loadBalancerName":  autorest.Encode("path", loadBalancerName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -152,14 +153,13 @@ func (client LoadBalancerFrontendIPConfigurationsClient) ListPreparer(resourceGr
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/frontendIPConfigurations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoadBalancerFrontendIPConfigurationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -176,71 +176,29 @@ func (client LoadBalancerFrontendIPConfigurationsClient) ListResponder(resp *htt
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client LoadBalancerFrontendIPConfigurationsClient) ListNextResults(lastResults LoadBalancerFrontendIPConfigurationListResult) (result LoadBalancerFrontendIPConfigurationListResult, err error) {
-	req, err := lastResults.LoadBalancerFrontendIPConfigurationListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client LoadBalancerFrontendIPConfigurationsClient) listNextResults(lastResults LoadBalancerFrontendIPConfigurationListResult) (result LoadBalancerFrontendIPConfigurationListResult, err error) {
+	req, err := lastResults.loadBalancerFrontendIPConfigurationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LoadBalancerFrontendIPConfigurationsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client LoadBalancerFrontendIPConfigurationsClient) ListComplete(resourceGroupName string, loadBalancerName string, cancel <-chan struct{}) (<-chan FrontendIPConfiguration, <-chan error) {
-	resultChan := make(chan FrontendIPConfiguration)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, loadBalancerName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LoadBalancerFrontendIPConfigurationsClient) ListComplete(ctx context.Context, resourceGroupName string, loadBalancerName string) (result LoadBalancerFrontendIPConfigurationListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, loadBalancerName)
+	return
 }

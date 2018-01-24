@@ -127,7 +127,7 @@ func (c Client) getObjectWithContext(ctx context.Context, bucketName, objectName
 					} else {
 						// First request is a Stat or Seek call.
 						// Only need to run a StatObject until an actual Read or ReadAt request comes through.
-						objectInfo, err = c.statObject(bucketName, objectName, StatObjectOptions{opts})
+						objectInfo, err = c.statObject(ctx, bucketName, objectName, StatObjectOptions{opts})
 						if err != nil {
 							resCh <- getResponse{
 								Error: err,
@@ -145,7 +145,7 @@ func (c Client) getObjectWithContext(ctx context.Context, bucketName, objectName
 					if etag != "" {
 						opts.SetMatchETag(etag)
 					}
-					objectInfo, err := c.statObject(bucketName, objectName, StatObjectOptions{opts})
+					objectInfo, err := c.statObject(ctx, bucketName, objectName, StatObjectOptions{opts})
 					if err != nil {
 						resCh <- getResponse{
 							Error: err,

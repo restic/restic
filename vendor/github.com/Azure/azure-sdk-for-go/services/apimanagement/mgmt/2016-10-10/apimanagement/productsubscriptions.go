@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ProductSubscriptionsClient is the apiManagement Client
 type ProductSubscriptionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewProductSubscriptionsClient creates an instance of the ProductSubscriptionsClient client.
@@ -52,7 +53,7 @@ func NewProductSubscriptionsClientWithBaseURI(baseURI string, subscriptionID str
 // | productId    | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith |
 // | state        | eq                     |                                             | top is number of records to
 // return. skip is number of records to skip.
-func (client ProductSubscriptionsClient) ListByProducts(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result SubscriptionCollection, err error) {
+func (client ProductSubscriptionsClient) ListByProducts(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result SubscriptionCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -71,7 +72,8 @@ func (client ProductSubscriptionsClient) ListByProducts(resourceGroupName string
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts")
 	}
 
-	req, err := client.ListByProductsPreparer(resourceGroupName, serviceName, productID, filter, top, skip)
+	result.fn = client.listByProductsNextResults
+	req, err := client.ListByProductsPreparer(ctx, resourceGroupName, serviceName, productID, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", nil, "Failure preparing request")
 		return
@@ -79,12 +81,12 @@ func (client ProductSubscriptionsClient) ListByProducts(resourceGroupName string
 
 	resp, err := client.ListByProductsSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByProductsResponder(resp)
+	result.sc, err = client.ListByProductsResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", resp, "Failure responding to request")
 	}
@@ -93,7 +95,7 @@ func (client ProductSubscriptionsClient) ListByProducts(resourceGroupName string
 }
 
 // ListByProductsPreparer prepares the ListByProducts request.
-func (client ProductSubscriptionsClient) ListByProductsPreparer(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client ProductSubscriptionsClient) ListByProductsPreparer(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"productId":         autorest.Encode("path", productID),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -120,14 +122,13 @@ func (client ProductSubscriptionsClient) ListByProductsPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/products/{productId}/subscriptions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByProductsSender sends the ListByProducts request. The method will close the
 // http.Response Body if it receives an error.
 func (client ProductSubscriptionsClient) ListByProductsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -144,71 +145,29 @@ func (client ProductSubscriptionsClient) ListByProductsResponder(resp *http.Resp
 	return
 }
 
-// ListByProductsNextResults retrieves the next set of results, if any.
-func (client ProductSubscriptionsClient) ListByProductsNextResults(lastResults SubscriptionCollection) (result SubscriptionCollection, err error) {
-	req, err := lastResults.SubscriptionCollectionPreparer()
+// listByProductsNextResults retrieves the next set of results, if any.
+func (client ProductSubscriptionsClient) listByProductsNextResults(lastResults SubscriptionCollection) (result SubscriptionCollection, err error) {
+	req, err := lastResults.subscriptionCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "listByProductsNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByProductsSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "listByProductsNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByProductsResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "ListByProducts", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.ProductSubscriptionsClient", "listByProductsNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByProductsComplete gets all elements from the list without paging.
-func (client ProductSubscriptionsClient) ListByProductsComplete(resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan SubscriptionContract, <-chan error) {
-	resultChan := make(chan SubscriptionContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByProducts(resourceGroupName, serviceName, productID, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByProductsNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByProductsComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ProductSubscriptionsClient) ListByProductsComplete(ctx context.Context, resourceGroupName string, serviceName string, productID string, filter string, top *int32, skip *int32) (result SubscriptionCollectionIterator, err error) {
+	result.page, err = client.ListByProducts(ctx, resourceGroupName, serviceName, productID, filter, top, skip)
+	return
 }

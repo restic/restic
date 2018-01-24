@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // DeployedApplicationsClient is the client for the DeployedApplications methods of the Servicefabric service.
 type DeployedApplicationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeployedApplicationsClient creates an instance of the DeployedApplicationsClient client.
@@ -41,8 +42,8 @@ func NewDeployedApplicationsClientWithBaseURI(baseURI string, timeout *int32) De
 // Get get deployed applications
 //
 // nodeName is the name of the node applicationName is the name of the application
-func (client DeployedApplicationsClient) Get(nodeName string, applicationName string) (result DeployedApplication, err error) {
-	req, err := client.GetPreparer(nodeName, applicationName)
+func (client DeployedApplicationsClient) Get(ctx context.Context, nodeName string, applicationName string) (result DeployedApplication, err error) {
+	req, err := client.GetPreparer(ctx, nodeName, applicationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedApplicationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client DeployedApplicationsClient) Get(nodeName string, applicationName st
 }
 
 // GetPreparer prepares the Get request.
-func (client DeployedApplicationsClient) GetPreparer(nodeName string, applicationName string) (*http.Request, error) {
+func (client DeployedApplicationsClient) GetPreparer(ctx context.Context, nodeName string, applicationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applicationName": autorest.Encode("path", applicationName),
 		"nodeName":        autorest.Encode("path", nodeName),
@@ -83,14 +84,13 @@ func (client DeployedApplicationsClient) GetPreparer(nodeName string, applicatio
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedApplicationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -110,8 +110,8 @@ func (client DeployedApplicationsClient) GetResponder(resp *http.Response) (resu
 // List list deployed applications
 //
 // nodeName is the name of the node
-func (client DeployedApplicationsClient) List(nodeName string) (result ListDeployedApplication, err error) {
-	req, err := client.ListPreparer(nodeName)
+func (client DeployedApplicationsClient) List(ctx context.Context, nodeName string) (result ListDeployedApplication, err error) {
+	req, err := client.ListPreparer(ctx, nodeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.DeployedApplicationsClient", "List", nil, "Failure preparing request")
 		return
@@ -133,7 +133,7 @@ func (client DeployedApplicationsClient) List(nodeName string) (result ListDeplo
 }
 
 // ListPreparer prepares the List request.
-func (client DeployedApplicationsClient) ListPreparer(nodeName string) (*http.Request, error) {
+func (client DeployedApplicationsClient) ListPreparer(ctx context.Context, nodeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"nodeName": autorest.Encode("path", nodeName),
 	}
@@ -151,14 +151,13 @@ func (client DeployedApplicationsClient) ListPreparer(nodeName string) (*http.Re
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeployedApplicationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

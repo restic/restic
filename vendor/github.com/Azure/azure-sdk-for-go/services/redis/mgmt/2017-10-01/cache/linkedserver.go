@@ -18,6 +18,7 @@ package redis
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // LinkedServerClient is the REST API for Azure Redis Cache Service.
 type LinkedServerClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLinkedServerClient creates an instance of the LinkedServerClient client.
@@ -39,62 +40,38 @@ func NewLinkedServerClientWithBaseURI(baseURI string, subscriptionID string) Lin
 	return LinkedServerClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create adds a linked server to the Redis cache (requires Premium SKU). This method may poll for completion. Polling
-// can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Create adds a linked server to the Redis cache (requires Premium SKU).
 //
 // resourceGroupName is the name of the resource group. name is the name of the Redis cache. linkedServerName is the
 // name of the linked server that is being added to the Redis cache. parameters is parameters supplied to the Create
 // Linked server operation.
-func (client LinkedServerClient) Create(resourceGroupName string, name string, linkedServerName string, parameters LinkedServerCreateParameters, cancel <-chan struct{}) (<-chan LinkedServerWithProperties, <-chan error) {
-	resultChan := make(chan LinkedServerWithProperties, 1)
-	errChan := make(chan error, 1)
+func (client LinkedServerClient) Create(ctx context.Context, resourceGroupName string, name string, linkedServerName string, parameters LinkedServerCreateParameters) (result LinkedServerCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.LinkedServerCreateProperties", Name: validation.Null, Rule: true,
 				Chain: []validation.Constraint{{Target: "parameters.LinkedServerCreateProperties.LinkedRedisCacheID", Name: validation.Null, Rule: true, Chain: nil},
 					{Target: "parameters.LinkedServerCreateProperties.LinkedRedisCacheLocation", Name: validation.Null, Rule: true, Chain: nil},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "redis.LinkedServerClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "redis.LinkedServerClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result LinkedServerWithProperties
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, name, linkedServerName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, name, linkedServerName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client LinkedServerClient) CreatePreparer(resourceGroupName string, name string, linkedServerName string, parameters LinkedServerCreateParameters, cancel <-chan struct{}) (*http.Request, error) {
+func (client LinkedServerClient) CreatePreparer(ctx context.Context, resourceGroupName string, name string, linkedServerName string, parameters LinkedServerCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"linkedServerName":  autorest.Encode("path", linkedServerName),
 		"name":              autorest.Encode("path", name),
@@ -114,16 +91,22 @@ func (client LinkedServerClient) CreatePreparer(resourceGroupName string, name s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/linkedServers/{linkedServerName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client LinkedServerClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client LinkedServerClient) CreateSender(req *http.Request) (future LinkedServerCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -143,8 +126,8 @@ func (client LinkedServerClient) CreateResponder(resp *http.Response) (result Li
 //
 // resourceGroupName is the name of the resource group. name is the name of the redis cache. linkedServerName is the
 // name of the linked server that is being added to the Redis cache.
-func (client LinkedServerClient) Delete(resourceGroupName string, name string, linkedServerName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, name, linkedServerName)
+func (client LinkedServerClient) Delete(ctx context.Context, resourceGroupName string, name string, linkedServerName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, name, linkedServerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Delete", nil, "Failure preparing request")
 		return
@@ -166,7 +149,7 @@ func (client LinkedServerClient) Delete(resourceGroupName string, name string, l
 }
 
 // DeletePreparer prepares the Delete request.
-func (client LinkedServerClient) DeletePreparer(resourceGroupName string, name string, linkedServerName string) (*http.Request, error) {
+func (client LinkedServerClient) DeletePreparer(ctx context.Context, resourceGroupName string, name string, linkedServerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"linkedServerName":  autorest.Encode("path", linkedServerName),
 		"name":              autorest.Encode("path", name),
@@ -184,14 +167,13 @@ func (client LinkedServerClient) DeletePreparer(resourceGroupName string, name s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/linkedServers/{linkedServerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServerClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -211,8 +193,8 @@ func (client LinkedServerClient) DeleteResponder(resp *http.Response) (result au
 //
 // resourceGroupName is the name of the resource group. name is the name of the redis cache. linkedServerName is the
 // name of the linked server.
-func (client LinkedServerClient) Get(resourceGroupName string, name string, linkedServerName string) (result LinkedServerWithProperties, err error) {
-	req, err := client.GetPreparer(resourceGroupName, name, linkedServerName)
+func (client LinkedServerClient) Get(ctx context.Context, resourceGroupName string, name string, linkedServerName string) (result LinkedServerWithProperties, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, name, linkedServerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "Get", nil, "Failure preparing request")
 		return
@@ -234,7 +216,7 @@ func (client LinkedServerClient) Get(resourceGroupName string, name string, link
 }
 
 // GetPreparer prepares the Get request.
-func (client LinkedServerClient) GetPreparer(resourceGroupName string, name string, linkedServerName string) (*http.Request, error) {
+func (client LinkedServerClient) GetPreparer(ctx context.Context, resourceGroupName string, name string, linkedServerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"linkedServerName":  autorest.Encode("path", linkedServerName),
 		"name":              autorest.Encode("path", name),
@@ -252,14 +234,13 @@ func (client LinkedServerClient) GetPreparer(resourceGroupName string, name stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/linkedServers/{linkedServerName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServerClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -279,8 +260,9 @@ func (client LinkedServerClient) GetResponder(resp *http.Response) (result Linke
 // List gets the list of linked servers associated with this redis cache (requires Premium SKU).
 //
 // resourceGroupName is the name of the resource group. name is the name of the redis cache.
-func (client LinkedServerClient) List(resourceGroupName string, name string) (result LinkedServerWithPropertiesList, err error) {
-	req, err := client.ListPreparer(resourceGroupName, name)
+func (client LinkedServerClient) List(ctx context.Context, resourceGroupName string, name string) (result LinkedServerWithPropertiesListPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "List", nil, "Failure preparing request")
 		return
@@ -288,12 +270,12 @@ func (client LinkedServerClient) List(resourceGroupName string, name string) (re
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lswpl.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.lswpl, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "List", resp, "Failure responding to request")
 	}
@@ -302,7 +284,7 @@ func (client LinkedServerClient) List(resourceGroupName string, name string) (re
 }
 
 // ListPreparer prepares the List request.
-func (client LinkedServerClient) ListPreparer(resourceGroupName string, name string) (*http.Request, error) {
+func (client LinkedServerClient) ListPreparer(ctx context.Context, resourceGroupName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"name":              autorest.Encode("path", name),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -319,14 +301,13 @@ func (client LinkedServerClient) ListPreparer(resourceGroupName string, name str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/linkedServers", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LinkedServerClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -340,5 +321,32 @@ func (client LinkedServerClient) ListResponder(resp *http.Response) (result Link
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// listNextResults retrieves the next set of results, if any.
+func (client LinkedServerClient) listNextResults(lastResults LinkedServerWithPropertiesList) (result LinkedServerWithPropertiesList, err error) {
+	req, err := lastResults.linkedServerWithPropertiesListPreparer()
+	if err != nil {
+		return result, autorest.NewErrorWithError(err, "redis.LinkedServerClient", "listNextResults", nil, "Failure preparing next results request")
+	}
+	if req == nil {
+		return
+	}
+	resp, err := client.ListSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		return result, autorest.NewErrorWithError(err, "redis.LinkedServerClient", "listNextResults", resp, "Failure sending next results request")
+	}
+	result, err = client.ListResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "redis.LinkedServerClient", "listNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LinkedServerClient) ListComplete(ctx context.Context, resourceGroupName string, name string) (result LinkedServerWithPropertiesListIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, name)
 	return
 }

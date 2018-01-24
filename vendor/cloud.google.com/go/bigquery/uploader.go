@@ -54,6 +54,9 @@ type Uploader struct {
 
 // Uploader returns an Uploader that can be used to append rows to t.
 // The returned Uploader may optionally be further configured before its Put method is called.
+//
+// To stream rows into a date-partitioned table at a particular date, add the
+// $yyyymmdd suffix to the table name when constructing the Table.
 func (t *Table) Uploader() *Uploader {
 	return &Uploader{t: t}
 }
@@ -156,6 +159,9 @@ func (u *Uploader) putMulti(ctx context.Context, src []ValueSaver) error {
 	if err != nil {
 		return err
 	}
+	if req == nil {
+		return nil
+	}
 	call := u.t.c.bqs.Tabledata.InsertAll(u.t.ProjectID, u.t.DatasetID, u.t.TableID, req)
 	call = call.Context(ctx)
 	setClientHeader(call.Header())
@@ -171,6 +177,9 @@ func (u *Uploader) putMulti(ctx context.Context, src []ValueSaver) error {
 }
 
 func (u *Uploader) newInsertRequest(savers []ValueSaver) (*bq.TableDataInsertAllRequest, error) {
+	if savers == nil { // If there are no rows, do nothing.
+		return nil, nil
+	}
 	req := &bq.TableDataInsertAllRequest{
 		TemplateSuffix:      u.TableTemplateSuffix,
 		IgnoreUnknownValues: u.IgnoreUnknownValues,

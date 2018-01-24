@@ -18,6 +18,7 @@ package dtl
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ScheduleClient is the azure DevTest Labs REST API version 2015-05-21-preview.
 type ScheduleClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewScheduleClient creates an instance of the ScheduleClient client.
@@ -38,49 +39,28 @@ func NewScheduleClientWithBaseURI(baseURI string, subscriptionID string) Schedul
 	return ScheduleClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdateResource create or replace an existing schedule. This operation can take a while to complete. This
-// method may poll for completion. Polling can be canceled by passing the cancel channel argument. The channel will be
-// used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdateResource create or replace an existing schedule. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // schedule.
-func (client ScheduleClient) CreateOrUpdateResource(resourceGroupName string, labName string, name string, schedule Schedule, cancel <-chan struct{}) (<-chan Schedule, <-chan error) {
-	resultChan := make(chan Schedule, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result Schedule
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateResourcePreparer(resourceGroupName, labName, name, schedule, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "CreateOrUpdateResource", nil, "Failure preparing request")
-			return
-		}
+func (client ScheduleClient) CreateOrUpdateResource(ctx context.Context, resourceGroupName string, labName string, name string, schedule Schedule) (result ScheduleCreateOrUpdateResourceFuture, err error) {
+	req, err := client.CreateOrUpdateResourcePreparer(ctx, resourceGroupName, labName, name, schedule)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "CreateOrUpdateResource", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateResourceSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "CreateOrUpdateResource", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateResourceSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "CreateOrUpdateResource", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResourceResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "CreateOrUpdateResource", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateResourcePreparer prepares the CreateOrUpdateResource request.
-func (client ScheduleClient) CreateOrUpdateResourcePreparer(resourceGroupName string, labName string, name string, schedule Schedule, cancel <-chan struct{}) (*http.Request, error) {
+func (client ScheduleClient) CreateOrUpdateResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, schedule Schedule) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -100,16 +80,22 @@ func (client ScheduleClient) CreateOrUpdateResourcePreparer(resourceGroupName st
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),
 		autorest.WithJSON(schedule),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateResourceSender sends the CreateOrUpdateResource request. The method will close the
 // http.Response Body if it receives an error.
-func (client ScheduleClient) CreateOrUpdateResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ScheduleClient) CreateOrUpdateResourceSender(req *http.Request) (future ScheduleCreateOrUpdateResourceFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResourceResponder handles the response to the CreateOrUpdateResource request. The method always
@@ -125,49 +111,28 @@ func (client ScheduleClient) CreateOrUpdateResourceResponder(resp *http.Response
 	return
 }
 
-// DeleteResource delete schedule. This operation can take a while to complete. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// DeleteResource delete schedule. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // schedule.
-func (client ScheduleClient) DeleteResource(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeleteResourcePreparer(resourceGroupName, labName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "DeleteResource", nil, "Failure preparing request")
-			return
-		}
+func (client ScheduleClient) DeleteResource(ctx context.Context, resourceGroupName string, labName string, name string) (result ScheduleDeleteResourceFuture, err error) {
+	req, err := client.DeleteResourcePreparer(ctx, resourceGroupName, labName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "DeleteResource", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteResourceSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "DeleteResource", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteResourceSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "DeleteResource", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResourceResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "DeleteResource", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeleteResourcePreparer prepares the DeleteResource request.
-func (client ScheduleClient) DeleteResourcePreparer(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ScheduleClient) DeleteResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -185,16 +150,22 @@ func (client ScheduleClient) DeleteResourcePreparer(resourceGroupName string, la
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteResourceSender sends the DeleteResource request. The method will close the
 // http.Response Body if it receives an error.
-func (client ScheduleClient) DeleteResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ScheduleClient) DeleteResourceSender(req *http.Request) (future ScheduleDeleteResourceFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResourceResponder handles the response to the DeleteResource request. The method always
@@ -209,49 +180,28 @@ func (client ScheduleClient) DeleteResourceResponder(resp *http.Response) (resul
 	return
 }
 
-// Execute execute a schedule. This operation can take a while to complete. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// Execute execute a schedule. This operation can take a while to complete.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // schedule.
-func (client ScheduleClient) Execute(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.ExecutePreparer(resourceGroupName, labName, name, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "Execute", nil, "Failure preparing request")
-			return
-		}
+func (client ScheduleClient) Execute(ctx context.Context, resourceGroupName string, labName string, name string) (result ScheduleExecuteFuture, err error) {
+	req, err := client.ExecutePreparer(ctx, resourceGroupName, labName, name)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "Execute", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.ExecuteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "Execute", resp, "Failure sending request")
-			return
-		}
+	result, err = client.ExecuteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "Execute", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.ExecuteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "Execute", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // ExecutePreparer prepares the Execute request.
-func (client ScheduleClient) ExecutePreparer(resourceGroupName string, labName string, name string, cancel <-chan struct{}) (*http.Request, error) {
+func (client ScheduleClient) ExecutePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -269,16 +219,22 @@ func (client ScheduleClient) ExecutePreparer(resourceGroupName string, labName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}/execute", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ExecuteSender sends the Execute request. The method will close the
 // http.Response Body if it receives an error.
-func (client ScheduleClient) ExecuteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client ScheduleClient) ExecuteSender(req *http.Request) (future ScheduleExecuteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // ExecuteResponder handles the response to the Execute request. The method always
@@ -297,8 +253,8 @@ func (client ScheduleClient) ExecuteResponder(resp *http.Response) (result autor
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // schedule.
-func (client ScheduleClient) GetResource(resourceGroupName string, labName string, name string) (result Schedule, err error) {
-	req, err := client.GetResourcePreparer(resourceGroupName, labName, name)
+func (client ScheduleClient) GetResource(ctx context.Context, resourceGroupName string, labName string, name string) (result Schedule, err error) {
+	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, name)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "GetResource", nil, "Failure preparing request")
 		return
@@ -320,7 +276,7 @@ func (client ScheduleClient) GetResource(resourceGroupName string, labName strin
 }
 
 // GetResourcePreparer prepares the GetResource request.
-func (client ScheduleClient) GetResourcePreparer(resourceGroupName string, labName string, name string) (*http.Request, error) {
+func (client ScheduleClient) GetResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -338,14 +294,13 @@ func (client ScheduleClient) GetResourcePreparer(resourceGroupName string, labNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetResourceSender sends the GetResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) GetResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -366,8 +321,9 @@ func (client ScheduleClient) GetResourceResponder(resp *http.Response) (result S
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
 // on the operation.
-func (client ScheduleClient) List(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationSchedule, err error) {
-	req, err := client.ListPreparer(resourceGroupName, labName, filter, top, orderBy)
+func (client ScheduleClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationSchedulePage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderBy)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", nil, "Failure preparing request")
 		return
@@ -375,12 +331,12 @@ func (client ScheduleClient) List(resourceGroupName string, labName string, filt
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.rwcs.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.rwcs, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", resp, "Failure responding to request")
 	}
@@ -389,7 +345,7 @@ func (client ScheduleClient) List(resourceGroupName string, labName string, filt
 }
 
 // ListPreparer prepares the List request.
-func (client ScheduleClient) ListPreparer(resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
+func (client ScheduleClient) ListPreparer(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -415,14 +371,13 @@ func (client ScheduleClient) ListPreparer(resourceGroupName string, labName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -439,81 +394,39 @@ func (client ScheduleClient) ListResponder(resp *http.Response) (result Response
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client ScheduleClient) ListNextResults(lastResults ResponseWithContinuationSchedule) (result ResponseWithContinuationSchedule, err error) {
-	req, err := lastResults.ResponseWithContinuationSchedulePreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client ScheduleClient) listNextResults(lastResults ResponseWithContinuationSchedule) (result ResponseWithContinuationSchedule, err error) {
+	req, err := lastResults.responseWithContinuationSchedulePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ScheduleClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "dtl.ScheduleClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client ScheduleClient) ListComplete(resourceGroupName string, labName string, filter string, top *int32, orderBy string, cancel <-chan struct{}) (<-chan Schedule, <-chan error) {
-	resultChan := make(chan Schedule)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, labName, filter, top, orderBy)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ScheduleClient) ListComplete(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationScheduleIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, labName, filter, top, orderBy)
+	return
 }
 
 // PatchResource modify properties of schedules.
 //
 // resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
 // schedule.
-func (client ScheduleClient) PatchResource(resourceGroupName string, labName string, name string, schedule Schedule) (result Schedule, err error) {
-	req, err := client.PatchResourcePreparer(resourceGroupName, labName, name, schedule)
+func (client ScheduleClient) PatchResource(ctx context.Context, resourceGroupName string, labName string, name string, schedule Schedule) (result Schedule, err error) {
+	req, err := client.PatchResourcePreparer(ctx, resourceGroupName, labName, name, schedule)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "dtl.ScheduleClient", "PatchResource", nil, "Failure preparing request")
 		return
@@ -535,7 +448,7 @@ func (client ScheduleClient) PatchResource(resourceGroupName string, labName str
 }
 
 // PatchResourcePreparer prepares the PatchResource request.
-func (client ScheduleClient) PatchResourcePreparer(resourceGroupName string, labName string, name string, schedule Schedule) (*http.Request, error) {
+func (client ScheduleClient) PatchResourcePreparer(ctx context.Context, resourceGroupName string, labName string, name string, schedule Schedule) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"labName":           autorest.Encode("path", labName),
 		"name":              autorest.Encode("path", name),
@@ -555,14 +468,13 @@ func (client ScheduleClient) PatchResourcePreparer(resourceGroupName string, lab
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),
 		autorest.WithJSON(schedule),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // PatchResourceSender sends the PatchResource request. The method will close the
 // http.Response Body if it receives an error.
 func (client ScheduleClient) PatchResourceSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

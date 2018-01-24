@@ -18,6 +18,7 @@ package managedapplications
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // AppliancesClient is the ARM managed applications (appliances)
 type AppliancesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewAppliancesClient creates an instance of the AppliancesClient client.
@@ -39,14 +40,11 @@ func NewAppliancesClientWithBaseURI(baseURI string, subscriptionID string) Appli
 	return AppliancesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates a new appliance. This method may poll for completion. Polling can be canceled by passing the
-// cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates a new appliance.
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. applianceName is the name of the
 // appliance. parameters is parameters supplied to the create or update an appliance.
-func (client AppliancesClient) CreateOrUpdate(resourceGroupName string, applianceName string, parameters Appliance, cancel <-chan struct{}) (<-chan Appliance, <-chan error) {
-	resultChan := make(chan Appliance, 1)
-	errChan := make(chan error, 1)
+func (client AppliancesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, applianceName string, parameters Appliance) (result AppliancesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -66,46 +64,26 @@ func (client AppliancesClient) CreateOrUpdate(resourceGroupName string, applianc
 					}},
 				{Target: "parameters.Kind", Name: validation.Null, Rule: true,
 					Chain: []validation.Constraint{{Target: "parameters.Kind", Name: validation.Pattern, Rule: `^[-\w\._,\(\)]+$`, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result Appliance
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, applianceName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, applianceName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client AppliancesClient) CreateOrUpdatePreparer(resourceGroupName string, applianceName string, parameters Appliance, cancel <-chan struct{}) (*http.Request, error) {
+func (client AppliancesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, applianceName string, parameters Appliance) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceName":     autorest.Encode("path", applianceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -124,16 +102,22 @@ func (client AppliancesClient) CreateOrUpdatePreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Solutions/appliances/{applianceName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client AppliancesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AppliancesClient) CreateOrUpdateSender(req *http.Request) (future AppliancesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -149,16 +133,13 @@ func (client AppliancesClient) CreateOrUpdateResponder(resp *http.Response) (res
 	return
 }
 
-// CreateOrUpdateByID creates a new appliance. This method may poll for completion. Polling can be canceled by passing
-// the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdateByID creates a new appliance.
 //
 // applianceID is the fully qualified ID of the appliance, including the appliance name and the appliance resource
 // type. Use the format,
 // /subscriptions/{guid}/resourceGroups/{resource-group-name}/Microsoft.Solutions/appliances/{appliance-name}
 // parameters is parameters supplied to the create or update an appliance.
-func (client AppliancesClient) CreateOrUpdateByID(applianceID string, parameters Appliance, cancel <-chan struct{}) (<-chan Appliance, <-chan error) {
-	resultChan := make(chan Appliance, 1)
-	errChan := make(chan error, 1)
+func (client AppliancesClient) CreateOrUpdateByID(ctx context.Context, applianceID string, parameters Appliance) (result AppliancesCreateOrUpdateByIDFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.ApplianceProperties", Name: validation.Null, Rule: true,
@@ -171,46 +152,26 @@ func (client AppliancesClient) CreateOrUpdateByID(applianceID string, parameters
 					}},
 				{Target: "parameters.Kind", Name: validation.Null, Rule: true,
 					Chain: []validation.Constraint{{Target: "parameters.Kind", Name: validation.Pattern, Rule: `^[-\w\._,\(\)]+$`, Chain: nil}}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID")
 	}
 
-	go func() {
-		var err error
-		var result Appliance
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdateByIDPreparer(applianceID, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdateByIDPreparer(ctx, applianceID, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateByIDSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateByIDSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateByIDResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "CreateOrUpdateByID", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdateByIDPreparer prepares the CreateOrUpdateByID request.
-func (client AppliancesClient) CreateOrUpdateByIDPreparer(applianceID string, parameters Appliance, cancel <-chan struct{}) (*http.Request, error) {
+func (client AppliancesClient) CreateOrUpdateByIDPreparer(ctx context.Context, applianceID string, parameters Appliance) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceId": applianceID,
 	}
@@ -227,16 +188,22 @@ func (client AppliancesClient) CreateOrUpdateByIDPreparer(applianceID string, pa
 		autorest.WithPathParameters("/{applianceId}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateByIDSender sends the CreateOrUpdateByID request. The method will close the
 // http.Response Body if it receives an error.
-func (client AppliancesClient) CreateOrUpdateByIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AppliancesClient) CreateOrUpdateByIDSender(req *http.Request) (future AppliancesCreateOrUpdateByIDFuture, err error) {
+	sender := autorest.DecorateSender(client, autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateByIDResponder handles the response to the CreateOrUpdateByID request. The method always
@@ -252,14 +219,11 @@ func (client AppliancesClient) CreateOrUpdateByIDResponder(resp *http.Response) 
 	return
 }
 
-// Delete deletes the appliance. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the appliance.
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. applianceName is the name of the
 // appliance.
-func (client AppliancesClient) Delete(resourceGroupName string, applianceName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client AppliancesClient) Delete(ctx context.Context, resourceGroupName string, applianceName string) (result AppliancesDeleteFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -268,46 +232,26 @@ func (client AppliancesClient) Delete(resourceGroupName string, applianceName st
 		{TargetValue: applianceName,
 			Constraints: []validation.Constraint{{Target: "applianceName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "applianceName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "Delete")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "Delete")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, applianceName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.DeletePreparer(ctx, resourceGroupName, applianceName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client AppliancesClient) DeletePreparer(resourceGroupName string, applianceName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client AppliancesClient) DeletePreparer(ctx context.Context, resourceGroupName string, applianceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceName":     autorest.Encode("path", applianceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -324,16 +268,22 @@ func (client AppliancesClient) DeletePreparer(resourceGroupName string, applianc
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Solutions/appliances/{applianceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client AppliancesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AppliancesClient) DeleteSender(req *http.Request) (future AppliancesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -342,55 +292,35 @@ func (client AppliancesClient) DeleteResponder(resp *http.Response) (result auto
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
 }
 
-// DeleteByID deletes the appliance. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// DeleteByID deletes the appliance.
 //
 // applianceID is the fully qualified ID of the appliance, including the appliance name and the appliance resource
 // type. Use the format,
 // /subscriptions/{guid}/resourceGroups/{resource-group-name}/Microsoft.Solutions/appliances/{appliance-name}
-func (client AppliancesClient) DeleteByID(applianceID string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeleteByIDPreparer(applianceID, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "DeleteByID", nil, "Failure preparing request")
-			return
-		}
+func (client AppliancesClient) DeleteByID(ctx context.Context, applianceID string) (result AppliancesDeleteByIDFuture, err error) {
+	req, err := client.DeleteByIDPreparer(ctx, applianceID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "DeleteByID", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteByIDSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "DeleteByID", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteByIDSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "DeleteByID", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteByIDResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "DeleteByID", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeleteByIDPreparer prepares the DeleteByID request.
-func (client AppliancesClient) DeleteByIDPreparer(applianceID string, cancel <-chan struct{}) (*http.Request, error) {
+func (client AppliancesClient) DeleteByIDPreparer(ctx context.Context, applianceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceId": applianceID,
 	}
@@ -405,16 +335,22 @@ func (client AppliancesClient) DeleteByIDPreparer(applianceID string, cancel <-c
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{applianceId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteByIDSender sends the DeleteByID request. The method will close the
 // http.Response Body if it receives an error.
-func (client AppliancesClient) DeleteByIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client AppliancesClient) DeleteByIDSender(req *http.Request) (future AppliancesDeleteByIDFuture, err error) {
+	sender := autorest.DecorateSender(client, autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteByIDResponder handles the response to the DeleteByID request. The method always
@@ -423,7 +359,7 @@ func (client AppliancesClient) DeleteByIDResponder(resp *http.Response) (result 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -433,7 +369,7 @@ func (client AppliancesClient) DeleteByIDResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. applianceName is the name of the
 // appliance.
-func (client AppliancesClient) Get(resourceGroupName string, applianceName string) (result Appliance, err error) {
+func (client AppliancesClient) Get(ctx context.Context, resourceGroupName string, applianceName string) (result Appliance, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -445,7 +381,7 @@ func (client AppliancesClient) Get(resourceGroupName string, applianceName strin
 		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, applianceName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, applianceName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Get", nil, "Failure preparing request")
 		return
@@ -467,7 +403,7 @@ func (client AppliancesClient) Get(resourceGroupName string, applianceName strin
 }
 
 // GetPreparer prepares the Get request.
-func (client AppliancesClient) GetPreparer(resourceGroupName string, applianceName string) (*http.Request, error) {
+func (client AppliancesClient) GetPreparer(ctx context.Context, resourceGroupName string, applianceName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceName":     autorest.Encode("path", applianceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -484,14 +420,13 @@ func (client AppliancesClient) GetPreparer(resourceGroupName string, applianceNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Solutions/appliances/{applianceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -513,8 +448,8 @@ func (client AppliancesClient) GetResponder(resp *http.Response) (result Applian
 // applianceID is the fully qualified ID of the appliance, including the appliance name and the appliance resource
 // type. Use the format,
 // /subscriptions/{guid}/resourceGroups/{resource-group-name}/Microsoft.Solutions/appliances/{appliance-name}
-func (client AppliancesClient) GetByID(applianceID string) (result Appliance, err error) {
-	req, err := client.GetByIDPreparer(applianceID)
+func (client AppliancesClient) GetByID(ctx context.Context, applianceID string) (result Appliance, err error) {
+	req, err := client.GetByIDPreparer(ctx, applianceID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "GetByID", nil, "Failure preparing request")
 		return
@@ -536,7 +471,7 @@ func (client AppliancesClient) GetByID(applianceID string) (result Appliance, er
 }
 
 // GetByIDPreparer prepares the GetByID request.
-func (client AppliancesClient) GetByIDPreparer(applianceID string) (*http.Request, error) {
+func (client AppliancesClient) GetByIDPreparer(ctx context.Context, applianceID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceId": applianceID,
 	}
@@ -551,14 +486,13 @@ func (client AppliancesClient) GetByIDPreparer(applianceID string) (*http.Reques
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{applianceId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetByIDSender sends the GetByID request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) GetByIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -578,7 +512,7 @@ func (client AppliancesClient) GetByIDResponder(resp *http.Response) (result App
 // ListByResourceGroup gets all the appliances within a resource group.
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive.
-func (client AppliancesClient) ListByResourceGroup(resourceGroupName string) (result ApplianceListResult, err error) {
+func (client AppliancesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ApplianceListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -587,7 +521,8 @@ func (client AppliancesClient) ListByResourceGroup(resourceGroupName string) (re
 		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "ListByResourceGroup")
 	}
 
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+	result.fn = client.listByResourceGroupNextResults
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -595,12 +530,12 @@ func (client AppliancesClient) ListByResourceGroup(resourceGroupName string) (re
 
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.alr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByResourceGroupResponder(resp)
+	result.alr, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", resp, "Failure responding to request")
 	}
@@ -609,7 +544,7 @@ func (client AppliancesClient) ListByResourceGroup(resourceGroupName string) (re
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client AppliancesClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client AppliancesClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -625,14 +560,13 @@ func (client AppliancesClient) ListByResourceGroupPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Solutions/appliances", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -649,78 +583,37 @@ func (client AppliancesClient) ListByResourceGroupResponder(resp *http.Response)
 	return
 }
 
-// ListByResourceGroupNextResults retrieves the next set of results, if any.
-func (client AppliancesClient) ListByResourceGroupNextResults(lastResults ApplianceListResult) (result ApplianceListResult, err error) {
-	req, err := lastResults.ApplianceListResultPreparer()
+// listByResourceGroupNextResults retrieves the next set of results, if any.
+func (client AppliancesClient) listByResourceGroupNextResults(lastResults ApplianceListResult) (result ApplianceListResult, err error) {
+	req, err := lastResults.applianceListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listByResourceGroupNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByResourceGroupSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listByResourceGroupNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByResourceGroupResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListByResourceGroup", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listByResourceGroupNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByResourceGroupComplete gets all elements from the list without paging.
-func (client AppliancesClient) ListByResourceGroupComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan Appliance, <-chan error) {
-	resultChan := make(chan Appliance)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByResourceGroup(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByResourceGroupNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByResourceGroupComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AppliancesClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string) (result ApplianceListResultIterator, err error) {
+	result.page, err = client.ListByResourceGroup(ctx, resourceGroupName)
+	return
 }
 
 // ListBySubscription gets all the appliances within a subscription.
-func (client AppliancesClient) ListBySubscription() (result ApplianceListResult, err error) {
-	req, err := client.ListBySubscriptionPreparer()
+func (client AppliancesClient) ListBySubscription(ctx context.Context) (result ApplianceListResultPage, err error) {
+	result.fn = client.listBySubscriptionNextResults
+	req, err := client.ListBySubscriptionPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", nil, "Failure preparing request")
 		return
@@ -728,12 +621,12 @@ func (client AppliancesClient) ListBySubscription() (result ApplianceListResult,
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.alr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.alr, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -742,7 +635,7 @@ func (client AppliancesClient) ListBySubscription() (result ApplianceListResult,
 }
 
 // ListBySubscriptionPreparer prepares the ListBySubscription request.
-func (client AppliancesClient) ListBySubscriptionPreparer() (*http.Request, error) {
+func (client AppliancesClient) ListBySubscriptionPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -757,14 +650,13 @@ func (client AppliancesClient) ListBySubscriptionPreparer() (*http.Request, erro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Solutions/appliances", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionSender sends the ListBySubscription request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) ListBySubscriptionSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -781,80 +673,38 @@ func (client AppliancesClient) ListBySubscriptionResponder(resp *http.Response) 
 	return
 }
 
-// ListBySubscriptionNextResults retrieves the next set of results, if any.
-func (client AppliancesClient) ListBySubscriptionNextResults(lastResults ApplianceListResult) (result ApplianceListResult, err error) {
-	req, err := lastResults.ApplianceListResultPreparer()
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client AppliancesClient) listBySubscriptionNextResults(lastResults ApplianceListResult) (result ApplianceListResult, err error) {
+	req, err := lastResults.applianceListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "ListBySubscription", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListBySubscriptionComplete gets all elements from the list without paging.
-func (client AppliancesClient) ListBySubscriptionComplete(cancel <-chan struct{}) (<-chan Appliance, <-chan error) {
-	resultChan := make(chan Appliance)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListBySubscription()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListBySubscriptionNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client AppliancesClient) ListBySubscriptionComplete(ctx context.Context) (result ApplianceListResultIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx)
+	return
 }
 
 // Update updates an existing appliance. The only value that can be updated via PATCH currently is the tags.
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. applianceName is the name of the
 // appliance. parameters is parameters supplied to update an existing appliance.
-func (client AppliancesClient) Update(resourceGroupName string, applianceName string, parameters *Appliance) (result Appliance, err error) {
+func (client AppliancesClient) Update(ctx context.Context, resourceGroupName string, applianceName string, parameters *Appliance) (result Appliance, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -866,7 +716,7 @@ func (client AppliancesClient) Update(resourceGroupName string, applianceName st
 		return result, validation.NewErrorWithValidationError(err, "managedapplications.AppliancesClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, applianceName, parameters)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, applianceName, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "Update", nil, "Failure preparing request")
 		return
@@ -888,7 +738,7 @@ func (client AppliancesClient) Update(resourceGroupName string, applianceName st
 }
 
 // UpdatePreparer prepares the Update request.
-func (client AppliancesClient) UpdatePreparer(resourceGroupName string, applianceName string, parameters *Appliance) (*http.Request, error) {
+func (client AppliancesClient) UpdatePreparer(ctx context.Context, resourceGroupName string, applianceName string, parameters *Appliance) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceName":     autorest.Encode("path", applianceName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -910,14 +760,13 @@ func (client AppliancesClient) UpdatePreparer(resourceGroupName string, applianc
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithJSON(parameters))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -940,8 +789,8 @@ func (client AppliancesClient) UpdateResponder(resp *http.Response) (result Appl
 // type. Use the format,
 // /subscriptions/{guid}/resourceGroups/{resource-group-name}/Microsoft.Solutions/appliances/{appliance-name}
 // parameters is parameters supplied to update an existing appliance.
-func (client AppliancesClient) UpdateByID(applianceID string, parameters *Appliance) (result Appliance, err error) {
-	req, err := client.UpdateByIDPreparer(applianceID, parameters)
+func (client AppliancesClient) UpdateByID(ctx context.Context, applianceID string, parameters *Appliance) (result Appliance, err error) {
+	req, err := client.UpdateByIDPreparer(ctx, applianceID, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "managedapplications.AppliancesClient", "UpdateByID", nil, "Failure preparing request")
 		return
@@ -963,7 +812,7 @@ func (client AppliancesClient) UpdateByID(applianceID string, parameters *Applia
 }
 
 // UpdateByIDPreparer prepares the UpdateByID request.
-func (client AppliancesClient) UpdateByIDPreparer(applianceID string, parameters *Appliance) (*http.Request, error) {
+func (client AppliancesClient) UpdateByIDPreparer(ctx context.Context, applianceID string, parameters *Appliance) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"applianceId": applianceID,
 	}
@@ -983,14 +832,13 @@ func (client AppliancesClient) UpdateByIDPreparer(applianceID string, parameters
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithJSON(parameters))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateByIDSender sends the UpdateByID request. The method will close the
 // http.Response Body if it receives an error.
 func (client AppliancesClient) UpdateByIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

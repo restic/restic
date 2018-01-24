@@ -18,6 +18,7 @@ package sql
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 // with Azure SQL Database services to manage your databases. The API enables you to create, retrieve, update, and
 // delete databases.
 type SyncAgentsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSyncAgentsClient creates an instance of the SyncAgentsClient client.
@@ -40,49 +41,29 @@ func NewSyncAgentsClientWithBaseURI(baseURI string, subscriptionID string) SyncA
 	return SyncAgentsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a sync agent. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// CreateOrUpdate creates or updates a sync agent.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
 // syncAgentName is the name of the sync agent. parameters is the requested sync agent resource state.
-func (client SyncAgentsClient) CreateOrUpdate(resourceGroupName string, serverName string, syncAgentName string, parameters SyncAgent, cancel <-chan struct{}) (<-chan SyncAgent, <-chan error) {
-	resultChan := make(chan SyncAgent, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result SyncAgent
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, serverName, syncAgentName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+func (client SyncAgentsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string, parameters SyncAgent) (result SyncAgentsCreateOrUpdateFuture, err error) {
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serverName, syncAgentName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client SyncAgentsClient) CreateOrUpdatePreparer(resourceGroupName string, serverName string, syncAgentName string, parameters SyncAgent, cancel <-chan struct{}) (*http.Request, error) {
+func (client SyncAgentsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string, parameters SyncAgent) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -102,16 +83,22 @@ func (client SyncAgentsClient) CreateOrUpdatePreparer(resourceGroupName string, 
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents/{syncAgentName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client SyncAgentsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SyncAgentsClient) CreateOrUpdateSender(req *http.Request) (future SyncAgentsCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -120,56 +107,36 @@ func (client SyncAgentsClient) CreateOrUpdateResponder(resp *http.Response) (res
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusCreated),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated, http.StatusAccepted),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// Delete deletes a sync agent. This method may poll for completion. Polling can be canceled by passing the cancel
-// channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes a sync agent.
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
 // syncAgentName is the name of the sync agent.
-func (client SyncAgentsClient) Delete(resourceGroupName string, serverName string, syncAgentName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, serverName, syncAgentName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client SyncAgentsClient) Delete(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentsDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serverName, syncAgentName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client SyncAgentsClient) DeletePreparer(resourceGroupName string, serverName string, syncAgentName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client SyncAgentsClient) DeletePreparer(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -187,16 +154,22 @@ func (client SyncAgentsClient) DeletePreparer(resourceGroupName string, serverNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents/{syncAgentName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client SyncAgentsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client SyncAgentsClient) DeleteSender(req *http.Request) (future SyncAgentsDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -216,8 +189,8 @@ func (client SyncAgentsClient) DeleteResponder(resp *http.Response) (result auto
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
 // syncAgentName is the name of the sync agent.
-func (client SyncAgentsClient) GenerateKey(resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentKeyProperties, err error) {
-	req, err := client.GenerateKeyPreparer(resourceGroupName, serverName, syncAgentName)
+func (client SyncAgentsClient) GenerateKey(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentKeyProperties, err error) {
+	req, err := client.GenerateKeyPreparer(ctx, resourceGroupName, serverName, syncAgentName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "GenerateKey", nil, "Failure preparing request")
 		return
@@ -239,7 +212,7 @@ func (client SyncAgentsClient) GenerateKey(resourceGroupName string, serverName 
 }
 
 // GenerateKeyPreparer prepares the GenerateKey request.
-func (client SyncAgentsClient) GenerateKeyPreparer(resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
+func (client SyncAgentsClient) GenerateKeyPreparer(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -257,14 +230,13 @@ func (client SyncAgentsClient) GenerateKeyPreparer(resourceGroupName string, ser
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents/{syncAgentName}/generateKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GenerateKeySender sends the GenerateKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client SyncAgentsClient) GenerateKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -286,8 +258,8 @@ func (client SyncAgentsClient) GenerateKeyResponder(resp *http.Response) (result
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
 // syncAgentName is the name of the sync agent.
-func (client SyncAgentsClient) Get(resourceGroupName string, serverName string, syncAgentName string) (result SyncAgent, err error) {
-	req, err := client.GetPreparer(resourceGroupName, serverName, syncAgentName)
+func (client SyncAgentsClient) Get(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (result SyncAgent, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, serverName, syncAgentName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "Get", nil, "Failure preparing request")
 		return
@@ -309,7 +281,7 @@ func (client SyncAgentsClient) Get(resourceGroupName string, serverName string, 
 }
 
 // GetPreparer prepares the Get request.
-func (client SyncAgentsClient) GetPreparer(resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
+func (client SyncAgentsClient) GetPreparer(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -327,14 +299,13 @@ func (client SyncAgentsClient) GetPreparer(resourceGroupName string, serverName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents/{syncAgentName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client SyncAgentsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -355,8 +326,9 @@ func (client SyncAgentsClient) GetResponder(resp *http.Response) (result SyncAge
 //
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
-func (client SyncAgentsClient) ListByServer(resourceGroupName string, serverName string) (result SyncAgentListResult, err error) {
-	req, err := client.ListByServerPreparer(resourceGroupName, serverName)
+func (client SyncAgentsClient) ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result SyncAgentListResultPage, err error) {
+	result.fn = client.listByServerNextResults
+	req, err := client.ListByServerPreparer(ctx, resourceGroupName, serverName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", nil, "Failure preparing request")
 		return
@@ -364,12 +336,12 @@ func (client SyncAgentsClient) ListByServer(resourceGroupName string, serverName
 
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.salr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByServerResponder(resp)
+	result.salr, err = client.ListByServerResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", resp, "Failure responding to request")
 	}
@@ -378,7 +350,7 @@ func (client SyncAgentsClient) ListByServer(resourceGroupName string, serverName
 }
 
 // ListByServerPreparer prepares the ListByServer request.
-func (client SyncAgentsClient) ListByServerPreparer(resourceGroupName string, serverName string) (*http.Request, error) {
+func (client SyncAgentsClient) ListByServerPreparer(ctx context.Context, resourceGroupName string, serverName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -395,14 +367,13 @@ func (client SyncAgentsClient) ListByServerPreparer(resourceGroupName string, se
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByServerSender sends the ListByServer request. The method will close the
 // http.Response Body if it receives an error.
 func (client SyncAgentsClient) ListByServerSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -419,73 +390,31 @@ func (client SyncAgentsClient) ListByServerResponder(resp *http.Response) (resul
 	return
 }
 
-// ListByServerNextResults retrieves the next set of results, if any.
-func (client SyncAgentsClient) ListByServerNextResults(lastResults SyncAgentListResult) (result SyncAgentListResult, err error) {
-	req, err := lastResults.SyncAgentListResultPreparer()
+// listByServerNextResults retrieves the next set of results, if any.
+func (client SyncAgentsClient) listByServerNextResults(lastResults SyncAgentListResult) (result SyncAgentListResult, err error) {
+	req, err := lastResults.syncAgentListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listByServerNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByServerSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listByServerNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByServerResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListByServer", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listByServerNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByServerComplete gets all elements from the list without paging.
-func (client SyncAgentsClient) ListByServerComplete(resourceGroupName string, serverName string, cancel <-chan struct{}) (<-chan SyncAgent, <-chan error) {
-	resultChan := make(chan SyncAgent)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByServer(resourceGroupName, serverName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByServerNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByServerComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SyncAgentsClient) ListByServerComplete(ctx context.Context, resourceGroupName string, serverName string) (result SyncAgentListResultIterator, err error) {
+	result.page, err = client.ListByServer(ctx, resourceGroupName, serverName)
+	return
 }
 
 // ListLinkedDatabases lists databases linked to a sync agent.
@@ -493,8 +422,9 @@ func (client SyncAgentsClient) ListByServerComplete(resourceGroupName string, se
 // resourceGroupName is the name of the resource group that contains the resource. You can obtain this value from the
 // Azure Resource Manager API or the portal. serverName is the name of the server on which the sync agent is hosted.
 // syncAgentName is the name of the sync agent.
-func (client SyncAgentsClient) ListLinkedDatabases(resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentLinkedDatabaseListResult, err error) {
-	req, err := client.ListLinkedDatabasesPreparer(resourceGroupName, serverName, syncAgentName)
+func (client SyncAgentsClient) ListLinkedDatabases(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentLinkedDatabaseListResultPage, err error) {
+	result.fn = client.listLinkedDatabasesNextResults
+	req, err := client.ListLinkedDatabasesPreparer(ctx, resourceGroupName, serverName, syncAgentName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", nil, "Failure preparing request")
 		return
@@ -502,12 +432,12 @@ func (client SyncAgentsClient) ListLinkedDatabases(resourceGroupName string, ser
 
 	resp, err := client.ListLinkedDatabasesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.saldlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListLinkedDatabasesResponder(resp)
+	result.saldlr, err = client.ListLinkedDatabasesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", resp, "Failure responding to request")
 	}
@@ -516,7 +446,7 @@ func (client SyncAgentsClient) ListLinkedDatabases(resourceGroupName string, ser
 }
 
 // ListLinkedDatabasesPreparer prepares the ListLinkedDatabases request.
-func (client SyncAgentsClient) ListLinkedDatabasesPreparer(resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
+func (client SyncAgentsClient) ListLinkedDatabasesPreparer(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serverName":        autorest.Encode("path", serverName),
@@ -534,14 +464,13 @@ func (client SyncAgentsClient) ListLinkedDatabasesPreparer(resourceGroupName str
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Sql/servers/{serverName}/syncAgents/{syncAgentName}/linkedDatabases", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListLinkedDatabasesSender sends the ListLinkedDatabases request. The method will close the
 // http.Response Body if it receives an error.
 func (client SyncAgentsClient) ListLinkedDatabasesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -558,71 +487,29 @@ func (client SyncAgentsClient) ListLinkedDatabasesResponder(resp *http.Response)
 	return
 }
 
-// ListLinkedDatabasesNextResults retrieves the next set of results, if any.
-func (client SyncAgentsClient) ListLinkedDatabasesNextResults(lastResults SyncAgentLinkedDatabaseListResult) (result SyncAgentLinkedDatabaseListResult, err error) {
-	req, err := lastResults.SyncAgentLinkedDatabaseListResultPreparer()
+// listLinkedDatabasesNextResults retrieves the next set of results, if any.
+func (client SyncAgentsClient) listLinkedDatabasesNextResults(lastResults SyncAgentLinkedDatabaseListResult) (result SyncAgentLinkedDatabaseListResult, err error) {
+	req, err := lastResults.syncAgentLinkedDatabaseListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listLinkedDatabasesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListLinkedDatabasesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listLinkedDatabasesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListLinkedDatabasesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "ListLinkedDatabases", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "sql.SyncAgentsClient", "listLinkedDatabasesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListLinkedDatabasesComplete gets all elements from the list without paging.
-func (client SyncAgentsClient) ListLinkedDatabasesComplete(resourceGroupName string, serverName string, syncAgentName string, cancel <-chan struct{}) (<-chan SyncAgentLinkedDatabase, <-chan error) {
-	resultChan := make(chan SyncAgentLinkedDatabase)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListLinkedDatabases(resourceGroupName, serverName, syncAgentName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListLinkedDatabasesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListLinkedDatabasesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SyncAgentsClient) ListLinkedDatabasesComplete(ctx context.Context, resourceGroupName string, serverName string, syncAgentName string) (result SyncAgentLinkedDatabaseListResultIterator, err error) {
+	result.page, err = client.ListLinkedDatabases(ctx, resourceGroupName, serverName, syncAgentName)
+	return
 }

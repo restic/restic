@@ -18,6 +18,7 @@ package resources
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // DeploymentOperationsClient is the client for the DeploymentOperations methods of the Resources service.
 type DeploymentOperationsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewDeploymentOperationsClient creates an instance of the DeploymentOperationsClient client.
@@ -43,7 +44,7 @@ func NewDeploymentOperationsClientWithBaseURI(baseURI string, subscriptionID str
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. deploymentName is the name of the
 // deployment. operationID is operation Id.
-func (client DeploymentOperationsClient) Get(resourceGroupName string, deploymentName string, operationID string) (result DeploymentOperation, err error) {
+func (client DeploymentOperationsClient) Get(ctx context.Context, resourceGroupName string, deploymentName string, operationID string) (result DeploymentOperation, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -52,7 +53,7 @@ func (client DeploymentOperationsClient) Get(resourceGroupName string, deploymen
 		return result, validation.NewErrorWithValidationError(err, "resources.DeploymentOperationsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, deploymentName, operationID)
+	req, err := client.GetPreparer(ctx, resourceGroupName, deploymentName, operationID)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "Get", nil, "Failure preparing request")
 		return
@@ -74,7 +75,7 @@ func (client DeploymentOperationsClient) Get(resourceGroupName string, deploymen
 }
 
 // GetPreparer prepares the Get request.
-func (client DeploymentOperationsClient) GetPreparer(resourceGroupName string, deploymentName string, operationID string) (*http.Request, error) {
+func (client DeploymentOperationsClient) GetPreparer(ctx context.Context, resourceGroupName string, deploymentName string, operationID string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deploymentName":    autorest.Encode("path", deploymentName),
 		"operationId":       autorest.Encode("path", operationID),
@@ -92,14 +93,13 @@ func (client DeploymentOperationsClient) GetPreparer(resourceGroupName string, d
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/deployments/{deploymentName}/operations/{operationId}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeploymentOperationsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -120,7 +120,7 @@ func (client DeploymentOperationsClient) GetResponder(resp *http.Response) (resu
 //
 // resourceGroupName is the name of the resource group. The name is case insensitive. deploymentName is the name of the
 // deployment. top is query parameters.
-func (client DeploymentOperationsClient) List(resourceGroupName string, deploymentName string, top *int32) (result DeploymentOperationsListResult, err error) {
+func (client DeploymentOperationsClient) List(ctx context.Context, resourceGroupName string, deploymentName string, top *int32) (result DeploymentOperationsListResultPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -129,7 +129,8 @@ func (client DeploymentOperationsClient) List(resourceGroupName string, deployme
 		return result, validation.NewErrorWithValidationError(err, "resources.DeploymentOperationsClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, deploymentName, top)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, deploymentName, top)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", nil, "Failure preparing request")
 		return
@@ -137,12 +138,12 @@ func (client DeploymentOperationsClient) List(resourceGroupName string, deployme
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.dolr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.dolr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", resp, "Failure responding to request")
 	}
@@ -151,7 +152,7 @@ func (client DeploymentOperationsClient) List(resourceGroupName string, deployme
 }
 
 // ListPreparer prepares the List request.
-func (client DeploymentOperationsClient) ListPreparer(resourceGroupName string, deploymentName string, top *int32) (*http.Request, error) {
+func (client DeploymentOperationsClient) ListPreparer(ctx context.Context, resourceGroupName string, deploymentName string, top *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"deploymentName":    autorest.Encode("path", deploymentName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -171,14 +172,13 @@ func (client DeploymentOperationsClient) ListPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/deployments/{deploymentName}/operations", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client DeploymentOperationsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -195,71 +195,29 @@ func (client DeploymentOperationsClient) ListResponder(resp *http.Response) (res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client DeploymentOperationsClient) ListNextResults(lastResults DeploymentOperationsListResult) (result DeploymentOperationsListResult, err error) {
-	req, err := lastResults.DeploymentOperationsListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client DeploymentOperationsClient) listNextResults(lastResults DeploymentOperationsListResult) (result DeploymentOperationsListResult, err error) {
+	req, err := lastResults.deploymentOperationsListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "resources.DeploymentOperationsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client DeploymentOperationsClient) ListComplete(resourceGroupName string, deploymentName string, top *int32, cancel <-chan struct{}) (<-chan DeploymentOperation, <-chan error) {
-	resultChan := make(chan DeploymentOperation)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, deploymentName, top)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client DeploymentOperationsClient) ListComplete(ctx context.Context, resourceGroupName string, deploymentName string, top *int32) (result DeploymentOperationsListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, deploymentName, top)
+	return
 }

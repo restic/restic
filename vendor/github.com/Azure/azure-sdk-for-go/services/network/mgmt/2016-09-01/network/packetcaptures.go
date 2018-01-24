@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // PacketCapturesClient is the network Client
 type PacketCapturesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPacketCapturesClient creates an instance of the PacketCapturesClient client.
@@ -39,62 +40,38 @@ func NewPacketCapturesClientWithBaseURI(baseURI string, subscriptionID string) P
 	return PacketCapturesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// Create create and start a packet capture on the specified VM. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Create create and start a packet capture on the specified VM.
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the network watcher.
 // packetCaptureName is the name of the packet capture session. parameters is parameters that define the create packet
 // capture operation.
-func (client PacketCapturesClient) Create(resourceGroupName string, networkWatcherName string, packetCaptureName string, parameters PacketCapture, cancel <-chan struct{}) (<-chan PacketCaptureResult, <-chan error) {
-	resultChan := make(chan PacketCaptureResult, 1)
-	errChan := make(chan error, 1)
+func (client PacketCapturesClient) Create(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string, parameters PacketCapture) (result PacketCapturesCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.PacketCaptureParameters", Name: validation.Null, Rule: true,
 				Chain: []validation.Constraint{{Target: "parameters.PacketCaptureParameters.Target", Name: validation.Null, Rule: true, Chain: nil},
 					{Target: "parameters.PacketCaptureParameters.StorageLocation", Name: validation.Null, Rule: true, Chain: nil},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "network.PacketCapturesClient", "Create")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "network.PacketCapturesClient", "Create")
 	}
 
-	go func() {
-		var err error
-		var result PacketCaptureResult
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreatePreparer(resourceGroupName, networkWatcherName, packetCaptureName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Create", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreatePreparer(ctx, resourceGroupName, networkWatcherName, packetCaptureName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Create", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Create", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Create", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Create", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreatePreparer prepares the Create request.
-func (client PacketCapturesClient) CreatePreparer(resourceGroupName string, networkWatcherName string, packetCaptureName string, parameters PacketCapture, cancel <-chan struct{}) (*http.Request, error) {
+func (client PacketCapturesClient) CreatePreparer(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string, parameters PacketCapture) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"packetCaptureName":  autorest.Encode("path", packetCaptureName),
@@ -114,16 +91,22 @@ func (client PacketCapturesClient) CreatePreparer(resourceGroupName string, netw
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures/{packetCaptureName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateSender sends the Create request. The method will close the
 // http.Response Body if it receives an error.
-func (client PacketCapturesClient) CreateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PacketCapturesClient) CreateSender(req *http.Request) (future PacketCapturesCreateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateResponder handles the response to the Create request. The method always
@@ -139,48 +122,28 @@ func (client PacketCapturesClient) CreateResponder(resp *http.Response) (result 
 	return
 }
 
-// Delete deletes the specified packet capture session. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the specified packet capture session.
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the network watcher.
 // packetCaptureName is the name of the packet capture session.
-func (client PacketCapturesClient) Delete(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, networkWatcherName, packetCaptureName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client PacketCapturesClient) Delete(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (result PacketCapturesDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, networkWatcherName, packetCaptureName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client PacketCapturesClient) DeletePreparer(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PacketCapturesClient) DeletePreparer(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"packetCaptureName":  autorest.Encode("path", packetCaptureName),
@@ -198,16 +161,22 @@ func (client PacketCapturesClient) DeletePreparer(resourceGroupName string, netw
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures/{packetCaptureName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client PacketCapturesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PacketCapturesClient) DeleteSender(req *http.Request) (future PacketCapturesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -216,7 +185,7 @@ func (client PacketCapturesClient) DeleteResponder(resp *http.Response) (result 
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusNoContent, http.StatusAccepted),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -226,8 +195,8 @@ func (client PacketCapturesClient) DeleteResponder(resp *http.Response) (result 
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the network watcher.
 // packetCaptureName is the name of the packet capture session.
-func (client PacketCapturesClient) Get(resourceGroupName string, networkWatcherName string, packetCaptureName string) (result PacketCaptureResult, err error) {
-	req, err := client.GetPreparer(resourceGroupName, networkWatcherName, packetCaptureName)
+func (client PacketCapturesClient) Get(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (result PacketCaptureResult, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, networkWatcherName, packetCaptureName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Get", nil, "Failure preparing request")
 		return
@@ -249,7 +218,7 @@ func (client PacketCapturesClient) Get(resourceGroupName string, networkWatcherN
 }
 
 // GetPreparer prepares the Get request.
-func (client PacketCapturesClient) GetPreparer(resourceGroupName string, networkWatcherName string, packetCaptureName string) (*http.Request, error) {
+func (client PacketCapturesClient) GetPreparer(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"packetCaptureName":  autorest.Encode("path", packetCaptureName),
@@ -267,14 +236,13 @@ func (client PacketCapturesClient) GetPreparer(resourceGroupName string, network
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures/{packetCaptureName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PacketCapturesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -291,49 +259,28 @@ func (client PacketCapturesClient) GetResponder(resp *http.Response) (result Pac
 	return
 }
 
-// GetStatus query the status of a running packet capture session. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// GetStatus query the status of a running packet capture session.
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the Network Watcher resource.
 // packetCaptureName is the name given to the packet capture session.
-func (client PacketCapturesClient) GetStatus(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (<-chan PacketCaptureQueryStatusResult, <-chan error) {
-	resultChan := make(chan PacketCaptureQueryStatusResult, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result PacketCaptureQueryStatusResult
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.GetStatusPreparer(resourceGroupName, networkWatcherName, packetCaptureName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "GetStatus", nil, "Failure preparing request")
-			return
-		}
+func (client PacketCapturesClient) GetStatus(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (result PacketCapturesGetStatusFuture, err error) {
+	req, err := client.GetStatusPreparer(ctx, resourceGroupName, networkWatcherName, packetCaptureName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "GetStatus", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.GetStatusSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "GetStatus", resp, "Failure sending request")
-			return
-		}
+	result, err = client.GetStatusSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "GetStatus", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.GetStatusResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "GetStatus", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // GetStatusPreparer prepares the GetStatus request.
-func (client PacketCapturesClient) GetStatusPreparer(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PacketCapturesClient) GetStatusPreparer(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"packetCaptureName":  autorest.Encode("path", packetCaptureName),
@@ -351,16 +298,22 @@ func (client PacketCapturesClient) GetStatusPreparer(resourceGroupName string, n
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures/{packetCaptureName}/queryStatus", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetStatusSender sends the GetStatus request. The method will close the
 // http.Response Body if it receives an error.
-func (client PacketCapturesClient) GetStatusSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PacketCapturesClient) GetStatusSender(req *http.Request) (future PacketCapturesGetStatusFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // GetStatusResponder handles the response to the GetStatus request. The method always
@@ -379,8 +332,8 @@ func (client PacketCapturesClient) GetStatusResponder(resp *http.Response) (resu
 // List lists all packet capture sessions within the specified resource group.
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the Network Watcher resource.
-func (client PacketCapturesClient) List(resourceGroupName string, networkWatcherName string) (result PacketCaptureListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, networkWatcherName)
+func (client PacketCapturesClient) List(ctx context.Context, resourceGroupName string, networkWatcherName string) (result PacketCaptureListResult, err error) {
+	req, err := client.ListPreparer(ctx, resourceGroupName, networkWatcherName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "List", nil, "Failure preparing request")
 		return
@@ -402,7 +355,7 @@ func (client PacketCapturesClient) List(resourceGroupName string, networkWatcher
 }
 
 // ListPreparer prepares the List request.
-func (client PacketCapturesClient) ListPreparer(resourceGroupName string, networkWatcherName string) (*http.Request, error) {
+func (client PacketCapturesClient) ListPreparer(ctx context.Context, resourceGroupName string, networkWatcherName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"resourceGroupName":  autorest.Encode("path", resourceGroupName),
@@ -419,14 +372,13 @@ func (client PacketCapturesClient) ListPreparer(resourceGroupName string, networ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PacketCapturesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -443,48 +395,28 @@ func (client PacketCapturesClient) ListResponder(resp *http.Response) (result Pa
 	return
 }
 
-// Stop stops a specified packet capture session. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Stop stops a specified packet capture session.
 //
 // resourceGroupName is the name of the resource group. networkWatcherName is the name of the network watcher.
 // packetCaptureName is the name of the packet capture session.
-func (client PacketCapturesClient) Stop(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StopPreparer(resourceGroupName, networkWatcherName, packetCaptureName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Stop", nil, "Failure preparing request")
-			return
-		}
+func (client PacketCapturesClient) Stop(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (result PacketCapturesStopFuture, err error) {
+	req, err := client.StopPreparer(ctx, resourceGroupName, networkWatcherName, packetCaptureName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Stop", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StopSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Stop", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StopSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Stop", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StopResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PacketCapturesClient", "Stop", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StopPreparer prepares the Stop request.
-func (client PacketCapturesClient) StopPreparer(resourceGroupName string, networkWatcherName string, packetCaptureName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PacketCapturesClient) StopPreparer(ctx context.Context, resourceGroupName string, networkWatcherName string, packetCaptureName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"networkWatcherName": autorest.Encode("path", networkWatcherName),
 		"packetCaptureName":  autorest.Encode("path", packetCaptureName),
@@ -502,16 +434,22 @@ func (client PacketCapturesClient) StopPreparer(resourceGroupName string, networ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/networkWatchers/{networkWatcherName}/packetCaptures/{packetCaptureName}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSender sends the Stop request. The method will close the
 // http.Response Body if it receives an error.
-func (client PacketCapturesClient) StopSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PacketCapturesClient) StopSender(req *http.Request) (future PacketCapturesStopFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StopResponder handles the response to the Stop request. The method always

@@ -18,6 +18,7 @@ package commerce
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -26,7 +27,7 @@ import (
 
 // UsageAggregatesClient is the client for the UsageAggregates methods of the Commerce service.
 type UsageAggregatesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewUsageAggregatesClient creates an instance of the UsageAggregatesClient client.
@@ -50,8 +51,9 @@ func NewUsageAggregatesClientWithBaseURI(baseURI string, subscriptionID string) 
 // hourly granularity. continuationToken is used when a continuation token string is provided in the response body of
 // the previous call, enabling paging through a large result set. If not present, the data is retrieved from the
 // beginning of the day/hour (based on the granularity) passed in.
-func (client UsageAggregatesClient) List(reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string) (result UsageAggregationListResult, err error) {
-	req, err := client.ListPreparer(reportedStartTime, reportedEndTime, showDetails, aggregationGranularity, continuationToken)
+func (client UsageAggregatesClient) List(ctx context.Context, reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string) (result UsageAggregationListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, reportedStartTime, reportedEndTime, showDetails, aggregationGranularity, continuationToken)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", nil, "Failure preparing request")
 		return
@@ -59,12 +61,12 @@ func (client UsageAggregatesClient) List(reportedStartTime date.Time, reportedEn
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.ualr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.ualr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", resp, "Failure responding to request")
 	}
@@ -73,7 +75,7 @@ func (client UsageAggregatesClient) List(reportedStartTime date.Time, reportedEn
 }
 
 // ListPreparer prepares the List request.
-func (client UsageAggregatesClient) ListPreparer(reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string) (*http.Request, error) {
+func (client UsageAggregatesClient) ListPreparer(ctx context.Context, reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -99,14 +101,13 @@ func (client UsageAggregatesClient) ListPreparer(reportedStartTime date.Time, re
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Commerce/UsageAggregates", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client UsageAggregatesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -123,71 +124,29 @@ func (client UsageAggregatesClient) ListResponder(resp *http.Response) (result U
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client UsageAggregatesClient) ListNextResults(lastResults UsageAggregationListResult) (result UsageAggregationListResult, err error) {
-	req, err := lastResults.UsageAggregationListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client UsageAggregatesClient) listNextResults(lastResults UsageAggregationListResult) (result UsageAggregationListResult, err error) {
+	req, err := lastResults.usageAggregationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "commerce.UsageAggregatesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client UsageAggregatesClient) ListComplete(reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string, cancel <-chan struct{}) (<-chan UsageAggregation, <-chan error) {
-	resultChan := make(chan UsageAggregation)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(reportedStartTime, reportedEndTime, showDetails, aggregationGranularity, continuationToken)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client UsageAggregatesClient) ListComplete(ctx context.Context, reportedStartTime date.Time, reportedEndTime date.Time, showDetails *bool, aggregationGranularity AggregationGranularity, continuationToken string) (result UsageAggregationListResultIterator, err error) {
+	result.page, err = client.List(ctx, reportedStartTime, reportedEndTime, showDetails, aggregationGranularity, continuationToken)
+	return
 }

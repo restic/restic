@@ -18,14 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/internal/fields"
-
-	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
-
 	"github.com/golang/protobuf/ptypes"
+	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 	"google.golang.org/genproto/googleapis/type/latlng"
 )
 
@@ -222,7 +219,7 @@ type tagOptions struct {
 
 // parseTag interprets firestore struct field tags.
 func parseTag(t reflect.StructTag) (name string, keep bool, other interface{}, err error) {
-	name, keep, opts, err := parseStandardTag("firestore", t)
+	name, keep, opts, err := fields.ParseStandardTag("firestore", t)
 	if err != nil {
 		return "", false, nil, fmt.Errorf("firestore: %v", err)
 	}
@@ -238,27 +235,6 @@ func parseTag(t reflect.StructTag) (name string, keep bool, other interface{}, e
 		}
 	}
 	return name, keep, tagOpts, nil
-}
-
-// parseStandardTag extracts the sub-tag named by key, then parses it using the
-// de facto standard format introduced in encoding/json:
-//   "-" means "ignore this tag". It must occur by itself. (parseStandardTag returns an error
-//       in this case, whereas encoding/json accepts the "-" even if it is not alone.)
-//   "<name>" provides an alternative name for the field
-//   "<name>,opt1,opt2,..." specifies options after the name.
-// The options are returned as a []string.
-//
-// TODO(jba): move this into the fields package, and use it elsewhere, like bigquery.
-func parseStandardTag(key string, t reflect.StructTag) (name string, keep bool, options []string, err error) {
-	s := t.Get(key)
-	parts := strings.Split(s, ",")
-	if parts[0] == "-" {
-		if len(parts) > 1 {
-			return "", false, nil, errors.New(`"-" field tag with options`)
-		}
-		return "", false, nil, nil
-	}
-	return parts[0], true, parts[1:], nil
 }
 
 // isLeafType determines whether or not a type is a 'leaf type'

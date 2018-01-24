@@ -18,6 +18,7 @@ package apimanagement
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // SubscriptionsClient is the apiManagement Client
 type SubscriptionsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewSubscriptionsClient creates an instance of the SubscriptionsClient client.
@@ -44,7 +45,7 @@ func NewSubscriptionsClientWithBaseURI(baseURI string, subscriptionID string) Su
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. sid is
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management. parameters is create parameters.
-func (client SubscriptionsClient) CreateOrUpdate(resourceGroupName string, serviceName string, sid string, parameters SubscriptionCreateParameters) (result autorest.Response, err error) {
+func (client SubscriptionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, serviceName string, sid string, parameters SubscriptionCreateParameters) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -71,7 +72,7 @@ func (client SubscriptionsClient) CreateOrUpdate(resourceGroupName string, servi
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, serviceName, sid, parameters)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, serviceName, sid, parameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -93,7 +94,7 @@ func (client SubscriptionsClient) CreateOrUpdate(resourceGroupName string, servi
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client SubscriptionsClient) CreateOrUpdatePreparer(resourceGroupName string, serviceName string, sid string, parameters SubscriptionCreateParameters) (*http.Request, error) {
+func (client SubscriptionsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string, parameters SubscriptionCreateParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -113,14 +114,13 @@ func (client SubscriptionsClient) CreateOrUpdatePreparer(resourceGroupName strin
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -142,7 +142,7 @@ func (client SubscriptionsClient) CreateOrUpdateResponder(resp *http.Response) (
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management. ifMatch is eTag of the Subscription Entity. ETag should match the current entity state from the header
 // response of the GET request or it should be * for unconditional update.
-func (client SubscriptionsClient) Delete(resourceGroupName string, serviceName string, sid string, ifMatch string) (result autorest.Response, err error) {
+func (client SubscriptionsClient) Delete(ctx context.Context, resourceGroupName string, serviceName string, sid string, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -154,7 +154,7 @@ func (client SubscriptionsClient) Delete(resourceGroupName string, serviceName s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, serviceName, sid, ifMatch)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, serviceName, sid, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -176,7 +176,7 @@ func (client SubscriptionsClient) Delete(resourceGroupName string, serviceName s
 }
 
 // DeletePreparer prepares the Delete request.
-func (client SubscriptionsClient) DeletePreparer(resourceGroupName string, serviceName string, sid string, ifMatch string) (*http.Request, error) {
+func (client SubscriptionsClient) DeletePreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -195,14 +195,13 @@ func (client SubscriptionsClient) DeletePreparer(resourceGroupName string, servi
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}", pathParameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -223,7 +222,7 @@ func (client SubscriptionsClient) DeleteResponder(resp *http.Response) (result a
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. sid is
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management.
-func (client SubscriptionsClient) Get(resourceGroupName string, serviceName string, sid string) (result SubscriptionContract, err error) {
+func (client SubscriptionsClient) Get(ctx context.Context, resourceGroupName string, serviceName string, sid string) (result SubscriptionContract, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -235,7 +234,7 @@ func (client SubscriptionsClient) Get(resourceGroupName string, serviceName stri
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, serviceName, sid)
+	req, err := client.GetPreparer(ctx, resourceGroupName, serviceName, sid)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "Get", nil, "Failure preparing request")
 		return
@@ -257,7 +256,7 @@ func (client SubscriptionsClient) Get(resourceGroupName string, serviceName stri
 }
 
 // GetPreparer prepares the Get request.
-func (client SubscriptionsClient) GetPreparer(resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
+func (client SubscriptionsClient) GetPreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -275,14 +274,13 @@ func (client SubscriptionsClient) GetPreparer(resourceGroupName string, serviceN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -311,7 +309,7 @@ func (client SubscriptionsClient) GetResponder(resp *http.Response) (result Subs
 // | productId    | ge, le, eq, ne, gt, lt | substringof, contains, startswith, endswith |
 // | state        | eq                     |                                             | top is number of records to
 // return. skip is number of records to skip.
-func (client SubscriptionsClient) List(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result SubscriptionCollection, err error) {
+func (client SubscriptionsClient) List(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result SubscriptionCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -326,7 +324,8 @@ func (client SubscriptionsClient) List(resourceGroupName string, serviceName str
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "List")
 	}
 
-	req, err := client.ListPreparer(resourceGroupName, serviceName, filter, top, skip)
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, serviceName, filter, top, skip)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", nil, "Failure preparing request")
 		return
@@ -334,12 +333,12 @@ func (client SubscriptionsClient) List(resourceGroupName string, serviceName str
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.sc.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.sc, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", resp, "Failure responding to request")
 	}
@@ -348,7 +347,7 @@ func (client SubscriptionsClient) List(resourceGroupName string, serviceName str
 }
 
 // ListPreparer prepares the List request.
-func (client SubscriptionsClient) ListPreparer(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
+func (client SubscriptionsClient) ListPreparer(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -374,14 +373,13 @@ func (client SubscriptionsClient) ListPreparer(resourceGroupName string, service
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -398,73 +396,31 @@ func (client SubscriptionsClient) ListResponder(resp *http.Response) (result Sub
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client SubscriptionsClient) ListNextResults(lastResults SubscriptionCollection) (result SubscriptionCollection, err error) {
-	req, err := lastResults.SubscriptionCollectionPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client SubscriptionsClient) listNextResults(lastResults SubscriptionCollection) (result SubscriptionCollection, err error) {
+	req, err := lastResults.subscriptionCollectionPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client SubscriptionsClient) ListComplete(resourceGroupName string, serviceName string, filter string, top *int32, skip *int32, cancel <-chan struct{}) (<-chan SubscriptionContract, <-chan error) {
-	resultChan := make(chan SubscriptionContract)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, serviceName, filter, top, skip)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client SubscriptionsClient) ListComplete(ctx context.Context, resourceGroupName string, serviceName string, filter string, top *int32, skip *int32) (result SubscriptionCollectionIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, serviceName, filter, top, skip)
+	return
 }
 
 // RegeneratePrimaryKey regenerates primary key of existing subscription of the API Management service instance.
@@ -472,7 +428,7 @@ func (client SubscriptionsClient) ListComplete(resourceGroupName string, service
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. sid is
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management.
-func (client SubscriptionsClient) RegeneratePrimaryKey(resourceGroupName string, serviceName string, sid string) (result autorest.Response, err error) {
+func (client SubscriptionsClient) RegeneratePrimaryKey(ctx context.Context, resourceGroupName string, serviceName string, sid string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -484,7 +440,7 @@ func (client SubscriptionsClient) RegeneratePrimaryKey(resourceGroupName string,
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "RegeneratePrimaryKey")
 	}
 
-	req, err := client.RegeneratePrimaryKeyPreparer(resourceGroupName, serviceName, sid)
+	req, err := client.RegeneratePrimaryKeyPreparer(ctx, resourceGroupName, serviceName, sid)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "RegeneratePrimaryKey", nil, "Failure preparing request")
 		return
@@ -506,7 +462,7 @@ func (client SubscriptionsClient) RegeneratePrimaryKey(resourceGroupName string,
 }
 
 // RegeneratePrimaryKeyPreparer prepares the RegeneratePrimaryKey request.
-func (client SubscriptionsClient) RegeneratePrimaryKeyPreparer(resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
+func (client SubscriptionsClient) RegeneratePrimaryKeyPreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -524,14 +480,13 @@ func (client SubscriptionsClient) RegeneratePrimaryKeyPreparer(resourceGroupName
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}/regeneratePrimaryKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegeneratePrimaryKeySender sends the RegeneratePrimaryKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) RegeneratePrimaryKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -552,7 +507,7 @@ func (client SubscriptionsClient) RegeneratePrimaryKeyResponder(resp *http.Respo
 // resourceGroupName is the name of the resource group. serviceName is the name of the API Management service. sid is
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management.
-func (client SubscriptionsClient) RegenerateSecondaryKey(resourceGroupName string, serviceName string, sid string) (result autorest.Response, err error) {
+func (client SubscriptionsClient) RegenerateSecondaryKey(ctx context.Context, resourceGroupName string, serviceName string, sid string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -564,7 +519,7 @@ func (client SubscriptionsClient) RegenerateSecondaryKey(resourceGroupName strin
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "RegenerateSecondaryKey")
 	}
 
-	req, err := client.RegenerateSecondaryKeyPreparer(resourceGroupName, serviceName, sid)
+	req, err := client.RegenerateSecondaryKeyPreparer(ctx, resourceGroupName, serviceName, sid)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "RegenerateSecondaryKey", nil, "Failure preparing request")
 		return
@@ -586,7 +541,7 @@ func (client SubscriptionsClient) RegenerateSecondaryKey(resourceGroupName strin
 }
 
 // RegenerateSecondaryKeyPreparer prepares the RegenerateSecondaryKey request.
-func (client SubscriptionsClient) RegenerateSecondaryKeyPreparer(resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
+func (client SubscriptionsClient) RegenerateSecondaryKeyPreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -604,14 +559,13 @@ func (client SubscriptionsClient) RegenerateSecondaryKeyPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ApiManagement/service/{serviceName}/subscriptions/{sid}/regenerateSecondaryKey", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateSecondaryKeySender sends the RegenerateSecondaryKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) RegenerateSecondaryKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -633,7 +587,7 @@ func (client SubscriptionsClient) RegenerateSecondaryKeyResponder(resp *http.Res
 // subscription entity Identifier. The entity represents the association between a user and a product in API
 // Management. parameters is update parameters. ifMatch is eTag of the Subscription Entity. ETag should match the
 // current entity state from the header response of the GET request or it should be * for unconditional update.
-func (client SubscriptionsClient) Update(resourceGroupName string, serviceName string, sid string, parameters SubscriptionUpdateParameters, ifMatch string) (result autorest.Response, err error) {
+func (client SubscriptionsClient) Update(ctx context.Context, resourceGroupName string, serviceName string, sid string, parameters SubscriptionUpdateParameters, ifMatch string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: serviceName,
 			Constraints: []validation.Constraint{{Target: "serviceName", Name: validation.MaxLength, Rule: 50, Chain: nil},
@@ -645,7 +599,7 @@ func (client SubscriptionsClient) Update(resourceGroupName string, serviceName s
 		return result, validation.NewErrorWithValidationError(err, "apimanagement.SubscriptionsClient", "Update")
 	}
 
-	req, err := client.UpdatePreparer(resourceGroupName, serviceName, sid, parameters, ifMatch)
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, serviceName, sid, parameters, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "apimanagement.SubscriptionsClient", "Update", nil, "Failure preparing request")
 		return
@@ -667,7 +621,7 @@ func (client SubscriptionsClient) Update(resourceGroupName string, serviceName s
 }
 
 // UpdatePreparer prepares the Update request.
-func (client SubscriptionsClient) UpdatePreparer(resourceGroupName string, serviceName string, sid string, parameters SubscriptionUpdateParameters, ifMatch string) (*http.Request, error) {
+func (client SubscriptionsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, serviceName string, sid string, parameters SubscriptionUpdateParameters, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"serviceName":       autorest.Encode("path", serviceName),
@@ -688,14 +642,13 @@ func (client SubscriptionsClient) UpdatePreparer(resourceGroupName string, servi
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters),
 		autorest.WithHeader("If-Match", autorest.String(ifMatch)))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UpdateSender sends the Update request. The method will close the
 // http.Response Body if it receives an error.
 func (client SubscriptionsClient) UpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

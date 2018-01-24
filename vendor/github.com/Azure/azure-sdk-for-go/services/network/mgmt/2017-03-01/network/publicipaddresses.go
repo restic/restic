@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // PublicIPAddressesClient is the network Client
 type PublicIPAddressesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewPublicIPAddressesClient creates an instance of the PublicIPAddressesClient client.
@@ -39,15 +40,11 @@ func NewPublicIPAddressesClientWithBaseURI(baseURI string, subscriptionID string
 	return PublicIPAddressesClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a static or dynamic public IP address. This method may poll for completion.
-// Polling can be canceled by passing the cancel channel argument. The channel will be used to cancel polling and any
-// outstanding HTTP requests.
+// CreateOrUpdate creates or updates a static or dynamic public IP address.
 //
 // resourceGroupName is the name of the resource group. publicIPAddressName is the name of the public IP address.
 // parameters is parameters supplied to the create or update public IP address operation.
-func (client PublicIPAddressesClient) CreateOrUpdate(resourceGroupName string, publicIPAddressName string, parameters PublicIPAddress, cancel <-chan struct{}) (<-chan PublicIPAddress, <-chan error) {
-	resultChan := make(chan PublicIPAddress, 1)
-	errChan := make(chan error, 1)
+func (client PublicIPAddressesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, publicIPAddressName string, parameters PublicIPAddress) (result PublicIPAddressesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.PublicIPAddressPropertiesFormat", Name: validation.Null, Rule: false,
@@ -56,46 +53,26 @@ func (client PublicIPAddressesClient) CreateOrUpdate(resourceGroupName string, p
 						Chain: []validation.Constraint{{Target: "parameters.PublicIPAddressPropertiesFormat.IPConfiguration.IPConfigurationPropertiesFormat.PublicIPAddress", Name: validation.Null, Rule: false, Chain: nil}}},
 					}},
 				}}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "network.PublicIPAddressesClient", "CreateOrUpdate")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+		return result, validation.NewErrorWithValidationError(err, "network.PublicIPAddressesClient", "CreateOrUpdate")
 	}
 
-	go func() {
-		var err error
-		var result PublicIPAddress
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.CreateOrUpdatePreparer(resourceGroupName, publicIPAddressName, parameters, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "CreateOrUpdate", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, publicIPAddressName, parameters)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "CreateOrUpdate", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.CreateOrUpdateSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "CreateOrUpdate", resp, "Failure sending request")
-			return
-		}
+	result, err = client.CreateOrUpdateSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "CreateOrUpdate", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.CreateOrUpdateResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "CreateOrUpdate", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client PublicIPAddressesClient) CreateOrUpdatePreparer(resourceGroupName string, publicIPAddressName string, parameters PublicIPAddress, cancel <-chan struct{}) (*http.Request, error) {
+func (client PublicIPAddressesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, publicIPAddressName string, parameters PublicIPAddress) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"publicIpAddressName": autorest.Encode("path", publicIPAddressName),
 		"resourceGroupName":   autorest.Encode("path", resourceGroupName),
@@ -114,16 +91,22 @@ func (client PublicIPAddressesClient) CreateOrUpdatePreparer(resourceGroupName s
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses/{publicIpAddressName}", pathParameters),
 		autorest.WithJSON(parameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
-func (client PublicIPAddressesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PublicIPAddressesClient) CreateOrUpdateSender(req *http.Request) (future PublicIPAddressesCreateOrUpdateFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated))
+	return
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -132,54 +115,34 @@ func (client PublicIPAddressesClient) CreateOrUpdateResponder(resp *http.Respons
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusCreated, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
 	return
 }
 
-// Delete deletes the specified public IP address. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP requests.
+// Delete deletes the specified public IP address.
 //
 // resourceGroupName is the name of the resource group. publicIPAddressName is the name of the subnet.
-func (client PublicIPAddressesClient) Delete(resourceGroupName string, publicIPAddressName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.DeletePreparer(resourceGroupName, publicIPAddressName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Delete", nil, "Failure preparing request")
-			return
-		}
+func (client PublicIPAddressesClient) Delete(ctx context.Context, resourceGroupName string, publicIPAddressName string) (result PublicIPAddressesDeleteFuture, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, publicIPAddressName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Delete", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.DeleteSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Delete", resp, "Failure sending request")
-			return
-		}
+	result, err = client.DeleteSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Delete", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.DeleteResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Delete", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // DeletePreparer prepares the Delete request.
-func (client PublicIPAddressesClient) DeletePreparer(resourceGroupName string, publicIPAddressName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client PublicIPAddressesClient) DeletePreparer(ctx context.Context, resourceGroupName string, publicIPAddressName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"publicIpAddressName": autorest.Encode("path", publicIPAddressName),
 		"resourceGroupName":   autorest.Encode("path", resourceGroupName),
@@ -196,16 +159,22 @@ func (client PublicIPAddressesClient) DeletePreparer(resourceGroupName string, p
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses/{publicIpAddressName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
-func (client PublicIPAddressesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client PublicIPAddressesClient) DeleteSender(req *http.Request) (future PublicIPAddressesDeleteFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent))
+	return
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -214,7 +183,7 @@ func (client PublicIPAddressesClient) DeleteResponder(resp *http.Response) (resu
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
-		azure.WithErrorUnlessStatusCode(http.StatusNoContent, http.StatusAccepted, http.StatusOK),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted, http.StatusNoContent),
 		autorest.ByClosing())
 	result.Response = resp
 	return
@@ -224,8 +193,8 @@ func (client PublicIPAddressesClient) DeleteResponder(resp *http.Response) (resu
 //
 // resourceGroupName is the name of the resource group. publicIPAddressName is the name of the subnet. expand is
 // expands referenced resources.
-func (client PublicIPAddressesClient) Get(resourceGroupName string, publicIPAddressName string, expand string) (result PublicIPAddress, err error) {
-	req, err := client.GetPreparer(resourceGroupName, publicIPAddressName, expand)
+func (client PublicIPAddressesClient) Get(ctx context.Context, resourceGroupName string, publicIPAddressName string, expand string) (result PublicIPAddress, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, publicIPAddressName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "Get", nil, "Failure preparing request")
 		return
@@ -247,7 +216,7 @@ func (client PublicIPAddressesClient) Get(resourceGroupName string, publicIPAddr
 }
 
 // GetPreparer prepares the Get request.
-func (client PublicIPAddressesClient) GetPreparer(resourceGroupName string, publicIPAddressName string, expand string) (*http.Request, error) {
+func (client PublicIPAddressesClient) GetPreparer(ctx context.Context, resourceGroupName string, publicIPAddressName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"publicIpAddressName": autorest.Encode("path", publicIPAddressName),
 		"resourceGroupName":   autorest.Encode("path", resourceGroupName),
@@ -267,14 +236,13 @@ func (client PublicIPAddressesClient) GetPreparer(resourceGroupName string, publ
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses/{publicIpAddressName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -297,8 +265,8 @@ func (client PublicIPAddressesClient) GetResponder(resp *http.Response) (result 
 // scale set. virtualmachineIndex is the virtual machine index. networkInterfaceName is the name of the network
 // interface. IPConfigurationName is the name of the IP configuration. publicIPAddressName is the name of the public IP
 // Address. expand is expands referenced resources.
-func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddress(resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, publicIPAddressName string, expand string) (result PublicIPAddress, err error) {
-	req, err := client.GetVirtualMachineScaleSetPublicIPAddressPreparer(resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName, publicIPAddressName, expand)
+func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddress(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, publicIPAddressName string, expand string) (result PublicIPAddress, err error) {
+	req, err := client.GetVirtualMachineScaleSetPublicIPAddressPreparer(ctx, resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName, publicIPAddressName, expand)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "GetVirtualMachineScaleSetPublicIPAddress", nil, "Failure preparing request")
 		return
@@ -320,7 +288,7 @@ func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddress(r
 }
 
 // GetVirtualMachineScaleSetPublicIPAddressPreparer prepares the GetVirtualMachineScaleSetPublicIPAddress request.
-func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddressPreparer(resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, publicIPAddressName string, expand string) (*http.Request, error) {
+func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddressPreparer(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, publicIPAddressName string, expand string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"ipConfigurationName":        autorest.Encode("path", IPConfigurationName),
 		"networkInterfaceName":       autorest.Encode("path", networkInterfaceName),
@@ -344,14 +312,13 @@ func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddressPr
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/virtualMachines/{virtualmachineIndex}/networkInterfaces/{networkInterfaceName}/ipconfigurations/{ipConfigurationName}/publicipaddresses/{publicIpAddressName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetVirtualMachineScaleSetPublicIPAddressSender sends the GetVirtualMachineScaleSetPublicIPAddress request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddressSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -371,8 +338,9 @@ func (client PublicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddressRe
 // List gets all public IP addresses in a resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client PublicIPAddressesClient) List(resourceGroupName string) (result PublicIPAddressListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName)
+func (client PublicIPAddressesClient) List(ctx context.Context, resourceGroupName string) (result PublicIPAddressListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", nil, "Failure preparing request")
 		return
@@ -380,12 +348,12 @@ func (client PublicIPAddressesClient) List(resourceGroupName string) (result Pub
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.pialr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", resp, "Failure responding to request")
 	}
@@ -394,7 +362,7 @@ func (client PublicIPAddressesClient) List(resourceGroupName string) (result Pub
 }
 
 // ListPreparer prepares the List request.
-func (client PublicIPAddressesClient) ListPreparer(resourceGroupName string) (*http.Request, error) {
+func (client PublicIPAddressesClient) ListPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -410,14 +378,13 @@ func (client PublicIPAddressesClient) ListPreparer(resourceGroupName string) (*h
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/publicIPAddresses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -434,78 +401,37 @@ func (client PublicIPAddressesClient) ListResponder(resp *http.Response) (result
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client PublicIPAddressesClient) ListNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
-	req, err := lastResults.PublicIPAddressListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client PublicIPAddressesClient) listNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
+	req, err := lastResults.publicIPAddressListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client PublicIPAddressesClient) ListComplete(resourceGroupName string, cancel <-chan struct{}) (<-chan PublicIPAddress, <-chan error) {
-	resultChan := make(chan PublicIPAddress)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PublicIPAddressesClient) ListComplete(ctx context.Context, resourceGroupName string) (result PublicIPAddressListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName)
+	return
 }
 
 // ListAll gets all the public IP addresses in a subscription.
-func (client PublicIPAddressesClient) ListAll() (result PublicIPAddressListResult, err error) {
-	req, err := client.ListAllPreparer()
+func (client PublicIPAddressesClient) ListAll(ctx context.Context) (result PublicIPAddressListResultPage, err error) {
+	result.fn = client.listAllNextResults
+	req, err := client.ListAllPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", nil, "Failure preparing request")
 		return
@@ -513,12 +439,12 @@ func (client PublicIPAddressesClient) ListAll() (result PublicIPAddressListResul
 
 	resp, err := client.ListAllSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListAllResponder(resp)
+	result.pialr, err = client.ListAllResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", resp, "Failure responding to request")
 	}
@@ -527,7 +453,7 @@ func (client PublicIPAddressesClient) ListAll() (result PublicIPAddressListResul
 }
 
 // ListAllPreparer prepares the ListAll request.
-func (client PublicIPAddressesClient) ListAllPreparer() (*http.Request, error) {
+func (client PublicIPAddressesClient) ListAllPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -542,14 +468,13 @@ func (client PublicIPAddressesClient) ListAllPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Network/publicIPAddresses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAllSender sends the ListAll request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) ListAllSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -566,73 +491,31 @@ func (client PublicIPAddressesClient) ListAllResponder(resp *http.Response) (res
 	return
 }
 
-// ListAllNextResults retrieves the next set of results, if any.
-func (client PublicIPAddressesClient) ListAllNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
-	req, err := lastResults.PublicIPAddressListResultPreparer()
+// listAllNextResults retrieves the next set of results, if any.
+func (client PublicIPAddressesClient) listAllNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
+	req, err := lastResults.publicIPAddressListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listAllNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListAllSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listAllNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListAllResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListAll", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listAllNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListAllComplete gets all elements from the list without paging.
-func (client PublicIPAddressesClient) ListAllComplete(cancel <-chan struct{}) (<-chan PublicIPAddress, <-chan error) {
-	resultChan := make(chan PublicIPAddress)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListAll()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListAllNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListAllComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PublicIPAddressesClient) ListAllComplete(ctx context.Context) (result PublicIPAddressListResultIterator, err error) {
+	result.page, err = client.ListAll(ctx)
+	return
 }
 
 // ListVirtualMachineScaleSetPublicIPAddresses gets information about all public IP addresses on a virtual machine
@@ -640,8 +523,9 @@ func (client PublicIPAddressesClient) ListAllComplete(cancel <-chan struct{}) (<
 //
 // resourceGroupName is the name of the resource group. virtualMachineScaleSetName is the name of the virtual machine
 // scale set.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresses(resourceGroupName string, virtualMachineScaleSetName string) (result PublicIPAddressListResult, err error) {
-	req, err := client.ListVirtualMachineScaleSetPublicIPAddressesPreparer(resourceGroupName, virtualMachineScaleSetName)
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresses(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string) (result PublicIPAddressListResultPage, err error) {
+	result.fn = client.listVirtualMachineScaleSetPublicIPAddressesNextResults
+	req, err := client.ListVirtualMachineScaleSetPublicIPAddressesPreparer(ctx, resourceGroupName, virtualMachineScaleSetName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", nil, "Failure preparing request")
 		return
@@ -649,12 +533,12 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresse
 
 	resp, err := client.ListVirtualMachineScaleSetPublicIPAddressesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListVirtualMachineScaleSetPublicIPAddressesResponder(resp)
+	result.pialr, err = client.ListVirtualMachineScaleSetPublicIPAddressesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", resp, "Failure responding to request")
 	}
@@ -663,7 +547,7 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresse
 }
 
 // ListVirtualMachineScaleSetPublicIPAddressesPreparer prepares the ListVirtualMachineScaleSetPublicIPAddresses request.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesPreparer(resourceGroupName string, virtualMachineScaleSetName string) (*http.Request, error) {
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesPreparer(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName":          autorest.Encode("path", resourceGroupName),
 		"subscriptionId":             autorest.Encode("path", client.SubscriptionID),
@@ -680,14 +564,13 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresse
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/publicipaddresses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListVirtualMachineScaleSetPublicIPAddressesSender sends the ListVirtualMachineScaleSetPublicIPAddresses request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -704,73 +587,31 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresse
 	return
 }
 
-// ListVirtualMachineScaleSetPublicIPAddressesNextResults retrieves the next set of results, if any.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
-	req, err := lastResults.PublicIPAddressListResultPreparer()
+// listVirtualMachineScaleSetPublicIPAddressesNextResults retrieves the next set of results, if any.
+func (client PublicIPAddressesClient) listVirtualMachineScaleSetPublicIPAddressesNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
+	req, err := lastResults.publicIPAddressListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetPublicIPAddressesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListVirtualMachineScaleSetPublicIPAddressesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetPublicIPAddressesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListVirtualMachineScaleSetPublicIPAddressesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetPublicIPAddresses", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetPublicIPAddressesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListVirtualMachineScaleSetPublicIPAddressesComplete gets all elements from the list without paging.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesComplete(resourceGroupName string, virtualMachineScaleSetName string, cancel <-chan struct{}) (<-chan PublicIPAddress, <-chan error) {
-	resultChan := make(chan PublicIPAddress)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListVirtualMachineScaleSetPublicIPAddresses(resourceGroupName, virtualMachineScaleSetName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListVirtualMachineScaleSetPublicIPAddressesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListVirtualMachineScaleSetPublicIPAddressesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddressesComplete(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string) (result PublicIPAddressListResultIterator, err error) {
+	result.page, err = client.ListVirtualMachineScaleSetPublicIPAddresses(ctx, resourceGroupName, virtualMachineScaleSetName)
+	return
 }
 
 // ListVirtualMachineScaleSetVMPublicIPAddresses gets information about all public IP addresses in a virtual machine IP
@@ -779,8 +620,9 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetPublicIPAddresse
 // resourceGroupName is the name of the resource group. virtualMachineScaleSetName is the name of the virtual machine
 // scale set. virtualmachineIndex is the virtual machine index. networkInterfaceName is the network interface name.
 // IPConfigurationName is the IP configuration name.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddresses(resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string) (result PublicIPAddressListResult, err error) {
-	req, err := client.ListVirtualMachineScaleSetVMPublicIPAddressesPreparer(resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName)
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddresses(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string) (result PublicIPAddressListResultPage, err error) {
+	result.fn = client.listVirtualMachineScaleSetVMPublicIPAddressesNextResults
+	req, err := client.ListVirtualMachineScaleSetVMPublicIPAddressesPreparer(ctx, resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", nil, "Failure preparing request")
 		return
@@ -788,12 +630,12 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddres
 
 	resp, err := client.ListVirtualMachineScaleSetVMPublicIPAddressesSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.pialr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListVirtualMachineScaleSetVMPublicIPAddressesResponder(resp)
+	result.pialr, err = client.ListVirtualMachineScaleSetVMPublicIPAddressesResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", resp, "Failure responding to request")
 	}
@@ -802,7 +644,7 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddres
 }
 
 // ListVirtualMachineScaleSetVMPublicIPAddressesPreparer prepares the ListVirtualMachineScaleSetVMPublicIPAddresses request.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesPreparer(resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string) (*http.Request, error) {
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesPreparer(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"ipConfigurationName":        autorest.Encode("path", IPConfigurationName),
 		"networkInterfaceName":       autorest.Encode("path", networkInterfaceName),
@@ -822,14 +664,13 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddres
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/virtualMachines/{virtualmachineIndex}/networkInterfaces/{networkInterfaceName}/ipconfigurations/{ipConfigurationName}/publicipaddresses", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListVirtualMachineScaleSetVMPublicIPAddressesSender sends the ListVirtualMachineScaleSetVMPublicIPAddresses request. The method will close the
 // http.Response Body if it receives an error.
 func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -846,71 +687,29 @@ func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddres
 	return
 }
 
-// ListVirtualMachineScaleSetVMPublicIPAddressesNextResults retrieves the next set of results, if any.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
-	req, err := lastResults.PublicIPAddressListResultPreparer()
+// listVirtualMachineScaleSetVMPublicIPAddressesNextResults retrieves the next set of results, if any.
+func (client PublicIPAddressesClient) listVirtualMachineScaleSetVMPublicIPAddressesNextResults(lastResults PublicIPAddressListResult) (result PublicIPAddressListResult, err error) {
+	req, err := lastResults.publicIPAddressListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetVMPublicIPAddressesNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListVirtualMachineScaleSetVMPublicIPAddressesSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetVMPublicIPAddressesNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListVirtualMachineScaleSetVMPublicIPAddressesResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "ListVirtualMachineScaleSetVMPublicIPAddresses", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.PublicIPAddressesClient", "listVirtualMachineScaleSetVMPublicIPAddressesNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListVirtualMachineScaleSetVMPublicIPAddressesComplete gets all elements from the list without paging.
-func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesComplete(resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, cancel <-chan struct{}) (<-chan PublicIPAddress, <-chan error) {
-	resultChan := make(chan PublicIPAddress)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListVirtualMachineScaleSetVMPublicIPAddresses(resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListVirtualMachineScaleSetVMPublicIPAddressesNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListVirtualMachineScaleSetVMPublicIPAddressesComplete enumerates all values, automatically crossing page boundaries as required.
+func (client PublicIPAddressesClient) ListVirtualMachineScaleSetVMPublicIPAddressesComplete(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string) (result PublicIPAddressListResultIterator, err error) {
+	result.page, err = client.ListVirtualMachineScaleSetVMPublicIPAddresses(ctx, resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, IPConfigurationName)
+	return
 }

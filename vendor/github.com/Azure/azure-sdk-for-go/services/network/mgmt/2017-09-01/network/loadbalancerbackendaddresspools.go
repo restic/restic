@@ -18,6 +18,7 @@ package network
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // LoadBalancerBackendAddressPoolsClient is the network Client
 type LoadBalancerBackendAddressPoolsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewLoadBalancerBackendAddressPoolsClient creates an instance of the LoadBalancerBackendAddressPoolsClient client.
@@ -43,8 +44,8 @@ func NewLoadBalancerBackendAddressPoolsClientWithBaseURI(baseURI string, subscri
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is the name of the load balancer.
 // backendAddressPoolName is the name of the backend address pool.
-func (client LoadBalancerBackendAddressPoolsClient) Get(resourceGroupName string, loadBalancerName string, backendAddressPoolName string) (result BackendAddressPool, err error) {
-	req, err := client.GetPreparer(resourceGroupName, loadBalancerName, backendAddressPoolName)
+func (client LoadBalancerBackendAddressPoolsClient) Get(ctx context.Context, resourceGroupName string, loadBalancerName string, backendAddressPoolName string) (result BackendAddressPool, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, loadBalancerName, backendAddressPoolName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "Get", nil, "Failure preparing request")
 		return
@@ -66,7 +67,7 @@ func (client LoadBalancerBackendAddressPoolsClient) Get(resourceGroupName string
 }
 
 // GetPreparer prepares the Get request.
-func (client LoadBalancerBackendAddressPoolsClient) GetPreparer(resourceGroupName string, loadBalancerName string, backendAddressPoolName string) (*http.Request, error) {
+func (client LoadBalancerBackendAddressPoolsClient) GetPreparer(ctx context.Context, resourceGroupName string, loadBalancerName string, backendAddressPoolName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"backendAddressPoolName": autorest.Encode("path", backendAddressPoolName),
 		"loadBalancerName":       autorest.Encode("path", loadBalancerName),
@@ -84,14 +85,13 @@ func (client LoadBalancerBackendAddressPoolsClient) GetPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/backendAddressPools/{backendAddressPoolName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoadBalancerBackendAddressPoolsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -111,8 +111,9 @@ func (client LoadBalancerBackendAddressPoolsClient) GetResponder(resp *http.Resp
 // List gets all the load balancer backed address pools.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is the name of the load balancer.
-func (client LoadBalancerBackendAddressPoolsClient) List(resourceGroupName string, loadBalancerName string) (result LoadBalancerBackendAddressPoolListResult, err error) {
-	req, err := client.ListPreparer(resourceGroupName, loadBalancerName)
+func (client LoadBalancerBackendAddressPoolsClient) List(ctx context.Context, resourceGroupName string, loadBalancerName string) (result LoadBalancerBackendAddressPoolListResultPage, err error) {
+	result.fn = client.listNextResults
+	req, err := client.ListPreparer(ctx, resourceGroupName, loadBalancerName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", nil, "Failure preparing request")
 		return
@@ -120,12 +121,12 @@ func (client LoadBalancerBackendAddressPoolsClient) List(resourceGroupName strin
 
 	resp, err := client.ListSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.lbbaplr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListResponder(resp)
+	result.lbbaplr, err = client.ListResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", resp, "Failure responding to request")
 	}
@@ -134,7 +135,7 @@ func (client LoadBalancerBackendAddressPoolsClient) List(resourceGroupName strin
 }
 
 // ListPreparer prepares the List request.
-func (client LoadBalancerBackendAddressPoolsClient) ListPreparer(resourceGroupName string, loadBalancerName string) (*http.Request, error) {
+func (client LoadBalancerBackendAddressPoolsClient) ListPreparer(ctx context.Context, resourceGroupName string, loadBalancerName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"loadBalancerName":  autorest.Encode("path", loadBalancerName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -151,14 +152,13 @@ func (client LoadBalancerBackendAddressPoolsClient) ListPreparer(resourceGroupNa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/loadBalancers/{loadBalancerName}/backendAddressPools", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListSender sends the List request. The method will close the
 // http.Response Body if it receives an error.
 func (client LoadBalancerBackendAddressPoolsClient) ListSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -175,71 +175,29 @@ func (client LoadBalancerBackendAddressPoolsClient) ListResponder(resp *http.Res
 	return
 }
 
-// ListNextResults retrieves the next set of results, if any.
-func (client LoadBalancerBackendAddressPoolsClient) ListNextResults(lastResults LoadBalancerBackendAddressPoolListResult) (result LoadBalancerBackendAddressPoolListResult, err error) {
-	req, err := lastResults.LoadBalancerBackendAddressPoolListResultPreparer()
+// listNextResults retrieves the next set of results, if any.
+func (client LoadBalancerBackendAddressPoolsClient) listNextResults(lastResults LoadBalancerBackendAddressPoolListResult) (result LoadBalancerBackendAddressPoolListResult, err error) {
+	req, err := lastResults.loadBalancerBackendAddressPoolListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "listNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LoadBalancerBackendAddressPoolsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListComplete gets all elements from the list without paging.
-func (client LoadBalancerBackendAddressPoolsClient) ListComplete(resourceGroupName string, loadBalancerName string, cancel <-chan struct{}) (<-chan BackendAddressPool, <-chan error) {
-	resultChan := make(chan BackendAddressPool)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.List(resourceGroupName, loadBalancerName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListComplete enumerates all values, automatically crossing page boundaries as required.
+func (client LoadBalancerBackendAddressPoolsClient) ListComplete(ctx context.Context, resourceGroupName string, loadBalancerName string) (result LoadBalancerBackendAddressPoolListResultIterator, err error) {
+	result.page, err = client.List(ctx, resourceGroupName, loadBalancerName)
+	return
 }

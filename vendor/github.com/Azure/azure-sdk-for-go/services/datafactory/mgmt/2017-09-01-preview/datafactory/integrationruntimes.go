@@ -18,6 +18,7 @@ package datafactory
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -27,7 +28,7 @@ import (
 // IntegrationRuntimesClient is the the Azure Data Factory V2 management API provides a RESTful set of web services
 // that interact with Azure Data Factory V2 services.
 type IntegrationRuntimesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewIntegrationRuntimesClient creates an instance of the IntegrationRuntimesClient client.
@@ -46,7 +47,7 @@ func NewIntegrationRuntimesClientWithBaseURI(baseURI string, subscriptionID stri
 // integration runtime name. integrationRuntime is integration runtime resource definition. ifMatch is eTag of the
 // integration runtime entity. Should only be specified for update, for which it should match existing entity or can be
 // * for unconditional update.
-func (client IntegrationRuntimesClient) CreateOrUpdate(resourceGroupName string, factoryName string, integrationRuntimeName string, integrationRuntime IntegrationRuntimeResource, ifMatch string) (result IntegrationRuntimeResource, err error) {
+func (client IntegrationRuntimesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, integrationRuntime IntegrationRuntimeResource, ifMatch string) (result IntegrationRuntimeResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -56,12 +57,16 @@ func (client IntegrationRuntimesClient) CreateOrUpdate(resourceGroupName string,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
 				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
 		{TargetValue: integrationRuntime,
 			Constraints: []validation.Constraint{{Target: "integrationRuntime.Properties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, factoryName, integrationRuntimeName, integrationRuntime, ifMatch)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName, integrationRuntime, ifMatch)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -83,7 +88,7 @@ func (client IntegrationRuntimesClient) CreateOrUpdate(resourceGroupName string,
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client IntegrationRuntimesClient) CreateOrUpdatePreparer(resourceGroupName string, factoryName string, integrationRuntimeName string, integrationRuntime IntegrationRuntimeResource, ifMatch string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, integrationRuntime IntegrationRuntimeResource, ifMatch string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -107,14 +112,13 @@ func (client IntegrationRuntimesClient) CreateOrUpdatePreparer(resourceGroupName
 		preparer = autorest.DecoratePreparer(preparer,
 			autorest.WithHeader("If-Match", autorest.String(ifMatch)))
 	}
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -135,7 +139,7 @@ func (client IntegrationRuntimesClient) CreateOrUpdateResponder(resp *http.Respo
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) Delete(resourceGroupName string, factoryName string, integrationRuntimeName string) (result autorest.Response, err error) {
+func (client IntegrationRuntimesClient) Delete(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -144,11 +148,15 @@ func (client IntegrationRuntimesClient) Delete(resourceGroupName string, factory
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Delete")
 	}
 
-	req, err := client.DeletePreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.DeletePreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Delete", nil, "Failure preparing request")
 		return
@@ -170,7 +178,7 @@ func (client IntegrationRuntimesClient) Delete(resourceGroupName string, factory
 }
 
 // DeletePreparer prepares the Delete request.
-func (client IntegrationRuntimesClient) DeletePreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) DeletePreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -188,14 +196,13 @@ func (client IntegrationRuntimesClient) DeletePreparer(resourceGroupName string,
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -215,7 +222,7 @@ func (client IntegrationRuntimesClient) DeleteResponder(resp *http.Response) (re
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) Get(resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeResource, err error) {
+func (client IntegrationRuntimesClient) Get(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -224,11 +231,15 @@ func (client IntegrationRuntimesClient) Get(resourceGroupName string, factoryNam
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Get")
 	}
 
-	req, err := client.GetPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.GetPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Get", nil, "Failure preparing request")
 		return
@@ -250,7 +261,7 @@ func (client IntegrationRuntimesClient) Get(resourceGroupName string, factoryNam
 }
 
 // GetPreparer prepares the Get request.
-func (client IntegrationRuntimesClient) GetPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) GetPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -268,14 +279,13 @@ func (client IntegrationRuntimesClient) GetPreparer(resourceGroupName string, fa
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -297,7 +307,7 @@ func (client IntegrationRuntimesClient) GetResponder(resp *http.Response) (resul
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) GetConnectionInfo(resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeConnectionInfo, err error) {
+func (client IntegrationRuntimesClient) GetConnectionInfo(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeConnectionInfo, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -306,11 +316,15 @@ func (client IntegrationRuntimesClient) GetConnectionInfo(resourceGroupName stri
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "GetConnectionInfo")
 	}
 
-	req, err := client.GetConnectionInfoPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.GetConnectionInfoPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "GetConnectionInfo", nil, "Failure preparing request")
 		return
@@ -332,7 +346,7 @@ func (client IntegrationRuntimesClient) GetConnectionInfo(resourceGroupName stri
 }
 
 // GetConnectionInfoPreparer prepares the GetConnectionInfo request.
-func (client IntegrationRuntimesClient) GetConnectionInfoPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) GetConnectionInfoPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -350,14 +364,13 @@ func (client IntegrationRuntimesClient) GetConnectionInfoPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/getConnectionInfo", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetConnectionInfoSender sends the GetConnectionInfo request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) GetConnectionInfoSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -379,7 +392,7 @@ func (client IntegrationRuntimesClient) GetConnectionInfoResponder(resp *http.Re
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) GetMonitoringData(resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeMonitoringData, err error) {
+func (client IntegrationRuntimesClient) GetMonitoringData(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeMonitoringData, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -388,11 +401,15 @@ func (client IntegrationRuntimesClient) GetMonitoringData(resourceGroupName stri
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "GetMonitoringData")
 	}
 
-	req, err := client.GetMonitoringDataPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.GetMonitoringDataPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "GetMonitoringData", nil, "Failure preparing request")
 		return
@@ -414,7 +431,7 @@ func (client IntegrationRuntimesClient) GetMonitoringData(resourceGroupName stri
 }
 
 // GetMonitoringDataPreparer prepares the GetMonitoringData request.
-func (client IntegrationRuntimesClient) GetMonitoringDataPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) GetMonitoringDataPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -432,14 +449,13 @@ func (client IntegrationRuntimesClient) GetMonitoringDataPreparer(resourceGroupN
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/monitoringData", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetMonitoringDataSender sends the GetMonitoringData request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) GetMonitoringDataSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -460,7 +476,7 @@ func (client IntegrationRuntimesClient) GetMonitoringDataResponder(resp *http.Re
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) GetStatus(resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeStatusResponse, err error) {
+func (client IntegrationRuntimesClient) GetStatus(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeStatusResponse, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -469,11 +485,15 @@ func (client IntegrationRuntimesClient) GetStatus(resourceGroupName string, fact
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "GetStatus")
 	}
 
-	req, err := client.GetStatusPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.GetStatusPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "GetStatus", nil, "Failure preparing request")
 		return
@@ -495,7 +515,7 @@ func (client IntegrationRuntimesClient) GetStatus(resourceGroupName string, fact
 }
 
 // GetStatusPreparer prepares the GetStatus request.
-func (client IntegrationRuntimesClient) GetStatusPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) GetStatusPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -513,14 +533,13 @@ func (client IntegrationRuntimesClient) GetStatusPreparer(resourceGroupName stri
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/getStatus", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetStatusSender sends the GetStatus request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) GetStatusSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -541,7 +560,7 @@ func (client IntegrationRuntimesClient) GetStatusResponder(resp *http.Response) 
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) ListAuthKeys(resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeAuthKeys, err error) {
+func (client IntegrationRuntimesClient) ListAuthKeys(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimeAuthKeys, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -550,11 +569,15 @@ func (client IntegrationRuntimesClient) ListAuthKeys(resourceGroupName string, f
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "ListAuthKeys")
 	}
 
-	req, err := client.ListAuthKeysPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.ListAuthKeysPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListAuthKeys", nil, "Failure preparing request")
 		return
@@ -576,7 +599,7 @@ func (client IntegrationRuntimesClient) ListAuthKeys(resourceGroupName string, f
 }
 
 // ListAuthKeysPreparer prepares the ListAuthKeys request.
-func (client IntegrationRuntimesClient) ListAuthKeysPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) ListAuthKeysPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -594,14 +617,13 @@ func (client IntegrationRuntimesClient) ListAuthKeysPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/listAuthKeys", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListAuthKeysSender sends the ListAuthKeys request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) ListAuthKeysSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -621,7 +643,7 @@ func (client IntegrationRuntimesClient) ListAuthKeysResponder(resp *http.Respons
 // ListByFactory lists integration runtimes.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name.
-func (client IntegrationRuntimesClient) ListByFactory(resourceGroupName string, factoryName string) (result IntegrationRuntimeListResponse, err error) {
+func (client IntegrationRuntimesClient) ListByFactory(ctx context.Context, resourceGroupName string, factoryName string) (result IntegrationRuntimeListResponsePage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -634,7 +656,8 @@ func (client IntegrationRuntimesClient) ListByFactory(resourceGroupName string, 
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory")
 	}
 
-	req, err := client.ListByFactoryPreparer(resourceGroupName, factoryName)
+	result.fn = client.listByFactoryNextResults
+	req, err := client.ListByFactoryPreparer(ctx, resourceGroupName, factoryName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", nil, "Failure preparing request")
 		return
@@ -642,12 +665,12 @@ func (client IntegrationRuntimesClient) ListByFactory(resourceGroupName string, 
 
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.irlr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListByFactoryResponder(resp)
+	result.irlr, err = client.ListByFactoryResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", resp, "Failure responding to request")
 	}
@@ -656,7 +679,7 @@ func (client IntegrationRuntimesClient) ListByFactory(resourceGroupName string, 
 }
 
 // ListByFactoryPreparer prepares the ListByFactory request.
-func (client IntegrationRuntimesClient) ListByFactoryPreparer(resourceGroupName string, factoryName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) ListByFactoryPreparer(ctx context.Context, resourceGroupName string, factoryName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":       autorest.Encode("path", factoryName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -673,14 +696,13 @@ func (client IntegrationRuntimesClient) ListByFactoryPreparer(resourceGroupName 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByFactorySender sends the ListByFactory request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) ListByFactorySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -697,73 +719,31 @@ func (client IntegrationRuntimesClient) ListByFactoryResponder(resp *http.Respon
 	return
 }
 
-// ListByFactoryNextResults retrieves the next set of results, if any.
-func (client IntegrationRuntimesClient) ListByFactoryNextResults(lastResults IntegrationRuntimeListResponse) (result IntegrationRuntimeListResponse, err error) {
-	req, err := lastResults.IntegrationRuntimeListResponsePreparer()
+// listByFactoryNextResults retrieves the next set of results, if any.
+func (client IntegrationRuntimesClient) listByFactoryNextResults(lastResults IntegrationRuntimeListResponse) (result IntegrationRuntimeListResponse, err error) {
+	req, err := lastResults.integrationRuntimeListResponsePreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "listByFactoryNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
 	}
-
 	resp, err := client.ListByFactorySender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "listByFactoryNextResults", resp, "Failure sending next results request")
 	}
-
 	result, err = client.ListByFactoryResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "ListByFactory", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "listByFactoryNextResults", resp, "Failure responding to next results request")
 	}
-
 	return
 }
 
-// ListByFactoryComplete gets all elements from the list without paging.
-func (client IntegrationRuntimesClient) ListByFactoryComplete(resourceGroupName string, factoryName string, cancel <-chan struct{}) (<-chan IntegrationRuntimeResource, <-chan error) {
-	resultChan := make(chan IntegrationRuntimeResource)
-	errChan := make(chan error, 1)
-	go func() {
-		defer func() {
-			close(resultChan)
-			close(errChan)
-		}()
-		list, err := client.ListByFactory(resourceGroupName, factoryName)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		if list.Value != nil {
-			for _, item := range *list.Value {
-				select {
-				case <-cancel:
-					return
-				case resultChan <- item:
-					// Intentionally left blank
-				}
-			}
-		}
-		for list.NextLink != nil {
-			list, err = client.ListByFactoryNextResults(list)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			if list.Value != nil {
-				for _, item := range *list.Value {
-					select {
-					case <-cancel:
-						return
-					case resultChan <- item:
-						// Intentionally left blank
-					}
-				}
-			}
-		}
-	}()
-	return resultChan, errChan
+// ListByFactoryComplete enumerates all values, automatically crossing page boundaries as required.
+func (client IntegrationRuntimesClient) ListByFactoryComplete(ctx context.Context, resourceGroupName string, factoryName string) (result IntegrationRuntimeListResponseIterator, err error) {
+	result.page, err = client.ListByFactory(ctx, resourceGroupName, factoryName)
+	return
 }
 
 // RegenerateAuthKey regenerates the authentication key for an integration runtime.
@@ -771,7 +751,7 @@ func (client IntegrationRuntimesClient) ListByFactoryComplete(resourceGroupName 
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name. regenerateKeyParameters is the parameters for regenerating integration runtime
 // authentication key.
-func (client IntegrationRuntimesClient) RegenerateAuthKey(resourceGroupName string, factoryName string, integrationRuntimeName string, regenerateKeyParameters IntegrationRuntimeRegenerateKeyParameters) (result IntegrationRuntimeAuthKeys, err error) {
+func (client IntegrationRuntimesClient) RegenerateAuthKey(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, regenerateKeyParameters IntegrationRuntimeRegenerateKeyParameters) (result IntegrationRuntimeAuthKeys, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -780,11 +760,15 @@ func (client IntegrationRuntimesClient) RegenerateAuthKey(resourceGroupName stri
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "RegenerateAuthKey")
 	}
 
-	req, err := client.RegenerateAuthKeyPreparer(resourceGroupName, factoryName, integrationRuntimeName, regenerateKeyParameters)
+	req, err := client.RegenerateAuthKeyPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName, regenerateKeyParameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "RegenerateAuthKey", nil, "Failure preparing request")
 		return
@@ -806,7 +790,7 @@ func (client IntegrationRuntimesClient) RegenerateAuthKey(resourceGroupName stri
 }
 
 // RegenerateAuthKeyPreparer prepares the RegenerateAuthKey request.
-func (client IntegrationRuntimesClient) RegenerateAuthKeyPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string, regenerateKeyParameters IntegrationRuntimeRegenerateKeyParameters) (*http.Request, error) {
+func (client IntegrationRuntimesClient) RegenerateAuthKeyPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, regenerateKeyParameters IntegrationRuntimeRegenerateKeyParameters) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -826,14 +810,13 @@ func (client IntegrationRuntimesClient) RegenerateAuthKeyPreparer(resourceGroupN
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/regenerateAuthKey", pathParameters),
 		autorest.WithJSON(regenerateKeyParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegenerateAuthKeySender sends the RegenerateAuthKey request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) RegenerateAuthKeySender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -854,7 +837,7 @@ func (client IntegrationRuntimesClient) RegenerateAuthKeyResponder(resp *http.Re
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name. removeNodeParameters is the name of the node to be removed from an integration runtime.
-func (client IntegrationRuntimesClient) RemoveNode(resourceGroupName string, factoryName string, integrationRuntimeName string, removeNodeParameters IntegrationRuntimeRemoveNodeRequest) (result autorest.Response, err error) {
+func (client IntegrationRuntimesClient) RemoveNode(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, removeNodeParameters IntegrationRuntimeRemoveNodeRequest) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -863,11 +846,15 @@ func (client IntegrationRuntimesClient) RemoveNode(resourceGroupName string, fac
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "RemoveNode")
 	}
 
-	req, err := client.RemoveNodePreparer(resourceGroupName, factoryName, integrationRuntimeName, removeNodeParameters)
+	req, err := client.RemoveNodePreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName, removeNodeParameters)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "RemoveNode", nil, "Failure preparing request")
 		return
@@ -889,7 +876,7 @@ func (client IntegrationRuntimesClient) RemoveNode(resourceGroupName string, fac
 }
 
 // RemoveNodePreparer prepares the RemoveNode request.
-func (client IntegrationRuntimesClient) RemoveNodePreparer(resourceGroupName string, factoryName string, integrationRuntimeName string, removeNodeParameters IntegrationRuntimeRemoveNodeRequest) (*http.Request, error) {
+func (client IntegrationRuntimesClient) RemoveNodePreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, removeNodeParameters IntegrationRuntimeRemoveNodeRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -909,14 +896,13 @@ func (client IntegrationRuntimesClient) RemoveNodePreparer(resourceGroupName str
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/removeNode", pathParameters),
 		autorest.WithJSON(removeNodeParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RemoveNodeSender sends the RemoveNode request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) RemoveNodeSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -932,15 +918,11 @@ func (client IntegrationRuntimesClient) RemoveNodeResponder(resp *http.Response)
 	return
 }
 
-// Start starts a ManagedReserved type integration runtime. This method may poll for completion. Polling can be
-// canceled by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Start starts a ManagedReserved type integration runtime.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) Start(resourceGroupName string, factoryName string, integrationRuntimeName string, cancel <-chan struct{}) (<-chan IntegrationRuntimeStatusResponse, <-chan error) {
-	resultChan := make(chan IntegrationRuntimeStatusResponse, 1)
-	errChan := make(chan error, 1)
+func (client IntegrationRuntimesClient) Start(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimesStartFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -949,47 +931,31 @@ func (client IntegrationRuntimesClient) Start(resourceGroupName string, factoryN
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Start")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Start")
 	}
 
-	go func() {
-		var err error
-		var result IntegrationRuntimeStatusResponse
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StartPreparer(resourceGroupName, factoryName, integrationRuntimeName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Start", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.StartPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Start", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StartSender(req)
-		if err != nil {
-			result.Response = autorest.Response{Response: resp}
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Start", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StartSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Start", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StartResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Start", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StartPreparer prepares the Start request.
-func (client IntegrationRuntimesClient) StartPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client IntegrationRuntimesClient) StartPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -1007,16 +973,22 @@ func (client IntegrationRuntimesClient) StartPreparer(resourceGroupName string, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/start", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StartSender sends the Start request. The method will close the
 // http.Response Body if it receives an error.
-func (client IntegrationRuntimesClient) StartSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client IntegrationRuntimesClient) StartSender(req *http.Request) (future IntegrationRuntimesStartFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StartResponder handles the response to the Start request. The method always
@@ -1032,15 +1004,11 @@ func (client IntegrationRuntimesClient) StartResponder(resp *http.Response) (res
 	return
 }
 
-// Stop stops a ManagedReserved type integration runtime. This method may poll for completion. Polling can be canceled
-// by passing the cancel channel argument. The channel will be used to cancel polling and any outstanding HTTP
-// requests.
+// Stop stops a ManagedReserved type integration runtime.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) Stop(resourceGroupName string, factoryName string, integrationRuntimeName string, cancel <-chan struct{}) (<-chan autorest.Response, <-chan error) {
-	resultChan := make(chan autorest.Response, 1)
-	errChan := make(chan error, 1)
+func (client IntegrationRuntimesClient) Stop(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result IntegrationRuntimesStopFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -1049,47 +1017,31 @@ func (client IntegrationRuntimesClient) Stop(resourceGroupName string, factoryNa
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
-		errChan <- validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Stop")
-		close(errChan)
-		close(resultChan)
-		return resultChan, errChan
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Stop")
 	}
 
-	go func() {
-		var err error
-		var result autorest.Response
-		defer func() {
-			if err != nil {
-				errChan <- err
-			}
-			resultChan <- result
-			close(resultChan)
-			close(errChan)
-		}()
-		req, err := client.StopPreparer(resourceGroupName, factoryName, integrationRuntimeName, cancel)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Stop", nil, "Failure preparing request")
-			return
-		}
+	req, err := client.StopPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Stop", nil, "Failure preparing request")
+		return
+	}
 
-		resp, err := client.StopSender(req)
-		if err != nil {
-			result.Response = resp
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Stop", resp, "Failure sending request")
-			return
-		}
+	result, err = client.StopSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Stop", result.Response(), "Failure sending request")
+		return
+	}
 
-		result, err = client.StopResponder(resp)
-		if err != nil {
-			err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Stop", resp, "Failure responding to request")
-		}
-	}()
-	return resultChan, errChan
+	return
 }
 
 // StopPreparer prepares the Stop request.
-func (client IntegrationRuntimesClient) StopPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string, cancel <-chan struct{}) (*http.Request, error) {
+func (client IntegrationRuntimesClient) StopPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -1107,16 +1059,22 @@ func (client IntegrationRuntimesClient) StopPreparer(resourceGroupName string, f
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/stop", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{Cancel: cancel})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // StopSender sends the Stop request. The method will close the
 // http.Response Body if it receives an error.
-func (client IntegrationRuntimesClient) StopSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
-		azure.DoRetryWithRegistration(client.Client),
-		azure.DoPollForAsynchronous(client.PollingDelay))
+func (client IntegrationRuntimesClient) StopSender(req *http.Request) (future IntegrationRuntimesStopFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
 }
 
 // StopResponder handles the response to the Stop request. The method always
@@ -1131,11 +1089,14 @@ func (client IntegrationRuntimesClient) StopResponder(resp *http.Response) (resu
 	return
 }
 
-// SyncCredentials force the integration runtime to synchronize credentials among integration runtime nodes.
+// SyncCredentials force the integration runtime to synchronize credentials across integration runtime nodes, and this
+// will override the credentials across all worker nodes with those available on the dispatcher node. If you already
+// have the latest credential backup file, you should manually import it (preferred) on any self-hosted integration
+// runtime node than using this API directly.
 //
 // resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
 // integration runtime name.
-func (client IntegrationRuntimesClient) SyncCredentials(resourceGroupName string, factoryName string, integrationRuntimeName string) (result autorest.Response, err error) {
+func (client IntegrationRuntimesClient) SyncCredentials(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
@@ -1144,11 +1105,15 @@ func (client IntegrationRuntimesClient) SyncCredentials(resourceGroupName string
 		{TargetValue: factoryName,
 			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
 				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
-				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "SyncCredentials")
 	}
 
-	req, err := client.SyncCredentialsPreparer(resourceGroupName, factoryName, integrationRuntimeName)
+	req, err := client.SyncCredentialsPreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "SyncCredentials", nil, "Failure preparing request")
 		return
@@ -1170,7 +1135,7 @@ func (client IntegrationRuntimesClient) SyncCredentials(resourceGroupName string
 }
 
 // SyncCredentialsPreparer prepares the SyncCredentials request.
-func (client IntegrationRuntimesClient) SyncCredentialsPreparer(resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+func (client IntegrationRuntimesClient) SyncCredentialsPreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"factoryName":            autorest.Encode("path", factoryName),
 		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
@@ -1188,20 +1153,188 @@ func (client IntegrationRuntimesClient) SyncCredentialsPreparer(resourceGroupNam
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/syncCredentials", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // SyncCredentialsSender sends the SyncCredentials request. The method will close the
 // http.Response Body if it receives an error.
 func (client IntegrationRuntimesClient) SyncCredentialsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
 // SyncCredentialsResponder handles the response to the SyncCredentials request. The method always
 // closes the http.Response Body.
 func (client IntegrationRuntimesClient) SyncCredentialsResponder(resp *http.Response) (result autorest.Response, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByClosing())
+	result.Response = resp
+	return
+}
+
+// Update updates an integration runtime.
+//
+// resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
+// integration runtime name. updateIntegrationRuntimeRequest is the parameters for updating an integration runtime.
+func (client IntegrationRuntimesClient) Update(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, updateIntegrationRuntimeRequest UpdateIntegrationRuntimeRequest) (result IntegrationRuntimeStatusResponse, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}},
+		{TargetValue: factoryName,
+			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Update")
+	}
+
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName, updateIntegrationRuntimeRequest)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Update", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.UpdateSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Update", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Update", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// UpdatePreparer prepares the Update request.
+func (client IntegrationRuntimesClient) UpdatePreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string, updateIntegrationRuntimeRequest UpdateIntegrationRuntimeRequest) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"factoryName":            autorest.Encode("path", factoryName),
+		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
+		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
+		"subscriptionId":         autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-09-01-preview"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsJSON(),
+		autorest.AsPatch(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}", pathParameters),
+		autorest.WithJSON(updateIntegrationRuntimeRequest),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// UpdateSender sends the Update request. The method will close the
+// http.Response Body if it receives an error.
+func (client IntegrationRuntimesClient) UpdateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// UpdateResponder handles the response to the Update request. The method always
+// closes the http.Response Body.
+func (client IntegrationRuntimesClient) UpdateResponder(resp *http.Response) (result IntegrationRuntimeStatusResponse, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// Upgrade upgrade self-hosted integration runtime to latest version if availably.
+//
+// resourceGroupName is the resource group name. factoryName is the factory name. integrationRuntimeName is the
+// integration runtime name.
+func (client IntegrationRuntimesClient) Upgrade(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (result autorest.Response, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}},
+		{TargetValue: factoryName,
+			Constraints: []validation.Constraint{{Target: "factoryName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "factoryName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "factoryName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}},
+		{TargetValue: integrationRuntimeName,
+			Constraints: []validation.Constraint{{Target: "integrationRuntimeName", Name: validation.MaxLength, Rule: 63, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.MinLength, Rule: 3, Chain: nil},
+				{Target: "integrationRuntimeName", Name: validation.Pattern, Rule: `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`, Chain: nil}}}}); err != nil {
+		return result, validation.NewErrorWithValidationError(err, "datafactory.IntegrationRuntimesClient", "Upgrade")
+	}
+
+	req, err := client.UpgradePreparer(ctx, resourceGroupName, factoryName, integrationRuntimeName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Upgrade", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.UpgradeSender(req)
+	if err != nil {
+		result.Response = resp
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Upgrade", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.UpgradeResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "datafactory.IntegrationRuntimesClient", "Upgrade", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// UpgradePreparer prepares the Upgrade request.
+func (client IntegrationRuntimesClient) UpgradePreparer(ctx context.Context, resourceGroupName string, factoryName string, integrationRuntimeName string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"factoryName":            autorest.Encode("path", factoryName),
+		"integrationRuntimeName": autorest.Encode("path", integrationRuntimeName),
+		"resourceGroupName":      autorest.Encode("path", resourceGroupName),
+		"subscriptionId":         autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-09-01-preview"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DataFactory/factories/{factoryName}/integrationRuntimes/{integrationRuntimeName}/upgrade", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// UpgradeSender sends the Upgrade request. The method will close the
+// http.Response Body if it receives an error.
+func (client IntegrationRuntimesClient) UpgradeSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// UpgradeResponder handles the response to the Upgrade request. The method always
+// closes the http.Response Body.
+func (client IntegrationRuntimesClient) UpgradeResponder(resp *http.Response) (result autorest.Response, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),

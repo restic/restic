@@ -18,6 +18,7 @@ package insights
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/validation"
@@ -26,7 +27,7 @@ import (
 
 // ActionGroupsClient is the monitor Management Client
 type ActionGroupsClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewActionGroupsClient creates an instance of the ActionGroupsClient client.
@@ -43,7 +44,7 @@ func NewActionGroupsClientWithBaseURI(baseURI string, subscriptionID string) Act
 //
 // resourceGroupName is the name of the resource group. actionGroupName is the name of the action group. actionGroup is
 // the action group to create or use for the update.
-func (client ActionGroupsClient) CreateOrUpdate(resourceGroupName string, actionGroupName string, actionGroup ActionGroupResource) (result ActionGroupResource, err error) {
+func (client ActionGroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, actionGroupName string, actionGroup ActionGroupResource) (result ActionGroupResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: actionGroup,
 			Constraints: []validation.Constraint{{Target: "actionGroup.ActionGroup", Name: validation.Null, Rule: false,
@@ -54,7 +55,7 @@ func (client ActionGroupsClient) CreateOrUpdate(resourceGroupName string, action
 		return result, validation.NewErrorWithValidationError(err, "insights.ActionGroupsClient", "CreateOrUpdate")
 	}
 
-	req, err := client.CreateOrUpdatePreparer(resourceGroupName, actionGroupName, actionGroup)
+	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, actionGroupName, actionGroup)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "CreateOrUpdate", nil, "Failure preparing request")
 		return
@@ -76,7 +77,7 @@ func (client ActionGroupsClient) CreateOrUpdate(resourceGroupName string, action
 }
 
 // CreateOrUpdatePreparer prepares the CreateOrUpdate request.
-func (client ActionGroupsClient) CreateOrUpdatePreparer(resourceGroupName string, actionGroupName string, actionGroup ActionGroupResource) (*http.Request, error) {
+func (client ActionGroupsClient) CreateOrUpdatePreparer(ctx context.Context, resourceGroupName string, actionGroupName string, actionGroup ActionGroupResource) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"actionGroupName":   autorest.Encode("path", actionGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -95,14 +96,13 @@ func (client ActionGroupsClient) CreateOrUpdatePreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}", pathParameters),
 		autorest.WithJSON(actionGroup),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -122,8 +122,8 @@ func (client ActionGroupsClient) CreateOrUpdateResponder(resp *http.Response) (r
 // Delete delete an action group.
 //
 // resourceGroupName is the name of the resource group. actionGroupName is the name of the action group.
-func (client ActionGroupsClient) Delete(resourceGroupName string, actionGroupName string) (result autorest.Response, err error) {
-	req, err := client.DeletePreparer(resourceGroupName, actionGroupName)
+func (client ActionGroupsClient) Delete(ctx context.Context, resourceGroupName string, actionGroupName string) (result autorest.Response, err error) {
+	req, err := client.DeletePreparer(ctx, resourceGroupName, actionGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "Delete", nil, "Failure preparing request")
 		return
@@ -145,7 +145,7 @@ func (client ActionGroupsClient) Delete(resourceGroupName string, actionGroupNam
 }
 
 // DeletePreparer prepares the Delete request.
-func (client ActionGroupsClient) DeletePreparer(resourceGroupName string, actionGroupName string) (*http.Request, error) {
+func (client ActionGroupsClient) DeletePreparer(ctx context.Context, resourceGroupName string, actionGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"actionGroupName":   autorest.Encode("path", actionGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -162,14 +162,13 @@ func (client ActionGroupsClient) DeletePreparer(resourceGroupName string, action
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -189,14 +188,14 @@ func (client ActionGroupsClient) DeleteResponder(resp *http.Response) (result au
 //
 // resourceGroupName is the name of the resource group. actionGroupName is the name of the action group. enableRequest
 // is the receiver to re-enable.
-func (client ActionGroupsClient) EnableReceiver(resourceGroupName string, actionGroupName string, enableRequest EnableRequest) (result autorest.Response, err error) {
+func (client ActionGroupsClient) EnableReceiver(ctx context.Context, resourceGroupName string, actionGroupName string, enableRequest EnableRequest) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: enableRequest,
 			Constraints: []validation.Constraint{{Target: "enableRequest.ReceiverName", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
 		return result, validation.NewErrorWithValidationError(err, "insights.ActionGroupsClient", "EnableReceiver")
 	}
 
-	req, err := client.EnableReceiverPreparer(resourceGroupName, actionGroupName, enableRequest)
+	req, err := client.EnableReceiverPreparer(ctx, resourceGroupName, actionGroupName, enableRequest)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "EnableReceiver", nil, "Failure preparing request")
 		return
@@ -218,7 +217,7 @@ func (client ActionGroupsClient) EnableReceiver(resourceGroupName string, action
 }
 
 // EnableReceiverPreparer prepares the EnableReceiver request.
-func (client ActionGroupsClient) EnableReceiverPreparer(resourceGroupName string, actionGroupName string, enableRequest EnableRequest) (*http.Request, error) {
+func (client ActionGroupsClient) EnableReceiverPreparer(ctx context.Context, resourceGroupName string, actionGroupName string, enableRequest EnableRequest) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"actionGroupName":   autorest.Encode("path", actionGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -237,14 +236,13 @@ func (client ActionGroupsClient) EnableReceiverPreparer(resourceGroupName string
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}/subscribe", pathParameters),
 		autorest.WithJSON(enableRequest),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // EnableReceiverSender sends the EnableReceiver request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) EnableReceiverSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -263,8 +261,8 @@ func (client ActionGroupsClient) EnableReceiverResponder(resp *http.Response) (r
 // Get get an action group.
 //
 // resourceGroupName is the name of the resource group. actionGroupName is the name of the action group.
-func (client ActionGroupsClient) Get(resourceGroupName string, actionGroupName string) (result ActionGroupResource, err error) {
-	req, err := client.GetPreparer(resourceGroupName, actionGroupName)
+func (client ActionGroupsClient) Get(ctx context.Context, resourceGroupName string, actionGroupName string) (result ActionGroupResource, err error) {
+	req, err := client.GetPreparer(ctx, resourceGroupName, actionGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "Get", nil, "Failure preparing request")
 		return
@@ -286,7 +284,7 @@ func (client ActionGroupsClient) Get(resourceGroupName string, actionGroupName s
 }
 
 // GetPreparer prepares the Get request.
-func (client ActionGroupsClient) GetPreparer(resourceGroupName string, actionGroupName string) (*http.Request, error) {
+func (client ActionGroupsClient) GetPreparer(ctx context.Context, resourceGroupName string, actionGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"actionGroupName":   autorest.Encode("path", actionGroupName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -303,14 +301,13 @@ func (client ActionGroupsClient) GetPreparer(resourceGroupName string, actionGro
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -330,8 +327,8 @@ func (client ActionGroupsClient) GetResponder(resp *http.Response) (result Actio
 // ListByResourceGroup get a list of all action groups in a resource group.
 //
 // resourceGroupName is the name of the resource group.
-func (client ActionGroupsClient) ListByResourceGroup(resourceGroupName string) (result ActionGroupList, err error) {
-	req, err := client.ListByResourceGroupPreparer(resourceGroupName)
+func (client ActionGroupsClient) ListByResourceGroup(ctx context.Context, resourceGroupName string) (result ActionGroupList, err error) {
+	req, err := client.ListByResourceGroupPreparer(ctx, resourceGroupName)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "ListByResourceGroup", nil, "Failure preparing request")
 		return
@@ -353,7 +350,7 @@ func (client ActionGroupsClient) ListByResourceGroup(resourceGroupName string) (
 }
 
 // ListByResourceGroupPreparer prepares the ListByResourceGroup request.
-func (client ActionGroupsClient) ListByResourceGroupPreparer(resourceGroupName string) (*http.Request, error) {
+func (client ActionGroupsClient) ListByResourceGroupPreparer(ctx context.Context, resourceGroupName string) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
 		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
@@ -369,14 +366,13 @@ func (client ActionGroupsClient) ListByResourceGroupPreparer(resourceGroupName s
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListByResourceGroupSender sends the ListByResourceGroup request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) ListByResourceGroupSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 
@@ -394,8 +390,8 @@ func (client ActionGroupsClient) ListByResourceGroupResponder(resp *http.Respons
 }
 
 // ListBySubscriptionID get a list of all action groups in a subscription.
-func (client ActionGroupsClient) ListBySubscriptionID() (result ActionGroupList, err error) {
-	req, err := client.ListBySubscriptionIDPreparer()
+func (client ActionGroupsClient) ListBySubscriptionID(ctx context.Context) (result ActionGroupList, err error) {
+	req, err := client.ListBySubscriptionIDPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "ListBySubscriptionID", nil, "Failure preparing request")
 		return
@@ -417,7 +413,7 @@ func (client ActionGroupsClient) ListBySubscriptionID() (result ActionGroupList,
 }
 
 // ListBySubscriptionIDPreparer prepares the ListBySubscriptionID request.
-func (client ActionGroupsClient) ListBySubscriptionIDPreparer() (*http.Request, error) {
+func (client ActionGroupsClient) ListBySubscriptionIDPreparer(ctx context.Context) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"subscriptionId": autorest.Encode("path", client.SubscriptionID),
 	}
@@ -432,14 +428,13 @@ func (client ActionGroupsClient) ListBySubscriptionIDPreparer() (*http.Request, 
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/actionGroups", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // ListBySubscriptionIDSender sends the ListBySubscriptionID request. The method will close the
 // http.Response Body if it receives an error.
 func (client ActionGroupsClient) ListBySubscriptionIDSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		azure.DoRetryWithRegistration(client.Client))
 }
 

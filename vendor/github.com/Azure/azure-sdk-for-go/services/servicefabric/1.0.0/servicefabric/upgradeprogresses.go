@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // UpgradeProgressesClient is the client for the UpgradeProgresses methods of the Servicefabric service.
 type UpgradeProgressesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewUpgradeProgressesClient creates an instance of the UpgradeProgressesClient client.
@@ -39,8 +40,8 @@ func NewUpgradeProgressesClientWithBaseURI(baseURI string, timeout *int32) Upgra
 }
 
 // Get get upgrade progresses
-func (client UpgradeProgressesClient) Get() (result ClusterUpgradeProgress, err error) {
-	req, err := client.GetPreparer()
+func (client UpgradeProgressesClient) Get(ctx context.Context) (result ClusterUpgradeProgress, err error) {
+	req, err := client.GetPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.UpgradeProgressesClient", "Get", nil, "Failure preparing request")
 		return
@@ -62,7 +63,7 @@ func (client UpgradeProgressesClient) Get() (result ClusterUpgradeProgress, err 
 }
 
 // GetPreparer prepares the Get request.
-func (client UpgradeProgressesClient) GetPreparer() (*http.Request, error) {
+func (client UpgradeProgressesClient) GetPreparer(ctx context.Context) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -76,14 +77,13 @@ func (client UpgradeProgressesClient) GetPreparer() (*http.Request, error) {
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/GetUpgradeProgress"),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // GetSender sends the Get request. The method will close the
 // http.Response Body if it receives an error.
 func (client UpgradeProgressesClient) GetSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 

@@ -18,6 +18,7 @@ package servicefabric
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"context"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"net/http"
@@ -25,7 +26,7 @@ import (
 
 // ClusterPackagesClient is the client for the ClusterPackages methods of the Servicefabric service.
 type ClusterPackagesClient struct {
-	ManagementClient
+	BaseClient
 }
 
 // NewClusterPackagesClient creates an instance of the ClusterPackagesClient client.
@@ -41,8 +42,8 @@ func NewClusterPackagesClientWithBaseURI(baseURI string, timeout *int32) Cluster
 // Register register cluster packages
 //
 // registerClusterPackage is the package of the register cluster
-func (client ClusterPackagesClient) Register(registerClusterPackage RegisterClusterPackage) (result String, err error) {
-	req, err := client.RegisterPreparer(registerClusterPackage)
+func (client ClusterPackagesClient) Register(ctx context.Context, registerClusterPackage RegisterClusterPackage) (result String, err error) {
+	req, err := client.RegisterPreparer(ctx, registerClusterPackage)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterPackagesClient", "Register", nil, "Failure preparing request")
 		return
@@ -64,7 +65,7 @@ func (client ClusterPackagesClient) Register(registerClusterPackage RegisterClus
 }
 
 // RegisterPreparer prepares the Register request.
-func (client ClusterPackagesClient) RegisterPreparer(registerClusterPackage RegisterClusterPackage) (*http.Request, error) {
+func (client ClusterPackagesClient) RegisterPreparer(ctx context.Context, registerClusterPackage RegisterClusterPackage) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -80,14 +81,13 @@ func (client ClusterPackagesClient) RegisterPreparer(registerClusterPackage Regi
 		autorest.WithPath("/$/Provision"),
 		autorest.WithJSON(registerClusterPackage),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // RegisterSender sends the Register request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterPackagesClient) RegisterSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
@@ -107,8 +107,8 @@ func (client ClusterPackagesClient) RegisterResponder(resp *http.Response) (resu
 // Unregister unregister cluster packages
 //
 // unregisterClusterPackage is the package of the unregister cluster
-func (client ClusterPackagesClient) Unregister(unregisterClusterPackage UnregisterClusterPackage) (result String, err error) {
-	req, err := client.UnregisterPreparer(unregisterClusterPackage)
+func (client ClusterPackagesClient) Unregister(ctx context.Context, unregisterClusterPackage UnregisterClusterPackage) (result String, err error) {
+	req, err := client.UnregisterPreparer(ctx, unregisterClusterPackage)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicefabric.ClusterPackagesClient", "Unregister", nil, "Failure preparing request")
 		return
@@ -130,7 +130,7 @@ func (client ClusterPackagesClient) Unregister(unregisterClusterPackage Unregist
 }
 
 // UnregisterPreparer prepares the Unregister request.
-func (client ClusterPackagesClient) UnregisterPreparer(unregisterClusterPackage UnregisterClusterPackage) (*http.Request, error) {
+func (client ClusterPackagesClient) UnregisterPreparer(ctx context.Context, unregisterClusterPackage UnregisterClusterPackage) (*http.Request, error) {
 	const APIVersion = "1.0.0"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
@@ -146,14 +146,13 @@ func (client ClusterPackagesClient) UnregisterPreparer(unregisterClusterPackage 
 		autorest.WithPath("/$/Unprovision"),
 		autorest.WithJSON(unregisterClusterPackage),
 		autorest.WithQueryParameters(queryParameters))
-	return preparer.Prepare(&http.Request{})
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
 
 // UnregisterSender sends the Unregister request. The method will close the
 // http.Response Body if it receives an error.
 func (client ClusterPackagesClient) UnregisterSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client,
-		req,
+	return autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
