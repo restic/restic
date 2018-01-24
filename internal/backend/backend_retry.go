@@ -128,3 +128,17 @@ func (be *RetryBackend) Test(ctx context.Context, h restic.Handle) (exists bool,
 	})
 	return exists, err
 }
+
+// List runs fn for each file in the backend which has the type t.
+func (be *RetryBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	listed := make(map[string]bool)
+	return be.retry(ctx, fmt.Sprintf("List(%v)", t), func() error {
+		return be.Backend.List(ctx, t, func(fi restic.FileInfo) error {
+			if _, ok := listed[fi.Name]; ok {
+				return nil
+			}
+			listed[fi.Name] = true
+			return fn(fi)
+		})
+	})
+}
