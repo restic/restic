@@ -32,7 +32,7 @@ type Repository interface {
 	//
 	// The function fn is called in the same Goroutine List() was called from.
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
-	ListPack(context.Context, ID) ([]Blob, int64, error)
+	ListPack(context.Context, ID, int64) ([]Blob, int64, error)
 
 	Flush(context.Context) error
 

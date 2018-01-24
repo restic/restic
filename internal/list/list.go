@@ -12,7 +12,7 @@ const listPackWorkers = 10
 // Lister combines lists packs in a repo and blobs in a pack.
 type Lister interface {
 	List(context.Context, restic.FileType, func(restic.ID, int64) error) error
-	ListPack(context.Context, restic.ID) ([]restic.Blob, int64, error)
+	ListPack(context.Context, restic.ID, int64) ([]restic.Blob, int64, error)
 }
 
 // Result is returned in the channel from LoadBlobsFromAllPacks.
@@ -39,12 +39,17 @@ func (l Result) Entries() []restic.Blob {
 
 // AllPacks sends the contents of all packs to ch.
 func AllPacks(ctx context.Context, repo Lister, ignorePacks restic.IDSet, ch chan<- worker.Job) {
+	type fileInfo struct {
+		id   restic.ID
+		size int64
+	}
+
 	f := func(ctx context.Context, job worker.Job) (interface{}, error) {
-		packID := job.Data.(restic.ID)
-		entries, size, err := repo.ListPack(ctx, packID)
+		packInfo := job.Data.(fileInfo)
+		entries, size, err := repo.ListPack(ctx, packInfo.id, packInfo.size)
 
 		return Result{
-			packID:  packID,
+			packID:  packInfo.id,
 			size:    size,
 			entries: entries,
 		}, err
@@ -62,7 +67,7 @@ func AllPacks(ctx context.Context, repo Lister, ignorePacks restic.IDSet, ch cha
 			}
 
 			select {
-			case jobCh <- worker.Job{Data: id}:
+			case jobCh <- worker.Job{Data: fileInfo{id: id, size: size}, Result: Result{packID: id}}:
 			case <-ctx.Done():
 				return ctx.Err()
 			}
