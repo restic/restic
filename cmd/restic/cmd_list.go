@@ -73,9 +73,8 @@ func runList(opts GlobalOptions, args []string) error {
 		return errors.Fatal("invalid type")
 	}
 
-	for id := range repo.List(opts.ctx, t) {
+	return repo.List(opts.ctx, t, func(id restic.ID, size int64) error {
 		Printf("%s\n", id)
-	}
-
-	return nil
+		return nil
+	})
 }

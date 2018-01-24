@@ -74,24 +74,25 @@ var lister = testIDs{
 	"34dd044c228727f2226a0c9c06a3e5ceb5e30e31cb7854f8fa1cde846b395a58",
 }
 
-func (tests testIDs) List(ctx context.Context, t restic.FileType) <-chan string {
-	ch := make(chan string)
+func (tests testIDs) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	for i := 0; i < 500; i++ {
+		for _, id := range tests {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 
-	go func() {
-		defer close(ch)
+			fi := restic.FileInfo{
+				Name: id,
+			}
 
-		for i := 0; i < 500; i++ {
-			for _, id := range tests {
-				select {
-				case ch <- id:
-				case <-ctx.Done():
-					return
-				}
+			err := fn(fi)
+			if err != nil {
+				return err
 			}
 		}
-	}()
+	}
 
-	return ch
+	return nil
 }
 
 func TestFilesInParallel(t *testing.T) {
@@ -100,7 +101,7 @@ func TestFilesInParallel(t *testing.T) {
 		return nil
 	}
 
-	for n := uint(1); n < 5; n++ {
+	for n := 1; n < 5; n++ {
 		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
 		rtest.OK(t, err)
 	}
@@ -109,7 +110,6 @@ func TestFilesInParallel(t *testing.T) {
 var errTest = errors.New("test error")
 
 func TestFilesInParallelWithError(t *testing.T) {
-
 	f := func(ctx context.Context, id string) error {
 		time.Sleep(1 * time.Millisecond)
 
@@ -120,8 +120,10 @@ func TestFilesInParallelWithError(t *testing.T) {
 		return nil
 	}
 
-	for n := uint(1); n < 5; n++ {
+	for n := 1; n < 5; n++ {
 		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
-		rtest.Equals(t, errTest, err)
+		if err != errTest {
+			t.Fatalf("wrong error returned, want %q, got %v", errTest, err)
+		}
 	}
 }

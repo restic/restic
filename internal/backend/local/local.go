@@ -191,7 +191,7 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
-	return restic.FileInfo{Size: fi.Size()}, nil
+	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -226,52 +226,48 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this.
-func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
 
-	ch := make(chan string)
-
-	go func() {
-		defer close(ch)
-
-		basedir, subdirs := b.Basedir(t)
-		err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
-			debug.Log("walk on %v\n", path)
-			if err != nil {
-				return err
-			}
-
-			if path == basedir {
-				return nil
-			}
-
-			if !isFile(fi) {
-				return nil
-			}
-
-			if fi.IsDir() && !subdirs {
-				return filepath.SkipDir
-			}
-
-			debug.Log("send %v\n", filepath.Base(path))
-
-			select {
-			case ch <- filepath.Base(path):
-			case <-ctx.Done():
-				return nil
-			}
-
-			return nil
-		})
-
+	basedir, subdirs := b.Basedir(t)
+	return fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
+		debug.Log("walk on %v\n", path)
 		if err != nil {
-			debug.Log("Walk %v", err)
+			return err
 		}
-	}()
 
-	return ch
+		if path == basedir {
+			return nil
+		}
+
+		if !isFile(fi) {
+			return nil
+		}
+
+		if fi.IsDir() && !subdirs {
+			return filepath.SkipDir
+		}
+
+		debug.Log("send %v\n", filepath.Base(path))
+
+		rfi := restic.FileInfo{
+			Name: filepath.Base(path),
+			Size: fi.Size(),
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		err = fn(rfi)
+		if err != nil {
+			return err
+		}
+
+		return ctx.Err()
+	})
 }
 
 // Delete removes the repository and all files.

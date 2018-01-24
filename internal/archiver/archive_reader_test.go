@@ -135,8 +135,12 @@ func (e errReader) Read([]byte) (int, error) {
 
 func countSnapshots(t testing.TB, repo restic.Repository) int {
 	snapshots := 0
-	for range repo.List(context.TODO(), restic.SnapshotFile) {
+	err := repo.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
 		snapshots++
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	return snapshots
 }

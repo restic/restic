@@ -333,7 +333,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 		return restic.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
 	}
 
-	return restic.FileInfo{Size: int64(obj.Size)}, nil
+	return restic.FileInfo{Size: int64(obj.Size), Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -370,69 +370,72 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("listing %v", t)
-	ch := make(chan string)
 
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
-	if prefix[len(prefix)-1] != '/' {
+	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
 
-	go func() {
-		defer close(ch)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix).MaxResults(int64(be.listMaxItems))
-		for {
-			be.sem.GetToken()
-			obj, err := listReq.Do()
-			be.sem.ReleaseToken()
+	listReq := be.service.Objects.List(be.bucketName).Context(ctx).Prefix(prefix).MaxResults(int64(be.listMaxItems))
+	for {
+		be.sem.GetToken()
+		obj, err := listReq.Do()
+		be.sem.ReleaseToken()
 
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error listing %v: %v\n", prefix, err)
-				return
-			}
-
-			debug.Log("returned %v items", len(obj.Items))
-
-			for _, item := range obj.Items {
-				m := strings.TrimPrefix(item.Name, prefix)
-				if m == "" {
-					continue
-				}
-
-				select {
-				case ch <- path.Base(m):
-				case <-ctx.Done():
-					return
-				}
-			}
-
-			if obj.NextPageToken == "" {
-				break
-			}
-			listReq.PageToken(obj.NextPageToken)
+		if err != nil {
+			return err
 		}
-	}()
 
-	return ch
+		debug.Log("returned %v items", len(obj.Items))
+
+		for _, item := range obj.Items {
+			m := strings.TrimPrefix(item.Name, prefix)
+			if m == "" {
+				continue
+			}
+
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			fi := restic.FileInfo{
+				Name: path.Base(m),
+				Size: int64(item.Size),
+			}
+
+			err := fn(fi)
+			if err != nil {
+				return err
+			}
+
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+		}
+
+		if obj.NextPageToken == "" {
+			break
+		}
+		listReq.PageToken(obj.NextPageToken)
+	}
+
+	return ctx.Err()
 }
 
 // Remove keys for a specified backend type.
 func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	for key := range be.List(ctx, restic.DataFile) {
-		err := be.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return be.List(ctx, t, func(fi restic.FileInfo) error {
+		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+	})
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.

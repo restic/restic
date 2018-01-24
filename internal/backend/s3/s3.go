@@ -365,7 +365,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
-	return restic.FileInfo{Size: fi.Size}, nil
+	return restic.FileInfo{Size: fi.Size, Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -402,54 +402,59 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("listing %v", t)
-	ch := make(chan string)
 
 	prefix, recursive := be.Basedir(t)
 
 	// make sure prefix ends with a slash
-	if prefix[len(prefix)-1] != '/' {
+	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	// NB: unfortunately we can't protect this with be.sem.GetToken() here.
 	// Doing so would enable a deadlock situation (gh-1399), as ListObjects()
 	// starts its own goroutine and returns results via a channel.
 	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, recursive, ctx.Done())
 
-	go func() {
-		defer close(ch)
-		for obj := range listresp {
-			m := strings.TrimPrefix(obj.Key, prefix)
-			if m == "" {
-				continue
-			}
-
-			select {
-			case ch <- path.Base(m):
-			case <-ctx.Done():
-				return
-			}
+	for obj := range listresp {
+		m := strings.TrimPrefix(obj.Key, prefix)
+		if m == "" {
+			continue
 		}
-	}()
 
-	return ch
+		fi := restic.FileInfo{
+			Name: path.Base(m),
+			Size: obj.Size,
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		err := fn(fi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+
+	return ctx.Err()
 }
 
 // Remove keys for a specified backend type.
 func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	for key := range be.List(ctx, restic.DataFile) {
-		err := be.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return be.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+	})
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.

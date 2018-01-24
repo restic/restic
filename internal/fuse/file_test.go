@@ -35,11 +35,17 @@ func testRead(t testing.TB, f *file, offset, length int, data []byte) {
 }
 
 func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
-	for id := range repo.List(context.TODO(), restic.SnapshotFile) {
+	err := repo.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
 		if first.IsNull() {
 			first = id
 		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
+
 	return first
 }
 

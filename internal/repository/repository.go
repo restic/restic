@@ -536,22 +536,15 @@ func (r *Repository) KeyName() string {
 	return r.keyName
 }
 
-// List returns a channel that yields all IDs of type t in the backend.
-func (r *Repository) List(ctx context.Context, t restic.FileType) <-chan restic.ID {
-	out := make(chan restic.ID)
-	go func() {
-		defer close(out)
-		for strID := range r.be.List(ctx, t) {
-			if id, err := restic.ParseID(strID); err == nil {
-				select {
-				case out <- id:
-				case <-ctx.Done():
-					return
-				}
-			}
+// List runs fn for all files of type t in the repo.
+func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
+	return r.be.List(ctx, t, func(fi restic.FileInfo) error {
+		id, err := restic.ParseID(fi.Name)
+		if err != nil {
+			debug.Log("unable to parse %v as an ID", fi.Name)
 		}
-	}()
-	return out
+		return fn(id, fi.Size)
+	})
 }
 
 // ListPack returns the list of blobs saved in the pack id and the length of

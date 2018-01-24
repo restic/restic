@@ -157,15 +157,14 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 }
 
 func eachLock(ctx context.Context, repo Repository, f func(ID, *Lock, error) error) error {
-	for id := range repo.List(ctx, LockFile) {
+	return repo.List(ctx, LockFile, func(id ID, size int64) error {
 		lock, err := LoadLock(ctx, repo, id)
-		err = f(id, lock, err)
 		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		return f(id, lock, err)
+	})
 }
 
 // createLock acquires the lock by creating a file in the repository.

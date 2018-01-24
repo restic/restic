@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -203,7 +202,7 @@ func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 		return restic.FileInfo{}, errors.Wrap(err, "conn.Object")
 	}
 
-	return restic.FileInfo{Size: obj.Bytes}, nil
+	return restic.FileInfo{Size: obj.Bytes, Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -237,61 +236,62 @@ func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(err, "conn.ObjectDelete")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (be *beSwift) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("listing %v", t)
-	ch := make(chan string)
 
 	prefix, _ := be.Basedir(t)
 	prefix += "/"
 
-	go func() {
-		defer close(ch)
+	err := be.conn.ObjectsWalk(be.container, &swift.ObjectsOpts{Prefix: prefix},
+		func(opts *swift.ObjectsOpts) (interface{}, error) {
+			be.sem.GetToken()
+			newObjects, err := be.conn.Objects(be.container, opts)
+			be.sem.ReleaseToken()
 
-		err := be.conn.ObjectsWalk(be.container, &swift.ObjectsOpts{Prefix: prefix},
-			func(opts *swift.ObjectsOpts) (interface{}, error) {
-				be.sem.GetToken()
-				newObjects, err := be.conn.ObjectNames(be.container, opts)
-				be.sem.ReleaseToken()
+			if err != nil {
+				return nil, errors.Wrap(err, "conn.ObjectNames")
+			}
+			for _, obj := range newObjects {
+				m := path.Base(strings.TrimPrefix(obj.Name, prefix))
+				if m == "" {
+					continue
+				}
 
+				fi := restic.FileInfo{
+					Name: m,
+					Size: obj.Bytes,
+				}
+
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+
+				err := fn(fi)
 				if err != nil {
-					return nil, errors.Wrap(err, "conn.ObjectNames")
+					return nil, err
 				}
-				for _, obj := range newObjects {
-					m := filepath.Base(strings.TrimPrefix(obj, prefix))
-					if m == "" {
-						continue
-					}
 
-					select {
-					case ch <- m:
-					case <-ctx.Done():
-						return nil, io.EOF
-					}
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
 				}
-				return newObjects, nil
-			})
+			}
+			return newObjects, nil
+		})
 
-		if err != nil {
-			debug.Log("ObjectsWalk returned error: %v", err)
-		}
-	}()
+	if err != nil {
+		return err
+	}
 
-	return ch
+	return ctx.Err()
 }
 
 // Remove keys for a specified backend type.
 func (be *beSwift) removeKeys(ctx context.Context, t restic.FileType) error {
-	for key := range be.List(ctx, t) {
-		err := be.Remove(ctx, restic.Handle{Type: t, Name: key})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return be.List(ctx, t, func(fi restic.FileInfo) error {
+		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+	})
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.

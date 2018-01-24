@@ -32,11 +32,11 @@ func listKeys(ctx context.Context, s *repository.Repository) error {
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	for id := range s.List(ctx, restic.KeyFile) {
+	err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
 		k, err := repository.LoadKey(ctx, s, id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
-			continue
+			return nil
 		}
 
 		var current string
@@ -47,6 +47,10 @@ func listKeys(ctx context.Context, s *repository.Repository) error {
 		}
 		tab.Rows = append(tab.Rows, []interface{}{current, id.Str(),
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return tab.Write(globalOptions.stdout)

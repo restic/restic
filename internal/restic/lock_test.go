@@ -227,21 +227,29 @@ func TestLockRefresh(t *testing.T) {
 	rtest.OK(t, err)
 
 	var lockID *restic.ID
-	for id := range repo.List(context.TODO(), restic.LockFile) {
+	err = repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
 		if lockID != nil {
 			t.Error("more than one lock found")
 		}
 		lockID = &id
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	rtest.OK(t, lock.Refresh(context.TODO()))
 
 	var lockID2 *restic.ID
-	for id := range repo.List(context.TODO(), restic.LockFile) {
+	err = repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
 		if lockID2 != nil {
 			t.Error("more than one lock found")
 		}
 		lockID2 = &id
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	rtest.Assert(t, !lockID.Equal(*lockID2),

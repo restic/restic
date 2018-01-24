@@ -20,26 +20,31 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 		found    bool
 	)
 
-	for snapshotID := range repo.List(ctx, SnapshotFile) {
+	err := repo.List(ctx, SnapshotFile, func(snapshotID ID, size int64) error {
 		snapshot, err := LoadSnapshot(ctx, repo, snapshotID)
 		if err != nil {
-			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
+			return errors.Errorf("Error loading snapshot %v: %v", snapshotID.Str(), err)
 		}
 		if snapshot.Time.Before(latest) || (hostname != "" && hostname != snapshot.Hostname) {
-			continue
+			return nil
 		}
 
 		if !snapshot.HasTagList(tagLists) {
-			continue
+			return nil
 		}
 
 		if !snapshot.HasPaths(targets) {
-			continue
+			return nil
 		}
 
 		latest = snapshot.Time
 		latestID = snapshotID
 		found = true
+		return nil
+	})
+
+	if err != nil {
+		return ID{}, err
 	}
 
 	if !found {
@@ -64,20 +69,27 @@ func FindSnapshot(repo Repository, s string) (ID, error) {
 
 // FindFilteredSnapshots yields Snapshots filtered from the list of all
 // snapshots.
-func FindFilteredSnapshots(ctx context.Context, repo Repository, host string, tags []TagList, paths []string) Snapshots {
+func FindFilteredSnapshots(ctx context.Context, repo Repository, host string, tags []TagList, paths []string) (Snapshots, error) {
 	results := make(Snapshots, 0, 20)
 
-	for id := range repo.List(ctx, SnapshotFile) {
+	err := repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
 		sn, err := LoadSnapshot(ctx, repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not load snapshot %v: %v\n", id.Str(), err)
-			continue
+			return nil
 		}
+
 		if (host != "" && host != sn.Hostname) || !sn.HasTagList(tags) || !sn.HasPaths(paths) {
-			continue
+			return nil
 		}
 
 		results = append(results, sn)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
-	return results
+
+	return results, nil
 }

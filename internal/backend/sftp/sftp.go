@@ -376,7 +376,7 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
 	}
 
-	return restic.FileInfo{Size: fi.Size()}, nil
+	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -408,47 +408,54 @@ func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 	return r.c.Remove(r.Filename(h))
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (r *SFTP) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
 
-	ch := make(chan string)
-
-	go func() {
-		defer close(ch)
-
-		basedir, subdirs := r.Basedir(t)
-		walker := r.c.Walk(basedir)
-		for walker.Step() {
-			if walker.Err() != nil {
-				continue
-			}
-
-			if walker.Path() == basedir {
-				continue
-			}
-
-			if walker.Stat().IsDir() && !subdirs {
-				walker.SkipDir()
-				continue
-			}
-
-			if !walker.Stat().Mode().IsRegular() {
-				continue
-			}
-
-			select {
-			case ch <- path.Base(walker.Path()):
-			case <-ctx.Done():
-				return
-			}
+	basedir, subdirs := r.Basedir(t)
+	walker := r.c.Walk(basedir)
+	for walker.Step() {
+		if walker.Err() != nil {
+			return walker.Err()
 		}
-	}()
 
-	return ch
+		if walker.Path() == basedir {
+			continue
+		}
 
+		if walker.Stat().IsDir() && !subdirs {
+			walker.SkipDir()
+			continue
+		}
+
+		fi := walker.Stat()
+		if !fi.Mode().IsRegular() {
+			continue
+		}
+
+		debug.Log("send %v\n", path.Base(walker.Path()))
+
+		rfi := restic.FileInfo{
+			Name: path.Base(walker.Path()),
+			Size: fi.Size(),
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		err := fn(rfi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+
+	return ctx.Err()
 }
 
 var closeTimeout = 2 * time.Second

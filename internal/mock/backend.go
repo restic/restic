@@ -15,7 +15,7 @@ type Backend struct {
 	SaveFn       func(ctx context.Context, h restic.Handle, rd io.Reader) error
 	LoadFn       func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn       func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
-	ListFn       func(ctx context.Context, t restic.FileType) <-chan string
+	ListFn       func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
 	RemoveFn     func(ctx context.Context, h restic.Handle) error
 	TestFn       func(ctx context.Context, h restic.Handle) (bool, error)
 	DeleteFn     func(ctx context.Context) error
@@ -77,14 +77,12 @@ func (m *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 }
 
 // List items of type t.
-func (m *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
+func (m *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	if m.ListFn == nil {
-		ch := make(chan string)
-		close(ch)
-		return ch
+		return nil
 	}
 
-	return m.ListFn(ctx, t)
+	return m.ListFn(ctx, t, fn)
 }
 
 // Remove data from the backend.

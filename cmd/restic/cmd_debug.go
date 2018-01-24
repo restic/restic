@@ -15,8 +15,6 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/worker"
 )
 
 var cmdDebug = &cobra.Command{
@@ -52,25 +50,17 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
-	for id := range repo.List(context.TODO(), restic.SnapshotFile) {
+	return repo.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
 		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "LoadSnapshot(%v): %v", id.Str(), err)
-			continue
+			return err
 		}
 
 		fmt.Fprintf(wr, "snapshot_id: %v\n", id)
 
-		err = prettyPrintJSON(wr, snapshot)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return prettyPrintJSON(wr, snapshot)
+	})
 }
-
-const dumpPackWorkers = 10
 
 // Pack is the struct used in printPacks.
 type Pack struct {
@@ -88,49 +78,21 @@ type Blob struct {
 }
 
 func printPacks(repo *repository.Repository, wr io.Writer) error {
-	f := func(ctx context.Context, job worker.Job) (interface{}, error) {
-		name := job.Data.(string)
 
-		h := restic.Handle{Type: restic.DataFile, Name: name}
+	return repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-		blobInfo, err := repo.Backend().Stat(ctx, h)
+		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), size)
 		if err != nil {
-			return nil, err
+			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id.Str(), err)
+			return nil
 		}
 
-		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), blobInfo.Size)
-		if err != nil {
-			return nil, err
-		}
-
-		return blobs, nil
-	}
-
-	jobCh := make(chan worker.Job)
-	resCh := make(chan worker.Job)
-	wp := worker.New(context.TODO(), dumpPackWorkers, f, jobCh, resCh)
-
-	go func() {
-		for name := range repo.Backend().List(context.TODO(), restic.DataFile) {
-			jobCh <- worker.Job{Data: name}
-		}
-		close(jobCh)
-	}()
-
-	for job := range resCh {
-		name := job.Data.(string)
-
-		if job.Error != nil {
-			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", name, job.Error)
-			continue
-		}
-
-		entries := job.Result.([]restic.Blob)
 		p := Pack{
-			Name:  name,
-			Blobs: make([]Blob, len(entries)),
+			Name:  id.String(),
+			Blobs: make([]Blob, len(blobs)),
 		}
-		for i, blob := range entries {
+		for i, blob := range blobs {
 			p.Blobs[i] = Blob{
 				Type:   blob.Type,
 				Length: blob.Length,
@@ -139,16 +101,14 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 			}
 		}
 
-		prettyPrintJSON(os.Stdout, p)
-	}
-
-	wp.Wait()
+		return prettyPrintJSON(os.Stdout, p)
+	})
 
 	return nil
 }
 
 func dumpIndexes(repo restic.Repository) error {
-	for id := range repo.List(context.TODO(), restic.IndexFile) {
+	return repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		fmt.Printf("index_id: %v\n", id)
 
 		idx, err := repository.LoadIndex(context.TODO(), repo, id)
@@ -156,13 +116,8 @@ func dumpIndexes(repo restic.Repository) error {
 			return err
 		}
 
-		err = idx.Dump(os.Stdout)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return idx.Dump(os.Stdout)
+	})
 }
 
 func runDebugDump(gopts GlobalOptions, args []string) error {

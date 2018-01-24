@@ -131,9 +131,13 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	}
 }
 
-func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
-	for range repo.Backend().List(context.TODO(), t) {
+func countPacks(t testing.TB, repo restic.Repository, tpe restic.FileType) (n uint) {
+	err := repo.Backend().List(context.TODO(), tpe, func(restic.FileInfo) error {
 		n++
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	return n
@@ -158,7 +162,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	cnt.before.packs = countPacks(repo, restic.DataFile)
+	cnt.before.packs = countPacks(t, repo, restic.DataFile)
 	cnt.before.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.before.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
@@ -169,7 +173,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after.packs = countPacks(repo, restic.DataFile)
+	cnt.after.packs = countPacks(t, repo, restic.DataFile)
 	cnt.after.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.after.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
@@ -186,7 +190,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after2.packs = countPacks(repo, restic.DataFile)
+	cnt.after2.packs = countPacks(t, repo, restic.DataFile)
 	cnt.after2.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.after2.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",

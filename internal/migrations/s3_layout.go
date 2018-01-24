@@ -59,14 +59,14 @@ func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layo
 		fmt.Fprintf(os.Stderr, "renaming file returned error: %v\n", err)
 	}
 
-	for name := range be.List(ctx, t) {
-		h := restic.Handle{Type: t, Name: name}
+	return be.List(ctx, t, func(fi restic.FileInfo) error {
+		h := restic.Handle{Type: t, Name: fi.Name}
 		debug.Log("move %v", h)
 
-		retry(maxErrors, printErr, func() error {
+		return retry(maxErrors, printErr, func() error {
 			return be.Rename(h, l)
 		})
-	}
+	})
 
 	return nil
 }

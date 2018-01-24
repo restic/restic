@@ -113,42 +113,48 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int) (*Key, error) {
+func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int) (k *Key, err error) {
 	checked := 0
 
 	// try at most maxKeysForSearch keys in repo
-	for name := range s.Backend().List(ctx, restic.KeyFile) {
+	err = s.Backend().List(ctx, restic.KeyFile, func(fi restic.FileInfo) error {
 		if maxKeys > 0 && checked > maxKeys {
-			return nil, ErrMaxKeysReached
+			return ErrMaxKeysReached
 		}
 
-		_, err := restic.ParseID(name)
+		_, err := restic.ParseID(fi.Name)
 		if err != nil {
-			debug.Log("rejecting key with invalid name: %v", name)
-			continue
+			debug.Log("rejecting key with invalid name: %v", fi.Name)
+			return nil
 		}
 
-		debug.Log("trying key %q", name)
-		key, err := OpenKey(ctx, s, name, password)
+		debug.Log("trying key %q", fi.Name)
+		key, err := OpenKey(ctx, s, fi.Name, password)
 		if err != nil {
-			debug.Log("key %v returned error %v", name, err)
+			debug.Log("key %v returned error %v", fi.Name, err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
 			if errors.Cause(err) == crypto.ErrUnauthenticated {
-				continue
+				return nil
 			}
 
-			if err != nil {
-				debug.Log("unable to open key %v: %v\n", err)
-				continue
-			}
+			return err
 		}
 
-		debug.Log("successfully opened key %v", name)
-		return key, nil
+		debug.Log("successfully opened key %v", fi.Name)
+		k = key
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, ErrNoKeyFound
+	if k == nil {
+		return nil, ErrNoKeyFound
+	}
+
+	return k, nil
 }
 
 // LoadKey loads a key from the backend.

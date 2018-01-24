@@ -115,13 +115,13 @@ func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Ind
 
 	index := newIndex()
 
-	for id := range repo.List(ctx, restic.IndexFile) {
+	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 		p.Report(restic.Stat{Blobs: 1})
 
 		debug.Log("Load index %v", id.Str())
 		idx, err := loadIndexJSON(ctx, repo, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		res := make(map[restic.ID]Pack)
@@ -144,12 +144,18 @@ func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Ind
 			}
 
 			if err = index.AddPack(jpack.ID, 0, entries); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		results[id] = res
 		index.IndexIDs.Insert(id)
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	for superID, list := range supersedes {

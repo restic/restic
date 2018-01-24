@@ -242,7 +242,11 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
 
-	return restic.FileInfo{Size: int64(blob.Properties.ContentLength)}, nil
+	fi := restic.FileInfo{
+		Size: int64(blob.Properties.ContentLength),
+		Name: h.Name,
+	}
+	return fi, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -271,17 +275,15 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("listing %v", t)
-	ch := make(chan string)
 
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
-	if prefix[len(prefix)-1] != '/' {
+	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
 
@@ -290,53 +292,57 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 		Prefix:     prefix,
 	}
 
-	go func() {
-		defer close(ch)
+	for {
+		be.sem.GetToken()
+		obj, err := be.container.ListBlobs(params)
+		be.sem.ReleaseToken()
 
-		for {
-			be.sem.GetToken()
-			obj, err := be.container.ListBlobs(params)
-			be.sem.ReleaseToken()
-
-			if err != nil {
-				return
-			}
-
-			debug.Log("got %v objects", len(obj.Blobs))
-
-			for _, item := range obj.Blobs {
-				m := strings.TrimPrefix(item.Name, prefix)
-				if m == "" {
-					continue
-				}
-
-				select {
-				case ch <- path.Base(m):
-				case <-ctx.Done():
-					return
-				}
-			}
-
-			if obj.NextMarker == "" {
-				break
-			}
-			params.Marker = obj.NextMarker
+		if err != nil {
+			return err
 		}
-	}()
 
-	return ch
+		debug.Log("got %v objects", len(obj.Blobs))
+
+		for _, item := range obj.Blobs {
+			m := strings.TrimPrefix(item.Name, prefix)
+			if m == "" {
+				continue
+			}
+
+			fi := restic.FileInfo{
+				Name: path.Base(m),
+				Size: item.Properties.ContentLength,
+			}
+
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+			err := fn(fi)
+			if err != nil {
+				return err
+			}
+
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
+		}
+
+		if obj.NextMarker == "" {
+			break
+		}
+		params.Marker = obj.NextMarker
+	}
+
+	return ctx.Err()
 }
 
 // Remove keys for a specified backend type.
 func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	for key := range be.List(ctx, restic.DataFile) {
-		err := be.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return be.List(ctx, t, func(fi restic.FileInfo) error {
+		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+	})
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
