@@ -115,10 +115,10 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id.Str(), len(plaintextBuf), cap(plaintextBuf))
 
 	// lookup packs
-	blobs, err := r.idx.Lookup(id, t)
-	if err != nil {
-		debug.Log("id %v not found in index: %v", id.Str(), err)
-		return 0, err
+	blobs, found := r.idx.Lookup(id, t)
+	if !found {
+		debug.Log("id %v not found in index", id.Str())
+		return 0, errors.Errorf("id %v not found in repository", id)
 	}
 
 	// try cached pack files first
@@ -193,7 +193,7 @@ func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id
 }
 
 // LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, error) {
+func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
 	return r.idx.LookupSize(id, tpe)
 }
 
@@ -576,9 +576,9 @@ func (r *Repository) Close() error {
 // space.
 func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) (int, error) {
 	debug.Log("load blob %v into buf (len %v, cap %v)", id.Str(), len(buf), cap(buf))
-	size, err := r.idx.LookupSize(id, t)
-	if err != nil {
-		return 0, err
+	size, found := r.idx.LookupSize(id, t)
+	if !found {
+		return 0, errors.Errorf("id %v not found in repository", id)
 	}
 
 	if cap(buf) < restic.CiphertextLength(int(size)) {
@@ -610,9 +610,9 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
 	debug.Log("load tree %v", id.Str())
 
-	size, err := r.idx.LookupSize(id, restic.TreeBlob)
-	if err != nil {
-		return nil, err
+	size, found := r.idx.LookupSize(id, restic.TreeBlob)
+	if !found {
+		return nil, errors.Errorf("tree %v not found in repository", id)
 	}
 
 	debug.Log("size is %d, create buffer", size)

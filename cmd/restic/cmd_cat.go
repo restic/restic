@@ -165,8 +165,8 @@ func runCat(gopts GlobalOptions, args []string) error {
 
 	case "blob":
 		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
-			list, err := repo.Index().Lookup(id, t)
-			if err != nil {
+			list, found := repo.Index().Lookup(id, t)
+			if !found {
 				continue
 			}
 			blob := list[0]

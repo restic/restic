@@ -43,9 +43,9 @@ func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name
 
 	// check blobs
 	for i, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, restic.DataBlob)
-		if err != nil {
-			t.Fatal(err)
+		size, found := repo.LookupBlobSize(id, restic.DataBlob)
+		if !found {
+			t.Fatal("Failed to find blob", id.Str())
 		}
 
 		buf := restic.NewBlobBuffer(int(size))
@@ -55,7 +55,7 @@ func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name
 		}
 
 		buf2 := make([]byte, int(size))
-		_, err = io.ReadFull(rd, buf2)
+		_, err := io.ReadFull(rd, buf2)
 		if err != nil {
 			t.Fatal(err)
 		}

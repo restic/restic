@@ -65,8 +65,8 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, testBlob := range tests {
-		list, err := idx.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
@@ -78,8 +78,8 @@ func TestIndexSerialize(t *testing.T) {
 		rtest.Equals(t, testBlob.offset, result.Offset)
 		rtest.Equals(t, testBlob.length, result.Length)
 
-		list2, err := idx2.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list2, found := idx2.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id)
 
 		if len(list2) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list2), list2)
@@ -146,8 +146,8 @@ func TestIndexSerialize(t *testing.T) {
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
-		list, err := idx3.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list, found := idx3.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
@@ -293,8 +293,8 @@ func TestIndexUnserialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
-		list, err := idx.Lookup(test.id, test.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(test.id, test.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", test.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
@@ -341,8 +341,8 @@ func TestIndexUnserializeOld(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
-		list, err := idx.Lookup(test.id, test.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(test.id, test.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", test.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
@@ -383,16 +383,23 @@ func TestIndexPacks(t *testing.T) {
 
 const maxPackSize = 16 * 1024 * 1024
 
-func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
+// This function generates a (insecure) random ID, similar to NewRandomID
+func NewRandomTestID(rng *rand.Rand) restic.ID {
+	id := restic.ID{}
+	rng.Read(id[:])
+	return id
+}
+
+func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.ID) {
 	idx = repository.NewIndex()
 
 	// create index with 200k pack files
 	for i := 0; i < 200000; i++ {
-		packID := restic.NewRandomID()
+		packID := NewRandomTestID(rng)
 		offset := 0
 		for offset < maxPackSize {
 			size := 2000 + rand.Intn(4*1024*1024)
-			id := restic.NewRandomID()
+			id := NewRandomTestID(rng)
 			idx.Store(restic.PackedBlob{
 				PackID: packID,
 				Blob: restic.Blob{
@@ -415,7 +422,7 @@ func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
 }
 
 func BenchmarkIndexHasUnknown(b *testing.B) {
-	idx, _ := createRandomIndex()
+	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)))
 	lookupID := restic.NewRandomID()
 
 	b.ResetTimer()
@@ -426,7 +433,7 @@ func BenchmarkIndexHasUnknown(b *testing.B) {
 }
 
 func BenchmarkIndexHasKnown(b *testing.B) {
-	idx, lookupID := createRandomIndex()
+	idx, lookupID := createRandomIndex(rand.New(rand.NewSource(0)))
 
 	b.ResetTimer()
 

@@ -24,7 +24,7 @@ type Repository interface {
 
 	Config() Config
 
-	LookupBlobSize(ID, BlobType) (uint, error)
+	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -57,7 +57,7 @@ type Lister interface {
 // Index keeps track of the blobs are stored within files.
 type Index interface {
 	Has(ID, BlobType) bool
-	Lookup(ID, BlobType) ([]PackedBlob, error)
+	Lookup(ID, BlobType) ([]PackedBlob, bool)
 	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When

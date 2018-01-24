@@ -285,9 +285,9 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, DataBlob)
-		if err != nil {
-			return err
+		size, found := repo.LookupBlobSize(id, DataBlob)
+		if !found {
+			return errors.Errorf("id %v not found in repository", id)
 		}
 
 		buf = buf[:cap(buf)]

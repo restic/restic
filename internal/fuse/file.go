@@ -4,6 +4,7 @@
 package fuse
 
 import (
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -36,9 +37,10 @@ func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (
 	for i, id := range node.Content {
 		size, ok := root.blobSizeCache.Lookup(id)
 		if !ok {
-			size, err = root.repo.LookupBlobSize(id, restic.DataBlob)
-			if err != nil {
-				return nil, err
+			var found bool
+			size, found = root.repo.LookupBlobSize(id, restic.DataBlob)
+			if !found {
+				return nil, errors.Errorf("id %v not found in repository", id)
 			}
 		}
 
