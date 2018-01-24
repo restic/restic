@@ -49,23 +49,21 @@ func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, 
 	for job := range ch {
 		p.Report(restic.Stat{Blobs: 1})
 
-		packID := job.Data.(restic.ID)
+		j := job.Result.(list.Result)
 		if job.Error != nil {
 			cause := errors.Cause(job.Error)
 			if _, ok := cause.(pack.InvalidFileError); ok {
-				invalidFiles = append(invalidFiles, packID)
+				invalidFiles = append(invalidFiles, j.PackID())
 				continue
 			}
 
-			fmt.Fprintf(os.Stderr, "pack file cannot be listed %v: %v\n", packID.Str(), job.Error)
+			fmt.Fprintf(os.Stderr, "pack file cannot be listed %v: %v\n", j.PackID(), job.Error)
 			continue
 		}
 
-		j := job.Result.(list.Result)
+		debug.Log("pack %v contains %d blobs", j.PackID(), len(j.Entries()))
 
-		debug.Log("pack %v contains %d blobs", packID.Str(), len(j.Entries()))
-
-		err := idx.AddPack(packID, j.Size(), j.Entries())
+		err := idx.AddPack(j.PackID(), j.Size(), j.Entries())
 		if err != nil {
 			return nil, nil, err
 		}
