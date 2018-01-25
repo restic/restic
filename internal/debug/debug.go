@@ -180,6 +180,16 @@ func Log(f string, args ...interface{}) {
 		f += "\n"
 	}
 
+	type Shortener interface {
+		Str() string
+	}
+
+	for i, item := range args {
+		if shortener, ok := item.(Shortener); ok {
+			args[i] = shortener.Str()
+		}
+	}
+
 	pos := fmt.Sprintf("%s/%s:%d", dir, file, line)
 
 	formatString := fmt.Sprintf("%s\t%s\t%d\t%s", pos, fn, goroutine, f)
@@ -192,7 +202,8 @@ func Log(f string, args ...interface{}) {
 		opts.logger.Printf(formatString, args...)
 	}
 
-	if checkFilter(opts.files, fmt.Sprintf("%s/%s:%d", dir, file, line)) {
+	filename := fmt.Sprintf("%s/%s:%d", dir, file, line)
+	if checkFilter(opts.files, filename) {
 		dbgprint()
 		return
 	}

@@ -19,7 +19,7 @@ func BenchmarkLogIDStr(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		debug.Log("id: %v", id.Str())
+		debug.Log("id: %v", id)
 	}
 }
 
@@ -29,6 +29,6 @@ func BenchmarkLogIDString(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		debug.Log("id: %v", id.String())
+		debug.Log("id: %s", id)
 	}
 }
