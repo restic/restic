@@ -637,6 +637,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 
 	packfile, err := fs.TempFile("", "restic-temp-check-")
 	if err != nil {
+		_ = rd.Close()
 		return errors.Wrap(err, "TempFile")
 	}
 
@@ -648,6 +649,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	hrd := hashing.NewReader(rd, sha256.New())
 	size, err := io.Copy(packfile, hrd)
 	if err != nil {
+		_ = rd.Close()
 		return errors.Wrap(err, "Copy")
 	}
 

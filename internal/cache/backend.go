@@ -127,6 +127,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	}
 
 	if err = b.Cache.Save(h, rd); err != nil {
+		_ = rd.Close()
 		return err
 	}
 
