@@ -73,12 +73,12 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		return err
 	}
 
-	id, err := idx.Save(ctx, repo, supersedes)
+	ids, err := idx.Save(ctx, repo, supersedes)
 	if err != nil {
 		return errors.Fatalf("unable to save index, last error was: %v", err)
 	}
 
-	Verbosef("saved new index as %v\n", id.Str())
+	Verbosef("saved new indexes as %v\n", ids)
 
 	Verbosef("remove %d old index files\n", len(supersedes))
 

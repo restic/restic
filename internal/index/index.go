@@ -85,8 +85,8 @@ type blobJSON struct {
 }
 
 type indexJSON struct {
-	Supersedes restic.IDs  `json:"supersedes,omitempty"`
-	Packs      []*packJSON `json:"packs"`
+	Supersedes restic.IDs `json:"supersedes,omitempty"`
+	Packs      []packJSON `json:"packs"`
 }
 
 func loadIndexJSON(ctx context.Context, repo restic.Repository, id restic.ID) (*indexJSON, error) {
@@ -257,26 +257,24 @@ func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 	return result, nil
 }
 
+const maxEntries = 3000
+
 // Save writes the complete index to the repo.
-func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
-	packs := make(map[restic.ID][]restic.Blob, len(idx.Packs))
-	for id, p := range idx.Packs {
-		packs[id] = p.Entries
-	}
+func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.IDs, error) {
+	debug.Log("pack files: %d\n", len(idx.Packs))
 
-	return Save(ctx, repo, packs, supersedes)
-}
+	var indexIDs []restic.ID
 
-// Save writes a new index containing the given packs.
-func Save(ctx context.Context, repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
-	idx := &indexJSON{
+	packs := 0
+	jsonIDX := &indexJSON{
 		Supersedes: supersedes,
-		Packs:      make([]*packJSON, 0, len(packs)),
+		Packs:      make([]packJSON, 0, maxEntries),
 	}
 
-	for packID, blobs := range packs {
-		b := make([]blobJSON, 0, len(blobs))
-		for _, blob := range blobs {
+	for packID, pack := range idx.Packs {
+		debug.Log("%04d add pack %v with %d entries", packs, packID, len(pack.Entries))
+		b := make([]blobJSON, 0, len(pack.Entries))
+		for _, blob := range pack.Entries {
 			b = append(b, blobJSON{
 				ID:     blob.ID,
 				Type:   blob.Type,
@@ -285,13 +283,35 @@ func Save(ctx context.Context, repo restic.Repository, packs map[restic.ID][]res
 			})
 		}
 
-		p := &packJSON{
+		p := packJSON{
 			ID:    packID,
 			Blobs: b,
 		}
 
-		idx.Packs = append(idx.Packs, p)
+		jsonIDX.Packs = append(jsonIDX.Packs, p)
+
+		packs++
+		if packs == maxEntries {
+			id, err := repo.SaveJSONUnpacked(ctx, restic.IndexFile, jsonIDX)
+			if err != nil {
+				return nil, err
+			}
+			debug.Log("saved new index as %v", id)
+
+			indexIDs = append(indexIDs, id)
+			packs = 0
+			jsonIDX.Packs = jsonIDX.Packs[:0]
+		}
 	}
 
-	return repo.SaveJSONUnpacked(ctx, restic.IndexFile, idx)
+	if packs > 0 {
+		id, err := repo.SaveJSONUnpacked(ctx, restic.IndexFile, jsonIDX)
+		if err != nil {
+			return nil, err
+		}
+		debug.Log("saved new index as %v", id)
+		indexIDs = append(indexIDs, id)
+	}
+
+	return indexIDs, nil
 }
