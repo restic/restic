@@ -302,6 +302,21 @@ func TestIndexSave(t *testing.T) {
 	for _, err := range errs {
 		t.Errorf("checker found error: %v", err)
 	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+
+	errCh := make(chan error)
+	go checker.Structure(ctx, errCh)
+	i := 0
+	for err := range errCh {
+		t.Errorf("checker returned error: %v", err)
+		i++
+		if i == 10 {
+			t.Errorf("more than 10 errors returned, skipping the rest")
+			cancel()
+			break
+		}
+	}
 }
 
 func TestIndexAddRemovePack(t *testing.T) {
