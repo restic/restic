@@ -42,10 +42,10 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 // restoreTo restores a tree from the repo to a destination. target is the path in
 // the file system, location within the snapshot.
 func (res *Restorer) restoreTo(ctx context.Context, target, location string, treeID ID, idx *HardlinkIndex) error {
-	debug.Log("%v %v %v", target, location, treeID.Str())
+	debug.Log("%v %v %v", target, location, treeID)
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
-		debug.Log("error loading tree %v: %v", treeID.Str(), err)
+		debug.Log("error loading tree %v: %v", treeID, err)
 		return res.Error(location, nil, err)
 	}
 

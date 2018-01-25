@@ -246,7 +246,7 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 			return nil, err
 		}
 
-		debug.Log("adding index id %v to supersedes field", id.Str())
+		debug.Log("adding index id %v to supersedes field", id)
 
 		err = newIndex.AddToSupersedes(id)
 		if err != nil {

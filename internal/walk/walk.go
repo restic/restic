@@ -36,8 +36,8 @@ func NewTreeWalker(ch chan<- loadTreeJob, out chan<- TreeJob) *TreeWalker {
 // Walk starts walking the tree given by id. When the channel done is closed,
 // processing stops.
 func (tw *TreeWalker) Walk(ctx context.Context, path string, id restic.ID) {
-	debug.Log("starting on tree %v for %v", id.Str(), path)
-	defer debug.Log("done walking tree %v for %v", id.Str(), path)
+	debug.Log("starting on tree %v for %v", id, path)
+	defer debug.Log("done walking tree %v for %v", id, path)
 
 	resCh := make(chan loadTreeResult, 1)
 	tw.ch <- loadTreeJob{
@@ -141,10 +141,10 @@ func loadTreeWorker(ctx context.Context, wg *sync.WaitGroup, in <-chan loadTreeJ
 				return
 			}
 
-			debug.Log("received job to load tree %v", job.id.Str())
+			debug.Log("received job to load tree %v", job.id)
 			tree, err := load(job.id)
 
-			debug.Log("tree %v loaded, error %v", job.id.Str(), err)
+			debug.Log("tree %v loaded, error %v", job.id, err)
 
 			select {
 			case job.res <- loadTreeResult{tree, err}:
@@ -168,7 +168,7 @@ const loadTreeWorkers = 10
 // file and directory it finds. When the channel done is closed, processing
 // stops.
 func Tree(ctx context.Context, repo TreeLoader, id restic.ID, jobCh chan<- TreeJob) {
-	debug.Log("start on %v, start workers", id.Str())
+	debug.Log("start on %v, start workers", id)
 
 	load := func(id restic.ID) (*restic.Tree, error) {
 		tree, err := repo.LoadTree(ctx, id)

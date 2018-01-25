@@ -90,7 +90,7 @@ type indexJSON struct {
 }
 
 func loadIndexJSON(ctx context.Context, repo restic.Repository, id restic.ID) (*indexJSON, error) {
-	debug.Log("process index %v\n", id.Str())
+	debug.Log("process index %v\n", id)
 
 	var idx indexJSON
 	err := repo.LoadJSONUnpacked(ctx, restic.IndexFile, id, &idx)
@@ -116,7 +116,7 @@ func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Ind
 	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 		p.Report(restic.Stat{Blobs: 1})
 
-		debug.Log("Load index %v", id.Str())
+		debug.Log("Load index %v", id)
 		idx, err := loadIndexJSON(ctx, repo, id)
 		if err != nil {
 			return err
@@ -125,7 +125,7 @@ func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Ind
 		res := make(map[restic.ID]Pack)
 		supersedes[id] = restic.NewIDSet()
 		for _, sid := range idx.Supersedes {
-			debug.Log("  index %v supersedes %v", id.Str(), sid)
+			debug.Log("  index %v supersedes %v", id, sid)
 			supersedes[id].Insert(sid)
 		}
 
@@ -161,7 +161,7 @@ func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Ind
 			if _, ok := results[indexID]; !ok {
 				continue
 			}
-			debug.Log("  removing index %v, superseded by %v", indexID.Str(), superID.Str())
+			debug.Log("  removing index %v, superseded by %v", indexID, superID)
 			fmt.Fprintf(os.Stderr, "index %v can be removed, superseded by index %v\n", indexID.Str(), superID.Str())
 			delete(results, indexID)
 		}

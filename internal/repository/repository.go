@@ -66,7 +66,7 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
 func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
-	debug.Log("load %v with id %v", t, id.Str())
+	debug.Log("load %v with id %v", t, id)
 
 	h := restic.Handle{Type: t, Name: id.String()}
 	buf, err = backend.LoadAll(ctx, r.be, h)
@@ -112,12 +112,12 @@ func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedB
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
 func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
-	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id.Str(), len(plaintextBuf), cap(plaintextBuf))
+	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id, len(plaintextBuf), cap(plaintextBuf))
 
 	// lookup packs
 	blobs, found := r.idx.Lookup(id, t)
 	if !found {
-		debug.Log("id %v not found in index", id.Str())
+		debug.Log("id %v not found in index", id)
 		return 0, errors.Errorf("id %v not found in repository", id)
 	}
 
@@ -126,7 +126,7 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("blob %v/%v found: %v", t, id.Str(), blob)
+		debug.Log("blob %v/%v found: %v", t, id, blob)
 
 		if blob.Type != t {
 			debug.Log("blob %v has wrong block type, want %v", blob, t)
@@ -206,7 +206,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		id = &hashedID
 	}
 
-	debug.Log("save id %v (%v, %d bytes)", id.Str(), t, len(data))
+	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	// get buf from the pool
 	ciphertext := getBuf()
@@ -353,7 +353,7 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 			return err
 		}
 
-		debug.Log("Saved index %d as %v", i, sid.Str())
+		debug.Log("Saved index %d as %v", i, sid)
 	}
 
 	return nil
@@ -575,7 +575,7 @@ func (r *Repository) Close() error {
 // be large enough to hold the encrypted blob, since it is used as scratch
 // space.
 func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) (int, error) {
-	debug.Log("load blob %v into buf (len %v, cap %v)", id.Str(), len(buf), cap(buf))
+	debug.Log("load blob %v into buf (len %v, cap %v)", id, len(buf), cap(buf))
 	size, found := r.idx.LookupSize(id, t)
 	if !found {
 		return 0, errors.Errorf("id %v not found in repository", id)
@@ -608,7 +608,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 // LoadTree loads a tree from the repository.
 func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
-	debug.Log("load tree %v", id.Str())
+	debug.Log("load tree %v", id)
 
 	size, found := r.idx.LookupSize(id, restic.TreeBlob)
 	if !found {

@@ -48,7 +48,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		}
 
 		hash := restic.IDFromHash(hrd.Sum(nil))
-		debug.Log("pack %v loaded (%d bytes), hash %v", packID.Str(), packLength, hash.Str())
+		debug.Log("pack %v loaded (%d bytes), hash %v", packID, packLength, hash)
 
 		if !packID.Equal(hash) {
 			return nil, errors.Errorf("hash does not match id: want %v, got %v", packID, hash)
@@ -64,7 +64,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 			return nil, err
 		}
 
-		debug.Log("processing pack %v, blobs: %v", packID.Str(), len(blobs))
+		debug.Log("processing pack %v, blobs: %v", packID, len(blobs))
 		var buf []byte
 		for _, entry := range blobs {
 			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
@@ -109,7 +109,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 				return nil, err
 			}
 
-			debug.Log("  saved blob %v", entry.ID.Str())
+			debug.Log("  saved blob %v", entry.ID)
 
 			keepBlobs.Delete(h)
 		}
