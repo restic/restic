@@ -1,0 +1,12 @@
+Enhancement: Limit index file size
+
+Before, restic would create a single new index file on `prune` or
+`rebuild-index`, this may lead to memory problems when this huge index is
+created and loaded again. We're now limiting the size of the index file, and
+split newly created index files into several smaller ones. This allows restic
+to be more memory-efficient.
+
+https://github.com/restic/restic/pull/1584
+https://github.com/restic/restic/issues/1412
+https://github.com/restic/restic/issues/979
+https://github.com/restic/restic/issues/526
