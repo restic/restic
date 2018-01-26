@@ -7,3 +7,4 @@ down when it receives SIGINT and remove the lock file from the repo, afterwards
 exiting the `ssh` process.
 
 https://github.com/restic/restic/pull/1564
+https://github.com/restic/restic/pull/1588
