@@ -40,6 +40,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		hrd := hashing.NewReader(beRd, sha256.New())
 		packLength, err := io.Copy(tempfile, hrd)
 		if err != nil {
+			_ = beRd.Close()
 			return nil, errors.Wrap(err, "Copy")
 		}
 
