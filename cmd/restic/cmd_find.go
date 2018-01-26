@@ -182,11 +182,11 @@ type Finder struct {
 
 func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string) error {
 	if f.notfound.Has(treeID) {
-		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID.Str())
+		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID)
 		return nil
 	}
 
-	debug.Log("%v checking tree %v\n", prefix, treeID.Str())
+	debug.Log("%v checking tree %v\n", prefix, treeID)
 
 	tree, err := f.repo.LoadTree(ctx, treeID)
 	if err != nil {

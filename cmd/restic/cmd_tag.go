@@ -82,7 +82,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 			return false, err
 		}
 
-		debug.Log("new snapshot saved as %v", id.Str())
+		debug.Log("new snapshot saved as %v", id)
 
 		if err = repo.Flush(ctx); err != nil {
 			return false, err

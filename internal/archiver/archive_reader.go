@@ -59,9 +59,9 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 			if err != nil {
 				return nil, restic.ID{}, err
 			}
-			debug.Log("saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
+			debug.Log("saved blob %v (%d bytes)\n", id, chunk.Length)
 		} else {
-			debug.Log("blob %v already saved in the repo\n", id.Str())
+			debug.Log("blob %v already saved in the repo\n", id)
 		}
 
 		freeBuf(chunk.Data)
@@ -94,14 +94,14 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 		return nil, restic.ID{}, err
 	}
 	sn.Tree = &treeID
-	debug.Log("tree saved as %v", treeID.Str())
+	debug.Log("tree saved as %v", treeID)
 
 	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 
-	debug.Log("snapshot saved as %v", id.Str())
+	debug.Log("snapshot saved as %v", id)
 
 	err = repo.Flush(ctx)
 	if err != nil {

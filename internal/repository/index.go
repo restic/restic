@@ -398,7 +398,7 @@ func (idx *Index) SetID(id restic.ID) error {
 		return errors.New("ID already set")
 	}
 
-	debug.Log("ID set to %v", id.Str())
+	debug.Log("ID set to %v", id)
 	idx.id = id
 
 	return nil
@@ -550,7 +550,7 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
 func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, id restic.ID, fn func([]byte) (*Index, error)) (idx *Index, err error) {
-	debug.Log("Loading index %v", id.Str())
+	debug.Log("Loading index %v", id)
 
 	buf, err := repo.LoadAndDecrypt(ctx, restic.IndexFile, id)
 	if err != nil {
