@@ -33,6 +33,7 @@ type RestoreOptions struct {
 	Host    string
 	Paths   []string
 	Tags    restic.TagLists
+	Workers int
 }
 
 var restoreOptions RestoreOptions
@@ -48,6 +49,7 @@ func init() {
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
 	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.IntVarP(&restoreOptions.Workers, "worker", "c", 1, "enable concurrent restore worker")
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
@@ -104,7 +106,10 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	res, err := restic.NewRestorer(repo, id)
+	if opts.Workers == 0 {
+		opts.Workers = 1
+	}
+	res, err := restic.NewRestorer(repo, id, opts.Workers)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}
@@ -156,5 +161,6 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	if totalErrors > 0 {
 		Printf("There were %d errors\n", totalErrors)
 	}
+
 	return err
 }
