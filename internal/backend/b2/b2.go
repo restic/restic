@@ -297,6 +297,10 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 				return ctx.Err()
 			}
 
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
 			attrs, err := obj.Attrs(ctx)
 			if err != nil {
 				return err
