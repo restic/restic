@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -29,7 +30,11 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	// open the TTY, we need the file descriptor
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
-		return nil, errors.Wrap(err, "open TTY")
+		debug.Log("unable to open tty: %v", err)
+		bg = func() error {
+			return nil
+		}
+		return bg, cmd.Start()
 	}
 
 	signal.Ignore(syscall.SIGTTIN)
