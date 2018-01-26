@@ -620,7 +620,7 @@ func (j archiveJob) Copy() pipe.Job {
 const saveIndexTime = 30 * time.Second
 
 // saveIndexes regularly queries the master index for full indexes and saves them.
-func (arch *Archiver) saveIndexes(ctx context.Context, wg *sync.WaitGroup) {
+func (arch *Archiver) saveIndexes(saveCtx, shutdownCtx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	ticker := time.NewTicker(saveIndexTime)
@@ -628,11 +628,13 @@ func (arch *Archiver) saveIndexes(ctx context.Context, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-saveCtx.Done():
+			return
+		case <-shutdownCtx.Done():
 			return
 		case <-ticker.C:
 			debug.Log("saving full indexes")
-			err := arch.repo.SaveFullIndex(ctx)
+			err := arch.repo.SaveFullIndex(saveCtx)
 			if err != nil {
 				debug.Log("save indexes returned an error: %v", err)
 				fmt.Fprintf(os.Stderr, "error saving preliminary index: %v\n", err)
@@ -748,16 +750,16 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 
 	// run index saver
 	var wgIndexSaver sync.WaitGroup
-	indexCtx, indexCancel := context.WithCancel(ctx)
+	shutdownCtx, indexShutdown := context.WithCancel(ctx)
 	wgIndexSaver.Add(1)
-	go arch.saveIndexes(indexCtx, &wgIndexSaver)
+	go arch.saveIndexes(ctx, shutdownCtx, &wgIndexSaver)
 
 	// wait for all workers to terminate
 	debug.Log("wait for workers")
 	wg.Wait()
 
 	// stop index saver
-	indexCancel()
+	indexShutdown()
 	wgIndexSaver.Wait()
 
 	debug.Log("workers terminated")
