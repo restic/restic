@@ -1,0 +1,7 @@
+Bugfix: Google Cloud Storage: Use generic HTTP transport
+
+It was discovered that the Google Cloud Storage backend did not use the generic
+HTTP transport, so things such as bandwidth limiting with `--limit-upload` did
+not work. This is resolved now.
+
+https://github.com/restic/restic/pull/1594
