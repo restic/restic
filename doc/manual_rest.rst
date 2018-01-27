@@ -51,8 +51,8 @@ Usage help is available:
       -p, --password-file string    read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                   do not output comprehensive progress report
       -r, --repo string             repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --tls-client-cert string  path to a TLS client certificate
-          --tls-client-key string   path to a TLS client certificate key
+          --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
+
 
     Use "restic [command] --help" for more information about a command.
 

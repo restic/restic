@@ -48,7 +48,6 @@ type GlobalOptions struct {
 	NoCache       bool
 	CACerts       []string
 	TLSClientCert string
-	TLSClientKey  string
 	CleanupCache  bool
 
 	LimitUploadKb   int
@@ -86,8 +85,7 @@ func init() {
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
-	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a TLS client certificate")
-	f.StringVar(&globalOptions.TLSClientKey, "tls-client-key", "", "path to a TLS client certificate key")
+	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a file containing PEM encoded TLS client certificate and private key")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
@@ -545,7 +543,11 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.CACerts, globalOptions.TLSClientCert, globalOptions.TLSClientKey)
+	tropts := backend.TransportOptions{
+		RootCertFilenames:        globalOptions.CACerts,
+		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
+	}
+	rt, err := backend.Transport(tropts)
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +611,11 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.CACerts, globalOptions.TLSClientCert, globalOptions.TLSClientKey)
+	tropts := backend.TransportOptions{
+		RootCertFilenames:        globalOptions.CACerts,
+		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
+	}
+	rt, err := backend.Transport(tropts)
 	if err != nil {
 		return nil, err
 	}

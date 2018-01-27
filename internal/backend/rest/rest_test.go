@@ -68,7 +68,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, fun
 }
 
 func newTestSuite(ctx context.Context, t testing.TB, url *url.URL, minimalData bool) *test.Suite {
-	tr, err := backend.Transport(nil, "", "")
+	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
