@@ -1,0 +1,17 @@
+Bugfix: Complete intermediate index upload
+
+After a user posted a comprehensive report of what he observed, we were able to
+find a bug and correct it: During backup, restic uploads so-called
+"intermediate" index files. When the backup finishes during a transfer of such
+an intermediate index, the upload is cancelled, but the backup is finished
+without an error. This leads to an inconsistent state, where the snapshot
+references data that is contained in the repo, but is not referenced in any
+index.
+
+The situation can be resolved by building a new index with `rebuild-index`, but
+looks very confusing at first. Since all the data got uploaded to the repo
+successfully, there was no risk of data loss, just minor inconvenience for our
+users.
+
+https://github.com/restic/restic/pull/1589
+https://forum.restic.net/t/error-loading-tree-check-prune-and-forget-gives-error-b2-backend/406
