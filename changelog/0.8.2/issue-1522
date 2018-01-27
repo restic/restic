@@ -1,0 +1,8 @@
+Enhancement: Add support for TLS client certificate authentication
+
+Support has been added for using a TLS client certificate for authentication to
+HTTP based backend. A file containing the PEM encoded private key and
+certificate can be set using the `--tls-client-cert` option.
+
+https://github.com/restic/restic/issues/1522
+https://github.com/restic/restic/pull/1524

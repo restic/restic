@@ -39,18 +39,20 @@ Usage help is available:
       version       Print version information
 
     Flags:
-          --cacert stringSlice     path to load root certificates from (default: use system certificates)
-          --cache-dir string       set the cache directory
-      -h, --help                   help for restic
-          --json                   set output mode to JSON for commands that support it
-          --limit-download int     limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int       limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache               do not use a local cache
-          --no-lock                do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value       set extended option (key=value, can be specified multiple times)
-      -p, --password-file string   read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                  do not output comprehensive progress report
-      -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --cacert stringSlice      path to load root certificates from (default: use system certificates)
+          --cache-dir string        set the cache directory
+      -h, --help                    help for restic
+          --json                    set output mode to JSON for commands that support it
+          --limit-download int      limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int        limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                do not use a local cache
+          --no-lock                 do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value        set extended option (key=value, can be specified multiple times)
+      -p, --password-file string    read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                   do not output comprehensive progress report
+      -r, --repo string             repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
+
 
     Use "restic [command] --help" for more information about a command.
 
@@ -87,17 +89,19 @@ command:
           --time string                      time of the backup (ex. '2012-11-01 22:08:41') (default: now)
 
     Global Flags:
-          --cacert stringSlice     path to load root certificates from (default: use system certificates)
-          --cache-dir string       set the cache directory
-          --json                   set output mode to JSON for commands that support it
-          --limit-download int     limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int       limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache               do not use a local cache
-          --no-lock                do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value       set extended option (key=value, can be specified multiple times)
-      -p, --password-file string   read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                  do not output comprehensive progress report
-      -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --cacert stringSlice      path to load root certificates from (default: use system certificates)
+          --cache-dir string        set the cache directory
+          --json                    set output mode to JSON for commands that support it
+          --limit-download int      limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int        limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                do not use a local cache
+          --no-lock                 do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value        set extended option (key=value, can be specified multiple times)
+      -p, --password-file string    read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                   do not output comprehensive progress report
+      -r, --repo string             repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --tls-client-cert string  path to a TLS client certificate
+          --tls-client-key string   path to a TLS client certificate key
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
