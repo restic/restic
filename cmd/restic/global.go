@@ -567,7 +567,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config), rt)
 	case "gs":
-		be, err = gs.Open(cfg.(gs.Config))
+		be, err = gs.Open(cfg.(gs.Config), rt)
 	case "azure":
 		be, err = azure.Open(cfg.(azure.Config), rt)
 	case "swift":
@@ -628,7 +628,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "s3":
 		return s3.Create(cfg.(s3.Config), rt)
 	case "gs":
-		return gs.Create(cfg.(gs.Config))
+		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":
 		return azure.Create(cfg.(azure.Config), rt)
 	case "swift":
