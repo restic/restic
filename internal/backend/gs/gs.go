@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -16,6 +17,7 @@ import (
 
 	"io/ioutil"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 	storage "google.golang.org/api/storage/v1"
@@ -41,7 +43,7 @@ type Backend struct {
 // Ensure that *Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
 
-func getStorageService(jsonKeyPath string) (*storage.Service, error) {
+func getStorageService(jsonKeyPath string, rt http.RoundTripper) (*storage.Service, error) {
 
 	raw, err := ioutil.ReadFile(jsonKeyPath)
 	if err != nil {
@@ -53,8 +55,18 @@ func getStorageService(jsonKeyPath string) (*storage.Service, error) {
 		return nil, err
 	}
 
-	client := conf.Client(context.TODO())
+	// create a new HTTP client
+	httpClient := &http.Client{
+		Transport: rt,
+	}
 
+	// create a now context with the HTTP client stored at the oauth2.HTTPClient key
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
+
+	// then pass this context to Client(), which returns a new HTTP client
+	client := conf.Client(ctx)
+
+	// that we can then pass to New()
 	service, err := storage.New(client)
 	if err != nil {
 		return nil, err
@@ -65,10 +77,10 @@ func getStorageService(jsonKeyPath string) (*storage.Service, error) {
 
 const defaultListMaxItems = 1000
 
-func open(cfg Config) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
-	service, err := getStorageService(cfg.JSONKeyPath)
+	service, err := getStorageService(cfg.JSONKeyPath, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "getStorageService")
 	}
@@ -95,8 +107,8 @@ func open(cfg Config) (*Backend, error) {
 }
 
 // Open opens the gs backend at the specified bucket.
-func Open(cfg Config) (restic.Backend, error) {
-	return open(cfg)
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	return open(cfg, rt)
 }
 
 // Create opens the gs backend at the specified bucket and attempts to creates
@@ -104,8 +116,8 @@ func Open(cfg Config) (restic.Backend, error) {
 //
 // The service account must have the "storage.buckets.create" permission to
 // create a bucket the does not yet exist.
-func Create(cfg Config) (restic.Backend, error) {
-	be, err := open(cfg)
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
