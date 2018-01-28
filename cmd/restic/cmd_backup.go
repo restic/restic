@@ -138,10 +138,9 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 
 		itemsDone := s.Files + s.Dirs
 
-		status1 := fmt.Sprintf("[%s] %s  %s/s  %s / %s  %d / %d items  %d errors  ",
+		status1 := fmt.Sprintf("[%s] %s  %s / %s  %d / %d items  %d errors  ",
 			formatDuration(d),
 			formatPercent(s.Bytes, todo.Bytes),
-			formatBytes(bps),
 			formatBytes(s.Bytes), formatBytes(todo.Bytes),
 			itemsDone, itemsTodo,
 			s.Errors)
@@ -162,7 +161,7 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nduration: %s, %s\n", formatDuration(d), formatRate(todo.Bytes, d))
+		fmt.Printf("\nduration: %s\n", formatDuration(d))
 	}
 
 	return archiveProgress
@@ -206,7 +205,7 @@ func newArchiveStdinProgress(gopts GlobalOptions) *restic.Progress {
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nduration: %s, %s\n", formatDuration(d), formatRate(s.Bytes, d))
+		fmt.Printf("\nduration: %s\n", formatDuration(d))
 	}
 
 	return archiveProgress
