@@ -249,6 +249,19 @@ func (s *Suite) TestList(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
+	// Check that the backend is empty to start with
+	var found []string
+	err := b.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+		found = append(found, fi.Name)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("List returned error %v", err)
+	}
+	if found != nil {
+		t.Fatalf("backend not empty at start of test - contains: %v", found)
+	}
+
 	list1 := make(map[restic.ID]int64)
 
 	for i := 0; i < numTestFiles; i++ {
@@ -324,7 +337,7 @@ func (s *Suite) TestList(t *testing.T) {
 		handles = append(handles, restic.Handle{Type: restic.DataFile, Name: id.String()})
 	}
 
-	err := s.delayedRemove(t, b, handles...)
+	err = s.delayedRemove(t, b, handles...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -784,7 +797,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		// create blob
 		h := restic.Handle{Type: tpe, Name: ts.id}
 		err := b.Save(context.TODO(), h, strings.NewReader(ts.data))
-		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
+		test.Assert(t, err != nil, "backend has allowed overwrite of existing blob: expected error for %v, got %v", h, err)
 
 		// remove and recreate
 		err = s.delayedRemove(t, b, h)
