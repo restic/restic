@@ -121,48 +121,40 @@ policy:
    :alt: Assign a Policy
 
 A new browser window or tab will open with the policy wizard. In Amazon IAM,
-policies are defined as JSON documents. For this tutorial, the "Policy
-Generator" will be used to generate a policy file using a web interface:
+policies are defined as JSON documents. For this tutorial, the "Visual editor"
+will be used to generate a policy:
 
 .. image:: images/aws_s3/11_policy_start.png
    :alt: Create a New Policy
 
-After invoking the policy generator, you will be presented with a user
-interface to generate individual permission statements. For restic to work, two
-such statements must be created. The first statement is set up as follows:
+For restic to work, two permission statements must be created using the visual
+policy editor. The first statement is set up as follows:
 
 .. code::
 
-   Effect: Allow
-   Service: Amazon S3
-   Actions: DeleteObject, GetObject, PutObject
-   Resource: arn:aws:s3:::restic-demo/*
+   Service: S3
+   Allow Actions: DeleteObject, GetObject, PutObject
+   Resources: arn:aws:s3:::restic-demo/*
 
 This statement allows restic to create, read and delete objects inside the S3
-bucket named ``restic-demo``. Adjust the bucket's name to the name of the bucket
-you created earlier. Using the "Add Statement" button, this statement can be
-saved. Now a second statement is created:
+bucket named ``restic-demo``. Adjust the bucket's name to the name of the
+bucket you created earlier. Next, add a second statement using the "Add
+additional permissions" button:
 
 .. code::
 
-   Effect: Allow
-   Service: Amazon S3
-   Actions: ListBucket
+   Service: S3
+   Allow Actions: ListBucket, GetBucketLocation
    Resource: arn:aws:s3:::restic-demo
 
-Again, substitute ``restic-demo`` with the actual name of your bucket. Note that,
-unlike before, there is no ``/*`` after the bucket name. This statement allows
-restic to list the objects stored in the ``restic-demo`` bucket. Again, use "Add
-Statement" to save this statement. The policy creator interface should now
-look as follows:
+Again, substitute ``restic-demo`` with the actual name of your bucket. Note
+that, unlike before, there is no ``/*`` after the bucket name. This statement
+allows restic to list the objects stored in the ``restic-demo`` bucket and to
+query the bucket's region.
 
-.. image:: images/aws_s3/12_policy_permissions_done.png
-   :alt: Policy Creator With Two Statements
-
-Continue to the next step and enter a name and description for this policy. For
-this tutorial, the policy will be named ``restic-demo-policy``. In this step you
-can also examine the JSON document created by the policy generator. Click
-"Create Policy" to finish the process:
+Continue to the next step by clicking the "Review policy" button and enter a
+name and description for this policy. For this tutorial, the policy will be
+named ``restic-demo-policy``. Click "Create policy" to finish the process:
 
 .. image:: images/aws_s3/13_policy_review.png
    :alt: Policy Review
