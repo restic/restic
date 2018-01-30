@@ -1,0 +1,3 @@
+Enhancement: Retry Backend.List() in case of errors
+
+https://github.com/restic/restic/pull/1579
