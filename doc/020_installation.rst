@@ -113,6 +113,8 @@ supply the target OS and platform via the command-line options like this
 
     $ go run build.go --goos freebsd --goarch 386
 
+    $ go run build.go --goos linux --goarch arm --goarm 6
+    
 The resulting binary is statically linked and does not require any
 libraries.
 
