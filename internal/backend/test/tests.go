@@ -449,8 +449,8 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
 		}
 
-		if i > 1 {
-			t.Fatalf("wrong number of files returned by List, want <= 1, got %v", i)
+		if i > 2 {
+			t.Fatalf("wrong number of files returned by List, want <= 2, got %v", i)
 		}
 	})
 
