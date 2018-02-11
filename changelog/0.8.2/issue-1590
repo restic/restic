@@ -1,0 +1,7 @@
+Bugfix: Strip spaces for lines read via --files-from
+
+Leading and trailing spaces in lines read via `--files-from` are now stripped,
+so it behaves the same as with lines read via `--exclude-file`.
+
+https://github.com/restic/restic/issues/1590
+https://github.com/restic/restic/pull/1613
