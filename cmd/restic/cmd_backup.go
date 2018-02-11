@@ -304,7 +304,7 @@ func readLinesFromFile(filename string) ([]string, error) {
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		// ignore empty lines
 		if line == "" {
 			continue
