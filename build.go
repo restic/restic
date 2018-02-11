@@ -227,6 +227,7 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "         --enable-cgo    use CGO to link against libc\n")
 	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
+	fmt.Fprintf(output, "         --goarm value  set GOARM for cross-compilation\n")
 }
 
 func verbosePrintf(message string, args ...interface{}) {
@@ -252,13 +253,16 @@ func cleanEnv() (env []string) {
 }
 
 // build runs "go build args..." with GOPATH set to gopath.
-func build(cwd, goos, goarch, gopath string, args ...string) error {
+func build(cwd, goos, goarch, goarm, gopath string, args ...string) error {
 	a := []string{"build"}
 	a = append(a, "-asmflags", fmt.Sprintf("-trimpath=%s", gopath))
 	a = append(a, "-gcflags", fmt.Sprintf("-trimpath=%s", gopath))
 	a = append(a, args...)
 	cmd := exec.Command("go", a...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
+	if goarm != "" {
+		cmd.Env = append(cmd.Env, "GOARM="+goarm)
+	}
 	if !enableCGO {
 		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
 	}
@@ -431,6 +435,7 @@ func main() {
 
 	targetGOOS := runtime.GOOS
 	targetGOARCH := runtime.GOARCH
+	targetGOARM := ""
 
 	var outputFilename string
 
@@ -464,6 +469,9 @@ func main() {
 		case "--goarch":
 			skipNext = true
 			targetGOARCH = params[i+1]
+		case "--goarm":
+			skipNext = true
+			targetGOARM = params[i+1]
 		case "-h":
 			showUsage(os.Stdout)
 			return
@@ -548,7 +556,7 @@ func main() {
 		"-o", output, config.Main,
 	}
 
-	err = build(filepath.Join(gopath, "src"), targetGOOS, targetGOARCH, gopath, args...)
+	err = build(filepath.Join(gopath, "src"), targetGOOS, targetGOARCH, targetGOARM, gopath, args...)
 	if err != nil {
 		die("build failed: %v\n", err)
 	}
