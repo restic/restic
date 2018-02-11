@@ -1,4 +1,33 @@
-// +build ignore
+// BSD 2-Clause License
+//
+// Copyright (c) 2016-2018, Alexander Neumann <alexander@bumpern.de>
+// All rights reserved.
+//
+// This file has been copied from the repository at:
+// https://github.com/fd0/build-go
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// +build ignore_build_go
 
 package main
 
@@ -15,28 +44,33 @@ import (
 	"strings"
 )
 
+// config contains the configuration for the program to build.
+var config = Config{
+	Name:      "restic",                              // name of the program executable and directory
+	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
+	Main:      "github.com/restic/restic/cmd/restic", // package name for the main package
+	Tests: []string{ // tests to run
+		"github.com/restic/restic/internal/...",
+		"github.com/restic/restic/cmd/...",
+	},
+	MinVersion: GoVersion{Major: 1, Minor: 8, Patch: 0}, // minimum Go version supported
+}
+
+// Config configures the build.
+type Config struct {
+	Name       string
+	Namespace  string
+	Main       string
+	Tests      []string
+	MinVersion GoVersion
+}
+
 var (
 	verbose    bool
 	keepGopath bool
 	runTests   bool
 	enableCGO  bool
 )
-
-var config = struct {
-	Name       string
-	Namespace  string
-	Main       string
-	Tests      []string
-	MinVersion GoVersion
-}{
-	Name:      "restic",                              // name of the program executable and directory
-	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
-	Main:      "github.com/restic/restic/cmd/restic", // package name for the main package
-	Tests: []string{ // tests to run
-		"github.com/restic/restic/internal/...",
-		"github.com/restic/restic/cmd/..."},
-	MinVersion: GoVersion{Major: 1, Minor: 8, Patch: 0}, // minimum Go version supported
-}
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
 func specialDir(name string) bool {
