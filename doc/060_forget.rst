@@ -145,19 +145,20 @@ tags use ``--group-by paths,tags``. The policy is then applied to each group of
 snapshots separately. This is a safety feature.
 
 The ``forget`` command accepts the following parameters:
+
 -  ``--keep-last n`` never delete the ``n`` last (most recent) snapshots
 -  ``--keep-hourly n`` for the last ``n`` hours in which a snapshot was
-made, keep only the last snapshot for each hour.
+   made, keep only the last snapshot for each hour.
 -  ``--keep-daily n`` for the last ``n`` days which have one or more
-snapshots, only keep the last one for that day.
+   snapshots, only keep the last one for that day.
 -  ``--keep-weekly n`` for the last ``n`` weeks which have one or more
-snapshots, only keep the last one for that week.
+   snapshots, only keep the last one for that week.
 -  ``--keep-monthly n`` for the last ``n`` months which have one or more
-snapshots, only keep the last one for that month.
+   snapshots, only keep the last one for that month.
 -  ``--keep-yearly n`` for the last ``n`` years which have one or more
-snapshots, only keep the last one for that year.
+   snapshots, only keep the last one for that year.
 -  ``--keep-tag`` keep all snapshots which have all tags specified by
-this option (can be specified multiple times).
+   this option (can be specified multiple times).
 
 Additionally, you can restrict removing snapshots to those which have a
 particular hostname with the ``--hostname`` parameter, or tags with the
