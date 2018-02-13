@@ -188,6 +188,12 @@ All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a
 snapshot are ignored.
 
+For safety reasons, restic refuses to act on an "empty" policy. For example,
+if one were to specify ``--keep-last 0`` to forget *all* snapshots in the
+repository, restic will respond that no snapshots will be removed. To delete
+all snapshots, use ``--keep-last 1`` and then finally remove the last
+snapshot ID manually (by passing the ID to ``forget``).
+
 All snapshots are evaluated counted against all matching keep-* counts. A
 single snapshot on 2017-09-30 (Sun) will count as a daily, weekly and monthly.
 
