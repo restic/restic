@@ -194,7 +194,7 @@ repository, restic will respond that no snapshots will be removed. To delete
 all snapshots, use ``--keep-last 1`` and then finally remove the last
 snapshot ID manually (by passing the ID to ``forget``).
 
-All snapshots are evaluated counted against all matching keep-* counts. A
+All snapshots are evaluated against all matching ``--keep-*`` counts. A
 single snapshot on 2017-09-30 (Sun) will count as a daily, weekly and monthly.
 
 Let's explain this with an example: Suppose you have only made a backup
