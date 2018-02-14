@@ -80,7 +80,7 @@ the exclude options are:
 
 -  ``--exclude`` Specified one or more times to exclude one or more items
 -  ``--exclude-caches`` Specified once to exclude folders containing a special file
--  ``--exclude-file`` Specified one time to exclude items listed in a given file
+-  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--exclude-if-present`` Specified one or more times to exclude a folders content
    if it contains a given file (optionally having a given header)
 
