@@ -75,8 +75,16 @@ Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
 to make sure the internal structure of the repository is free of errors.
 
-You can exclude folders and files by specifying exclude-patterns. Either
-specify them with multiple ``--exclude``'s or one ``--exclude-file``
+You can exclude folders and files by specifying exclude patterns, currently
+the exclude options are:
+
+-  ``--exclude`` Specified one or more times to exclude one or more items
+-  ``--exclude-caches`` Specified once to exclude folders containing a special file
+-  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
+-  ``--exclude-if-present`` Specified one or more times to exclude a folders content
+   if it contains a given file (optionally having a given header)
+
+Basic example:
 
 .. code-block:: console
 
@@ -86,6 +94,8 @@ specify them with multiple ``--exclude``'s or one ``--exclude-file``
     # exclude foo/x/y/z/bar foo/x/bar foo/bar
     foo/**/bar
     $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
+
+Please see ``restic help backup`` for more specific information about each exclude option.
 
 Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
 see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for syntax.
