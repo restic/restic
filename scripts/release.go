@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -21,11 +20,12 @@ import (
 var opts = struct {
 	Version string
 
-	IgnoreBranchName         bool
-	IgnoreUncommittedChanges bool
-	IgnoreChangelogVersion   bool
-	IgnoreChangelogRelease   bool
-	IgnoreChangelogCurrent   bool
+	IgnoreBranchName           bool
+	IgnoreUncommittedChanges   bool
+	IgnoreChangelogVersion     bool
+	IgnoreChangelogReleaseDate bool
+	IgnoreChangelogCurrent     bool
+	IgnoreDockerBuildGoVersion bool
 
 	tarFilename string
 	buildDir    string
@@ -37,8 +37,9 @@ func init() {
 	pflag.BoolVar(&opts.IgnoreBranchName, "ignore-branch-name", false, "allow releasing from other branches as 'master'")
 	pflag.BoolVar(&opts.IgnoreUncommittedChanges, "ignore-uncommitted-changes", false, "allow uncommitted changes")
 	pflag.BoolVar(&opts.IgnoreChangelogVersion, "ignore-changelog-version", false, "ignore missing entry in CHANGELOG.md")
-	pflag.BoolVar(&opts.IgnoreChangelogRelease, "ignore-changelog-releases", false, "ignore missing entry changelog/releases")
+	pflag.BoolVar(&opts.IgnoreChangelogReleaseDate, "ignore-changelog-release-date", false, "ignore missing subdir with date in changelog/")
 	pflag.BoolVar(&opts.IgnoreChangelogCurrent, "ignore-changelog-current", false, "ignore check if CHANGELOG.md is up to date")
+	pflag.BoolVar(&opts.IgnoreDockerBuildGoVersion, "ignore-docker-build-go-version", false, "ignore check if docker builder go version is up to date")
 	pflag.Parse()
 }
 
@@ -172,32 +173,33 @@ func preCheckChangelogCurrent() {
 }
 
 func preCheckChangelogRelease() {
-	if opts.IgnoreChangelogRelease {
+	if opts.IgnoreChangelogReleaseDate {
 		return
 	}
 
-	f, err := os.Open(filepath.FromSlash("changelog/releases"))
+	d, err := os.Open("changelog")
 	if err != nil {
-		die("unable to open releases file in changelog/: %v", err)
+		die("error opening dir: %v", err)
 	}
 
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		if sc.Err() != nil {
-			die("error reading releases file in changelog: %v", err)
-		}
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		_ = d.Close()
+		die("error listing dir: %v", err)
+	}
 
-		if sc.Text() == fmt.Sprintf("%v %v", opts.Version, time.Now().Format("2006-01-02")) {
+	err = d.Close()
+	if err != nil {
+		die("error closing dir: %v", err)
+	}
+
+	for _, name := range names {
+		if strings.HasPrefix(name, opts.Version+"_") {
 			return
 		}
 	}
 
-	err = f.Close()
-	if err != nil {
-		die("close releases error: %v", err)
-	}
-
-	die("unable to find correct line for version %v (released today) in changelog/releases", opts.Version)
+	die("unable to find subdir with date for version %v in changelog", opts.Version)
 }
 
 func preCheckChangelogVersion() {
@@ -226,6 +228,10 @@ func preCheckChangelogVersion() {
 }
 
 func preCheckDockerBuilderGoVersion() {
+	if opts.IgnoreDockerBuildGoVersion {
+		return
+	}
+
 	buf, err := exec.Command("go", "version").Output()
 	if err != nil {
 		die("unable to check local Go version: %v", err)
