@@ -225,6 +225,26 @@ func preCheckChangelogVersion() {
 	die("CHANGELOG.md does not contain version %v", opts.Version)
 }
 
+func preCheckDockerBuilderGoVersion() {
+	buf, err := exec.Command("go", "version").Output()
+	if err != nil {
+		die("unable to check local Go version: %v", err)
+	}
+	localVersion := strings.TrimSpace(string(buf))
+
+	run("docker", "pull", "restic/builder")
+	buf, err = exec.Command("docker", "run", "--rm", "restic/builder", "-").Output()
+	if err != nil {
+		die("unable to check Go version in docker image: %v", err)
+	}
+	containerVersion := strings.TrimSpace(string(buf))
+
+	if localVersion != containerVersion {
+		die("version in docker container restic/builder is different:\n  local:     %v\n  container: %v\n",
+			localVersion, containerVersion)
+	}
+}
+
 func generateFiles() {
 	msg("generate files")
 	run("go", "run", "build.go", "-o", "restic-generate.temp")
@@ -273,8 +293,7 @@ func exportTar() {
 
 func runBuild() {
 	msg("building binaries...")
-	run("docker", "pull", "restic/builder")
-	run("docker", "run", "--volume", getwd()+":/home/build", "restic/builder", opts.tarFilename)
+	run("docker", "run", "--rm", "--volume", getwd()+":/home/build", "restic/builder", opts.tarFilename)
 }
 
 func findBuildDir() string {
@@ -338,6 +357,7 @@ func main() {
 	preCheckBranchMaster()
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
+	preCheckDockerBuilderGoVersion()
 	preCheckChangelogRelease()
 	preCheckChangelogCurrent()
 	preCheckChangelogVersion()
