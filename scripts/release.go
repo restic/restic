@@ -338,8 +338,8 @@ func main() {
 	preCheckBranchMaster()
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
-	preCheckChangelogCurrent()
 	preCheckChangelogRelease()
+	preCheckChangelogCurrent()
 	preCheckChangelogVersion()
 
 	generateFiles()
