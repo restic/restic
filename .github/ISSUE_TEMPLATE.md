@@ -2,8 +2,8 @@
 
 Welcome! - We kindly ask that you:
 
-  1. Fill out the issue template below - not doing so needs a good reason
-  2. Use the forum if you have a question rather than a bug or feature request
+  1. Fill out the issue template below - not doing so needs a good reason.
+  2. Use the forum if you have a question rather than a bug or feature request.
 
 The forum is at: https://forum.restic.net
 
