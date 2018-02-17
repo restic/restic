@@ -239,7 +239,7 @@ func preCheckDockerBuilderGoVersion() {
 	localVersion := strings.TrimSpace(string(buf))
 
 	run("docker", "pull", "restic/builder")
-	buf, err = exec.Command("docker", "run", "--rm", "restic/builder", "-").Output()
+	buf, err = exec.Command("docker", "run", "--rm", "restic/builder", "go", "version").Output()
 	if err != nil {
 		die("unable to check Go version in docker image: %v", err)
 	}
@@ -299,7 +299,7 @@ func exportTar() {
 
 func runBuild() {
 	msg("building binaries...")
-	run("docker", "run", "--rm", "--volume", getwd()+":/home/build", "restic/builder", opts.tarFilename)
+	run("docker", "run", "--rm", "--volume", getwd()+":/home/build", "restic/builder", "build.sh", opts.tarFilename)
 }
 
 func findBuildDir() string {
