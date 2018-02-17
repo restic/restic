@@ -19,6 +19,38 @@ The "mount" command mounts the repository via fuse to a directory. This is a
 read\-only mount.
 
 
+.SH Snapshot Directories
+.PP
+If you need a different template for all directories that contain snapshots,
+you can pass a template via \-\-snapshot\-template. Example without colons:
+
+.PP
+.RS
+
+.nf
+\-\-snapshot\-template "2006\-01\-02\_15\-04\-05"
+
+.fi
+.RE
+
+.PP
+You need to specify a sample format for exactly the following timestamp:
+
+.PP
+.RS
+
+.nf
+Mon Jan 2 15:04:05 \-0700 MST 2006
+
+.fi
+.RE
+
+.PP
+For details please see the documentation for time.Format() at:
+  
+\[la]https://godoc.org/time#Time.Format\[ra]
+
+
 .SH OPTIONS
 .PP
 \fB\-\-allow\-other\fP[=false]
@@ -43,6 +75,10 @@ read\-only mount.
 .PP
 \fB\-\-path\fP=[]
     only consider snapshots which include this (absolute) \fB\fCpath\fR
+
+.PP
+\fB\-\-snapshot\-template\fP="2006\-01\-02T15:04:05Z07:00"
+    set \fB\fCtemplate\fR to use for snapshot dirs
 
 .PP
 \fB\-\-tag\fP=[]
@@ -97,6 +133,10 @@ read\-only mount.
 .PP
 \fB\-r\fP, \fB\-\-repo\fP=""
     repository to backup to or restore from (default: $RESTIC\_REPOSITORY)
+
+.PP
+\fB\-\-tls\-client\-cert\fP=""
+    path to a file containing PEM encoded TLS client certificate and private key
 
 
 .SH SEE ALSO
