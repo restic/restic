@@ -123,3 +123,66 @@ func TestBackendListRetry(t *testing.T) {
 	test.Equals(t, 2, retry)                   // assert retried once
 	test.Equals(t, []string{ID1, ID2}, listed) // assert no duplicate files
 }
+
+// failingReader returns an error after reading limit number of bytes
+type failingReader struct {
+	data  []byte
+	pos   int
+	limit int
+}
+
+func (r failingReader) Read(p []byte) (n int, err error) {
+	i := 0
+	for ; i < len(p) && i+r.pos < r.limit; i++ {
+		p[i] = r.data[r.pos+i]
+	}
+	r.pos += i
+	if r.pos >= r.limit {
+		return i, errors.Errorf("reader reached limit of %d", r.limit)
+	}
+	return i, nil
+}
+func (r failingReader) Close() error {
+	return nil
+}
+
+// closingReader adapts io.Reader to io.ReadCloser interface
+type closingReader struct {
+	rd io.Reader
+}
+
+func (r closingReader) Read(p []byte) (n int, err error) {
+	return r.rd.Read(p)
+}
+func (r closingReader) Close() error {
+	return nil
+}
+
+func TestBackendLoadRetry(t *testing.T) {
+	data := test.Random(23, 1024)
+	limit := 100
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+		// returns failing reader on first invocation, good reader on subsequent invocations
+		attempt++
+		if attempt > 1 {
+			return closingReader{rd: bytes.NewReader(data)}, nil
+		}
+		return failingReader{data: data, limit: limit}, nil
+	}
+
+	retryBackend := RetryBackend{
+		Backend: be,
+	}
+
+	var buf []byte
+	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
+		buf, err = ioutil.ReadAll(rd)
+		return err
+	})
+	test.OK(t, err)
+	test.Equals(t, data, buf)
+	test.Equals(t, 2, attempt)
+}

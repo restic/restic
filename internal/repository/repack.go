@@ -2,14 +2,11 @@ package repository
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 
@@ -27,28 +24,11 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		// load the complete pack into a temp file
 		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
-		tempfile, err := fs.TempFile("", "restic-temp-repack-")
+		tempfile, hash, packLength, err := DownloadAndHash(ctx, repo, h)
 		if err != nil {
-			return nil, errors.Wrap(err, "TempFile")
+			return nil, errors.Wrap(err, "Repack")
 		}
 
-		beRd, err := repo.Backend().Load(ctx, h, 0, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		hrd := hashing.NewReader(beRd, sha256.New())
-		packLength, err := io.Copy(tempfile, hrd)
-		if err != nil {
-			_ = beRd.Close()
-			return nil, errors.Wrap(err, "Copy")
-		}
-
-		if err = beRd.Close(); err != nil {
-			return nil, errors.Wrap(err, "Close")
-		}
-
-		hash := restic.IDFromHash(hrd.Sum(nil))
 		debug.Log("pack %v loaded (%d bytes), hash %v", packID, packLength, hash)
 
 		if !packID.Equal(hash) {

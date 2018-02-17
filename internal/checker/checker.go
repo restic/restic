@@ -2,15 +2,12 @@ package checker
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 
@@ -630,15 +627,9 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id)
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	rd, err := r.Backend().Load(ctx, h, 0, 0)
+	packfile, hash, size, err := repository.DownloadAndHash(ctx, r, h)
 	if err != nil {
-		return err
-	}
-
-	packfile, err := fs.TempFile("", "restic-temp-check-")
-	if err != nil {
-		_ = rd.Close()
-		return errors.Wrap(err, "TempFile")
+		return errors.Wrap(err, "checkPack")
 	}
 
 	defer func() {
@@ -646,18 +637,6 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 		_ = os.Remove(packfile.Name())
 	}()
 
-	hrd := hashing.NewReader(rd, sha256.New())
-	size, err := io.Copy(packfile, hrd)
-	if err != nil {
-		_ = rd.Close()
-		return errors.Wrap(err, "Copy")
-	}
-
-	if err = rd.Close(); err != nil {
-		return err
-	}
-
-	hash := restic.IDFromHash(hrd.Sum(nil))
 	debug.Log("hash for pack %v is %v", id, hash)
 
 	if !hash.Equal(id) {

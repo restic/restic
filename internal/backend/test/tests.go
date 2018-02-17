@@ -115,12 +115,13 @@ func (s *Suite) TestLoad(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	rd, err := b.Load(context.TODO(), restic.Handle{}, 0, 0)
+	noop := func(rd io.Reader) error {
+		return nil
+	}
+
+	err := b.Load(context.TODO(), restic.Handle{}, 0, 0, noop)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
-	}
-	if rd != nil {
-		_ = rd.Close()
 	}
 
 	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
@@ -141,13 +142,19 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 	t.Logf("saved %d bytes as %v", length, handle)
 
-	rd, err = b.Load(context.TODO(), handle, 100, -1)
+	err = b.Load(context.TODO(), handle, 100, -1, noop)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
 	}
 
-	if rd != nil {
-		t.Fatalf("Load() returned a non-nil reader for negative offset!")
+	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
+		return errors.Errorf("deliberate error")
+	})
+	if err == nil {
+		t.Fatalf("Load() did not propagate consumer error!")
+	}
+	if err.Error() != "deliberate error" {
+		t.Fatalf("Load() did not correctly propagate consumer error!")
 	}
 
 	loadTests := 50
@@ -176,63 +183,38 @@ func (s *Suite) TestLoad(t *testing.T) {
 			d = d[:l]
 		}
 
-		rd, err := b.Load(context.TODO(), handle, getlen, int64(o))
+		var buf []byte
+		err := b.Load(context.TODO(), handle, getlen, int64(o), func(rd io.Reader) (ierr error) {
+			buf, ierr = ioutil.ReadAll(rd)
+			return ierr
+		})
 		if err != nil {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
 			continue
 		}
 
-		buf, err := ioutil.ReadAll(rd)
-		if err != nil {
-			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
-			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %+v", l, o, err)
-			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
-			}
-			continue
-		}
-
 		if l == 0 && len(buf) != len(d) {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, len(d), len(buf))
-			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
-			}
 			continue
 		}
 
 		if l > 0 && l <= len(d) && len(buf) != l {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
-			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
-			}
 			continue
 		}
 
 		if l > len(d) && len(buf) != len(d) {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
-			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
-			}
 			continue
 		}
 
 		if !bytes.Equal(buf, d) {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
-			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
-			}
-			continue
-		}
-
-		err = rd.Close()
-		if err != nil {
-			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
-			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %+v", l, o, err)
 			continue
 		}
 	}
@@ -647,17 +629,10 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 
 // testLoad loads a blob (but discards its contents).
 func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
-	rd, err := b.Load(context.TODO(), h, 0, 0)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(ioutil.Discard, rd)
-	cerr := rd.Close()
-	if err == nil {
-		err = cerr
-	}
-	return err
+	return b.Load(context.TODO(), h, 0, 0, func(rd io.Reader) (ierr error) {
+		_, ierr = io.Copy(ioutil.Discard, rd)
+		return ierr
+	})
 }
 
 func (s *Suite) delayedRemove(t testing.TB, be restic.Backend, handles ...restic.Handle) error {
@@ -776,18 +751,14 @@ func (s *Suite) TestBackend(t *testing.T) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			rd, err := b.Load(context.TODO(), h, len(buf2), int64(start))
+			var n int
+			err = b.Load(context.TODO(), h, len(buf2), int64(start), func(rd io.Reader) (ierr error) {
+				n, ierr = io.ReadFull(rd, buf2)
+				return ierr
+			})
 			test.OK(t, err)
-			n, err := io.ReadFull(rd, buf2)
 			test.OK(t, err)
 			test.Equals(t, len(buf2), n)
-
-			remaining, err := io.Copy(ioutil.Discard, rd)
-			test.OK(t, err)
-			test.Equals(t, int64(0), remaining)
-
-			test.OK(t, rd.Close())
-
 			test.Equals(t, ts.data[start:end], string(buf2))
 		}
 
