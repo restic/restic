@@ -235,13 +235,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	// Check key does not already exist
-	_, err = be.client.StatObject(be.cfg.Bucket, objName, minio.StatObjectOptions{})
-	if err == nil {
-		debug.Log("%v already exists", h)
-		return errors.New("key already exists")
-	}
-
 	var size int64 = -1
 
 	type lenner interface {

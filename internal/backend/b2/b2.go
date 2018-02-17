@@ -196,12 +196,6 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) er
 	debug.Log("Save %v, name %v", h, name)
 	obj := be.bucket.Object(name)
 
-	_, err := obj.Attrs(ctx)
-	if err == nil {
-		debug.Log("  %v already exists", h)
-		return errors.New("key already exists")
-	}
-
 	w := obj.NewWriter(ctx)
 	n, err := io.Copy(w, rd)
 	debug.Log("  saved %d bytes, err %v", n, err)
