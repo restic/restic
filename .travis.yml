@@ -2,8 +2,9 @@ language: go
 sudo: false
 
 go:
-  - 1.8.x
-  - 1.9.x
+  - "1.8.x"
+  - "1.9.x"
+  - "1.10.x"
 
 os:
   - linux
@@ -16,12 +17,12 @@ env:
 matrix:
   exclude:
     - os: osx
-      go: 1.8.x
+      go: "1.9.x"
     - os: linux
-      go: 1.9.x
+      go: "1.10.x"
   include:
     - os: linux
-      go: 1.9.x
+      go: "1.10.x"
       sudo: true
       env:
         RESTIC_TEST_FUSE=1
