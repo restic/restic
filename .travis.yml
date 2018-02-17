@@ -4,7 +4,7 @@ sudo: false
 go:
   - "1.8.x"
   - "1.9.x"
-  - "1.10.x"
+  - "1.10"
 
 os:
   - linux
@@ -21,10 +21,10 @@ matrix:
     - os: osx
       go: "1.9.x"
     - os: linux
-      go: "1.10.x"
+      go: "1.10"
   include:
     - os: linux
-      go: "1.10.x"
+      go: "1.10"
       sudo: true
       env:
         RESTIC_TEST_FUSE=1
