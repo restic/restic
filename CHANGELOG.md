@@ -1,3 +1,175 @@
+Changelog for restic 0.8.2 (2018-02-17)
+=======================================
+
+The following sections list the changes in restic 0.8.2 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
+ * Fix #1512: Restore directory permissions as the last step
+ * Fix #1528: Correctly create missing subdirs in data/
+ * Fix #1590: Strip spaces for lines read via --files-from
+ * Fix #1589: Complete intermediate index upload
+ * Fix #1594: Google Cloud Storage: Use generic HTTP transport
+ * Fix #1595: Backup: Remove bandwidth display
+ * Enh #1522: Add support for TLS client certificate authentication
+ * Enh #1541: Reduce number of remote requests during repository check
+ * Enh #1567: Reduce number of backend requests for rebuild-index and prune
+ * Enh #1507: Only reload snapshots once per minute for fuse mount
+ * Enh #1538: Reduce memory allocations for querying the index
+ * Enh #1549: Speed up querying across indices and scanning existing files
+ * Enh #1554: Fuse/mount: Correctly handle EOF, add template option
+ * Enh #1564: Don't terminate ssh on SIGINT
+ * Enh #1579: Retry Backend.List() in case of errors
+ * Enh #1584: Limit index file size
+
+Details
+-------
+
+ * Bugfix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
+
+   https://github.com/restic/restic/issues/1506
+   https://github.com/restic/restic/pull/1511
+
+ * Bugfix #1512: Restore directory permissions as the last step
+
+   This change allows restoring into directories that were not writable during backup. Before,
+   restic created the directory, set the read-only mode and then failed to create files in the
+   directory. This change now restores the directory (with its permissions) as the very last
+   step.
+
+   https://github.com/restic/restic/issues/1512
+   https://github.com/restic/restic/pull/1536
+
+ * Bugfix #1528: Correctly create missing subdirs in data/
+
+   https://github.com/restic/restic/issues/1528
+   https://github.com/restic/restic/pull/1529
+
+ * Bugfix #1590: Strip spaces for lines read via --files-from
+
+   Leading and trailing spaces in lines read via `--files-from` are now stripped, so it behaves
+   the same as with lines read via `--exclude-file`.
+
+   https://github.com/restic/restic/issues/1590
+   https://github.com/restic/restic/pull/1613
+
+ * Bugfix #1589: Complete intermediate index upload
+
+   After a user posted a comprehensive report of what he observed, we were able to find a bug and
+   correct it: During backup, restic uploads so-called "intermediate" index files. When the
+   backup finishes during a transfer of such an intermediate index, the upload is cancelled, but
+   the backup is finished without an error. This leads to an inconsistent state, where the
+   snapshot references data that is contained in the repo, but is not referenced in any index.
+
+   The situation can be resolved by building a new index with `rebuild-index`, but looks very
+   confusing at first. Since all the data got uploaded to the repo successfully, there was no risk
+   of data loss, just minor inconvenience for our users.
+
+   https://github.com/restic/restic/pull/1589
+
+ * Bugfix #1594: Google Cloud Storage: Use generic HTTP transport
+
+   It was discovered that the Google Cloud Storage backend did not use the generic HTTP transport,
+   so things such as bandwidth limiting with `--limit-upload` did not work. This is resolved now.
+
+   https://github.com/restic/restic/pull/1594
+
+ * Bugfix #1595: Backup: Remove bandwidth display
+
+   This commit removes the bandwidth displayed during backup process. It is misleading and
+   seldomly correct, because it's neither the "read bandwidth" (only for the very first backup)
+   nor the "upload bandwidth". Many users are confused about (and rightly so), c.f. #1581, #1033,
+   #1591
+
+   We'll eventually replace this display with something more relevant when the new archiver code
+   is ready.
+
+   https://github.com/restic/restic/pull/1595
+
+ * Enhancement #1522: Add support for TLS client certificate authentication
+
+   Support has been added for using a TLS client certificate for authentication to HTTP based
+   backend. A file containing the PEM encoded private key and certificate can be set using the
+   `--tls-client-cert` option.
+
+   https://github.com/restic/restic/issues/1522
+   https://github.com/restic/restic/pull/1524
+
+ * Enhancement #1541: Reduce number of remote requests during repository check
+
+   This change eliminates redundant remote repository calls and significantly improves
+   repository check time.
+
+   https://github.com/restic/restic/issues/1541
+   https://github.com/restic/restic/pull/1548
+
+ * Enhancement #1567: Reduce number of backend requests for rebuild-index and prune
+
+   We've found a way to reduce then number of backend requests for the `rebuild-index` and `prune`
+   operations. This significantly speeds up the operations for high-latency backends.
+
+   https://github.com/restic/restic/issues/1567
+   https://github.com/restic/restic/pull/1574
+   https://github.com/restic/restic/pull/1575
+
+ * Enhancement #1507: Only reload snapshots once per minute for fuse mount
+
+   https://github.com/restic/restic/pull/1507
+
+ * Enhancement #1538: Reduce memory allocations for querying the index
+
+   This change reduces the internal memory allocations when the index data structures in memory
+   are queried if a blob (part of a file) already exists in the repo. It should speed up backup a bit,
+   and maybe even reduce RAM usage.
+
+   https://github.com/restic/restic/pull/1538
+
+ * Enhancement #1549: Speed up querying across indices and scanning existing files
+
+   This change increases the whenever a blob (part of a file) is searched for in a restic
+   repository. This will reduce cpu usage some when backing up files already backed up by restic.
+   Cpu usage is further decreased when scanning files.
+
+   https://github.com/restic/restic/pull/1549
+
+ * Enhancement #1554: Fuse/mount: Correctly handle EOF, add template option
+
+   We've added the `--snapshot-template` string, which can be used to specify a template for a
+   snapshot directory. In addition, accessing data after the end of a file via the fuse mount is now
+   handled correctly.
+
+   https://github.com/restic/restic/pull/1554
+
+ * Enhancement #1564: Don't terminate ssh on SIGINT
+
+   We've reworked the code which runs the `ssh` login for the sftp backend so that it can prompt for a
+   password (if needed) but does not exit when the user presses CTRL+C (SIGINT) e.g. during
+   backup. This allows restic to properly shut down when it receives SIGINT and remove the lock
+   file from the repo, afterwards exiting the `ssh` process.
+
+   https://github.com/restic/restic/pull/1564
+   https://github.com/restic/restic/pull/1588
+
+ * Enhancement #1579: Retry Backend.List() in case of errors
+
+   https://github.com/restic/restic/pull/1579
+
+ * Enhancement #1584: Limit index file size
+
+   Before, restic would create a single new index file on `prune` or `rebuild-index`, this may
+   lead to memory problems when this huge index is created and loaded again. We're now limiting the
+   size of the index file, and split newly created index files into several smaller ones. This
+   allows restic to be more memory-efficient.
+
+   https://github.com/restic/restic/issues/1412
+   https://github.com/restic/restic/issues/979
+   https://github.com/restic/restic/issues/526
+   https://github.com/restic/restic/pull/1584
+
+
 Changelog for restic 0.8.1 (2017-12-27)
 =======================================
 
@@ -327,7 +499,7 @@ Summary
  * Enh #1061: Add Dockerfile and official Docker image
  * Enh #1126: Use the standard Go git repository layout, use `dep` for vendoring
  * Enh #1134: Add support for storing backups on Google Cloud Storage
- * Enh #1144: Properly report errors when reading files with exclude patterns.
+ * Enh #1144: Properly report errors when reading files with exclude patterns
  * Enh #1149: Add support for storing backups on Microsoft Azure Blob Storage
  * Enh #1196: Add `--group-by` to `forget` command for flexible grouping
  * Enh #1203: Print stats on all BSD systems when SIGINFO (ctrl+t) is received
@@ -415,7 +587,7 @@ Details
    https://github.com/restic/restic/pull/1134
    https://github.com/restic/restic/pull/1052
 
- * Enhancement #1144: Properly report errors when reading files with exclude patterns.
+ * Enhancement #1144: Properly report errors when reading files with exclude patterns
 
    https://github.com/restic/restic/pull/1144
 
