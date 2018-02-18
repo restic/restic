@@ -198,6 +198,10 @@ func (t *testBucket) listFileVersions(ctx context.Context, count int, a, b, c, d
 	return x, y, "", z
 }
 
+func (t *testBucket) listUnfinishedLargeFiles(ctx context.Context, count int, cont string) ([]b2FileInterface, string, error) {
+	return nil, "", fmt.Errorf("testBucket.listUnfinishedLargeFiles(ctx, %d, %q): not implemented", count, cont)
+}
+
 func (t *testBucket) downloadFileByName(_ context.Context, name string, offset, size int64) (b2FileReaderInterface, error) {
 	gmux.Lock()
 	defer gmux.Unlock()

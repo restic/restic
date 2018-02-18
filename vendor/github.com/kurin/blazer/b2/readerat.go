@@ -33,7 +33,7 @@ func (r *readerAt) ReadAt(p []byte, off int64) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func() { r.rs.Seek(cur, io.SeekStart) }()
+	defer r.rs.Seek(cur, io.SeekStart)
 
 	if _, err := r.rs.Seek(off, io.SeekStart); err != nil {
 		return 0, err

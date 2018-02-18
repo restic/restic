@@ -49,6 +49,7 @@ type beBucketInterface interface {
 	startLargeFile(ctx context.Context, name, contentType string, info map[string]string) (beLargeFileInterface, error)
 	listFileNames(context.Context, int, string, string, string) ([]beFileInterface, string, error)
 	listFileVersions(context.Context, int, string, string, string, string) ([]beFileInterface, string, string, error)
+	listUnfinishedLargeFiles(context.Context, int, string) ([]beFileInterface, string, error)
 	downloadFileByName(context.Context, string, int64, int64) (beFileReaderInterface, error)
 	hideFile(context.Context, string) (beFileInterface, error)
 	getDownloadAuthorization(context.Context, string, time.Duration) (string, error)
@@ -337,6 +338,32 @@ func (b *beBucket) listFileVersions(ctx context.Context, count int, nextName, ne
 		return nil, "", "", err
 	}
 	return files, name, id, nil
+}
+
+func (b *beBucket) listUnfinishedLargeFiles(ctx context.Context, count int, continuation string) ([]beFileInterface, string, error) {
+	var cont string
+	var files []beFileInterface
+	f := func() error {
+		g := func() error {
+			fs, c, err := b.b2bucket.listUnfinishedLargeFiles(ctx, count, continuation)
+			if err != nil {
+				return err
+			}
+			cont = c
+			for _, f := range fs {
+				files = append(files, &beFile{
+					b2file: f,
+					ri:     b.ri,
+				})
+			}
+			return nil
+		}
+		return withReauth(ctx, b.ri, g)
+	}
+	if err := withBackoff(ctx, b.ri, f); err != nil {
+		return nil, "", err
+	}
+	return files, cont, nil
 }
 
 func (b *beBucket) downloadFileByName(ctx context.Context, name string, offset, size int64) (beFileReaderInterface, error) {

@@ -144,7 +144,7 @@ func (w *Writer) thread() {
 			}
 			if sha, ok := w.seen[chunk.id]; ok {
 				if sha != chunk.buf.Hash() {
-					w.setErr(errors.New("resumable upload was requested, but chunks don't match!"))
+					w.setErr(errors.New("resumable upload was requested, but chunks don't match"))
 					return
 				}
 				chunk.buf.Close()
@@ -245,11 +245,23 @@ func (w *Writer) Write(p []byte) (int, error) {
 	return i + k, err
 }
 
+func (w *Writer) getUploadURL(ctx context.Context) (beURLInterface, error) {
+	u := w.o.b.urlPool.Get()
+	if u == nil {
+		return w.o.b.b.getUploadURL(w.ctx)
+	}
+	ue := u.(beURLInterface)
+	return ue, nil
+}
+
 func (w *Writer) simpleWriteFile() error {
-	ue, err := w.o.b.b.getUploadURL(w.ctx)
+	ue, err := w.getUploadURL(w.ctx)
 	if err != nil {
 		return err
 	}
+	// This defer needs to be in a func() so that we put whatever the value of ue
+	// is at function exit.
+	defer func() { w.o.b.urlPool.Put(ue) }()
 	sha1 := w.w.Hash()
 	ctype := w.contentType
 	if ctype == "" {

@@ -18,7 +18,6 @@
 // It currently lacks support for the following APIs:
 //
 // b2_download_file_by_id
-// b2_list_unfinished_large_files
 package base
 
 import (
@@ -43,7 +42,7 @@ import (
 
 const (
 	APIBase          = "https://api.backblazeb2.com"
-	DefaultUserAgent = "blazer/0.2.1"
+	DefaultUserAgent = "blazer/0.2.2"
 )
 
 type b2err struct {
@@ -69,17 +68,15 @@ func Action(err error) ErrAction {
 	if e.retry > 0 {
 		return Retry
 	}
-	if e.code >= 500 && e.code < 600 {
-		if e.method == "b2_upload_file" || e.method == "b2_upload_part" {
-			return AttemptNewUpload
-		}
+	if e.code >= 500 && e.code < 600 && (e.method == "b2_upload_file" || e.method == "b2_upload_part") {
+		return AttemptNewUpload
 	}
 	switch e.code {
 	case 401:
-		if e.method == "b2_authorize_account" {
+		switch e.method {
+		case "b2_authorize_account":
 			return Punt
-		}
-		if e.method == "b2_upload_file" || e.method == "b2_upload_part" {
+		case "b2_upload_file", "b2_upload_part":
 			return AttemptNewUpload
 		}
 		return ReAuthenticate
@@ -698,9 +695,9 @@ func (b *Bucket) File(id, name string) *File {
 }
 
 // UploadFile wraps b2_upload_file.
-func (u *URL) UploadFile(ctx context.Context, r io.Reader, size int, name, contentType, sha1 string, info map[string]string) (*File, error) {
+func (url *URL) UploadFile(ctx context.Context, r io.Reader, size int, name, contentType, sha1 string, info map[string]string) (*File, error) {
 	headers := map[string]string{
-		"Authorization":     u.token,
+		"Authorization":     url.token,
 		"X-Bz-File-Name":    name,
 		"Content-Type":      contentType,
 		"Content-Length":    fmt.Sprintf("%d", size),
@@ -710,7 +707,7 @@ func (u *URL) UploadFile(ctx context.Context, r io.Reader, size int, name, conte
 		headers[fmt.Sprintf("X-Bz-Info-%s", k)] = v
 	}
 	b2resp := &b2types.UploadFileResponse{}
-	if err := u.b2.opts.makeRequest(ctx, "b2_upload_file", "POST", u.uri, nil, b2resp, headers, &requestBody{body: r, size: int64(size)}); err != nil {
+	if err := url.b2.opts.makeRequest(ctx, "b2_upload_file", "POST", url.uri, nil, b2resp, headers, &requestBody{body: r, size: int64(size)}); err != nil {
 		return nil, err
 	}
 	return &File{
@@ -719,7 +716,7 @@ func (u *URL) UploadFile(ctx context.Context, r io.Reader, size int, name, conte
 		Timestamp: millitime(b2resp.Timestamp),
 		Status:    b2resp.Action,
 		id:        b2resp.FileID,
-		b2:        u.b2,
+		b2:        url.b2,
 	}, nil
 }
 
@@ -922,6 +919,39 @@ func (l *LargeFile) FinishLargeFile(ctx context.Context) (*File, error) {
 		id:        b2resp.FileID,
 		b2:        l.b2,
 	}, nil
+}
+
+// ListUnfinishedLargeFiles wraps b2_list_unfinished_large_files.
+func (b *Bucket) ListUnfinishedLargeFiles(ctx context.Context, count int, continuation string) ([]*File, string, error) {
+	b2req := &b2types.ListUnfinishedLargeFilesRequest{
+		BucketID:     b.id,
+		Continuation: continuation,
+		Count:        count,
+	}
+	b2resp := &b2types.ListUnfinishedLargeFilesResponse{}
+	headers := map[string]string{
+		"Authorization": b.b2.authToken,
+	}
+	if err := b.b2.opts.makeRequest(ctx, "b2_list_unfinished_large_files", "POST", b.b2.apiURI+b2types.V1api+"b2_list_unfinished_large_files", b2req, b2resp, headers, nil); err != nil {
+		return nil, "", err
+	}
+	cont := b2resp.Continuation
+	var files []*File
+	for _, f := range b2resp.Files {
+		files = append(files, &File{
+			Name:      f.Name,
+			Timestamp: millitime(f.Timestamp),
+			b2:        b.b2,
+			id:        f.FileID,
+			Info: &FileInfo{
+				Name:        f.Name,
+				ContentType: f.ContentType,
+				Info:        f.Info,
+				Timestamp:   millitime(f.Timestamp),
+			},
+		})
+	}
+	return files, cont, nil
 }
 
 // ListFileNames wraps b2_list_file_names.
