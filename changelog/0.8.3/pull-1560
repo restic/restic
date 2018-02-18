@@ -1,0 +1,5 @@
+Enhancement: Retry all repository file download errors
+
+Restic will now retry failed downloads, similar to other operations.
+
+https://github.com/restic/restic/pull/1560
