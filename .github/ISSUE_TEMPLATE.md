@@ -1,13 +1,27 @@
 <!--
-NOTE: Not filling out the issue template needs a good reason, otherwise it may
-take a lot longer to find the problem! Please take the time to help us
-debugging the problem by collecting information, even if it seems irrelevant to
-you. Thanks!
 
-If you have a question, the forum at https://forum.restic.net is a better place.
-Please do not create issues for usage or documentation questions! We're using
-the GitHub issue tracker mainly for tracking bugs and feature requests.
+Welcome! - We kindly ask that you:
+
+  1. Fill out the issue template below - not doing so needs a good reason.
+  2. Use the forum if you have a question rather than a bug or feature request.
+
+The forum is at: https://forum.restic.net
+
+NOTE: Not filling out the issue template needs a good reason, as otherwise it
+may take a lot longer to find the problem, not to mention it can take up a lot
+more time which can otherwise be spent on development. Please also take the
+time to help us debug the issue by collecting relevant information, even if
+it doesn't seem to be relevant to you. Thanks!
+
+The forum is a better place for questions about restic or general suggestions
+and topics, e.g. usage or documentation questions! This issue tracker is mainly
+for tracking bugs and feature requests directly relating to the development of
+the software itself, rather than the project.
+
+Thanks for understanding, and for contributing to the project!
+
 -->
+
 
 ## Output of `restic version`
 
@@ -24,8 +38,8 @@ This section should include at least:
    information to diagnose the problem!
 -->
 
-
 ## What backend/server/service did you use to store the repository?
+
 
 
 ## Expected behavior
@@ -48,11 +62,13 @@ The more time you spend describing an easy way to reproduce the behavior (if
 this is possible), the easier it is for the project developers to fix it!
 -->
 
-
 ## Do you have any idea what may have caused this?
 
 
+
 ## Do you have an idea how to solve the issue?
+
+
 
 ## Did restic help you or made you happy in any way?
 
