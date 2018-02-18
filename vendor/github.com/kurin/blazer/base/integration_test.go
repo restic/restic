@@ -156,8 +156,8 @@ func TestStorage(t *testing.T) {
 
 	// b2_start_large_file
 	largeInfoMap := map[string]string{
-		"one_BILLION":  "1e9",
-		"two_TRILLION": "2eSomething, I guess 2e12",
+		"one_billion":  "1e9",
+		"two_trillion": "2eSomething, I guess 2e12",
 	}
 	lf, err := bucket.StartLargeFile(ctx, largeFileName, "application/octet-stream", largeInfoMap)
 	if err != nil {
