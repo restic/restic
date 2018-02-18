@@ -209,8 +209,11 @@ func TestNodeRestoreAt(t *testing.T) {
 			rtest.Assert(t, test.GID == n2.GID,
 				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 			if test.Type != "symlink" {
-				rtest.Assert(t, test.Mode == n2.Mode,
-					"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
+				// On OpenBSD only root can set sticky bit (see sticky(8)).
+				if runtime.GOOS != "openbsd" && test.Name == "testSticky" {
+					rtest.Assert(t, test.Mode == n2.Mode,
+						"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
+				}
 			}
 		}
 
