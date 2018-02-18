@@ -218,13 +218,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	be.sem.GetToken()
 
-	// Check key does not already exist
-	if _, err := be.service.Objects.Get(be.bucketName, objName).Do(); err == nil {
-		debug.Log("%v already exists", h)
-		be.sem.ReleaseToken()
-		return errors.New("key already exists")
-	}
-
 	debug.Log("InsertObject(%v, %v)", be.bucketName, objName)
 
 	// Set chunk size to zero to disable resumable uploads.

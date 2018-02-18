@@ -1,0 +1,12 @@
+Enhancement: Don't check for presence of files in the backend before writing
+
+Before, all backend implementations were required to return an error if the
+file that is to be written already exists in the backend. For most backends,
+that means making a request (e.g. via HTTP) and returning an error when the
+file already exists.
+
+This is not accurate, the file could have been created between the HTTP request
+testing for it, and when writing starts, so we've relaxed this requeriment,
+which saves one additional HTTP request per newly added file.
+
+https://github.com/restic/restic/pull/1623

@@ -764,14 +764,10 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 		// test adding the first file again
 		ts := testStrings[0]
-
-		// create blob
 		h := restic.Handle{Type: tpe, Name: ts.id}
-		err := b.Save(context.TODO(), h, strings.NewReader(ts.data))
-		test.Assert(t, err != nil, "backend has allowed overwrite of existing blob: expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		err = s.delayedRemove(t, b, h)
+		err := s.delayedRemove(t, b, h)
 		test.OK(t, err)
 
 		// test that the blob is gone

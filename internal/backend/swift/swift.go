@@ -168,19 +168,6 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	// Check key does not already exist
-	switch _, _, err = be.conn.Object(be.container, objName); err {
-	case nil:
-		debug.Log("%v already exists", h)
-		return errors.New("key already exists")
-
-	case swift.ObjectNotFound:
-		// Ok, that's what we want
-
-	default:
-		return errors.Wrap(err, "conn.Object")
-	}
-
 	encoding := "binary/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)

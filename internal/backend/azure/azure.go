@@ -135,16 +135,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	debug.Log("Save %v at %v", h, objName)
 
-	// Check key does not already exist
-	found, err := be.container.GetBlobReference(objName).Exists()
-	if err != nil {
-		return errors.Wrap(err, "GetBlobReference().Exists()")
-	}
-	if found {
-		debug.Log("%v already exists", h)
-		return errors.New("key already exists")
-	}
-
 	be.sem.GetToken()
 
 	// wrap the reader so that net/http client cannot close the reader, return
