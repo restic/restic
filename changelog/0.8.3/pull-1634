@@ -1,0 +1,7 @@
+Enhancement: Upgrade B2 client library, reduce HTTP requests
+
+We've upgraded the B2 client library restic uses to access BackBlaze B2. This
+reduces the number of HTTP requests needed to upload a new file from two to
+one, which should improve throughput to B2.
+
+https://github.com/restic/restic/pull/1634
