@@ -246,12 +246,12 @@ func (w *Writer) Write(p []byte) (int, error) {
 }
 
 func (w *Writer) getUploadURL(ctx context.Context) (beURLInterface, error) {
-	u := w.o.b.urlPool.Get()
+	u := w.o.b.urlPool.get()
 	if u == nil {
 		return w.o.b.b.getUploadURL(w.ctx)
 	}
-	ue := u.(beURLInterface)
-	return ue, nil
+
+	return u, nil
 }
 
 func (w *Writer) simpleWriteFile() error {
@@ -261,7 +261,7 @@ func (w *Writer) simpleWriteFile() error {
 	}
 	// This defer needs to be in a func() so that we put whatever the value of ue
 	// is at function exit.
-	defer func() { w.o.b.urlPool.Put(ue) }()
+	defer func() { w.o.b.urlPool.put(ue) }()
 	sha1 := w.w.Hash()
 	ctype := w.contentType
 	if ctype == "" {

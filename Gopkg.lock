@@ -88,8 +88,8 @@
 [[projects]]
   name = "github.com/kurin/blazer"
   packages = ["b2","base","internal/b2types","internal/blog"]
-  revision = "5b348b2bdb078b06baa46ab7e12cdff12ee028ab"
-  version = "v0.2.2"
+  revision = "cd0304efa98725679cf68422cefa328d3d96f2f4"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/marstr/guid"

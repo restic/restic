@@ -138,9 +138,11 @@ func (b *b2Root) authorizeAccount(ctx context.Context, account, key string, opts
 		f(c)
 	}
 	var aopts []base.AuthOption
+	ct := &clientTransport{client: c.client}
 	if c.transport != nil {
-		aopts = append(aopts, base.Transport(c.transport))
+		ct.rt = c.transport
 	}
+	aopts = append(aopts, base.Transport(ct))
 	if c.failSomeUploads {
 		aopts = append(aopts, base.FailSomeUploads())
 	}

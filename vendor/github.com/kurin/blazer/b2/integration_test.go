@@ -17,7 +17,9 @@ package b2
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -735,21 +737,14 @@ func TestWriteEmpty(t *testing.T) {
 type rtCounter struct {
 	rt    http.RoundTripper
 	trips int
-	api   string
 	sync.Mutex
 }
 
 func (rt *rtCounter) RoundTrip(r *http.Request) (*http.Response, error) {
 	rt.Lock()
 	defer rt.Unlock()
-	resp, err := rt.rt.RoundTrip(r)
-	if err != nil {
-		return resp, err
-	}
-	if rt.api == "" || r.Header.Get("X-Blazer-Method") == rt.api {
-		rt.trips++
-	}
-	return resp, nil
+	rt.trips++
+	return rt.rt.RoundTrip(r)
 }
 
 func TestAttrsNoRoundtrip(t *testing.T) {
@@ -828,12 +823,6 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 }*/
 
 func TestSmallUploadsFewRoundtrips(t *testing.T) {
-	rt := &rtCounter{rt: defaultTransport, api: "b2_get_upload_url"}
-	defaultTransport = rt
-	defer func() {
-		defaultTransport = rt.rt
-	}()
-
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
@@ -847,9 +836,11 @@ func TestSmallUploadsFewRoundtrips(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if rt.trips > 3 {
-		// Pool is not guaranteed to be valid, so 3 calls allows some slack.
-		t.Errorf("too many calls to b2_get_upload_url: got %d, want < 3", rt.trips)
+	si := bucket.c.Status()
+	getURL := si.MethodCalls["b2_get_upload_url"]
+	uploadFile := si.MethodCalls["b2_upload_file"]
+	if getURL >= uploadFile {
+		t.Errorf("too many calls to b2_get_upload_url")
 	}
 }
 
@@ -1001,6 +992,16 @@ func (cc *ccRC) Close() error {
 	return cc.ReadCloser.Close()
 }
 
+var uniq string
+
+func init() {
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	uniq = hex.EncodeToString(b)
+}
+
 func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 	id := os.Getenv(apiID)
 	key := os.Getenv(apiKey)
@@ -1016,7 +1017,7 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 		t.Fatal(err)
 		return nil, nil
 	}
-	bucket, err := client.NewBucket(ctx, id+"-"+bucketName, nil)
+	bucket, err := client.NewBucket(ctx, fmt.Sprintf("%s-%s-%s", id, bucketName, uniq), nil)
 	if err != nil {
 		t.Fatal(err)
 		return nil, nil
