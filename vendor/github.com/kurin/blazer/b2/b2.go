@@ -45,6 +45,7 @@ type Client struct {
 	slock    sync.Mutex
 	sWriters map[string]*Writer
 	sReaders map[string]*Reader
+	sMethods map[string]int
 }
 
 // NewClient creates and returns a new Client with valid B2 service account
@@ -54,7 +55,9 @@ func NewClient(ctx context.Context, account, key string, opts ...ClientOption) (
 		backend: &beRoot{
 			b2i: &b2Root{},
 		},
+		sMethods: make(map[string]int),
 	}
+	opts = append(opts, client(c))
 	if err := c.backend.authorizeAccount(ctx, account, key, opts...); err != nil {
 		return nil, err
 	}
@@ -62,6 +65,7 @@ func NewClient(ctx context.Context, account, key string, opts ...ClientOption) (
 }
 
 type clientOptions struct {
+	client          *Client
 	transport       http.RoundTripper
 	failSomeUploads bool
 	expireTokens    bool
@@ -115,13 +119,38 @@ func ForceCapExceeded() ClientOption {
 	}
 }
 
+func client(cl *Client) ClientOption {
+	return func(c *clientOptions) {
+		c.client = cl
+	}
+}
+
+type clientTransport struct {
+	client *Client
+	rt     http.RoundTripper
+}
+
+func (ct *clientTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	method := r.Header.Get("X-Blazer-Method")
+	if method != "" && ct.client != nil {
+		ct.client.slock.Lock()
+		ct.client.sMethods[method]++
+		ct.client.slock.Unlock()
+	}
+	t := ct.rt
+	if t == nil {
+		t = http.DefaultTransport
+	}
+	return t.RoundTrip(r)
+}
+
 // Bucket is a reference to a B2 bucket.
 type Bucket struct {
 	b beBucketInterface
 	r beRootInterface
 
 	c       *Client
-	urlPool sync.Pool
+	urlPool *urlPool
 }
 
 type BucketType string
@@ -189,6 +218,36 @@ func IsNotExist(err error) bool {
 	return berr.notFoundErr
 }
 
+const uploadURLPoolSize = 100
+
+type urlPool struct {
+	ch chan beURLInterface
+}
+
+func newURLPool() *urlPool {
+	return &urlPool{ch: make(chan beURLInterface, uploadURLPoolSize)}
+}
+
+func (p *urlPool) get() beURLInterface {
+	select {
+	case ue := <-p.ch:
+		// if the channel has an upload URL available, use that
+		return ue
+	default:
+		// otherwise return nil, a new upload URL needs to be generated
+		return nil
+	}
+}
+
+func (p *urlPool) put(u beURLInterface) {
+	select {
+	case p.ch <- u:
+		// put the URL back if possible
+	default:
+		// if the channel is full, throw it away
+	}
+}
+
 // Bucket returns a bucket if it exists.
 func (c *Client) Bucket(ctx context.Context, name string) (*Bucket, error) {
 	buckets, err := c.backend.listBuckets(ctx)
@@ -198,9 +257,10 @@ func (c *Client) Bucket(ctx context.Context, name string) (*Bucket, error) {
 	for _, bucket := range buckets {
 		if bucket.name() == name {
 			return &Bucket{
-				b: bucket,
-				r: c.backend,
-				c: c,
+				b:       bucket,
+				r:       c.backend,
+				c:       c,
+				urlPool: newURLPool(),
 			}, nil
 		}
 	}
@@ -221,9 +281,10 @@ func (c *Client) NewBucket(ctx context.Context, name string, attrs *BucketAttrs)
 	for _, bucket := range buckets {
 		if bucket.name() == name {
 			return &Bucket{
-				b: bucket,
-				r: c.backend,
-				c: c,
+				b:       bucket,
+				r:       c.backend,
+				c:       c,
+				urlPool: newURLPool(),
 			}, nil
 		}
 	}
@@ -235,9 +296,10 @@ func (c *Client) NewBucket(ctx context.Context, name string, attrs *BucketAttrs)
 		return nil, err
 	}
 	return &Bucket{
-		b: b,
-		r: c.backend,
-		c: c,
+		b:       b,
+		r:       c.backend,
+		c:       c,
+		urlPool: newURLPool(),
 	}, err
 }
 
@@ -250,9 +312,10 @@ func (c *Client) ListBuckets(ctx context.Context) ([]*Bucket, error) {
 	var buckets []*Bucket
 	for _, b := range bs {
 		buckets = append(buckets, &Bucket{
-			b: b,
-			r: c.backend,
-			c: c,
+			b:       b,
+			r:       c.backend,
+			c:       c,
+			urlPool: newURLPool(),
 		})
 	}
 	return buckets, nil

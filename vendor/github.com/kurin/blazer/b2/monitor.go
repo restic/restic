@@ -18,8 +18,9 @@ import "fmt"
 
 // StatusInfo reports information about a client.
 type StatusInfo struct {
-	Writers map[string]*WriterStatus
-	Readers map[string]*ReaderStatus
+	Writers     map[string]*WriterStatus
+	Readers     map[string]*ReaderStatus
+	MethodCalls map[string]int
 }
 
 // WriterStatus reports the status for each writer.
@@ -42,8 +43,9 @@ func (c *Client) Status() *StatusInfo {
 	defer c.slock.Unlock()
 
 	si := &StatusInfo{
-		Writers: make(map[string]*WriterStatus),
-		Readers: make(map[string]*ReaderStatus),
+		Writers:     make(map[string]*WriterStatus),
+		Readers:     make(map[string]*ReaderStatus),
+		MethodCalls: make(map[string]int),
 	}
 
 	for name, w := range c.sWriters {
@@ -52,6 +54,10 @@ func (c *Client) Status() *StatusInfo {
 
 	for name, r := range c.sReaders {
 		si.Readers[name] = r.status()
+	}
+
+	for name, n := range c.sMethods {
+		si.MethodCalls[name] = n
 	}
 
 	return si
