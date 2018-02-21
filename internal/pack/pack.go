@@ -172,8 +172,11 @@ func (p *Packer) String() string {
 
 const maxHeaderSize = 16 * 1024 * 1024
 
+// size of the header-length field at the end of the file
+var headerLengthSize = binary.Size(uint32(0))
+
 // we require at least one entry in the header, and one blob for a pack file
-var minFileSize = entrySize + crypto.Extension
+var minFileSize = entrySize + crypto.Extension + uint(headerLengthSize)
 
 // number of header enries to download as part of header-length request
 var eagerEntries = uint(15)
@@ -197,10 +200,10 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	// only make second request if actual number of entries is greater than eagerEntries
 
 	eagerHl := uint32((eagerEntries * entrySize) + crypto.Extension)
-	if int64(eagerHl) > size {
-		eagerHl = uint32(size) - uint32(binary.Size(uint32(0)))
+	if int64(eagerHl)+int64(headerLengthSize) > size {
+		eagerHl = uint32(size) - uint32(headerLengthSize)
 	}
-	eagerBuf := make([]byte, eagerHl+uint32(binary.Size(uint32(0))))
+	eagerBuf := make([]byte, eagerHl+uint32(headerLengthSize))
 
 	n, err := rd.ReadAt(eagerBuf, size-int64(len(eagerBuf)))
 	if err != nil {
@@ -228,7 +231,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
-	if int64(hl) > size-int64(binary.Size(hl)) {
+	if int64(hl) > size-int64(headerLengthSize) {
 		err := InvalidFileError{Message: "header is larger than file"}
 		return nil, errors.Wrap(err, "readHeader")
 	}
@@ -248,7 +251,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 		// need more header bytes
 		buf = make([]byte, hl)
 		missingHl := hl - eagerHl
-		n, err := rd.ReadAt(buf[:missingHl], size-int64(hl)-int64(binary.Size(hl)))
+		n, err := rd.ReadAt(buf[:missingHl], size-int64(hl)-int64(headerLengthSize))
 		if err != nil {
 			return nil, errors.Wrap(err, "ReadAt")
 		}
