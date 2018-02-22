@@ -183,12 +183,13 @@ const (
 	eagerEntries = 15
 )
 
-// readRecords reads count records from the underlying ReaderAt, returning the
-// raw header, the total number of records in the header, and any error.  If
-// the header contains fewer than count entries, the return value is truncated.
-func readRecords(rd io.ReaderAt, size int64, count int) ([]byte, int, error) {
+// readRecords reads up to max records from the underlying ReaderAt, returning
+// the raw header, the total number of records in the header, and any error.
+// If the header contains fewer than max entries, the header is truncated to
+// the appropriate size.
+func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 	var bufsize int
-	bufsize += count * int(entrySize)
+	bufsize += max * int(entrySize)
 	bufsize += crypto.Extension
 	bufsize += headerLengthSize
 
@@ -202,36 +203,34 @@ func readRecords(rd io.ReaderAt, size int64, count int) ([]byte, int, error) {
 		return nil, 0, err
 	}
 
-	header := b[len(b)-headerLengthSize:]
+	hlen := binary.LittleEndian.Uint32(b[len(b)-headerLengthSize:])
 	b = b[:len(b)-headerLengthSize]
-	hl := binary.LittleEndian.Uint32(header)
-	debug.Log("header length: %v", hl)
+	debug.Log("header length: %v", hlen)
 
 	var err error
 	switch {
-	case hl == 0:
+	case hlen == 0:
 		err = InvalidFileError{Message: "header length is zero"}
-	case hl < crypto.Extension:
+	case hlen < crypto.Extension:
 		err = InvalidFileError{Message: "header length is too small"}
-	case (hl-crypto.Extension)%uint32(entrySize) != 0:
+	case (hlen-crypto.Extension)%uint32(entrySize) != 0:
 		err = InvalidFileError{Message: "header length is invalid"}
-	case int64(hl) > size-int64(headerLengthSize):
+	case int64(hlen) > size-int64(headerLengthSize):
 		err = InvalidFileError{Message: "header is larger than file"}
-	case int64(hl) > maxHeaderSize:
+	case int64(hlen) > maxHeaderSize:
 		err = InvalidFileError{Message: "header is larger than maxHeaderSize"}
 	}
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "readHeader")
 	}
 
-	c := (int(hl) - crypto.Extension) / int(entrySize)
-	if c < count {
-		recordSize := c * int(entrySize)
-		start := len(b) - (recordSize + crypto.Extension)
-		b = b[start:]
+	total := (int(hlen) - crypto.Extension) / int(entrySize)
+	if total < max {
+		// truncate to the beginning of the pack header
+		b = b[len(b)-int(hlen):]
 	}
 
-	return b, c, nil
+	return b, total, nil
 }
 
 // readHeader reads the header at the end of rd. size is the length of the
