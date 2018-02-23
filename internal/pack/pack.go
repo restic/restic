@@ -170,26 +170,73 @@ func (p *Packer) String() string {
 	return fmt.Sprintf("<Packer %d blobs, %d bytes>", len(p.blobs), p.bytes)
 }
 
-const maxHeaderSize = 16 * 1024 * 1024
+var (
+	// size of the header-length field at the end of the file
+	headerLengthSize = binary.Size(uint32(0))
+	// we require at least one entry in the header, and one blob for a pack file
+	minFileSize = entrySize + crypto.Extension + uint(headerLengthSize)
+)
 
-// size of the header-length field at the end of the file
-var headerLengthSize = binary.Size(uint32(0))
+const (
+	maxHeaderSize = 16 * 1024 * 1024
+	// number of header enries to download as part of header-length request
+	eagerEntries = 15
+)
 
-// we require at least one entry in the header, and one blob for a pack file
-var minFileSize = entrySize + crypto.Extension + uint(headerLengthSize)
+// readRecords reads up to max records from the underlying ReaderAt, returning
+// the raw header, the total number of records in the header, and any error.
+// If the header contains fewer than max entries, the header is truncated to
+// the appropriate size.
+func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
+	var bufsize int
+	bufsize += max * int(entrySize)
+	bufsize += crypto.Extension
+	bufsize += headerLengthSize
 
-// number of header enries to download as part of header-length request
-var eagerEntries = uint(15)
+	if bufsize > int(size) {
+		bufsize = int(size)
+	}
+
+	b := make([]byte, bufsize)
+	off := size - int64(bufsize)
+	if _, err := rd.ReadAt(b, off); err != nil {
+		return nil, 0, err
+	}
+
+	hlen := binary.LittleEndian.Uint32(b[len(b)-headerLengthSize:])
+	b = b[:len(b)-headerLengthSize]
+	debug.Log("header length: %v", hlen)
+
+	var err error
+	switch {
+	case hlen == 0:
+		err = InvalidFileError{Message: "header length is zero"}
+	case hlen < crypto.Extension:
+		err = InvalidFileError{Message: "header length is too small"}
+	case (hlen-crypto.Extension)%uint32(entrySize) != 0:
+		err = InvalidFileError{Message: "header length is invalid"}
+	case int64(hlen) > size-int64(headerLengthSize):
+		err = InvalidFileError{Message: "header is larger than file"}
+	case int64(hlen) > maxHeaderSize:
+		err = InvalidFileError{Message: "header is larger than maxHeaderSize"}
+	}
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "readHeader")
+	}
+
+	total := (int(hlen) - crypto.Extension) / int(entrySize)
+	if total < max {
+		// truncate to the beginning of the pack header
+		b = b[len(b)-int(hlen):]
+	}
+
+	return b, total, nil
+}
 
 // readHeader reads the header at the end of rd. size is the length of the
 // whole data accessible in rd.
 func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	debug.Log("size: %v", size)
-	if size == 0 {
-		err := InvalidFileError{Message: "file is empty"}
-		return nil, errors.Wrap(err, "readHeader")
-	}
-
 	if size < int64(minFileSize) {
 		err := InvalidFileError{Message: "file is too small"}
 		return nil, errors.Wrap(err, "readHeader")
@@ -199,69 +246,19 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	// eagerly download eagerEntries header entries as part of header-length request.
 	// only make second request if actual number of entries is greater than eagerEntries
 
-	eagerHl := uint32((eagerEntries * entrySize) + crypto.Extension)
-	if int64(eagerHl)+int64(headerLengthSize) > size {
-		eagerHl = uint32(size) - uint32(headerLengthSize)
-	}
-	eagerBuf := make([]byte, eagerHl+uint32(headerLengthSize))
-
-	n, err := rd.ReadAt(eagerBuf, size-int64(len(eagerBuf)))
+	b, c, err := readRecords(rd, size, eagerEntries)
 	if err != nil {
 		return nil, err
 	}
-	if n != len(eagerBuf) {
-		return nil, errors.New("not enough bytes read")
+	if c <= eagerEntries {
+		// eager read sufficed, return what we got
+		return b, nil
 	}
-
-	hl := binary.LittleEndian.Uint32(eagerBuf[eagerHl:])
-	debug.Log("header length: %v", size)
-
-	if hl == 0 {
-		err := InvalidFileError{Message: "header length is zero"}
-		return nil, errors.Wrap(err, "readHeader")
+	b, _, err = readRecords(rd, size, c)
+	if err != nil {
+		return nil, err
 	}
-
-	if hl < crypto.Extension {
-		err := InvalidFileError{Message: "header length is too small"}
-		return nil, errors.Wrap(err, "readHeader")
-	}
-
-	if (hl-crypto.Extension)%uint32(entrySize) != 0 {
-		err := InvalidFileError{Message: "header length is invalid"}
-		return nil, errors.Wrap(err, "readHeader")
-	}
-
-	if int64(hl) > size-int64(headerLengthSize) {
-		err := InvalidFileError{Message: "header is larger than file"}
-		return nil, errors.Wrap(err, "readHeader")
-	}
-
-	if int64(hl) > maxHeaderSize {
-		err := InvalidFileError{Message: "header is larger than maxHeaderSize"}
-		return nil, errors.Wrap(err, "readHeader")
-	}
-
-	eagerBuf = eagerBuf[:eagerHl]
-
-	var buf []byte
-	if hl <= eagerHl {
-		// already have all header bytes. yay.
-		buf = eagerBuf[eagerHl-hl:]
-	} else {
-		// need more header bytes
-		buf = make([]byte, hl)
-		missingHl := hl - eagerHl
-		n, err := rd.ReadAt(buf[:missingHl], size-int64(hl)-int64(headerLengthSize))
-		if err != nil {
-			return nil, errors.Wrap(err, "ReadAt")
-		}
-		if uint32(n) != missingHl {
-			return nil, errors.New("not enough bytes read")
-		}
-		copy(buf[hl-eagerHl:], eagerBuf)
-	}
-
-	return buf, nil
+	return b, nil
 }
 
 // InvalidFileError is return when a file is found that is not a pack file.
