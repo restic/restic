@@ -87,3 +87,29 @@ yield the same error:
     Load indexes
     ciphertext verification failed
 
+By default, ``check`` command does not check that repository data files 
+are unmodified. Use ``--read-data`` parameter to check all repository
+data files:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup check --read-data
+    load indexes
+    check all packs
+    check snapshots, trees and blobs
+    read all data
+
+Use ``--read-data-subset=n/t`` parameter to check subset of repository data
+files. The parameter takes two values, ``n`` and ``t``. All repository data 
+files are logically devided in ``t`` roughly equal groups and only files that
+belong to the group number ``n`` are checked. For example, the following 
+commands check all repository data files over 5 separate invocations:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup check --read-data-subset=1/5
+    $ restic -r /tmp/backup check --read-data-subset=2/5
+    $ restic -r /tmp/backup check --read-data-subset=3/5
+    $ restic -r /tmp/backup check --read-data-subset=4/5
+    $ restic -r /tmp/backup check --read-data-subset=5/5
+
