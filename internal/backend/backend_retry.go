@@ -125,16 +125,39 @@ func (be *RetryBackend) Test(ctx context.Context, h restic.Handle) (exists bool,
 	return exists, err
 }
 
-// List runs fn for each file in the backend which has the type t.
+// List runs fn for each file in the backend which has the type t. When an
+// error is returned by the underlying backend, the request is retried. When fn
+// returns an error, the operation is aborted and the error is returned to the
+// caller.
 func (be *RetryBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	listed := make(map[string]struct{})
-	return be.retry(ctx, fmt.Sprintf("List(%v)", t), func() error {
+	// create a new context that we can cancel when fn returns an error, so
+	// that listing is aborted
+	listCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	listed := make(map[string]struct{}) // remember for which files we already ran fn
+	var innerErr error                  // remember when fn returned an error, so we can return that to the caller
+
+	err := be.retry(listCtx, fmt.Sprintf("List(%v)", t), func() error {
 		return be.Backend.List(ctx, t, func(fi restic.FileInfo) error {
 			if _, ok := listed[fi.Name]; ok {
 				return nil
 			}
 			listed[fi.Name] = struct{}{}
-			return fn(fi)
+
+			innerErr = fn(fi)
+			if innerErr != nil {
+				// if fn returned an error, listing is aborted, so we cancel the context
+				cancel()
+			}
+			return innerErr
 		})
 	})
+
+	// the error fn returned takes precedence
+	if innerErr != nil {
+		return innerErr
+	}
+
+	return err
 }

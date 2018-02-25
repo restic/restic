@@ -44,7 +44,11 @@ type ErrAlreadyLocked struct {
 }
 
 func (e ErrAlreadyLocked) Error() string {
-	return fmt.Sprintf("repository is already locked by %v", e.otherLock)
+	s := ""
+	if e.otherLock.Exclusive {
+		s = "exclusively "
+	}
+	return fmt.Sprintf("repository is already locked %sby %v", s, e.otherLock)
 }
 
 // IsAlreadyLocked returns true iff err is an instance of ErrAlreadyLocked.

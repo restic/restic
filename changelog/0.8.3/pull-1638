@@ -1,0 +1,16 @@
+Bugfix: Handle errors listing files in the backend
+
+A user reported in the forum that restic completes a backup although a
+concurrent `prune` operation was running. A few error messages were printed,
+but the backup was attempted and completed successfully. No error code was
+returned.
+
+This should not happen: The repository is exclusively locked during `prune`, so
+when `restic backup` is run in parallel, it should abort and return an error
+code instead.
+
+It was found that the bug was in the code introduced only recently, which
+retries a List() operation on the backend should that fail. It is now corrected.
+
+https://github.com/restic/restic/pull/1638
+https://forum.restic.net/t/restic-backup-returns-0-exit-code-when-already-locked/484

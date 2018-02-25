@@ -124,6 +124,104 @@ func TestBackendListRetry(t *testing.T) {
 	test.Equals(t, []string{ID1, ID2}, listed) // assert no duplicate files
 }
 
+func TestBackendListRetryErrorFn(t *testing.T) {
+	var names = []string{"id1", "id2", "foo", "bar"}
+
+	be := &mock.Backend{
+		ListFn: func(ctx context.Context, tpe restic.FileType, fn func(restic.FileInfo) error) error {
+			t.Logf("List called for %v", tpe)
+			for _, name := range names {
+				err := fn(restic.FileInfo{Name: name})
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	}
+
+	retryBackend := RetryBackend{
+		Backend: be,
+	}
+
+	var ErrTest = errors.New("test error")
+
+	var listed []string
+	run := 0
+	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+		t.Logf("fn called for %v", fi.Name)
+		run++
+		// return an error for the third item in the list
+		if run == 3 {
+			t.Log("returning an error")
+			return ErrTest
+		}
+		listed = append(listed, fi.Name)
+		return nil
+	})
+
+	if err != ErrTest {
+		t.Fatalf("wrong error returned, want %v, got %v", ErrTest, err)
+	}
+
+	// processing should stop after the error was returned, so run should be 3
+	if run != 3 {
+		t.Fatalf("function was called %d times, wanted %v", run, 3)
+	}
+
+	test.Equals(t, []string{"id1", "id2"}, listed)
+}
+
+func TestBackendListRetryErrorBackend(t *testing.T) {
+	var names = []string{"id1", "id2", "foo", "bar"}
+
+	var ErrBackendTest = errors.New("test error")
+
+	retries := 0
+	be := &mock.Backend{
+		ListFn: func(ctx context.Context, tpe restic.FileType, fn func(restic.FileInfo) error) error {
+			t.Logf("List called for %v, retries %v", tpe, retries)
+			retries++
+			for i, name := range names {
+				if i == 2 {
+					return ErrBackendTest
+				}
+
+				err := fn(restic.FileInfo{Name: name})
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	}
+
+	const maxRetries = 2
+	retryBackend := RetryBackend{
+		MaxTries: maxRetries,
+		Backend:  be,
+	}
+
+	var listed []string
+	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+		t.Logf("fn called for %v", fi.Name)
+		listed = append(listed, fi.Name)
+		return nil
+	})
+
+	if err != ErrBackendTest {
+		t.Fatalf("wrong error returned, want %v, got %v", ErrBackendTest, err)
+	}
+
+	if retries != maxRetries+1 {
+		t.Fatalf("List was called %d times, wanted %v", retries, maxRetries+1)
+	}
+
+	test.Equals(t, names[:2], listed)
+}
+
 // failingReader returns an error after reading limit number of bytes
 type failingReader struct {
 	data  []byte
