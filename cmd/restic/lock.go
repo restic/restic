@@ -91,18 +91,22 @@ func unlockRepo(lock *restic.Lock) error {
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
-	debug.Log("unlocking repository with lock %p", lock)
-	if err := lock.Unlock(); err != nil {
-		debug.Log("error while unlocking: %v", err)
-		return err
-	}
-
 	for i := 0; i < len(globalLocks.locks); i++ {
 		if lock == globalLocks.locks[i] {
+			// remove the lock from the repo
+			debug.Log("unlocking repository with lock %v", lock)
+			if err := lock.Unlock(); err != nil {
+				debug.Log("error while unlocking: %v", err)
+				return err
+			}
+
+			// remove the lock from the list of locks
 			globalLocks.locks = append(globalLocks.locks[:i], globalLocks.locks[i+1:]...)
 			return nil
 		}
 	}
+
+	debug.Log("unable to find lock %v in the global list of locks, ignoring", lock)
 
 	return nil
 }
@@ -119,6 +123,7 @@ func unlockAll() error {
 		}
 		debug.Log("successfully removed lock")
 	}
+	globalLocks.locks = globalLocks.locks[:0]
 
 	return nil
 }
