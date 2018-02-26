@@ -1,7 +1,7 @@
 Bugfix: Fixed unexpected 'pack file cannot be listed' error
 
-Due to regression introduced in 0.8.2, `rebuild-index` and `prune` commands
-failed to read pack files with size of 587, 588, 589 or 590 bytes.
+Due to a regression introduced in 0.8.2, the `rebuild-index` and `prune`
+commands failed to read pack files with size of 587, 588, 589 or 590 bytes.
 
 https://github.com/restic/restic/issues/1633
 https://github.com/restic/restic/pull/1635
