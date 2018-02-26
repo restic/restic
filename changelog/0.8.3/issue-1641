@@ -1,0 +1,10 @@
+Bugfix: Ignore files with invalid names in the repo
+
+The release 0.8.2 introduced a bug: when restic encounters files in the repo
+which do not have a valid name, it tries to load a file with a name of lots of
+zeroes instead of ignoring it. This is now resolved, invalid file names are
+just ignored.
+
+https://github.com/restic/restic/issues/1641
+https://github.com/restic/restic/pull/1643
+https://forum.restic.net/t/help-fixing-repo-no-such-file/485/3
