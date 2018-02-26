@@ -546,6 +546,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 		id, err := restic.ParseID(fi.Name)
 		if err != nil {
 			debug.Log("unable to parse %v as an ID", fi.Name)
+			return nil
 		}
 		return fn(id, fi.Size)
 	})
