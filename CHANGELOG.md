@@ -1,3 +1,89 @@
+Changelog for restic 0.8.3 (2018-02-26)
+=======================================
+
+The following sections list the changes in restic 0.8.3 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1633: Fixed unexpected 'pack file cannot be listed' error
+ * Fix #1641: Ignore files with invalid names in the repo
+ * Fix #1638: Handle errors listing files in the backend
+ * Enh #1497: Add --read-data-subset flag to check command
+ * Enh #1560: Retry all repository file download errors
+ * Enh #1623: Don't check for presence of files in the backend before writing
+ * Enh #1634: Upgrade B2 client library, reduce HTTP requests
+
+Details
+-------
+
+ * Bugfix #1633: Fixed unexpected 'pack file cannot be listed' error
+
+   Due to a regression introduced in 0.8.2, the `rebuild-index` and `prune` commands failed to
+   read pack files with size of 587, 588, 589 or 590 bytes.
+
+   https://github.com/restic/restic/issues/1633
+   https://github.com/restic/restic/pull/1635
+
+ * Bugfix #1641: Ignore files with invalid names in the repo
+
+   The release 0.8.2 introduced a bug: when restic encounters files in the repo which do not have a
+   valid name, it tries to load a file with a name of lots of zeroes instead of ignoring it. This is now
+   resolved, invalid file names are just ignored.
+
+   https://github.com/restic/restic/issues/1641
+   https://github.com/restic/restic/pull/1643
+
+ * Bugfix #1638: Handle errors listing files in the backend
+
+   A user reported in the forum that restic completes a backup although a concurrent `prune`
+   operation was running. A few error messages were printed, but the backup was attempted and
+   completed successfully. No error code was returned.
+
+   This should not happen: The repository is exclusively locked during `prune`, so when `restic
+   backup` is run in parallel, it should abort and return an error code instead.
+
+   It was found that the bug was in the code introduced only recently, which retries a List()
+   operation on the backend should that fail. It is now corrected.
+
+   https://github.com/restic/restic/pull/1638
+
+ * Enhancement #1497: Add --read-data-subset flag to check command
+
+   This change introduces ability to check integrity of a subset of repository data packs. This
+   can be used to spread integrity check of larger repositories over a period of time.
+
+   https://github.com/restic/restic/issues/1497
+   https://github.com/restic/restic/pull/1556
+
+ * Enhancement #1560: Retry all repository file download errors
+
+   Restic will now retry failed downloads, similar to other operations.
+
+   https://github.com/restic/restic/pull/1560
+
+ * Enhancement #1623: Don't check for presence of files in the backend before writing
+
+   Before, all backend implementations were required to return an error if the file that is to be
+   written already exists in the backend. For most backends, that means making a request (e.g. via
+   HTTP) and returning an error when the file already exists.
+
+   This is not accurate, the file could have been created between the HTTP request testing for it,
+   and when writing starts, so we've relaxed this requeriment, which saves one additional HTTP
+   request per newly added file.
+
+   https://github.com/restic/restic/pull/1623
+
+ * Enhancement #1634: Upgrade B2 client library, reduce HTTP requests
+
+   We've upgraded the B2 client library restic uses to access BackBlaze B2. This reduces the
+   number of HTTP requests needed to upload a new file from two to one, which should improve
+   throughput to B2.
+
+   https://github.com/restic/restic/pull/1634
+
+
 Changelog for restic 0.8.2 (2018-02-17)
 =======================================
 
