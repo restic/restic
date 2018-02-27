@@ -270,7 +270,7 @@ func build(cwd, goos, goarch, goarm, gopath string, args ...string) error {
 	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	verbosePrintf("go %s\n", args)
+	verbosePrintf("go %s\n", a)
 
 	return cmd.Run()
 }
@@ -437,6 +437,8 @@ func main() {
 	targetGOARCH := runtime.GOARCH
 	targetGOARM := ""
 
+	gopath := ""
+
 	var outputFilename string
 
 	for i, arg := range params {
@@ -459,6 +461,9 @@ func main() {
 		case "-o", "--output":
 			skipNext = true
 			outputFilename = params[i+1]
+		case "--tempdir":
+			skipNext = true
+			gopath = params[i+1]
 		case "-T", "--test":
 			runTests = true
 		case "--enable-cgo":
@@ -498,9 +503,11 @@ func main() {
 		die("Getwd(): %v\n", err)
 	}
 
-	gopath, err := ioutil.TempDir("", fmt.Sprintf("%v-build-", config.Name))
-	if err != nil {
-		die("TempDir(): %v\n", err)
+	if gopath == "" {
+		gopath, err = ioutil.TempDir("", fmt.Sprintf("%v-build-", config.Name))
+		if err != nil {
+			die("TempDir(): %v\n", err)
+		}
 	}
 
 	verbosePrintf("create GOPATH at %v\n", gopath)
