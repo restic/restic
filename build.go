@@ -227,7 +227,7 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "         --enable-cgo    use CGO to link against libc\n")
 	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
-	fmt.Fprintf(output, "         --goarm value  set GOARM for cross-compilation\n")
+	fmt.Fprintf(output, "         --goarm value   set GOARM for cross-compilation\n")
 }
 
 func verbosePrintf(message string, args ...interface{}) {
@@ -253,10 +253,19 @@ func cleanEnv() (env []string) {
 }
 
 // build runs "go build args..." with GOPATH set to gopath.
-func build(cwd, goos, goarch, goarm, gopath string, args ...string) error {
+func build(cwd string, ver GoVersion, goos, goarch, goarm, gopath string, args ...string) error {
 	a := []string{"build"}
-	a = append(a, "-asmflags", fmt.Sprintf("-trimpath=%s", gopath))
-	a = append(a, "-gcflags", fmt.Sprintf("-trimpath=%s", gopath))
+
+	if ver.AtLeast(GoVersion{1, 10, 0}) {
+		verbosePrintf("Go version is at least 1.10, using new syntax for -gcflags\n")
+		// use new prefix
+		a = append(a, "-asmflags", fmt.Sprintf("all=-trimpath=%s", gopath))
+		a = append(a, "-gcflags", fmt.Sprintf("all=-trimpath=%s", gopath))
+	} else {
+		a = append(a, "-asmflags", fmt.Sprintf("-trimpath=%s", gopath))
+		a = append(a, "-gcflags", fmt.Sprintf("-trimpath=%s", gopath))
+	}
+
 	a = append(a, args...)
 	cmd := exec.Command("go", a...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
@@ -366,30 +375,39 @@ func ParseGoVersion(s string) (v GoVersion) {
 
 	s = s[2:]
 	data := strings.Split(s, ".")
-	if len(data) != 3 {
-		return
+	if len(data) < 2 || len(data) > 3 {
+		// invalid version
+		return GoVersion{}
 	}
 
-	major, err := strconv.Atoi(data[0])
+	var err error
+
+	v.Major, err = strconv.Atoi(data[0])
 	if err != nil {
-		return
+		return GoVersion{}
 	}
 
-	minor, err := strconv.Atoi(data[1])
-	if err != nil {
-		return
+	// try to parse the minor version while removing an eventual suffix (like
+	// "rc2" or so)
+	for s := data[1]; s != ""; s = s[:len(s)-1] {
+		v.Minor, err = strconv.Atoi(s)
+		if err == nil {
+			break
+		}
 	}
 
-	patch, err := strconv.Atoi(data[2])
-	if err != nil {
-		return
+	if v.Minor == 0 {
+		// no minor version found
+		return GoVersion{}
 	}
 
-	v = GoVersion{
-		Major: major,
-		Minor: minor,
-		Patch: patch,
+	if len(data) >= 3 {
+		v.Patch, err = strconv.Atoi(data[2])
+		if err != nil {
+			return GoVersion{}
+		}
 	}
+
 	return
 }
 
@@ -487,6 +505,8 @@ func main() {
 		}
 	}
 
+	verbosePrintf("detected Go version %v\n", ver)
+
 	if len(buildTags) == 0 {
 		verbosePrintf("adding build-tag release\n")
 		buildTags = []string{"release"}
@@ -563,7 +583,7 @@ func main() {
 		"-o", output, config.Main,
 	}
 
-	err = build(filepath.Join(gopath, "src"), targetGOOS, targetGOARCH, targetGOARM, gopath, args...)
+	err = build(filepath.Join(gopath, "src"), ver, targetGOOS, targetGOARCH, targetGOARM, gopath, args...)
 	if err != nil {
 		die("build failed: %v\n", err)
 	}
