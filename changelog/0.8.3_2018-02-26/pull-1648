@@ -1,0 +1,6 @@
+Enhancement: Ignore AWS permission denied error when creating a repository.
+
+It's not possible to use s3 backend scoped to a subdirectory(with specific permissions).
+Restic doesn't try to create repository in a subdirectory, when 'bucket exists' of parent directory check fails due to permission issues.
+
+https://github.com/restic/restic/pull/1648
