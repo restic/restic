@@ -104,6 +104,12 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "open")
 	}
 	found, err := be.client.BucketExists(cfg.Bucket)
+
+	if err != nil && be.IsAccessDenied(err) {
+		err = nil
+		found = true
+	}
+
 	if err != nil {
 		debug.Log("BucketExists(%v) returned err %v", cfg.Bucket, err)
 		return nil, errors.Wrap(err, "client.BucketExists")
@@ -118,6 +124,17 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	}
 
 	return be, nil
+}
+
+// IsAccessDenied returns true if the error is caused by Access Denied.
+func (be *Backend) IsAccessDenied(err error) bool {
+	debug.Log("IsAccessDenied(%T, %#v)", err, err)
+
+	if e, ok := errors.Cause(err).(minio.ErrorResponse); ok && e.Code == "AccessDenied" {
+		return true
+	}
+
+	return false
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
