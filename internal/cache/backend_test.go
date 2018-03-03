@@ -28,7 +28,7 @@ func loadAndCompare(t testing.TB, be restic.Backend, h restic.Handle, data []byt
 }
 
 func save(t testing.TB, be restic.Backend, h restic.Handle, data []byte) {
-	err := be.Save(context.TODO(), h, bytes.NewReader(data))
+	err := be.Save(context.TODO(), h, restic.NewByteReader(data))
 	if err != nil {
 		t.Fatal(err)
 	}

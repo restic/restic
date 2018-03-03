@@ -207,7 +207,7 @@ func (be *Backend) Path() string {
 }
 
 // Save stores data in the backend at the handle.
-func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -250,6 +250,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	info, err := be.service.Objects.Insert(be.bucketName,
 		&storage.Object{
 			Name: objName,
+			Size: uint64(rd.Length()),
 		}).Media(rd, cs).Do()
 
 	be.sem.ReleaseToken()

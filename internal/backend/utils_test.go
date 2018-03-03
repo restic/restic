@@ -24,7 +24,8 @@ func TestLoadAll(t *testing.T) {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
@@ -49,7 +50,8 @@ func TestLoadSmallBuffer(t *testing.T) {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
@@ -74,7 +76,8 @@ func TestLoadLargeBuffer(t *testing.T) {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})

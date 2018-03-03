@@ -12,7 +12,7 @@ import (
 type Backend struct {
 	CloseFn      func() error
 	IsNotExistFn func(err error) bool
-	SaveFn       func(ctx context.Context, h restic.Handle, rd io.Reader) error
+	SaveFn       func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error
 	OpenReaderFn func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn       func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
 	ListFn       func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
@@ -56,7 +56,7 @@ func (m *Backend) IsNotExist(err error) bool {
 }
 
 // Save data in the backend.
-func (m *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
+func (m *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if m.SaveFn == nil {
 		return errors.New("not implemented")
 	}

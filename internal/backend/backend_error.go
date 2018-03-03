@@ -45,7 +45,7 @@ func (be *ErrorBackend) fail(p float32) bool {
 }
 
 // Save stores the data in the backend under the given handle.
-func (be *ErrorBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
+func (be *ErrorBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if be.fail(be.FailSave) {
 		return errors.Errorf("Save(%v) random error induced", h)
 	}

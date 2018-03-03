@@ -282,7 +282,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	id = restic.Hash(ciphertext)
 	h := restic.Handle{Type: t, Name: id.String()}
 
-	err = r.be.Save(ctx, h, bytes.NewReader(ciphertext))
+	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext))
 	if err != nil {
 		debug.Log("error saving blob %v: %v", h, err)
 		return restic.ID{}, err
@@ -456,11 +456,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		}
 	}
 
-	if err := <-errCh; err != nil {
-		return err
-	}
-
-	return nil
+	return <-errCh
 }
 
 // LoadIndex loads the index id from backend and returns it.

@@ -3,7 +3,9 @@ package checker_test
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -195,16 +197,46 @@ func TestModifiedIndex(t *testing.T) {
 		Type: restic.IndexFile,
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-	err := repo.Backend().Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
-		// save the index again with a modified name so that the hash doesn't match
-		// the content any more
-		h2 := restic.Handle{
-			Type: restic.IndexFile,
-			Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
+
+	tmpfile, err := ioutil.TempFile("", "restic-test-mod-index-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err := tmpfile.Close()
+		if err != nil {
+			t.Fatal(err)
 		}
-		return repo.Backend().Save(context.TODO(), h2, rd)
+
+		err = os.Remove(tmpfile.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	// read the file from the backend
+	err = repo.Backend().Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
+		_, err := io.Copy(tmpfile, rd)
+		return err
 	})
 	test.OK(t, err)
+
+	// save the index again with a modified name so that the hash doesn't match
+	// the content any more
+	h2 := restic.Handle{
+		Type: restic.IndexFile,
+		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
+	}
+
+	rd, err := restic.NewFileReader(tmpfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = repo.Backend().Save(context.TODO(), h2, rd)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	chkr := checker.New(repo)
 	hints, errs := chkr.LoadIndex(context.TODO())

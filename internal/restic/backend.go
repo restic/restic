@@ -20,8 +20,8 @@ type Backend interface {
 	// Close the backend
 	Close() error
 
-	// Save stores the data in the backend under the given handle.
-	Save(ctx context.Context, h Handle, rd io.Reader) error
+	// Save stores the data from rd under the given handle.
+	Save(ctx context.Context, h Handle, rd RewindReader) error
 
 	// Load runs fn with a reader that yields the contents of the file at h at the
 	// given offset. If length is larger than zero, only a portion of the file

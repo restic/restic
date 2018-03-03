@@ -21,8 +21,23 @@ type rateLimitedBackend struct {
 	limiter Limiter
 }
 
-func (r rateLimitedBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
-	return r.Backend.Save(ctx, h, r.limiter.Upstream(rd))
+func (r rateLimitedBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	limited := limitedRewindReader{
+		RewindReader: rd,
+		limited:      r.limiter.Upstream(rd),
+	}
+
+	return r.Backend.Save(ctx, h, limited)
+}
+
+type limitedRewindReader struct {
+	restic.RewindReader
+
+	limited io.Reader
+}
+
+func (l limitedRewindReader) Read(b []byte) (int, error) {
+	return l.limited.Read(b)
 }
 
 func (r rateLimitedBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
