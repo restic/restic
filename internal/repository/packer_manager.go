@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"crypto/sha256"
-	"io"
 	"os"
 	"sync"
 
@@ -19,7 +18,7 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(context.Context, restic.Handle, io.Reader) error
+	Save(context.Context, restic.Handle, restic.RewindReader) error
 }
 
 // Packer holds a pack.Packer together with a hash writer.
@@ -96,15 +95,15 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 		return err
 	}
 
-	_, err = p.tmpfile.Seek(0, 0)
-	if err != nil {
-		return errors.Wrap(err, "Seek")
-	}
-
 	id := restic.IDFromHash(p.hw.Sum(nil))
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	err = r.be.Save(ctx, h, p.tmpfile)
+	rd, err := restic.NewFileReader(p.tmpfile)
+	if err != nil {
+		return err
+	}
+
+	err = r.be.Save(ctx, h, rd)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
 		return err

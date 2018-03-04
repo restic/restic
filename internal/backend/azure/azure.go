@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -114,19 +115,8 @@ func (be *Backend) Path() string {
 	return be.prefix
 }
 
-// preventCloser wraps an io.Reader to run a function instead of the original Close() function.
-type preventCloser struct {
-	io.Reader
-	f func()
-}
-
-func (wr preventCloser) Close() error {
-	wr.f()
-	return nil
-}
-
 // Save stores data in the backend at the handle.
-func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -137,18 +127,10 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	be.sem.GetToken()
 
-	// wrap the reader so that net/http client cannot close the reader, return
-	// the token instead.
-	rd = preventCloser{
-		Reader: rd,
-		f: func() {
-			debug.Log("Close()")
-		},
-	}
-
 	debug.Log("InsertObject(%v, %v)", be.container.Name, objName)
 
-	err = be.container.GetBlobReference(objName).CreateBlockBlobFromReader(rd, nil)
+	// wrap the reader so that net/http client cannot close the reader
+	err := be.container.GetBlobReference(objName).CreateBlockBlobFromReader(ioutil.NopCloser(rd), nil)
 
 	be.sem.ReleaseToken()
 	debug.Log("%v, err %#v", objName, err)

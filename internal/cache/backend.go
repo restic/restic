@@ -5,7 +5,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
@@ -50,35 +49,29 @@ var autoCacheTypes = map[restic.FileType]struct{}{
 }
 
 // Save stores a new file in the backend and the cache.
-func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if _, ok := autoCacheTypes[h.Type]; !ok {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
 	debug.Log("Save(%v): auto-store in the cache", h)
 
-	seeker, ok := rd.(io.Seeker)
-	if !ok {
-		return errors.New("reader is not a seeker")
-	}
-
-	pos, err := seeker.Seek(0, io.SeekCurrent)
+	// make sure the reader is at the start
+	err := rd.Rewind()
 	if err != nil {
-		return errors.Wrapf(err, "Seek")
+		return err
 	}
 
-	if pos != 0 {
-		return errors.Errorf("reader is not rewind (pos %d)", pos)
-	}
-
+	// first, save in the backend
 	err = b.Backend.Save(ctx, h, rd)
 	if err != nil {
 		return err
 	}
 
-	_, err = seeker.Seek(pos, io.SeekStart)
+	// next, save in the cache
+	err = rd.Rewind()
 	if err != nil {
-		return errors.Wrapf(err, "Seek")
+		return err
 	}
 
 	err = b.Cache.Save(h, rd)

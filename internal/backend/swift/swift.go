@@ -156,8 +156,8 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 }
 
 // Save stores data in the backend at the handle.
-func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
-	if err = h.Valid(); err != nil {
+func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	if err := h.Valid(); err != nil {
 		return err
 	}
 
@@ -171,7 +171,7 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	encoding := "binary/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)
-	_, err = be.conn.ObjectPut(be.container, objName, rd, true, "", encoding, nil)
+	_, err := be.conn.ObjectPut(be.container, objName, rd, true, "", encoding, nil)
 	debug.Log("%v, err %#v", objName, err)
 
 	return errors.Wrap(err, "client.PutObject")

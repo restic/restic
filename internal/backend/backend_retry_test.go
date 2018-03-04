@@ -13,48 +13,11 @@ import (
 	"github.com/restic/restic/internal/test"
 )
 
-func TestBackendRetrySeeker(t *testing.T) {
-	be := &mock.Backend{
-		SaveFn: func(ctx context.Context, h restic.Handle, rd io.Reader) error {
-			return nil
-		},
-	}
-
-	retryBackend := RetryBackend{
-		Backend: be,
-	}
-
-	data := test.Random(24, 23*14123)
-
-	type wrapReader struct {
-		io.Reader
-	}
-
-	var rd io.Reader
-	rd = wrapReader{bytes.NewReader(data)}
-
-	err := retryBackend.Save(context.TODO(), restic.Handle{}, rd)
-	if err == nil {
-		t.Fatal("did not get expected error for retry backend with non-seeker reader")
-	}
-
-	rd = bytes.NewReader(data)
-	_, err = io.CopyN(ioutil.Discard, rd, 5)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = retryBackend.Save(context.TODO(), restic.Handle{}, rd)
-	if err == nil {
-		t.Fatal("did not get expected error for partial reader")
-	}
-}
-
 func TestBackendSaveRetry(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	errcount := 0
 	be := &mock.Backend{
-		SaveFn: func(ctx context.Context, h restic.Handle, rd io.Reader) error {
+		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 			if errcount == 0 {
 				errcount++
 				_, err := io.CopyN(ioutil.Discard, rd, 120)
@@ -75,7 +38,7 @@ func TestBackendSaveRetry(t *testing.T) {
 	}
 
 	data := test.Random(23, 5*1024*1024+11241)
-	err := retryBackend.Save(context.TODO(), restic.Handle{}, bytes.NewReader(data))
+	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data))
 	if err != nil {
 		t.Fatal(err)
 	}

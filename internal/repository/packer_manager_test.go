@@ -50,11 +50,17 @@ func randomID(rd io.Reader) restic.ID {
 
 const maxBlobSize = 1 << 20
 
-func saveFile(t testing.TB, be Saver, f *os.File, id restic.ID) {
+func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID) {
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
-	if err := be.Save(context.TODO(), h, f); err != nil {
+	rd, err := restic.NewFileReader(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = be.Save(context.TODO(), h, rd)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -101,12 +107,8 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			t.Fatal(err)
 		}
 
-		if _, err = packer.tmpfile.Seek(0, 0); err != nil {
-			t.Fatal(err)
-		}
-
 		packID := restic.IDFromHash(packer.hw.Sum(nil))
-		saveFile(t, be, packer.tmpfile, packID)
+		saveFile(t, be, int(packer.Size()), packer.tmpfile, packID)
 	}
 
 	return bytes
@@ -122,7 +124,7 @@ func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerMana
 			bytes += int(n)
 
 			packID := restic.IDFromHash(packer.hw.Sum(nil))
-			saveFile(t, be, packer.tmpfile, packID)
+			saveFile(t, be, int(packer.Size()), packer.tmpfile, packID)
 		}
 	}
 
@@ -147,7 +149,7 @@ func BenchmarkPackerManager(t *testing.B) {
 	rnd := newRandReader(rand.NewSource(23))
 
 	be := &mock.Backend{
-		SaveFn: func(context.Context, restic.Handle, io.Reader) error { return nil },
+		SaveFn: func(context.Context, restic.Handle, restic.RewindReader) error { return nil },
 	}
 	blobBuf := make([]byte, maxBlobSize)
 
