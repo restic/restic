@@ -443,7 +443,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 
 type errorCloser struct {
 	io.ReadSeeker
-	l int
+	l int64
 	t testing.TB
 }
 
@@ -452,7 +452,7 @@ func (ec errorCloser) Close() error {
 	return errors.New("forbidden method close was called")
 }
 
-func (ec errorCloser) Length() int {
+func (ec errorCloser) Length() int64 {
 	return ec.l
 }
 
@@ -536,7 +536,7 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
-	err = b.Save(context.TODO(), h, errorCloser{t: t, l: length, ReadSeeker: tmpfile})
+	err = b.Save(context.TODO(), h, errorCloser{t: t, l: int64(length), ReadSeeker: tmpfile})
 	if err != nil {
 		t.Fatal(err)
 	}

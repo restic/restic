@@ -57,15 +57,15 @@ func TestFileReader(t *testing.T) {
 }
 
 func testRewindReader(t *testing.T, fn func() RewindReader, data []byte) {
-	seed := time.Now().Unix()
+	seed := time.Now().UnixNano()
 	t.Logf("seed is %d", seed)
 	rnd := rand.New(rand.NewSource(seed))
 
 	type ReaderTestFunc func(t testing.TB, r RewindReader, data []byte)
 	var tests = []ReaderTestFunc{
 		func(t testing.TB, rd RewindReader, data []byte) {
-			if rd.Length() != len(data) {
-				t.Fatalf("wrong length returned, want %d, got %d", len(data), rd.Length())
+			if rd.Length() != int64(len(data)) {
+				t.Fatalf("wrong length returned, want %d, got %d", int64(len(data)), rd.Length())
 			}
 
 			buf := make([]byte, len(data))
@@ -78,8 +78,8 @@ func testRewindReader(t *testing.T, fn func() RewindReader, data []byte) {
 				t.Fatalf("wrong data returned")
 			}
 
-			if rd.Length() != len(data) {
-				t.Fatalf("wrong length returned, want %d, got %d", len(data), rd.Length())
+			if rd.Length() != int64(len(data)) {
+				t.Fatalf("wrong length returned, want %d, got %d", int64(len(data)), rd.Length())
 			}
 
 			err = rd.Rewind()
@@ -87,11 +87,11 @@ func testRewindReader(t *testing.T, fn func() RewindReader, data []byte) {
 				t.Fatal(err)
 			}
 
-			if rd.Length() != len(data) {
-				t.Fatalf("wrong length returned, want %d, got %d", len(data), rd.Length())
+			if rd.Length() != int64(len(data)) {
+				t.Fatalf("wrong length returned, want %d, got %d", int64(len(data)), rd.Length())
 			}
 
-			buf2 := make([]byte, len(data))
+			buf2 := make([]byte, int64(len(data)))
 			_, err = io.ReadFull(rd, buf2)
 			if err != nil {
 				t.Fatal(err)
@@ -101,8 +101,8 @@ func testRewindReader(t *testing.T, fn func() RewindReader, data []byte) {
 				t.Fatalf("wrong data returned")
 			}
 
-			if rd.Length() != len(data) {
-				t.Fatalf("wrong length returned, want %d, got %d", len(data), rd.Length())
+			if rd.Length() != int64(len(data)) {
+				t.Fatalf("wrong length returned, want %d, got %d", int64(len(data)), rd.Length())
 			}
 		},
 		func(t testing.TB, rd RewindReader, data []byte) {

@@ -17,13 +17,13 @@ type RewindReader interface {
 
 	// Length returns the number of bytes that can be read from the Reader
 	// after calling Rewind.
-	Length() int
+	Length() int64
 }
 
 // ByteReader implements a RewindReader for a byte slice.
 type ByteReader struct {
 	*bytes.Reader
-	Len int
+	Len int64
 }
 
 // Rewind restarts the reader from the beginning of the data.
@@ -34,7 +34,7 @@ func (b *ByteReader) Rewind() error {
 
 // Length returns the number of bytes read from the reader after Rewind is
 // called.
-func (b *ByteReader) Length() int {
+func (b *ByteReader) Length() int64 {
 	return b.Len
 }
 
@@ -45,7 +45,7 @@ var _ RewindReader = &ByteReader{}
 func NewByteReader(buf []byte) *ByteReader {
 	return &ByteReader{
 		Reader: bytes.NewReader(buf),
-		Len:    len(buf),
+		Len:    int64(len(buf)),
 	}
 }
 
@@ -55,7 +55,7 @@ var _ RewindReader = &FileReader{}
 // FileReader implements a RewindReader for an open file.
 type FileReader struct {
 	io.ReadSeeker
-	Len int
+	Len int64
 }
 
 // Rewind seeks to the beginning of the file.
@@ -65,7 +65,7 @@ func (f *FileReader) Rewind() error {
 }
 
 // Length returns the length of the file.
-func (f *FileReader) Length() int {
+func (f *FileReader) Length() int64 {
 	return f.Len
 }
 
@@ -78,7 +78,7 @@ func NewFileReader(f io.ReadSeeker) (*FileReader, error) {
 
 	fr := &FileReader{
 		ReadSeeker: f,
-		Len:        int(pos),
+		Len:        pos,
 	}
 
 	err = fr.Rewind()
