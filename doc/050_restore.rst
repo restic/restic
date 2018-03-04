@@ -63,7 +63,8 @@ command to serve the repository with FUSE:
     Now serving /tmp/backup at /mnt/restic
     Don't forget to umount after quitting!
 
-Mounting repositories via FUSE is not possible on Windows and OpenBSD.
+Mounting repositories via FUSE is not possible on OpenBSD, Solaris/illumos
+and Windows.
 
 Restic supports storage and preservation of hard links. However, since
 hard links exist in the scope of a filesystem by definition, restoring

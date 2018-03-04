@@ -1,3 +1,4 @@
+// +build !solaris
 // +build !windows
 
 package sftp

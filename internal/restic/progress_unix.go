@@ -1,4 +1,4 @@
-// +build !windows,!darwin,!freebsd,!netbsd,!openbsd,!dragonfly
+// +build !windows,!darwin,!freebsd,!netbsd,!openbsd,!dragonfly,!solaris
 
 package restic
 

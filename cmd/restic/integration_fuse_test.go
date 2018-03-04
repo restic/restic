@@ -1,4 +1,5 @@
 // +build !openbsd
+// +build !solaris
 // +build !windows
 
 package main
