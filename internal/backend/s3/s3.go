@@ -48,6 +48,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	// AWS env variables such as AWS_ACCESS_KEY_ID
 	// Minio env variables such as MINIO_ACCESS_KEY
 	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvAWS{},
 		&credentials.Static{
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
@@ -59,7 +60,6 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 				Transport: http.DefaultTransport,
 			},
 		},
-		&credentials.EnvAWS{},
 		&credentials.EnvMinio{},
 	})
 	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
