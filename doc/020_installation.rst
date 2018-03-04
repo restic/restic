@@ -62,6 +62,28 @@ installed from the official repos, e.g. with ``apt-get``:
 .. warning:: Please be aware that, at the time of writing, Debian *stable*
    has ``restic`` version 0.3.3 which is very old. The *testing* and *unstable*
    branches have recent versions of ``restic``.
+   
+RHEL & CentOS
+=============
+
+restic can be installed via copr repository.
+
+.. code-block:: console
+
+    $ yum install yum-plugin-copr
+    $ yum copr enable copart/restic
+    $ yum install restic
+
+Fedora
+======
+
+restic can be installed via copr repository.
+
+.. code-block:: console
+
+    $ dnf install dnf-plugin-core
+    $ dnf copr enable copart/restic
+    $ dnf install restic
 
 Pre-compiled Binary
 *******************
