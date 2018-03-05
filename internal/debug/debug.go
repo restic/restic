@@ -43,15 +43,15 @@ func initDebugLogger() {
 
 	fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
 
-	f, err := fs.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := fs.OpenFile(debugfile, os.O_WRONLY|os.O_TRUNC, 0600)
 
-	if err == nil {
-		_, err = f.Seek(2, 0)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
-			os.Exit(3)
-		}
-	}
+	// if err == nil {
+	// 	_, err = f.Seek(2, 0)
+	// 	if err != nil {
+	// 		fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
+	// 		os.Exit(3)
+	// 	}
+	// }
 
 	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -174,7 +174,7 @@ func checkFilter(filter map[string]bool, key string) bool {
 // Log prints a message to the debug log (if debug is enabled).
 func Log(f string, args ...interface{}) {
 	fn, dir, file, line := getPosition()
-	goroutine := goroutineNum()
+	// goroutine := goroutineNum()
 
 	if len(f) == 0 || f[len(f)-1] != '\n' {
 		f += "\n"
@@ -190,16 +190,15 @@ func Log(f string, args ...interface{}) {
 		}
 	}
 
-	pos := fmt.Sprintf("%s/%s:%d", dir, file, line)
+	// pos := fmt.Sprintf("%s/%s:%d", dir, file, line)
 
-	formatString := fmt.Sprintf("%s\t%s\t%d\t%s", pos, fn, goroutine, f)
+	formatString := f //fmt.Sprintf("%s\t%s\t%d\t%s", pos, fn, goroutine, f)
 
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, formatString, args...)
-	}
-
-	if opts.logger != nil {
-		opts.logger.Printf(formatString, args...)
+		if opts.logger != nil {
+			opts.logger.Printf(formatString, args...)
+		}
 	}
 
 	filename := fmt.Sprintf("%s/%s:%d", dir, file, line)
