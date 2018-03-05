@@ -1,0 +1,9 @@
+Bugfix: Ignore/remove invalid lock files
+
+This corrects a bug introduced recently: When an invalid lock file in the repo
+is encountered (e.g. if the file is empty), the code used to ignore that, but
+now returns the error. Now, invalid files are ignored for the normal lock
+check, and removed when `restic unlock --remove-all` is run.
+
+https://github.com/restic/restic/issues/1652
+https://github.com/restic/restic/pull/1653

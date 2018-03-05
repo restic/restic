@@ -138,13 +138,15 @@ func (l *Lock) fillUserInfo() error {
 // non-exclusive lock is to be created, an error is only returned when an
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks(ctx context.Context) error {
-	return eachLock(ctx, l.repo, func(id ID, lock *Lock, err error) error {
+	return l.repo.List(ctx, LockFile, func(id ID, size int64) error {
 		if l.lockID != nil && id.Equal(*l.lockID) {
 			return nil
 		}
 
-		// ignore locks that cannot be loaded
+		lock, err := LoadLock(ctx, l.repo, id)
 		if err != nil {
+			// ignore locks that cannot be loaded
+			debug.Log("ignore lock %v: %v", id, err)
 			return nil
 		}
 
@@ -157,17 +159,6 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		}
 
 		return nil
-	})
-}
-
-func eachLock(ctx context.Context, repo Repository, f func(ID, *Lock, error) error) error {
-	return repo.List(ctx, LockFile, func(id ID, size int64) error {
-		lock, err := LoadLock(ctx, repo, id)
-		if err != nil {
-			return err
-		}
-
-		return f(id, lock, err)
 	})
 }
 
@@ -283,9 +274,11 @@ func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
 func RemoveStaleLocks(ctx context.Context, repo Repository) error {
-	return eachLock(ctx, repo, func(id ID, lock *Lock, err error) error {
-		// ignore locks that cannot be loaded
+	return repo.List(ctx, LockFile, func(id ID, size int64) error {
+		lock, err := LoadLock(ctx, repo, id)
 		if err != nil {
+			// ignore locks that cannot be loaded
+			debug.Log("ignore lock %v: %v", id, err)
 			return nil
 		}
 
@@ -299,7 +292,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) error {
 
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(ctx context.Context, repo Repository) error {
-	return eachLock(ctx, repo, func(id ID, lock *Lock, err error) error {
+	return repo.List(ctx, LockFile, func(id ID, size int64) error {
 		return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
 	})
 }
