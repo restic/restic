@@ -280,12 +280,6 @@ func (env *TravisEnvironment) RunTests() error {
 		return errors.New("CI: forbidden imports found")
 	}
 
-	// check that the man pages are up to date
-	manpath := filepath.Join("doc", "new-man")
-	if err := os.MkdirAll(manpath, 0755); err != nil {
-		return err
-	}
-
 	// check that the entries in changelog/ are valid
 	if err := run("calens"); err != nil {
 		fmt.Fprintf(os.Stderr, "calens failed, files in changelog/ are not valid\n")
