@@ -29,14 +29,16 @@ directories in an encrypted repository stored on different backends.
 	SilenceUsage:      true,
 	DisableAutoGenTag: true,
 
-	PersistentPreRunE: func(*cobra.Command, []string) error {
+	PersistentPreRunE: func(c *cobra.Command, args []string) error {
 		// parse extended options
 		opts, err := options.Parse(globalOptions.Options)
 		if err != nil {
 			return err
 		}
 		globalOptions.extended = opts
-
+		if c.Name() == "version" {
+			return nil
+		}
 		pwd, err := resolvePassword(globalOptions, "RESTIC_PASSWORD")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Resolving password failed: %v\n", err)
