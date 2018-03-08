@@ -335,7 +335,11 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(resti
 	b.sem.ReleaseToken()
 
 	if err != nil {
-		return errors.Wrap(err, "Get")
+		return errors.Wrap(err, "List")
+	}
+
+	if resp.StatusCode != 200 {
+		return errors.Errorf("List failed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
 	if resp.Header.Get("Content-Type") == contentTypeV2 {
