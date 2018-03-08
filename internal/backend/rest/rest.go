@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 	"strings"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -119,9 +118,12 @@ func (b *restBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rewin
 	if err != nil {
 		return errors.Wrap(err, "NewRequest")
 	}
-	req.Header.Set("Content-Length", strconv.FormatInt(rd.Length(), 10))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Accept", contentTypeV2)
+
+	// explicitly set the content length, this prevents chunked encoding and
+	// let's the server know what's coming.
+	req.ContentLength = rd.Length()
 
 	b.sem.GetToken()
 	resp, err := ctxhttp.Do(ctx, b.client, req)
