@@ -487,7 +487,10 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg, err = restic.LoadConfig(ctx, r)
-	return err
+	if err != nil {
+		return errors.Fatalf("config cannot be loaded: %v", err)
+	}
+	return nil
 }
 
 // Init creates a new master key with the supplied password, initializes and
