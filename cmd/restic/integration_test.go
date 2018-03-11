@@ -44,6 +44,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 
 func testRunInit(t testing.TB, opts GlobalOptions) {
 	repository.TestUseLowSecurityKDFParameters(t)
+	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
 	rtest.OK(t, runInit(opts, nil))
