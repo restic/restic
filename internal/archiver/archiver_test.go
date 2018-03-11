@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -205,98 +204,6 @@ func archiveWithDedup(t testing.TB) {
 
 func TestArchiveDedup(t *testing.T) {
 	archiveWithDedup(t)
-}
-
-// Saves several identical chunks concurrently and later checks that there are no
-// unreferenced packs in the repository. See also #292 and #358.
-func TestParallelSaveWithDuplication(t *testing.T) {
-	for seed := 0; seed < 10; seed++ {
-		testParallelSaveWithDuplication(t, seed)
-	}
-}
-
-func testParallelSaveWithDuplication(t *testing.T, seed int) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
-	dataSizeMb := 128
-	duplication := 7
-
-	arch := archiver.New(repo)
-	chunks := getRandomData(seed, dataSizeMb*1024*1024)
-
-	errChannels := [](<-chan error){}
-
-	// interwoven processing of subsequent chunks
-	maxParallel := 2*duplication - 1
-	barrier := make(chan struct{}, maxParallel)
-
-	for _, c := range chunks {
-		for dupIdx := 0; dupIdx < duplication; dupIdx++ {
-			errChan := make(chan error)
-			errChannels = append(errChannels, errChan)
-
-			go func(c chunker.Chunk, errChan chan<- error) {
-				barrier <- struct{}{}
-
-				id := restic.Hash(c.Data)
-				time.Sleep(time.Duration(id[0]))
-				err := arch.Save(context.TODO(), restic.DataBlob, c.Data, id)
-				<-barrier
-				errChan <- err
-			}(c, errChan)
-		}
-	}
-
-	for _, errChan := range errChannels {
-		rtest.OK(t, <-errChan)
-	}
-
-	rtest.OK(t, repo.Flush(context.Background()))
-	rtest.OK(t, repo.SaveIndex(context.TODO()))
-
-	chkr := createAndInitChecker(t, repo)
-	assertNoUnreferencedPacks(t, chkr)
-}
-
-func getRandomData(seed int, size int) []chunker.Chunk {
-	buf := rtest.Random(seed, size)
-	var chunks []chunker.Chunk
-	chunker := chunker.New(bytes.NewReader(buf), testPol)
-
-	for {
-		c, err := chunker.Next(nil)
-		if errors.Cause(err) == io.EOF {
-			break
-		}
-		chunks = append(chunks, c)
-	}
-
-	return chunks
-}
-
-func createAndInitChecker(t *testing.T, repo restic.Repository) *checker.Checker {
-	chkr := checker.New(repo)
-
-	hints, errs := chkr.LoadIndex(context.TODO())
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
-
-	return chkr
-}
-
-func assertNoUnreferencedPacks(t *testing.T, chkr *checker.Checker) {
-	errChan := make(chan error)
-	go chkr.Packs(context.TODO(), errChan)
-
-	for err := range errChan {
-		rtest.OK(t, err)
-	}
 }
 
 func TestArchiveEmptySnapshot(t *testing.T) {
