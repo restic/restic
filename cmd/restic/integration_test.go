@@ -576,9 +576,9 @@ func TestBackupExclude(t *testing.T) {
 }
 
 const (
-	incrementalFirstWrite  = 20 * 1042 * 1024
-	incrementalSecondWrite = 12 * 1042 * 1024
-	incrementalThirdWrite  = 4 * 1042 * 1024
+	incrementalFirstWrite  = 6 * 1042 * 1024
+	incrementalSecondWrite = 1 * 1042 * 1024
+	incrementalThirdWrite  = 1 * 1042 * 1024
 )
 
 func appendRandomData(filename string, bytes uint) error {
