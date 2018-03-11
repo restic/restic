@@ -43,6 +43,7 @@ const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 // is used for the chunker and low-security test parameters.
 func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Repository, cleanup func()) {
 	TestUseLowSecurityKDFParameters(t)
+	restic.TestDisableCheckPolynomial(t)
 
 	var beCleanup func()
 	if be == nil {
