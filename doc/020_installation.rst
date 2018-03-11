@@ -69,6 +69,15 @@ Pre-compiled Binary
 You can download the latest pre-compiled binary from the `restic release
 page <https://github.com/restic/restic/releases/latest>`__.
 
+OpenBSD
+=======
+
+On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
+
+.. code-block:: console
+
+    # pkg_add restic
+
 Windows
 =======
 
