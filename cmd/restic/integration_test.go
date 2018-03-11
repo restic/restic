@@ -894,7 +894,7 @@ func TestRestore(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
 		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
-		rtest.OK(t, appendRandomData(p, uint(mrand.Intn(5<<21))))
+		rtest.OK(t, appendRandomData(p, uint(mrand.Intn(2<<21))))
 	}
 
 	opts := BackupOptions{}
