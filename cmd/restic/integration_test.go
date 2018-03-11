@@ -286,7 +286,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 		globalOptions.stderr = os.Stderr
 	}()
 
-	p := filepath.Join(env.testdata, "0", "0")
+	p := filepath.Join(env.testdata, "0", "0", "9")
 	dirs := []string{
 		filepath.Join(p, "0"),
 		filepath.Join(p, "1"),
@@ -410,7 +410,7 @@ func TestBackupChangedFile(t *testing.T) {
 		globalOptions.stderr = os.Stderr
 	}()
 
-	modFile := filepath.Join(env.testdata, "0", "0", "6", "18")
+	modFile := filepath.Join(env.testdata, "0", "0", "9", "18")
 
 	ranHook := false
 	debug.Hook("archiver.SaveFile", func(context interface{}) {
@@ -1198,13 +1198,13 @@ func TestPrune(t *testing.T) {
 	rtest.SetupTarTestFixture(t, env.testdata, datafile)
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0")}, opts, env.gopts)
+	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 	firstSnapshot := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
 
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "2")}, opts, env.gopts)
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "3")}, opts, env.gopts)
+	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 3,
