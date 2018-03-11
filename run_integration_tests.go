@@ -97,6 +97,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"github.com/golang/dep/cmd/dep",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
+		"github.com/ncw/rclone",
 	}
 
 	for _, pkg := range pkgs {
