@@ -30,9 +30,10 @@ type restBackend struct {
 	backend.Layout
 }
 
+// the REST API protocol version is decided by HTTP request headers, these are the constants.
 const (
-	contentTypeV1 = "application/vnd.x.restic.rest.v1"
-	contentTypeV2 = "application/vnd.x.restic.rest.v2"
+	ContentTypeV1 = "application/vnd.x.restic.rest.v1"
+	ContentTypeV2 = "application/vnd.x.restic.rest.v2"
 )
 
 // Open opens the REST backend with the given config.
@@ -119,7 +120,7 @@ func (b *restBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rewin
 		return errors.Wrap(err, "NewRequest")
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("Accept", contentTypeV2)
+	req.Header.Set("Accept", ContentTypeV2)
 
 	// explicitly set the content length, this prevents chunked encoding and
 	// let's the server know what's coming.
@@ -198,7 +199,7 @@ func (b *restBackend) openReader(ctx context.Context, h restic.Handle, length in
 		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
 	}
 	req.Header.Set("Range", byteRange)
-	req.Header.Set("Accept", contentTypeV2)
+	req.Header.Set("Accept", ContentTypeV2)
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	b.sem.GetToken()
@@ -236,7 +237,7 @@ func (b *restBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInf
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "NewRequest")
 	}
-	req.Header.Set("Accept", contentTypeV2)
+	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
 	resp, err := ctxhttp.Do(ctx, b.client, req)
@@ -291,7 +292,7 @@ func (b *restBackend) Remove(ctx context.Context, h restic.Handle) error {
 	if err != nil {
 		return errors.Wrap(err, "http.NewRequest")
 	}
-	req.Header.Set("Accept", contentTypeV2)
+	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
 	resp, err := ctxhttp.Do(ctx, b.client, req)
@@ -330,7 +331,7 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(resti
 	if err != nil {
 		return errors.Wrap(err, "NewRequest")
 	}
-	req.Header.Set("Accept", contentTypeV2)
+	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
 	resp, err := ctxhttp.Do(ctx, b.client, req)
@@ -344,7 +345,7 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(resti
 		return errors.Errorf("List failed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	if resp.Header.Get("Content-Type") == contentTypeV2 {
+	if resp.Header.Get("Content-Type") == ContentTypeV2 {
 		return b.listv2(ctx, t, resp, fn)
 	}
 
