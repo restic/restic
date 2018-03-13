@@ -1,4 +1,4 @@
-package sftp
+package backend
 
 import (
 	"unicode"
