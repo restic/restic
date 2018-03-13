@@ -1,7 +1,7 @@
 // +build !solaris
 // +build !windows
 
-package sftp
+package backend
 
 import (
 	"os"
@@ -24,10 +24,10 @@ func tcsetpgrp(fd int, pid int) error {
 	return errno
 }
 
-// startForeground runs cmd in the foreground, by temporarily switching to the
+// StartForeground runs cmd in the foreground, by temporarily switching to the
 // new process group created for cmd. The returned function `bg` switches back
 // to the previous process group.
-func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
+func StartForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	// open the TTY, we need the file descriptor
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {

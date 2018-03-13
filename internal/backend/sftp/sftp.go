@@ -65,7 +65,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
-	bg, err := startForeground(cmd)
+	bg, err := backend.StartForeground(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "cmd.Start")
 	}
