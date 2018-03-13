@@ -69,9 +69,9 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 }
 
 const (
-	maxFileSize = 1500000
+	maxFileSize = 20000
 	maxSeed     = 32
-	maxNodes    = 32
+	maxNodes    = 15
 )
 
 func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {

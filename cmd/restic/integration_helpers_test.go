@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -189,6 +190,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	}
 
 	repository.TestUseLowSecurityKDFParameters(t)
+	restic.TestDisableCheckPolynomial(t)
 
 	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)

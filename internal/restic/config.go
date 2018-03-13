@@ -57,6 +57,15 @@ func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
 	return cfg
 }
 
+var checkPolynomial = true
+
+// TestDisableCheckPolynomial disables the check that the polynomial used for
+// the chunker.
+func TestDisableCheckPolynomial(t testing.TB) {
+	t.Logf("disabling check of the chunker polynomial")
+	checkPolynomial = false
+}
+
 // LoadConfig returns loads, checks and returns the config for a repository.
 func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 	var (
@@ -72,8 +81,10 @@ func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 		return Config{}, errors.New("unsupported repository version")
 	}
 
-	if !cfg.ChunkerPolynomial.Irreducible() {
-		return Config{}, errors.New("invalid chunker polynomial")
+	if checkPolynomial {
+		if !cfg.ChunkerPolynomial.Irreducible() {
+			return Config{}, errors.New("invalid chunker polynomial")
+		}
 	}
 
 	return cfg, nil
