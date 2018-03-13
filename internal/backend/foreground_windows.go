@@ -9,7 +9,7 @@ import (
 // StartForeground runs cmd in the foreground, by temporarily switching to the
 // new process group created for cmd. The returned function `bg` switches back
 // to the previous process group.
-func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
+func StartForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	// just start the process and hope for the best
 	err = cmd.Start()
 	if err != nil {
