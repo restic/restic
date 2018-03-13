@@ -179,7 +179,12 @@ func (r *SFTP) IsNotExist(err error) bool {
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 	if cfg.Command != "" {
-		return backend.SplitShellArgs(cfg.Command)
+		args, err := backend.SplitShellStrings(cfg.Command)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return args[0], args[1:], nil
 	}
 
 	cmd = "ssh"
