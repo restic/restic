@@ -147,6 +147,10 @@ func (s *Suite) TestLoad(t *testing.T) {
 	}
 
 	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
+		_, err := io.Copy(ioutil.Discard, rd)
+		if err != nil {
+			t.Fatal(err)
+		}
 		return errors.Errorf("deliberate error")
 	})
 	if err == nil {
