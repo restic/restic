@@ -221,6 +221,7 @@ func Create(cfg Config) (*Backend, error) {
 
 	restBackend, err := rest.Create(restConfig, be.tr)
 	if err != nil {
+		_ = be.Close()
 		return nil, err
 	}
 
