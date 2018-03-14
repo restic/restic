@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -49,7 +51,12 @@ func newTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			t.Logf("Create()")
 			cfg := config.(rclone.Config)
-			return rclone.Create(cfg)
+			be, err := rclone.Create(cfg)
+			if e, ok := errors.Cause(err).(*exec.Error); ok && e.Err == exec.ErrNotFound {
+				t.Skipf("program %q not found", e.Name)
+				return nil, nil
+			}
+			return be, err
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
