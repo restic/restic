@@ -1,8 +1,10 @@
 package rclone
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -30,7 +32,18 @@ type Backend struct {
 // run starts command with args and initializes the StdioConn.
 func run(command string, args ...string) (*StdioConn, *exec.Cmd, func() error, error) {
 	cmd := exec.Command(command, args...)
-	cmd.Stderr = os.Stderr
+	p, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// start goroutine to add a prefix to all messages printed by to stderr by rclone
+	go func() {
+		sc := bufio.NewScanner(p)
+		for sc.Scan() {
+			fmt.Fprintf(os.Stderr, "rclone: %v\n", sc.Text())
+		}
+	}()
 
 	r, stdin, err := os.Pipe()
 	if err != nil {
