@@ -681,7 +681,7 @@ return JSON. Any different value for this header means API version 1.
 
 The placeholder ``{path}`` in this document is a path to the repository, so
 that multiple different repositories can be accessed. The default path is
-``/``.
+``/``. The path must end with a slash.
 
 POST {path}?create=true
 =======================

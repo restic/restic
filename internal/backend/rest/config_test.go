@@ -19,24 +19,34 @@ var configTests = []struct {
 	s   string
 	cfg Config
 }{
-	{"rest:http://localhost:1234", Config{
-		URL:         parseURL("http://localhost:1234"),
-		Connections: 5,
-	}},
+	{
+		s: "rest:http://localhost:1234",
+		cfg: Config{
+			URL:         parseURL("http://localhost:1234/"),
+			Connections: 5,
+		},
+	},
+	{
+		s: "rest:http://localhost:1234/",
+		cfg: Config{
+			URL:         parseURL("http://localhost:1234/"),
+			Connections: 5,
+		},
+	},
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range configTests {
-		cfg, err := ParseConfig(test.s)
-		if err != nil {
-			t.Errorf("test %d:%s failed: %v", i, test.s, err)
-			continue
-		}
+	for _, test := range configTests {
+		t.Run("", func(t *testing.T) {
+			cfg, err := ParseConfig(test.s)
+			if err != nil {
+				t.Fatalf("%s failed: %v", test.s, err)
+			}
 
-		if !reflect.DeepEqual(cfg, test.cfg) {
-			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
-				i, test.s, test.cfg, cfg)
-			continue
-		}
+			if !reflect.DeepEqual(cfg, test.cfg) {
+				t.Fatalf("\ninput: %s\n wrong config, want:\n  %v\ngot:\n  %v",
+					test.s, test.cfg, cfg)
+			}
+		})
 	}
 }
