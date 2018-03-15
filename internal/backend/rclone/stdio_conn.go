@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"sync"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -14,6 +15,7 @@ type StdioConn struct {
 	stdout                  *os.File
 	bytesWritten, bytesRead int
 	cmd                     *exec.Cmd
+	close                   sync.Once
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {
@@ -29,21 +31,24 @@ func (s *StdioConn) Write(p []byte) (int, error) {
 }
 
 // Close closes both streams.
-func (s *StdioConn) Close() error {
-	debug.Log("close server instance")
-	var errs []error
+func (s *StdioConn) Close() (err error) {
+	s.close.Do(func() {
+		debug.Log("close stdio connection")
+		var errs []error
 
-	for _, f := range []func() error{s.stdin.Close, s.stdout.Close} {
-		err := f()
-		if err != nil {
-			errs = append(errs, err)
+		for _, f := range []func() error{s.stdin.Close, s.stdout.Close} {
+			err := f()
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
-	}
 
-	if len(errs) > 0 {
-		return errs[0]
-	}
-	return nil
+		if len(errs) > 0 {
+			err = errs[0]
+		}
+	})
+
+	return err
 }
 
 // LocalAddr returns nil.
