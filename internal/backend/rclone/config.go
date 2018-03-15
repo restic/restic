@@ -10,7 +10,7 @@ import (
 // Config contains all configuration necessary to start rclone.
 type Config struct {
 	Program string `option:"program" help:"path to rclone (default: rclone)"`
-	Args    string `option:"args"    help:"arguments for running rclone (default: restic serve --stdio)"`
+	Args    string `option:"args"    help:"arguments for running rclone (default: serve restic --stdio)"`
 	Remote  string
 }
 

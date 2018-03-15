@@ -231,7 +231,7 @@ func Create(cfg Config) (*Backend, error) {
 
 // Close terminates the backend.
 func (be *Backend) Close() error {
-	debug.Log("exting rclone")
+	debug.Log("exiting rclone")
 	be.tr.CloseIdleConnections()
 	<-be.waitCh
 	debug.Log("wait for rclone returned: %v", be.waitResult)

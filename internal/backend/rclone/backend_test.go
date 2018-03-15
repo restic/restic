@@ -1,11 +1,7 @@
 package rclone_test
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/internal/backend/rclone"
@@ -15,35 +11,15 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-const rcloneConfig = `
-[local]
-type = local
-`
-
 func newTestSuite(t testing.TB) *test.Suite {
 	dir, cleanup := rtest.TempDir(t)
 
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			cfgfile := filepath.Join(dir, "rclone.conf")
-			t.Logf("write rclone config to %v", cfgfile)
-			err := ioutil.WriteFile(cfgfile, []byte(rcloneConfig), 0644)
-			if err != nil {
-				return nil, err
-			}
-
 			t.Logf("use backend at %v", dir)
-
-			repodir := filepath.Join(dir, "repo")
-			err = os.Mkdir(repodir, 0755)
-			if err != nil {
-				return nil, err
-			}
-
 			cfg := rclone.NewConfig()
-			cfg.Program = fmt.Sprintf("rclone --config %q", cfgfile)
-			cfg.Remote = "local:" + repodir
+			cfg.Remote = dir
 			return cfg, nil
 		},
 
