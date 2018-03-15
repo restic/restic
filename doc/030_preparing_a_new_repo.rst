@@ -387,6 +387,95 @@ established.
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 
+Other Services via rclone
+*************************
+
+The program `rclone`_ can be used to access many other different services and
+store data there. First, you need to install and `configure`_ rclone. When you
+configure a remote named ``foo``, you can then call restic as follows to
+initiate a new repository in the path ``bar`` in the repo:
+
+.. code-block:: console
+
+    $ restic -r rclone:foo:bar init
+
+Restic takes care of starting and stopping rclone.
+
+As a more concrete example, suppose you have configured a remote named
+``b2prod`` for Backblaze B2 with rclone, with a bucket called ``yggdrasil``.
+You can then use rclone to list files in the bucket like this:
+
+.. code-block:: console
+
+    $ rclone ls b2prod:yggdrasil
+
+In order to create a new repository in the root directory of the bucket, call
+restic like this:
+
+.. code-block:: console
+
+    $ restic -r rclone:b2prod:yggdrasil
+
+If you want to use the path ``foo/bar/baz`` in the bucket instead, pass this to
+restic:
+
+.. code-block:: console
+
+    $ restic -r rclone:b2prod:yggdrasil/foo/bar/baz
+
+Listing the files of an empty repository directly with rclone should return a
+listing similar to the following:
+
+
+.. code-block:: console
+
+    $ rclone ls b2prod:yggdrasil/foo/bar/baz
+        155 bar/baz/config
+        448 bar/baz/keys/4bf9c78049de689d73a56ed0546f83b8416795295cda12ec7fb9465af3900b44
+
+The rclone backend has two additional options:
+
+ * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
+ * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio``
+
+In order to start rclone, restic will build a list of arguments by joining the
+following lists (in this order): ``rclone.program``, ``rclone.args`` and as the
+last parameter the value that follows the ``rclone:`` prefix of the repository
+specification.
+
+So, calling restic like this
+
+.. code-block:: console
+
+    $ restic -o rclone.program="/path/to/rclone" \
+      -o rclone.args="serve restic --stdio --bwlimit 1M --verbose" \
+      -r rclone:b2:foo/bar
+
+runs rclone as follows:
+
+.. code-block:: console
+
+    $ /path/to/rclone serve restic --stdio --bwlimit 1M --verbose b2:foo/bar
+
+Manually setting ``rclone.program`` also allows running a remote instance of
+rclone e.g. via SSH on a server, for example:
+
+.. code-block:: console
+
+    $ restic -o rclone.program="ssh user@host rclone" -r rclone:b2:foo/bar
+
+The rclone command may also be hard-coded in the SSH configuration or the
+user's public key, in this case it may be sufficient to just start the SSH
+connection (and it's irrelevant what's passed after ``rclone:`` in the
+repository specification):
+
+.. code-block:: console
+
+    $ restic -o rclone.program="ssh user@host" -r rclone:x
+
+.. _rclone: https://rclone.org/
+.. _configure: https://rclone.org/docs/
+
 Password prompt on Windows
 **************************
 
