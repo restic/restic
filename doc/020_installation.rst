@@ -17,6 +17,14 @@ Installation
 Packages
 ********
 
+Note that if at any point the package you’re trying to use is outdated, you
+always have the option to use an official binary from the restic project.
+
+These are up to date binaries, built in a reproducible and verifiable way, that
+you can download and run without having to do additional installation work.
+
+Please see the :ref:`official_binaries` section below for various downloads.
+
 Mac OS X
 ========
 
@@ -85,12 +93,6 @@ restic can be installed via copr repository.
     $ dnf copr enable copart/restic
     $ dnf install restic
 
-Pre-compiled Binary
-*******************
-
-You can download the latest pre-compiled binary from the `restic release
-page <https://github.com/restic/restic/releases/latest>`__.
-
 OpenBSD
 =======
 
@@ -99,6 +101,30 @@ On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
 .. code-block:: console
 
     # pkg_add restic
+
+.. _official_binaries:
+
+Official Binaries
+*****************
+
+Stable Releases
+===============
+
+You can download the latest stable release versions of restic from the `restic
+release page <https://github.com/restic/restic/releases/latest>`__. These builds
+are considered stable and releases are made regularly in a controlled manner.
+
+There's both pre-compiled binaries for different platforms as well as the source
+code available for download. Just download and run the one matching your system.
+
+Unstable Builds
+===============
+
+Another option is to use the latest builds for the master branch, available on
+the `restic beta download site
+<https://beta.restic.net/?sort=time&order=desc>`__. These too are pre-compiled
+and ready to run, and a new version is built every time a push is made to the
+master branch.
 
 Windows
 =======
