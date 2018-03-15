@@ -1,0 +1,10 @@
+Enhancement: Allow using rclone to access other services
+
+We've added the ability to use rclone to store backup data on all backends that
+it supports. This was done in collaboration with Nick, the author of rclone.
+You can now use it to first configure a service, then restic manages the rest
+(starting and stopping rclone). For details, please see the manual.
+
+https://github.com/restic/restic/issues/1561
+https://github.com/restic/restic/pull/1657
+https://rclone.org
