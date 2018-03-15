@@ -139,7 +139,7 @@ If you use TLS, restic will use the system's CA certificates to verify the
 server certificate. When the verification fails, restic refuses to proceed and
 exits with an error. If you have your own self-signed certificate, or a custom
 CA certificate should be used for verification, you can pass restic the
-certificate filename via the `--cacert` option.
+certificate filename via the ``--cacert`` option.
 
 REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even
@@ -306,8 +306,8 @@ bucket does not exist yet, it will be created:
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-The number of concurrent connections to the B2 service can be set with the `-o
-b2.connections=10`. By default, at most five parallel connections are
+The number of concurrent connections to the B2 service can be set with the ``-o
+b2.connections=10``. By default, at most five parallel connections are
 established.
 
 Microsoft Azure Blob Storage
@@ -321,7 +321,7 @@ account name and key as follows:
     $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
     $ export AZURE_ACCOUNT_KEY=<SECRET_KEY>
 
-Afterwards you can initialize a repository in a container called `foo` in the
+Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:
 
 .. code-block:: console
@@ -334,7 +334,7 @@ root path like this:
     [...]
 
 The number of concurrent connections to the Azure Blob Storage service can be set with the
-`-o azure.connections=10`. By default, at most five parallel connections are
+``-o azure.connections=10``. By default, at most five parallel connections are
 established.
 
 Google Cloud Storage
@@ -369,7 +369,7 @@ located on an instance with default service accounts then these should work out
 the box.
 
 Once authenticated, you can use the ``gs:`` backend type to create a new
-repository in the bucket `foo` at the root path:
+repository in the bucket ``foo`` at the root path:
 
 .. code-block:: console
 
@@ -381,7 +381,7 @@ repository in the bucket `foo` at the root path:
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
-`-o gs.connections=10`. By default, at most five parallel connections are
+``-o gs.connections=10``. By default, at most five parallel connections are
 established.
 
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
