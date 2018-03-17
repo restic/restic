@@ -391,7 +391,9 @@ Other Services via rclone
 *************************
 
 The program `rclone`_ can be used to access many other different services and
-store data there. First, you need to install and `configure`_ rclone. When you
+store data there. First, you need to install and `configure`_ rclone.  The
+general backend specification format is ``rclone:<remote>:<path>``, the
+``<remote>:<path>`` component will be directly passed to rclone. When you
 configure a remote named ``foo``, you can then call restic as follows to
 initiate a new repository in the path ``bar`` in the repo:
 
@@ -426,12 +428,19 @@ restic:
 Listing the files of an empty repository directly with rclone should return a
 listing similar to the following:
 
-
 .. code-block:: console
 
     $ rclone ls b2prod:yggdrasil/foo/bar/baz
         155 bar/baz/config
         448 bar/baz/keys/4bf9c78049de689d73a56ed0546f83b8416795295cda12ec7fb9465af3900b44
+
+Rclone can be `configured with environment variables`_, so for instance
+configuring a bandwidth limit for rclone cat be achieve by setting the
+``RCLONE_BWLIMIT`` environment variable:
+
+.. code-block:: console
+
+    $ export RCLONE_BWLIMIT=1M
 
 The rclone backend has two additional options:
 
@@ -475,6 +484,7 @@ repository specification):
 
 .. _rclone: https://rclone.org/
 .. _configure: https://rclone.org/docs/
+.. _configured with environment variables: https://rclone.org/docs/#environment-variables
 
 Password prompt on Windows
 **************************
