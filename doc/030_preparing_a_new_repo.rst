@@ -442,6 +442,8 @@ configuring a bandwidth limit for rclone cat be achieve by setting the
 
     $ export RCLONE_BWLIMIT=1M
 
+For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
+
 The rclone backend has two additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
