@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -174,7 +175,11 @@ func New(cfg Config) (*Backend, error) {
 		Timeout:   60 * time.Second,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "http://localhost/", nil)
+	// request a random file which does not exist. we just want to test when
+	// rclone is able to accept HTTP requests.
+	url := fmt.Sprintf("http://localhost/file-%d", rand.Uint64())
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
