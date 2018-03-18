@@ -416,14 +416,14 @@ restic like this:
 
 .. code-block:: console
 
-    $ restic -r rclone:b2prod:yggdrasil
+    $ restic -r rclone:b2prod:yggdrasil init
 
 If you want to use the path ``foo/bar/baz`` in the bucket instead, pass this to
 restic:
 
 .. code-block:: console
 
-    $ restic -r rclone:b2prod:yggdrasil/foo/bar/baz
+    $ restic -r rclone:b2prod:yggdrasil/foo/bar/baz init
 
 Listing the files of an empty repository directly with rclone should return a
 listing similar to the following:
