@@ -111,6 +111,10 @@ directory structure via sftp, so the path that needs to be specified is
 different than the directory structure on the device and maybe even as exposed
 via other protocols.
 
+
+Try removing the /volume1 prefix in your paths. If this does not work, use sftp
+and ls to explore the SFTP file system hierarchy on your NAS.
+
 The following may work:
 
 ::
