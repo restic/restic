@@ -93,7 +93,7 @@ Basic example:
     *.go
     # exclude foo/x/y/z/bar foo/x/bar foo/bar
     foo/**/bar
-    $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
+    $ restic -r /tmp/backup backup ~/work --exclude="*.c" --exclude-file=exclude
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
