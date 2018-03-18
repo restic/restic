@@ -362,7 +362,7 @@ key file and the project ID as follows:
     $ export GOOGLE_PROJECT_ID=123123123123
     $ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gs-secret-restic-key.json
 
-We use Google's client library to generate [default authentication
+Restic uses  Google's client library to generate [default authentication
 material](https://developers.google.com/identity/protocols/application-default-credentials),
 which means if you're running in Google Container Engine or are otherwise
 located on an instance with default service accounts then these should work out

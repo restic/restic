@@ -9,4 +9,5 @@ the additional capabilities to auth from Google's internal metadata endpoints.
 For users running restic in GCP this can make authentication far easier than it
 was before.
 
+https://github.com/restic/restic/pull/1552
 https://developers.google.com/identity/protocols/application-default-credentials
