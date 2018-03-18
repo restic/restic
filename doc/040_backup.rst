@@ -126,7 +126,7 @@ backup from a file. This is especially useful if a lot of files have to
 be backed up that are not in the same folder or are maybe pre-filtered
 by other software.
 
-or example maybe you want to backup files that have a certain filename
+For example maybe you want to backup files that have a certain filename
 in them:
 
 .. code-block:: console
