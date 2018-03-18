@@ -171,7 +171,7 @@ func New(cfg Config) (*Backend, error) {
 	// send an HTTP request to the base URL, see if the server is there
 	client := &http.Client{
 		Transport: tr,
-		Timeout:   5 * time.Second,
+		Timeout:   60 * time.Second,
 	}
 
 	req, err := http.NewRequest(http.MethodGet, "http://localhost/", nil)
