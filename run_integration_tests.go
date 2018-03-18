@@ -183,7 +183,7 @@ func (env *TravisEnvironment) RunTests() error {
 
 	env.env["GOPATH"] = os.Getenv("GOPATH")
 	if env.gcsCredentialsFile != "" {
-		env.env["RESTIC_TEST_GS_APPLICATION_CREDENTIALS"] = env.gcsCredentialsFile
+		env.env["GOOGLE_APPLICATION_CREDENTIALS"] = env.gcsCredentialsFile
 	}
 
 	// ensure that the following tests cannot be silently skipped on Travis
