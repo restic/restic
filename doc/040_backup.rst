@@ -146,6 +146,8 @@ args:
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
+Paths in the listing file can be absolute or relative.
+
 Comparing Snapshots
 *******************
 
