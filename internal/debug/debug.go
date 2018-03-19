@@ -195,7 +195,7 @@ func Log(f string, args ...interface{}) {
 	formatString := f //fmt.Sprintf("%s\t%s\t%d\t%s", pos, fn, goroutine, f)
 
 	dbgprint := func() {
-		fmt.Fprintf(os.Stderr, formatString, args...)
+		// fmt.Fprintf(os.Stderr, formatString, args...)
 		if opts.logger != nil {
 			opts.logger.Printf(formatString, args...)
 		}

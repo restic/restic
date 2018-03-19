@@ -11,6 +11,8 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+
+	"github.com/hashicorp/golang-lru"
 )
 
 // TODO prioritize packs with "head" blobs
@@ -178,6 +180,8 @@ type FileRestorer struct {
 
 	files []*fileInfo
 
+	writers *lru.Cache
+
 	downloadCh chan processingInfo
 	feedbackCh chan processingInfo
 }
@@ -281,9 +285,13 @@ type downloadInfo struct {
 }
 
 func newFileRestorer(repo Repository) *FileRestorer {
+	writers, _ := lru.NewWithEvict(32, func(key interface{}, value interface{}) {
+		value.(io.Closer).Close()
+	})
 	return &FileRestorer{
 		repo:       repo,
 		cache:      newPackCache(),
+		writers:    writers,
 		downloadCh: make(chan processingInfo),
 		feedbackCh: make(chan processingInfo),
 	}
@@ -389,7 +397,7 @@ func (r *FileRestorer) RestoreFiles(ctx context.Context) error {
 		}
 	}
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 8; i++ {
 		go r.processor(ctx)
 	}
 
@@ -457,13 +465,29 @@ func (r *FileRestorer) RestoreFiles(ctx context.Context) error {
 	}
 
 	// assert restore worked
+	key := r.repo.Key()
 	for _, file := range r.files {
 		stat, err := os.Stat(file.path)
 		if err != nil {
 			fmt.Printf("Failed to restore %s", file.path)
 		}
 		if int64(file.node.Size) != stat.Size() {
-			fmt.Printf("Wrong file size, expected %d but got %d: %s", file.node.Size, stat.Size(), file.path)
+			fmt.Printf("Wrong file size, expected %d but got %d: %s\n", file.node.Size, stat.Size(), file.path)
+			offset := int64(0)
+			for blobIdx, blobID := range file.node.Content {
+				blobs, _ := r.repo.Index().Lookup(blobID, DataBlob)
+				if len(blobs) > 1 {
+					for i := 1; i < len(blobs); i++ {
+						if !blobs[i].ID.Equal(blobs[0].ID) || blobs[i].Length != blobs[0].Length {
+							fmt.Printf("inconsistent/unexpected blob[0] {%s, %d} != blob[%d]{%s, %d}\n", blobs[0].ID.Str(), blobs[0].Length, i, blobs[i].ID.Str(), blobs[i].Length)
+						}
+					}
+				}
+				length := blobs[0].Length - uint(key.NonceSize()) - uint(key.NonceSize())
+				fmt.Printf("blob #%d id %s packs %d length %d range %d-%d\n", blobIdx, blobID.Str(), len(blobs), length, offset, offset+int64(length))
+				offset += int64(length)
+			}
+			fmt.Printf("blobs length total %d\n", offset)
 		}
 	}
 
@@ -522,6 +546,7 @@ func (r *FileRestorer) processFeedback(packs map[ID]*packInfo, queue *packQueue,
 			file.blobIdx = len(file.node.Content) // done with this file
 		}
 		if file.blobIdx >= len(file.node.Content) {
+			r.writers.Remove(file)
 			fmt.Printf("Restored %s\n", file.path)
 		}
 	}
@@ -642,12 +667,13 @@ func (r *FileRestorer) copyBlob(file *fileInfo, cachedPack packCacheRecord, blob
 	if err != nil {
 		return err
 	}
-	_, err = wr.Write(plaintext)
+	n, err = wr.Write(plaintext)
 	if err != nil {
-		r.releaseFileWriter(file, wr) // ignore secondary errors releasing the writer
 		return err
 	}
-	err = r.releaseFileWriter(file, wr)
+	if n != len(plaintext) {
+		return errors.Errorf("error writing blob %v: wrong length written, want %d, got %d", blobID.Str(), length, n)
+	}
 	if err != nil {
 		return err
 	}
@@ -656,17 +682,21 @@ func (r *FileRestorer) copyBlob(file *fileInfo, cachedPack packCacheRecord, blob
 }
 
 func (r *FileRestorer) acquireFileWriter(file *fileInfo) (io.Writer, error) {
+	if wr, ok := r.writers.Get(file); ok {
+		return wr.(io.Writer), nil
+	}
 	var flags int
 	if file.blobIdx > 0 {
 		flags = os.O_APPEND | os.O_WRONLY
 	} else {
 		flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	}
-	return os.OpenFile(file.path, flags, 0600)
-}
-
-func (r *FileRestorer) releaseFileWriter(file *fileInfo, wr io.Writer) error {
-	return wr.(*os.File).Close()
+	wr, err := os.OpenFile(file.path, flags, 0600)
+	if err != nil {
+		return nil, err
+	}
+	r.writers.Add(file, wr)
+	return wr, nil
 }
 
 func (r *FileRestorer) AddFile(node *Node, dir string, path string) {
