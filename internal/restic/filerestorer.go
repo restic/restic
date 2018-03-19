@@ -137,6 +137,27 @@ func (c *packCache) release(pack packCacheRecord) error {
 	return nil
 }
 
+func (c *packCache) remove(packID ID) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if _, ok := c.reservedPacks[packID]; ok {
+		return errors.Errorf("invalid pack remove request, pack %s is reserved", packID.Str())
+	}
+
+	pack, ok := c.cachedPacks[packID]
+	if !ok {
+		return errors.Errorf("invalid pack remove request, pack %s is not cached", packID.Str())
+	}
+
+	delete(c.cachedPacks, pack.id)
+	pack.data.Close()
+	os.Remove(pack.data.Name())
+	c.allocatedCapacity -= pack.length
+
+	return nil
+}
+
 func (r *packCacheRecord) hasData() bool {
 	return r.populated
 }
@@ -562,6 +583,7 @@ func (r *FileRestorer) processFeedback(packs map[ID]*packInfo, queue *packQueue,
 		packs[pack.id] = pack
 		debug.Log("Requeued pack %s (%d files), queue length=%d, pack index=%d", pack.id.Str(), len(pack.files), len(*queue), pack.index)
 	} else {
+		r.cache.remove(pack.id)
 		debug.Log("Dropped used up pack %s", pack.id.Str())
 	}
 }
