@@ -15,9 +15,9 @@ import (
 	"github.com/hashicorp/golang-lru"
 )
 
-// TODO prioritize packs with "head" blobs
-// TODO do to schedule processingInfo without any target files
+// TODO do not schedule processingInfo without any target files
 //      wait for feedback instead
+// TODO prioritize packs with "head" blobs
 // TODO if a blob is corrupt, there may be good blob copies in other packs
 // TODO evaluate if it makes sense to cache open output files
 // TODO hardlink support

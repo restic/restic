@@ -1,9 +1,9 @@
 The main goal of this POC is two fold
 
-1. Reduce number of backend request
-  * download each pack with single backend request
+1. Reduce number of backend request, specifically
+  * download all required blobs of a pack with single backend request
   * avoid repeated pack downloads when possible
-2. Download multiple pack files
+2. Download multiple pack files concurrently
 
 Here is high-level pseudo-code of the how the POC attempts to achieve these goals
 
