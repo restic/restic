@@ -107,7 +107,9 @@ Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
 ``--quiet`` is set. When running from a non-interactive console progress
 reporting will be limited to once every 10 seconds to not fill your
-logs.
+logs. Use ``backup`` with the quiet flag ``-q`` or ``--quiet`` can skip
+the initial scan of the source directory, this may shorten the backup
+time needed for large directories.
 
 Additionally on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will written to the standard output so you can check up

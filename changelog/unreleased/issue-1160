@@ -1,0 +1,5 @@
+Enhancement: Improve backup speed by skipping the initial scan when the quiet flag is set
+
+We've improved the backup speed when the quiet flag -q or --quiet is set by skipping the initial scan which gathers information for displaying the progress bar and the ETA estimation.
+
+https://github.com/restic/restic/issues/1160
