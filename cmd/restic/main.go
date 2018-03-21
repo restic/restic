@@ -66,7 +66,7 @@ func init() {
 
 func main() {
 	debug.Log("main %#v", os.Args)
-	debug.Log("restic %s, compiled with %v on %v/%v",
+	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	err := cmdRoot.Execute()
 
