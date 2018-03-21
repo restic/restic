@@ -282,7 +282,7 @@ func (env *TravisEnvironment) RunTests() error {
 
 	// check that the entries in changelog/ are valid
 	if err := run("calens"); err != nil {
-		fmt.Fprintf(os.Stderr, "calens failed, files in changelog/ are not valid\n")
+		return errors.New("calens failed, files in changelog/ are not valid")
 	}
 
 	return nil
