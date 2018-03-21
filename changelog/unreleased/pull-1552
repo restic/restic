@@ -1,4 +1,4 @@
-Feature: Use Google Application Default credentials
+Enhancement: Use Google Application Default credentials
 
 Google provide libraries to generate appropriate credentials with various
 fallback sources. This change uses the library to generate our GCS client, which
