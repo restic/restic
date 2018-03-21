@@ -1312,3 +1312,38 @@ func linkEqual(source, dest []string) bool {
 
 	return true
 }
+
+func TestQuietBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	fd, err := os.Open(datafile)
+	if os.IsNotExist(errors.Cause(err)) {
+		t.Skipf("unable to find data file %q, skipping", datafile)
+		return
+	}
+	rtest.OK(t, err)
+	rtest.OK(t, fd.Close())
+
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{}
+
+	env.gopts.Quiet = false
+	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 1,
+		"expected one snapshot, got %v", snapshotIDs)
+
+	testRunCheck(t, env.gopts)
+
+	env.gopts.Quiet = true
+	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 2,
+		"expected two snapshots, got %v", snapshotIDs)
+
+	testRunCheck(t, env.gopts)
+}

@@ -451,9 +451,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return true
 	}
 
-	stat, err := archiver.Scan(target, selectFilter, newScanProgress(gopts))
-	if err != nil {
-		return err
+	var stat restic.Stat
+	if !gopts.Quiet {
+		stat, err = archiver.Scan(target, selectFilter, newScanProgress(gopts))
+		if err != nil {
+			return err
+		}
 	}
 
 	arch := archiver.New(repo)
