@@ -93,7 +93,7 @@ Basic example:
     *.go
     # exclude foo/x/y/z/bar foo/x/bar foo/bar
     foo/**/bar
-    $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
+    $ restic -r /tmp/backup backup ~/work --exclude="*.c" --exclude-file=exclude
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
@@ -126,7 +126,7 @@ backup from a file. This is especially useful if a lot of files have to
 be backed up that are not in the same folder or are maybe pre-filtered
 by other software.
 
-or example maybe you want to backup files that have a certain filename
+For example maybe you want to backup files that have a certain filename
 in them:
 
 .. code-block:: console
@@ -145,6 +145,8 @@ args:
 .. code-block:: console
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
+
+Paths in the listing file can be absolute or relative.
 
 Comparing Snapshots
 *******************
