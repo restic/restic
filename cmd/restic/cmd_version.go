@@ -16,7 +16,7 @@ and the version of this software.
 `,
 	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("restic %s\ncompiled with %v on %v/%v\n",
+		fmt.Printf("restic %s compiled with %v on %v/%v\n",
 			version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	},
 }
