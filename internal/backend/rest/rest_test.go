@@ -22,7 +22,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, fun
 		t.Skip(err)
 	}
 
-	cmd := exec.CommandContext(ctx, srv, "--path", dir)
+	cmd := exec.CommandContext(ctx, srv, "--no-auth", "--path", dir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	if err := cmd.Start(); err != nil {
