@@ -18,11 +18,11 @@ Details
 {{ range $par := .Paragraphs }}
    {{ wrap $par 80 3 }}
 {{ end -}}
-{{ range $id := .Issues }}
-   https://github.com/restic/restic/issues/{{ $id -}}
+{{ range $url := .IssueURLs }}
+   {{ $url -}}
 {{ end -}}
-{{ range $id := .PRs }}
-   https://github.com/restic/restic/pull/{{ $id -}}
+{{ range $url := .PRURLs }}
+   {{ $url -}}
 {{ end -}}
 {{ range $url := .OtherURLs }}
    {{ $url -}}
