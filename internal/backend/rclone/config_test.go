@@ -13,7 +13,8 @@ func TestParseConfig(t *testing.T) {
 		{
 			"rclone:local:foo:/bar",
 			Config{
-				Remote: "local:foo:/bar",
+				Remote:      "local:foo:/bar",
+				Connections: 5,
 			},
 		},
 	}
