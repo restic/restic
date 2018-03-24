@@ -1,0 +1,6 @@
+Bugfix: Fix backend tests for rest-server
+
+The REST server for restic now requires an explicit parameter (`--no-auth`) if
+no authentication should be allowed. This is fixed in the tests.
+
+https://github.com/restic/restic/pull/1684
