@@ -107,19 +107,19 @@ Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
 ``--quiet`` is set. When running from a non-interactive console progress
 reporting will be limited to once every 10 seconds to not fill your
-logs. Use ``backup`` with the quiet flag ``-q`` or ``--quiet`` can skip
+logs. Use ``backup`` with the quiet flag ``-q`` or ``--quiet`` to skip
 the initial scan of the source directory, this may shorten the backup
 time needed for large directories.
 
 Additionally on Unix systems if ``restic`` receives a SIGUSR1 signal the
-current progress will written to the standard output so you can check up
+current progress will be written to the standard output so you can check up
 on the status at will.
 
 Manage tags
 -----------
 
 Managing tags on snapshots is done with the ``tag`` command. The
-existing set of tags can be replaced completely, tags can be added to
+existing set of tags can be replaced completely, tags can be added or
 removed. The result is directly visible in the ``snapshots`` command.
 
 Let's say we want to tag snapshot ``590c8fc8`` with the tags ``NL`` and
@@ -187,7 +187,7 @@ repository.
       -rw-r--r--   501    20      5 2015-08-26 14:09:57 +0200 CEST path/to/test.txt
 
 The ``cat`` command allows you to display the JSON representation of the
-objects or its raw content.
+objects or their raw content.
 
 .. code-block:: console
 
