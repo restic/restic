@@ -13,8 +13,8 @@ governance](https://raw.githubusercontent.com/i3/i3/next/.github/GOVERNANCE.md).
 * core contributor: a handful of people who have contributed significantly to
   the project by any means (issue triage, support, documentation, code, etc.).
   Core contributors are recognizable via GitHub’s "Member" badge.
-* BDFL: a single individual who makes decisions when consensus cannot be
-  reached. restic's current BDFL is [@fd0](https://github.com/fd0).
+* Benevolent Dictator For Life (BDFL): a single individual who makes decisions
+  when consensus cannot be reached. restic's current BDFL is [@fd0](https://github.com/fd0).
 
 ## Decision making process
 
