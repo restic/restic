@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -51,9 +51,13 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
-func testRunBackup(t testing.TB, target []string, opts BackupOptions, gopts GlobalOptions) {
+func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
 	gopts.stdout = ioutil.Discard
-	t.Logf("backing up %v", target)
+	t.Logf("backing up %v in %v", target, dir)
+	if dir != "" {
+		cleanup := fs.TestChdir(t, dir)
+		defer cleanup()
+	}
 	rtest.OK(t, runBackup(opts, gopts, target))
 }
 
@@ -220,7 +224,7 @@ func TestBackup(t *testing.T) {
 	opts := BackupOptions{}
 
 	// first backup
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
@@ -229,7 +233,7 @@ func TestBackup(t *testing.T) {
 	stat1 := dirStats(env.repo)
 
 	// second backup, implicit incremental
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
@@ -243,7 +247,7 @@ func TestBackup(t *testing.T) {
 	testRunCheck(t, env.gopts)
 	// third backup, explicit incremental
 	opts.Parent = snapshotIDs[0].String()
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
@@ -297,198 +301,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, dirs, opts, env.gopts)
-}
-
-func TestBackupMissingFile1(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
-	globalOptions.stderr = ioutil.Discard
-	defer func() {
-		globalOptions.stderr = os.Stderr
-	}()
-
-	ranHook := false
-	debug.Hook("pipe.walk1", func(context interface{}) {
-		pathname := context.(string)
-
-		if pathname != filepath.Join("testdata", "0", "0", "9") {
-			return
-		}
-
-		t.Logf("in hook, removing test file testdata/0/0/9/37")
-		ranHook = true
-
-		rtest.OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
-	})
-
-	opts := BackupOptions{}
-
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
-
-	rtest.Assert(t, ranHook, "hook did not run")
-	debug.RemoveHook("pipe.walk1")
-}
-
-func TestBackupMissingFile2(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
-
-	globalOptions.stderr = ioutil.Discard
-	defer func() {
-		globalOptions.stderr = os.Stderr
-	}()
-
-	ranHook := false
-	debug.Hook("pipe.walk2", func(context interface{}) {
-		pathname := context.(string)
-
-		if pathname != filepath.Join("testdata", "0", "0", "9", "37") {
-			return
-		}
-
-		t.Logf("in hook, removing test file testdata/0/0/9/37")
-		ranHook = true
-
-		rtest.OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
-	})
-
-	opts := BackupOptions{}
-
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
-
-	rtest.Assert(t, ranHook, "hook did not run")
-	debug.RemoveHook("pipe.walk2")
-}
-
-func TestBackupChangedFile(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
-
-	globalOptions.stderr = ioutil.Discard
-	defer func() {
-		globalOptions.stderr = os.Stderr
-	}()
-
-	modFile := filepath.Join(env.testdata, "0", "0", "9", "18")
-
-	ranHook := false
-	debug.Hook("archiver.SaveFile", func(context interface{}) {
-		pathname := context.(string)
-
-		if pathname != modFile {
-			return
-		}
-
-		t.Logf("in hook, modifying test file %v", modFile)
-		ranHook = true
-
-		rtest.OK(t, ioutil.WriteFile(modFile, []byte("modified"), 0600))
-	})
-
-	opts := BackupOptions{}
-
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
-	testRunCheck(t, env.gopts)
-
-	rtest.Assert(t, ranHook, "hook did not run")
-	debug.RemoveHook("archiver.SaveFile")
-}
-
-func TestBackupDirectoryError(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
-
-	globalOptions.stderr = ioutil.Discard
-	defer func() {
-		globalOptions.stderr = os.Stderr
-	}()
-
-	ranHook := false
-
-	testdir := filepath.Join(env.testdata, "0", "0", "9")
-
-	// install hook that removes the dir right before readdirnames()
-	debug.Hook("pipe.readdirnames", func(context interface{}) {
-		path := context.(string)
-
-		if path != testdir {
-			return
-		}
-
-		t.Logf("in hook, removing test file %v", testdir)
-		ranHook = true
-
-		rtest.OK(t, os.RemoveAll(testdir))
-	})
-
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0")}, BackupOptions{}, env.gopts)
-	testRunCheck(t, env.gopts)
-
-	rtest.Assert(t, ranHook, "hook did not run")
-	debug.RemoveHook("pipe.walk2")
-
-	snapshots := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshots) > 0,
-		"no snapshots found in repo (%v)", datafile)
-
-	files := testRunLs(t, env.gopts, snapshots[0].String())
-
-	rtest.Assert(t, len(files) > 1, "snapshot is empty")
+	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
 func includes(haystack []string, needle string) bool {
@@ -553,21 +366,21 @@ func TestBackupExclude(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 	files := testRunLs(t, env.gopts, snapshotID)
 	rtest.Assert(t, includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 		"expected file %q in first snapshot, but it's not included", "foo.tar.gz")
 
 	opts.Excludes = []string{"*.tar.gz"}
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 	files = testRunLs(t, env.gopts, snapshotID)
 	rtest.Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 		"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 
 	opts.Excludes = []string{"*.tar.gz", "private/secret"}
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	_, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 	files = testRunLs(t, env.gopts, snapshotID)
 	rtest.Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
@@ -617,13 +430,13 @@ func TestIncrementalBackup(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	stat1 := dirStats(env.repo)
 
 	rtest.OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	stat2 := dirStats(env.repo)
 	if stat2.size-stat1.size > incrementalFirstWrite {
@@ -633,7 +446,7 @@ func TestIncrementalBackup(t *testing.T) {
 
 	rtest.OK(t, appendRandomData(testfile, incrementalThirdWrite))
 
-	testRunBackup(t, []string{datadir}, opts, env.gopts)
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	stat3 := dirStats(env.repo)
 	if stat3.size-stat2.size > incrementalFirstWrite {
@@ -652,7 +465,7 @@ func TestBackupTags(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
 	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
@@ -661,7 +474,7 @@ func TestBackupTags(t *testing.T) {
 	parent := newest
 
 	opts.Tags = []string{"NL"}
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
 	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
@@ -684,7 +497,7 @@ func TestTag(t *testing.T) {
 	testRunInit(t, env.gopts)
 	rtest.SetupTarTestFixture(t, env.testdata, datafile)
 
-	testRunBackup(t, []string{env.testdata}, BackupOptions{}, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
 	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
@@ -860,7 +673,7 @@ func TestRestoreFilter(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	snapshotID := testRunList(t, "snapshots", env.gopts)[0]
@@ -900,7 +713,7 @@ func TestRestore(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	// Restore latest without any filters
@@ -923,12 +736,12 @@ func TestRestoreLatest(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	os.Remove(p)
 	rtest.OK(t, appendRandomData(p, 101))
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	// Restore latest without any filters
@@ -939,13 +752,13 @@ func TestRestoreLatest(t *testing.T) {
 	p1 := filepath.Join(env.testdata, "p1/testfile.c")
 	rtest.OK(t, os.MkdirAll(filepath.Dir(p1), 0755))
 	rtest.OK(t, appendRandomData(p1, 102))
-	testRunBackup(t, []string{filepath.Dir(p1)}, opts, env.gopts)
+	testRunBackup(t, env.testdata, []string{"p1"}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	p2 := filepath.Join(env.testdata, "p2/testfile.c")
 	rtest.OK(t, os.MkdirAll(filepath.Dir(p2), 0755))
 	rtest.OK(t, appendRandomData(p2, 103))
-	testRunBackup(t, []string{filepath.Dir(p2)}, opts, env.gopts)
+	testRunBackup(t, env.testdata, []string{"p2"}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	p1rAbs := filepath.Join(env.base, "restore1", "p1/testfile.c")
@@ -1018,7 +831,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	snapshotID := testRunList(t, "snapshots", env.gopts)[0]
@@ -1056,7 +869,7 @@ func TestFind(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	results := testRunFind(t, false, env.gopts, "unexistingfile")
@@ -1096,7 +909,7 @@ func TestFindJSON(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	results := testRunFind(t, true, env.gopts, "unexistingfile")
@@ -1199,13 +1012,13 @@ func TestPrune(t *testing.T) {
 	rtest.SetupTarTestFixture(t, env.testdata, datafile)
 	opts := BackupOptions{}
 
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 	firstSnapshot := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
 
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 3,
@@ -1239,7 +1052,7 @@ func TestHardLink(t *testing.T) {
 	opts := BackupOptions{}
 
 	// first backup
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
@@ -1333,7 +1146,7 @@ func TestQuietBackup(t *testing.T) {
 	opts := BackupOptions{}
 
 	env.gopts.Quiet = false
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
@@ -1341,7 +1154,7 @@ func TestQuietBackup(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	env.gopts.Quiet = true
-	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
+	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)

@@ -496,14 +496,19 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 			createFilesAt(t, targetDir, test.files)
 
-			back := fs.TestChdir(t, targetDir)
+			back := fs.TestChdir(t, tempdir)
 			defer back()
 
 			repo, cleanup := repository.TestRepository(t)
 			defer cleanup()
 
-			arch := New(repo)
-			_, id, err := arch.Snapshot(ctx, nil, []string{"."}, nil, "hostname", nil, time.Now())
+			arch := New(repo, fs.Local{}, Options{})
+			opts := SnapshotOptions{
+				Time:     time.Now(),
+				Hostname: "localhost",
+				Tags:     []string{"test"},
+			}
+			_, id, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

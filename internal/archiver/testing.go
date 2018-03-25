@@ -19,8 +19,16 @@ import (
 
 // TestSnapshot creates a new snapshot of path.
 func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
-	arch := New(repo)
-	sn, _, err := arch.Snapshot(context.TODO(), nil, []string{path}, []string{"test"}, "localhost", parent, time.Now())
+	arch := New(repo, fs.Local{}, Options{})
+	opts := SnapshotOptions{
+		Time:     time.Now(),
+		Hostname: "localhost",
+		Tags:     []string{"test"},
+	}
+	if parent != nil {
+		opts.ParentSnapshot = *parent
+	}
+	sn, _, err := arch.Snapshot(context.TODO(), []string{path}, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
