@@ -24,3 +24,12 @@ be reached, the BDFL makes a decision.
 ## Contribution process
 
 Please see [CONTRIBUTING](CONTRIBUTING.md).
+
+## Violations of the Code of Conduct
+
+Violations of our Code of Conduct can be reported to `conduct AT restic.net`,
+mails are delivered to and read by the BDFL and up to two core contributors.
+They will acknowledge the receipt, try to understand the situation and get a
+picture of what happened. Then, they will react appropriately, for example by
+giving a public warning, suspend a person, or even permanently ban them. The
+original reporter will receive feedback on which action was taken.
