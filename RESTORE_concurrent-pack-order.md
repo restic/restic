@@ -13,7 +13,7 @@ while there are packs to process
   get the pack from the backend or cache        [2]
   write pack blobs to the files that need them  [3]
   if not all pack blobs were used
-    put cache the pack cache                    [4]
+    cache the pack for future use               [4]
 ```
 
 Pack download and processing (steps [2] - [4]) runs on multiple concurrent goroutings. The POC runs all steps [2]-[4] sequentially on the same gorouting, but it is possible to split the work differently. For example, one pool of workers can handle download (step [2]) while the other pool can handle pack processing (steps [3] and [4]).
