@@ -57,7 +57,6 @@ func New(client *http.Client) (*Service, error) {
 	}
 	s := &Service{client: client, BasePath: basePath}
 	s.Edits = NewEditsService(s)
-	s.Entitlements = NewEntitlementsService(s)
 	s.Inappproducts = NewInappproductsService(s)
 	s.Purchases = NewPurchasesService(s)
 	s.Reviews = NewReviewsService(s)
@@ -70,8 +69,6 @@ type Service struct {
 	UserAgent string // optional additional User-Agent fragment
 
 	Edits *EditsService
-
-	Entitlements *EntitlementsService
 
 	Inappproducts *InappproductsService
 
@@ -201,15 +198,6 @@ func NewEditsTracksService(s *Service) *EditsTracksService {
 }
 
 type EditsTracksService struct {
-	s *Service
-}
-
-func NewEntitlementsService(s *Service) *EntitlementsService {
-	rs := &EntitlementsService{s: s}
-	return rs
-}
-
-type EntitlementsService struct {
 	s *Service
 }
 
@@ -762,82 +750,6 @@ type DeviceMetadata struct {
 
 func (s *DeviceMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod DeviceMetadata
-	raw := NoMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Entitlement: An Entitlement resource indicates a user's current
-// entitlement to an inapp item or subscription.
-type Entitlement struct {
-	// Kind: This kind represents an entitlement object in the
-	// androidpublisher service.
-	Kind string `json:"kind,omitempty"`
-
-	// ProductId: The SKU of the product.
-	ProductId string `json:"productId,omitempty"`
-
-	// ProductType: The type of the inapp product. Possible values are:
-	// - In-app item: "inapp"
-	// - Subscription: "subs"
-	ProductType string `json:"productType,omitempty"`
-
-	// Token: The token which can be verified using the subscriptions or
-	// products API.
-	Token string `json:"token,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Kind") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Kind") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Entitlement) MarshalJSON() ([]byte, error) {
-	type NoMethod Entitlement
-	raw := NoMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type EntitlementsListResponse struct {
-	PageInfo *PageInfo `json:"pageInfo,omitempty"`
-
-	Resources []*Entitlement `json:"resources,omitempty"`
-
-	TokenPagination *TokenPagination `json:"tokenPagination,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "PageInfo") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "PageInfo") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *EntitlementsListResponse) MarshalJSON() ([]byte, error) {
-	type NoMethod EntitlementsListResponse
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1481,7 +1393,7 @@ type ProductPurchase struct {
 	// PurchaseState: The purchase state of the order. Possible values are:
 	//
 	// - Purchased
-	// - Cancelled
+	// - Canceled
 	PurchaseState int64 `json:"purchaseState,omitempty"`
 
 	// PurchaseTimeMillis: The time the product was purchased, in
@@ -1492,6 +1404,7 @@ type ProductPurchase struct {
 	// is only set if this purchase was not made using the standard in-app
 	// billing flow. Possible values are:
 	// - Test (i.e. purchased from a license testing account)
+	// - Promo (i.e. purchased using a promo code)
 	PurchaseType int64 `json:"purchaseType,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1797,13 +1710,13 @@ type SubscriptionPurchase struct {
 	// when it reaches its current expiry time.
 	AutoRenewing bool `json:"autoRenewing,omitempty"`
 
-	// CancelReason: The reason why a subscription was cancelled or is not
+	// CancelReason: The reason why a subscription was canceled or is not
 	// auto-renewing. Possible values are:
-	// - User cancelled the subscription
-	// - Subscription was cancelled by the system, for example because of a
+	// - User canceled the subscription
+	// - Subscription was canceled by the system, for example because of a
 	// billing problem
 	// - Subscription was replaced with a new subscription
-	// - Subscription was cancelled by the developer
+	// - Subscription was canceled by the developer
 	CancelReason *int64 `json:"cancelReason,omitempty"`
 
 	// CountryCode: ISO 3166-1 alpha-2 billing country/region code of the
@@ -1814,9 +1727,24 @@ type SubscriptionPurchase struct {
 	// supplemental information about an order.
 	DeveloperPayload string `json:"developerPayload,omitempty"`
 
+	// EmailAddress: The email address of the user when the subscription was
+	// purchased. Only present for purchases made with 'Subscribe with
+	// Google'.
+	EmailAddress string `json:"emailAddress,omitempty"`
+
 	// ExpiryTimeMillis: Time at which the subscription will expire, in
 	// milliseconds since the Epoch.
 	ExpiryTimeMillis int64 `json:"expiryTimeMillis,omitempty,string"`
+
+	// FamilyName: The family name of the user when the subscription was
+	// purchased. Only present for purchases made with 'Subscribe with
+	// Google'.
+	FamilyName string `json:"familyName,omitempty"`
+
+	// GivenName: The given name of the user when the subscription was
+	// purchased. Only present for purchases made with 'Subscribe with
+	// Google'.
+	GivenName string `json:"givenName,omitempty"`
 
 	// Kind: This kind represents a subscriptionPurchase object in the
 	// androidpublisher service.
@@ -1857,6 +1785,16 @@ type SubscriptionPurchase struct {
 	// For example, if the price is specified in British pounds sterling,
 	// price_currency_code is "GBP".
 	PriceCurrencyCode string `json:"priceCurrencyCode,omitempty"`
+
+	// ProfileId: The profile id of the user when the subscription was
+	// purchased. Only present for purchases made with 'Subscribe with
+	// Google'.
+	ProfileId string `json:"profileId,omitempty"`
+
+	// ProfileName: The profile name of the user when the subscription was
+	// purchased. Only present for purchases made with 'Subscribe with
+	// Google'.
+	ProfileName string `json:"profileName,omitempty"`
 
 	// PurchaseType: The type of purchase of the subscription. This field is
 	// only set if this purchase was not made using the standard in-app
@@ -2051,7 +1989,7 @@ func (s *TokenPagination) MarshalJSON() ([]byte, error) {
 
 type Track struct {
 	// Track: Identifier for this track. One of "alpha", "beta",
-	// "production" or "rollout".
+	// "production", "rollout" or "internal".
 	Track string `json:"track,omitempty"`
 
 	UserFraction float64 `json:"userFraction,omitempty"`
@@ -2209,7 +2147,7 @@ func (s *UserComment) MarshalJSON() ([]byte, error) {
 }
 
 // VoidedPurchase: A VoidedPurchase resource indicates a purchase that
-// was either cancelled/refunded/charged-back.
+// was either canceled/refunded/charged-back.
 type VoidedPurchase struct {
 	// Kind: This kind represents a voided purchase object in the
 	// androidpublisher service.
@@ -2224,7 +2162,7 @@ type VoidedPurchase struct {
 	PurchaseToken string `json:"purchaseToken,omitempty"`
 
 	// VoidedTimeMillis: The time at which the purchase was
-	// cancelled/refunded/charged-back, in milliseconds since the epoch (Jan
+	// canceled/refunded/charged-back, in milliseconds since the epoch (Jan
 	// 1, 1970).
 	VoidedTimeMillis int64 `json:"voidedTimeMillis,omitempty,string"`
 
@@ -4240,11 +4178,12 @@ func (c *EditsApksUploadCall) doRequest(alt string) (*http.Response, error) {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	body, getBody, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
 	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
+	gensupport.SetGetBody(req, getBody)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
@@ -4462,11 +4401,12 @@ func (c *EditsDeobfuscationfilesUploadCall) doRequest(alt string) (*http.Respons
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	body, getBody, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
 	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
+	gensupport.SetGetBody(req, getBody)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":           c.packageNameid,
 		"editId":                c.editId,
@@ -5662,11 +5602,12 @@ func (c *EditsExpansionfilesUploadCall) doRequest(alt string) (*http.Response, e
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	body, getBody, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
 	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
+	gensupport.SetGetBody(req, getBody)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName":       c.packageNameid,
 		"editId":            c.editId,
@@ -6427,11 +6368,12 @@ func (c *EditsImagesUploadCall) doRequest(alt string) (*http.Response, error) {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	body, getBody, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
 	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
+	gensupport.SetGetBody(req, getBody)
 	googleapi.Expand(req.URL, map[string]string{
 		"packageName": c.packageNameid,
 		"editId":      c.editId,
@@ -7551,9 +7493,9 @@ func (c *EditsTestersGetCall) Do(opts ...googleapi.CallOption) (*Testers, error)
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -7701,9 +7643,9 @@ func (c *EditsTestersPatchCall) Do(opts ...googleapi.CallOption) (*Testers, erro
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -7854,9 +7796,9 @@ func (c *EditsTestersUpdateCall) Do(opts ...googleapi.CallOption) (*Testers, err
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -8016,9 +7958,9 @@ func (c *EditsTracksGetCall) Do(opts ...googleapi.CallOption) (*Track, error) {
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -8317,9 +8259,9 @@ func (c *EditsTracksPatchCall) Do(opts ...googleapi.CallOption) (*Track, error) 
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -8473,9 +8415,9 @@ func (c *EditsTracksUpdateCall) Do(opts ...googleapi.CallOption) (*Track, error)
 	//       "type": "string"
 	//     },
 	//     "track": {
-	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\" or \"rollout\".",
+	//       "description": "The track to read or modify. Acceptable values are: \"alpha\", \"beta\", \"production\", \"rollout\" or \"internal\".",
 	//       "location": "path",
-	//       "pattern": "(alpha|beta|production|rollout)",
+	//       "pattern": "(alpha|beta|production|rollout|internal)",
 	//       "required": true,
 	//       "type": "string"
 	//     }
@@ -8490,186 +8432,6 @@ func (c *EditsTracksUpdateCall) Do(opts ...googleapi.CallOption) (*Track, error)
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/androidpublisher"
 	//   ]
-	// }
-
-}
-
-// method id "androidpublisher.entitlements.list":
-
-type EntitlementsListCall struct {
-	s            *Service
-	packageName  string
-	urlParams_   gensupport.URLParams
-	ifNoneMatch_ string
-	ctx_         context.Context
-	header_      http.Header
-}
-
-// List: Lists the user's current inapp item or subscription
-// entitlements
-func (r *EntitlementsService) List(packageName string) *EntitlementsListCall {
-	c := &EntitlementsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.packageName = packageName
-	return c
-}
-
-// MaxResults sets the optional parameter "maxResults":
-func (c *EntitlementsListCall) MaxResults(maxResults int64) *EntitlementsListCall {
-	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
-	return c
-}
-
-// ProductId sets the optional parameter "productId": The product id of
-// the inapp product (for example, 'sku1'). This can be used to restrict
-// the result set.
-func (c *EntitlementsListCall) ProductId(productId string) *EntitlementsListCall {
-	c.urlParams_.Set("productId", productId)
-	return c
-}
-
-// StartIndex sets the optional parameter "startIndex":
-func (c *EntitlementsListCall) StartIndex(startIndex int64) *EntitlementsListCall {
-	c.urlParams_.Set("startIndex", fmt.Sprint(startIndex))
-	return c
-}
-
-// Token sets the optional parameter "token":
-func (c *EntitlementsListCall) Token(token string) *EntitlementsListCall {
-	c.urlParams_.Set("token", token)
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *EntitlementsListCall) Fields(s ...googleapi.Field) *EntitlementsListCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// IfNoneMatch sets the optional parameter which makes the operation
-// fail if the object's ETag matches the given value. This is useful for
-// getting updates only after the object has changed since the last
-// request. Use googleapi.IsNotModified to check whether the response
-// error from Do is the result of In-None-Match.
-func (c *EntitlementsListCall) IfNoneMatch(entityTag string) *EntitlementsListCall {
-	c.ifNoneMatch_ = entityTag
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *EntitlementsListCall) Context(ctx context.Context) *EntitlementsListCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *EntitlementsListCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *EntitlementsListCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	if c.ifNoneMatch_ != "" {
-		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
-	}
-	var body io.Reader = nil
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{packageName}/entitlements")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("GET", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"packageName": c.packageName,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "androidpublisher.entitlements.list" call.
-// Exactly one of *EntitlementsListResponse or error will be non-nil.
-// Any non-2xx status code is an error. Response headers are in either
-// *EntitlementsListResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *EntitlementsListCall) Do(opts ...googleapi.CallOption) (*EntitlementsListResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &EntitlementsListResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Lists the user's current inapp item or subscription entitlements",
-	//   "httpMethod": "GET",
-	//   "id": "androidpublisher.entitlements.list",
-	//   "parameterOrder": [
-	//     "packageName"
-	//   ],
-	//   "parameters": {
-	//     "maxResults": {
-	//       "format": "uint32",
-	//       "location": "query",
-	//       "type": "integer"
-	//     },
-	//     "packageName": {
-	//       "description": "The package name of the application the inapp product was sold in (for example, 'com.some.thing').",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     },
-	//     "productId": {
-	//       "description": "The product id of the inapp product (for example, 'sku1'). This can be used to restrict the result set.",
-	//       "location": "query",
-	//       "type": "string"
-	//     },
-	//     "startIndex": {
-	//       "format": "uint32",
-	//       "location": "query",
-	//       "type": "integer"
-	//     },
-	//     "token": {
-	//       "location": "query",
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{packageName}/entitlements",
-	//   "response": {
-	//     "$ref": "EntitlementsListResponse"
-	//   }
 	// }
 
 }
@@ -10391,7 +10153,7 @@ type PurchasesVoidedpurchasesListCall struct {
 	header_      http.Header
 }
 
-// List: Lists the purchases that were cancelled, refunded or
+// List: Lists the purchases that were canceled, refunded or
 // charged-back.
 func (r *PurchasesVoidedpurchasesService) List(packageName string) *PurchasesVoidedpurchasesListCall {
 	c := &PurchasesVoidedpurchasesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -10537,7 +10299,7 @@ func (c *PurchasesVoidedpurchasesListCall) Do(opts ...googleapi.CallOption) (*Vo
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists the purchases that were cancelled, refunded or charged-back.",
+	//   "description": "Lists the purchases that were canceled, refunded or charged-back.",
 	//   "httpMethod": "GET",
 	//   "id": "androidpublisher.purchases.voidedpurchases.list",
 	//   "parameterOrder": [

@@ -1060,10 +1060,10 @@ type LogEntry struct {
 	// Stackdriver Logging.
 	ReceiveTimestamp string `json:"receiveTimestamp,omitempty"`
 
-	// Resource: Required. The monitored resource associated with this log
-	// entry. Example: a log entry that reports a database error would be
-	// associated with the monitored resource designating the particular
-	// database that reported the error.
+	// Resource: Required. The primary monitored resource associated with
+	// this log entry. Example: a log entry that reports a database error
+	// would be associated with the monitored resource designating the
+	// particular database that reported the error.
 	Resource *MonitoredResource `json:"resource,omitempty"`
 
 	// Severity: Optional. The severity of the log entry. The default value
@@ -1642,15 +1642,14 @@ type MetricDescriptor struct {
 	// Ki kibi (2**10)
 	// Mi mebi (2**20)
 	// Gi gibi (2**30)
-	// Ti tebi (2**40)GrammarThe grammar includes the dimensionless unit 1,
-	// such as 1/s.The grammar also includes these connectors:
+	// Ti tebi (2**40)GrammarThe grammar also includes these connectors:
 	// / division (as an infix operator, e.g. 1/s).
 	// . multiplication (as an infix operator, e.g. GBy.d)The grammar for a
 	// unit is as follows:
 	// Expression = Component { "." Component } { "/" Component }
 	// ;
 	//
-	// Component = [ PREFIX ] UNIT [ Annotation ]
+	// Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
 	//           | Annotation
 	//           | "1"
 	//           ;
@@ -1662,6 +1661,9 @@ type MetricDescriptor struct {
 	// By{transmitted}/s == By/s.
 	// NAME is a sequence of non-blank printable ASCII characters not
 	// containing '{' or '}'.
+	// 1 represents dimensionless value 1, such as in 1/s.
+	// % represents dimensionless value 1/100, and annotates values giving
+	// a percentage.
 	Unit string `json:"unit,omitempty"`
 
 	// ValueType: Whether the measurement is an integer, a floating-point

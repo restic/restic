@@ -343,7 +343,9 @@ func (s *OrderCancellation) MarshalJSON() ([]byte, error) {
 }
 
 type OrderCustomer struct {
-	// Email: Email address of the customer.
+	// Email: Email address that should be used for order related
+	// communications. In certain cases this might not be a real users
+	// email, but a proxy email.
 	Email string `json:"email,omitempty"`
 
 	// ExplicitMarketingPreference: If set, this indicates the user
