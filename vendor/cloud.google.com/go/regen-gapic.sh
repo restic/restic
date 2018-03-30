@@ -43,7 +43,8 @@ google/firestore/artman_firestore.yaml
 google/logging/artman_logging.yaml
 google/longrunning/artman_longrunning.yaml
 google/monitoring/artman_monitoring.yaml
-google/privacy/dlp/artman_dlp.yaml
+google/privacy/dlp/artman_dlp_v2beta1.yaml
+google/privacy/dlp/artman_dlp_v2.yaml
 google/pubsub/artman_pubsub.yaml
 google/spanner/admin/database/artman_spanner_admin_database.yaml
 google/spanner/admin/instance/artman_spanner_admin_instance.yaml
@@ -52,7 +53,7 @@ google/spanner/artman_spanner.yaml
 
 for api in "${APIS[@]}"; do
   rm -rf artman-genfiles/*
-  artman2 --config "$api" generate go_gapic
+  artman --config "$api" generate go_gapic
   cp -r artman-genfiles/gapi-*/cloud.google.com/go/* $GOPATH/src/cloud.google.com/go/
 done
 

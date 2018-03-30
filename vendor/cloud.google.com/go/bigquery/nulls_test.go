@@ -16,7 +16,16 @@ package bigquery
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
+
+	"cloud.google.com/go/civil"
+	"cloud.google.com/go/internal/testutil"
+)
+
+var (
+	nullsTestTime     = civil.Time{Hour: 7, Minute: 50, Second: 22, Nanosecond: 1000}
+	nullsTestDateTime = civil.DateTime{Date: civil.Date{Year: 2016, Month: 11, Day: 5}, Time: nullsTestTime}
 )
 
 func TestNullsJSON(t *testing.T) {
@@ -24,23 +33,23 @@ func TestNullsJSON(t *testing.T) {
 		in   interface{}
 		want string
 	}{
-		{NullInt64{Valid: true, Int64: 3}, `3`},
-		{NullFloat64{Valid: true, Float64: 3.14}, `3.14`},
-		{NullBool{Valid: true, Bool: true}, `true`},
-		{NullString{Valid: true, StringVal: "foo"}, `"foo"`},
-		{NullTimestamp{Valid: true, Timestamp: testTimestamp}, `"2016-11-05T07:50:22.000000008Z"`},
-		{NullDate{Valid: true, Date: testDate}, `"2016-11-05"`},
-		{NullTime{Valid: true, Time: testTime}, `"07:50:22.000000"`},
-		{NullDateTime{Valid: true, DateTime: testDateTime}, `"2016-11-05 07:50:22.000000"`},
+		{&NullInt64{Valid: true, Int64: 3}, `3`},
+		{&NullFloat64{Valid: true, Float64: 3.14}, `3.14`},
+		{&NullBool{Valid: true, Bool: true}, `true`},
+		{&NullString{Valid: true, StringVal: "foo"}, `"foo"`},
+		{&NullTimestamp{Valid: true, Timestamp: testTimestamp}, `"2016-11-05T07:50:22.000000008Z"`},
+		{&NullDate{Valid: true, Date: testDate}, `"2016-11-05"`},
+		{&NullTime{Valid: true, Time: nullsTestTime}, `"07:50:22.000001"`},
+		{&NullDateTime{Valid: true, DateTime: nullsTestDateTime}, `"2016-11-05 07:50:22.000001"`},
 
-		{NullInt64{}, `null`},
-		{NullFloat64{}, `null`},
-		{NullBool{}, `null`},
-		{NullString{}, `null`},
-		{NullTimestamp{}, `null`},
-		{NullDate{}, `null`},
-		{NullTime{}, `null`},
-		{NullDateTime{}, `null`},
+		{&NullInt64{}, `null`},
+		{&NullFloat64{}, `null`},
+		{&NullBool{}, `null`},
+		{&NullString{}, `null`},
+		{&NullTimestamp{}, `null`},
+		{&NullDate{}, `null`},
+		{&NullTime{}, `null`},
+		{&NullDateTime{}, `null`},
 	} {
 		bytes, err := json.Marshal(test.in)
 		if err != nil {
@@ -48,6 +57,17 @@ func TestNullsJSON(t *testing.T) {
 		}
 		if got, want := string(bytes), test.want; got != want {
 			t.Errorf("%#v: got %s, want %s", test.in, got, want)
+		}
+
+		typ := reflect.Indirect(reflect.ValueOf(test.in)).Type()
+		value := reflect.New(typ).Interface()
+		err = json.Unmarshal(bytes, value)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !testutil.Equal(value, test.in) {
+			t.Errorf("%#v: got %#v, want %#v", test.in, value, test.in)
 		}
 	}
 }

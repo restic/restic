@@ -15,9 +15,11 @@
 package bigquery
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/civil"
@@ -132,6 +134,134 @@ func nulljson(valid bool, v interface{}) ([]byte, error) {
 		return jsonNull, nil
 	}
 	return json.Marshal(v)
+}
+
+func (n *NullInt64) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Int64 = 0
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.Int64); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullFloat64) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Float64 = 0
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.Float64); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullBool) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Bool = false
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.Bool); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullString) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.StringVal = ""
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.StringVal); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullTimestamp) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Timestamp = time.Time{}
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.Timestamp); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullDate) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Date = civil.Date{}
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &n.Date); err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+func (n *NullTime) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.Time = civil.Time{}
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+
+	t, err := civil.ParseTime(s)
+	if err != nil {
+		return err
+	}
+	n.Time = t
+
+	n.Valid = true
+	return nil
+}
+
+func (n *NullDateTime) UnmarshalJSON(b []byte) error {
+	n.Valid = false
+	n.DateTime = civil.DateTime{}
+	if bytes.Equal(b, jsonNull) {
+		return nil
+	}
+
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+
+	dt, err := parseCivilDateTime(s)
+	if err != nil {
+		return err
+	}
+	n.DateTime = dt
+
+	n.Valid = true
+	return nil
 }
 
 var (

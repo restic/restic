@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"testing"
@@ -259,6 +260,7 @@ func TestIntegration_GetAll(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		doc := coll.NewDoc()
 		docRefs = append(docRefs, doc)
+		// TODO(jba): omit one create so we can test missing doc behavior.
 		mustCreate("GetAll #1", t, doc, getAll{N: i})
 	}
 	docSnapshots, err := iClient.GetAll(ctx, docRefs)
@@ -276,6 +278,9 @@ func TestIntegration_GetAll(t *testing.T) {
 		want := getAll{N: i}
 		if got != want {
 			t.Errorf("%d: got %+v, want %+v", i, got, want)
+		}
+		if ds.ReadTime.IsZero() {
+			t.Errorf("%d: got zero read time", i)
 		}
 	}
 }
@@ -686,6 +691,38 @@ func TestIntegration_Query(t *testing.T) {
 	}
 }
 
+// Test unary filters.
+func TestIntegration_QueryUnary(t *testing.T) {
+	ctx := context.Background()
+	coll := integrationColl(t)
+	mustCreate("q", t, coll.NewDoc(), map[string]interface{}{"x": 2, "q": "a"})
+	mustCreate("q", t, coll.NewDoc(), map[string]interface{}{"x": 2, "q": nil})
+	mustCreate("q", t, coll.NewDoc(), map[string]interface{}{"x": 2, "q": math.NaN()})
+	wantNull := map[string]interface{}{"q": nil}
+	wantNaN := map[string]interface{}{"q": math.NaN()}
+
+	base := coll.Select("q").Where("x", "==", 2)
+	for _, test := range []struct {
+		q    Query
+		want map[string]interface{}
+	}{
+		{base.Where("q", "==", nil), wantNull},
+		{base.Where("q", "==", math.NaN()), wantNaN},
+	} {
+		got, err := test.q.Documents(ctx).GetAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 1 {
+			t.Errorf("got %d responses, want 1", len(got))
+			continue
+		}
+		if g, w := got[0].Data(), test.want; !testEqual(g, w) {
+			t.Errorf("%v: got %v, want %v", test.q, g, w)
+		}
+	}
+}
+
 // Test the special DocumentID field in queries.
 func TestIntegration_QueryName(t *testing.T) {
 	ctx := context.Background()
@@ -783,6 +820,7 @@ func TestIntegration_RunTransaction(t *testing.T) {
 		}
 		return anError
 	}
+
 	mustCreate("RunTransaction", t, patDoc, pat)
 	err := client.RunTransaction(ctx, incPat)
 	if err != nil {
@@ -810,6 +848,41 @@ func TestIntegration_RunTransaction(t *testing.T) {
 	// want is same as before.
 	if got != want {
 		t.Errorf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestIntegration_TransactionGetAll(t *testing.T) {
+	ctx := context.Background()
+	type Player struct {
+		Name  string
+		Score int
+	}
+	lee := Player{Name: "Lee", Score: 3}
+	sam := Player{Name: "Sam", Score: 1}
+	client := integrationClient(t)
+	leeDoc := iColl.Doc("lee")
+	samDoc := iColl.Doc("sam")
+	mustCreate("TransactionGetAll", t, leeDoc, lee)
+	mustCreate("TransactionGetAll", t, samDoc, sam)
+
+	err := client.RunTransaction(ctx, func(_ context.Context, tx *Transaction) error {
+		docs, err := tx.GetAll([]*DocumentRef{samDoc, leeDoc})
+		if err != nil {
+			return err
+		}
+		for i, want := range []Player{sam, lee} {
+			var got Player
+			if err := docs[i].DataTo(&got); err != nil {
+				return err
+			}
+			if !testutil.Equal(got, want) {
+				return fmt.Errorf("got %+v, want %+v", got, want)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"unicode/utf8"
 
 	"golang.org/x/net/context"
@@ -47,8 +48,11 @@ type Writer struct {
 	// to the nearest multiple of 256K. If zero, chunking will be disabled and
 	// the object will be uploaded in a single request.
 	//
-	// ChunkSize will default to a reasonable value. Any custom configuration
-	// must be done before the first Write call.
+	// ChunkSize will default to a reasonable value. If you perform many concurrent
+	// writes of small objects, you may wish set ChunkSize to a value that matches
+	// your objects' sizes to avoid consuming large amounts of memory.
+	//
+	// ChunkSize must be set before the first Write call.
 	ChunkSize int
 
 	// ProgressFunc can be used to monitor the progress of a large write.
@@ -68,8 +72,10 @@ type Writer struct {
 	pw     *io.PipeWriter
 
 	donec chan struct{} // closed after err and obj are set.
-	err   error
 	obj   *ObjectAttrs
+
+	mu  sync.Mutex
+	err error
 }
 
 func (w *Writer) open() error {
@@ -114,8 +120,10 @@ func (w *Writer) open() error {
 			call.ProgressUpdater(func(n, _ int64) { w.ProgressFunc(n) })
 		}
 		if err := setEncryptionHeaders(call.Header(), w.o.encryptionKey, false); err != nil {
+			w.mu.Lock()
 			w.err = err
-			pr.CloseWithError(w.err)
+			w.mu.Unlock()
+			pr.CloseWithError(err)
 			return
 		}
 		var resp *raw.Object
@@ -142,8 +150,10 @@ func (w *Writer) open() error {
 			}
 		}
 		if err != nil {
+			w.mu.Lock()
 			w.err = err
-			pr.CloseWithError(w.err)
+			w.mu.Unlock()
+			pr.CloseWithError(err)
 			return
 		}
 		w.obj = newObject(resp)
@@ -158,8 +168,11 @@ func (w *Writer) open() error {
 // use the error returned from Writer.Close to determine if
 // the upload was successful.
 func (w *Writer) Write(p []byte) (n int, err error) {
-	if w.err != nil {
-		return 0, w.err
+	w.mu.Lock()
+	werr := w.err
+	w.mu.Unlock()
+	if werr != nil {
+		return 0, werr
 	}
 	if !w.opened {
 		if err := w.open(); err != nil {
@@ -182,6 +195,8 @@ func (w *Writer) Close() error {
 		return err
 	}
 	<-w.donec
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return w.err
 }
 

@@ -37,11 +37,13 @@ type pullStream struct {
 }
 
 func newPullStream(ctx context.Context, subc *vkit.SubscriberClient, subName string, ackDeadlineSecs int32) *pullStream {
+	ctx = withSubscriptionKey(ctx, subName)
 	return &pullStream{
 		ctx: ctx,
 		open: func() (pb.Subscriber_StreamingPullClient, error) {
 			spc, err := subc.StreamingPull(ctx, gax.WithGRPCOptions(grpc.MaxCallRecvMsgSize(maxSendRecvBytes)))
 			if err == nil {
+				recordStat(ctx, StreamRequestCount, 1)
 				err = spc.Send(&pb.StreamingPullRequest{
 					Subscription:             subName,
 					StreamAckDeadlineSeconds: ackDeadlineSecs,
@@ -91,6 +93,7 @@ func (s *pullStream) get(spc *pb.Subscriber_StreamingPullClient) (*pb.Subscriber
 	// The lock is held here for a long time, but it doesn't matter because no callers could get
 	// anything done anyway.
 	s.spc = new(pb.Subscriber_StreamingPullClient)
+	recordStat(s.ctx, StreamOpenCount, 1)
 	*s.spc, s.err = s.open() // Setting s.err means any error from open is permanent. Reconsider.
 	return s.spc, s.err
 }
@@ -111,10 +114,13 @@ func (s *pullStream) call(f func(pb.Subscriber_StreamingPullClient) error) error
 		err = f(*spc)
 		if err != nil {
 			if isRetryable(err) {
+				recordStat(s.ctx, StreamRetryCount, 1)
 				gax.Sleep(s.ctx, bo.Pause())
 				continue
 			}
+			s.mu.Lock()
 			s.err = err
+			s.mu.Unlock()
 		}
 		return err
 	}
@@ -122,6 +128,16 @@ func (s *pullStream) call(f func(pb.Subscriber_StreamingPullClient) error) error
 
 func (s *pullStream) Send(req *pb.StreamingPullRequest) error {
 	return s.call(func(spc pb.Subscriber_StreamingPullClient) error {
+		recordStat(s.ctx, AckCount, int64(len(req.AckIds)))
+		zeroes := 0
+		for _, mds := range req.ModifyDeadlineSeconds {
+			if mds == 0 {
+				zeroes++
+			}
+		}
+		recordStat(s.ctx, NackCount, int64(zeroes))
+		recordStat(s.ctx, ModAckCount, int64(len(req.ModifyDeadlineSeconds)-zeroes))
+		recordStat(s.ctx, StreamRequestCount, 1)
 		return spc.Send(req)
 	})
 }
@@ -130,7 +146,11 @@ func (s *pullStream) Recv() (*pb.StreamingPullResponse, error) {
 	var res *pb.StreamingPullResponse
 	err := s.call(func(spc pb.Subscriber_StreamingPullClient) error {
 		var err error
+		recordStat(s.ctx, StreamResponseCount, 1)
 		res, err = spc.Recv()
+		if err == nil {
+			recordStat(s.ctx, PullCount, int64(len(res.ReceivedMessages)))
+		}
 		return err
 	})
 	return res, err

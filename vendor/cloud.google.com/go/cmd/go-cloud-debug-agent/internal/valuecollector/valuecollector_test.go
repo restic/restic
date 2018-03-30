@@ -43,15 +43,15 @@ func TestValueCollector(t *testing.T) {
 	c := NewCollector(&Program{}, 26)
 	// Add some variables of various types, whose values we want the collector to read.
 	variablesToAdd := []debug.LocalVar{
-		{Name: "a", Var: debug.Var{int16Type, 0x1}},
-		{Name: "b", Var: debug.Var{stringType, 0x2}},
-		{Name: "c", Var: debug.Var{structType, 0x3}},
-		{Name: "d", Var: debug.Var{pointerType, 0x4}},
-		{Name: "e", Var: debug.Var{arrayType, 0x5}},
-		{Name: "f", Var: debug.Var{debugStringType, 0x6}},
-		{Name: "g", Var: debug.Var{mapType, 0x7}},
-		{Name: "h", Var: debug.Var{channelType, 0x8}},
-		{Name: "i", Var: debug.Var{sliceType, 0x9}},
+		{Name: "a", Var: debug.Var{TypeID: int16Type, Address: 0x1}},
+		{Name: "b", Var: debug.Var{TypeID: stringType, Address: 0x2}},
+		{Name: "c", Var: debug.Var{TypeID: structType, Address: 0x3}},
+		{Name: "d", Var: debug.Var{TypeID: pointerType, Address: 0x4}},
+		{Name: "e", Var: debug.Var{TypeID: arrayType, Address: 0x5}},
+		{Name: "f", Var: debug.Var{TypeID: debugStringType, Address: 0x6}},
+		{Name: "g", Var: debug.Var{TypeID: mapType, Address: 0x7}},
+		{Name: "h", Var: debug.Var{TypeID: channelType, Address: 0x8}},
+		{Name: "i", Var: debug.Var{TypeID: sliceType, Address: 0x9}},
 	}
 	expectedResults := []*cd.Variable{
 		&cd.Variable{Name: "a", VarTableIndex: 1},
@@ -195,17 +195,17 @@ func (p *Program) Value(v debug.Var) (debug.Value, error) {
 			Fields: []debug.StructField{
 				{
 					Name: "x",
-					Var:  debug.Var{int16Type, 0x1},
+					Var:  debug.Var{TypeID: int16Type, Address: 0x1},
 				},
 				{
 					Name: "y",
-					Var:  debug.Var{stringType, 0x2},
+					Var:  debug.Var{TypeID: stringType, Address: 0x2},
 				},
 			},
 		}, nil
 	case pointerType:
 		// A pointer to the first variable above.
-		return debug.Pointer{int16Type, 0x1}, nil
+		return debug.Pointer{TypeID: int16Type, Address: 0x1}, nil
 	case arrayType:
 		// An array of 4 32-bit-wide elements.
 		return debug.Array{

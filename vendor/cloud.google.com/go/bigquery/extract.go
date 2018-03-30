@@ -99,7 +99,7 @@ func (e *Extractor) Run(ctx context.Context) (*Job, error) {
 
 func (e *Extractor) newJob() *bq.Job {
 	return &bq.Job{
-		JobReference:  e.JobIDConfig.createJobRef(e.c.projectID),
+		JobReference:  e.JobIDConfig.createJobRef(e.c),
 		Configuration: e.ExtractConfig.toBQ(),
 	}
 }

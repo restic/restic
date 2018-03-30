@@ -19,6 +19,7 @@ package spanner_test
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/spanner"
@@ -549,4 +550,58 @@ func ExampleGenericColumnValue_Decode() {
 	// Output:
 	// int 42
 	// string my-text
+}
+
+func ExampleClient_BatchReadOnlyTransaction() {
+	ctx := context.Background()
+	var (
+		client *spanner.Client
+		txn    *spanner.BatchReadOnlyTransaction
+		err    error
+	)
+	if client, err = spanner.NewClient(ctx, myDB); err != nil {
+		// TODO: Handle error.
+	}
+	defer client.Close()
+	if txn, err = client.BatchReadOnlyTransaction(ctx, spanner.StrongRead()); err != nil {
+		// TODO: Handle error.
+	}
+	defer txn.Close()
+
+	// Singer represents the elements in a row from the Singers table.
+	type Singer struct {
+		SingerID   int64
+		FirstName  string
+		LastName   string
+		SingerInfo []byte
+	}
+	stmt := spanner.Statement{SQL: "SELECT * FROM Singers;"}
+	partitions, err := txn.PartitionQuery(ctx, stmt, spanner.PartitionOptions{})
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// Note: here we use multiple goroutines, but you should use separate processes/machines.
+	wg := sync.WaitGroup{}
+	for i, p := range partitions {
+		wg.Add(1)
+		go func(i int, p *spanner.Partition) {
+			defer wg.Done()
+			iter := txn.Execute(ctx, p)
+			defer iter.Stop()
+			for {
+				row, err := iter.Next()
+				if err == iterator.Done {
+					break
+				} else if err != nil {
+					// TODO: Handle error.
+				}
+				var s Singer
+				if err := row.ToStruct(&s); err != nil {
+					// TODO: Handle error.
+				}
+				_ = s // TODO: Process the row.
+			}
+		}(i, p)
+	}
+	wg.Wait()
 }

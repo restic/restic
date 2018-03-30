@@ -30,7 +30,7 @@ import (
 )
 
 func TestConvertBasicValues(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{Type: StringFieldType},
 		{Type: IntegerFieldType},
 		{Type: FloatFieldType},
@@ -57,7 +57,7 @@ func TestConvertBasicValues(t *testing.T) {
 }
 
 func TestConvertTime(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{Type: TimestampFieldType},
 		{Type: DateFieldType},
 		{Type: TimeFieldType},
@@ -103,9 +103,7 @@ func TestConvertSmallTimes(t *testing.T) {
 }
 
 func TestConvertNullValues(t *testing.T) {
-	schema := []*FieldSchema{
-		{Type: StringFieldType},
-	}
+	schema := Schema{{Type: StringFieldType}}
 	row := &bq.TableRow{
 		F: []*bq.TableCell{
 			{V: nil},
@@ -122,7 +120,7 @@ func TestConvertNullValues(t *testing.T) {
 }
 
 func TestBasicRepetition(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{Type: IntegerFieldType, Repeated: true},
 	}
 	row := &bq.TableRow{
@@ -153,7 +151,7 @@ func TestBasicRepetition(t *testing.T) {
 }
 
 func TestNestedRecordContainingRepetition(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{
 			Type: RecordFieldType,
 			Schema: Schema{
@@ -190,7 +188,7 @@ func TestNestedRecordContainingRepetition(t *testing.T) {
 }
 
 func TestRepeatedRecordContainingRepetition(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{
 			Type:     RecordFieldType,
 			Repeated: true,
@@ -264,7 +262,7 @@ func TestRepeatedRecordContainingRepetition(t *testing.T) {
 }
 
 func TestRepeatedRecordContainingRecord(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{
 			Type:     RecordFieldType,
 			Repeated: true,
@@ -399,14 +397,17 @@ func TestValuesSaverConvertsToMap(t *testing.T) {
 	}{
 		{
 			vs: ValuesSaver{
-				Schema: []*FieldSchema{
+				Schema: Schema{
 					{Name: "intField", Type: IntegerFieldType},
 					{Name: "strField", Type: StringFieldType},
 					{Name: "dtField", Type: DateTimeFieldType},
 				},
 				InsertID: "iid",
 				Row: []Value{1, "a",
-					civil.DateTime{civil.Date{1, 2, 3}, civil.Time{4, 5, 6, 7000}}},
+					civil.DateTime{
+						Date: civil.Date{Year: 1, Month: 2, Day: 3},
+						Time: civil.Time{Hour: 4, Minute: 5, Second: 6, Nanosecond: 7000}},
+				},
 			},
 			wantInsertID: "iid",
 			wantRow: map[string]Value{"intField": 1, "strField": "a",
@@ -414,12 +415,12 @@ func TestValuesSaverConvertsToMap(t *testing.T) {
 		},
 		{
 			vs: ValuesSaver{
-				Schema: []*FieldSchema{
+				Schema: Schema{
 					{Name: "intField", Type: IntegerFieldType},
 					{
 						Name: "recordField",
 						Type: RecordFieldType,
-						Schema: []*FieldSchema{
+						Schema: Schema{
 							{Name: "nestedInt", Type: IntegerFieldType, Repeated: true},
 						},
 					},
@@ -559,8 +560,8 @@ func TestStructSaver(t *testing.T) {
 		}
 	}
 
-	ct1 := civil.Time{1, 2, 3, 4000}
-	ct2 := civil.Time{5, 6, 7, 8000}
+	ct1 := civil.Time{Hour: 1, Minute: 2, Second: 3, Nanosecond: 4000}
+	ct2 := civil.Time{Hour: 5, Minute: 6, Second: 7, Nanosecond: 8000}
 	in := T{
 		S:       "x",
 		R:       []int{1, 2},
@@ -629,7 +630,7 @@ func TestStructSaverErrors(t *testing.T) {
 }
 
 func TestConvertRows(t *testing.T) {
-	schema := []*FieldSchema{
+	schema := Schema{
 		{Type: StringFieldType},
 		{Type: IntegerFieldType},
 		{Type: FloatFieldType},
@@ -772,9 +773,9 @@ var (
 	}
 
 	testTimestamp = time.Date(2016, 11, 5, 7, 50, 22, 8, time.UTC)
-	testDate      = civil.Date{2016, 11, 5}
-	testTime      = civil.Time{7, 50, 22, 8}
-	testDateTime  = civil.DateTime{testDate, testTime}
+	testDate      = civil.Date{Year: 2016, Month: 11, Day: 5}
+	testTime      = civil.Time{Hour: 7, Minute: 50, Second: 22, Nanosecond: 8}
+	testDateTime  = civil.DateTime{Date: testDate, Time: testTime}
 
 	testValues = []Value{"x", "y", []byte{1, 2, 3}, int64(7), int64(8), 3.14, true,
 		testTimestamp, testDate, testTime, testDateTime,
@@ -1069,7 +1070,7 @@ func TestStructLoaderErrors(t *testing.T) {
 		t.Errorf("%T: got nil, want error", bad6)
 	}
 
-	// sl.set's error is sticky, with even good input.
+	// sl.set's error is sticky, even with good input.
 	err2 := sl.set(&repStruct{}, repSchema)
 	if err2 != err {
 		t.Errorf("%v != %v, expected equal", err2, err)
@@ -1087,6 +1088,7 @@ func TestStructLoaderErrors(t *testing.T) {
 		{Name: "b", Type: BooleanFieldType},
 		{Name: "s", Type: StringFieldType},
 		{Name: "d", Type: DateFieldType},
+		{Name: "r", Type: RecordFieldType, Schema: Schema{{Name: "X", Type: IntegerFieldType}}},
 	}
 	type s struct {
 		I int

@@ -22,6 +22,8 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	vkit "cloud.google.com/go/firestore/apiv1beta1"
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
@@ -64,12 +66,14 @@ func (d *DocumentRef) Get(ctx context.Context) (*DocumentSnapshot, error) {
 	if d == nil {
 		return nil, errNilDocRef
 	}
-	doc, err := d.Parent.c.c.GetDocument(withResourceHeader(ctx, d.Parent.c.path()),
-		&pb.GetDocumentRequest{Name: d.Path})
+	docsnaps, err := d.Parent.c.getAll(ctx, []*DocumentRef{d}, nil)
 	if err != nil {
 		return nil, err
 	}
-	return newDocumentSnapshot(d, doc, d.Parent.c)
+	if docsnaps[0] == nil {
+		return nil, status.Errorf(codes.NotFound, "%q not found", d.Path)
+	}
+	return docsnaps[0], nil
 }
 
 // Create creates the document with the given data.

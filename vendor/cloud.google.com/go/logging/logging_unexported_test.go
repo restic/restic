@@ -17,6 +17,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"testing"
@@ -176,6 +177,53 @@ func TestToProtoStruct(t *testing.T) {
 	}
 	if got != want {
 		t.Error("got and want should be identical, but are not")
+	}
+}
+
+func TestToLogEntryPayload(t *testing.T) {
+	for _, test := range []struct {
+		in         interface{}
+		wantText   string
+		wantStruct *structpb.Struct
+	}{
+		{
+			in:       "string",
+			wantText: "string",
+		},
+		{
+			in: map[string]interface{}{"a": 1, "b": true},
+			wantStruct: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"a": {Kind: &structpb.Value_NumberValue{NumberValue: 1}},
+					"b": {Kind: &structpb.Value_BoolValue{BoolValue: true}},
+				},
+			},
+		},
+		{
+			in: json.RawMessage([]byte(`{"a": 1, "b": true}`)),
+			wantStruct: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"a": {Kind: &structpb.Value_NumberValue{NumberValue: 1}},
+					"b": {Kind: &structpb.Value_BoolValue{BoolValue: true}},
+				},
+			},
+		},
+	} {
+		e, err := toLogEntry(Entry{Payload: test.in})
+		if err != nil {
+			t.Fatalf("%+v: %v", test.in, err)
+		}
+		if test.wantStruct != nil {
+			got := e.GetJsonPayload()
+			if !proto.Equal(got, test.wantStruct) {
+				t.Errorf("%+v: got %s, want %s", test.in, got, test.wantStruct)
+			}
+		} else {
+			got := e.GetTextPayload()
+			if got != test.wantText {
+				t.Errorf("%+v: got %s, want %s", test.in, got, test.wantText)
+			}
+		}
 	}
 }
 

@@ -50,9 +50,14 @@ type Subscription struct {
 
 // Subscription creates a reference to a subscription.
 func (c *Client) Subscription(id string) *Subscription {
+	return c.SubscriptionInProject(id, c.projectID)
+}
+
+// SubscriptionInProject creates a reference to a subscription in a given project.
+func (c *Client) SubscriptionInProject(id, projectID string) *Subscription {
 	return &Subscription{
 		c:    c,
-		name: fmt.Sprintf("projects/%s/subscriptions/%s", c.projectID, id),
+		name: fmt.Sprintf("projects/%s/subscriptions/%s", projectID, id),
 	}
 }
 
@@ -164,9 +169,13 @@ func (cfg *SubscriptionConfig) toProto(name string) *pb.Subscription {
 }
 
 func protoToSubscriptionConfig(pbSub *pb.Subscription, c *Client) (SubscriptionConfig, error) {
-	rd, err := ptypes.Duration(pbSub.MessageRetentionDuration)
-	if err != nil {
-		return SubscriptionConfig{}, err
+	rd := time.Hour * 24 * 7
+	var err error
+	if pbSub.MessageRetentionDuration != nil {
+		rd, err = ptypes.Duration(pbSub.MessageRetentionDuration)
+		if err != nil {
+			return SubscriptionConfig{}, err
+		}
 	}
 	return SubscriptionConfig{
 		Topic:       newTopic(c, pbSub.Topic),
@@ -188,7 +197,11 @@ type ReceiveSettings struct {
 	//
 	// The Subscription will automatically extend the ack deadline of all
 	// fetched Messages for the duration specified. Automatic deadline
-	// extension may be disabled by specifying a duration less than 1.
+	// extension may be disabled by specifying a duration less than 0.
+	//
+	// Connections may be terminated if they last longer than 30m, which
+	// effectively makes that the ceiling for this value. For longer message
+	// processing, see the example at https://godoc.org/cloud.google.com/go/pubsub/apiv1#example_SubscriberClient_Pull_lengthyClientProcessing
 	MaxExtension time.Duration
 
 	// MaxOutstandingMessages is the maximum number of unprocessed messages
@@ -484,13 +497,15 @@ func (s *Subscription) receive(ctx context.Context, po *pullOptions, fc *flowCon
 				}
 				return nil
 			}
+			old := msg.doneFunc
+			msgLen := len(msg.Data)
+			msg.doneFunc = func(ackID string, ack bool, receiveTime time.Time) {
+				defer fc.release(msgLen)
+				old(ackID, ack, receiveTime)
+			}
 			wg.Add(1)
 			go func() {
-				// TODO(jba): call release when the message is available for GC.
-				// This considers the message to be released when
-				// f is finished, but f may ack early or not at all.
 				defer wg.Done()
-				defer fc.release(len(msg.Data))
 				f(ctx2, msg)
 			}()
 		}
