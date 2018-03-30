@@ -2,14 +2,17 @@
     "language": "en-US",
     "messages": [
         {
-            "id": "Hello world!",
-            "message": "Hello world!",
-            "translation": "Hello world!"
+            "id": "Hello world!\n",
+            "key": "Hello world!\n",
+            "message": "Hello world!\n",
+            "translation": "",
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:28:10"
         },
         {
-            "id": "Hello {City}!",
-            "message": "Hello {City}!",
-            "translation": "Hello {City}n",
+            "id": "Hello {City}!\n",
+            "key": "Hello %s!\n",
+            "message": "Hello {City}!\n",
+            "translation": "",
             "placeholders": [
                 {
                     "id": "City",
@@ -19,12 +22,32 @@
                     "argNum": 1,
                     "expr": "city"
                 }
-            ]
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:32:10"
         },
         {
-            "id": "{Person} is visiting {Place}!",
-            "message": "{Person} is visiting {Place}!",
-            "translation": "{Person} is visiting {Place}!",
+            "id": "Hello {Town}!\n",
+            "key": "Hello %s!\n",
+            "message": "Hello {Town}!\n",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Town",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "town",
+                    "comment": "Town"
+                }
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:36:10"
+        },
+        {
+            "id": "{Person} is visiting {Place}!\n",
+            "key": "%s is visiting %s!\n",
+            "message": "{Person} is visiting {Place}!\n",
+            "translation": "",
             "placeholders": [
                 {
                     "id": "Person",
@@ -44,16 +67,52 @@
                     "expr": "place",
                     "comment": "Place the person is visiting."
                 }
-            ]
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:41:10"
         },
         {
-            "id": "{2} files remaining!",
-            "message": "{2} files remaining!",
-            "translation": "{2} files remaining!",
-            "translatorComment": "Copied from source.",
+            "id": "{Person} is visiting {Place}!\n",
+            "key": "%[1]s is visiting %[3]s!\n",
+            "message": "{Person} is visiting {Place}!\n",
+            "translation": "",
+            "comment": "Person visiting a place.",
             "placeholders": [
                 {
-                    "id": "2",
+                    "id": "Person",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "pp.Person"
+                },
+                {
+                    "id": "Place",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "pp.Place",
+                    "comment": "Place the person is visiting."
+                },
+                {
+                    "id": "Extra",
+                    "string": "%[2]v",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "pp.extra"
+                }
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:56:10"
+        },
+        {
+            "id": "{} files remaining!",
+            "key": "%d files remaining!",
+            "message": "{} files remaining!",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "",
                     "string": "%[1]d",
                     "type": "int",
                     "underlyingType": "int",
@@ -61,25 +120,13 @@
                     "expr": "2"
                 }
             ],
-            "fuzzy": true
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:63:10"
         },
         {
             "id": "{N} more files remaining!",
+            "key": "%d more files remaining!",
             "message": "{N} more files remaining!",
-            "translation": {
-                "select": {
-                    "feature": "plural",
-                    "arg": "N",
-                    "cases": {
-                        "one": {
-                            "msg": "One file remaining!"
-                        },
-                        "other": {
-                            "msg": "There are {N} more files remaining!"
-                        }
-                    }
-                }
-            },
+            "translation": "",
             "placeholders": [
                 {
                     "id": "N",
@@ -89,13 +136,14 @@
                     "argNum": 1,
                     "expr": "n"
                 }
-            ]
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:68:10"
         },
         {
-            "id": "Use the following code for your discount: {ReferralCode}",
-            "message": "Use the following code for your discount: {ReferralCode}",
-            "translation": "Use the following code for your discount: {ReferralCode}",
-            "translatorComment": "Copied from source.",
+            "id": "Use the following code for your discount: {ReferralCode}\n",
+            "key": "Use the following code for your discount: %d\n",
+            "message": "Use the following code for your discount: {ReferralCode}\n",
+            "translation": "",
             "placeholders": [
                 {
                     "id": "ReferralCode",
@@ -106,15 +154,16 @@
                     "expr": "c"
                 }
             ],
-            "fuzzy": true
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:74:10"
         },
         {
             "id": [
                 "msgOutOfOrder",
                 "{Device} is out of order!"
             ],
+            "key": "%s is out of order!",
             "message": "{Device} is out of order!",
-            "translation": "{Device} is out of order!",
+            "translation": "",
             "comment": "FOO\n",
             "placeholders": [
                 {
@@ -125,12 +174,14 @@
                     "argNum": 1,
                     "expr": "device"
                 }
-            ]
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:82:10"
         },
         {
             "id": "{Miles} miles traveled ({Miles_1})",
+            "key": "%.2[1]f miles traveled (%[1]f)",
             "message": "{Miles} miles traveled ({Miles_1})",
-            "translation": "{Miles} miles traveled ({Miles_1})",
+            "translation": "",
             "placeholders": [
                 {
                     "id": "Miles",
@@ -148,7 +199,8 @@
                     "argNum": 1,
                     "expr": "miles"
                 }
-            ]
+            ],
+            "position": "golang.org/x/text/cmd/gotext/examples/extract/main.go:86:10"
         }
     ]
 }
