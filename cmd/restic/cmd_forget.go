@@ -178,6 +178,8 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !policy.Empty() {
+		Verbosef("Applying Policy: %v\n", policy)
+
 		for k, snapshotGroup := range snapshotGroups {
 			var key key
 			if json.Unmarshal([]byte(k), &key) != nil {
