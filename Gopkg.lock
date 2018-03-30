@@ -185,7 +185,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","idna","lex/httplex"]
-  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
