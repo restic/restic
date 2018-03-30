@@ -113,7 +113,7 @@
   branch = "master"
   name = "github.com/ncw/swift"
   packages = ["."]
-  revision = "ae9f0ea1605b9aa6434ed5c731ca35d83ba67c55"
+  revision = "b2a7479cf26fa841ff90dd932d0221cb5c50782d"
 
 [[projects]]
   name = "github.com/pkg/errors"
