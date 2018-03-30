@@ -3,6 +3,8 @@ package fs
 import (
 	"os"
 	"testing"
+
+	"github.com/restic/restic/internal/test"
 )
 
 // IsRegularFile returns true if fi belongs to a normal file. If fi is nil,
@@ -17,6 +19,8 @@ func IsRegularFile(fi os.FileInfo) bool {
 
 // TestChdir changes the current directory to dest, the function back returns to the previous directory.
 func TestChdir(t testing.TB, dest string) (back func()) {
+	test.Helper(t).Helper()
+
 	prev, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +33,7 @@ func TestChdir(t testing.TB, dest string) (back func()) {
 	}
 
 	return func() {
+		test.Helper(t).Helper()
 		t.Logf("chdir back to %v", prev)
 		err = os.Chdir(prev)
 		if err != nil {
