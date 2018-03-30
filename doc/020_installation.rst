@@ -93,6 +93,15 @@ restic can be installed via copr repository.
     $ dnf copr enable copart/restic
     $ dnf install restic
 
+Solus
+=====
+
+restic can be installed from the official repo of Solus via the ``eopkg`` package manager:
+
+.. code-block:: console
+
+    $ eopkg install restic
+    
 OpenBSD
 =======
 
