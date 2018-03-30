@@ -48,7 +48,7 @@ func (t Tree) Equals(other *Tree) bool {
 func (t *Tree) Insert(node *Node) error {
 	pos, _, err := t.binarySearch(node.Name)
 	if err == nil {
-		return errors.New("node already present")
+		return errors.Errorf("node %q already present", node.Name)
 	}
 
 	// https://code.google.com/p/go-wiki/wiki/SliceTricks
