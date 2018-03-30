@@ -41,42 +41,30 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	filePath := "my-testfile" // Specify a local file that we will upload
+
 	// Open a local file that we will upload
-	file, err := os.Open("my-testfile")
+	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer file.Close()
 
-	//// Build an asymmetric key from private and public files
-	//
-	// privateKey, err := ioutil.ReadFile("private.key")
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	//
-	// publicKey, err := ioutil.ReadFile("public.key")
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	//
-	// asymmetricKey, err := NewAsymmetricKey(privateKey, publicKey)
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	////
-
-	// Build a symmetric key
-	symmetricKey := encrypt.NewSymmetricKey([]byte("my-secret-key-00"))
-
-	// Build encryption materials which will encrypt uploaded data
-	cbcMaterials, err := encrypt.NewCBCSecureMaterials(symmetricKey)
+	// Get file stats.
+	fstat, err := file.Stat()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	bucketname := "my-bucketname"              // Specify a bucket name - the bucket must already exist
+	objectName := "my-objectname"              // Specify a object name
+	password := "correct horse battery staple" // Specify your password. DO NOT USE THIS ONE - USE YOUR OWN.
+
+	// New SSE-C where the cryptographic key is derived from a password and the objectname + bucketname as salt
+	encryption := encrypt.DefaultPBKDF([]byte(password), []byte(bucketname+objectName))
+
 	// Encrypt file content and upload to the server
-	n, err := s3Client.PutEncryptedObject("my-bucketname", "my-objectname", file, cbcMaterials)
+	n, err := s3Client.PutObject(bucketname, objectName, file, fstat.Size(), minio.PutObjectOptions{ServerSideEncryption: encryption})
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -18,6 +18,8 @@
 package policy
 
 import (
+	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -80,6 +82,33 @@ var startsWithFunc = func(resource string, resourcePrefix string) bool {
 type User struct {
 	AWS           set.StringSet `json:"AWS,omitempty"`
 	CanonicalUser set.StringSet `json:"CanonicalUser,omitempty"`
+}
+
+// UnmarshalJSON is a custom json unmarshaler for Principal field,
+// the reason is that Principal can take a json struct represented by
+// User string but it can also take a string.
+func (u *User) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal data in a struct equal to User, we need it
+	// to avoid infinite recursive call of this function
+	type AliasUser User
+	var au AliasUser
+	err := json.Unmarshal(data, &au)
+	if err == nil {
+		*u = User(au)
+		return nil
+	}
+	// Data type is not known, check if it is a json string
+	// which contains a star, which is permitted in the spec
+	var str string
+	err = json.Unmarshal(data, &str)
+	if err == nil {
+		if str != "*" {
+			return errors.New("unrecognized Principal field")
+		}
+		*u = User{AWS: set.CreateStringSet("*")}
+		return nil
+	}
+	return err
 }
 
 // Statement - minio policy statement
@@ -564,14 +593,14 @@ func GetPolicy(statements []Statement, bucketName string, prefix string) BucketP
 	return policy
 }
 
-// GetPolicies - returns a map of policies rules of given bucket name, prefix in given statements.
-func GetPolicies(statements []Statement, bucketName string) map[string]BucketPolicy {
+// GetPolicies - returns a map of policies of given bucket name, prefix in given statements.
+func GetPolicies(statements []Statement, bucketName, prefix string) map[string]BucketPolicy {
 	policyRules := map[string]BucketPolicy{}
 	objResources := set.NewStringSet()
 	// Search all resources related to objects policy
 	for _, s := range statements {
 		for r := range s.Resources {
-			if strings.HasPrefix(r, awsResourcePrefix+bucketName+"/") {
+			if strings.HasPrefix(r, awsResourcePrefix+bucketName+"/"+prefix) {
 				objResources.Add(r)
 			}
 		}

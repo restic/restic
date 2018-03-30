@@ -312,6 +312,7 @@ func TestIsStandardHeader(t *testing.T) {
 		{"content-type", true},
 		{"cache-control", true},
 		{"content-disposition", true},
+		{"content-language", true},
 		{"random-header", false},
 	}
 
@@ -347,32 +348,6 @@ func TestIsSSEHeader(t *testing.T) {
 			t.Errorf("Test %d: Expected to pass, but failed", i+1)
 		}
 	}
-}
-
-// Tests if header is client encryption header
-func TestIsCSEHeader(t *testing.T) {
-	testCases := []struct {
-		// Input.
-		header string
-		// Expected result.
-		expectedValue bool
-	}{
-		{"x-amz-iv", true},
-		{"x-amz-key", true},
-		{"x-amz-matdesc", true},
-		{"x-amz-meta-x-amz-iv", true},
-		{"x-amz-meta-x-amz-key", true},
-		{"x-amz-meta-x-amz-matdesc", true},
-		{"random-header", false},
-	}
-
-	for i, testCase := range testCases {
-		actual := isCSEHeader(testCase.header)
-		if actual != testCase.expectedValue {
-			t.Errorf("Test %d: Expected to pass, but failed", i+1)
-		}
-	}
-
 }
 
 // Tests if header is x-amz-meta or x-amz-acl

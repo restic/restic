@@ -122,7 +122,7 @@ func TestGetBucketLocationRequest(t *testing.T) {
 			req.Header.Set("X-Amz-Content-Sha256", contentSha256)
 			req = s3signer.SignV4(*req, accessKeyID, secretAccessKey, sessionToken, "us-east-1")
 		case signerType.IsV2():
-			req = s3signer.SignV2(*req, accessKeyID, secretAccessKey)
+			req = s3signer.SignV2(*req, accessKeyID, secretAccessKey, false)
 		}
 
 		return req, nil

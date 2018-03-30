@@ -100,8 +100,8 @@
 [[projects]]
   name = "github.com/minio/minio-go"
   packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
-  revision = "14f1d472d115bac5ca4804094aa87484a72ced61"
-  version = "4.0.6"
+  revision = "66252c2a3c15f7b90cc8493d497a04ac3b6e3606"
+  version = "5.0.0"
 
 [[projects]]
   branch = "master"
@@ -178,7 +178,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
+  packages = ["argon2","blake2b","curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
   revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
