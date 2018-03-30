@@ -11,22 +11,19 @@ import (
 
 // StdioConn implements a net.Conn via stdin/stdout.
 type StdioConn struct {
-	stdin                   *os.File
-	stdout                  *os.File
-	bytesWritten, bytesRead int
-	cmd                     *exec.Cmd
-	close                   sync.Once
+	stdin  *os.File
+	stdout *os.File
+	cmd    *exec.Cmd
+	close  sync.Once
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {
 	n, err := s.stdin.Read(p)
-	s.bytesRead += n
 	return n, err
 }
 
 func (s *StdioConn) Write(p []byte) (int, error) {
 	n, err := s.stdout.Write(p)
-	s.bytesWritten += n
 	return n, err
 }
 
