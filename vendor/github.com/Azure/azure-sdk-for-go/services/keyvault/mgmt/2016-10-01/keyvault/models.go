@@ -18,6 +18,7 @@ package keyvault
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 import (
+	"encoding/json"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
@@ -25,6 +26,23 @@ import (
 	"github.com/satori/go.uuid"
 	"net/http"
 )
+
+// AccessPolicyUpdateKind enumerates the values for access policy update kind.
+type AccessPolicyUpdateKind string
+
+const (
+	// Add ...
+	Add AccessPolicyUpdateKind = "add"
+	// Remove ...
+	Remove AccessPolicyUpdateKind = "remove"
+	// Replace ...
+	Replace AccessPolicyUpdateKind = "replace"
+)
+
+// PossibleAccessPolicyUpdateKindValues returns an array of possible values for the AccessPolicyUpdateKind const type.
+func PossibleAccessPolicyUpdateKindValues() []AccessPolicyUpdateKind {
+	return []AccessPolicyUpdateKind{Add, Remove, Replace}
+}
 
 // CertificatePermissions enumerates the values for certificate permissions.
 type CertificatePermissions string
@@ -60,6 +78,11 @@ const (
 	Update CertificatePermissions = "update"
 )
 
+// PossibleCertificatePermissionsValues returns an array of possible values for the CertificatePermissions const type.
+func PossibleCertificatePermissionsValues() []CertificatePermissions {
+	return []CertificatePermissions{Create, Delete, Deleteissuers, Get, Getissuers, Import, List, Listissuers, Managecontacts, Manageissuers, Purge, Recover, Setissuers, Update}
+}
+
 // CreateMode enumerates the values for create mode.
 type CreateMode string
 
@@ -69,6 +92,11 @@ const (
 	// CreateModeRecover ...
 	CreateModeRecover CreateMode = "recover"
 )
+
+// PossibleCreateModeValues returns an array of possible values for the CreateMode const type.
+func PossibleCreateModeValues() []CreateMode {
+	return []CreateMode{CreateModeDefault, CreateModeRecover}
+}
 
 // KeyPermissions enumerates the values for key permissions.
 type KeyPermissions string
@@ -108,6 +136,26 @@ const (
 	KeyPermissionsWrapKey KeyPermissions = "wrapKey"
 )
 
+// PossibleKeyPermissionsValues returns an array of possible values for the KeyPermissions const type.
+func PossibleKeyPermissionsValues() []KeyPermissions {
+	return []KeyPermissions{KeyPermissionsBackup, KeyPermissionsCreate, KeyPermissionsDecrypt, KeyPermissionsDelete, KeyPermissionsEncrypt, KeyPermissionsGet, KeyPermissionsImport, KeyPermissionsList, KeyPermissionsPurge, KeyPermissionsRecover, KeyPermissionsRestore, KeyPermissionsSign, KeyPermissionsUnwrapKey, KeyPermissionsUpdate, KeyPermissionsVerify, KeyPermissionsWrapKey}
+}
+
+// Reason enumerates the values for reason.
+type Reason string
+
+const (
+	// AccountNameInvalid ...
+	AccountNameInvalid Reason = "AccountNameInvalid"
+	// AlreadyExists ...
+	AlreadyExists Reason = "AlreadyExists"
+)
+
+// PossibleReasonValues returns an array of possible values for the Reason const type.
+func PossibleReasonValues() []Reason {
+	return []Reason{AccountNameInvalid, AlreadyExists}
+}
+
 // SecretPermissions enumerates the values for secret permissions.
 type SecretPermissions string
 
@@ -130,6 +178,11 @@ const (
 	SecretPermissionsSet SecretPermissions = "set"
 )
 
+// PossibleSecretPermissionsValues returns an array of possible values for the SecretPermissions const type.
+func PossibleSecretPermissionsValues() []SecretPermissions {
+	return []SecretPermissions{SecretPermissionsBackup, SecretPermissionsDelete, SecretPermissionsGet, SecretPermissionsList, SecretPermissionsPurge, SecretPermissionsRecover, SecretPermissionsRestore, SecretPermissionsSet}
+}
+
 // SkuName enumerates the values for sku name.
 type SkuName string
 
@@ -140,10 +193,17 @@ const (
 	Standard SkuName = "standard"
 )
 
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{Premium, Standard}
+}
+
 // StoragePermissions enumerates the values for storage permissions.
 type StoragePermissions string
 
 const (
+	// StoragePermissionsBackup ...
+	StoragePermissionsBackup StoragePermissions = "backup"
 	// StoragePermissionsDelete ...
 	StoragePermissionsDelete StoragePermissions = "delete"
 	// StoragePermissionsDeletesas ...
@@ -156,8 +216,14 @@ const (
 	StoragePermissionsList StoragePermissions = "list"
 	// StoragePermissionsListsas ...
 	StoragePermissionsListsas StoragePermissions = "listsas"
+	// StoragePermissionsPurge ...
+	StoragePermissionsPurge StoragePermissions = "purge"
+	// StoragePermissionsRecover ...
+	StoragePermissionsRecover StoragePermissions = "recover"
 	// StoragePermissionsRegeneratekey ...
 	StoragePermissionsRegeneratekey StoragePermissions = "regeneratekey"
+	// StoragePermissionsRestore ...
+	StoragePermissionsRestore StoragePermissions = "restore"
 	// StoragePermissionsSet ...
 	StoragePermissionsSet StoragePermissions = "set"
 	// StoragePermissionsSetsas ...
@@ -165,6 +231,11 @@ const (
 	// StoragePermissionsUpdate ...
 	StoragePermissionsUpdate StoragePermissions = "update"
 )
+
+// PossibleStoragePermissionsValues returns an array of possible values for the StoragePermissions const type.
+func PossibleStoragePermissionsValues() []StoragePermissions {
+	return []StoragePermissions{StoragePermissionsBackup, StoragePermissionsDelete, StoragePermissionsDeletesas, StoragePermissionsGet, StoragePermissionsGetsas, StoragePermissionsList, StoragePermissionsListsas, StoragePermissionsPurge, StoragePermissionsRecover, StoragePermissionsRegeneratekey, StoragePermissionsRestore, StoragePermissionsSet, StoragePermissionsSetsas, StoragePermissionsUpdate}
+}
 
 // AccessPolicyEntry an identity that have access to the key vault. All identities in the array must use the same
 // tenant ID as the key vault's tenant ID.
@@ -177,6 +248,17 @@ type AccessPolicyEntry struct {
 	ApplicationID *uuid.UUID `json:"applicationId,omitempty"`
 	// Permissions - Permissions the identity has for keys, secrets and certificates.
 	Permissions *Permissions `json:"permissions,omitempty"`
+}
+
+// CheckNameAvailabilityResult the CheckNameAvailability operation response.
+type CheckNameAvailabilityResult struct {
+	autorest.Response `json:"-"`
+	// NameAvailable - A boolean value that indicates whether the name is available for you to use. If true, the name is available. If false, the name has already been taken or is invalid and cannot be used.
+	NameAvailable *bool `json:"nameAvailable,omitempty"`
+	// Reason - The reason that a vault name could not be used. The Reason element is only returned if NameAvailable is false. Possible values include: 'AccountNameInvalid', 'AlreadyExists'
+	Reason Reason `json:"reason,omitempty"`
+	// Message - An error message explaining the Reason value in more detail.
+	Message *string `json:"message,omitempty"`
 }
 
 // DeletedVault deleted vault information with extended details.
@@ -305,7 +387,240 @@ type DeletedVaultProperties struct {
 	// ScheduledPurgeDate - The scheduled purged date.
 	ScheduledPurgeDate *date.Time `json:"scheduledPurgeDate,omitempty"`
 	// Tags - Tags of the original vault.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for DeletedVaultProperties.
+func (dvp DeletedVaultProperties) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dvp.VaultID != nil {
+		objectMap["vaultId"] = dvp.VaultID
+	}
+	if dvp.Location != nil {
+		objectMap["location"] = dvp.Location
+	}
+	if dvp.DeletionDate != nil {
+		objectMap["deletionDate"] = dvp.DeletionDate
+	}
+	if dvp.ScheduledPurgeDate != nil {
+		objectMap["scheduledPurgeDate"] = dvp.ScheduledPurgeDate
+	}
+	if dvp.Tags != nil {
+		objectMap["tags"] = dvp.Tags
+	}
+	return json.Marshal(objectMap)
+}
+
+// LogSpecification log specification of operation.
+type LogSpecification struct {
+	// Name - Name of log specification.
+	Name *string `json:"name,omitempty"`
+	// DisplayName - Display name of log specification.
+	DisplayName *string `json:"displayName,omitempty"`
+	// BlobDuration - Blob duration of specification.
+	BlobDuration *string `json:"blobDuration,omitempty"`
+}
+
+// Operation key Vault REST API operation definition.
+type Operation struct {
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - Display metadata associated with the operation.
+	Display *OperationDisplay `json:"display,omitempty"`
+	// Origin - The origin of operations.
+	Origin *string `json:"origin,omitempty"`
+	// OperationProperties - Properties of operation, include metric specifications.
+	*OperationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Operation.
+func (o Operation) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if o.Name != nil {
+		objectMap["name"] = o.Name
+	}
+	if o.Display != nil {
+		objectMap["display"] = o.Display
+	}
+	if o.Origin != nil {
+		objectMap["origin"] = o.Origin
+	}
+	if o.OperationProperties != nil {
+		objectMap["properties"] = o.OperationProperties
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for Operation struct.
+func (o *Operation) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				o.Name = &name
+			}
+		case "display":
+			if v != nil {
+				var display OperationDisplay
+				err = json.Unmarshal(*v, &display)
+				if err != nil {
+					return err
+				}
+				o.Display = &display
+			}
+		case "origin":
+			if v != nil {
+				var origin string
+				err = json.Unmarshal(*v, &origin)
+				if err != nil {
+					return err
+				}
+				o.Origin = &origin
+			}
+		case "properties":
+			if v != nil {
+				var operationProperties OperationProperties
+				err = json.Unmarshal(*v, &operationProperties)
+				if err != nil {
+					return err
+				}
+				o.OperationProperties = &operationProperties
+			}
+		}
+	}
+
+	return nil
+}
+
+// OperationDisplay display metadata associated with the operation.
+type OperationDisplay struct {
+	// Provider - Service provider: Microsoft Key Vault.
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Type of operation: get, read, delete, etc.
+	Operation *string `json:"operation,omitempty"`
+	// Description - Decription of operation.
+	Description *string `json:"description,omitempty"`
+}
+
+// OperationListResult result of the request to list Storage operations. It contains a list of operations and a URL
+// link to get the next set of results.
+type OperationListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of Storage operations supported by the Storage resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of operations.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// OperationListResultIterator provides access to a complete listing of Operation values.
+type OperationListResultIterator struct {
+	i    int
+	page OperationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *OperationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter OperationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter OperationListResultIterator) Response() OperationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter OperationListResultIterator) Value() Operation {
+	if !iter.page.NotDone() {
+		return Operation{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (olr OperationListResult) IsEmpty() bool {
+	return olr.Value == nil || len(*olr.Value) == 0
+}
+
+// operationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (olr OperationListResult) operationListResultPreparer() (*http.Request, error) {
+	if olr.NextLink == nil || len(to.String(olr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(olr.NextLink)))
+}
+
+// OperationListResultPage contains a page of Operation values.
+type OperationListResultPage struct {
+	fn  func(OperationListResult) (OperationListResult, error)
+	olr OperationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *OperationListResultPage) Next() error {
+	next, err := page.fn(page.olr)
+	if err != nil {
+		return err
+	}
+	page.olr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page OperationListResultPage) NotDone() bool {
+	return !page.olr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page OperationListResultPage) Response() OperationListResult {
+	return page.olr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page OperationListResultPage) Values() []Operation {
+	if page.olr.IsEmpty() {
+		return nil
+	}
+	return *page.olr.Value
+}
+
+// OperationProperties properties of operation, include metric specifications.
+type OperationProperties struct {
+	// ServiceSpecification - One property of operation, include metric specifications.
+	ServiceSpecification *ServiceSpecification `json:"serviceSpecification,omitempty"`
 }
 
 // Permissions permissions the identity has for keys, secrets, certificates and storage.
@@ -331,15 +646,36 @@ type Resource struct {
 	// Location - The supported Azure location where the key vault should be created.
 	Location *string `json:"location,omitempty"`
 	// Tags - The tags that will be assigned to the key vault.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // ResourceListResult list of vault resources.
 type ResourceListResult struct {
 	autorest.Response `json:"-"`
-	// Value - Gets the list of vault resources.
+	// Value - The list of vault resources.
 	Value *[]Resource `json:"value,omitempty"`
-	// NextLink - Gets the URL to get the next set of vault resources.
+	// NextLink - The URL to get the next set of vault resources.
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
@@ -436,6 +772,12 @@ func (page ResourceListResultPage) Values() []Resource {
 	return *page.rlr.Value
 }
 
+// ServiceSpecification one property of operation, include log specifications.
+type ServiceSpecification struct {
+	// LogSpecifications - Log specifications of operation.
+	LogSpecifications *[]LogSpecification `json:"logSpecifications,omitempty"`
+}
+
 // Sku SKU details
 type Sku struct {
 	// Family - SKU family name
@@ -447,6 +789,8 @@ type Sku struct {
 // Vault resource information with extended details.
 type Vault struct {
 	autorest.Response `json:"-"`
+	// Properties - Properties of the vault
+	Properties *VaultProperties `json:"properties,omitempty"`
 	// ID - The Azure Resource Manager resource ID for the key vault.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the key vault.
@@ -456,9 +800,60 @@ type Vault struct {
 	// Location - The supported Azure location where the key vault should be created.
 	Location *string `json:"location,omitempty"`
 	// Tags - The tags that will be assigned to the key vault.
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Properties - Properties of the vault
-	Properties *VaultProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Vault.
+func (vVar Vault) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vVar.Properties != nil {
+		objectMap["properties"] = vVar.Properties
+	}
+	if vVar.ID != nil {
+		objectMap["id"] = vVar.ID
+	}
+	if vVar.Name != nil {
+		objectMap["name"] = vVar.Name
+	}
+	if vVar.Type != nil {
+		objectMap["type"] = vVar.Type
+	}
+	if vVar.Location != nil {
+		objectMap["location"] = vVar.Location
+	}
+	if vVar.Tags != nil {
+		objectMap["tags"] = vVar.Tags
+	}
+	return json.Marshal(objectMap)
+}
+
+// VaultAccessPolicyParameters parameters for updating the access policy in a vault
+type VaultAccessPolicyParameters struct {
+	autorest.Response `json:"-"`
+	// ID - The resource id of the access policy.
+	ID *string `json:"id,omitempty"`
+	// Name - The resource name of the access policy.
+	Name *string `json:"name,omitempty"`
+	// Type - The resource name of the access policy.
+	Type *string `json:"type,omitempty"`
+	// Location - The resource type of the the access policy.
+	Location *string `json:"location,omitempty"`
+	// Properties - Properties of the access policy
+	Properties *VaultAccessPolicyProperties `json:"properties,omitempty"`
+}
+
+// VaultAccessPolicyProperties properties of the vault access policy
+type VaultAccessPolicyProperties struct {
+	// AccessPolicies - An array of 0 to 16 identities that have access to the key vault. All identities in the array must use the same tenant ID as the key vault's tenant ID.
+	AccessPolicies *[]AccessPolicyEntry `json:"accessPolicies,omitempty"`
+}
+
+// VaultCheckNameAvailabilityParameters the parameters used to check the availabity of the vault name.
+type VaultCheckNameAvailabilityParameters struct {
+	// Name - The vault name.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of resource, Microsoft.KeyVault/vaults
+	Type *string `json:"type,omitempty"`
 }
 
 // VaultCreateOrUpdateParameters parameters for creating or updating a vault
@@ -466,17 +861,32 @@ type VaultCreateOrUpdateParameters struct {
 	// Location - The supported Azure location where the key vault should be created.
 	Location *string `json:"location,omitempty"`
 	// Tags - The tags that will be assigned to the key vault.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Properties - Properties of the vault
 	Properties *VaultProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VaultCreateOrUpdateParameters.
+func (vcoup VaultCreateOrUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vcoup.Location != nil {
+		objectMap["location"] = vcoup.Location
+	}
+	if vcoup.Tags != nil {
+		objectMap["tags"] = vcoup.Tags
+	}
+	if vcoup.Properties != nil {
+		objectMap["properties"] = vcoup.Properties
+	}
+	return json.Marshal(objectMap)
 }
 
 // VaultListResult list of vaults
 type VaultListResult struct {
 	autorest.Response `json:"-"`
-	// Value - Gets or sets the list of vaults.
+	// Value - The list of vaults.
 	Value *[]Vault `json:"value,omitempty"`
-	// NextLink - Gets or sets the URL to get the next set of vaults.
+	// NextLink - The URL to get the next set of vaults.
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
@@ -573,6 +983,48 @@ func (page VaultListResultPage) Values() []Vault {
 	return *page.vlr.Value
 }
 
+// VaultPatchParameters parameters for creating or updating a vault
+type VaultPatchParameters struct {
+	// Tags - The tags that will be assigned to the key vault.
+	Tags map[string]*string `json:"tags"`
+	// Properties - Properties of the vault
+	Properties *VaultPatchProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VaultPatchParameters.
+func (vpp VaultPatchParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vpp.Tags != nil {
+		objectMap["tags"] = vpp.Tags
+	}
+	if vpp.Properties != nil {
+		objectMap["properties"] = vpp.Properties
+	}
+	return json.Marshal(objectMap)
+}
+
+// VaultPatchProperties properties of the vault
+type VaultPatchProperties struct {
+	// TenantID - The Azure Active Directory tenant ID that should be used for authenticating requests to the key vault.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// Sku - SKU details
+	Sku *Sku `json:"sku,omitempty"`
+	// AccessPolicies - An array of 0 to 16 identities that have access to the key vault. All identities in the array must use the same tenant ID as the key vault's tenant ID.
+	AccessPolicies *[]AccessPolicyEntry `json:"accessPolicies,omitempty"`
+	// EnabledForDeployment - Property to specify whether Azure Virtual Machines are permitted to retrieve certificates stored as secrets from the key vault.
+	EnabledForDeployment *bool `json:"enabledForDeployment,omitempty"`
+	// EnabledForDiskEncryption - Property to specify whether Azure Disk Encryption is permitted to retrieve secrets from the vault and unwrap keys.
+	EnabledForDiskEncryption *bool `json:"enabledForDiskEncryption,omitempty"`
+	// EnabledForTemplateDeployment - Property to specify whether Azure Resource Manager is permitted to retrieve secrets from the key vault.
+	EnabledForTemplateDeployment *bool `json:"enabledForTemplateDeployment,omitempty"`
+	// EnableSoftDelete - Property specifying whether recoverable deletion ('soft' delete) is enabled for this key vault. The property may not be set to false.
+	EnableSoftDelete *bool `json:"enableSoftDelete,omitempty"`
+	// CreateMode - The vault's create mode to indicate whether the vault need to be recovered or not. Possible values include: 'CreateModeRecover', 'CreateModeDefault'
+	CreateMode CreateMode `json:"createMode,omitempty"`
+	// EnablePurgeProtection - Property specifying whether protection against purge is enabled for this vault; it is only effective if soft delete is also enabled. Once activated, the property may no longer be reset to false.
+	EnablePurgeProtection *bool `json:"enablePurgeProtection,omitempty"`
+}
+
 // VaultProperties properties of the vault
 type VaultProperties struct {
 	// TenantID - The Azure Active Directory tenant ID that should be used for authenticating requests to the key vault.
@@ -589,10 +1041,12 @@ type VaultProperties struct {
 	EnabledForDiskEncryption *bool `json:"enabledForDiskEncryption,omitempty"`
 	// EnabledForTemplateDeployment - Property to specify whether Azure Resource Manager is permitted to retrieve secrets from the key vault.
 	EnabledForTemplateDeployment *bool `json:"enabledForTemplateDeployment,omitempty"`
-	// EnableSoftDelete - Property to specify whether the 'soft delete' functionality is enabled for this key vault. It does not accept false value.
+	// EnableSoftDelete - Property specifying whether recoverable deletion is enabled for this key vault. Setting this property to true activates the soft delete feature, whereby vaults or vault entities can be recovered after deletion. Enabling this functionality is irreversible - that is, the property does not accept false as its value.
 	EnableSoftDelete *bool `json:"enableSoftDelete,omitempty"`
 	// CreateMode - The vault's create mode to indicate whether the vault need to be recovered or not. Possible values include: 'CreateModeRecover', 'CreateModeDefault'
 	CreateMode CreateMode `json:"createMode,omitempty"`
+	// EnablePurgeProtection - Property specifying whether protection against purge is enabled for this vault. Setting this property to true activates protection against purge for this vault and its content - only the Key Vault service may initiate a hard, irrecoverable deletion. The setting is effective only if soft delete is also enabled. Enabling this functionality is irreversible - that is, the property does not accept false as its value.
+	EnablePurgeProtection *bool `json:"enablePurgeProtection,omitempty"`
 }
 
 // VaultsPurgeDeletedFuture an abstraction for monitoring and retrieving the results of a long-running operation.
@@ -607,21 +1061,38 @@ func (future VaultsPurgeDeletedFuture) Result(client VaultsClient) (ar autorest.
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsPurgeDeletedFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("keyvault.VaultsPurgeDeletedFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("keyvault.VaultsPurgeDeletedFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.PurgeDeletedResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "keyvault.VaultsPurgeDeletedFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsPurgeDeletedFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.PurgeDeletedResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "keyvault.VaultsPurgeDeletedFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }

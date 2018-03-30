@@ -36,6 +36,11 @@ const (
 	Unknown AvailabilityStateValues = "Unknown"
 )
 
+// PossibleAvailabilityStateValuesValues returns an array of possible values for the AvailabilityStateValues const type.
+func PossibleAvailabilityStateValuesValues() []AvailabilityStateValues {
+	return []AvailabilityStateValues{Available, Unavailable, Unknown}
+}
+
 // ReasonChronicityTypes enumerates the values for reason chronicity types.
 type ReasonChronicityTypes string
 
@@ -45,6 +50,11 @@ const (
 	// Transient ...
 	Transient ReasonChronicityTypes = "Transient"
 )
+
+// PossibleReasonChronicityTypesValues returns an array of possible values for the ReasonChronicityTypes const type.
+func PossibleReasonChronicityTypesValues() []ReasonChronicityTypes {
+	return []ReasonChronicityTypes{Persistent, Transient}
+}
 
 // AvailabilityStatus availabilityStatus of a resource.
 type AvailabilityStatus struct {

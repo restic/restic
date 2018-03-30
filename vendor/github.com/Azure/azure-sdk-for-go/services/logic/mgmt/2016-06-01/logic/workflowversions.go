@@ -109,8 +109,8 @@ func (client WorkflowVersionsClient) GetResponder(resp *http.Response) (result W
 
 // List gets a list of workflow versions.
 //
-// resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to be
-// included in the result.
+// resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to
+// be included in the result.
 func (client WorkflowVersionsClient) List(ctx context.Context, resourceGroupName string, workflowName string, top *int32) (result WorkflowVersionListResultPage, err error) {
 	result.fn = client.listNextResults
 	req, err := client.ListPreparer(ctx, resourceGroupName, workflowName, top)
@@ -247,7 +247,7 @@ func (client WorkflowVersionsClient) ListCallbackURLPreparer(ctx context.Context
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/versions/{versionId}/triggers/{triggerName}/listCallbackUrl", pathParameters),

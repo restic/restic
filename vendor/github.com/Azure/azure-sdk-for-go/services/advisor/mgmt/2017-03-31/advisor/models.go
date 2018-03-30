@@ -40,6 +40,11 @@ const (
 	Security Category = "Security"
 )
 
+// PossibleCategoryValues returns an array of possible values for the Category const type.
+func PossibleCategoryValues() []Category {
+	return []Category{Cost, HighAvailability, Performance, Security}
+}
+
 // Impact enumerates the values for impact.
 type Impact string
 
@@ -52,6 +57,11 @@ const (
 	Medium Impact = "Medium"
 )
 
+// PossibleImpactValues returns an array of possible values for the Impact const type.
+func PossibleImpactValues() []Impact {
+	return []Impact{High, Low, Medium}
+}
+
 // Risk enumerates the values for risk.
 type Risk string
 
@@ -63,6 +73,11 @@ const (
 	// Warning ...
 	Warning Risk = "Warning"
 )
+
+// PossibleRiskValues returns an array of possible values for the Risk const type.
+func PossibleRiskValues() []Risk {
+	return []Risk{Error, None, Warning}
+}
 
 // ListSuppressionContract ...
 type ListSuppressionContract struct {
@@ -205,7 +220,7 @@ type RecommendationProperties struct {
 	// LastUpdated - The most recent time that Advisor checked the validity of the recommendation.
 	LastUpdated *date.Time `json:"lastUpdated,omitempty"`
 	// Metadata - The recommendation metadata.
-	Metadata *map[string]*map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]interface{} `json:"metadata"`
 	// RecommendationTypeID - The recommendation-type GUID.
 	RecommendationTypeID *string `json:"recommendationTypeId,omitempty"`
 	// Risk - The potential risk of not implementing the recommendation. Possible values include: 'Error', 'Warning', 'None'
@@ -214,6 +229,42 @@ type RecommendationProperties struct {
 	ShortDescription *ShortDescription `json:"shortDescription,omitempty"`
 	// SuppressionIds - The list of snoozed and dismissed rules for the recommendation.
 	SuppressionIds *[]uuid.UUID `json:"suppressionIds,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for RecommendationProperties.
+func (rp RecommendationProperties) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rp.Category != "" {
+		objectMap["category"] = rp.Category
+	}
+	if rp.Impact != "" {
+		objectMap["impact"] = rp.Impact
+	}
+	if rp.ImpactedField != nil {
+		objectMap["impactedField"] = rp.ImpactedField
+	}
+	if rp.ImpactedValue != nil {
+		objectMap["impactedValue"] = rp.ImpactedValue
+	}
+	if rp.LastUpdated != nil {
+		objectMap["lastUpdated"] = rp.LastUpdated
+	}
+	if rp.Metadata != nil {
+		objectMap["metadata"] = rp.Metadata
+	}
+	if rp.RecommendationTypeID != nil {
+		objectMap["recommendationTypeId"] = rp.RecommendationTypeID
+	}
+	if rp.Risk != "" {
+		objectMap["risk"] = rp.Risk
+	}
+	if rp.ShortDescription != nil {
+		objectMap["shortDescription"] = rp.ShortDescription
+	}
+	if rp.SuppressionIds != nil {
+		objectMap["suppressionIds"] = rp.SuppressionIds
+	}
+	return json.Marshal(objectMap)
 }
 
 // Resource an Azure resource.
@@ -229,14 +280,32 @@ type Resource struct {
 // ResourceRecommendationBase advisor Recommendation.
 type ResourceRecommendationBase struct {
 	autorest.Response `json:"-"`
+	// RecommendationProperties - The properties of the recommendation.
+	*RecommendationProperties `json:"properties,omitempty"`
 	// ID - The resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource.
 	Type *string `json:"type,omitempty"`
-	// RecommendationProperties - The properties of the recommendation.
-	*RecommendationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ResourceRecommendationBase.
+func (rrb ResourceRecommendationBase) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rrb.RecommendationProperties != nil {
+		objectMap["properties"] = rrb.RecommendationProperties
+	}
+	if rrb.ID != nil {
+		objectMap["id"] = rrb.ID
+	}
+	if rrb.Name != nil {
+		objectMap["name"] = rrb.Name
+	}
+	if rrb.Type != nil {
+		objectMap["type"] = rrb.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ResourceRecommendationBase struct.
@@ -246,46 +315,45 @@ func (rrb *ResourceRecommendationBase) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties RecommendationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var recommendationProperties RecommendationProperties
+				err = json.Unmarshal(*v, &recommendationProperties)
+				if err != nil {
+					return err
+				}
+				rrb.RecommendationProperties = &recommendationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				rrb.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				rrb.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				rrb.Type = &typeVar
+			}
 		}
-		rrb.RecommendationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		rrb.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		rrb.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		rrb.Type = &typeVar
 	}
 
 	return nil
@@ -406,14 +474,32 @@ type ShortDescription struct {
 // associated with the rule.
 type SuppressionContract struct {
 	autorest.Response `json:"-"`
+	// SuppressionProperties - The properties of the suppression.
+	*SuppressionProperties `json:"properties,omitempty"`
 	// ID - The resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource.
 	Type *string `json:"type,omitempty"`
-	// SuppressionProperties - The properties of the suppression.
-	*SuppressionProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SuppressionContract.
+func (sc SuppressionContract) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if sc.SuppressionProperties != nil {
+		objectMap["properties"] = sc.SuppressionProperties
+	}
+	if sc.ID != nil {
+		objectMap["id"] = sc.ID
+	}
+	if sc.Name != nil {
+		objectMap["name"] = sc.Name
+	}
+	if sc.Type != nil {
+		objectMap["type"] = sc.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SuppressionContract struct.
@@ -423,46 +509,45 @@ func (sc *SuppressionContract) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SuppressionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var suppressionProperties SuppressionProperties
+				err = json.Unmarshal(*v, &suppressionProperties)
+				if err != nil {
+					return err
+				}
+				sc.SuppressionProperties = &suppressionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				sc.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				sc.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sc.Type = &typeVar
+			}
 		}
-		sc.SuppressionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		sc.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		sc.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sc.Type = &typeVar
 	}
 
 	return nil

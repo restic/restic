@@ -31,13 +31,13 @@ type AccountsClient struct {
 }
 
 // NewAccountsClient creates an instance of the AccountsClient client.
-func NewAccountsClient(subscriptionID string) AccountsClient {
-	return NewAccountsClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewAccountsClient(subscriptionID string, filter string) AccountsClient {
+	return NewAccountsClientWithBaseURI(DefaultBaseURI, subscriptionID, filter)
 }
 
 // NewAccountsClientWithBaseURI creates an instance of the AccountsClient client.
-func NewAccountsClientWithBaseURI(baseURI string, subscriptionID string) AccountsClient {
-	return AccountsClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewAccountsClientWithBaseURI(baseURI string, subscriptionID string, filter string) AccountsClient {
+	return AccountsClient{NewWithBaseURI(baseURI, subscriptionID, filter)}
 }
 
 // Create create Cognitive Services Account. Accounts is a resource group wide resource type. It holds the keys for
@@ -55,7 +55,7 @@ func (client AccountsClient) Create(ctx context.Context, resourceGroupName strin
 			Constraints: []validation.Constraint{{Target: "parameters.Sku", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.Location", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.Properties", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "Create")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "Create", err.Error())
 	}
 
 	req, err := client.CreatePreparer(ctx, resourceGroupName, accountName, parameters)
@@ -93,7 +93,7 @@ func (client AccountsClient) CreatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CognitiveServices/accounts/{accountName}", pathParameters),
@@ -132,7 +132,7 @@ func (client AccountsClient) Delete(ctx context.Context, resourceGroupName strin
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "Delete")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "Delete", err.Error())
 	}
 
 	req, err := client.DeletePreparer(ctx, resourceGroupName, accountName)
@@ -206,7 +206,7 @@ func (client AccountsClient) GetProperties(ctx context.Context, resourceGroupNam
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "GetProperties")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "GetProperties", err.Error())
 	}
 
 	req, err := client.GetPropertiesPreparer(ctx, resourceGroupName, accountName)
@@ -261,6 +261,84 @@ func (client AccountsClient) GetPropertiesSender(req *http.Request) (*http.Respo
 // GetPropertiesResponder handles the response to the GetProperties request. The method always
 // closes the http.Response Body.
 func (client AccountsClient) GetPropertiesResponder(resp *http.Response) (result Account, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// GetUsages get usages for the requested Cognitive Services account
+//
+// resourceGroupName is the name of the resource group within the user's subscription. accountName is the name of
+// Cognitive Services account.
+func (client AccountsClient) GetUsages(ctx context.Context, resourceGroupName string, accountName string) (result UsagesResult, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: accountName,
+			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
+				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
+				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
+		return result, validation.NewError("cognitiveservices.AccountsClient", "GetUsages", err.Error())
+	}
+
+	req, err := client.GetUsagesPreparer(ctx, resourceGroupName, accountName)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "cognitiveservices.AccountsClient", "GetUsages", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.GetUsagesSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "cognitiveservices.AccountsClient", "GetUsages", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.GetUsagesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "cognitiveservices.AccountsClient", "GetUsages", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// GetUsagesPreparer prepares the GetUsages request.
+func (client AccountsClient) GetUsagesPreparer(ctx context.Context, resourceGroupName string, accountName string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"accountName":       autorest.Encode("path", accountName),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-18"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+	if len(client.Filter) > 0 {
+		queryParameters["$filter"] = autorest.Encode("query", client.Filter)
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CognitiveServices/accounts/{accountName}/usages", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// GetUsagesSender sends the GetUsages request. The method will close the
+// http.Response Body if it receives an error.
+func (client AccountsClient) GetUsagesSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// GetUsagesResponder handles the response to the GetUsages request. The method always
+// closes the http.Response Body.
+func (client AccountsClient) GetUsagesResponder(resp *http.Response) (result UsagesResult, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -464,7 +542,7 @@ func (client AccountsClient) ListKeys(ctx context.Context, resourceGroupName str
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "ListKeys")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "ListKeys", err.Error())
 	}
 
 	req, err := client.ListKeysPreparer(ctx, resourceGroupName, accountName)
@@ -539,7 +617,7 @@ func (client AccountsClient) ListSkus(ctx context.Context, resourceGroupName str
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "ListSkus")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "ListSkus", err.Error())
 	}
 
 	req, err := client.ListSkusPreparer(ctx, resourceGroupName, accountName)
@@ -614,7 +692,7 @@ func (client AccountsClient) RegenerateKey(ctx context.Context, resourceGroupNam
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "RegenerateKey")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "RegenerateKey", err.Error())
 	}
 
 	req, err := client.RegenerateKeyPreparer(ctx, resourceGroupName, accountName, parameters)
@@ -652,7 +730,7 @@ func (client AccountsClient) RegenerateKeyPreparer(ctx context.Context, resource
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CognitiveServices/accounts/{accountName}/regenerateKey", pathParameters),
@@ -691,7 +769,7 @@ func (client AccountsClient) Update(ctx context.Context, resourceGroupName strin
 			Constraints: []validation.Constraint{{Target: "accountName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "accountName", Name: validation.MinLength, Rule: 2, Chain: nil},
 				{Target: "accountName", Name: validation.Pattern, Rule: `^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.AccountsClient", "Update")
+		return result, validation.NewError("cognitiveservices.AccountsClient", "Update", err.Error())
 	}
 
 	req, err := client.UpdatePreparer(ctx, resourceGroupName, accountName, parameters)
@@ -729,7 +807,7 @@ func (client AccountsClient) UpdatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CognitiveServices/accounts/{accountName}", pathParameters),

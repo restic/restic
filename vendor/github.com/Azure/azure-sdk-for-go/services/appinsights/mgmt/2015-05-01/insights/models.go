@@ -35,6 +35,53 @@ const (
 	Web ApplicationType = "web"
 )
 
+// PossibleApplicationTypeValues returns an array of possible values for the ApplicationType const type.
+func PossibleApplicationTypeValues() []ApplicationType {
+	return []ApplicationType{Other, Web}
+}
+
+// FavoriteSourceType enumerates the values for favorite source type.
+type FavoriteSourceType string
+
+const (
+	// Events ...
+	Events FavoriteSourceType = "events"
+	// Funnel ...
+	Funnel FavoriteSourceType = "funnel"
+	// Impact ...
+	Impact FavoriteSourceType = "impact"
+	// Notebook ...
+	Notebook FavoriteSourceType = "notebook"
+	// Retention ...
+	Retention FavoriteSourceType = "retention"
+	// Segmentation ...
+	Segmentation FavoriteSourceType = "segmentation"
+	// Sessions ...
+	Sessions FavoriteSourceType = "sessions"
+	// Userflows ...
+	Userflows FavoriteSourceType = "userflows"
+)
+
+// PossibleFavoriteSourceTypeValues returns an array of possible values for the FavoriteSourceType const type.
+func PossibleFavoriteSourceTypeValues() []FavoriteSourceType {
+	return []FavoriteSourceType{Events, Funnel, Impact, Notebook, Retention, Segmentation, Sessions, Userflows}
+}
+
+// FavoriteType enumerates the values for favorite type.
+type FavoriteType string
+
+const (
+	// Shared ...
+	Shared FavoriteType = "shared"
+	// User ...
+	User FavoriteType = "user"
+)
+
+// PossibleFavoriteTypeValues returns an array of possible values for the FavoriteType const type.
+func PossibleFavoriteTypeValues() []FavoriteType {
+	return []FavoriteType{Shared, User}
+}
+
 // FlowType enumerates the values for flow type.
 type FlowType string
 
@@ -43,6 +90,26 @@ const (
 	Bluefield FlowType = "Bluefield"
 )
 
+// PossibleFlowTypeValues returns an array of possible values for the FlowType const type.
+func PossibleFlowTypeValues() []FlowType {
+	return []FlowType{Bluefield}
+}
+
+// PurgeState enumerates the values for purge state.
+type PurgeState string
+
+const (
+	// Completed ...
+	Completed PurgeState = "Completed"
+	// Pending ...
+	Pending PurgeState = "Pending"
+)
+
+// PossiblePurgeStateValues returns an array of possible values for the PurgeState const type.
+func PossiblePurgeStateValues() []PurgeState {
+	return []PurgeState{Completed, Pending}
+}
+
 // RequestSource enumerates the values for request source.
 type RequestSource string
 
@@ -50,6 +117,11 @@ const (
 	// Rest ...
 	Rest RequestSource = "rest"
 )
+
+// PossibleRequestSourceValues returns an array of possible values for the RequestSource const type.
+func PossibleRequestSourceValues() []RequestSource {
+	return []RequestSource{Rest}
+}
 
 // WebTestKind enumerates the values for web test kind.
 type WebTestKind string
@@ -60,6 +132,36 @@ const (
 	// Ping ...
 	Ping WebTestKind = "ping"
 )
+
+// PossibleWebTestKindValues returns an array of possible values for the WebTestKind const type.
+func PossibleWebTestKindValues() []WebTestKind {
+	return []WebTestKind{Multistep, Ping}
+}
+
+// Annotation annotation associated with an application insights resource.
+type Annotation struct {
+	// AnnotationName - Name of annotation
+	AnnotationName *string `json:"AnnotationName,omitempty"`
+	// Category - Category of annotation, free form
+	Category *string `json:"Category,omitempty"`
+	// EventTime - Time when event occurred
+	EventTime *date.Time `json:"EventTime,omitempty"`
+	// ID - Unique Id for annotation
+	ID *string `json:"Id,omitempty"`
+	// Properties - Serialized JSON object for detailed properties
+	Properties *string `json:"Properties,omitempty"`
+	// RelatedAnnotation - Related parent annotation if any
+	RelatedAnnotation *string `json:"RelatedAnnotation,omitempty"`
+}
+
+// AnnotationError error associated with trying to create annotation with Id that already exist
+type AnnotationError struct {
+	// Code - Error detail code and explanation
+	Code *string `json:"code,omitempty"`
+	// Message - Error message
+	Message    *string     `json:"message,omitempty"`
+	Innererror *InnerError `json:"innererror,omitempty"`
+}
 
 // APIKeyRequest an Application Insights component API Key createion request definition.
 type APIKeyRequest struct {
@@ -74,6 +176,10 @@ type APIKeyRequest struct {
 // ApplicationInsightsComponent an Application Insights component definition.
 type ApplicationInsightsComponent struct {
 	autorest.Response `json:"-"`
+	// Kind - The kind of application that this component refers to, used to customize UI. This value is a freeform string, values should typically be one of the following: web, ios, other, store, java, phone.
+	Kind *string `json:"kind,omitempty"`
+	// ApplicationInsightsComponentProperties - Properties that define an Application Insights component resource.
+	*ApplicationInsightsComponentProperties `json:"properties,omitempty"`
 	// ID - Azure resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Azure resource name
@@ -83,11 +189,34 @@ type ApplicationInsightsComponent struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Kind - The kind of application that this component refers to, used to customize UI. This value is a freeform string, values should typically be one of the following: web, ios, other, store, java, phone.
-	Kind *string `json:"kind,omitempty"`
-	// ApplicationInsightsComponentProperties - Properties that define an Application Insights component resource.
-	*ApplicationInsightsComponentProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for ApplicationInsightsComponent.
+func (aic ApplicationInsightsComponent) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if aic.Kind != nil {
+		objectMap["kind"] = aic.Kind
+	}
+	if aic.ApplicationInsightsComponentProperties != nil {
+		objectMap["properties"] = aic.ApplicationInsightsComponentProperties
+	}
+	if aic.ID != nil {
+		objectMap["id"] = aic.ID
+	}
+	if aic.Name != nil {
+		objectMap["name"] = aic.Name
+	}
+	if aic.Type != nil {
+		objectMap["type"] = aic.Type
+	}
+	if aic.Location != nil {
+		objectMap["location"] = aic.Location
+	}
+	if aic.Tags != nil {
+		objectMap["tags"] = aic.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ApplicationInsightsComponent struct.
@@ -97,76 +226,72 @@ func (aic *ApplicationInsightsComponent) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["kind"]
-	if v != nil {
-		var kind string
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "kind":
+			if v != nil {
+				var kind string
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				aic.Kind = &kind
+			}
+		case "properties":
+			if v != nil {
+				var applicationInsightsComponentProperties ApplicationInsightsComponentProperties
+				err = json.Unmarshal(*v, &applicationInsightsComponentProperties)
+				if err != nil {
+					return err
+				}
+				aic.ApplicationInsightsComponentProperties = &applicationInsightsComponentProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				aic.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				aic.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				aic.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				aic.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				aic.Tags = tags
+			}
 		}
-		aic.Kind = &kind
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties ApplicationInsightsComponentProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		aic.ApplicationInsightsComponentProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		aic.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		aic.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		aic.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		aic.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		aic.Tags = &tags
 	}
 
 	return nil
@@ -189,11 +314,19 @@ type ApplicationInsightsComponentAPIKey struct {
 	LinkedWriteProperties *[]string `json:"linkedWriteProperties,omitempty"`
 }
 
-// ApplicationInsightsComponentAPIKeyListResult describes the list of API Keys of an Application Insights Component.
+// ApplicationInsightsComponentAPIKeyListResult describes the list of API Keys of an Application Insights
+// Component.
 type ApplicationInsightsComponentAPIKeyListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of API Key definitions.
 	Value *[]ApplicationInsightsComponentAPIKey `json:"value,omitempty"`
+}
+
+// ApplicationInsightsComponentAvailableFeatures an Application Insights component available features.
+type ApplicationInsightsComponentAvailableFeatures struct {
+	autorest.Response `json:"-"`
+	// Result - A list of Application Insigths component feature.
+	Result *[]ApplicationInsightsComponentFeature `json:"Result,omitempty"`
 }
 
 // ApplicationInsightsComponentBillingFeatures an Application Insights component billing features
@@ -264,8 +397,8 @@ type ApplicationInsightsComponentExportConfiguration struct {
 	ContainerName *string `json:"ContainerName,omitempty"`
 }
 
-// ApplicationInsightsComponentExportRequest an Application Insights component Continuous Export configuration request
-// definition.
+// ApplicationInsightsComponentExportRequest an Application Insights component Continuous Export configuration
+// request definition.
 type ApplicationInsightsComponentExportRequest struct {
 	// RecordTypes - The document types to be exported, as comma separated values. Allowed values include 'Requests', 'Event', 'Exceptions', 'Metrics', 'PageViews', 'PageViewPerformance', 'Rdd', 'PerformanceCounters', 'Availability', 'Messages'.
 	RecordTypes *string `json:"RecordTypes,omitempty"`
@@ -287,6 +420,109 @@ type ApplicationInsightsComponentExportRequest struct {
 	DestinationAccountID *string `json:"DestinationAccountId,omitempty"`
 }
 
+// ApplicationInsightsComponentFavorite properties that define a favorite that is associated to an Application
+// Insights component.
+type ApplicationInsightsComponentFavorite struct {
+	autorest.Response `json:"-"`
+	// Name - The user-defined name of the favorite.
+	Name *string `json:"Name,omitempty"`
+	// Config - Configuration of this particular favorite, which are driven by the Azure portal UX. Configuration data is a string containing valid JSON
+	Config *string `json:"Config,omitempty"`
+	// Version - This instance's version of the data model. This can change as new features are added that can be marked favorite. Current examples include MetricsExplorer (ME) and Search.
+	Version *string `json:"Version,omitempty"`
+	// FavoriteID - Internally assigned unique id of the favorite definition.
+	FavoriteID *string `json:"FavoriteId,omitempty"`
+	// FavoriteType - Enum indicating if this favorite definition is owned by a specific user or is shared between all users with access to the Application Insights component. Possible values include: 'Shared', 'User'
+	FavoriteType FavoriteType `json:"FavoriteType,omitempty"`
+	// SourceType - The source of the favorite definition.
+	SourceType *string `json:"SourceType,omitempty"`
+	// TimeModified - Date and time in UTC of the last modification that was made to this favorite definition.
+	TimeModified *string `json:"TimeModified,omitempty"`
+	// Tags - A list of 0 or more tags that are associated with this favorite definition
+	Tags *[]string `json:"Tags,omitempty"`
+	// Category - Favorite category, as defined by the user at creation time.
+	Category *string `json:"Category,omitempty"`
+	// IsGeneratedFromTemplate - Flag denoting wether or not this favorite was generated from a template.
+	IsGeneratedFromTemplate *bool `json:"IsGeneratedFromTemplate,omitempty"`
+	// UserID - Unique user id of the specific user that owns this favorite.
+	UserID *string `json:"UserId,omitempty"`
+}
+
+// ApplicationInsightsComponentFeature an Application Insights component daily data volume cap status
+type ApplicationInsightsComponentFeature struct {
+	// FeatureName - The pricing feature name.
+	FeatureName *string `json:"FeatureName,omitempty"`
+	// MeterID - The meter id used for the feature.
+	MeterID *string `json:"MeterId,omitempty"`
+	// MeterRateFrequency - The meter meter rate for the feature's meter.
+	MeterRateFrequency *string `json:"MeterRateFrequency,omitempty"`
+	// ResouceID - Reserved, not used now.
+	ResouceID *string `json:"ResouceId,omitempty"`
+	// IsHidden - Reserved, not used now.
+	IsHidden *bool `json:"IsHidden,omitempty"`
+	// Capabilities - A list of Application Insigths component feature capability.
+	Capabilities *[]ApplicationInsightsComponentFeatureCapability `json:"Capabilities,omitempty"`
+	// Title - Desplay name of the feature.
+	Title *string `json:"Title,omitempty"`
+	// IsMainFeature - Whether can apply addon feature on to it.
+	IsMainFeature *bool `json:"IsMainFeature,omitempty"`
+	// SupportedAddonFeatures - The add on features on main feature.
+	SupportedAddonFeatures *string `json:"SupportedAddonFeatures,omitempty"`
+}
+
+// ApplicationInsightsComponentFeatureCapabilities an Application Insights component feature capabilities
+type ApplicationInsightsComponentFeatureCapabilities struct {
+	autorest.Response `json:"-"`
+	// SupportExportData - Whether allow to use continuous export feature.
+	SupportExportData *bool `json:"SupportExportData,omitempty"`
+	// BurstThrottlePolicy - Reserved, not used now.
+	BurstThrottlePolicy *string `json:"BurstThrottlePolicy,omitempty"`
+	// MetadataClass - Reserved, not used now.
+	MetadataClass *string `json:"MetadataClass,omitempty"`
+	// LiveStreamMetrics - Reserved, not used now.
+	LiveStreamMetrics *bool `json:"LiveStreamMetrics,omitempty"`
+	// ApplicationMap - Reserved, not used now.
+	ApplicationMap *bool `json:"ApplicationMap,omitempty"`
+	// WorkItemIntegration - Whether allow to use work item integration feature.
+	WorkItemIntegration *bool `json:"WorkItemIntegration,omitempty"`
+	// PowerBIIntegration - Reserved, not used now.
+	PowerBIIntegration *bool `json:"PowerBIIntegration,omitempty"`
+	// OpenSchema - Reserved, not used now.
+	OpenSchema *bool `json:"OpenSchema,omitempty"`
+	// ProactiveDetection - Reserved, not used now.
+	ProactiveDetection *bool `json:"ProactiveDetection,omitempty"`
+	// AnalyticsIntegration - Reserved, not used now.
+	AnalyticsIntegration *bool `json:"AnalyticsIntegration,omitempty"`
+	// MultipleStepWebTest - Whether allow to use multiple steps web test feature.
+	MultipleStepWebTest *bool `json:"MultipleStepWebTest,omitempty"`
+	// APIAccessLevel - Reserved, not used now.
+	APIAccessLevel *string `json:"ApiAccessLevel,omitempty"`
+	// TrackingType - The applciation insights component used tracking type.
+	TrackingType *string `json:"TrackingType,omitempty"`
+	// DailyCap - Daily data volume cap in GB.
+	DailyCap *float64 `json:"DailyCap,omitempty"`
+	// DailyCapResetTime - Daily data volume cap UTC reset hour.
+	DailyCapResetTime *float64 `json:"DailyCapResetTime,omitempty"`
+	// ThrottleRate - Reserved, not used now.
+	ThrottleRate *float64 `json:"ThrottleRate,omitempty"`
+}
+
+// ApplicationInsightsComponentFeatureCapability an Application Insights component feature capability
+type ApplicationInsightsComponentFeatureCapability struct {
+	// Name - The name of the capability.
+	Name *string `json:"Name,omitempty"`
+	// Description - The description of the capability.
+	Description *string `json:"Description,omitempty"`
+	// Value - The vaule of the capability.
+	Value *string `json:"Value,omitempty"`
+	// Unit - The unit of the capability.
+	Unit *string `json:"Unit,omitempty"`
+	// MeterID - The meter used for the capability.
+	MeterID *string `json:"MeterId,omitempty"`
+	// MeterRateFrequency - The meter rate of the meter.
+	MeterRateFrequency *string `json:"MeterRateFrequency,omitempty"`
+}
+
 // ApplicationInsightsComponentListResult describes the list of Application Insights Resources.
 type ApplicationInsightsComponentListResult struct {
 	autorest.Response `json:"-"`
@@ -296,8 +532,8 @@ type ApplicationInsightsComponentListResult struct {
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// ApplicationInsightsComponentListResultIterator provides access to a complete listing of ApplicationInsightsComponent
-// values.
+// ApplicationInsightsComponentListResultIterator provides access to a complete listing of
+// ApplicationInsightsComponent values.
 type ApplicationInsightsComponentListResultIterator struct {
 	i    int
 	page ApplicationInsightsComponentListResultPage
@@ -390,6 +626,45 @@ func (page ApplicationInsightsComponentListResultPage) Values() []ApplicationIns
 	return *page.aiclr.Value
 }
 
+// ApplicationInsightsComponentProactiveDetectionConfiguration properties that define a ProactiveDetection
+// configuration.
+type ApplicationInsightsComponentProactiveDetectionConfiguration struct {
+	autorest.Response `json:"-"`
+	// Name - The rule name
+	Name *string `json:"Name,omitempty"`
+	// Enabled - A flag that indicates whether this rule is enabled by the user
+	Enabled *bool `json:"Enabled,omitempty"`
+	// SendEmailsToSubscriptionOwners - A flag that indicated whether notifications on this rule should be sent to subscription owners
+	SendEmailsToSubscriptionOwners *bool `json:"SendEmailsToSubscriptionOwners,omitempty"`
+	// CustomEmails - Custom email addresses for this rule notifications
+	CustomEmails *[]string `json:"CustomEmails,omitempty"`
+	// LastUpdatedTime - The last time this rule was updated
+	LastUpdatedTime *string `json:"LastUpdatedTime,omitempty"`
+	// RuleDefinitions - Static definitions of the ProactiveDetection configuration rule (same values for all components).
+	RuleDefinitions *ApplicationInsightsComponentProactiveDetectionConfigurationRuleDefinitions `json:"RuleDefinitions,omitempty"`
+}
+
+// ApplicationInsightsComponentProactiveDetectionConfigurationRuleDefinitions static definitions of the
+// ProactiveDetection configuration rule (same values for all components).
+type ApplicationInsightsComponentProactiveDetectionConfigurationRuleDefinitions struct {
+	// Name - The rule name
+	Name *string `json:"Name,omitempty"`
+	// DisplayName - The rule name as it is displayed in UI
+	DisplayName *string `json:"DisplayName,omitempty"`
+	// Description - The rule description
+	Description *string `json:"Description,omitempty"`
+	// HelpURL - URL which displays aditional info about the proactive detection rule
+	HelpURL *string `json:"HelpUrl,omitempty"`
+	// IsHidden - A flag indicating whether the rule is hidden (from the UI)
+	IsHidden *bool `json:"IsHidden,omitempty"`
+	// IsEnabledByDefault - A flag indicating whether the rule is enabled by default
+	IsEnabledByDefault *bool `json:"IsEnabledByDefault,omitempty"`
+	// IsInPreview - A flag indicating whether the rule is in preview
+	IsInPreview *bool `json:"IsInPreview,omitempty"`
+	// SupportsEmailNotifications - A flag indicating whether email notifications are supported for detections for this rule
+	SupportsEmailNotifications *bool `json:"SupportsEmailNotifications,omitempty"`
+}
+
 // ApplicationInsightsComponentProperties properties that define an Application Insights component resource.
 type ApplicationInsightsComponentProperties struct {
 	// ApplicationID - The unique ID of your application. This field mirrors the 'Name' field and cannot be changed.
@@ -429,8 +704,55 @@ type ApplicationInsightsComponentQuotaStatus struct {
 	ExpirationTime *string `json:"ExpirationTime,omitempty"`
 }
 
-// ErrorResponse error reponse indicates Insights service is not able to process the incoming request. The reason is
-// provided in the error message.
+// ApplicationInsightsComponentWebTestLocation properties that define a web test location available to an
+// Application Insights Component.
+type ApplicationInsightsComponentWebTestLocation struct {
+	// DisplayName - The display name of the web test location.
+	DisplayName *string `json:"DisplayName,omitempty"`
+	// Tag - Internally defined geographic location tag.
+	Tag *string `json:"Tag,omitempty"`
+}
+
+// ApplicationInsightsWebTestLocationsListResult describes the list of web test locations available to an
+// Application Insights Component.
+type ApplicationInsightsWebTestLocationsListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of web test locations.
+	Value *[]ApplicationInsightsComponentWebTestLocation `json:"value,omitempty"`
+}
+
+// ComponentPurgeBody describes the body of a purge request for an App Insights component
+type ComponentPurgeBody struct {
+	// Table - Table from which to purge data.
+	Table *string `json:"table,omitempty"`
+	// Filters - The set of columns and filters (queries) to run over them to purge the resulting data.
+	Filters *[]ComponentPurgeBodyFilters `json:"filters,omitempty"`
+}
+
+// ComponentPurgeBodyFilters user-defined filters to return data which will be purged from the table.
+type ComponentPurgeBodyFilters struct {
+	// Column - The column of the table over which the given query should run
+	Column *string `json:"column,omitempty"`
+	// Filter - A query to to run over the provided table and column to purge the corresponding data.
+	Filter *string `json:"filter,omitempty"`
+}
+
+// ComponentPurgeResponse response containing operationId for a specific purge action.
+type ComponentPurgeResponse struct {
+	autorest.Response `json:"-"`
+	// OperationID - Id to use when querying for status for a particular purge operation.
+	OperationID *string `json:"operationId,omitempty"`
+}
+
+// ComponentPurgeStatusResponse response containing status for a specific purge operation.
+type ComponentPurgeStatusResponse struct {
+	autorest.Response `json:"-"`
+	// Status - Status of the operation represented by the requested Id. Possible values include: 'Pending', 'Completed'
+	Status PurgeState `json:"status,omitempty"`
+}
+
+// ErrorResponse error reponse indicates Insights service is not able to process the incoming request. The reason
+// is provided in the error message.
 type ErrorResponse struct {
 	// Code - Error code.
 	Code *string `json:"code,omitempty"`
@@ -438,10 +760,42 @@ type ErrorResponse struct {
 	Message *string `json:"message,omitempty"`
 }
 
+// InnerError inner error
+type InnerError struct {
+	// Diagnosticcontext - Provides correlation for request
+	Diagnosticcontext *string `json:"diagnosticcontext,omitempty"`
+	// Time - Request time
+	Time *date.Time `json:"time,omitempty"`
+}
+
+// ListAnnotation ...
+type ListAnnotation struct {
+	autorest.Response `json:"-"`
+	Value             *[]Annotation `json:"value,omitempty"`
+}
+
 // ListApplicationInsightsComponentExportConfiguration ...
 type ListApplicationInsightsComponentExportConfiguration struct {
 	autorest.Response `json:"-"`
 	Value             *[]ApplicationInsightsComponentExportConfiguration `json:"value,omitempty"`
+}
+
+// ListApplicationInsightsComponentFavorite ...
+type ListApplicationInsightsComponentFavorite struct {
+	autorest.Response `json:"-"`
+	Value             *[]ApplicationInsightsComponentFavorite `json:"value,omitempty"`
+}
+
+// ListApplicationInsightsComponentProactiveDetectionConfiguration ...
+type ListApplicationInsightsComponentProactiveDetectionConfiguration struct {
+	autorest.Response `json:"-"`
+	Value             *[]ApplicationInsightsComponentProactiveDetectionConfiguration `json:"value,omitempty"`
+}
+
+// ListWorkItemConfiguration ...
+type ListWorkItemConfiguration struct {
+	autorest.Response `json:"-"`
+	Value             *[]WorkItemConfiguration `json:"value,omitempty"`
 }
 
 // Operation CDN REST API operation
@@ -462,8 +816,8 @@ type OperationDisplay struct {
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult result of the request to list CDN operations. It contains a list of operations and a URL link to
-// get the next set of results.
+// OperationListResult result of the request to list CDN operations. It contains a list of operations and a URL
+// link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of CDN operations supported by the CDN resource provider.
@@ -576,19 +930,59 @@ type Resource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
+}
+
+// SetObject ...
+type SetObject struct {
+	autorest.Response `json:"-"`
+	Value             interface{} `json:"value,omitempty"`
 }
 
 // TagsResource a container holding only the Tags for a resource, allowing the user to update the tags on a WebTest
 // instance.
 type TagsResource struct {
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for TagsResource.
+func (tr TagsResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tr.Tags != nil {
+		objectMap["tags"] = tr.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // WebTest an Application Insights web test definition.
 type WebTest struct {
 	autorest.Response `json:"-"`
+	// Kind - The kind of web test that this web test watches. Choices are ping and multistep. Possible values include: 'Ping', 'Multistep'
+	Kind WebTestKind `json:"kind,omitempty"`
+	// WebTestProperties - Metadata describing a web test for an Azure resource.
+	*WebTestProperties `json:"properties,omitempty"`
 	// ID - Azure resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Azure resource name
@@ -598,11 +992,34 @@ type WebTest struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Kind - The kind of web test that this web test watches. Choices are ping and multistep. Possible values include: 'Ping', 'Multistep'
-	Kind WebTestKind `json:"kind,omitempty"`
-	// WebTestProperties - Metadata describing a web test for an Azure resource.
-	*WebTestProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for WebTest.
+func (wt WebTest) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if wt.Kind != "" {
+		objectMap["kind"] = wt.Kind
+	}
+	if wt.WebTestProperties != nil {
+		objectMap["properties"] = wt.WebTestProperties
+	}
+	if wt.ID != nil {
+		objectMap["id"] = wt.ID
+	}
+	if wt.Name != nil {
+		objectMap["name"] = wt.Name
+	}
+	if wt.Type != nil {
+		objectMap["type"] = wt.Type
+	}
+	if wt.Location != nil {
+		objectMap["location"] = wt.Location
+	}
+	if wt.Tags != nil {
+		objectMap["tags"] = wt.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for WebTest struct.
@@ -612,83 +1029,79 @@ func (wt *WebTest) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["kind"]
-	if v != nil {
-		var kind WebTestKind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "kind":
+			if v != nil {
+				var kind WebTestKind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				wt.Kind = kind
+			}
+		case "properties":
+			if v != nil {
+				var webTestProperties WebTestProperties
+				err = json.Unmarshal(*v, &webTestProperties)
+				if err != nil {
+					return err
+				}
+				wt.WebTestProperties = &webTestProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				wt.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				wt.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				wt.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				wt.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				wt.Tags = tags
+			}
 		}
-		wt.Kind = kind
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties WebTestProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		wt.WebTestProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		wt.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		wt.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		wt.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		wt.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		wt.Tags = &tags
 	}
 
 	return nil
 }
 
-// WebTestGeolocation geo-physical location to run a web test from. You must specify one or more locations for the test
-// to run from.
+// WebTestGeolocation geo-physical location to run a web test from. You must specify one or more locations for the
+// test to run from.
 type WebTestGeolocation struct {
 	// Location - Location ID for the webtest to run from.
 	Location *string `json:"Id,omitempty"`
@@ -826,4 +1239,40 @@ type WebTestProperties struct {
 type WebTestPropertiesConfiguration struct {
 	// WebTest - The XML specification of a WebTest to run against an application.
 	WebTest *string `json:"WebTest,omitempty"`
+}
+
+// WorkItemConfiguration work item configuration associated with an application insights resource.
+type WorkItemConfiguration struct {
+	autorest.Response `json:"-"`
+	// ConnectorID - Connector identifier where work item is created
+	ConnectorID *string `json:"ConnectorId,omitempty"`
+	// ConfigDisplayName - Configuration friendly name
+	ConfigDisplayName *string `json:"ConfigDisplayName,omitempty"`
+	// IsDefault - Boolean value indicating whether configuration is default
+	IsDefault *bool `json:"IsDefault,omitempty"`
+	// ID - Unique Id for work item
+	ID *string `json:"Id,omitempty"`
+	// ConfigProperties - Serialized JSON object for detailed properties
+	ConfigProperties *string `json:"ConfigProperties,omitempty"`
+}
+
+// WorkItemConfigurationError error associated with trying to get work item configuration or configurations
+type WorkItemConfigurationError struct {
+	// Code - Error detail code and explanation
+	Code *string `json:"code,omitempty"`
+	// Message - Error message
+	Message    *string     `json:"message,omitempty"`
+	Innererror *InnerError `json:"innererror,omitempty"`
+}
+
+// WorkItemCreateConfiguration work item configuration creation payload
+type WorkItemCreateConfiguration struct {
+	// ConnectorID - Unique connector id
+	ConnectorID *string `json:"ConnectorId,omitempty"`
+	// ConnectorDataConfiguration - Serialized JSON object for detaile d properties
+	ConnectorDataConfiguration *string `json:"ConnectorDataConfiguration,omitempty"`
+	// ValidateOnly - Boolean indicating validate only
+	ValidateOnly *bool `json:"ValidateOnly,omitempty"`
+	// WorkItemProperties - Custom work item properties
+	WorkItemProperties *string `json:"WorkItemProperties,omitempty"`
 }

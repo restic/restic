@@ -41,8 +41,8 @@ func NewPolicySetClientWithBaseURI(baseURI string, subscriptionID string) Policy
 
 // EvaluatePolicies evaluates Lab Policy.
 //
-// resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the policy
-// set.
+// resourceGroupName is the name of the resource group. labName is the name of the lab. name is the name of the
+// policy set.
 func (client PolicySetClient) EvaluatePolicies(ctx context.Context, resourceGroupName string, labName string, name string, evaluatePoliciesRequest EvaluatePoliciesRequest) (result EvaluatePoliciesResponse, err error) {
 	req, err := client.EvaluatePoliciesPreparer(ctx, resourceGroupName, labName, name, evaluatePoliciesRequest)
 	if err != nil {
@@ -80,7 +80,7 @@ func (client PolicySetClient) EvaluatePoliciesPreparer(ctx context.Context, reso
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/policysets/{name}/evaluatePolicies", pathParameters),

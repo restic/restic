@@ -72,7 +72,7 @@ func (client ProfilesClient) CheckTrafficManagerRelativeDNSNameAvailabilityPrepa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Network/checkTrafficManagerNameAvailability"),
@@ -103,9 +103,9 @@ func (client ProfilesClient) CheckTrafficManagerRelativeDNSNameAvailabilityRespo
 
 // CreateOrUpdate create or update a Traffic Manager profile.
 //
-// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the name
-// of the Traffic Manager profile. parameters is the Traffic Manager profile parameters supplied to the CreateOrUpdate
-// operation.
+// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the
+// name of the Traffic Manager profile. parameters is the Traffic Manager profile parameters supplied to the
+// CreateOrUpdate operation.
 func (client ProfilesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, profileName string, parameters Profile) (result Profile, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, profileName, parameters)
 	if err != nil {
@@ -142,7 +142,7 @@ func (client ProfilesClient) CreateOrUpdatePreparer(ctx context.Context, resourc
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficmanagerprofiles/{profileName}", pathParameters),
@@ -240,8 +240,8 @@ func (client ProfilesClient) DeleteResponder(resp *http.Response) (result Delete
 
 // Get gets a Traffic Manager profile.
 //
-// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the name
-// of the Traffic Manager profile.
+// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the
+// name of the Traffic Manager profile.
 func (client ProfilesClient) Get(ctx context.Context, resourceGroupName string, profileName string) (result Profile, err error) {
 	req, err := client.GetPreparer(ctx, resourceGroupName, profileName)
 	if err != nil {
@@ -434,8 +434,8 @@ func (client ProfilesClient) ListAllInResourceGroupResponder(resp *http.Response
 
 // Update update a Traffic Manager profile.
 //
-// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the name
-// of the Traffic Manager profile. parameters is the Traffic Manager profile parameters supplied to the Update
+// resourceGroupName is the name of the resource group containing the Traffic Manager profile. profileName is the
+// name of the Traffic Manager profile. parameters is the Traffic Manager profile parameters supplied to the Update
 // operation.
 func (client ProfilesClient) Update(ctx context.Context, resourceGroupName string, profileName string, parameters Profile) (result Profile, err error) {
 	req, err := client.UpdatePreparer(ctx, resourceGroupName, profileName, parameters)
@@ -473,7 +473,7 @@ func (client ProfilesClient) UpdatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficmanagerprofiles/{profileName}", pathParameters),

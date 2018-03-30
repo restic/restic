@@ -75,7 +75,7 @@ func (client ClusterUpgradesClient) ResumePreparer(ctx context.Context, resumeCl
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/MoveToNextUpgradeDomain"),
@@ -201,7 +201,7 @@ func (client ClusterUpgradesClient) StartPreparer(ctx context.Context, startClus
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/Upgrade"),
@@ -266,7 +266,7 @@ func (client ClusterUpgradesClient) UpdatePreparer(ctx context.Context, updateCl
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/UpdateUpgrade"),

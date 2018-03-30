@@ -203,7 +203,7 @@ func (client ApplicationTypesClient) RegisterPreparer(ctx context.Context, regis
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/ApplicationTypes/$/Provision"),
@@ -273,7 +273,7 @@ func (client ApplicationTypesClient) UnregisterPreparer(ctx context.Context, app
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/ApplicationTypes/{applicationTypeName}/$/Unprovision", pathParameters),

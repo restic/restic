@@ -31,13 +31,13 @@ type CheckSkuAvailabilityClient struct {
 }
 
 // NewCheckSkuAvailabilityClient creates an instance of the CheckSkuAvailabilityClient client.
-func NewCheckSkuAvailabilityClient(subscriptionID string) CheckSkuAvailabilityClient {
-	return NewCheckSkuAvailabilityClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewCheckSkuAvailabilityClient(subscriptionID string, filter string) CheckSkuAvailabilityClient {
+	return NewCheckSkuAvailabilityClientWithBaseURI(DefaultBaseURI, subscriptionID, filter)
 }
 
 // NewCheckSkuAvailabilityClientWithBaseURI creates an instance of the CheckSkuAvailabilityClient client.
-func NewCheckSkuAvailabilityClientWithBaseURI(baseURI string, subscriptionID string) CheckSkuAvailabilityClient {
-	return CheckSkuAvailabilityClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewCheckSkuAvailabilityClientWithBaseURI(baseURI string, subscriptionID string, filter string) CheckSkuAvailabilityClient {
+	return CheckSkuAvailabilityClient{NewWithBaseURI(baseURI, subscriptionID, filter)}
 }
 
 // List check available SKUs.
@@ -48,7 +48,7 @@ func (client CheckSkuAvailabilityClient) List(ctx context.Context, location stri
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Skus", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.Type", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cognitiveservices.CheckSkuAvailabilityClient", "List")
+		return result, validation.NewError("cognitiveservices.CheckSkuAvailabilityClient", "List", err.Error())
 	}
 
 	req, err := client.ListPreparer(ctx, location, parameters)
@@ -85,7 +85,7 @@ func (client CheckSkuAvailabilityClient) ListPreparer(ctx context.Context, locat
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.CognitiveServices/locations/{location}/checkSkuAvailability", pathParameters),

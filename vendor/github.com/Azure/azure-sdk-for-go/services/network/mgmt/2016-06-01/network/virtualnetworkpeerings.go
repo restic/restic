@@ -42,8 +42,8 @@ func NewVirtualNetworkPeeringsClientWithBaseURI(baseURI string, subscriptionID s
 // CreateOrUpdate the Put virtual network peering operation creates/updates a peering in the specified virtual network
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
-// virtualNetworkPeeringName is the name of the peering. virtualNetworkPeeringParameters is parameters supplied to the
-// create/update virtual network peering operation
+// virtualNetworkPeeringName is the name of the peering. virtualNetworkPeeringParameters is parameters supplied to
+// the create/update virtual network peering operation
 func (client VirtualNetworkPeeringsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering) (result VirtualNetworkPeeringsCreateOrUpdateFuture, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, virtualNetworkName, virtualNetworkPeeringName, virtualNetworkPeeringParameters)
 	if err != nil {
@@ -75,7 +75,7 @@ func (client VirtualNetworkPeeringsClient) CreateOrUpdatePreparer(ctx context.Co
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/virtualNetworkPeerings/{virtualNetworkPeeringName}", pathParameters),

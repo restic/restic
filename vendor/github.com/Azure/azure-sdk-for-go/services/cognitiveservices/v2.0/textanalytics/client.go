@@ -83,7 +83,7 @@ func (client BaseClient) DetectLanguagePreparer(ctx context.Context, input Batch
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithCustomBaseURL("https://{AzureRegion}.api.cognitive.microsoft.com/text/analytics", urlParameters),
 		autorest.WithPath("/v2.0/languages"),
@@ -146,7 +146,7 @@ func (client BaseClient) KeyPhrasesPreparer(ctx context.Context, input MultiLang
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithCustomBaseURL("https://{AzureRegion}.api.cognitive.microsoft.com/text/analytics", urlParameters),
 		autorest.WithPath("/v2.0/keyPhrases"),
@@ -210,7 +210,7 @@ func (client BaseClient) SentimentPreparer(ctx context.Context, input MultiLangu
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithCustomBaseURL("https://{AzureRegion}.api.cognitive.microsoft.com/text/analytics", urlParameters),
 		autorest.WithPath("/v2.0/sentiment"),

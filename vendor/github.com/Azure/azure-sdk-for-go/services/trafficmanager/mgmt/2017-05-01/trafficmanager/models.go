@@ -40,6 +40,11 @@ const (
 	Stopped EndpointMonitorStatus = "Stopped"
 )
 
+// PossibleEndpointMonitorStatusValues returns an array of possible values for the EndpointMonitorStatus const type.
+func PossibleEndpointMonitorStatusValues() []EndpointMonitorStatus {
+	return []EndpointMonitorStatus{CheckingEndpoint, Degraded, Disabled, Inactive, Online, Stopped}
+}
+
 // EndpointStatus enumerates the values for endpoint status.
 type EndpointStatus string
 
@@ -49,6 +54,11 @@ const (
 	// EndpointStatusEnabled ...
 	EndpointStatusEnabled EndpointStatus = "Enabled"
 )
+
+// PossibleEndpointStatusValues returns an array of possible values for the EndpointStatus const type.
+func PossibleEndpointStatusValues() []EndpointStatus {
+	return []EndpointStatus{EndpointStatusDisabled, EndpointStatusEnabled}
+}
 
 // MonitorProtocol enumerates the values for monitor protocol.
 type MonitorProtocol string
@@ -61,6 +71,11 @@ const (
 	// TCP ...
 	TCP MonitorProtocol = "TCP"
 )
+
+// PossibleMonitorProtocolValues returns an array of possible values for the MonitorProtocol const type.
+func PossibleMonitorProtocolValues() []MonitorProtocol {
+	return []MonitorProtocol{HTTP, HTTPS, TCP}
+}
 
 // ProfileMonitorStatus enumerates the values for profile monitor status.
 type ProfileMonitorStatus string
@@ -78,6 +93,11 @@ const (
 	ProfileMonitorStatusOnline ProfileMonitorStatus = "Online"
 )
 
+// PossibleProfileMonitorStatusValues returns an array of possible values for the ProfileMonitorStatus const type.
+func PossibleProfileMonitorStatusValues() []ProfileMonitorStatus {
+	return []ProfileMonitorStatus{ProfileMonitorStatusCheckingEndpoints, ProfileMonitorStatusDegraded, ProfileMonitorStatusDisabled, ProfileMonitorStatusInactive, ProfileMonitorStatusOnline}
+}
+
 // ProfileStatus enumerates the values for profile status.
 type ProfileStatus string
 
@@ -87,6 +107,11 @@ const (
 	// ProfileStatusEnabled ...
 	ProfileStatusEnabled ProfileStatus = "Enabled"
 )
+
+// PossibleProfileStatusValues returns an array of possible values for the ProfileStatus const type.
+func PossibleProfileStatusValues() []ProfileStatus {
+	return []ProfileStatus{ProfileStatusDisabled, ProfileStatusEnabled}
+}
 
 // TrafficRoutingMethod enumerates the values for traffic routing method.
 type TrafficRoutingMethod string
@@ -101,6 +126,11 @@ const (
 	// Weighted ...
 	Weighted TrafficRoutingMethod = "Weighted"
 )
+
+// PossibleTrafficRoutingMethodValues returns an array of possible values for the TrafficRoutingMethod const type.
+func PossibleTrafficRoutingMethodValues() []TrafficRoutingMethod {
+	return []TrafficRoutingMethod{Geographic, Performance, Priority, Weighted}
+}
 
 // CheckTrafficManagerRelativeDNSNameAvailabilityParameters parameters supplied to check Traffic Manager name
 // operation.
@@ -149,14 +179,32 @@ type DNSConfig struct {
 // Endpoint class representing a Traffic Manager endpoint.
 type Endpoint struct {
 	autorest.Response `json:"-"`
+	// EndpointProperties - The properties of the Traffic Manager endpoint.
+	*EndpointProperties `json:"properties,omitempty"`
 	// ID - Fully qualified resource Id for the resource. Ex - /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{resourceName}
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource. Ex- Microsoft.Network/trafficmanagerProfiles.
 	Type *string `json:"type,omitempty"`
-	// EndpointProperties - The properties of the Traffic Manager endpoint.
-	*EndpointProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Endpoint.
+func (e Endpoint) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if e.EndpointProperties != nil {
+		objectMap["properties"] = e.EndpointProperties
+	}
+	if e.ID != nil {
+		objectMap["id"] = e.ID
+	}
+	if e.Name != nil {
+		objectMap["name"] = e.Name
+	}
+	if e.Type != nil {
+		objectMap["type"] = e.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Endpoint struct.
@@ -166,46 +214,45 @@ func (e *Endpoint) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EndpointProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var endpointProperties EndpointProperties
+				err = json.Unmarshal(*v, &endpointProperties)
+				if err != nil {
+					return err
+				}
+				e.EndpointProperties = &endpointProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				e.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				e.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				e.Type = &typeVar
+			}
 		}
-		e.EndpointProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		e.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		e.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		e.Type = &typeVar
 	}
 
 	return nil
@@ -236,14 +283,32 @@ type EndpointProperties struct {
 // GeographicHierarchy class representing the Geographic hierarchy used with the Geographic traffic routing method.
 type GeographicHierarchy struct {
 	autorest.Response `json:"-"`
+	// GeographicHierarchyProperties - The properties of the Geographic Hierarchy resource.
+	*GeographicHierarchyProperties `json:"properties,omitempty"`
 	// ID - Fully qualified resource Id for the resource. Ex - /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{resourceName}
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource. Ex- Microsoft.Network/trafficmanagerProfiles.
 	Type *string `json:"type,omitempty"`
-	// GeographicHierarchyProperties - The properties of the Geographic Hierarchy resource.
-	*GeographicHierarchyProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for GeographicHierarchy.
+func (gh GeographicHierarchy) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if gh.GeographicHierarchyProperties != nil {
+		objectMap["properties"] = gh.GeographicHierarchyProperties
+	}
+	if gh.ID != nil {
+		objectMap["id"] = gh.ID
+	}
+	if gh.Name != nil {
+		objectMap["name"] = gh.Name
+	}
+	if gh.Type != nil {
+		objectMap["type"] = gh.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for GeographicHierarchy struct.
@@ -253,53 +318,52 @@ func (gh *GeographicHierarchy) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties GeographicHierarchyProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var geographicHierarchyProperties GeographicHierarchyProperties
+				err = json.Unmarshal(*v, &geographicHierarchyProperties)
+				if err != nil {
+					return err
+				}
+				gh.GeographicHierarchyProperties = &geographicHierarchyProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				gh.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				gh.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				gh.Type = &typeVar
+			}
 		}
-		gh.GeographicHierarchyProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		gh.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		gh.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		gh.Type = &typeVar
 	}
 
 	return nil
 }
 
-// GeographicHierarchyProperties class representing the properties of the Geographic hierarchy used with the Geographic
-// traffic routing method.
+// GeographicHierarchyProperties class representing the properties of the Geographic hierarchy used with the
+// Geographic traffic routing method.
 type GeographicHierarchyProperties struct {
 	// GeographicHierarchy - The region at the root of the hierarchy from all the regions in the hierarchy can be retrieved.
 	GeographicHierarchy *Region `json:"geographicHierarchy,omitempty"`
@@ -341,18 +405,42 @@ type NameAvailability struct {
 // Profile class representing a Traffic Manager profile.
 type Profile struct {
 	autorest.Response `json:"-"`
+	// ProfileProperties - The properties of the Traffic Manager profile.
+	*ProfileProperties `json:"properties,omitempty"`
+	// Tags - Resource tags.
+	Tags map[string]*string `json:"tags"`
+	// Location - The Azure Region where the resource lives
+	Location *string `json:"location,omitempty"`
 	// ID - Fully qualified resource Id for the resource. Ex - /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{resourceName}
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource. Ex- Microsoft.Network/trafficmanagerProfiles.
 	Type *string `json:"type,omitempty"`
-	// Tags - Resource tags.
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Location - The Azure Region where the resource lives
-	Location *string `json:"location,omitempty"`
-	// ProfileProperties - The properties of the Traffic Manager profile.
-	*ProfileProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Profile.
+func (p Profile) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if p.ProfileProperties != nil {
+		objectMap["properties"] = p.ProfileProperties
+	}
+	if p.Tags != nil {
+		objectMap["tags"] = p.Tags
+	}
+	if p.Location != nil {
+		objectMap["location"] = p.Location
+	}
+	if p.ID != nil {
+		objectMap["id"] = p.ID
+	}
+	if p.Name != nil {
+		objectMap["name"] = p.Name
+	}
+	if p.Type != nil {
+		objectMap["type"] = p.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Profile struct.
@@ -362,66 +450,63 @@ func (p *Profile) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ProfileProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var profileProperties ProfileProperties
+				err = json.Unmarshal(*v, &profileProperties)
+				if err != nil {
+					return err
+				}
+				p.ProfileProperties = &profileProperties
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				p.Tags = tags
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				p.Location = &location
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				p.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				p.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				p.Type = &typeVar
+			}
 		}
-		p.ProfileProperties = &properties
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		p.Tags = &tags
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		p.Location = &location
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		p.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		p.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		p.Type = &typeVar
 	}
 
 	return nil
@@ -448,8 +533,8 @@ type ProfileProperties struct {
 	Endpoints *[]Endpoint `json:"endpoints,omitempty"`
 }
 
-// ProxyResource the resource model definition for a ARM proxy resource. It will have everything other than required
-// location and tags
+// ProxyResource the resource model definition for a ARM proxy resource. It will have everything other than
+// required location and tags
 type ProxyResource struct {
 	// ID - Fully qualified resource Id for the resource. Ex - /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{resourceName}
 	ID *string `json:"id,omitempty"`
@@ -481,14 +566,35 @@ type Resource struct {
 
 // TrackedResource the resource model definition for a ARM tracked top level resource
 type TrackedResource struct {
+	// Tags - Resource tags.
+	Tags map[string]*string `json:"tags"`
+	// Location - The Azure Region where the resource lives
+	Location *string `json:"location,omitempty"`
 	// ID - Fully qualified resource Id for the resource. Ex - /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/trafficManagerProfiles/{resourceName}
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource. Ex- Microsoft.Network/trafficmanagerProfiles.
 	Type *string `json:"type,omitempty"`
-	// Tags - Resource tags.
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Location - The Azure Region where the resource lives
-	Location *string `json:"location,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TrackedResource.
+func (tr TrackedResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tr.Tags != nil {
+		objectMap["tags"] = tr.Tags
+	}
+	if tr.Location != nil {
+		objectMap["location"] = tr.Location
+	}
+	if tr.ID != nil {
+		objectMap["id"] = tr.ID
+	}
+	if tr.Name != nil {
+		objectMap["name"] = tr.Name
+	}
+	if tr.Type != nil {
+		objectMap["type"] = tr.Type
+	}
+	return json.Marshal(objectMap)
 }

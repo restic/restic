@@ -45,8 +45,8 @@ func NewMachinesClientWithBaseURI(baseURI string, subscriptionID string) Machine
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineName is machine resource name. timestamp is UTC date and time
-// specifying a time instance relative to which to evaluate the machine resource. When not specified, the service uses
-// DateTime.UtcNow.
+// specifying a time instance relative to which to evaluate the machine resource. When not specified, the service
+// uses DateTime.UtcNow.
 func (client MachinesClient) Get(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, timestamp *date.Time) (result Machine, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -60,7 +60,7 @@ func (client MachinesClient) Get(ctx context.Context, resourceGroupName string, 
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "Get")
+		return result, validation.NewError("servicemap.MachinesClient", "Get", err.Error())
 	}
 
 	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, machineName, timestamp)
@@ -133,8 +133,8 @@ func (client MachinesClient) GetResponder(resp *http.Response) (result Machine, 
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineName is machine resource name. startTime is UTC date and time
-// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
-// date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
+// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is
+// UTC date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
 func (client MachinesClient) GetLiveness(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (result Liveness, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -148,7 +148,7 @@ func (client MachinesClient) GetLiveness(ctx context.Context, resourceGroupName 
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "GetLiveness")
+		return result, validation.NewError("servicemap.MachinesClient", "GetLiveness", err.Error())
 	}
 
 	req, err := client.GetLivenessPreparer(ctx, resourceGroupName, workspaceName, machineName, startTime, endTime)
@@ -227,14 +227,14 @@ func (client MachinesClient) GetLivenessResponder(resp *http.Response) (result L
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. live is specifies whether to return live resources (true) or inventory
-// resources (false). Defaults to **true**. When retrieving live resources, the start time (`startTime`) and end time
-// (`endTime`) of the desired interval should be included. When retrieving inventory resources, an optional timestamp
-// (`timestamp`) parameter can be specified to return the version of each resource closest (not-after) that timestamp.
-// startTime is UTC date and time specifying the start time of an interval. When not specified the service uses
-// DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an interval. When not specified the
-// service uses DateTime.UtcNow timestamp is UTC date and time specifying a time instance relative to which to evaluate
-// each machine resource. Only applies when `live=false`. When not specified, the service uses DateTime.UtcNow. top is
-// page size to use. When not specified, the default page size is 100 records.
+// resources (false). Defaults to **true**. When retrieving live resources, the start time (`startTime`) and end
+// time (`endTime`) of the desired interval should be included. When retrieving inventory resources, an optional
+// timestamp (`timestamp`) parameter can be specified to return the version of each resource closest (not-after)
+// that timestamp. startTime is UTC date and time specifying the start time of an interval. When not specified the
+// service uses DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an interval. When not
+// specified the service uses DateTime.UtcNow timestamp is UTC date and time specifying a time instance relative to
+// which to evaluate each machine resource. Only applies when `live=false`. When not specified, the service uses
+// DateTime.UtcNow. top is page size to use. When not specified, the default page size is 100 records.
 func (client MachinesClient) ListByWorkspace(ctx context.Context, resourceGroupName string, workspaceName string, live *bool, startTime *date.Time, endTime *date.Time, timestamp *date.Time, top *int32) (result MachineCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -250,7 +250,7 @@ func (client MachinesClient) ListByWorkspace(ctx context.Context, resourceGroupN
 				Chain: []validation.Constraint{{Target: "top", Name: validation.InclusiveMaximum, Rule: 200, Chain: nil},
 					{Target: "top", Name: validation.InclusiveMinimum, Rule: 1, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "ListByWorkspace")
+		return result, validation.NewError("servicemap.MachinesClient", "ListByWorkspace", err.Error())
 	}
 
 	result.fn = client.listByWorkspaceNextResults
@@ -289,6 +289,8 @@ func (client MachinesClient) ListByWorkspacePreparer(ctx context.Context, resour
 	}
 	if live != nil {
 		queryParameters["live"] = autorest.Encode("query", *live)
+	} else {
+		queryParameters["live"] = autorest.Encode("query", true)
 	}
 	if startTime != nil {
 		queryParameters["startTime"] = autorest.Encode("query", *startTime)
@@ -362,8 +364,8 @@ func (client MachinesClient) ListByWorkspaceComplete(ctx context.Context, resour
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineName is machine resource name. startTime is UTC date and time
-// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
-// date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
+// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is
+// UTC date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
 func (client MachinesClient) ListConnections(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (result ConnectionCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -377,7 +379,7 @@ func (client MachinesClient) ListConnections(ctx context.Context, resourceGroupN
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "ListConnections")
+		return result, validation.NewError("servicemap.MachinesClient", "ListConnections", err.Error())
 	}
 
 	result.fn = client.listConnectionsNextResults
@@ -477,11 +479,14 @@ func (client MachinesClient) ListConnectionsComplete(ctx context.Context, resour
 	return
 }
 
-// ListMachineGroupMembership returns a collection of machine groups this machine belongs to.
+// ListMachineGroupMembership returns a collection of machine groups this machine belongs to during the specified time
+// interval.
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
-// containing the resources of interest. machineName is machine resource name.
-func (client MachinesClient) ListMachineGroupMembership(ctx context.Context, resourceGroupName string, workspaceName string, machineName string) (result MachineGroupCollectionPage, err error) {
+// containing the resources of interest. machineName is machine resource name. startTime is UTC date and time
+// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is
+// UTC date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
+func (client MachinesClient) ListMachineGroupMembership(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (result MachineGroupCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 64, Chain: nil},
@@ -494,11 +499,11 @@ func (client MachinesClient) ListMachineGroupMembership(ctx context.Context, res
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "ListMachineGroupMembership")
+		return result, validation.NewError("servicemap.MachinesClient", "ListMachineGroupMembership", err.Error())
 	}
 
 	result.fn = client.listMachineGroupMembershipNextResults
-	req, err := client.ListMachineGroupMembershipPreparer(ctx, resourceGroupName, workspaceName, machineName)
+	req, err := client.ListMachineGroupMembershipPreparer(ctx, resourceGroupName, workspaceName, machineName, startTime, endTime)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "servicemap.MachinesClient", "ListMachineGroupMembership", nil, "Failure preparing request")
 		return
@@ -520,7 +525,7 @@ func (client MachinesClient) ListMachineGroupMembership(ctx context.Context, res
 }
 
 // ListMachineGroupMembershipPreparer prepares the ListMachineGroupMembership request.
-func (client MachinesClient) ListMachineGroupMembershipPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string) (*http.Request, error) {
+func (client MachinesClient) ListMachineGroupMembershipPreparer(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (*http.Request, error) {
 	pathParameters := map[string]interface{}{
 		"machineName":       autorest.Encode("path", machineName),
 		"resourceGroupName": autorest.Encode("path", resourceGroupName),
@@ -531,6 +536,12 @@ func (client MachinesClient) ListMachineGroupMembershipPreparer(ctx context.Cont
 	const APIVersion = "2015-11-01-preview"
 	queryParameters := map[string]interface{}{
 		"api-version": APIVersion,
+	}
+	if startTime != nil {
+		queryParameters["startTime"] = autorest.Encode("query", *startTime)
+	}
+	if endTime != nil {
+		queryParameters["endTime"] = autorest.Encode("query", *endTime)
 	}
 
 	preparer := autorest.CreatePreparer(
@@ -583,8 +594,8 @@ func (client MachinesClient) listMachineGroupMembershipNextResults(lastResults M
 }
 
 // ListMachineGroupMembershipComplete enumerates all values, automatically crossing page boundaries as required.
-func (client MachinesClient) ListMachineGroupMembershipComplete(ctx context.Context, resourceGroupName string, workspaceName string, machineName string) (result MachineGroupCollectionIterator, err error) {
-	result.page, err = client.ListMachineGroupMembership(ctx, resourceGroupName, workspaceName, machineName)
+func (client MachinesClient) ListMachineGroupMembershipComplete(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (result MachineGroupCollectionIterator, err error) {
+	result.page, err = client.ListMachineGroupMembership(ctx, resourceGroupName, workspaceName, machineName, startTime, endTime)
 	return
 }
 
@@ -592,8 +603,8 @@ func (client MachinesClient) ListMachineGroupMembershipComplete(ctx context.Cont
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
 // containing the resources of interest. machineName is machine resource name. startTime is UTC date and time
-// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC
-// date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
+// specifying the start time of an interval. When not specified the service uses DateTime.UtcNow - 10m endTime is
+// UTC date and time specifying the end time of an interval. When not specified the service uses DateTime.UtcNow
 func (client MachinesClient) ListPorts(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, startTime *date.Time, endTime *date.Time) (result PortCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -607,7 +618,7 @@ func (client MachinesClient) ListPorts(ctx context.Context, resourceGroupName st
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "ListPorts")
+		return result, validation.NewError("servicemap.MachinesClient", "ListPorts", err.Error())
 	}
 
 	result.fn = client.listPortsNextResults
@@ -713,15 +724,15 @@ func (client MachinesClient) ListPortsComplete(ctx context.Context, resourceGrou
 // the specified point in time (`live=false` and `timestamp` is specified).
 //
 // resourceGroupName is resource group name within the specified subscriptionId. workspaceName is OMS workspace
-// containing the resources of interest. machineName is machine resource name. live is specifies whether to return live
-// resources (true) or inventory resources (false). Defaults to **true**. When retrieving live resources, the start
-// time (`startTime`) and end time (`endTime`) of the desired interval should be included. When retrieving inventory
-// resources, an optional timestamp (`timestamp`) parameter can be specified to return the version of each resource
-// closest (not-after) that timestamp. startTime is UTC date and time specifying the start time of an interval. When
-// not specified the service uses DateTime.UtcNow - 10m endTime is UTC date and time specifying the end time of an
-// interval. When not specified the service uses DateTime.UtcNow timestamp is UTC date and time specifying a time
-// instance relative to which to evaluate all process resource. Only applies when `live=false`. When not specified, the
-// service uses DateTime.UtcNow.
+// containing the resources of interest. machineName is machine resource name. live is specifies whether to return
+// live resources (true) or inventory resources (false). Defaults to **true**. When retrieving live resources, the
+// start time (`startTime`) and end time (`endTime`) of the desired interval should be included. When retrieving
+// inventory resources, an optional timestamp (`timestamp`) parameter can be specified to return the version of
+// each resource closest (not-after) that timestamp. startTime is UTC date and time specifying the start time of an
+// interval. When not specified the service uses DateTime.UtcNow - 10m endTime is UTC date and time specifying the
+// end time of an interval. When not specified the service uses DateTime.UtcNow timestamp is UTC date and time
+// specifying a time instance relative to which to evaluate all process resource. Only applies when `live=false`.
+// When not specified, the service uses DateTime.UtcNow.
 func (client MachinesClient) ListProcesses(ctx context.Context, resourceGroupName string, workspaceName string, machineName string, live *bool, startTime *date.Time, endTime *date.Time, timestamp *date.Time) (result ProcessCollectionPage, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: resourceGroupName,
@@ -735,7 +746,7 @@ func (client MachinesClient) ListProcesses(ctx context.Context, resourceGroupNam
 		{TargetValue: machineName,
 			Constraints: []validation.Constraint{{Target: "machineName", Name: validation.MaxLength, Rule: 64, Chain: nil},
 				{Target: "machineName", Name: validation.MinLength, Rule: 3, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicemap.MachinesClient", "ListProcesses")
+		return result, validation.NewError("servicemap.MachinesClient", "ListProcesses", err.Error())
 	}
 
 	result.fn = client.listProcessesNextResults
@@ -775,6 +786,8 @@ func (client MachinesClient) ListProcessesPreparer(ctx context.Context, resource
 	}
 	if live != nil {
 		queryParameters["live"] = autorest.Encode("query", *live)
+	} else {
+		queryParameters["live"] = autorest.Encode("query", true)
 	}
 	if startTime != nil {
 		queryParameters["startTime"] = autorest.Encode("query", *startTime)

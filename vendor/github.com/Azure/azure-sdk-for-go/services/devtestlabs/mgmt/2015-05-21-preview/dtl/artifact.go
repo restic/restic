@@ -42,8 +42,8 @@ func NewArtifactClientWithBaseURI(baseURI string, subscriptionID string) Artifac
 // GenerateArmTemplate generates an ARM template for the given artifact, uploads the required files to a storage
 // account, and validates the generated artifact.
 //
-// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the name
-// of the artifact source. name is the name of the artifact.
+// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the
+// name of the artifact source. name is the name of the artifact.
 func (client ArtifactClient) GenerateArmTemplate(ctx context.Context, resourceGroupName string, labName string, artifactSourceName string, name string, generateArmTemplateRequest GenerateArmTemplateRequest) (result ArmTemplateInfo, err error) {
 	req, err := client.GenerateArmTemplatePreparer(ctx, resourceGroupName, labName, artifactSourceName, name, generateArmTemplateRequest)
 	if err != nil {
@@ -82,7 +82,7 @@ func (client ArtifactClient) GenerateArmTemplatePreparer(ctx context.Context, re
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/artifactsources/{artifactSourceName}/artifacts/{name}/generateArmTemplate", pathParameters),
@@ -113,8 +113,8 @@ func (client ArtifactClient) GenerateArmTemplateResponder(resp *http.Response) (
 
 // GetResource get artifact.
 //
-// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the name
-// of the artifact source. name is the name of the artifact.
+// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the
+// name of the artifact source. name is the name of the artifact.
 func (client ArtifactClient) GetResource(ctx context.Context, resourceGroupName string, labName string, artifactSourceName string, name string) (result Artifact, err error) {
 	req, err := client.GetResourcePreparer(ctx, resourceGroupName, labName, artifactSourceName, name)
 	if err != nil {
@@ -182,8 +182,8 @@ func (client ArtifactClient) GetResourceResponder(resp *http.Response) (result A
 
 // List list artifacts.
 //
-// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the name
-// of the artifact source. filter is the filter to apply on the operation.
+// resourceGroupName is the name of the resource group. labName is the name of the lab. artifactSourceName is the
+// name of the artifact source. filter is the filter to apply on the operation.
 func (client ArtifactClient) List(ctx context.Context, resourceGroupName string, labName string, artifactSourceName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationArtifactPage, err error) {
 	result.fn = client.listNextResults
 	req, err := client.ListPreparer(ctx, resourceGroupName, labName, artifactSourceName, filter, top, orderBy)

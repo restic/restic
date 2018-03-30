@@ -41,6 +41,11 @@ const (
 	Security Category = "Security"
 )
 
+// PossibleCategoryValues returns an array of possible values for the Category const type.
+func PossibleCategoryValues() []Category {
+	return []Category{Cost, HighAvailability, Performance, Security}
+}
+
 // Impact enumerates the values for impact.
 type Impact string
 
@@ -53,6 +58,11 @@ const (
 	Medium Impact = "Medium"
 )
 
+// PossibleImpactValues returns an array of possible values for the Impact const type.
+func PossibleImpactValues() []Impact {
+	return []Impact{High, Low, Medium}
+}
+
 // Risk enumerates the values for risk.
 type Risk string
 
@@ -64,6 +74,11 @@ const (
 	// Warning ...
 	Warning Risk = "Warning"
 )
+
+// PossibleRiskValues returns an array of possible values for the Risk const type.
+func PossibleRiskValues() []Risk {
+	return []Risk{Error, None, Warning}
+}
 
 // ARMErrorResponseBody ARM error response body.
 type ARMErrorResponseBody struct {
@@ -89,11 +104,26 @@ type ConfigData struct {
 // ConfigDataProperties the list of property name/value pairs.
 type ConfigDataProperties struct {
 	// AdditionalProperties - Unmatched properties from the message are deserialized this collection
-	AdditionalProperties *map[string]*map[string]interface{} `json:",omitempty"`
+	AdditionalProperties map[string]interface{} `json:""`
 	// Exclude - Exclude the resource from Advisor evaluations. Valid values: False (default) or True.
 	Exclude *bool `json:"exclude,omitempty"`
 	// LowCPUThreshold - Minimum percentage threshold for Advisor low CPU utilization evaluation. Valid only for subscriptions. Valid values: 5 (default), 10, 15 or 20.
 	LowCPUThreshold *string `json:"low_cpu_threshold,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ConfigDataProperties.
+func (cd ConfigDataProperties) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cd.Exclude != nil {
+		objectMap["exclude"] = cd.Exclude
+	}
+	if cd.LowCPUThreshold != nil {
+		objectMap["low_cpu_threshold"] = cd.LowCPUThreshold
+	}
+	for k, v := range cd.AdditionalProperties {
+		objectMap[k] = v
+	}
+	return json.Marshal(objectMap)
 }
 
 // ConfigurationListResult the list of Advisor configurations.
@@ -103,6 +133,99 @@ type ConfigurationListResult struct {
 	Value *[]ConfigData `json:"value,omitempty"`
 	// NextLink - The link used to get the next page of configurations.
 	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ConfigurationListResultIterator provides access to a complete listing of ConfigData values.
+type ConfigurationListResultIterator struct {
+	i    int
+	page ConfigurationListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ConfigurationListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ConfigurationListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ConfigurationListResultIterator) Response() ConfigurationListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ConfigurationListResultIterator) Value() ConfigData {
+	if !iter.page.NotDone() {
+		return ConfigData{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (clr ConfigurationListResult) IsEmpty() bool {
+	return clr.Value == nil || len(*clr.Value) == 0
+}
+
+// configurationListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (clr ConfigurationListResult) configurationListResultPreparer() (*http.Request, error) {
+	if clr.NextLink == nil || len(to.String(clr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(clr.NextLink)))
+}
+
+// ConfigurationListResultPage contains a page of ConfigData values.
+type ConfigurationListResultPage struct {
+	fn  func(ConfigurationListResult) (ConfigurationListResult, error)
+	clr ConfigurationListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ConfigurationListResultPage) Next() error {
+	next, err := page.fn(page.clr)
+	if err != nil {
+		return err
+	}
+	page.clr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ConfigurationListResultPage) NotDone() bool {
+	return !page.clr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ConfigurationListResultPage) Response() ConfigurationListResult {
+	return page.clr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ConfigurationListResultPage) Values() []ConfigData {
+	if page.clr.IsEmpty() {
+		return nil
+	}
+	return *page.clr.Value
 }
 
 // OperationDisplayInfo the operation supported by Advisor.
@@ -240,7 +363,7 @@ type RecommendationProperties struct {
 	// LastUpdated - The most recent time that Advisor checked the validity of the recommendation.
 	LastUpdated *date.Time `json:"lastUpdated,omitempty"`
 	// Metadata - The recommendation metadata.
-	Metadata *map[string]*map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]interface{} `json:"metadata"`
 	// RecommendationTypeID - The recommendation-type GUID.
 	RecommendationTypeID *string `json:"recommendationTypeId,omitempty"`
 	// Risk - The potential risk of not implementing the recommendation. Possible values include: 'Error', 'Warning', 'None'
@@ -251,8 +374,44 @@ type RecommendationProperties struct {
 	SuppressionIds *[]uuid.UUID `json:"suppressionIds,omitempty"`
 }
 
-// RecommendationsGetGenerateStatusFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// MarshalJSON is the custom marshaler for RecommendationProperties.
+func (rp RecommendationProperties) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rp.Category != "" {
+		objectMap["category"] = rp.Category
+	}
+	if rp.Impact != "" {
+		objectMap["impact"] = rp.Impact
+	}
+	if rp.ImpactedField != nil {
+		objectMap["impactedField"] = rp.ImpactedField
+	}
+	if rp.ImpactedValue != nil {
+		objectMap["impactedValue"] = rp.ImpactedValue
+	}
+	if rp.LastUpdated != nil {
+		objectMap["lastUpdated"] = rp.LastUpdated
+	}
+	if rp.Metadata != nil {
+		objectMap["metadata"] = rp.Metadata
+	}
+	if rp.RecommendationTypeID != nil {
+		objectMap["recommendationTypeId"] = rp.RecommendationTypeID
+	}
+	if rp.Risk != "" {
+		objectMap["risk"] = rp.Risk
+	}
+	if rp.ShortDescription != nil {
+		objectMap["shortDescription"] = rp.ShortDescription
+	}
+	if rp.SuppressionIds != nil {
+		objectMap["suppressionIds"] = rp.SuppressionIds
+	}
+	return json.Marshal(objectMap)
+}
+
+// RecommendationsGetGenerateStatusFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type RecommendationsGetGenerateStatusFuture struct {
 	azure.Future
 	req *http.Request
@@ -264,22 +423,39 @@ func (future RecommendationsGetGenerateStatusFuture) Result(client Recommendatio
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "advisor.RecommendationsGetGenerateStatusFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("advisor.RecommendationsGetGenerateStatusFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("advisor.RecommendationsGetGenerateStatusFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.GetGenerateStatusResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "advisor.RecommendationsGetGenerateStatusFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "advisor.RecommendationsGetGenerateStatusFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.GetGenerateStatusResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "advisor.RecommendationsGetGenerateStatusFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -296,14 +472,32 @@ type Resource struct {
 // ResourceRecommendationBase advisor Recommendation.
 type ResourceRecommendationBase struct {
 	autorest.Response `json:"-"`
+	// RecommendationProperties - The properties of the recommendation.
+	*RecommendationProperties `json:"properties,omitempty"`
 	// ID - The resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource.
 	Type *string `json:"type,omitempty"`
-	// RecommendationProperties - The properties of the recommendation.
-	*RecommendationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ResourceRecommendationBase.
+func (rrb ResourceRecommendationBase) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rrb.RecommendationProperties != nil {
+		objectMap["properties"] = rrb.RecommendationProperties
+	}
+	if rrb.ID != nil {
+		objectMap["id"] = rrb.ID
+	}
+	if rrb.Name != nil {
+		objectMap["name"] = rrb.Name
+	}
+	if rrb.Type != nil {
+		objectMap["type"] = rrb.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ResourceRecommendationBase struct.
@@ -313,46 +507,45 @@ func (rrb *ResourceRecommendationBase) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties RecommendationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var recommendationProperties RecommendationProperties
+				err = json.Unmarshal(*v, &recommendationProperties)
+				if err != nil {
+					return err
+				}
+				rrb.RecommendationProperties = &recommendationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				rrb.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				rrb.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				rrb.Type = &typeVar
+			}
 		}
-		rrb.RecommendationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		rrb.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		rrb.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		rrb.Type = &typeVar
 	}
 
 	return nil
@@ -473,14 +666,32 @@ type ShortDescription struct {
 // associated with the rule.
 type SuppressionContract struct {
 	autorest.Response `json:"-"`
+	// SuppressionProperties - The properties of the suppression.
+	*SuppressionProperties `json:"properties,omitempty"`
 	// ID - The resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Type - The type of the resource.
 	Type *string `json:"type,omitempty"`
-	// SuppressionProperties - The properties of the suppression.
-	*SuppressionProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SuppressionContract.
+func (sc SuppressionContract) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if sc.SuppressionProperties != nil {
+		objectMap["properties"] = sc.SuppressionProperties
+	}
+	if sc.ID != nil {
+		objectMap["id"] = sc.ID
+	}
+	if sc.Name != nil {
+		objectMap["name"] = sc.Name
+	}
+	if sc.Type != nil {
+		objectMap["type"] = sc.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SuppressionContract struct.
@@ -490,46 +701,45 @@ func (sc *SuppressionContract) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SuppressionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var suppressionProperties SuppressionProperties
+				err = json.Unmarshal(*v, &suppressionProperties)
+				if err != nil {
+					return err
+				}
+				sc.SuppressionProperties = &suppressionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				sc.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				sc.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sc.Type = &typeVar
+			}
 		}
-		sc.SuppressionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		sc.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		sc.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sc.Type = &typeVar
 	}
 
 	return nil

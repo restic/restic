@@ -36,6 +36,11 @@ const (
 	Read AccessLevel = "Read"
 )
 
+// PossibleAccessLevelValues returns an array of possible values for the AccessLevel const type.
+func PossibleAccessLevelValues() []AccessLevel {
+	return []AccessLevel{None, Read}
+}
+
 // CachingTypes enumerates the values for caching types.
 type CachingTypes string
 
@@ -48,6 +53,11 @@ const (
 	CachingTypesReadWrite CachingTypes = "ReadWrite"
 )
 
+// PossibleCachingTypesValues returns an array of possible values for the CachingTypes const type.
+func PossibleCachingTypesValues() []CachingTypes {
+	return []CachingTypes{CachingTypesNone, CachingTypesReadOnly, CachingTypesReadWrite}
+}
+
 // ComponentNames enumerates the values for component names.
 type ComponentNames string
 
@@ -55,6 +65,135 @@ const (
 	// MicrosoftWindowsShellSetup ...
 	MicrosoftWindowsShellSetup ComponentNames = "Microsoft-Windows-Shell-Setup"
 )
+
+// PossibleComponentNamesValues returns an array of possible values for the ComponentNames const type.
+func PossibleComponentNamesValues() []ComponentNames {
+	return []ComponentNames{MicrosoftWindowsShellSetup}
+}
+
+// ContainerServiceOrchestratorTypes enumerates the values for container service orchestrator types.
+type ContainerServiceOrchestratorTypes string
+
+const (
+	// Custom ...
+	Custom ContainerServiceOrchestratorTypes = "Custom"
+	// DCOS ...
+	DCOS ContainerServiceOrchestratorTypes = "DCOS"
+	// Kubernetes ...
+	Kubernetes ContainerServiceOrchestratorTypes = "Kubernetes"
+	// Swarm ...
+	Swarm ContainerServiceOrchestratorTypes = "Swarm"
+)
+
+// PossibleContainerServiceOrchestratorTypesValues returns an array of possible values for the ContainerServiceOrchestratorTypes const type.
+func PossibleContainerServiceOrchestratorTypesValues() []ContainerServiceOrchestratorTypes {
+	return []ContainerServiceOrchestratorTypes{Custom, DCOS, Kubernetes, Swarm}
+}
+
+// ContainerServiceVMSizeTypes enumerates the values for container service vm size types.
+type ContainerServiceVMSizeTypes string
+
+const (
+	// StandardA0 ...
+	StandardA0 ContainerServiceVMSizeTypes = "Standard_A0"
+	// StandardA1 ...
+	StandardA1 ContainerServiceVMSizeTypes = "Standard_A1"
+	// StandardA10 ...
+	StandardA10 ContainerServiceVMSizeTypes = "Standard_A10"
+	// StandardA11 ...
+	StandardA11 ContainerServiceVMSizeTypes = "Standard_A11"
+	// StandardA2 ...
+	StandardA2 ContainerServiceVMSizeTypes = "Standard_A2"
+	// StandardA3 ...
+	StandardA3 ContainerServiceVMSizeTypes = "Standard_A3"
+	// StandardA4 ...
+	StandardA4 ContainerServiceVMSizeTypes = "Standard_A4"
+	// StandardA5 ...
+	StandardA5 ContainerServiceVMSizeTypes = "Standard_A5"
+	// StandardA6 ...
+	StandardA6 ContainerServiceVMSizeTypes = "Standard_A6"
+	// StandardA7 ...
+	StandardA7 ContainerServiceVMSizeTypes = "Standard_A7"
+	// StandardA8 ...
+	StandardA8 ContainerServiceVMSizeTypes = "Standard_A8"
+	// StandardA9 ...
+	StandardA9 ContainerServiceVMSizeTypes = "Standard_A9"
+	// StandardD1 ...
+	StandardD1 ContainerServiceVMSizeTypes = "Standard_D1"
+	// StandardD11 ...
+	StandardD11 ContainerServiceVMSizeTypes = "Standard_D11"
+	// StandardD11V2 ...
+	StandardD11V2 ContainerServiceVMSizeTypes = "Standard_D11_v2"
+	// StandardD12 ...
+	StandardD12 ContainerServiceVMSizeTypes = "Standard_D12"
+	// StandardD12V2 ...
+	StandardD12V2 ContainerServiceVMSizeTypes = "Standard_D12_v2"
+	// StandardD13 ...
+	StandardD13 ContainerServiceVMSizeTypes = "Standard_D13"
+	// StandardD13V2 ...
+	StandardD13V2 ContainerServiceVMSizeTypes = "Standard_D13_v2"
+	// StandardD14 ...
+	StandardD14 ContainerServiceVMSizeTypes = "Standard_D14"
+	// StandardD14V2 ...
+	StandardD14V2 ContainerServiceVMSizeTypes = "Standard_D14_v2"
+	// StandardD1V2 ...
+	StandardD1V2 ContainerServiceVMSizeTypes = "Standard_D1_v2"
+	// StandardD2 ...
+	StandardD2 ContainerServiceVMSizeTypes = "Standard_D2"
+	// StandardD2V2 ...
+	StandardD2V2 ContainerServiceVMSizeTypes = "Standard_D2_v2"
+	// StandardD3 ...
+	StandardD3 ContainerServiceVMSizeTypes = "Standard_D3"
+	// StandardD3V2 ...
+	StandardD3V2 ContainerServiceVMSizeTypes = "Standard_D3_v2"
+	// StandardD4 ...
+	StandardD4 ContainerServiceVMSizeTypes = "Standard_D4"
+	// StandardD4V2 ...
+	StandardD4V2 ContainerServiceVMSizeTypes = "Standard_D4_v2"
+	// StandardD5V2 ...
+	StandardD5V2 ContainerServiceVMSizeTypes = "Standard_D5_v2"
+	// StandardDS1 ...
+	StandardDS1 ContainerServiceVMSizeTypes = "Standard_DS1"
+	// StandardDS11 ...
+	StandardDS11 ContainerServiceVMSizeTypes = "Standard_DS11"
+	// StandardDS12 ...
+	StandardDS12 ContainerServiceVMSizeTypes = "Standard_DS12"
+	// StandardDS13 ...
+	StandardDS13 ContainerServiceVMSizeTypes = "Standard_DS13"
+	// StandardDS14 ...
+	StandardDS14 ContainerServiceVMSizeTypes = "Standard_DS14"
+	// StandardDS2 ...
+	StandardDS2 ContainerServiceVMSizeTypes = "Standard_DS2"
+	// StandardDS3 ...
+	StandardDS3 ContainerServiceVMSizeTypes = "Standard_DS3"
+	// StandardDS4 ...
+	StandardDS4 ContainerServiceVMSizeTypes = "Standard_DS4"
+	// StandardG1 ...
+	StandardG1 ContainerServiceVMSizeTypes = "Standard_G1"
+	// StandardG2 ...
+	StandardG2 ContainerServiceVMSizeTypes = "Standard_G2"
+	// StandardG3 ...
+	StandardG3 ContainerServiceVMSizeTypes = "Standard_G3"
+	// StandardG4 ...
+	StandardG4 ContainerServiceVMSizeTypes = "Standard_G4"
+	// StandardG5 ...
+	StandardG5 ContainerServiceVMSizeTypes = "Standard_G5"
+	// StandardGS1 ...
+	StandardGS1 ContainerServiceVMSizeTypes = "Standard_GS1"
+	// StandardGS2 ...
+	StandardGS2 ContainerServiceVMSizeTypes = "Standard_GS2"
+	// StandardGS3 ...
+	StandardGS3 ContainerServiceVMSizeTypes = "Standard_GS3"
+	// StandardGS4 ...
+	StandardGS4 ContainerServiceVMSizeTypes = "Standard_GS4"
+	// StandardGS5 ...
+	StandardGS5 ContainerServiceVMSizeTypes = "Standard_GS5"
+)
+
+// PossibleContainerServiceVMSizeTypesValues returns an array of possible values for the ContainerServiceVMSizeTypes const type.
+func PossibleContainerServiceVMSizeTypesValues() []ContainerServiceVMSizeTypes {
+	return []ContainerServiceVMSizeTypes{StandardA0, StandardA1, StandardA10, StandardA11, StandardA2, StandardA3, StandardA4, StandardA5, StandardA6, StandardA7, StandardA8, StandardA9, StandardD1, StandardD11, StandardD11V2, StandardD12, StandardD12V2, StandardD13, StandardD13V2, StandardD14, StandardD14V2, StandardD1V2, StandardD2, StandardD2V2, StandardD3, StandardD3V2, StandardD4, StandardD4V2, StandardD5V2, StandardDS1, StandardDS11, StandardDS12, StandardDS13, StandardDS14, StandardDS2, StandardDS3, StandardDS4, StandardG1, StandardG2, StandardG3, StandardG4, StandardG5, StandardGS1, StandardGS2, StandardGS3, StandardGS4, StandardGS5}
+}
 
 // DiskCreateOption enumerates the values for disk create option.
 type DiskCreateOption string
@@ -72,6 +211,11 @@ const (
 	Import DiskCreateOption = "Import"
 )
 
+// PossibleDiskCreateOptionValues returns an array of possible values for the DiskCreateOption const type.
+func PossibleDiskCreateOptionValues() []DiskCreateOption {
+	return []DiskCreateOption{Attach, Copy, Empty, FromImage, Import}
+}
+
 // DiskCreateOptionTypes enumerates the values for disk create option types.
 type DiskCreateOptionTypes string
 
@@ -84,6 +228,11 @@ const (
 	DiskCreateOptionTypesFromImage DiskCreateOptionTypes = "FromImage"
 )
 
+// PossibleDiskCreateOptionTypesValues returns an array of possible values for the DiskCreateOptionTypes const type.
+func PossibleDiskCreateOptionTypesValues() []DiskCreateOptionTypes {
+	return []DiskCreateOptionTypes{DiskCreateOptionTypesAttach, DiskCreateOptionTypesEmpty, DiskCreateOptionTypesFromImage}
+}
+
 // InstanceViewTypes enumerates the values for instance view types.
 type InstanceViewTypes string
 
@@ -91,6 +240,11 @@ const (
 	// InstanceView ...
 	InstanceView InstanceViewTypes = "instanceView"
 )
+
+// PossibleInstanceViewTypesValues returns an array of possible values for the InstanceViewTypes const type.
+func PossibleInstanceViewTypesValues() []InstanceViewTypes {
+	return []InstanceViewTypes{InstanceView}
+}
 
 // IPVersion enumerates the values for ip version.
 type IPVersion string
@@ -101,6 +255,11 @@ const (
 	// IPv6 ...
 	IPv6 IPVersion = "IPv6"
 )
+
+// PossibleIPVersionValues returns an array of possible values for the IPVersion const type.
+func PossibleIPVersionValues() []IPVersion {
+	return []IPVersion{IPv4, IPv6}
+}
 
 // MaintenanceOperationResultCodeTypes enumerates the values for maintenance operation result code types.
 type MaintenanceOperationResultCodeTypes string
@@ -116,6 +275,11 @@ const (
 	MaintenanceOperationResultCodeTypesRetryLater MaintenanceOperationResultCodeTypes = "RetryLater"
 )
 
+// PossibleMaintenanceOperationResultCodeTypesValues returns an array of possible values for the MaintenanceOperationResultCodeTypes const type.
+func PossibleMaintenanceOperationResultCodeTypesValues() []MaintenanceOperationResultCodeTypes {
+	return []MaintenanceOperationResultCodeTypes{MaintenanceOperationResultCodeTypesMaintenanceAborted, MaintenanceOperationResultCodeTypesMaintenanceCompleted, MaintenanceOperationResultCodeTypesNone, MaintenanceOperationResultCodeTypesRetryLater}
+}
+
 // OperatingSystemStateTypes enumerates the values for operating system state types.
 type OperatingSystemStateTypes string
 
@@ -125,6 +289,11 @@ const (
 	// Specialized ...
 	Specialized OperatingSystemStateTypes = "Specialized"
 )
+
+// PossibleOperatingSystemStateTypesValues returns an array of possible values for the OperatingSystemStateTypes const type.
+func PossibleOperatingSystemStateTypesValues() []OperatingSystemStateTypes {
+	return []OperatingSystemStateTypes{Generalized, Specialized}
+}
 
 // OperatingSystemTypes enumerates the values for operating system types.
 type OperatingSystemTypes string
@@ -136,6 +305,11 @@ const (
 	Windows OperatingSystemTypes = "Windows"
 )
 
+// PossibleOperatingSystemTypesValues returns an array of possible values for the OperatingSystemTypes const type.
+func PossibleOperatingSystemTypesValues() []OperatingSystemTypes {
+	return []OperatingSystemTypes{Linux, Windows}
+}
+
 // PassNames enumerates the values for pass names.
 type PassNames string
 
@@ -143,6 +317,11 @@ const (
 	// OobeSystem ...
 	OobeSystem PassNames = "OobeSystem"
 )
+
+// PossiblePassNamesValues returns an array of possible values for the PassNames const type.
+func PossiblePassNamesValues() []PassNames {
+	return []PassNames{OobeSystem}
+}
 
 // ProtocolTypes enumerates the values for protocol types.
 type ProtocolTypes string
@@ -154,6 +333,11 @@ const (
 	HTTPS ProtocolTypes = "Https"
 )
 
+// PossibleProtocolTypesValues returns an array of possible values for the ProtocolTypes const type.
+func PossibleProtocolTypesValues() []ProtocolTypes {
+	return []ProtocolTypes{HTTP, HTTPS}
+}
+
 // ResourceIdentityType enumerates the values for resource identity type.
 type ResourceIdentityType string
 
@@ -161,6 +345,11 @@ const (
 	// SystemAssigned ...
 	SystemAssigned ResourceIdentityType = "SystemAssigned"
 )
+
+// PossibleResourceIdentityTypeValues returns an array of possible values for the ResourceIdentityType const type.
+func PossibleResourceIdentityTypeValues() []ResourceIdentityType {
+	return []ResourceIdentityType{SystemAssigned}
+}
 
 // ResourceSkuCapacityScaleType enumerates the values for resource sku capacity scale type.
 type ResourceSkuCapacityScaleType string
@@ -174,6 +363,11 @@ const (
 	ResourceSkuCapacityScaleTypeNone ResourceSkuCapacityScaleType = "None"
 )
 
+// PossibleResourceSkuCapacityScaleTypeValues returns an array of possible values for the ResourceSkuCapacityScaleType const type.
+func PossibleResourceSkuCapacityScaleTypeValues() []ResourceSkuCapacityScaleType {
+	return []ResourceSkuCapacityScaleType{ResourceSkuCapacityScaleTypeAutomatic, ResourceSkuCapacityScaleTypeManual, ResourceSkuCapacityScaleTypeNone}
+}
+
 // ResourceSkuRestrictionsReasonCode enumerates the values for resource sku restrictions reason code.
 type ResourceSkuRestrictionsReasonCode string
 
@@ -184,6 +378,11 @@ const (
 	QuotaID ResourceSkuRestrictionsReasonCode = "QuotaId"
 )
 
+// PossibleResourceSkuRestrictionsReasonCodeValues returns an array of possible values for the ResourceSkuRestrictionsReasonCode const type.
+func PossibleResourceSkuRestrictionsReasonCodeValues() []ResourceSkuRestrictionsReasonCode {
+	return []ResourceSkuRestrictionsReasonCode{NotAvailableForSubscription, QuotaID}
+}
+
 // ResourceSkuRestrictionsType enumerates the values for resource sku restrictions type.
 type ResourceSkuRestrictionsType string
 
@@ -191,6 +390,11 @@ const (
 	// Location ...
 	Location ResourceSkuRestrictionsType = "Location"
 )
+
+// PossibleResourceSkuRestrictionsTypeValues returns an array of possible values for the ResourceSkuRestrictionsType const type.
+func PossibleResourceSkuRestrictionsTypeValues() []ResourceSkuRestrictionsType {
+	return []ResourceSkuRestrictionsType{Location}
+}
 
 // RollingUpgradeActionType enumerates the values for rolling upgrade action type.
 type RollingUpgradeActionType string
@@ -201,6 +405,11 @@ const (
 	// Start ...
 	Start RollingUpgradeActionType = "Start"
 )
+
+// PossibleRollingUpgradeActionTypeValues returns an array of possible values for the RollingUpgradeActionType const type.
+func PossibleRollingUpgradeActionTypeValues() []RollingUpgradeActionType {
+	return []RollingUpgradeActionType{Cancel, Start}
+}
 
 // RollingUpgradeStatusCode enumerates the values for rolling upgrade status code.
 type RollingUpgradeStatusCode string
@@ -216,6 +425,11 @@ const (
 	RollingForward RollingUpgradeStatusCode = "RollingForward"
 )
 
+// PossibleRollingUpgradeStatusCodeValues returns an array of possible values for the RollingUpgradeStatusCode const type.
+func PossibleRollingUpgradeStatusCodeValues() []RollingUpgradeStatusCode {
+	return []RollingUpgradeStatusCode{Cancelled, Completed, Faulted, RollingForward}
+}
+
 // SettingNames enumerates the values for setting names.
 type SettingNames string
 
@@ -225,6 +439,11 @@ const (
 	// FirstLogonCommands ...
 	FirstLogonCommands SettingNames = "FirstLogonCommands"
 )
+
+// PossibleSettingNamesValues returns an array of possible values for the SettingNames const type.
+func PossibleSettingNamesValues() []SettingNames {
+	return []SettingNames{AutoLogon, FirstLogonCommands}
+}
 
 // StatusLevelTypes enumerates the values for status level types.
 type StatusLevelTypes string
@@ -238,6 +457,11 @@ const (
 	Warning StatusLevelTypes = "Warning"
 )
 
+// PossibleStatusLevelTypesValues returns an array of possible values for the StatusLevelTypes const type.
+func PossibleStatusLevelTypesValues() []StatusLevelTypes {
+	return []StatusLevelTypes{Error, Info, Warning}
+}
+
 // StorageAccountTypes enumerates the values for storage account types.
 type StorageAccountTypes string
 
@@ -247,6 +471,11 @@ const (
 	// StandardLRS ...
 	StandardLRS StorageAccountTypes = "Standard_LRS"
 )
+
+// PossibleStorageAccountTypesValues returns an array of possible values for the StorageAccountTypes const type.
+func PossibleStorageAccountTypesValues() []StorageAccountTypes {
+	return []StorageAccountTypes{PremiumLRS, StandardLRS}
+}
 
 // UpgradeMode enumerates the values for upgrade mode.
 type UpgradeMode string
@@ -260,6 +489,11 @@ const (
 	Rolling UpgradeMode = "Rolling"
 )
 
+// PossibleUpgradeModeValues returns an array of possible values for the UpgradeMode const type.
+func PossibleUpgradeModeValues() []UpgradeMode {
+	return []UpgradeMode{Automatic, Manual, Rolling}
+}
+
 // VirtualMachineScaleSetSkuScaleType enumerates the values for virtual machine scale set sku scale type.
 type VirtualMachineScaleSetSkuScaleType string
 
@@ -270,211 +504,230 @@ const (
 	VirtualMachineScaleSetSkuScaleTypeNone VirtualMachineScaleSetSkuScaleType = "None"
 )
 
+// PossibleVirtualMachineScaleSetSkuScaleTypeValues returns an array of possible values for the VirtualMachineScaleSetSkuScaleType const type.
+func PossibleVirtualMachineScaleSetSkuScaleTypeValues() []VirtualMachineScaleSetSkuScaleType {
+	return []VirtualMachineScaleSetSkuScaleType{VirtualMachineScaleSetSkuScaleTypeAutomatic, VirtualMachineScaleSetSkuScaleTypeNone}
+}
+
 // VirtualMachineSizeTypes enumerates the values for virtual machine size types.
 type VirtualMachineSizeTypes string
 
 const (
-	// BasicA0 ...
-	BasicA0 VirtualMachineSizeTypes = "Basic_A0"
-	// BasicA1 ...
-	BasicA1 VirtualMachineSizeTypes = "Basic_A1"
-	// BasicA2 ...
-	BasicA2 VirtualMachineSizeTypes = "Basic_A2"
-	// BasicA3 ...
-	BasicA3 VirtualMachineSizeTypes = "Basic_A3"
-	// BasicA4 ...
-	BasicA4 VirtualMachineSizeTypes = "Basic_A4"
-	// StandardA0 ...
-	StandardA0 VirtualMachineSizeTypes = "Standard_A0"
-	// StandardA1 ...
-	StandardA1 VirtualMachineSizeTypes = "Standard_A1"
-	// StandardA10 ...
-	StandardA10 VirtualMachineSizeTypes = "Standard_A10"
-	// StandardA11 ...
-	StandardA11 VirtualMachineSizeTypes = "Standard_A11"
-	// StandardA1V2 ...
-	StandardA1V2 VirtualMachineSizeTypes = "Standard_A1_v2"
-	// StandardA2 ...
-	StandardA2 VirtualMachineSizeTypes = "Standard_A2"
-	// StandardA2mV2 ...
-	StandardA2mV2 VirtualMachineSizeTypes = "Standard_A2m_v2"
-	// StandardA2V2 ...
-	StandardA2V2 VirtualMachineSizeTypes = "Standard_A2_v2"
-	// StandardA3 ...
-	StandardA3 VirtualMachineSizeTypes = "Standard_A3"
-	// StandardA4 ...
-	StandardA4 VirtualMachineSizeTypes = "Standard_A4"
-	// StandardA4mV2 ...
-	StandardA4mV2 VirtualMachineSizeTypes = "Standard_A4m_v2"
-	// StandardA4V2 ...
-	StandardA4V2 VirtualMachineSizeTypes = "Standard_A4_v2"
-	// StandardA5 ...
-	StandardA5 VirtualMachineSizeTypes = "Standard_A5"
-	// StandardA6 ...
-	StandardA6 VirtualMachineSizeTypes = "Standard_A6"
-	// StandardA7 ...
-	StandardA7 VirtualMachineSizeTypes = "Standard_A7"
-	// StandardA8 ...
-	StandardA8 VirtualMachineSizeTypes = "Standard_A8"
-	// StandardA8mV2 ...
-	StandardA8mV2 VirtualMachineSizeTypes = "Standard_A8m_v2"
-	// StandardA8V2 ...
-	StandardA8V2 VirtualMachineSizeTypes = "Standard_A8_v2"
-	// StandardA9 ...
-	StandardA9 VirtualMachineSizeTypes = "Standard_A9"
-	// StandardD1 ...
-	StandardD1 VirtualMachineSizeTypes = "Standard_D1"
-	// StandardD11 ...
-	StandardD11 VirtualMachineSizeTypes = "Standard_D11"
-	// StandardD11V2 ...
-	StandardD11V2 VirtualMachineSizeTypes = "Standard_D11_v2"
-	// StandardD12 ...
-	StandardD12 VirtualMachineSizeTypes = "Standard_D12"
-	// StandardD12V2 ...
-	StandardD12V2 VirtualMachineSizeTypes = "Standard_D12_v2"
-	// StandardD13 ...
-	StandardD13 VirtualMachineSizeTypes = "Standard_D13"
-	// StandardD13V2 ...
-	StandardD13V2 VirtualMachineSizeTypes = "Standard_D13_v2"
-	// StandardD14 ...
-	StandardD14 VirtualMachineSizeTypes = "Standard_D14"
-	// StandardD14V2 ...
-	StandardD14V2 VirtualMachineSizeTypes = "Standard_D14_v2"
-	// StandardD15V2 ...
-	StandardD15V2 VirtualMachineSizeTypes = "Standard_D15_v2"
-	// StandardD1V2 ...
-	StandardD1V2 VirtualMachineSizeTypes = "Standard_D1_v2"
-	// StandardD2 ...
-	StandardD2 VirtualMachineSizeTypes = "Standard_D2"
-	// StandardD2V2 ...
-	StandardD2V2 VirtualMachineSizeTypes = "Standard_D2_v2"
-	// StandardD3 ...
-	StandardD3 VirtualMachineSizeTypes = "Standard_D3"
-	// StandardD3V2 ...
-	StandardD3V2 VirtualMachineSizeTypes = "Standard_D3_v2"
-	// StandardD4 ...
-	StandardD4 VirtualMachineSizeTypes = "Standard_D4"
-	// StandardD4V2 ...
-	StandardD4V2 VirtualMachineSizeTypes = "Standard_D4_v2"
-	// StandardD5V2 ...
-	StandardD5V2 VirtualMachineSizeTypes = "Standard_D5_v2"
-	// StandardDS1 ...
-	StandardDS1 VirtualMachineSizeTypes = "Standard_DS1"
-	// StandardDS11 ...
-	StandardDS11 VirtualMachineSizeTypes = "Standard_DS11"
-	// StandardDS11V2 ...
-	StandardDS11V2 VirtualMachineSizeTypes = "Standard_DS11_v2"
-	// StandardDS12 ...
-	StandardDS12 VirtualMachineSizeTypes = "Standard_DS12"
-	// StandardDS12V2 ...
-	StandardDS12V2 VirtualMachineSizeTypes = "Standard_DS12_v2"
-	// StandardDS13 ...
-	StandardDS13 VirtualMachineSizeTypes = "Standard_DS13"
-	// StandardDS13V2 ...
-	StandardDS13V2 VirtualMachineSizeTypes = "Standard_DS13_v2"
-	// StandardDS14 ...
-	StandardDS14 VirtualMachineSizeTypes = "Standard_DS14"
-	// StandardDS14V2 ...
-	StandardDS14V2 VirtualMachineSizeTypes = "Standard_DS14_v2"
-	// StandardDS15V2 ...
-	StandardDS15V2 VirtualMachineSizeTypes = "Standard_DS15_v2"
-	// StandardDS1V2 ...
-	StandardDS1V2 VirtualMachineSizeTypes = "Standard_DS1_v2"
-	// StandardDS2 ...
-	StandardDS2 VirtualMachineSizeTypes = "Standard_DS2"
-	// StandardDS2V2 ...
-	StandardDS2V2 VirtualMachineSizeTypes = "Standard_DS2_v2"
-	// StandardDS3 ...
-	StandardDS3 VirtualMachineSizeTypes = "Standard_DS3"
-	// StandardDS3V2 ...
-	StandardDS3V2 VirtualMachineSizeTypes = "Standard_DS3_v2"
-	// StandardDS4 ...
-	StandardDS4 VirtualMachineSizeTypes = "Standard_DS4"
-	// StandardDS4V2 ...
-	StandardDS4V2 VirtualMachineSizeTypes = "Standard_DS4_v2"
-	// StandardDS5V2 ...
-	StandardDS5V2 VirtualMachineSizeTypes = "Standard_DS5_v2"
-	// StandardF1 ...
-	StandardF1 VirtualMachineSizeTypes = "Standard_F1"
-	// StandardF16 ...
-	StandardF16 VirtualMachineSizeTypes = "Standard_F16"
-	// StandardF16s ...
-	StandardF16s VirtualMachineSizeTypes = "Standard_F16s"
-	// StandardF1s ...
-	StandardF1s VirtualMachineSizeTypes = "Standard_F1s"
-	// StandardF2 ...
-	StandardF2 VirtualMachineSizeTypes = "Standard_F2"
-	// StandardF2s ...
-	StandardF2s VirtualMachineSizeTypes = "Standard_F2s"
-	// StandardF4 ...
-	StandardF4 VirtualMachineSizeTypes = "Standard_F4"
-	// StandardF4s ...
-	StandardF4s VirtualMachineSizeTypes = "Standard_F4s"
-	// StandardF8 ...
-	StandardF8 VirtualMachineSizeTypes = "Standard_F8"
-	// StandardF8s ...
-	StandardF8s VirtualMachineSizeTypes = "Standard_F8s"
-	// StandardG1 ...
-	StandardG1 VirtualMachineSizeTypes = "Standard_G1"
-	// StandardG2 ...
-	StandardG2 VirtualMachineSizeTypes = "Standard_G2"
-	// StandardG3 ...
-	StandardG3 VirtualMachineSizeTypes = "Standard_G3"
-	// StandardG4 ...
-	StandardG4 VirtualMachineSizeTypes = "Standard_G4"
-	// StandardG5 ...
-	StandardG5 VirtualMachineSizeTypes = "Standard_G5"
-	// StandardGS1 ...
-	StandardGS1 VirtualMachineSizeTypes = "Standard_GS1"
-	// StandardGS2 ...
-	StandardGS2 VirtualMachineSizeTypes = "Standard_GS2"
-	// StandardGS3 ...
-	StandardGS3 VirtualMachineSizeTypes = "Standard_GS3"
-	// StandardGS4 ...
-	StandardGS4 VirtualMachineSizeTypes = "Standard_GS4"
-	// StandardGS5 ...
-	StandardGS5 VirtualMachineSizeTypes = "Standard_GS5"
-	// StandardH16 ...
-	StandardH16 VirtualMachineSizeTypes = "Standard_H16"
-	// StandardH16m ...
-	StandardH16m VirtualMachineSizeTypes = "Standard_H16m"
-	// StandardH16mr ...
-	StandardH16mr VirtualMachineSizeTypes = "Standard_H16mr"
-	// StandardH16r ...
-	StandardH16r VirtualMachineSizeTypes = "Standard_H16r"
-	// StandardH8 ...
-	StandardH8 VirtualMachineSizeTypes = "Standard_H8"
-	// StandardH8m ...
-	StandardH8m VirtualMachineSizeTypes = "Standard_H8m"
-	// StandardL16s ...
-	StandardL16s VirtualMachineSizeTypes = "Standard_L16s"
-	// StandardL32s ...
-	StandardL32s VirtualMachineSizeTypes = "Standard_L32s"
-	// StandardL4s ...
-	StandardL4s VirtualMachineSizeTypes = "Standard_L4s"
-	// StandardL8s ...
-	StandardL8s VirtualMachineSizeTypes = "Standard_L8s"
-	// StandardNC12 ...
-	StandardNC12 VirtualMachineSizeTypes = "Standard_NC12"
-	// StandardNC24 ...
-	StandardNC24 VirtualMachineSizeTypes = "Standard_NC24"
-	// StandardNC24r ...
-	StandardNC24r VirtualMachineSizeTypes = "Standard_NC24r"
-	// StandardNC6 ...
-	StandardNC6 VirtualMachineSizeTypes = "Standard_NC6"
-	// StandardNV12 ...
-	StandardNV12 VirtualMachineSizeTypes = "Standard_NV12"
-	// StandardNV24 ...
-	StandardNV24 VirtualMachineSizeTypes = "Standard_NV24"
-	// StandardNV6 ...
-	StandardNV6 VirtualMachineSizeTypes = "Standard_NV6"
+	// VirtualMachineSizeTypesBasicA0 ...
+	VirtualMachineSizeTypesBasicA0 VirtualMachineSizeTypes = "Basic_A0"
+	// VirtualMachineSizeTypesBasicA1 ...
+	VirtualMachineSizeTypesBasicA1 VirtualMachineSizeTypes = "Basic_A1"
+	// VirtualMachineSizeTypesBasicA2 ...
+	VirtualMachineSizeTypesBasicA2 VirtualMachineSizeTypes = "Basic_A2"
+	// VirtualMachineSizeTypesBasicA3 ...
+	VirtualMachineSizeTypesBasicA3 VirtualMachineSizeTypes = "Basic_A3"
+	// VirtualMachineSizeTypesBasicA4 ...
+	VirtualMachineSizeTypesBasicA4 VirtualMachineSizeTypes = "Basic_A4"
+	// VirtualMachineSizeTypesStandardA0 ...
+	VirtualMachineSizeTypesStandardA0 VirtualMachineSizeTypes = "Standard_A0"
+	// VirtualMachineSizeTypesStandardA1 ...
+	VirtualMachineSizeTypesStandardA1 VirtualMachineSizeTypes = "Standard_A1"
+	// VirtualMachineSizeTypesStandardA10 ...
+	VirtualMachineSizeTypesStandardA10 VirtualMachineSizeTypes = "Standard_A10"
+	// VirtualMachineSizeTypesStandardA11 ...
+	VirtualMachineSizeTypesStandardA11 VirtualMachineSizeTypes = "Standard_A11"
+	// VirtualMachineSizeTypesStandardA1V2 ...
+	VirtualMachineSizeTypesStandardA1V2 VirtualMachineSizeTypes = "Standard_A1_v2"
+	// VirtualMachineSizeTypesStandardA2 ...
+	VirtualMachineSizeTypesStandardA2 VirtualMachineSizeTypes = "Standard_A2"
+	// VirtualMachineSizeTypesStandardA2mV2 ...
+	VirtualMachineSizeTypesStandardA2mV2 VirtualMachineSizeTypes = "Standard_A2m_v2"
+	// VirtualMachineSizeTypesStandardA2V2 ...
+	VirtualMachineSizeTypesStandardA2V2 VirtualMachineSizeTypes = "Standard_A2_v2"
+	// VirtualMachineSizeTypesStandardA3 ...
+	VirtualMachineSizeTypesStandardA3 VirtualMachineSizeTypes = "Standard_A3"
+	// VirtualMachineSizeTypesStandardA4 ...
+	VirtualMachineSizeTypesStandardA4 VirtualMachineSizeTypes = "Standard_A4"
+	// VirtualMachineSizeTypesStandardA4mV2 ...
+	VirtualMachineSizeTypesStandardA4mV2 VirtualMachineSizeTypes = "Standard_A4m_v2"
+	// VirtualMachineSizeTypesStandardA4V2 ...
+	VirtualMachineSizeTypesStandardA4V2 VirtualMachineSizeTypes = "Standard_A4_v2"
+	// VirtualMachineSizeTypesStandardA5 ...
+	VirtualMachineSizeTypesStandardA5 VirtualMachineSizeTypes = "Standard_A5"
+	// VirtualMachineSizeTypesStandardA6 ...
+	VirtualMachineSizeTypesStandardA6 VirtualMachineSizeTypes = "Standard_A6"
+	// VirtualMachineSizeTypesStandardA7 ...
+	VirtualMachineSizeTypesStandardA7 VirtualMachineSizeTypes = "Standard_A7"
+	// VirtualMachineSizeTypesStandardA8 ...
+	VirtualMachineSizeTypesStandardA8 VirtualMachineSizeTypes = "Standard_A8"
+	// VirtualMachineSizeTypesStandardA8mV2 ...
+	VirtualMachineSizeTypesStandardA8mV2 VirtualMachineSizeTypes = "Standard_A8m_v2"
+	// VirtualMachineSizeTypesStandardA8V2 ...
+	VirtualMachineSizeTypesStandardA8V2 VirtualMachineSizeTypes = "Standard_A8_v2"
+	// VirtualMachineSizeTypesStandardA9 ...
+	VirtualMachineSizeTypesStandardA9 VirtualMachineSizeTypes = "Standard_A9"
+	// VirtualMachineSizeTypesStandardD1 ...
+	VirtualMachineSizeTypesStandardD1 VirtualMachineSizeTypes = "Standard_D1"
+	// VirtualMachineSizeTypesStandardD11 ...
+	VirtualMachineSizeTypesStandardD11 VirtualMachineSizeTypes = "Standard_D11"
+	// VirtualMachineSizeTypesStandardD11V2 ...
+	VirtualMachineSizeTypesStandardD11V2 VirtualMachineSizeTypes = "Standard_D11_v2"
+	// VirtualMachineSizeTypesStandardD12 ...
+	VirtualMachineSizeTypesStandardD12 VirtualMachineSizeTypes = "Standard_D12"
+	// VirtualMachineSizeTypesStandardD12V2 ...
+	VirtualMachineSizeTypesStandardD12V2 VirtualMachineSizeTypes = "Standard_D12_v2"
+	// VirtualMachineSizeTypesStandardD13 ...
+	VirtualMachineSizeTypesStandardD13 VirtualMachineSizeTypes = "Standard_D13"
+	// VirtualMachineSizeTypesStandardD13V2 ...
+	VirtualMachineSizeTypesStandardD13V2 VirtualMachineSizeTypes = "Standard_D13_v2"
+	// VirtualMachineSizeTypesStandardD14 ...
+	VirtualMachineSizeTypesStandardD14 VirtualMachineSizeTypes = "Standard_D14"
+	// VirtualMachineSizeTypesStandardD14V2 ...
+	VirtualMachineSizeTypesStandardD14V2 VirtualMachineSizeTypes = "Standard_D14_v2"
+	// VirtualMachineSizeTypesStandardD15V2 ...
+	VirtualMachineSizeTypesStandardD15V2 VirtualMachineSizeTypes = "Standard_D15_v2"
+	// VirtualMachineSizeTypesStandardD1V2 ...
+	VirtualMachineSizeTypesStandardD1V2 VirtualMachineSizeTypes = "Standard_D1_v2"
+	// VirtualMachineSizeTypesStandardD2 ...
+	VirtualMachineSizeTypesStandardD2 VirtualMachineSizeTypes = "Standard_D2"
+	// VirtualMachineSizeTypesStandardD2V2 ...
+	VirtualMachineSizeTypesStandardD2V2 VirtualMachineSizeTypes = "Standard_D2_v2"
+	// VirtualMachineSizeTypesStandardD3 ...
+	VirtualMachineSizeTypesStandardD3 VirtualMachineSizeTypes = "Standard_D3"
+	// VirtualMachineSizeTypesStandardD3V2 ...
+	VirtualMachineSizeTypesStandardD3V2 VirtualMachineSizeTypes = "Standard_D3_v2"
+	// VirtualMachineSizeTypesStandardD4 ...
+	VirtualMachineSizeTypesStandardD4 VirtualMachineSizeTypes = "Standard_D4"
+	// VirtualMachineSizeTypesStandardD4V2 ...
+	VirtualMachineSizeTypesStandardD4V2 VirtualMachineSizeTypes = "Standard_D4_v2"
+	// VirtualMachineSizeTypesStandardD5V2 ...
+	VirtualMachineSizeTypesStandardD5V2 VirtualMachineSizeTypes = "Standard_D5_v2"
+	// VirtualMachineSizeTypesStandardDS1 ...
+	VirtualMachineSizeTypesStandardDS1 VirtualMachineSizeTypes = "Standard_DS1"
+	// VirtualMachineSizeTypesStandardDS11 ...
+	VirtualMachineSizeTypesStandardDS11 VirtualMachineSizeTypes = "Standard_DS11"
+	// VirtualMachineSizeTypesStandardDS11V2 ...
+	VirtualMachineSizeTypesStandardDS11V2 VirtualMachineSizeTypes = "Standard_DS11_v2"
+	// VirtualMachineSizeTypesStandardDS12 ...
+	VirtualMachineSizeTypesStandardDS12 VirtualMachineSizeTypes = "Standard_DS12"
+	// VirtualMachineSizeTypesStandardDS12V2 ...
+	VirtualMachineSizeTypesStandardDS12V2 VirtualMachineSizeTypes = "Standard_DS12_v2"
+	// VirtualMachineSizeTypesStandardDS13 ...
+	VirtualMachineSizeTypesStandardDS13 VirtualMachineSizeTypes = "Standard_DS13"
+	// VirtualMachineSizeTypesStandardDS13V2 ...
+	VirtualMachineSizeTypesStandardDS13V2 VirtualMachineSizeTypes = "Standard_DS13_v2"
+	// VirtualMachineSizeTypesStandardDS14 ...
+	VirtualMachineSizeTypesStandardDS14 VirtualMachineSizeTypes = "Standard_DS14"
+	// VirtualMachineSizeTypesStandardDS14V2 ...
+	VirtualMachineSizeTypesStandardDS14V2 VirtualMachineSizeTypes = "Standard_DS14_v2"
+	// VirtualMachineSizeTypesStandardDS15V2 ...
+	VirtualMachineSizeTypesStandardDS15V2 VirtualMachineSizeTypes = "Standard_DS15_v2"
+	// VirtualMachineSizeTypesStandardDS1V2 ...
+	VirtualMachineSizeTypesStandardDS1V2 VirtualMachineSizeTypes = "Standard_DS1_v2"
+	// VirtualMachineSizeTypesStandardDS2 ...
+	VirtualMachineSizeTypesStandardDS2 VirtualMachineSizeTypes = "Standard_DS2"
+	// VirtualMachineSizeTypesStandardDS2V2 ...
+	VirtualMachineSizeTypesStandardDS2V2 VirtualMachineSizeTypes = "Standard_DS2_v2"
+	// VirtualMachineSizeTypesStandardDS3 ...
+	VirtualMachineSizeTypesStandardDS3 VirtualMachineSizeTypes = "Standard_DS3"
+	// VirtualMachineSizeTypesStandardDS3V2 ...
+	VirtualMachineSizeTypesStandardDS3V2 VirtualMachineSizeTypes = "Standard_DS3_v2"
+	// VirtualMachineSizeTypesStandardDS4 ...
+	VirtualMachineSizeTypesStandardDS4 VirtualMachineSizeTypes = "Standard_DS4"
+	// VirtualMachineSizeTypesStandardDS4V2 ...
+	VirtualMachineSizeTypesStandardDS4V2 VirtualMachineSizeTypes = "Standard_DS4_v2"
+	// VirtualMachineSizeTypesStandardDS5V2 ...
+	VirtualMachineSizeTypesStandardDS5V2 VirtualMachineSizeTypes = "Standard_DS5_v2"
+	// VirtualMachineSizeTypesStandardF1 ...
+	VirtualMachineSizeTypesStandardF1 VirtualMachineSizeTypes = "Standard_F1"
+	// VirtualMachineSizeTypesStandardF16 ...
+	VirtualMachineSizeTypesStandardF16 VirtualMachineSizeTypes = "Standard_F16"
+	// VirtualMachineSizeTypesStandardF16s ...
+	VirtualMachineSizeTypesStandardF16s VirtualMachineSizeTypes = "Standard_F16s"
+	// VirtualMachineSizeTypesStandardF1s ...
+	VirtualMachineSizeTypesStandardF1s VirtualMachineSizeTypes = "Standard_F1s"
+	// VirtualMachineSizeTypesStandardF2 ...
+	VirtualMachineSizeTypesStandardF2 VirtualMachineSizeTypes = "Standard_F2"
+	// VirtualMachineSizeTypesStandardF2s ...
+	VirtualMachineSizeTypesStandardF2s VirtualMachineSizeTypes = "Standard_F2s"
+	// VirtualMachineSizeTypesStandardF4 ...
+	VirtualMachineSizeTypesStandardF4 VirtualMachineSizeTypes = "Standard_F4"
+	// VirtualMachineSizeTypesStandardF4s ...
+	VirtualMachineSizeTypesStandardF4s VirtualMachineSizeTypes = "Standard_F4s"
+	// VirtualMachineSizeTypesStandardF8 ...
+	VirtualMachineSizeTypesStandardF8 VirtualMachineSizeTypes = "Standard_F8"
+	// VirtualMachineSizeTypesStandardF8s ...
+	VirtualMachineSizeTypesStandardF8s VirtualMachineSizeTypes = "Standard_F8s"
+	// VirtualMachineSizeTypesStandardG1 ...
+	VirtualMachineSizeTypesStandardG1 VirtualMachineSizeTypes = "Standard_G1"
+	// VirtualMachineSizeTypesStandardG2 ...
+	VirtualMachineSizeTypesStandardG2 VirtualMachineSizeTypes = "Standard_G2"
+	// VirtualMachineSizeTypesStandardG3 ...
+	VirtualMachineSizeTypesStandardG3 VirtualMachineSizeTypes = "Standard_G3"
+	// VirtualMachineSizeTypesStandardG4 ...
+	VirtualMachineSizeTypesStandardG4 VirtualMachineSizeTypes = "Standard_G4"
+	// VirtualMachineSizeTypesStandardG5 ...
+	VirtualMachineSizeTypesStandardG5 VirtualMachineSizeTypes = "Standard_G5"
+	// VirtualMachineSizeTypesStandardGS1 ...
+	VirtualMachineSizeTypesStandardGS1 VirtualMachineSizeTypes = "Standard_GS1"
+	// VirtualMachineSizeTypesStandardGS2 ...
+	VirtualMachineSizeTypesStandardGS2 VirtualMachineSizeTypes = "Standard_GS2"
+	// VirtualMachineSizeTypesStandardGS3 ...
+	VirtualMachineSizeTypesStandardGS3 VirtualMachineSizeTypes = "Standard_GS3"
+	// VirtualMachineSizeTypesStandardGS4 ...
+	VirtualMachineSizeTypesStandardGS4 VirtualMachineSizeTypes = "Standard_GS4"
+	// VirtualMachineSizeTypesStandardGS5 ...
+	VirtualMachineSizeTypesStandardGS5 VirtualMachineSizeTypes = "Standard_GS5"
+	// VirtualMachineSizeTypesStandardH16 ...
+	VirtualMachineSizeTypesStandardH16 VirtualMachineSizeTypes = "Standard_H16"
+	// VirtualMachineSizeTypesStandardH16m ...
+	VirtualMachineSizeTypesStandardH16m VirtualMachineSizeTypes = "Standard_H16m"
+	// VirtualMachineSizeTypesStandardH16mr ...
+	VirtualMachineSizeTypesStandardH16mr VirtualMachineSizeTypes = "Standard_H16mr"
+	// VirtualMachineSizeTypesStandardH16r ...
+	VirtualMachineSizeTypesStandardH16r VirtualMachineSizeTypes = "Standard_H16r"
+	// VirtualMachineSizeTypesStandardH8 ...
+	VirtualMachineSizeTypesStandardH8 VirtualMachineSizeTypes = "Standard_H8"
+	// VirtualMachineSizeTypesStandardH8m ...
+	VirtualMachineSizeTypesStandardH8m VirtualMachineSizeTypes = "Standard_H8m"
+	// VirtualMachineSizeTypesStandardL16s ...
+	VirtualMachineSizeTypesStandardL16s VirtualMachineSizeTypes = "Standard_L16s"
+	// VirtualMachineSizeTypesStandardL32s ...
+	VirtualMachineSizeTypesStandardL32s VirtualMachineSizeTypes = "Standard_L32s"
+	// VirtualMachineSizeTypesStandardL4s ...
+	VirtualMachineSizeTypesStandardL4s VirtualMachineSizeTypes = "Standard_L4s"
+	// VirtualMachineSizeTypesStandardL8s ...
+	VirtualMachineSizeTypesStandardL8s VirtualMachineSizeTypes = "Standard_L8s"
+	// VirtualMachineSizeTypesStandardNC12 ...
+	VirtualMachineSizeTypesStandardNC12 VirtualMachineSizeTypes = "Standard_NC12"
+	// VirtualMachineSizeTypesStandardNC24 ...
+	VirtualMachineSizeTypesStandardNC24 VirtualMachineSizeTypes = "Standard_NC24"
+	// VirtualMachineSizeTypesStandardNC24r ...
+	VirtualMachineSizeTypesStandardNC24r VirtualMachineSizeTypes = "Standard_NC24r"
+	// VirtualMachineSizeTypesStandardNC6 ...
+	VirtualMachineSizeTypesStandardNC6 VirtualMachineSizeTypes = "Standard_NC6"
+	// VirtualMachineSizeTypesStandardNV12 ...
+	VirtualMachineSizeTypesStandardNV12 VirtualMachineSizeTypes = "Standard_NV12"
+	// VirtualMachineSizeTypesStandardNV24 ...
+	VirtualMachineSizeTypesStandardNV24 VirtualMachineSizeTypes = "Standard_NV24"
+	// VirtualMachineSizeTypesStandardNV6 ...
+	VirtualMachineSizeTypesStandardNV6 VirtualMachineSizeTypes = "Standard_NV6"
 )
+
+// PossibleVirtualMachineSizeTypesValues returns an array of possible values for the VirtualMachineSizeTypes const type.
+func PossibleVirtualMachineSizeTypesValues() []VirtualMachineSizeTypes {
+	return []VirtualMachineSizeTypes{VirtualMachineSizeTypesBasicA0, VirtualMachineSizeTypesBasicA1, VirtualMachineSizeTypesBasicA2, VirtualMachineSizeTypesBasicA3, VirtualMachineSizeTypesBasicA4, VirtualMachineSizeTypesStandardA0, VirtualMachineSizeTypesStandardA1, VirtualMachineSizeTypesStandardA10, VirtualMachineSizeTypesStandardA11, VirtualMachineSizeTypesStandardA1V2, VirtualMachineSizeTypesStandardA2, VirtualMachineSizeTypesStandardA2mV2, VirtualMachineSizeTypesStandardA2V2, VirtualMachineSizeTypesStandardA3, VirtualMachineSizeTypesStandardA4, VirtualMachineSizeTypesStandardA4mV2, VirtualMachineSizeTypesStandardA4V2, VirtualMachineSizeTypesStandardA5, VirtualMachineSizeTypesStandardA6, VirtualMachineSizeTypesStandardA7, VirtualMachineSizeTypesStandardA8, VirtualMachineSizeTypesStandardA8mV2, VirtualMachineSizeTypesStandardA8V2, VirtualMachineSizeTypesStandardA9, VirtualMachineSizeTypesStandardD1, VirtualMachineSizeTypesStandardD11, VirtualMachineSizeTypesStandardD11V2, VirtualMachineSizeTypesStandardD12, VirtualMachineSizeTypesStandardD12V2, VirtualMachineSizeTypesStandardD13, VirtualMachineSizeTypesStandardD13V2, VirtualMachineSizeTypesStandardD14, VirtualMachineSizeTypesStandardD14V2, VirtualMachineSizeTypesStandardD15V2, VirtualMachineSizeTypesStandardD1V2, VirtualMachineSizeTypesStandardD2, VirtualMachineSizeTypesStandardD2V2, VirtualMachineSizeTypesStandardD3, VirtualMachineSizeTypesStandardD3V2, VirtualMachineSizeTypesStandardD4, VirtualMachineSizeTypesStandardD4V2, VirtualMachineSizeTypesStandardD5V2, VirtualMachineSizeTypesStandardDS1, VirtualMachineSizeTypesStandardDS11, VirtualMachineSizeTypesStandardDS11V2, VirtualMachineSizeTypesStandardDS12, VirtualMachineSizeTypesStandardDS12V2, VirtualMachineSizeTypesStandardDS13, VirtualMachineSizeTypesStandardDS13V2, VirtualMachineSizeTypesStandardDS14, VirtualMachineSizeTypesStandardDS14V2, VirtualMachineSizeTypesStandardDS15V2, VirtualMachineSizeTypesStandardDS1V2, VirtualMachineSizeTypesStandardDS2, VirtualMachineSizeTypesStandardDS2V2, VirtualMachineSizeTypesStandardDS3, VirtualMachineSizeTypesStandardDS3V2, VirtualMachineSizeTypesStandardDS4, VirtualMachineSizeTypesStandardDS4V2, VirtualMachineSizeTypesStandardDS5V2, VirtualMachineSizeTypesStandardF1, VirtualMachineSizeTypesStandardF16, VirtualMachineSizeTypesStandardF16s, VirtualMachineSizeTypesStandardF1s, VirtualMachineSizeTypesStandardF2, VirtualMachineSizeTypesStandardF2s, VirtualMachineSizeTypesStandardF4, VirtualMachineSizeTypesStandardF4s, VirtualMachineSizeTypesStandardF8, VirtualMachineSizeTypesStandardF8s, VirtualMachineSizeTypesStandardG1, VirtualMachineSizeTypesStandardG2, VirtualMachineSizeTypesStandardG3, VirtualMachineSizeTypesStandardG4, VirtualMachineSizeTypesStandardG5, VirtualMachineSizeTypesStandardGS1, VirtualMachineSizeTypesStandardGS2, VirtualMachineSizeTypesStandardGS3, VirtualMachineSizeTypesStandardGS4, VirtualMachineSizeTypesStandardGS5, VirtualMachineSizeTypesStandardH16, VirtualMachineSizeTypesStandardH16m, VirtualMachineSizeTypesStandardH16mr, VirtualMachineSizeTypesStandardH16r, VirtualMachineSizeTypesStandardH8, VirtualMachineSizeTypesStandardH8m, VirtualMachineSizeTypesStandardL16s, VirtualMachineSizeTypesStandardL32s, VirtualMachineSizeTypesStandardL4s, VirtualMachineSizeTypesStandardL8s, VirtualMachineSizeTypesStandardNC12, VirtualMachineSizeTypesStandardNC24, VirtualMachineSizeTypesStandardNC24r, VirtualMachineSizeTypesStandardNC6, VirtualMachineSizeTypesStandardNV12, VirtualMachineSizeTypesStandardNV24, VirtualMachineSizeTypesStandardNV6}
+}
 
 // AccessURI a disk access SAS uri.
 type AccessURI struct {
 	autorest.Response `json:"-"`
 	// AccessURIOutput - Operation output data (raw JSON)
 	*AccessURIOutput `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AccessURI.
+func (au AccessURI) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if au.AccessURIOutput != nil {
+		objectMap["properties"] = au.AccessURIOutput
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AccessURI struct.
@@ -484,16 +737,18 @@ func (au *AccessURI) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccessURIOutput
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var accessURIOutput AccessURIOutput
+				err = json.Unmarshal(*v, &accessURIOutput)
+				if err != nil {
+					return err
+				}
+				au.AccessURIOutput = &accessURIOutput
+			}
 		}
-		au.AccessURIOutput = &properties
 	}
 
 	return nil
@@ -505,6 +760,15 @@ type AccessURIOutput struct {
 	*AccessURIRaw `json:"output,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for AccessURIOutput.
+func (auo AccessURIOutput) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if auo.AccessURIRaw != nil {
+		objectMap["output"] = auo.AccessURIRaw
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for AccessURIOutput struct.
 func (auo *AccessURIOutput) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -512,16 +776,18 @@ func (auo *AccessURIOutput) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["output"]
-	if v != nil {
-		var output AccessURIRaw
-		err = json.Unmarshal(*m["output"], &output)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "output":
+			if v != nil {
+				var accessURIRaw AccessURIRaw
+				err = json.Unmarshal(*v, &accessURIRaw)
+				if err != nil {
+					return err
+				}
+				auo.AccessURIRaw = &accessURIRaw
+			}
 		}
-		auo.AccessURIRaw = &output
 	}
 
 	return nil
@@ -533,9 +799,9 @@ type AccessURIRaw struct {
 	AccessSAS *string `json:"accessSAS,omitempty"`
 }
 
-// AdditionalUnattendContent specifies additional XML formatted information that can be included in the Unattend.xml
-// file, which is used by Windows Setup. Contents are defined by setting name, component name, and the pass in which
-// the content is applied.
+// AdditionalUnattendContent specifies additional XML formatted information that can be included in the
+// Unattend.xml file, which is used by Windows Setup. Contents are defined by setting name, component name, and the
+// pass in which the content is applied.
 type AdditionalUnattendContent struct {
 	// PassName - The pass name. Currently, the only allowable value is OobeSystem. Possible values include: 'OobeSystem'
 	PassName PassNames `json:"passName,omitempty"`
@@ -578,15 +844,18 @@ type APIErrorBase struct {
 }
 
 // AvailabilitySet specifies information about the availability set that the virtual machine should be assigned to.
-// Virtual machines specified in the same availability set are allocated to different nodes to maximize availability.
-// For more information about availability sets, see [Manage the availability of virtual
+// Virtual machines specified in the same availability set are allocated to different nodes to maximize
+// availability. For more information about availability sets, see [Manage the availability of virtual
 // machines](https://docs.microsoft.com/azure/virtual-machines/virtual-machines-windows-manage-availability?toc=%2fazure%2fvirtual-machines%2fwindows%2ftoc.json).
 // <br><br> For more information on Azure planned maintainance, see [Planned maintenance for virtual machines in
 // Azure](https://docs.microsoft.com/azure/virtual-machines/virtual-machines-windows-planned-maintenance?toc=%2fazure%2fvirtual-machines%2fwindows%2ftoc.json)
-// <br><br> Currently, a VM can only be added to availability set at creation time. An existing VM cannot be added to
-// an availability set.
+// <br><br> Currently, a VM can only be added to availability set at creation time. An existing VM cannot be added
+// to an availability set.
 type AvailabilitySet struct {
-	autorest.Response `json:"-"`
+	autorest.Response          `json:"-"`
+	*AvailabilitySetProperties `json:"properties,omitempty"`
+	// Sku - Sku of the availability set
+	Sku *Sku `json:"sku,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -596,10 +865,34 @@ type AvailabilitySet struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags                       *map[string]*string `json:"tags,omitempty"`
-	*AvailabilitySetProperties `json:"properties,omitempty"`
-	// Sku - Sku of the availability set
-	Sku *Sku `json:"sku,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for AvailabilitySet.
+func (as AvailabilitySet) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if as.AvailabilitySetProperties != nil {
+		objectMap["properties"] = as.AvailabilitySetProperties
+	}
+	if as.Sku != nil {
+		objectMap["sku"] = as.Sku
+	}
+	if as.ID != nil {
+		objectMap["id"] = as.ID
+	}
+	if as.Name != nil {
+		objectMap["name"] = as.Name
+	}
+	if as.Type != nil {
+		objectMap["type"] = as.Type
+	}
+	if as.Location != nil {
+		objectMap["location"] = as.Location
+	}
+	if as.Tags != nil {
+		objectMap["tags"] = as.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AvailabilitySet struct.
@@ -609,76 +902,72 @@ func (as *AvailabilitySet) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AvailabilitySetProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var availabilitySetProperties AvailabilitySetProperties
+				err = json.Unmarshal(*v, &availabilitySetProperties)
+				if err != nil {
+					return err
+				}
+				as.AvailabilitySetProperties = &availabilitySetProperties
+			}
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				as.Sku = &sku
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				as.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				as.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				as.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				as.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				as.Tags = tags
+			}
 		}
-		as.AvailabilitySetProperties = &properties
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		as.Sku = &sku
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		as.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		as.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		as.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		as.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		as.Tags = &tags
 	}
 
 	return nil
@@ -703,10 +992,10 @@ type AvailabilitySetProperties struct {
 	Statuses *[]InstanceViewStatus `json:"statuses,omitempty"`
 }
 
-// BootDiagnostics boot Diagnostics is a debugging feature which allows you to view Console Output and Screenshot to
-// diagnose VM status. <br><br> For Linux Virtual Machines, you can easily view the output of your console log.
-// <br><br> For both Windows and Linux virtual machines, Azure also enables you to see a screenshot of the VM from the
-// hypervisor.
+// BootDiagnostics boot Diagnostics is a debugging feature which allows you to view Console Output and Screenshot
+// to diagnose VM status. <br><br> For Linux Virtual Machines, you can easily view the output of your console log.
+// <br><br> For both Windows and Linux virtual machines, Azure also enables you to see a screenshot of the VM from
+// the hypervisor.
 type BootDiagnostics struct {
 	// Enabled - Whether boot diagnostics should be enabled on the Virtual Machine.
 	Enabled *bool `json:"enabled,omitempty"`
@@ -720,6 +1009,424 @@ type BootDiagnosticsInstanceView struct {
 	ConsoleScreenshotBlobURI *string `json:"consoleScreenshotBlobUri,omitempty"`
 	// SerialConsoleLogBlobURI - The Linux serial console log blob Uri.
 	SerialConsoleLogBlobURI *string `json:"serialConsoleLogBlobUri,omitempty"`
+}
+
+// ContainerService container service.
+type ContainerService struct {
+	autorest.Response           `json:"-"`
+	*ContainerServiceProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for ContainerService.
+func (cs ContainerService) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cs.ContainerServiceProperties != nil {
+		objectMap["properties"] = cs.ContainerServiceProperties
+	}
+	if cs.ID != nil {
+		objectMap["id"] = cs.ID
+	}
+	if cs.Name != nil {
+		objectMap["name"] = cs.Name
+	}
+	if cs.Type != nil {
+		objectMap["type"] = cs.Type
+	}
+	if cs.Location != nil {
+		objectMap["location"] = cs.Location
+	}
+	if cs.Tags != nil {
+		objectMap["tags"] = cs.Tags
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for ContainerService struct.
+func (cs *ContainerService) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var containerServiceProperties ContainerServiceProperties
+				err = json.Unmarshal(*v, &containerServiceProperties)
+				if err != nil {
+					return err
+				}
+				cs.ContainerServiceProperties = &containerServiceProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cs.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cs.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cs.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				cs.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				cs.Tags = tags
+			}
+		}
+	}
+
+	return nil
+}
+
+// ContainerServiceAgentPoolProfile profile for the container service agent pool.
+type ContainerServiceAgentPoolProfile struct {
+	// Name - Unique name of the agent pool profile in the context of the subscription and resource group.
+	Name *string `json:"name,omitempty"`
+	// Count - Number of agents (VMs) to host docker containers. Allowed values must be in the range of 1 to 100 (inclusive). The default value is 1.
+	Count *int32 `json:"count,omitempty"`
+	// VMSize - Size of agent VMs. Possible values include: 'StandardA0', 'StandardA1', 'StandardA2', 'StandardA3', 'StandardA4', 'StandardA5', 'StandardA6', 'StandardA7', 'StandardA8', 'StandardA9', 'StandardA10', 'StandardA11', 'StandardD1', 'StandardD2', 'StandardD3', 'StandardD4', 'StandardD11', 'StandardD12', 'StandardD13', 'StandardD14', 'StandardD1V2', 'StandardD2V2', 'StandardD3V2', 'StandardD4V2', 'StandardD5V2', 'StandardD11V2', 'StandardD12V2', 'StandardD13V2', 'StandardD14V2', 'StandardG1', 'StandardG2', 'StandardG3', 'StandardG4', 'StandardG5', 'StandardDS1', 'StandardDS2', 'StandardDS3', 'StandardDS4', 'StandardDS11', 'StandardDS12', 'StandardDS13', 'StandardDS14', 'StandardGS1', 'StandardGS2', 'StandardGS3', 'StandardGS4', 'StandardGS5'
+	VMSize ContainerServiceVMSizeTypes `json:"vmSize,omitempty"`
+	// DNSPrefix - DNS prefix to be used to create the FQDN for the agent pool.
+	DNSPrefix *string `json:"dnsPrefix,omitempty"`
+	// Fqdn - FDQN for the agent pool.
+	Fqdn *string `json:"fqdn,omitempty"`
+}
+
+// ContainerServiceCustomProfile properties to configure a custom container service cluster.
+type ContainerServiceCustomProfile struct {
+	// Orchestrator - The name of the custom orchestrator to use.
+	Orchestrator *string `json:"orchestrator,omitempty"`
+}
+
+// ContainerServiceDiagnosticsProfile ...
+type ContainerServiceDiagnosticsProfile struct {
+	// VMDiagnostics - Profile for the container service VM diagnostic agent.
+	VMDiagnostics *ContainerServiceVMDiagnostics `json:"vmDiagnostics,omitempty"`
+}
+
+// ContainerServiceLinuxProfile profile for Linux VMs in the container service cluster.
+type ContainerServiceLinuxProfile struct {
+	// AdminUsername - The administrator username to use for Linux VMs.
+	AdminUsername *string `json:"adminUsername,omitempty"`
+	// SSH - The ssh key configuration for Linux VMs.
+	SSH *ContainerServiceSSHConfiguration `json:"ssh,omitempty"`
+}
+
+// ContainerServiceListResult the response from the List Container Services operation.
+type ContainerServiceListResult struct {
+	autorest.Response `json:"-"`
+	// Value - the list of container services.
+	Value *[]ContainerService `json:"value,omitempty"`
+	// NextLink - The URL to get the next set of container service results.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// ContainerServiceListResultIterator provides access to a complete listing of ContainerService values.
+type ContainerServiceListResultIterator struct {
+	i    int
+	page ContainerServiceListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *ContainerServiceListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter ContainerServiceListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter ContainerServiceListResultIterator) Response() ContainerServiceListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter ContainerServiceListResultIterator) Value() ContainerService {
+	if !iter.page.NotDone() {
+		return ContainerService{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (cslr ContainerServiceListResult) IsEmpty() bool {
+	return cslr.Value == nil || len(*cslr.Value) == 0
+}
+
+// containerServiceListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (cslr ContainerServiceListResult) containerServiceListResultPreparer() (*http.Request, error) {
+	if cslr.NextLink == nil || len(to.String(cslr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(cslr.NextLink)))
+}
+
+// ContainerServiceListResultPage contains a page of ContainerService values.
+type ContainerServiceListResultPage struct {
+	fn   func(ContainerServiceListResult) (ContainerServiceListResult, error)
+	cslr ContainerServiceListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *ContainerServiceListResultPage) Next() error {
+	next, err := page.fn(page.cslr)
+	if err != nil {
+		return err
+	}
+	page.cslr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page ContainerServiceListResultPage) NotDone() bool {
+	return !page.cslr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page ContainerServiceListResultPage) Response() ContainerServiceListResult {
+	return page.cslr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page ContainerServiceListResultPage) Values() []ContainerService {
+	if page.cslr.IsEmpty() {
+		return nil
+	}
+	return *page.cslr.Value
+}
+
+// ContainerServiceMasterProfile profile for the container service master.
+type ContainerServiceMasterProfile struct {
+	// Count - Number of masters (VMs) in the container service cluster. Allowed values are 1, 3, and 5. The default value is 1.
+	Count *int32 `json:"count,omitempty"`
+	// DNSPrefix - DNS prefix to be used to create the FQDN for master.
+	DNSPrefix *string `json:"dnsPrefix,omitempty"`
+	// Fqdn - FDQN for the master.
+	Fqdn *string `json:"fqdn,omitempty"`
+}
+
+// ContainerServiceOrchestratorProfile profile for the container service orchestrator.
+type ContainerServiceOrchestratorProfile struct {
+	// OrchestratorType - The orchestrator to use to manage container service cluster resources. Valid values are Swarm, DCOS, and Custom. Possible values include: 'Swarm', 'DCOS', 'Custom', 'Kubernetes'
+	OrchestratorType ContainerServiceOrchestratorTypes `json:"orchestratorType,omitempty"`
+}
+
+// ContainerServiceProperties properties of the container service.
+type ContainerServiceProperties struct {
+	// ProvisioningState - the current deployment or provisioning state, which only appears in the response.
+	ProvisioningState *string `json:"provisioningState,omitempty"`
+	// OrchestratorProfile - Properties of the orchestrator.
+	OrchestratorProfile *ContainerServiceOrchestratorProfile `json:"orchestratorProfile,omitempty"`
+	// CustomProfile - Properties for custom clusters.
+	CustomProfile *ContainerServiceCustomProfile `json:"customProfile,omitempty"`
+	// ServicePrincipalProfile - Properties for cluster service principals.
+	ServicePrincipalProfile *ContainerServiceServicePrincipalProfile `json:"servicePrincipalProfile,omitempty"`
+	// MasterProfile - Properties of master agents.
+	MasterProfile *ContainerServiceMasterProfile `json:"masterProfile,omitempty"`
+	// AgentPoolProfiles - Properties of the agent pool.
+	AgentPoolProfiles *[]ContainerServiceAgentPoolProfile `json:"agentPoolProfiles,omitempty"`
+	// WindowsProfile - Properties of Windows VMs.
+	WindowsProfile *ContainerServiceWindowsProfile `json:"windowsProfile,omitempty"`
+	// LinuxProfile - Properties of Linux VMs.
+	LinuxProfile *ContainerServiceLinuxProfile `json:"linuxProfile,omitempty"`
+	// DiagnosticsProfile - Properties of the diagnostic agent.
+	DiagnosticsProfile *ContainerServiceDiagnosticsProfile `json:"diagnosticsProfile,omitempty"`
+}
+
+// ContainerServicesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type ContainerServicesCreateOrUpdateFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ContainerServicesCreateOrUpdateFuture) Result(client ContainerServicesClient) (cs ContainerService, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
+		return
+	}
+	if !done {
+		return cs, azure.NewAsyncOpIncompleteError("compute.ContainerServicesCreateOrUpdateFuture")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		cs, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.ContainerServicesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
+		return
+	}
+	var req *http.Request
+	var resp *http.Response
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
+		return
+	}
+	cs, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
+	return
+}
+
+// ContainerServicesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
+type ContainerServicesDeleteFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future ContainerServicesDeleteFuture) Result(client ContainerServicesClient) (ar autorest.Response, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesDeleteFuture", "Result", future.Response(), "Polling failure")
+		return
+	}
+	if !done {
+		return ar, azure.NewAsyncOpIncompleteError("compute.ContainerServicesDeleteFuture")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.ContainerServicesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
+		return
+	}
+	var req *http.Request
+	var resp *http.Response
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesDeleteFuture", "Result", resp, "Failure sending request")
+		return
+	}
+	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ContainerServicesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
+	return
+}
+
+// ContainerServiceServicePrincipalProfile information about a service principal identity for the cluster to use
+// for manipulating Azure APIs.
+type ContainerServiceServicePrincipalProfile struct {
+	// ClientID - The ID for the service principal.
+	ClientID *string `json:"clientId,omitempty"`
+	// Secret - The secret password associated with the service principal.
+	Secret *string `json:"secret,omitempty"`
+}
+
+// ContainerServiceSSHConfiguration SSH configuration for Linux-based VMs running on Azure.
+type ContainerServiceSSHConfiguration struct {
+	// PublicKeys - the list of SSH public keys used to authenticate with Linux-based VMs.
+	PublicKeys *[]ContainerServiceSSHPublicKey `json:"publicKeys,omitempty"`
+}
+
+// ContainerServiceSSHPublicKey contains information about SSH certificate public key data.
+type ContainerServiceSSHPublicKey struct {
+	// KeyData - Certificate public key used to authenticate with VMs through SSH. The certificate must be in PEM format with or without headers.
+	KeyData *string `json:"keyData,omitempty"`
+}
+
+// ContainerServiceVMDiagnostics profile for diagnostics on the container service VMs.
+type ContainerServiceVMDiagnostics struct {
+	// Enabled - Whether the VM diagnostic agent is provisioned on the VM.
+	Enabled *bool `json:"enabled,omitempty"`
+	// StorageURI - The URI of the storage account where diagnostics are stored.
+	StorageURI *string `json:"storageUri,omitempty"`
+}
+
+// ContainerServiceWindowsProfile profile for Windows VMs in the container service cluster.
+type ContainerServiceWindowsProfile struct {
+	// AdminUsername - The administrator username to use for Windows VMs.
+	AdminUsername *string `json:"adminUsername,omitempty"`
+	// AdminPassword - The administrator password to use for Windows VMs.
+	AdminPassword *string `json:"adminPassword,omitempty"`
 }
 
 // CreationData data used when creating a disk.
@@ -771,6 +1478,12 @@ type DiagnosticsProfile struct {
 // Disk disk resource.
 type Disk struct {
 	autorest.Response `json:"-"`
+	// ManagedBy - A relative URI containing the ID of the VM that has the disk attached.
+	ManagedBy *string  `json:"managedBy,omitempty"`
+	Sku       *DiskSku `json:"sku,omitempty"`
+	// Zones - The Logical zone list for Disk.
+	Zones           *[]string `json:"zones,omitempty"`
+	*DiskProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -780,13 +1493,40 @@ type Disk struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// ManagedBy - A relative URI containing the ID of the VM that has the disk attached.
-	ManagedBy *string  `json:"managedBy,omitempty"`
-	Sku       *DiskSku `json:"sku,omitempty"`
-	// Zones - The Logical zone list for Disk.
-	Zones           *[]string `json:"zones,omitempty"`
-	*DiskProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Disk.
+func (d Disk) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if d.ManagedBy != nil {
+		objectMap["managedBy"] = d.ManagedBy
+	}
+	if d.Sku != nil {
+		objectMap["sku"] = d.Sku
+	}
+	if d.Zones != nil {
+		objectMap["zones"] = d.Zones
+	}
+	if d.DiskProperties != nil {
+		objectMap["properties"] = d.DiskProperties
+	}
+	if d.ID != nil {
+		objectMap["id"] = d.ID
+	}
+	if d.Name != nil {
+		objectMap["name"] = d.Name
+	}
+	if d.Type != nil {
+		objectMap["type"] = d.Type
+	}
+	if d.Location != nil {
+		objectMap["location"] = d.Location
+	}
+	if d.Tags != nil {
+		objectMap["tags"] = d.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Disk struct.
@@ -796,96 +1536,90 @@ func (d *Disk) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["managedBy"]
-	if v != nil {
-		var managedBy string
-		err = json.Unmarshal(*m["managedBy"], &managedBy)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "managedBy":
+			if v != nil {
+				var managedBy string
+				err = json.Unmarshal(*v, &managedBy)
+				if err != nil {
+					return err
+				}
+				d.ManagedBy = &managedBy
+			}
+		case "sku":
+			if v != nil {
+				var sku DiskSku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				d.Sku = &sku
+			}
+		case "zones":
+			if v != nil {
+				var zones []string
+				err = json.Unmarshal(*v, &zones)
+				if err != nil {
+					return err
+				}
+				d.Zones = &zones
+			}
+		case "properties":
+			if v != nil {
+				var diskProperties DiskProperties
+				err = json.Unmarshal(*v, &diskProperties)
+				if err != nil {
+					return err
+				}
+				d.DiskProperties = &diskProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				d.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				d.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				d.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				d.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				d.Tags = tags
+			}
 		}
-		d.ManagedBy = &managedBy
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku DiskSku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		d.Sku = &sku
-	}
-
-	v = m["zones"]
-	if v != nil {
-		var zones []string
-		err = json.Unmarshal(*m["zones"], &zones)
-		if err != nil {
-			return err
-		}
-		d.Zones = &zones
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DiskProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		d.DiskProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		d.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		d.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		d.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		d.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		d.Tags = &tags
 	}
 
 	return nil
@@ -1041,22 +1775,39 @@ func (future DisksCreateOrUpdateFuture) Result(client DisksClient) (d Disk, err 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return d, autorest.NewError("compute.DisksCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return d, azure.NewAsyncOpIncompleteError("compute.DisksCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		d, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.DisksCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	d, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1072,22 +1823,39 @@ func (future DisksDeleteFuture) Result(client DisksClient) (osr OperationStatusR
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.DisksDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.DisksDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.DisksDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1103,22 +1871,39 @@ func (future DisksGrantAccessFuture) Result(client DisksClient) (au AccessURI, e
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksGrantAccessFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return au, autorest.NewError("compute.DisksGrantAccessFuture", "Result", "asynchronous operation has not completed")
+		return au, azure.NewAsyncOpIncompleteError("compute.DisksGrantAccessFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		au, err = client.GrantAccessResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.DisksGrantAccessFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksGrantAccessFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	au, err = client.GrantAccessResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksGrantAccessFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1142,22 +1927,39 @@ func (future DisksRevokeAccessFuture) Result(client DisksClient) (osr OperationS
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksRevokeAccessFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.DisksRevokeAccessFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.DisksRevokeAccessFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RevokeAccessResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.DisksRevokeAccessFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksRevokeAccessFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RevokeAccessResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksRevokeAccessFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1173,31 +1975,63 @@ func (future DisksUpdateFuture) Result(client DisksClient) (d Disk, err error) {
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return d, autorest.NewError("compute.DisksUpdateFuture", "Result", "asynchronous operation has not completed")
+		return d, azure.NewAsyncOpIncompleteError("compute.DisksUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		d, err = client.UpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.DisksUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	d, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.DisksUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // DiskUpdate disk update resource.
 type DiskUpdate struct {
-	// Tags - Resource tags
-	Tags                  *map[string]*string `json:"tags,omitempty"`
-	Sku                   *DiskSku            `json:"sku,omitempty"`
 	*DiskUpdateProperties `json:"properties,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+	Sku  *DiskSku           `json:"sku,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for DiskUpdate.
+func (du DiskUpdate) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if du.DiskUpdateProperties != nil {
+		objectMap["properties"] = du.DiskUpdateProperties
+	}
+	if du.Tags != nil {
+		objectMap["tags"] = du.Tags
+	}
+	if du.Sku != nil {
+		objectMap["sku"] = du.Sku
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for DiskUpdate struct.
@@ -1207,36 +2041,36 @@ func (du *DiskUpdate) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DiskUpdateProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var diskUpdateProperties DiskUpdateProperties
+				err = json.Unmarshal(*v, &diskUpdateProperties)
+				if err != nil {
+					return err
+				}
+				du.DiskUpdateProperties = &diskUpdateProperties
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				du.Tags = tags
+			}
+		case "sku":
+			if v != nil {
+				var sku DiskSku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				du.Sku = &sku
+			}
 		}
-		du.DiskUpdateProperties = &properties
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		du.Tags = &tags
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku DiskSku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		du.Sku = &sku
 	}
 
 	return nil
@@ -1272,7 +2106,7 @@ type GrantAccessData struct {
 
 // HardwareProfile specifies the hardware settings for the virtual machine.
 type HardwareProfile struct {
-	// VMSize - Specifies the size of the virtual machine. For more information about virtual machine sizes, see [Sizes for virtual machines](https://docs.microsoft.com/azure/virtual-machines/virtual-machines-windows-sizes?toc=%2fazure%2fvirtual-machines%2fwindows%2ftoc.json). <br><br> The available VM sizes depend on region and availability set. For a list of available sizes use these APIs:  <br><br> [List all available virtual machine sizes in an availability set](virtualmachines-list-sizes-availability-set.md) <br><br> [List all available virtual machine sizes in a region](virtualmachines-list-sizes-region.md) <br><br> [List all available virtual machine sizes for resizing](virtualmachines-list-sizes-for-resizing.md). Possible values include: 'BasicA0', 'BasicA1', 'BasicA2', 'BasicA3', 'BasicA4', 'StandardA0', 'StandardA1', 'StandardA2', 'StandardA3', 'StandardA4', 'StandardA5', 'StandardA6', 'StandardA7', 'StandardA8', 'StandardA9', 'StandardA10', 'StandardA11', 'StandardA1V2', 'StandardA2V2', 'StandardA4V2', 'StandardA8V2', 'StandardA2mV2', 'StandardA4mV2', 'StandardA8mV2', 'StandardD1', 'StandardD2', 'StandardD3', 'StandardD4', 'StandardD11', 'StandardD12', 'StandardD13', 'StandardD14', 'StandardD1V2', 'StandardD2V2', 'StandardD3V2', 'StandardD4V2', 'StandardD5V2', 'StandardD11V2', 'StandardD12V2', 'StandardD13V2', 'StandardD14V2', 'StandardD15V2', 'StandardDS1', 'StandardDS2', 'StandardDS3', 'StandardDS4', 'StandardDS11', 'StandardDS12', 'StandardDS13', 'StandardDS14', 'StandardDS1V2', 'StandardDS2V2', 'StandardDS3V2', 'StandardDS4V2', 'StandardDS5V2', 'StandardDS11V2', 'StandardDS12V2', 'StandardDS13V2', 'StandardDS14V2', 'StandardDS15V2', 'StandardF1', 'StandardF2', 'StandardF4', 'StandardF8', 'StandardF16', 'StandardF1s', 'StandardF2s', 'StandardF4s', 'StandardF8s', 'StandardF16s', 'StandardG1', 'StandardG2', 'StandardG3', 'StandardG4', 'StandardG5', 'StandardGS1', 'StandardGS2', 'StandardGS3', 'StandardGS4', 'StandardGS5', 'StandardH8', 'StandardH16', 'StandardH8m', 'StandardH16m', 'StandardH16r', 'StandardH16mr', 'StandardL4s', 'StandardL8s', 'StandardL16s', 'StandardL32s', 'StandardNC6', 'StandardNC12', 'StandardNC24', 'StandardNC24r', 'StandardNV6', 'StandardNV12', 'StandardNV24'
+	// VMSize - Specifies the size of the virtual machine. For more information about virtual machine sizes, see [Sizes for virtual machines](https://docs.microsoft.com/azure/virtual-machines/virtual-machines-windows-sizes?toc=%2fazure%2fvirtual-machines%2fwindows%2ftoc.json). <br><br> The available VM sizes depend on region and availability set. For a list of available sizes use these APIs:  <br><br> [List all available virtual machine sizes in an availability set](virtualmachines-list-sizes-availability-set.md) <br><br> [List all available virtual machine sizes in a region](virtualmachines-list-sizes-region.md) <br><br> [List all available virtual machine sizes for resizing](virtualmachines-list-sizes-for-resizing.md). Possible values include: 'VirtualMachineSizeTypesBasicA0', 'VirtualMachineSizeTypesBasicA1', 'VirtualMachineSizeTypesBasicA2', 'VirtualMachineSizeTypesBasicA3', 'VirtualMachineSizeTypesBasicA4', 'VirtualMachineSizeTypesStandardA0', 'VirtualMachineSizeTypesStandardA1', 'VirtualMachineSizeTypesStandardA2', 'VirtualMachineSizeTypesStandardA3', 'VirtualMachineSizeTypesStandardA4', 'VirtualMachineSizeTypesStandardA5', 'VirtualMachineSizeTypesStandardA6', 'VirtualMachineSizeTypesStandardA7', 'VirtualMachineSizeTypesStandardA8', 'VirtualMachineSizeTypesStandardA9', 'VirtualMachineSizeTypesStandardA10', 'VirtualMachineSizeTypesStandardA11', 'VirtualMachineSizeTypesStandardA1V2', 'VirtualMachineSizeTypesStandardA2V2', 'VirtualMachineSizeTypesStandardA4V2', 'VirtualMachineSizeTypesStandardA8V2', 'VirtualMachineSizeTypesStandardA2mV2', 'VirtualMachineSizeTypesStandardA4mV2', 'VirtualMachineSizeTypesStandardA8mV2', 'VirtualMachineSizeTypesStandardD1', 'VirtualMachineSizeTypesStandardD2', 'VirtualMachineSizeTypesStandardD3', 'VirtualMachineSizeTypesStandardD4', 'VirtualMachineSizeTypesStandardD11', 'VirtualMachineSizeTypesStandardD12', 'VirtualMachineSizeTypesStandardD13', 'VirtualMachineSizeTypesStandardD14', 'VirtualMachineSizeTypesStandardD1V2', 'VirtualMachineSizeTypesStandardD2V2', 'VirtualMachineSizeTypesStandardD3V2', 'VirtualMachineSizeTypesStandardD4V2', 'VirtualMachineSizeTypesStandardD5V2', 'VirtualMachineSizeTypesStandardD11V2', 'VirtualMachineSizeTypesStandardD12V2', 'VirtualMachineSizeTypesStandardD13V2', 'VirtualMachineSizeTypesStandardD14V2', 'VirtualMachineSizeTypesStandardD15V2', 'VirtualMachineSizeTypesStandardDS1', 'VirtualMachineSizeTypesStandardDS2', 'VirtualMachineSizeTypesStandardDS3', 'VirtualMachineSizeTypesStandardDS4', 'VirtualMachineSizeTypesStandardDS11', 'VirtualMachineSizeTypesStandardDS12', 'VirtualMachineSizeTypesStandardDS13', 'VirtualMachineSizeTypesStandardDS14', 'VirtualMachineSizeTypesStandardDS1V2', 'VirtualMachineSizeTypesStandardDS2V2', 'VirtualMachineSizeTypesStandardDS3V2', 'VirtualMachineSizeTypesStandardDS4V2', 'VirtualMachineSizeTypesStandardDS5V2', 'VirtualMachineSizeTypesStandardDS11V2', 'VirtualMachineSizeTypesStandardDS12V2', 'VirtualMachineSizeTypesStandardDS13V2', 'VirtualMachineSizeTypesStandardDS14V2', 'VirtualMachineSizeTypesStandardDS15V2', 'VirtualMachineSizeTypesStandardF1', 'VirtualMachineSizeTypesStandardF2', 'VirtualMachineSizeTypesStandardF4', 'VirtualMachineSizeTypesStandardF8', 'VirtualMachineSizeTypesStandardF16', 'VirtualMachineSizeTypesStandardF1s', 'VirtualMachineSizeTypesStandardF2s', 'VirtualMachineSizeTypesStandardF4s', 'VirtualMachineSizeTypesStandardF8s', 'VirtualMachineSizeTypesStandardF16s', 'VirtualMachineSizeTypesStandardG1', 'VirtualMachineSizeTypesStandardG2', 'VirtualMachineSizeTypesStandardG3', 'VirtualMachineSizeTypesStandardG4', 'VirtualMachineSizeTypesStandardG5', 'VirtualMachineSizeTypesStandardGS1', 'VirtualMachineSizeTypesStandardGS2', 'VirtualMachineSizeTypesStandardGS3', 'VirtualMachineSizeTypesStandardGS4', 'VirtualMachineSizeTypesStandardGS5', 'VirtualMachineSizeTypesStandardH8', 'VirtualMachineSizeTypesStandardH16', 'VirtualMachineSizeTypesStandardH8m', 'VirtualMachineSizeTypesStandardH16m', 'VirtualMachineSizeTypesStandardH16r', 'VirtualMachineSizeTypesStandardH16mr', 'VirtualMachineSizeTypesStandardL4s', 'VirtualMachineSizeTypesStandardL8s', 'VirtualMachineSizeTypesStandardL16s', 'VirtualMachineSizeTypesStandardL32s', 'VirtualMachineSizeTypesStandardNC6', 'VirtualMachineSizeTypesStandardNC12', 'VirtualMachineSizeTypesStandardNC24', 'VirtualMachineSizeTypesStandardNC24r', 'VirtualMachineSizeTypesStandardNV6', 'VirtualMachineSizeTypesStandardNV12', 'VirtualMachineSizeTypesStandardNV24'
 	VMSize VirtualMachineSizeTypes `json:"vmSize,omitempty"`
 }
 
@@ -1280,6 +2114,7 @@ type HardwareProfile struct {
 // virtual machine. If SourceImage is provided, the destination virtual hard drive must not exist.
 type Image struct {
 	autorest.Response `json:"-"`
+	*ImageProperties  `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -1289,8 +2124,31 @@ type Image struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags             *map[string]*string `json:"tags,omitempty"`
-	*ImageProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Image.
+func (i Image) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if i.ImageProperties != nil {
+		objectMap["properties"] = i.ImageProperties
+	}
+	if i.ID != nil {
+		objectMap["id"] = i.ID
+	}
+	if i.Name != nil {
+		objectMap["name"] = i.Name
+	}
+	if i.Type != nil {
+		objectMap["type"] = i.Type
+	}
+	if i.Location != nil {
+		objectMap["location"] = i.Location
+	}
+	if i.Tags != nil {
+		objectMap["tags"] = i.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Image struct.
@@ -1300,66 +2158,63 @@ func (i *Image) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ImageProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var imageProperties ImageProperties
+				err = json.Unmarshal(*v, &imageProperties)
+				if err != nil {
+					return err
+				}
+				i.ImageProperties = &imageProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				i.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				i.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				i.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				i.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				i.Tags = tags
+			}
 		}
-		i.ImageProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		i.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		i.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		i.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		i.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		i.Tags = &tags
 	}
 
 	return nil
@@ -1527,8 +2382,6 @@ type ImageProperties struct {
 // marketplace images, or virtual machine images. This element is required when you want to use a platform image,
 // marketplace image, or virtual machine image, but is not used in other creation operations.
 type ImageReference struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Publisher - The image publisher.
 	Publisher *string `json:"publisher,omitempty"`
 	// Offer - Specifies the offer of the platform image or marketplace image used to create the virtual machine.
@@ -1537,6 +2390,8 @@ type ImageReference struct {
 	Sku *string `json:"sku,omitempty"`
 	// Version - Specifies the version of the platform image or marketplace image used to create the virtual machine. The allowed formats are Major.Minor.Build or 'latest'. Major, Minor, and Build are decimal numbers. Specify 'latest' to use the latest version of an image available at deploy time. Even if you use 'latest', the VM image will not automatically update after deploy time even if a new version becomes available.
 	Version *string `json:"version,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
 }
 
 // ImagesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
@@ -1551,22 +2406,39 @@ func (future ImagesCreateOrUpdateFuture) Result(client ImagesClient) (i Image, e
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return i, autorest.NewError("compute.ImagesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return i, azure.NewAsyncOpIncompleteError("compute.ImagesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		i, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.ImagesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	i, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1582,22 +2454,39 @@ func (future ImagesDeleteFuture) Result(client ImagesClient) (osr OperationStatu
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.ImagesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.ImagesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.ImagesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.ImagesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1631,8 +2520,8 @@ type InstanceViewStatus struct {
 	Time *date.Time `json:"time,omitempty"`
 }
 
-// KeyVaultAndKeyReference key Vault Key Url and vault id of KeK, KeK is optional and when provided is used to unwrap
-// the encryptionKey
+// KeyVaultAndKeyReference key Vault Key Url and vault id of KeK, KeK is optional and when provided is used to
+// unwrap the encryptionKey
 type KeyVaultAndKeyReference struct {
 	// SourceVault - Resource id of the KeyVault containing the key or secret
 	SourceVault *SourceVault `json:"sourceVault,omitempty"`
@@ -1793,7 +2682,7 @@ type ListVirtualMachineImageResource struct {
 // LongRunningOperationProperties compute-specific operation properties, including output
 type LongRunningOperationProperties struct {
 	// Output - Operation output data (raw JSON)
-	Output *map[string]interface{} `json:"output,omitempty"`
+	Output interface{} `json:"output,omitempty"`
 }
 
 // MaintenanceRedeployStatus maintenance Operation Status.
@@ -1816,17 +2705,29 @@ type MaintenanceRedeployStatus struct {
 
 // ManagedDiskParameters the parameters of a managed disk.
 type ManagedDiskParameters struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// StorageAccountType - Specifies the storage account type for the managed disk. Possible values are: Standard_LRS or Premium_LRS. Possible values include: 'StandardLRS', 'PremiumLRS'
 	StorageAccountType StorageAccountTypes `json:"storageAccountType,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
 }
 
 // NetworkInterfaceReference describes a network interface reference.
 type NetworkInterfaceReference struct {
-	// ID - Resource Id
-	ID                                   *string `json:"id,omitempty"`
 	*NetworkInterfaceReferenceProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for NetworkInterfaceReference.
+func (nir NetworkInterfaceReference) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if nir.NetworkInterfaceReferenceProperties != nil {
+		objectMap["properties"] = nir.NetworkInterfaceReferenceProperties
+	}
+	if nir.ID != nil {
+		objectMap["id"] = nir.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for NetworkInterfaceReference struct.
@@ -1836,26 +2737,27 @@ func (nir *NetworkInterfaceReference) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties NetworkInterfaceReferenceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var networkInterfaceReferenceProperties NetworkInterfaceReferenceProperties
+				err = json.Unmarshal(*v, &networkInterfaceReferenceProperties)
+				if err != nil {
+					return err
+				}
+				nir.NetworkInterfaceReferenceProperties = &networkInterfaceReferenceProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				nir.ID = &ID
+			}
 		}
-		nir.NetworkInterfaceReferenceProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		nir.ID = &ID
 	}
 
 	return nil
@@ -1936,8 +2838,8 @@ type OSProfile struct {
 	Secrets *[]VaultSecretGroup `json:"secrets,omitempty"`
 }
 
-// Plan specifies information about the marketplace image used to create the virtual machine. This element is only used
-// for marketplace images. Before you can use a marketplace image from an API, you must enable the image for
+// Plan specifies information about the marketplace image used to create the virtual machine. This element is only
+// used for marketplace images. Before you can use a marketplace image from an API, you must enable the image for
 // programmatic use.  In the Azure portal, find the marketplace image that you want to use and then click **Want to
 // deploy programmatically, Get Started ->**. Enter any required information and then click **Save**.
 type Plan struct {
@@ -1972,7 +2874,28 @@ type Resource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // ResourceSku describes an available Compute SKU.
@@ -2148,8 +3071,20 @@ func (page ResourceSkusResultPage) Values() []ResourceSku {
 // ResourceUpdate the Resource model definition.
 type ResourceUpdate struct {
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	Sku  *DiskSku            `json:"sku,omitempty"`
+	Tags map[string]*string `json:"tags"`
+	Sku  *DiskSku           `json:"sku,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ResourceUpdate.
+func (ru ResourceUpdate) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ru.Tags != nil {
+		objectMap["tags"] = ru.Tags
+	}
+	if ru.Sku != nil {
+		objectMap["sku"] = ru.Sku
+	}
+	return json.Marshal(objectMap)
 }
 
 // RollingUpgradePolicy the configuration parameters used while performing a rolling upgrade.
@@ -2190,7 +3125,8 @@ type RollingUpgradeRunningStatus struct {
 
 // RollingUpgradeStatusInfo the status of the latest virtual machine scale set rolling upgrade.
 type RollingUpgradeStatusInfo struct {
-	autorest.Response `json:"-"`
+	autorest.Response                   `json:"-"`
+	*RollingUpgradeStatusInfoProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -2200,8 +3136,31 @@ type RollingUpgradeStatusInfo struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags                                *map[string]*string `json:"tags,omitempty"`
-	*RollingUpgradeStatusInfoProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for RollingUpgradeStatusInfo.
+func (rusi RollingUpgradeStatusInfo) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rusi.RollingUpgradeStatusInfoProperties != nil {
+		objectMap["properties"] = rusi.RollingUpgradeStatusInfoProperties
+	}
+	if rusi.ID != nil {
+		objectMap["id"] = rusi.ID
+	}
+	if rusi.Name != nil {
+		objectMap["name"] = rusi.Name
+	}
+	if rusi.Type != nil {
+		objectMap["type"] = rusi.Type
+	}
+	if rusi.Location != nil {
+		objectMap["location"] = rusi.Location
+	}
+	if rusi.Tags != nil {
+		objectMap["tags"] = rusi.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for RollingUpgradeStatusInfo struct.
@@ -2211,66 +3170,63 @@ func (rusi *RollingUpgradeStatusInfo) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties RollingUpgradeStatusInfoProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var rollingUpgradeStatusInfoProperties RollingUpgradeStatusInfoProperties
+				err = json.Unmarshal(*v, &rollingUpgradeStatusInfoProperties)
+				if err != nil {
+					return err
+				}
+				rusi.RollingUpgradeStatusInfoProperties = &rollingUpgradeStatusInfoProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				rusi.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				rusi.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				rusi.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				rusi.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				rusi.Tags = tags
+			}
 		}
-		rusi.RollingUpgradeStatusInfoProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		rusi.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		rusi.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		rusi.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		rusi.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		rusi.Tags = &tags
 	}
 
 	return nil
@@ -2291,6 +3247,10 @@ type RollingUpgradeStatusInfoProperties struct {
 // RunCommandDocument describes the properties of a Run Command.
 type RunCommandDocument struct {
 	autorest.Response `json:"-"`
+	// Script - The script to be executed.
+	Script *[]string `json:"script,omitempty"`
+	// Parameters - The parameters used by the script.
+	Parameters *[]RunCommandParameterDefinition `json:"parameters,omitempty"`
 	// Schema - The VM run command schema.
 	Schema *string `json:"$schema,omitempty"`
 	// ID - The VM run command id.
@@ -2301,10 +3261,6 @@ type RunCommandDocument struct {
 	Label *string `json:"label,omitempty"`
 	// Description - The VM run command description.
 	Description *string `json:"description,omitempty"`
-	// Script - The script to be executed.
-	Script *[]string `json:"script,omitempty"`
-	// Parameters - The parameters used by the script.
-	Parameters *[]RunCommandParameterDefinition `json:"parameters,omitempty"`
 }
 
 // RunCommandDocumentBase describes the properties of a Run Command metadata.
@@ -2455,7 +3411,8 @@ type RunCommandParameterDefinition struct {
 
 // RunCommandResult run command operation response.
 type RunCommandResult struct {
-	autorest.Response `json:"-"`
+	autorest.Response           `json:"-"`
+	*RunCommandResultProperties `json:"properties,omitempty"`
 	// Name - Operation ID
 	Name *string `json:"name,omitempty"`
 	// Status - Operation status
@@ -2465,8 +3422,31 @@ type RunCommandResult struct {
 	// EndTime - End time of the operation
 	EndTime *date.Time `json:"endTime,omitempty"`
 	// Error - Api error
-	Error                       *APIError `json:"error,omitempty"`
-	*RunCommandResultProperties `json:"properties,omitempty"`
+	Error *APIError `json:"error,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for RunCommandResult.
+func (rcr RunCommandResult) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rcr.RunCommandResultProperties != nil {
+		objectMap["properties"] = rcr.RunCommandResultProperties
+	}
+	if rcr.Name != nil {
+		objectMap["name"] = rcr.Name
+	}
+	if rcr.Status != nil {
+		objectMap["status"] = rcr.Status
+	}
+	if rcr.StartTime != nil {
+		objectMap["startTime"] = rcr.StartTime
+	}
+	if rcr.EndTime != nil {
+		objectMap["endTime"] = rcr.EndTime
+	}
+	if rcr.Error != nil {
+		objectMap["error"] = rcr.Error
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for RunCommandResult struct.
@@ -2476,66 +3456,63 @@ func (rcr *RunCommandResult) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties RunCommandResultProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var runCommandResultProperties RunCommandResultProperties
+				err = json.Unmarshal(*v, &runCommandResultProperties)
+				if err != nil {
+					return err
+				}
+				rcr.RunCommandResultProperties = &runCommandResultProperties
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				rcr.Name = &name
+			}
+		case "status":
+			if v != nil {
+				var status string
+				err = json.Unmarshal(*v, &status)
+				if err != nil {
+					return err
+				}
+				rcr.Status = &status
+			}
+		case "startTime":
+			if v != nil {
+				var startTime date.Time
+				err = json.Unmarshal(*v, &startTime)
+				if err != nil {
+					return err
+				}
+				rcr.StartTime = &startTime
+			}
+		case "endTime":
+			if v != nil {
+				var endTime date.Time
+				err = json.Unmarshal(*v, &endTime)
+				if err != nil {
+					return err
+				}
+				rcr.EndTime = &endTime
+			}
+		case "error":
+			if v != nil {
+				var errorVar APIError
+				err = json.Unmarshal(*v, &errorVar)
+				if err != nil {
+					return err
+				}
+				rcr.Error = &errorVar
+			}
 		}
-		rcr.RunCommandResultProperties = &properties
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		rcr.Name = &name
-	}
-
-	v = m["status"]
-	if v != nil {
-		var status string
-		err = json.Unmarshal(*m["status"], &status)
-		if err != nil {
-			return err
-		}
-		rcr.Status = &status
-	}
-
-	v = m["startTime"]
-	if v != nil {
-		var startTime date.Time
-		err = json.Unmarshal(*m["startTime"], &startTime)
-		if err != nil {
-			return err
-		}
-		rcr.StartTime = &startTime
-	}
-
-	v = m["endTime"]
-	if v != nil {
-		var endTime date.Time
-		err = json.Unmarshal(*m["endTime"], &endTime)
-		if err != nil {
-			return err
-		}
-		rcr.EndTime = &endTime
-	}
-
-	v = m["error"]
-	if v != nil {
-		var errorVar APIError
-		err = json.Unmarshal(*m["error"], &errorVar)
-		if err != nil {
-			return err
-		}
-		rcr.Error = &errorVar
 	}
 
 	return nil
@@ -2544,7 +3521,7 @@ func (rcr *RunCommandResult) UnmarshalJSON(body []byte) error {
 // RunCommandResultProperties compute-specific operation properties, including output
 type RunCommandResultProperties struct {
 	// Output - Operation output data (raw JSON)
-	Output *map[string]interface{} `json:"output,omitempty"`
+	Output interface{} `json:"output,omitempty"`
 }
 
 // Sku describes a virtual machine scale set sku.
@@ -2560,6 +3537,10 @@ type Sku struct {
 // Snapshot snapshot resource.
 type Snapshot struct {
 	autorest.Response `json:"-"`
+	// ManagedBy - Unused. Always Null.
+	ManagedBy       *string  `json:"managedBy,omitempty"`
+	Sku             *DiskSku `json:"sku,omitempty"`
+	*DiskProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -2569,11 +3550,37 @@ type Snapshot struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// ManagedBy - Unused. Always Null.
-	ManagedBy       *string  `json:"managedBy,omitempty"`
-	Sku             *DiskSku `json:"sku,omitempty"`
-	*DiskProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Snapshot.
+func (s Snapshot) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if s.ManagedBy != nil {
+		objectMap["managedBy"] = s.ManagedBy
+	}
+	if s.Sku != nil {
+		objectMap["sku"] = s.Sku
+	}
+	if s.DiskProperties != nil {
+		objectMap["properties"] = s.DiskProperties
+	}
+	if s.ID != nil {
+		objectMap["id"] = s.ID
+	}
+	if s.Name != nil {
+		objectMap["name"] = s.Name
+	}
+	if s.Type != nil {
+		objectMap["type"] = s.Type
+	}
+	if s.Location != nil {
+		objectMap["location"] = s.Location
+	}
+	if s.Tags != nil {
+		objectMap["tags"] = s.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Snapshot struct.
@@ -2583,86 +3590,81 @@ func (s *Snapshot) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["managedBy"]
-	if v != nil {
-		var managedBy string
-		err = json.Unmarshal(*m["managedBy"], &managedBy)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "managedBy":
+			if v != nil {
+				var managedBy string
+				err = json.Unmarshal(*v, &managedBy)
+				if err != nil {
+					return err
+				}
+				s.ManagedBy = &managedBy
+			}
+		case "sku":
+			if v != nil {
+				var sku DiskSku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				s.Sku = &sku
+			}
+		case "properties":
+			if v != nil {
+				var diskProperties DiskProperties
+				err = json.Unmarshal(*v, &diskProperties)
+				if err != nil {
+					return err
+				}
+				s.DiskProperties = &diskProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				s.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				s.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				s.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				s.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				s.Tags = tags
+			}
 		}
-		s.ManagedBy = &managedBy
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku DiskSku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		s.Sku = &sku
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DiskProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		s.DiskProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		s.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		s.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		s.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		s.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		s.Tags = &tags
 	}
 
 	return nil
@@ -2770,7 +3772,8 @@ func (page SnapshotListPage) Values() []Snapshot {
 	return *page.sl.Value
 }
 
-// SnapshotsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// SnapshotsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type SnapshotsCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -2782,22 +3785,39 @@ func (future SnapshotsCreateOrUpdateFuture) Result(client SnapshotsClient) (s Sn
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return s, autorest.NewError("compute.SnapshotsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return s, azure.NewAsyncOpIncompleteError("compute.SnapshotsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		s, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.SnapshotsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	s, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2813,22 +3833,39 @@ func (future SnapshotsDeleteFuture) Result(client SnapshotsClient) (osr Operatio
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.SnapshotsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.SnapshotsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.SnapshotsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2844,26 +3881,44 @@ func (future SnapshotsGrantAccessFuture) Result(client SnapshotsClient) (au Acce
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsGrantAccessFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return au, autorest.NewError("compute.SnapshotsGrantAccessFuture", "Result", "asynchronous operation has not completed")
+		return au, azure.NewAsyncOpIncompleteError("compute.SnapshotsGrantAccessFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		au, err = client.GrantAccessResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.SnapshotsGrantAccessFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsGrantAccessFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	au, err = client.GrantAccessResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsGrantAccessFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// SnapshotsRevokeAccessFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// SnapshotsRevokeAccessFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type SnapshotsRevokeAccessFuture struct {
 	azure.Future
 	req *http.Request
@@ -2875,22 +3930,39 @@ func (future SnapshotsRevokeAccessFuture) Result(client SnapshotsClient) (osr Op
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsRevokeAccessFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.SnapshotsRevokeAccessFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.SnapshotsRevokeAccessFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RevokeAccessResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.SnapshotsRevokeAccessFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsRevokeAccessFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RevokeAccessResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsRevokeAccessFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2906,31 +3978,63 @@ func (future SnapshotsUpdateFuture) Result(client SnapshotsClient) (s Snapshot, 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return s, autorest.NewError("compute.SnapshotsUpdateFuture", "Result", "asynchronous operation has not completed")
+		return s, azure.NewAsyncOpIncompleteError("compute.SnapshotsUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		s, err = client.UpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.SnapshotsUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	s, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.SnapshotsUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // SnapshotUpdate snapshot update resource.
 type SnapshotUpdate struct {
-	// Tags - Resource tags
-	Tags                  *map[string]*string `json:"tags,omitempty"`
-	Sku                   *DiskSku            `json:"sku,omitempty"`
 	*DiskUpdateProperties `json:"properties,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+	Sku  *DiskSku           `json:"sku,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SnapshotUpdate.
+func (su SnapshotUpdate) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if su.DiskUpdateProperties != nil {
+		objectMap["properties"] = su.DiskUpdateProperties
+	}
+	if su.Tags != nil {
+		objectMap["tags"] = su.Tags
+	}
+	if su.Sku != nil {
+		objectMap["sku"] = su.Sku
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SnapshotUpdate struct.
@@ -2940,36 +4044,36 @@ func (su *SnapshotUpdate) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DiskUpdateProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var diskUpdateProperties DiskUpdateProperties
+				err = json.Unmarshal(*v, &diskUpdateProperties)
+				if err != nil {
+					return err
+				}
+				su.DiskUpdateProperties = &diskUpdateProperties
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				su.Tags = tags
+			}
+		case "sku":
+			if v != nil {
+				var sku DiskSku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				su.Sku = &sku
+			}
 		}
-		su.DiskUpdateProperties = &properties
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		su.Tags = &tags
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku DiskSku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		su.Sku = &sku
 	}
 
 	return nil
@@ -2988,8 +4092,8 @@ type SSHConfiguration struct {
 	PublicKeys *[]SSHPublicKey `json:"publicKeys,omitempty"`
 }
 
-// SSHPublicKey contains information about SSH certificate public key and the path on the Linux VM where the public key
-// is placed.
+// SSHPublicKey contains information about SSH certificate public key and the path on the Linux VM where the public
+// key is placed.
 type SSHPublicKey struct {
 	// Path - Specifies the full path on the created VM where ssh public key is stored. If the file already exists, the specified key is appended to the file. Example: /home/user/.ssh/authorized_keys
 	Path *string `json:"path,omitempty"`
@@ -3022,7 +4126,16 @@ type SubResourceReadOnly struct {
 // UpdateResource the Update Resource model definition.
 type UpdateResource struct {
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for UpdateResource.
+func (ur UpdateResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ur.Tags != nil {
+		objectMap["tags"] = ur.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UpgradePolicy describes an upgrade policy - automatic, manual, or rolling.
@@ -3055,8 +4168,8 @@ type UsageName struct {
 	LocalizedValue *string `json:"localizedValue,omitempty"`
 }
 
-// VaultCertificate describes a single certificate reference in a Key Vault, and where the certificate should reside on
-// the VM.
+// VaultCertificate describes a single certificate reference in a Key Vault, and where the certificate should
+// reside on the VM.
 type VaultCertificate struct {
 	// CertificateURL - This is the URL of a certificate that has been uploaded to Key Vault as a secret. For adding a secret to the Key Vault, see [Add a key or secret to the key vault](https://docs.microsoft.com/azure/key-vault/key-vault-get-started/#add). In this case, your certificate needs to be It is the Base64 encoding of the following JSON Object which is encoded in UTF-8: <br><br> {<br>  "data":"<Base64-encoded-certificate>",<br>  "dataType":"pfx",<br>  "password":"<pfx-file-password>"<br>}
 	CertificateURL *string `json:"certificateUrl,omitempty"`
@@ -3081,16 +4194,6 @@ type VirtualHardDisk struct {
 // VirtualMachine describes a Virtual Machine.
 type VirtualMachine struct {
 	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
-	// Name - Resource name
-	Name *string `json:"name,omitempty"`
-	// Type - Resource type
-	Type *string `json:"type,omitempty"`
-	// Location - Resource location
-	Location *string `json:"location,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
 	// Plan - Specifies information about the marketplace image used to create the virtual machine. This element is only used for marketplace images. Before you can use a marketplace image from an API, you must enable the image for programmatic use.  In the Azure portal, find the marketplace image that you want to use and then click **Want to deploy programmatically, Get Started ->**. Enter any required information and then click **Save**.
 	Plan                      *Plan `json:"plan,omitempty"`
 	*VirtualMachineProperties `json:"properties,omitempty"`
@@ -3100,6 +4203,52 @@ type VirtualMachine struct {
 	Identity *VirtualMachineIdentity `json:"identity,omitempty"`
 	// Zones - The virtual machine zones.
 	Zones *[]string `json:"zones,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachine.
+func (VM VirtualMachine) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if VM.Plan != nil {
+		objectMap["plan"] = VM.Plan
+	}
+	if VM.VirtualMachineProperties != nil {
+		objectMap["properties"] = VM.VirtualMachineProperties
+	}
+	if VM.Resources != nil {
+		objectMap["resources"] = VM.Resources
+	}
+	if VM.Identity != nil {
+		objectMap["identity"] = VM.Identity
+	}
+	if VM.Zones != nil {
+		objectMap["zones"] = VM.Zones
+	}
+	if VM.ID != nil {
+		objectMap["id"] = VM.ID
+	}
+	if VM.Name != nil {
+		objectMap["name"] = VM.Name
+	}
+	if VM.Type != nil {
+		objectMap["type"] = VM.Type
+	}
+	if VM.Location != nil {
+		objectMap["location"] = VM.Location
+	}
+	if VM.Tags != nil {
+		objectMap["tags"] = VM.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachine struct.
@@ -3109,106 +4258,99 @@ func (VM *VirtualMachine) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["plan"]
-	if v != nil {
-		var plan Plan
-		err = json.Unmarshal(*m["plan"], &plan)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "plan":
+			if v != nil {
+				var plan Plan
+				err = json.Unmarshal(*v, &plan)
+				if err != nil {
+					return err
+				}
+				VM.Plan = &plan
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineProperties VirtualMachineProperties
+				err = json.Unmarshal(*v, &virtualMachineProperties)
+				if err != nil {
+					return err
+				}
+				VM.VirtualMachineProperties = &virtualMachineProperties
+			}
+		case "resources":
+			if v != nil {
+				var resources []VirtualMachineExtension
+				err = json.Unmarshal(*v, &resources)
+				if err != nil {
+					return err
+				}
+				VM.Resources = &resources
+			}
+		case "identity":
+			if v != nil {
+				var identity VirtualMachineIdentity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				VM.Identity = &identity
+			}
+		case "zones":
+			if v != nil {
+				var zones []string
+				err = json.Unmarshal(*v, &zones)
+				if err != nil {
+					return err
+				}
+				VM.Zones = &zones
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				VM.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				VM.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				VM.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				VM.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				VM.Tags = tags
+			}
 		}
-		VM.Plan = &plan
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		VM.VirtualMachineProperties = &properties
-	}
-
-	v = m["resources"]
-	if v != nil {
-		var resources []VirtualMachineExtension
-		err = json.Unmarshal(*m["resources"], &resources)
-		if err != nil {
-			return err
-		}
-		VM.Resources = &resources
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity VirtualMachineIdentity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		VM.Identity = &identity
-	}
-
-	v = m["zones"]
-	if v != nil {
-		var zones []string
-		err = json.Unmarshal(*m["zones"], &zones)
-		if err != nil {
-			return err
-		}
-		VM.Zones = &zones
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		VM.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		VM.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		VM.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		VM.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		VM.Tags = &tags
 	}
 
 	return nil
@@ -3236,10 +4378,22 @@ type VirtualMachineCaptureParameters struct {
 
 // VirtualMachineCaptureResult resource Id.
 type VirtualMachineCaptureResult struct {
-	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID                                     *string `json:"id,omitempty"`
+	autorest.Response                      `json:"-"`
 	*VirtualMachineCaptureResultProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineCaptureResult.
+func (vmcr VirtualMachineCaptureResult) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmcr.VirtualMachineCaptureResultProperties != nil {
+		objectMap["properties"] = vmcr.VirtualMachineCaptureResultProperties
+	}
+	if vmcr.ID != nil {
+		objectMap["id"] = vmcr.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineCaptureResult struct.
@@ -3249,26 +4403,27 @@ func (vmcr *VirtualMachineCaptureResult) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineCaptureResultProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var virtualMachineCaptureResultProperties VirtualMachineCaptureResultProperties
+				err = json.Unmarshal(*v, &virtualMachineCaptureResultProperties)
+				if err != nil {
+					return err
+				}
+				vmcr.VirtualMachineCaptureResultProperties = &virtualMachineCaptureResultProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmcr.ID = &ID
+			}
 		}
-		vmcr.VirtualMachineCaptureResultProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmcr.ID = &ID
 	}
 
 	return nil
@@ -3277,12 +4432,13 @@ func (vmcr *VirtualMachineCaptureResult) UnmarshalJSON(body []byte) error {
 // VirtualMachineCaptureResultProperties compute-specific operation properties, including output
 type VirtualMachineCaptureResultProperties struct {
 	// Output - Operation output data (raw JSON)
-	Output *map[string]interface{} `json:"output,omitempty"`
+	Output interface{} `json:"output,omitempty"`
 }
 
 // VirtualMachineExtension describes a Virtual Machine Extension.
 type VirtualMachineExtension struct {
-	autorest.Response `json:"-"`
+	autorest.Response                  `json:"-"`
+	*VirtualMachineExtensionProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -3292,8 +4448,31 @@ type VirtualMachineExtension struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags                               *map[string]*string `json:"tags,omitempty"`
-	*VirtualMachineExtensionProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineExtension.
+func (vme VirtualMachineExtension) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vme.VirtualMachineExtensionProperties != nil {
+		objectMap["properties"] = vme.VirtualMachineExtensionProperties
+	}
+	if vme.ID != nil {
+		objectMap["id"] = vme.ID
+	}
+	if vme.Name != nil {
+		objectMap["name"] = vme.Name
+	}
+	if vme.Type != nil {
+		objectMap["type"] = vme.Type
+	}
+	if vme.Location != nil {
+		objectMap["location"] = vme.Location
+	}
+	if vme.Tags != nil {
+		objectMap["tags"] = vme.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineExtension struct.
@@ -3303,66 +4482,63 @@ func (vme *VirtualMachineExtension) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineExtensionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var virtualMachineExtensionProperties VirtualMachineExtensionProperties
+				err = json.Unmarshal(*v, &virtualMachineExtensionProperties)
+				if err != nil {
+					return err
+				}
+				vme.VirtualMachineExtensionProperties = &virtualMachineExtensionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vme.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vme.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vme.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				vme.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vme.Tags = tags
+			}
 		}
-		vme.VirtualMachineExtensionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vme.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vme.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vme.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		vme.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vme.Tags = &tags
 	}
 
 	return nil
@@ -3380,7 +4556,8 @@ type VirtualMachineExtensionHandlerInstanceView struct {
 
 // VirtualMachineExtensionImage describes a Virtual Machine Extension Image.
 type VirtualMachineExtensionImage struct {
-	autorest.Response `json:"-"`
+	autorest.Response                       `json:"-"`
+	*VirtualMachineExtensionImageProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -3390,8 +4567,31 @@ type VirtualMachineExtensionImage struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags                                    *map[string]*string `json:"tags,omitempty"`
-	*VirtualMachineExtensionImageProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineExtensionImage.
+func (vmei VirtualMachineExtensionImage) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmei.VirtualMachineExtensionImageProperties != nil {
+		objectMap["properties"] = vmei.VirtualMachineExtensionImageProperties
+	}
+	if vmei.ID != nil {
+		objectMap["id"] = vmei.ID
+	}
+	if vmei.Name != nil {
+		objectMap["name"] = vmei.Name
+	}
+	if vmei.Type != nil {
+		objectMap["type"] = vmei.Type
+	}
+	if vmei.Location != nil {
+		objectMap["location"] = vmei.Location
+	}
+	if vmei.Tags != nil {
+		objectMap["tags"] = vmei.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineExtensionImage struct.
@@ -3401,66 +4601,63 @@ func (vmei *VirtualMachineExtensionImage) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineExtensionImageProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var virtualMachineExtensionImageProperties VirtualMachineExtensionImageProperties
+				err = json.Unmarshal(*v, &virtualMachineExtensionImageProperties)
+				if err != nil {
+					return err
+				}
+				vmei.VirtualMachineExtensionImageProperties = &virtualMachineExtensionImageProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmei.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmei.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vmei.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				vmei.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vmei.Tags = tags
+			}
 		}
-		vmei.VirtualMachineExtensionImageProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmei.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vmei.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vmei.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		vmei.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vmei.Tags = &tags
 	}
 
 	return nil
@@ -3507,9 +4704,9 @@ type VirtualMachineExtensionProperties struct {
 	// AutoUpgradeMinorVersion - Indicates whether the extension should use a newer minor version if one is available at deployment time. Once deployed, however, the extension will not upgrade minor versions unless redeployed, even with this property set to true.
 	AutoUpgradeMinorVersion *bool `json:"autoUpgradeMinorVersion,omitempty"`
 	// Settings - Json formatted public settings for the extension.
-	Settings *map[string]interface{} `json:"settings,omitempty"`
+	Settings interface{} `json:"settings,omitempty"`
 	// ProtectedSettings - The extension can contain either protectedSettings or protectedSettingsFromKeyVault or no protected settings at all.
-	ProtectedSettings *map[string]interface{} `json:"protectedSettings,omitempty"`
+	ProtectedSettings interface{} `json:"protectedSettings,omitempty"`
 	// ProvisioningState - The provisioning state, which only appears in the response.
 	ProvisioningState *string `json:"provisioningState,omitempty"`
 	// InstanceView - The virtual machine extension instance view.
@@ -3529,22 +4726,39 @@ func (future VirtualMachineExtensionsCreateOrUpdateFuture) Result(client Virtual
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vme, autorest.NewError("compute.VirtualMachineExtensionsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vme, azure.NewAsyncOpIncompleteError("compute.VirtualMachineExtensionsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vme, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vme, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -3561,22 +4775,39 @@ func (future VirtualMachineExtensionsDeleteFuture) Result(client VirtualMachineE
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineExtensionsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineExtensionsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineExtensionsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -3598,16 +4829,37 @@ type VirtualMachineIdentity struct {
 
 // VirtualMachineImage describes a Virtual Machine Image.
 type VirtualMachineImage struct {
-	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
+	autorest.Response              `json:"-"`
+	*VirtualMachineImageProperties `json:"properties,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Location - The supported Azure location of the resource.
 	Location *string `json:"location,omitempty"`
 	// Tags - Specifies the tags that are assigned to the virtual machine. For more information about using tags, see [Using tags to organize your Azure resources](https://docs.microsoft.com/azure/azure-resource-manager/resource-group-using-tags.md).
-	Tags                           *map[string]*string `json:"tags,omitempty"`
-	*VirtualMachineImageProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineImage.
+func (vmi VirtualMachineImage) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmi.VirtualMachineImageProperties != nil {
+		objectMap["properties"] = vmi.VirtualMachineImageProperties
+	}
+	if vmi.Name != nil {
+		objectMap["name"] = vmi.Name
+	}
+	if vmi.Location != nil {
+		objectMap["location"] = vmi.Location
+	}
+	if vmi.Tags != nil {
+		objectMap["tags"] = vmi.Tags
+	}
+	if vmi.ID != nil {
+		objectMap["id"] = vmi.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineImage struct.
@@ -3617,56 +4869,54 @@ func (vmi *VirtualMachineImage) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineImageProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var virtualMachineImageProperties VirtualMachineImageProperties
+				err = json.Unmarshal(*v, &virtualMachineImageProperties)
+				if err != nil {
+					return err
+				}
+				vmi.VirtualMachineImageProperties = &virtualMachineImageProperties
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmi.Name = &name
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				vmi.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vmi.Tags = tags
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmi.ID = &ID
+			}
 		}
-		vmi.VirtualMachineImageProperties = &properties
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vmi.Name = &name
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		vmi.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vmi.Tags = &tags
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmi.ID = &ID
 	}
 
 	return nil
@@ -3681,14 +4931,32 @@ type VirtualMachineImageProperties struct {
 
 // VirtualMachineImageResource virtual machine image resource information.
 type VirtualMachineImageResource struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The name of the resource.
 	Name *string `json:"name,omitempty"`
 	// Location - The supported Azure location of the resource.
 	Location *string `json:"location,omitempty"`
 	// Tags - Specifies the tags that are assigned to the virtual machine. For more information about using tags, see [Using tags to organize your Azure resources](https://docs.microsoft.com/azure/azure-resource-manager/resource-group-using-tags.md).
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineImageResource.
+func (vmir VirtualMachineImageResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmir.Name != nil {
+		objectMap["name"] = vmir.Name
+	}
+	if vmir.Location != nil {
+		objectMap["location"] = vmir.Location
+	}
+	if vmir.Tags != nil {
+		objectMap["tags"] = vmir.Tags
+	}
+	if vmir.ID != nil {
+		objectMap["id"] = vmir.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // VirtualMachineInstanceView the instance view of a virtual machine.
@@ -3843,16 +5111,6 @@ type VirtualMachineProperties struct {
 // VirtualMachineScaleSet describes a Virtual Machine Scale Set.
 type VirtualMachineScaleSet struct {
 	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
-	// Name - Resource name
-	Name *string `json:"name,omitempty"`
-	// Type - Resource type
-	Type *string `json:"type,omitempty"`
-	// Location - Resource location
-	Location *string `json:"location,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
 	// Sku - The virtual machine scale set sku.
 	Sku *Sku `json:"sku,omitempty"`
 	// Plan - Specifies information about the marketplace image used to create the virtual machine. This element is only used for marketplace images. Before you can use a marketplace image from an API, you must enable the image for programmatic use.  In the Azure portal, find the marketplace image that you want to use and then click **Want to deploy programmatically, Get Started ->**. Enter any required information and then click **Save**.
@@ -3862,6 +5120,52 @@ type VirtualMachineScaleSet struct {
 	Identity *VirtualMachineScaleSetIdentity `json:"identity,omitempty"`
 	// Zones - The virtual machine scale set zones.
 	Zones *[]string `json:"zones,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSet.
+func (vmss VirtualMachineScaleSet) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmss.Sku != nil {
+		objectMap["sku"] = vmss.Sku
+	}
+	if vmss.Plan != nil {
+		objectMap["plan"] = vmss.Plan
+	}
+	if vmss.VirtualMachineScaleSetProperties != nil {
+		objectMap["properties"] = vmss.VirtualMachineScaleSetProperties
+	}
+	if vmss.Identity != nil {
+		objectMap["identity"] = vmss.Identity
+	}
+	if vmss.Zones != nil {
+		objectMap["zones"] = vmss.Zones
+	}
+	if vmss.ID != nil {
+		objectMap["id"] = vmss.ID
+	}
+	if vmss.Name != nil {
+		objectMap["name"] = vmss.Name
+	}
+	if vmss.Type != nil {
+		objectMap["type"] = vmss.Type
+	}
+	if vmss.Location != nil {
+		objectMap["location"] = vmss.Location
+	}
+	if vmss.Tags != nil {
+		objectMap["tags"] = vmss.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSet struct.
@@ -3871,106 +5175,99 @@ func (vmss *VirtualMachineScaleSet) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				vmss.Sku = &sku
+			}
+		case "plan":
+			if v != nil {
+				var plan Plan
+				err = json.Unmarshal(*v, &plan)
+				if err != nil {
+					return err
+				}
+				vmss.Plan = &plan
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetProperties VirtualMachineScaleSetProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetProperties)
+				if err != nil {
+					return err
+				}
+				vmss.VirtualMachineScaleSetProperties = &virtualMachineScaleSetProperties
+			}
+		case "identity":
+			if v != nil {
+				var identity VirtualMachineScaleSetIdentity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				vmss.Identity = &identity
+			}
+		case "zones":
+			if v != nil {
+				var zones []string
+				err = json.Unmarshal(*v, &zones)
+				if err != nil {
+					return err
+				}
+				vmss.Zones = &zones
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmss.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmss.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vmss.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				vmss.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vmss.Tags = tags
+			}
 		}
-		vmss.Sku = &sku
-	}
-
-	v = m["plan"]
-	if v != nil {
-		var plan Plan
-		err = json.Unmarshal(*m["plan"], &plan)
-		if err != nil {
-			return err
-		}
-		vmss.Plan = &plan
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmss.VirtualMachineScaleSetProperties = &properties
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity VirtualMachineScaleSetIdentity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		vmss.Identity = &identity
-	}
-
-	v = m["zones"]
-	if v != nil {
-		var zones []string
-		err = json.Unmarshal(*m["zones"], &zones)
-		if err != nil {
-			return err
-		}
-		vmss.Zones = &zones
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmss.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vmss.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vmss.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		vmss.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vmss.Tags = &tags
 	}
 
 	return nil
@@ -3995,11 +5292,26 @@ type VirtualMachineScaleSetDataDisk struct {
 // VirtualMachineScaleSetExtension describes a Virtual Machine Scale Set Extension.
 type VirtualMachineScaleSetExtension struct {
 	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The name of the extension.
 	Name                                       *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetExtensionProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetExtension.
+func (vmsse VirtualMachineScaleSetExtension) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmsse.Name != nil {
+		objectMap["name"] = vmsse.Name
+	}
+	if vmsse.VirtualMachineScaleSetExtensionProperties != nil {
+		objectMap["properties"] = vmsse.VirtualMachineScaleSetExtensionProperties
+	}
+	if vmsse.ID != nil {
+		objectMap["id"] = vmsse.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetExtension struct.
@@ -4009,36 +5321,36 @@ func (vmsse *VirtualMachineScaleSetExtension) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmsse.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetExtensionProperties VirtualMachineScaleSetExtensionProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetExtensionProperties)
+				if err != nil {
+					return err
+				}
+				vmsse.VirtualMachineScaleSetExtensionProperties = &virtualMachineScaleSetExtensionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmsse.ID = &ID
+			}
 		}
-		vmsse.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetExtensionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmsse.VirtualMachineScaleSetExtensionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmsse.ID = &ID
 	}
 
 	return nil
@@ -4166,15 +5478,15 @@ type VirtualMachineScaleSetExtensionProperties struct {
 	// AutoUpgradeMinorVersion - Indicates whether the extension should use a newer minor version if one is available at deployment time. Once deployed, however, the extension will not upgrade minor versions unless redeployed, even with this property set to true.
 	AutoUpgradeMinorVersion *bool `json:"autoUpgradeMinorVersion,omitempty"`
 	// Settings - Json formatted public settings for the extension.
-	Settings *map[string]interface{} `json:"settings,omitempty"`
+	Settings interface{} `json:"settings,omitempty"`
 	// ProtectedSettings - The extension can contain either protectedSettings or protectedSettingsFromKeyVault or no protected settings at all.
-	ProtectedSettings *map[string]interface{} `json:"protectedSettings,omitempty"`
+	ProtectedSettings interface{} `json:"protectedSettings,omitempty"`
 	// ProvisioningState - The provisioning state, which only appears in the response.
 	ProvisioningState *string `json:"provisioningState,omitempty"`
 }
 
-// VirtualMachineScaleSetExtensionsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a
-// long-running operation.
+// VirtualMachineScaleSetExtensionsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of
+// a long-running operation.
 type VirtualMachineScaleSetExtensionsCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -4186,22 +5498,39 @@ func (future VirtualMachineScaleSetExtensionsCreateOrUpdateFuture) Result(client
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vmsse, autorest.NewError("compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vmsse, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vmsse, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vmsse, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4218,22 +5547,39 @@ func (future VirtualMachineScaleSetExtensionsDeleteFuture) Result(client Virtual
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetExtensionsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetExtensionsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetExtensionsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4258,8 +5604,8 @@ type VirtualMachineScaleSetInstanceView struct {
 	Statuses *[]InstanceViewStatus `json:"statuses,omitempty"`
 }
 
-// VirtualMachineScaleSetInstanceViewStatusesSummary instance view statuses summary for virtual machines of a virtual
-// machine scale set.
+// VirtualMachineScaleSetInstanceViewStatusesSummary instance view statuses summary for virtual machines of a
+// virtual machine scale set.
 type VirtualMachineScaleSetInstanceViewStatusesSummary struct {
 	// StatusesSummary - The extensions information.
 	StatusesSummary *[]VirtualMachineStatusCodeCount `json:"statusesSummary,omitempty"`
@@ -4267,11 +5613,26 @@ type VirtualMachineScaleSetInstanceViewStatusesSummary struct {
 
 // VirtualMachineScaleSetIPConfiguration describes a virtual machine scale set network profile's IP configuration.
 type VirtualMachineScaleSetIPConfiguration struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The IP configuration name.
 	Name                                             *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetIPConfigurationProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetIPConfiguration.
+func (vmssic VirtualMachineScaleSetIPConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssic.Name != nil {
+		objectMap["name"] = vmssic.Name
+	}
+	if vmssic.VirtualMachineScaleSetIPConfigurationProperties != nil {
+		objectMap["properties"] = vmssic.VirtualMachineScaleSetIPConfigurationProperties
+	}
+	if vmssic.ID != nil {
+		objectMap["id"] = vmssic.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetIPConfiguration struct.
@@ -4281,36 +5642,36 @@ func (vmssic *VirtualMachineScaleSetIPConfiguration) UnmarshalJSON(body []byte) 
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssic.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetIPConfigurationProperties VirtualMachineScaleSetIPConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetIPConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmssic.VirtualMachineScaleSetIPConfigurationProperties = &virtualMachineScaleSetIPConfigurationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmssic.ID = &ID
+			}
 		}
-		vmssic.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetIPConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssic.VirtualMachineScaleSetIPConfigurationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmssic.ID = &ID
 	}
 
 	return nil
@@ -4652,11 +6013,26 @@ type VirtualMachineScaleSetManagedDiskParameters struct {
 // VirtualMachineScaleSetNetworkConfiguration describes a virtual machine scale set network profile's network
 // configurations.
 type VirtualMachineScaleSetNetworkConfiguration struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The network configuration name.
 	Name                                                  *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetNetworkConfigurationProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetNetworkConfiguration.
+func (vmssnc VirtualMachineScaleSetNetworkConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssnc.Name != nil {
+		objectMap["name"] = vmssnc.Name
+	}
+	if vmssnc.VirtualMachineScaleSetNetworkConfigurationProperties != nil {
+		objectMap["properties"] = vmssnc.VirtualMachineScaleSetNetworkConfigurationProperties
+	}
+	if vmssnc.ID != nil {
+		objectMap["id"] = vmssnc.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetNetworkConfiguration struct.
@@ -4666,36 +6042,36 @@ func (vmssnc *VirtualMachineScaleSetNetworkConfiguration) UnmarshalJSON(body []b
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssnc.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetNetworkConfigurationProperties VirtualMachineScaleSetNetworkConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetNetworkConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmssnc.VirtualMachineScaleSetNetworkConfigurationProperties = &virtualMachineScaleSetNetworkConfigurationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmssnc.ID = &ID
+			}
 		}
-		vmssnc.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetNetworkConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssnc.VirtualMachineScaleSetNetworkConfigurationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmssnc.ID = &ID
 	}
 
 	return nil
@@ -4791,6 +6167,18 @@ type VirtualMachineScaleSetPublicIPAddressConfiguration struct {
 	*VirtualMachineScaleSetPublicIPAddressConfigurationProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetPublicIPAddressConfiguration.
+func (vmsspiac VirtualMachineScaleSetPublicIPAddressConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmsspiac.Name != nil {
+		objectMap["name"] = vmsspiac.Name
+	}
+	if vmsspiac.VirtualMachineScaleSetPublicIPAddressConfigurationProperties != nil {
+		objectMap["properties"] = vmsspiac.VirtualMachineScaleSetPublicIPAddressConfigurationProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetPublicIPAddressConfiguration struct.
 func (vmsspiac *VirtualMachineScaleSetPublicIPAddressConfiguration) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -4798,26 +6186,27 @@ func (vmsspiac *VirtualMachineScaleSetPublicIPAddressConfiguration) UnmarshalJSO
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmsspiac.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetPublicIPAddressConfigurationProperties VirtualMachineScaleSetPublicIPAddressConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetPublicIPAddressConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmsspiac.VirtualMachineScaleSetPublicIPAddressConfigurationProperties = &virtualMachineScaleSetPublicIPAddressConfigurationProperties
+			}
 		}
-		vmsspiac.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetPublicIPAddressConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmsspiac.VirtualMachineScaleSetPublicIPAddressConfigurationProperties = &properties
 	}
 
 	return nil
@@ -4852,27 +6241,44 @@ func (future VirtualMachineScaleSetRollingUpgradesCancelFuture) Result(client Vi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesCancelFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetRollingUpgradesCancelFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetRollingUpgradesCancelFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.CancelResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesCancelFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesCancelFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.CancelResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesCancelFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture an abstraction for monitoring and retrieving the results
-// of a long-running operation.
+// VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture an abstraction for monitoring and retrieving the
+// results of a long-running operation.
 type VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture struct {
 	azure.Future
 	req *http.Request
@@ -4884,22 +6290,39 @@ func (future VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture) Result(c
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.StartOSUpgradeResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.StartOSUpgradeResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetRollingUpgradesStartOSUpgradeFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4916,27 +6339,44 @@ func (future VirtualMachineScaleSetsCreateOrUpdateFuture) Result(client VirtualM
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vmss, autorest.NewError("compute.VirtualMachineScaleSetsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vmss, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vmss, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vmss, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetsDeallocateFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetsDeallocateFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetsDeallocateFuture struct {
 	azure.Future
 	req *http.Request
@@ -4948,22 +6388,39 @@ func (future VirtualMachineScaleSetsDeallocateFuture) Result(client VirtualMachi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeallocateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsDeallocateFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsDeallocateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeallocateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeallocateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeallocateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeallocateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeallocateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4980,22 +6437,39 @@ func (future VirtualMachineScaleSetsDeleteFuture) Result(client VirtualMachineSc
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5012,22 +6486,39 @@ func (future VirtualMachineScaleSetsDeleteInstancesFuture) Result(client Virtual
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteInstancesFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsDeleteInstancesFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsDeleteInstancesFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteInstancesResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteInstancesFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteInstancesFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteInstancesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsDeleteInstancesFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5066,27 +6557,44 @@ func (future VirtualMachineScaleSetsPowerOffFuture) Result(client VirtualMachine
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsPowerOffFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsPowerOffFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsPowerOffFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.PowerOffResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsPowerOffFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsPowerOffFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.PowerOffResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsPowerOffFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetsReimageAllFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetsReimageAllFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetsReimageAllFuture struct {
 	azure.Future
 	req *http.Request
@@ -5098,22 +6606,39 @@ func (future VirtualMachineScaleSetsReimageAllFuture) Result(client VirtualMachi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageAllFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsReimageAllFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsReimageAllFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.ReimageAllResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageAllFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageAllFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.ReimageAllResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageAllFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5130,22 +6655,39 @@ func (future VirtualMachineScaleSetsReimageFuture) Result(client VirtualMachineS
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsReimageFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsReimageFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.ReimageResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.ReimageResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsReimageFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5162,22 +6704,39 @@ func (future VirtualMachineScaleSetsRestartFuture) Result(client VirtualMachineS
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsRestartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsRestartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsRestartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RestartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsRestartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsRestartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RestartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsRestartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5194,22 +6753,39 @@ func (future VirtualMachineScaleSetsStartFuture) Result(client VirtualMachineSca
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsStartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsStartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsStartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.StartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsStartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsStartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.StartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsStartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5236,22 +6812,39 @@ func (future VirtualMachineScaleSetsUpdateFuture) Result(client VirtualMachineSc
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vmss, autorest.NewError("compute.VirtualMachineScaleSetsUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vmss, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vmss, err = client.UpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vmss, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5268,29 +6861,44 @@ func (future VirtualMachineScaleSetsUpdateInstancesFuture) Result(client Virtual
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateInstancesFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetsUpdateInstancesFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetsUpdateInstancesFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.UpdateInstancesResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateInstancesFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateInstancesFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.UpdateInstancesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetsUpdateInstancesFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // VirtualMachineScaleSetUpdate describes a Virtual Machine Scale Set.
 type VirtualMachineScaleSetUpdate struct {
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
 	// Sku - The virtual machine scale set sku.
 	Sku *Sku `json:"sku,omitempty"`
 	// Plan - The purchase plan when deploying a virtual machine scale set from VM Marketplace images.
@@ -5298,6 +6906,29 @@ type VirtualMachineScaleSetUpdate struct {
 	*VirtualMachineScaleSetUpdateProperties `json:"properties,omitempty"`
 	// Identity - The identity of the virtual machine scale set, if configured.
 	Identity *VirtualMachineScaleSetIdentity `json:"identity,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetUpdate.
+func (vmssu VirtualMachineScaleSetUpdate) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssu.Sku != nil {
+		objectMap["sku"] = vmssu.Sku
+	}
+	if vmssu.Plan != nil {
+		objectMap["plan"] = vmssu.Plan
+	}
+	if vmssu.VirtualMachineScaleSetUpdateProperties != nil {
+		objectMap["properties"] = vmssu.VirtualMachineScaleSetUpdateProperties
+	}
+	if vmssu.Identity != nil {
+		objectMap["identity"] = vmssu.Identity
+	}
+	if vmssu.Tags != nil {
+		objectMap["tags"] = vmssu.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetUpdate struct.
@@ -5307,56 +6938,54 @@ func (vmssu *VirtualMachineScaleSetUpdate) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				vmssu.Sku = &sku
+			}
+		case "plan":
+			if v != nil {
+				var plan Plan
+				err = json.Unmarshal(*v, &plan)
+				if err != nil {
+					return err
+				}
+				vmssu.Plan = &plan
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetUpdateProperties VirtualMachineScaleSetUpdateProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetUpdateProperties)
+				if err != nil {
+					return err
+				}
+				vmssu.VirtualMachineScaleSetUpdateProperties = &virtualMachineScaleSetUpdateProperties
+			}
+		case "identity":
+			if v != nil {
+				var identity VirtualMachineScaleSetIdentity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				vmssu.Identity = &identity
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vmssu.Tags = tags
+			}
 		}
-		vmssu.Sku = &sku
-	}
-
-	v = m["plan"]
-	if v != nil {
-		var plan Plan
-		err = json.Unmarshal(*m["plan"], &plan)
-		if err != nil {
-			return err
-		}
-		vmssu.Plan = &plan
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetUpdateProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssu.VirtualMachineScaleSetUpdateProperties = &properties
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity VirtualMachineScaleSetIdentity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		vmssu.Identity = &identity
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vmssu.Tags = &tags
 	}
 
 	return nil
@@ -5365,11 +6994,26 @@ func (vmssu *VirtualMachineScaleSetUpdate) UnmarshalJSON(body []byte) error {
 // VirtualMachineScaleSetUpdateIPConfiguration describes a virtual machine scale set network profile's IP
 // configuration.
 type VirtualMachineScaleSetUpdateIPConfiguration struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The IP configuration name.
 	Name                                                   *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetUpdateIPConfigurationProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetUpdateIPConfiguration.
+func (vmssuic VirtualMachineScaleSetUpdateIPConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssuic.Name != nil {
+		objectMap["name"] = vmssuic.Name
+	}
+	if vmssuic.VirtualMachineScaleSetUpdateIPConfigurationProperties != nil {
+		objectMap["properties"] = vmssuic.VirtualMachineScaleSetUpdateIPConfigurationProperties
+	}
+	if vmssuic.ID != nil {
+		objectMap["id"] = vmssuic.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetUpdateIPConfiguration struct.
@@ -5379,36 +7023,36 @@ func (vmssuic *VirtualMachineScaleSetUpdateIPConfiguration) UnmarshalJSON(body [
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssuic.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetUpdateIPConfigurationProperties VirtualMachineScaleSetUpdateIPConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetUpdateIPConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmssuic.VirtualMachineScaleSetUpdateIPConfigurationProperties = &virtualMachineScaleSetUpdateIPConfigurationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmssuic.ID = &ID
+			}
 		}
-		vmssuic.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetUpdateIPConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssuic.VirtualMachineScaleSetUpdateIPConfigurationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmssuic.ID = &ID
 	}
 
 	return nil
@@ -5436,11 +7080,26 @@ type VirtualMachineScaleSetUpdateIPConfigurationProperties struct {
 // VirtualMachineScaleSetUpdateNetworkConfiguration describes a virtual machine scale set network profile's network
 // configurations.
 type VirtualMachineScaleSetUpdateNetworkConfiguration struct {
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
 	// Name - The network configuration name.
 	Name                                                        *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetUpdateNetworkConfigurationProperties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetUpdateNetworkConfiguration.
+func (vmssunc VirtualMachineScaleSetUpdateNetworkConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssunc.Name != nil {
+		objectMap["name"] = vmssunc.Name
+	}
+	if vmssunc.VirtualMachineScaleSetUpdateNetworkConfigurationProperties != nil {
+		objectMap["properties"] = vmssunc.VirtualMachineScaleSetUpdateNetworkConfigurationProperties
+	}
+	if vmssunc.ID != nil {
+		objectMap["id"] = vmssunc.ID
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetUpdateNetworkConfiguration struct.
@@ -5450,43 +7109,43 @@ func (vmssunc *VirtualMachineScaleSetUpdateNetworkConfiguration) UnmarshalJSON(b
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssunc.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetUpdateNetworkConfigurationProperties VirtualMachineScaleSetUpdateNetworkConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetUpdateNetworkConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmssunc.VirtualMachineScaleSetUpdateNetworkConfigurationProperties = &virtualMachineScaleSetUpdateNetworkConfigurationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmssunc.ID = &ID
+			}
 		}
-		vmssunc.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetUpdateNetworkConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssunc.VirtualMachineScaleSetUpdateNetworkConfigurationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmssunc.ID = &ID
 	}
 
 	return nil
 }
 
-// VirtualMachineScaleSetUpdateNetworkConfigurationProperties describes a virtual machine scale set updatable network
-// profile's IP configuration.Use this object for updating network profile's IP Configuration.
+// VirtualMachineScaleSetUpdateNetworkConfigurationProperties describes a virtual machine scale set updatable
+// network profile's IP configuration.Use this object for updating network profile's IP Configuration.
 type VirtualMachineScaleSetUpdateNetworkConfigurationProperties struct {
 	// Primary - Whether this is a primary NIC on a virtual machine.
 	Primary *bool `json:"primary,omitempty"`
@@ -5543,12 +7202,24 @@ type VirtualMachineScaleSetUpdateProperties struct {
 	SinglePlacementGroup *bool `json:"singlePlacementGroup,omitempty"`
 }
 
-// VirtualMachineScaleSetUpdatePublicIPAddressConfiguration describes a virtual machines scale set IP Configuration's
-// PublicIPAddress configuration
+// VirtualMachineScaleSetUpdatePublicIPAddressConfiguration describes a virtual machines scale set IP
+// Configuration's PublicIPAddress configuration
 type VirtualMachineScaleSetUpdatePublicIPAddressConfiguration struct {
 	// Name - The publicIP address configuration name.
 	Name                                                                *string `json:"name,omitempty"`
 	*VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetUpdatePublicIPAddressConfiguration.
+func (vmssupiac VirtualMachineScaleSetUpdatePublicIPAddressConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssupiac.Name != nil {
+		objectMap["name"] = vmssupiac.Name
+	}
+	if vmssupiac.VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties != nil {
+		objectMap["properties"] = vmssupiac.VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetUpdatePublicIPAddressConfiguration struct.
@@ -5558,26 +7229,27 @@ func (vmssupiac *VirtualMachineScaleSetUpdatePublicIPAddressConfiguration) Unmar
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssupiac.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				vmssupiac.VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties = &virtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties
+			}
 		}
-		vmssupiac.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssupiac.VirtualMachineScaleSetUpdatePublicIPAddressConfigurationProperties = &properties
 	}
 
 	return nil
@@ -5621,16 +7293,6 @@ type VirtualMachineScaleSetUpdateVMProfile struct {
 // VirtualMachineScaleSetVM describes a virtual machine scale set virtual machine.
 type VirtualMachineScaleSetVM struct {
 	autorest.Response `json:"-"`
-	// ID - Resource Id
-	ID *string `json:"id,omitempty"`
-	// Name - Resource name
-	Name *string `json:"name,omitempty"`
-	// Type - Resource type
-	Type *string `json:"type,omitempty"`
-	// Location - Resource location
-	Location *string `json:"location,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
 	// InstanceID - The virtual machine instance ID.
 	InstanceID *string `json:"instanceId,omitempty"`
 	// Sku - The virtual machine SKU.
@@ -5640,6 +7302,52 @@ type VirtualMachineScaleSetVM struct {
 	Plan *Plan `json:"plan,omitempty"`
 	// Resources - The virtual machine child extension resources.
 	Resources *[]VirtualMachineExtension `json:"resources,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for VirtualMachineScaleSetVM.
+func (vmssv VirtualMachineScaleSetVM) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vmssv.InstanceID != nil {
+		objectMap["instanceId"] = vmssv.InstanceID
+	}
+	if vmssv.Sku != nil {
+		objectMap["sku"] = vmssv.Sku
+	}
+	if vmssv.VirtualMachineScaleSetVMProperties != nil {
+		objectMap["properties"] = vmssv.VirtualMachineScaleSetVMProperties
+	}
+	if vmssv.Plan != nil {
+		objectMap["plan"] = vmssv.Plan
+	}
+	if vmssv.Resources != nil {
+		objectMap["resources"] = vmssv.Resources
+	}
+	if vmssv.ID != nil {
+		objectMap["id"] = vmssv.ID
+	}
+	if vmssv.Name != nil {
+		objectMap["name"] = vmssv.Name
+	}
+	if vmssv.Type != nil {
+		objectMap["type"] = vmssv.Type
+	}
+	if vmssv.Location != nil {
+		objectMap["location"] = vmssv.Location
+	}
+	if vmssv.Tags != nil {
+		objectMap["tags"] = vmssv.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VirtualMachineScaleSetVM struct.
@@ -5649,112 +7357,106 @@ func (vmssv *VirtualMachineScaleSetVM) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["instanceId"]
-	if v != nil {
-		var instanceID string
-		err = json.Unmarshal(*m["instanceId"], &instanceID)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "instanceId":
+			if v != nil {
+				var instanceID string
+				err = json.Unmarshal(*v, &instanceID)
+				if err != nil {
+					return err
+				}
+				vmssv.InstanceID = &instanceID
+			}
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				vmssv.Sku = &sku
+			}
+		case "properties":
+			if v != nil {
+				var virtualMachineScaleSetVMProperties VirtualMachineScaleSetVMProperties
+				err = json.Unmarshal(*v, &virtualMachineScaleSetVMProperties)
+				if err != nil {
+					return err
+				}
+				vmssv.VirtualMachineScaleSetVMProperties = &virtualMachineScaleSetVMProperties
+			}
+		case "plan":
+			if v != nil {
+				var plan Plan
+				err = json.Unmarshal(*v, &plan)
+				if err != nil {
+					return err
+				}
+				vmssv.Plan = &plan
+			}
+		case "resources":
+			if v != nil {
+				var resources []VirtualMachineExtension
+				err = json.Unmarshal(*v, &resources)
+				if err != nil {
+					return err
+				}
+				vmssv.Resources = &resources
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vmssv.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vmssv.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vmssv.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				vmssv.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				vmssv.Tags = tags
+			}
 		}
-		vmssv.InstanceID = &instanceID
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		vmssv.Sku = &sku
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties VirtualMachineScaleSetVMProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		vmssv.VirtualMachineScaleSetVMProperties = &properties
-	}
-
-	v = m["plan"]
-	if v != nil {
-		var plan Plan
-		err = json.Unmarshal(*m["plan"], &plan)
-		if err != nil {
-			return err
-		}
-		vmssv.Plan = &plan
-	}
-
-	v = m["resources"]
-	if v != nil {
-		var resources []VirtualMachineExtension
-		err = json.Unmarshal(*m["resources"], &resources)
-		if err != nil {
-			return err
-		}
-		vmssv.Resources = &resources
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vmssv.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vmssv.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vmssv.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		vmssv.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		vmssv.Tags = &tags
 	}
 
 	return nil
 }
 
-// VirtualMachineScaleSetVMExtensionsSummary extensions summary for virtual machines of a virtual machine scale set.
+// VirtualMachineScaleSetVMExtensionsSummary extensions summary for virtual machines of a virtual machine scale
+// set.
 type VirtualMachineScaleSetVMExtensionsSummary struct {
 	// Name - The extension name.
 	Name *string `json:"name,omitempty"`
@@ -5768,7 +7470,8 @@ type VirtualMachineScaleSetVMInstanceIDs struct {
 	InstanceIds *[]string `json:"instanceIds,omitempty"`
 }
 
-// VirtualMachineScaleSetVMInstanceRequiredIDs specifies a list of virtual machine instance IDs from the VM scale set.
+// VirtualMachineScaleSetVMInstanceRequiredIDs specifies a list of virtual machine instance IDs from the VM scale
+// set.
 type VirtualMachineScaleSetVMInstanceRequiredIDs struct {
 	// InstanceIds - The virtual machine scale set instance ids.
 	InstanceIds *[]string `json:"instanceIds,omitempty"`
@@ -5808,7 +7511,8 @@ type VirtualMachineScaleSetVMListResult struct {
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// VirtualMachineScaleSetVMListResultIterator provides access to a complete listing of VirtualMachineScaleSetVM values.
+// VirtualMachineScaleSetVMListResultIterator provides access to a complete listing of VirtualMachineScaleSetVM
+// values.
 type VirtualMachineScaleSetVMListResultIterator struct {
 	i    int
 	page VirtualMachineScaleSetVMListResultPage
@@ -5943,8 +7647,8 @@ type VirtualMachineScaleSetVMProperties struct {
 	LicenseType *string `json:"licenseType,omitempty"`
 }
 
-// VirtualMachineScaleSetVMsDeallocateFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetVMsDeallocateFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetVMsDeallocateFuture struct {
 	azure.Future
 	req *http.Request
@@ -5956,22 +7660,39 @@ func (future VirtualMachineScaleSetVMsDeallocateFuture) Result(client VirtualMac
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeallocateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsDeallocateFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsDeallocateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeallocateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeallocateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeallocateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeallocateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeallocateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5988,27 +7709,44 @@ func (future VirtualMachineScaleSetVMsDeleteFuture) Result(client VirtualMachine
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetVMsPowerOffFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetVMsPowerOffFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetVMsPowerOffFuture struct {
 	azure.Future
 	req *http.Request
@@ -6020,27 +7758,44 @@ func (future VirtualMachineScaleSetVMsPowerOffFuture) Result(client VirtualMachi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsPowerOffFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsPowerOffFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsPowerOffFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.PowerOffResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsPowerOffFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsPowerOffFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.PowerOffResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsPowerOffFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetVMsReimageAllFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetVMsReimageAllFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetVMsReimageAllFuture struct {
 	azure.Future
 	req *http.Request
@@ -6052,27 +7807,44 @@ func (future VirtualMachineScaleSetVMsReimageAllFuture) Result(client VirtualMac
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageAllFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsReimageAllFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsReimageAllFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.ReimageAllResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageAllFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageAllFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.ReimageAllResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageAllFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetVMsReimageFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetVMsReimageFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetVMsReimageFuture struct {
 	azure.Future
 	req *http.Request
@@ -6084,27 +7856,44 @@ func (future VirtualMachineScaleSetVMsReimageFuture) Result(client VirtualMachin
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsReimageFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsReimageFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.ReimageResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.ReimageResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsReimageFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachineScaleSetVMsRestartFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachineScaleSetVMsRestartFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachineScaleSetVMsRestartFuture struct {
 	azure.Future
 	req *http.Request
@@ -6116,22 +7905,39 @@ func (future VirtualMachineScaleSetVMsRestartFuture) Result(client VirtualMachin
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsRestartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsRestartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsRestartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RestartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsRestartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsRestartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RestartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsRestartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6148,26 +7954,44 @@ func (future VirtualMachineScaleSetVMsStartFuture) Result(client VirtualMachineS
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsStartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachineScaleSetVMsStartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachineScaleSetVMsStartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.StartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsStartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsStartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.StartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachineScaleSetVMsStartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachinesCaptureFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VirtualMachinesCaptureFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VirtualMachinesCaptureFuture struct {
 	azure.Future
 	req *http.Request
@@ -6179,22 +8003,39 @@ func (future VirtualMachinesCaptureFuture) Result(client VirtualMachinesClient) 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCaptureFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vmcr, autorest.NewError("compute.VirtualMachinesCaptureFuture", "Result", "asynchronous operation has not completed")
+		return vmcr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesCaptureFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vmcr, err = client.CaptureResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCaptureFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCaptureFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vmcr, err = client.CaptureResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCaptureFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6211,22 +8052,39 @@ func (future VirtualMachinesConvertToManagedDisksFuture) Result(client VirtualMa
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesConvertToManagedDisksFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesConvertToManagedDisksFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesConvertToManagedDisksFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.ConvertToManagedDisksResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesConvertToManagedDisksFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesConvertToManagedDisksFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.ConvertToManagedDisksResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesConvertToManagedDisksFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6243,22 +8101,39 @@ func (future VirtualMachinesCreateOrUpdateFuture) Result(client VirtualMachinesC
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return VM, autorest.NewError("compute.VirtualMachinesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return VM, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		VM, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	VM, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6275,26 +8150,44 @@ func (future VirtualMachinesDeallocateFuture) Result(client VirtualMachinesClien
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeallocateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesDeallocateFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesDeallocateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeallocateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeallocateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeallocateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeallocateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeallocateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachinesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VirtualMachinesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VirtualMachinesDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -6306,22 +8199,39 @@ func (future VirtualMachinesDeleteFuture) Result(client VirtualMachinesClient) (
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6348,8 +8258,8 @@ type VirtualMachineSizeListResult struct {
 	Value *[]VirtualMachineSize `json:"value,omitempty"`
 }
 
-// VirtualMachinesPerformMaintenanceFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// VirtualMachinesPerformMaintenanceFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type VirtualMachinesPerformMaintenanceFuture struct {
 	azure.Future
 	req *http.Request
@@ -6361,26 +8271,44 @@ func (future VirtualMachinesPerformMaintenanceFuture) Result(client VirtualMachi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPerformMaintenanceFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesPerformMaintenanceFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesPerformMaintenanceFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.PerformMaintenanceResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPerformMaintenanceFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPerformMaintenanceFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.PerformMaintenanceResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPerformMaintenanceFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachinesPowerOffFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VirtualMachinesPowerOffFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VirtualMachinesPowerOffFuture struct {
 	azure.Future
 	req *http.Request
@@ -6392,26 +8320,44 @@ func (future VirtualMachinesPowerOffFuture) Result(client VirtualMachinesClient)
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPowerOffFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesPowerOffFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesPowerOffFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.PowerOffResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPowerOffFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPowerOffFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.PowerOffResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesPowerOffFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachinesRedeployFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VirtualMachinesRedeployFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VirtualMachinesRedeployFuture struct {
 	azure.Future
 	req *http.Request
@@ -6423,26 +8369,44 @@ func (future VirtualMachinesRedeployFuture) Result(client VirtualMachinesClient)
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRedeployFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesRedeployFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesRedeployFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RedeployResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRedeployFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRedeployFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RedeployResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRedeployFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VirtualMachinesRestartFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VirtualMachinesRestartFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VirtualMachinesRestartFuture struct {
 	azure.Future
 	req *http.Request
@@ -6454,22 +8418,39 @@ func (future VirtualMachinesRestartFuture) Result(client VirtualMachinesClient) 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRestartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesRestartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesRestartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.RestartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRestartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRestartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.RestartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRestartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6486,22 +8467,39 @@ func (future VirtualMachinesRunCommandFuture) Result(client VirtualMachinesClien
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRunCommandFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return rcr, autorest.NewError("compute.VirtualMachinesRunCommandFuture", "Result", "asynchronous operation has not completed")
+		return rcr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesRunCommandFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		rcr, err = client.RunCommandResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRunCommandFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRunCommandFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	rcr, err = client.RunCommandResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesRunCommandFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -6517,22 +8515,39 @@ func (future VirtualMachinesStartFuture) Result(client VirtualMachinesClient) (o
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesStartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return osr, autorest.NewError("compute.VirtualMachinesStartFuture", "Result", "asynchronous operation has not completed")
+		return osr, azure.NewAsyncOpIncompleteError("compute.VirtualMachinesStartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		osr, err = client.StartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "compute.VirtualMachinesStartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesStartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	osr, err = client.StartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesStartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 

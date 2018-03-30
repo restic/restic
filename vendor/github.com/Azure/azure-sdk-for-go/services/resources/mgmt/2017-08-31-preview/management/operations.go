@@ -1,4 +1,4 @@
-package management
+package managementgroups
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.
 //
@@ -47,20 +47,20 @@ func (client OperationsClient) List(ctx context.Context) (result OperationListRe
 	result.fn = client.listNextResults
 	req, err := client.ListPreparer(ctx)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "management.OperationsClient", "List", nil, "Failure preparing request")
+		err = autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "List", nil, "Failure preparing request")
 		return
 	}
 
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.olr.Response = autorest.Response{Response: resp}
-		err = autorest.NewErrorWithError(err, "management.OperationsClient", "List", resp, "Failure sending request")
+		err = autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "List", resp, "Failure sending request")
 		return
 	}
 
 	result.olr, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "management.OperationsClient", "List", resp, "Failure responding to request")
+		err = autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "List", resp, "Failure responding to request")
 	}
 
 	return
@@ -105,7 +105,7 @@ func (client OperationsClient) ListResponder(resp *http.Response) (result Operat
 func (client OperationsClient) listNextResults(lastResults OperationListResult) (result OperationListResult, err error) {
 	req, err := lastResults.operationListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "management.OperationsClient", "listNextResults", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "listNextResults", nil, "Failure preparing next results request")
 	}
 	if req == nil {
 		return
@@ -113,11 +113,11 @@ func (client OperationsClient) listNextResults(lastResults OperationListResult) 
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "management.OperationsClient", "listNextResults", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "listNextResults", resp, "Failure sending next results request")
 	}
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "management.OperationsClient", "listNextResults", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "managementgroups.OperationsClient", "listNextResults", resp, "Failure responding to next results request")
 	}
 	return
 }

@@ -80,7 +80,7 @@ func (client ServiceGroupsClient) CreatePreparer(ctx context.Context, applicatio
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices/$/CreateServiceGroup", pathParameters),
@@ -179,8 +179,8 @@ func (client ServiceGroupsClient) RemoveResponder(resp *http.Response) (result S
 
 // Update update service groups
 //
-// applicationName is the name of the application serviceName is the name of the service updateServiceGroupDescription
-// is the description of the service group update
+// applicationName is the name of the application serviceName is the name of the service
+// updateServiceGroupDescription is the description of the service group update
 func (client ServiceGroupsClient) Update(ctx context.Context, applicationName string, serviceName string, updateServiceGroupDescription BasicUpdateServiceGroupDescription) (result String, err error) {
 	req, err := client.UpdatePreparer(ctx, applicationName, serviceName, updateServiceGroupDescription)
 	if err != nil {
@@ -219,7 +219,7 @@ func (client ServiceGroupsClient) UpdatePreparer(ctx context.Context, applicatio
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Applications/{applicationName}/$/GetServices/{serviceName}/$/UpdateServiceGroup", pathParameters),

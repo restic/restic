@@ -53,6 +53,11 @@ const (
 	Westus2 AzureRegions = "westus2"
 )
 
+// PossibleAzureRegionsValues returns an array of possible values for the AzureRegions const type.
+func PossibleAzureRegionsValues() []AzureRegions {
+	return []AzureRegions{Australiaeast, Brazilsouth, Eastasia, Eastus, Eastus2, Northeurope, Southcentralus, Southeastasia, Westcentralus, Westeurope, Westus, Westus2}
+}
+
 // Details enumerates the values for details.
 type Details string
 
@@ -63,6 +68,11 @@ const (
 	Landmarks Details = "Landmarks"
 )
 
+// PossibleDetailsValues returns an array of possible values for the Details const type.
+func PossibleDetailsValues() []Details {
+	return []Details{Celebrities, Landmarks}
+}
+
 // DomainModels enumerates the values for domain models.
 type DomainModels string
 
@@ -72,6 +82,11 @@ const (
 	// DomainModelsLandmarks ...
 	DomainModelsLandmarks DomainModels = "Landmarks"
 )
+
+// PossibleDomainModelsValues returns an array of possible values for the DomainModels const type.
+func PossibleDomainModelsValues() []DomainModels {
+	return []DomainModels{DomainModelsCelebrities, DomainModelsLandmarks}
+}
 
 // ErrorCodes enumerates the values for error codes.
 type ErrorCodes string
@@ -105,6 +120,11 @@ const (
 	Unspecified ErrorCodes = "Unspecified"
 )
 
+// PossibleErrorCodesValues returns an array of possible values for the ErrorCodes const type.
+func PossibleErrorCodesValues() []ErrorCodes {
+	return []ErrorCodes{BadArgument, FailedToProcess, InternalServerError, InvalidDetails, InvalidImageFormat, InvalidImageSize, InvalidImageURL, NotSupportedImage, NotSupportedLanguage, NotSupportedVisualFeature, StorageException, Timeout, Unspecified}
+}
+
 // Gender enumerates the values for gender.
 type Gender string
 
@@ -115,6 +135,11 @@ const (
 	Male Gender = "Male"
 )
 
+// PossibleGenderValues returns an array of possible values for the Gender const type.
+func PossibleGenderValues() []Gender {
+	return []Gender{Female, Male}
+}
+
 // Language1 enumerates the values for language 1.
 type Language1 string
 
@@ -124,6 +149,11 @@ const (
 	// Zh ...
 	Zh Language1 = "zh"
 )
+
+// PossibleLanguage1Values returns an array of possible values for the Language1 const type.
+func PossibleLanguage1Values() []Language1 {
+	return []Language1{En, Zh}
+}
 
 // OcrLanguages enumerates the values for ocr languages.
 type OcrLanguages string
@@ -185,6 +215,11 @@ const (
 	OcrLanguagesZhHant OcrLanguages = "zh-Hant"
 )
 
+// PossibleOcrLanguagesValues returns an array of possible values for the OcrLanguages const type.
+func PossibleOcrLanguagesValues() []OcrLanguages {
+	return []OcrLanguages{OcrLanguagesAr, OcrLanguagesCs, OcrLanguagesDa, OcrLanguagesDe, OcrLanguagesEl, OcrLanguagesEn, OcrLanguagesEs, OcrLanguagesFi, OcrLanguagesFr, OcrLanguagesHu, OcrLanguagesIt, OcrLanguagesJa, OcrLanguagesKo, OcrLanguagesNb, OcrLanguagesNl, OcrLanguagesPl, OcrLanguagesPt, OcrLanguagesRo, OcrLanguagesRu, OcrLanguagesSk, OcrLanguagesSrCyrl, OcrLanguagesSrLatn, OcrLanguagesSv, OcrLanguagesTr, OcrLanguagesUnk, OcrLanguagesZhHans, OcrLanguagesZhHant}
+}
+
 // TextOperationStatusCodes enumerates the values for text operation status codes.
 type TextOperationStatusCodes string
 
@@ -198,6 +233,11 @@ const (
 	// Succeeded ...
 	Succeeded TextOperationStatusCodes = "Succeeded"
 )
+
+// PossibleTextOperationStatusCodesValues returns an array of possible values for the TextOperationStatusCodes const type.
+func PossibleTextOperationStatusCodesValues() []TextOperationStatusCodes {
+	return []TextOperationStatusCodes{Failed, NotStarted, Running, Succeeded}
+}
 
 // VisualFeatureTypes enumerates the values for visual feature types.
 type VisualFeatureTypes string
@@ -218,6 +258,11 @@ const (
 	// VisualFeatureTypesTags ...
 	VisualFeatureTypesTags VisualFeatureTypes = "Tags"
 )
+
+// PossibleVisualFeatureTypesValues returns an array of possible values for the VisualFeatureTypes const type.
+func PossibleVisualFeatureTypesValues() []VisualFeatureTypes {
+	return []VisualFeatureTypes{VisualFeatureTypesAdult, VisualFeatureTypesCategories, VisualFeatureTypesColor, VisualFeatureTypesDescription, VisualFeatureTypesFaces, VisualFeatureTypesImageType, VisualFeatureTypesTags}
+}
 
 // AdultInfo an object describing whether the image contains adult-oriented content and/or is racy.
 type AdultInfo struct {
@@ -287,6 +332,21 @@ type DomainModelResults struct {
 	Metadata *ImageMetadata `json:"metadata,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for DomainModelResults.
+func (dmr DomainModelResults) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dmr.DomainModelResult != nil {
+		objectMap["result"] = dmr.DomainModelResult
+	}
+	if dmr.RequestID != nil {
+		objectMap["requestId"] = dmr.RequestID
+	}
+	if dmr.Metadata != nil {
+		objectMap["metadata"] = dmr.Metadata
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for DomainModelResults struct.
 func (dmr *DomainModelResults) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -294,36 +354,36 @@ func (dmr *DomainModelResults) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["result"]
-	if v != nil {
-		var resultVar DomainModelResult
-		err = json.Unmarshal(*m["result"], &resultVar)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "result":
+			if v != nil {
+				var domainModelResult DomainModelResult
+				err = json.Unmarshal(*v, &domainModelResult)
+				if err != nil {
+					return err
+				}
+				dmr.DomainModelResult = &domainModelResult
+			}
+		case "requestId":
+			if v != nil {
+				var requestID string
+				err = json.Unmarshal(*v, &requestID)
+				if err != nil {
+					return err
+				}
+				dmr.RequestID = &requestID
+			}
+		case "metadata":
+			if v != nil {
+				var metadata ImageMetadata
+				err = json.Unmarshal(*v, &metadata)
+				if err != nil {
+					return err
+				}
+				dmr.Metadata = &metadata
+			}
 		}
-		dmr.DomainModelResult = &resultVar
-	}
-
-	v = m["requestId"]
-	if v != nil {
-		var requestID string
-		err = json.Unmarshal(*m["requestId"], &requestID)
-		if err != nil {
-			return err
-		}
-		dmr.RequestID = &requestID
-	}
-
-	v = m["metadata"]
-	if v != nil {
-		var metadata ImageMetadata
-		err = json.Unmarshal(*m["metadata"], &metadata)
-		if err != nil {
-			return err
-		}
-		dmr.Metadata = &metadata
 	}
 
 	return nil
@@ -391,11 +451,20 @@ type ImageCaption struct {
 	Confidence *float64 `json:"confidence,omitempty"`
 }
 
-// ImageDescription a collection of content tags, along with a list of captions sorted by confidence level, and image
-// metadata.
+// ImageDescription a collection of content tags, along with a list of captions sorted by confidence level, and
+// image metadata.
 type ImageDescription struct {
 	autorest.Response        `json:"-"`
 	*ImageDescriptionDetails `json:"description,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ImageDescription.
+func (ID ImageDescription) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ID.ImageDescriptionDetails != nil {
+		objectMap["description"] = ID.ImageDescriptionDetails
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ImageDescription struct.
@@ -405,23 +474,25 @@ func (ID *ImageDescription) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["description"]
-	if v != nil {
-		var description ImageDescriptionDetails
-		err = json.Unmarshal(*m["description"], &description)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "description":
+			if v != nil {
+				var imageDescriptionDetails ImageDescriptionDetails
+				err = json.Unmarshal(*v, &imageDescriptionDetails)
+				if err != nil {
+					return err
+				}
+				ID.ImageDescriptionDetails = &imageDescriptionDetails
+			}
 		}
-		ID.ImageDescriptionDetails = &description
 	}
 
 	return nil
 }
 
-// ImageDescriptionDetails a collection of content tags, along with a list of captions sorted by confidence level, and
-// image metadata.
+// ImageDescriptionDetails a collection of content tags, along with a list of captions sorted by confidence level,
+// and image metadata.
 type ImageDescriptionDetails struct {
 	// Tags - A collection of image tags.
 	Tags *[]string `json:"tags,omitempty"`

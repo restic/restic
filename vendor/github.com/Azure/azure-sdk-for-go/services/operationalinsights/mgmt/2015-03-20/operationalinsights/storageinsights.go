@@ -31,13 +31,13 @@ type StorageInsightsClient struct {
 }
 
 // NewStorageInsightsClient creates an instance of the StorageInsightsClient client.
-func NewStorageInsightsClient(subscriptionID string) StorageInsightsClient {
-	return NewStorageInsightsClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewStorageInsightsClient(subscriptionID string, purgeID string) StorageInsightsClient {
+	return NewStorageInsightsClientWithBaseURI(DefaultBaseURI, subscriptionID, purgeID)
 }
 
 // NewStorageInsightsClientWithBaseURI creates an instance of the StorageInsightsClient client.
-func NewStorageInsightsClientWithBaseURI(baseURI string, subscriptionID string) StorageInsightsClient {
-	return StorageInsightsClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewStorageInsightsClientWithBaseURI(baseURI string, subscriptionID string, purgeID string) StorageInsightsClient {
+	return StorageInsightsClient{NewWithBaseURI(baseURI, subscriptionID, purgeID)}
 }
 
 // CreateOrUpdate create or update a storage insight.
@@ -58,7 +58,7 @@ func (client StorageInsightsClient) CreateOrUpdate(ctx context.Context, resource
 						{Target: "parameters.StorageInsightProperties.StorageAccount.Key", Name: validation.Null, Rule: true, Chain: nil},
 					}},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "CreateOrUpdate")
+		return result, validation.NewError("operationalinsights.StorageInsightsClient", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, workspaceName, storageInsightName, parameters)
@@ -97,7 +97,7 @@ func (client StorageInsightsClient) CreateOrUpdatePreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/storageInsightConfigs/{storageInsightName}", pathParameters),
@@ -137,7 +137,7 @@ func (client StorageInsightsClient) Delete(ctx context.Context, resourceGroupNam
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "Delete")
+		return result, validation.NewError("operationalinsights.StorageInsightsClient", "Delete", err.Error())
 	}
 
 	req, err := client.DeletePreparer(ctx, resourceGroupName, workspaceName, storageInsightName)
@@ -213,7 +213,7 @@ func (client StorageInsightsClient) Get(ctx context.Context, resourceGroupName s
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "Get")
+		return result, validation.NewError("operationalinsights.StorageInsightsClient", "Get", err.Error())
 	}
 
 	req, err := client.GetPreparer(ctx, resourceGroupName, workspaceName, storageInsightName)
@@ -289,7 +289,7 @@ func (client StorageInsightsClient) ListByWorkspace(ctx context.Context, resourc
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.StorageInsightsClient", "ListByWorkspace")
+		return result, validation.NewError("operationalinsights.StorageInsightsClient", "ListByWorkspace", err.Error())
 	}
 
 	result.fn = client.listByWorkspaceNextResults

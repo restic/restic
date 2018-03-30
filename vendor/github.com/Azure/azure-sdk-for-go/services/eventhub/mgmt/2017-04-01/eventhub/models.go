@@ -38,6 +38,11 @@ const (
 	Send AccessRights = "Send"
 )
 
+// PossibleAccessRightsValues returns an array of possible values for the AccessRights const type.
+func PossibleAccessRightsValues() []AccessRights {
+	return []AccessRights{Listen, Manage, Send}
+}
+
 // EncodingCaptureDescription enumerates the values for encoding capture description.
 type EncodingCaptureDescription string
 
@@ -47,6 +52,11 @@ const (
 	// AvroDeflate ...
 	AvroDeflate EncodingCaptureDescription = "AvroDeflate"
 )
+
+// PossibleEncodingCaptureDescriptionValues returns an array of possible values for the EncodingCaptureDescription const type.
+func PossibleEncodingCaptureDescriptionValues() []EncodingCaptureDescription {
+	return []EncodingCaptureDescription{Avro, AvroDeflate}
+}
 
 // EntityStatus enumerates the values for entity status.
 type EntityStatus string
@@ -72,6 +82,11 @@ const (
 	Unknown EntityStatus = "Unknown"
 )
 
+// PossibleEntityStatusValues returns an array of possible values for the EntityStatus const type.
+func PossibleEntityStatusValues() []EntityStatus {
+	return []EntityStatus{Active, Creating, Deleting, Disabled, ReceiveDisabled, Renaming, Restoring, SendDisabled, Unknown}
+}
+
 // KeyType enumerates the values for key type.
 type KeyType string
 
@@ -81,6 +96,11 @@ const (
 	// SecondaryKey ...
 	SecondaryKey KeyType = "SecondaryKey"
 )
+
+// PossibleKeyTypeValues returns an array of possible values for the KeyType const type.
+func PossibleKeyTypeValues() []KeyType {
+	return []KeyType{PrimaryKey, SecondaryKey}
+}
 
 // ProvisioningStateDR enumerates the values for provisioning state dr.
 type ProvisioningStateDR string
@@ -94,6 +114,11 @@ const (
 	Succeeded ProvisioningStateDR = "Succeeded"
 )
 
+// PossibleProvisioningStateDRValues returns an array of possible values for the ProvisioningStateDR const type.
+func PossibleProvisioningStateDRValues() []ProvisioningStateDR {
+	return []ProvisioningStateDR{Accepted, Failed, Succeeded}
+}
+
 // RoleDisasterRecovery enumerates the values for role disaster recovery.
 type RoleDisasterRecovery string
 
@@ -106,6 +131,11 @@ const (
 	Secondary RoleDisasterRecovery = "Secondary"
 )
 
+// PossibleRoleDisasterRecoveryValues returns an array of possible values for the RoleDisasterRecovery const type.
+func PossibleRoleDisasterRecoveryValues() []RoleDisasterRecovery {
+	return []RoleDisasterRecovery{Primary, PrimaryNotReplicating, Secondary}
+}
+
 // SkuName enumerates the values for sku name.
 type SkuName string
 
@@ -116,6 +146,11 @@ const (
 	Standard SkuName = "Standard"
 )
 
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{Basic, Standard}
+}
+
 // SkuTier enumerates the values for sku tier.
 type SkuTier string
 
@@ -125,6 +160,11 @@ const (
 	// SkuTierStandard ...
 	SkuTierStandard SkuTier = "Standard"
 )
+
+// PossibleSkuTierValues returns an array of possible values for the SkuTier const type.
+func PossibleSkuTierValues() []SkuTier {
+	return []SkuTier{SkuTierBasic, SkuTierStandard}
+}
 
 // UnavailableReason enumerates the values for unavailable reason.
 type UnavailableReason string
@@ -143,6 +183,11 @@ const (
 	// TooManyNamespaceInCurrentSubscription ...
 	TooManyNamespaceInCurrentSubscription UnavailableReason = "TooManyNamespaceInCurrentSubscription"
 )
+
+// PossibleUnavailableReasonValues returns an array of possible values for the UnavailableReason const type.
+func PossibleUnavailableReasonValues() []UnavailableReason {
+	return []UnavailableReason{InvalidName, NameInLockdown, NameInUse, None, SubscriptionIsDisabled, TooManyNamespaceInCurrentSubscription}
+}
 
 // AccessKeys namespace/EventHub Connection String
 type AccessKeys struct {
@@ -166,14 +211,32 @@ type AccessKeys struct {
 // ArmDisasterRecovery single item in List or Get Alias(Disaster Recovery configuration) operation
 type ArmDisasterRecovery struct {
 	autorest.Response `json:"-"`
+	// ArmDisasterRecoveryProperties - Properties required to the Create Or Update Alias(Disaster Recovery configurations)
+	*ArmDisasterRecoveryProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// ArmDisasterRecoveryProperties - Properties required to the Create Or Update Alias(Disaster Recovery configurations)
-	*ArmDisasterRecoveryProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ArmDisasterRecovery.
+func (adr ArmDisasterRecovery) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if adr.ArmDisasterRecoveryProperties != nil {
+		objectMap["properties"] = adr.ArmDisasterRecoveryProperties
+	}
+	if adr.ID != nil {
+		objectMap["id"] = adr.ID
+	}
+	if adr.Name != nil {
+		objectMap["name"] = adr.Name
+	}
+	if adr.Type != nil {
+		objectMap["type"] = adr.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ArmDisasterRecovery struct.
@@ -183,46 +246,45 @@ func (adr *ArmDisasterRecovery) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ArmDisasterRecoveryProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var armDisasterRecoveryProperties ArmDisasterRecoveryProperties
+				err = json.Unmarshal(*v, &armDisasterRecoveryProperties)
+				if err != nil {
+					return err
+				}
+				adr.ArmDisasterRecoveryProperties = &armDisasterRecoveryProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				adr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				adr.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				adr.Type = &typeVar
+			}
 		}
-		adr.ArmDisasterRecoveryProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		adr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		adr.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		adr.Type = &typeVar
 	}
 
 	return nil
@@ -330,7 +392,8 @@ func (page ArmDisasterRecoveryListResultPage) Values() []ArmDisasterRecovery {
 	return *page.adrlr.Value
 }
 
-// ArmDisasterRecoveryProperties properties required to the Create Or Update Alias(Disaster Recovery configurations)
+// ArmDisasterRecoveryProperties properties required to the Create Or Update Alias(Disaster Recovery
+// configurations)
 type ArmDisasterRecoveryProperties struct {
 	// ProvisioningState - Provisioning state of the Alias(Disaster Recovery configuration) - possible values 'Accepted' or 'Succeeded' or 'Failed'. Possible values include: 'Accepted', 'Succeeded', 'Failed'
 	ProvisioningState ProvisioningStateDR `json:"provisioningState,omitempty"`
@@ -345,14 +408,32 @@ type ArmDisasterRecoveryProperties struct {
 // AuthorizationRule single item in a List or Get AuthorizationRule operation
 type AuthorizationRule struct {
 	autorest.Response `json:"-"`
+	// AuthorizationRuleProperties - Properties supplied to create or update AuthorizationRule
+	*AuthorizationRuleProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// AuthorizationRuleProperties - Properties supplied to create or update AuthorizationRule
-	*AuthorizationRuleProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AuthorizationRule.
+func (ar AuthorizationRule) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ar.AuthorizationRuleProperties != nil {
+		objectMap["properties"] = ar.AuthorizationRuleProperties
+	}
+	if ar.ID != nil {
+		objectMap["id"] = ar.ID
+	}
+	if ar.Name != nil {
+		objectMap["name"] = ar.Name
+	}
+	if ar.Type != nil {
+		objectMap["type"] = ar.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AuthorizationRule struct.
@@ -362,46 +443,45 @@ func (ar *AuthorizationRule) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AuthorizationRuleProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var authorizationRuleProperties AuthorizationRuleProperties
+				err = json.Unmarshal(*v, &authorizationRuleProperties)
+				if err != nil {
+					return err
+				}
+				ar.AuthorizationRuleProperties = &authorizationRuleProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				ar.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				ar.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ar.Type = &typeVar
+			}
 		}
-		ar.AuthorizationRuleProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		ar.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		ar.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ar.Type = &typeVar
 	}
 
 	return nil
@@ -519,7 +599,7 @@ type AuthorizationRuleProperties struct {
 type CaptureDescription struct {
 	// Enabled - A value that indicates whether capture description is enabled.
 	Enabled *bool `json:"enabled,omitempty"`
-	// Encoding - Enumerates the possible values for the encoding format of capture description. Possible values include: 'Avro', 'AvroDeflate'
+	// Encoding - Enumerates the possible values for the encoding format of capture description. Note: 'AvroDeflate' will be deprecated in New API Version. Possible values include: 'Avro', 'AvroDeflate'
 	Encoding EncodingCaptureDescription `json:"encoding,omitempty"`
 	// IntervalInSeconds - The time window allows you to set the frequency with which the capture to Azure Blobs will happen, value should between 60 to 900 seconds
 	IntervalInSeconds *int32 `json:"intervalInSeconds,omitempty"`
@@ -549,14 +629,32 @@ type CheckNameAvailabilityResult struct {
 // ConsumerGroup single item in List or Get Consumer group operation
 type ConsumerGroup struct {
 	autorest.Response `json:"-"`
+	// ConsumerGroupProperties - Single item in List or Get Consumer group operation
+	*ConsumerGroupProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// ConsumerGroupProperties - Single item in List or Get Consumer group operation
-	*ConsumerGroupProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ConsumerGroup.
+func (cg ConsumerGroup) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cg.ConsumerGroupProperties != nil {
+		objectMap["properties"] = cg.ConsumerGroupProperties
+	}
+	if cg.ID != nil {
+		objectMap["id"] = cg.ID
+	}
+	if cg.Name != nil {
+		objectMap["name"] = cg.Name
+	}
+	if cg.Type != nil {
+		objectMap["type"] = cg.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ConsumerGroup struct.
@@ -566,46 +664,45 @@ func (cg *ConsumerGroup) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ConsumerGroupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var consumerGroupProperties ConsumerGroupProperties
+				err = json.Unmarshal(*v, &consumerGroupProperties)
+				if err != nil {
+					return err
+				}
+				cg.ConsumerGroupProperties = &consumerGroupProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cg.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cg.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cg.Type = &typeVar
+			}
 		}
-		cg.ConsumerGroupProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		cg.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cg.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cg.Type = &typeVar
 	}
 
 	return nil
@@ -731,6 +828,18 @@ type Destination struct {
 	*DestinationProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for Destination.
+func (d Destination) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if d.Name != nil {
+		objectMap["name"] = d.Name
+	}
+	if d.DestinationProperties != nil {
+		objectMap["properties"] = d.DestinationProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for Destination struct.
 func (d *Destination) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -738,33 +847,34 @@ func (d *Destination) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				d.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var destinationProperties DestinationProperties
+				err = json.Unmarshal(*v, &destinationProperties)
+				if err != nil {
+					return err
+				}
+				d.DestinationProperties = &destinationProperties
+			}
 		}
-		d.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DestinationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		d.DestinationProperties = &properties
 	}
 
 	return nil
 }
 
-// DestinationProperties properties describing the storage account, blob container and acrchive anme format for capture
-// destination
+// DestinationProperties properties describing the storage account, blob container and acrchive anme format for
+// capture destination
 type DestinationProperties struct {
 	// StorageAccountResourceID - Resource id of the storage account to be used to create the blobs
 	StorageAccountResourceID *string `json:"storageAccountResourceId,omitempty"`
@@ -777,20 +887,47 @@ type DestinationProperties struct {
 // EHNamespace single Namespace item in List or Get Operation
 type EHNamespace struct {
 	autorest.Response `json:"-"`
+	// Sku - Properties of sku resource
+	Sku *Sku `json:"sku,omitempty"`
+	// EHNamespaceProperties - Namespace properties supplied for create namespace operation.
+	*EHNamespaceProperties `json:"properties,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Location - Resource location
-	Location *string `json:"location,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Sku - Properties of sku resource
-	Sku *Sku `json:"sku,omitempty"`
-	// EHNamespaceProperties - Namespace properties supplied for create namespace operation.
-	*EHNamespaceProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for EHNamespace.
+func (en EHNamespace) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if en.Sku != nil {
+		objectMap["sku"] = en.Sku
+	}
+	if en.EHNamespaceProperties != nil {
+		objectMap["properties"] = en.EHNamespaceProperties
+	}
+	if en.Location != nil {
+		objectMap["location"] = en.Location
+	}
+	if en.Tags != nil {
+		objectMap["tags"] = en.Tags
+	}
+	if en.ID != nil {
+		objectMap["id"] = en.ID
+	}
+	if en.Name != nil {
+		objectMap["name"] = en.Name
+	}
+	if en.Type != nil {
+		objectMap["type"] = en.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for EHNamespace struct.
@@ -800,76 +937,72 @@ func (en *EHNamespace) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				en.Sku = &sku
+			}
+		case "properties":
+			if v != nil {
+				var eHNamespaceProperties EHNamespaceProperties
+				err = json.Unmarshal(*v, &eHNamespaceProperties)
+				if err != nil {
+					return err
+				}
+				en.EHNamespaceProperties = &eHNamespaceProperties
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				en.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				en.Tags = tags
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				en.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				en.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				en.Type = &typeVar
+			}
 		}
-		en.Sku = &sku
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties EHNamespaceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		en.EHNamespaceProperties = &properties
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		en.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		en.Tags = &tags
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		en.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		en.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		en.Type = &typeVar
 	}
 
 	return nil
@@ -995,8 +1128,8 @@ type EHNamespaceProperties struct {
 	MaximumThroughputUnits *int32 `json:"maximumThroughputUnits,omitempty"`
 }
 
-// ErrorResponse error reponse indicates EventHub service is not able to process the incoming request. The reason is
-// provided in the error message.
+// ErrorResponse error reponse indicates EventHub service is not able to process the incoming request. The reason
+// is provided in the error message.
 type ErrorResponse struct {
 	// Code - Error code.
 	Code *string `json:"code,omitempty"`
@@ -1106,17 +1239,305 @@ func (page ListResultPage) Values() []Model {
 	return *page.lr.Value
 }
 
-// Model single item in List or Get Event Hub operation
-type Model struct {
-	autorest.Response `json:"-"`
+// MessagingPlan messaging
+type MessagingPlan struct {
+	autorest.Response        `json:"-"`
+	*MessagingPlanproperties `json:"properties,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for MessagingPlan.
+func (mp MessagingPlan) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mp.MessagingPlanproperties != nil {
+		objectMap["properties"] = mp.MessagingPlanproperties
+	}
+	if mp.Location != nil {
+		objectMap["location"] = mp.Location
+	}
+	if mp.Tags != nil {
+		objectMap["tags"] = mp.Tags
+	}
+	if mp.ID != nil {
+		objectMap["id"] = mp.ID
+	}
+	if mp.Name != nil {
+		objectMap["name"] = mp.Name
+	}
+	if mp.Type != nil {
+		objectMap["type"] = mp.Type
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for MessagingPlan struct.
+func (mp *MessagingPlan) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var messagingPlanproperties MessagingPlanproperties
+				err = json.Unmarshal(*v, &messagingPlanproperties)
+				if err != nil {
+					return err
+				}
+				mp.MessagingPlanproperties = &messagingPlanproperties
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				mp.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				mp.Tags = tags
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				mp.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				mp.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				mp.Type = &typeVar
+			}
+		}
+	}
+
+	return nil
+}
+
+// MessagingPlanproperties messaging Region
+type MessagingPlanproperties struct {
+	// Sku - Sku type
+	Sku *int32 `json:"sku,omitempty"`
+	// SelectedEventHubUnit - Selected event hub unit
+	SelectedEventHubUnit *int32 `json:"selectedEventHubUnit,omitempty"`
+	// UpdatedAt - The exact time the messaging plan was updated.
+	UpdatedAt *date.Time `json:"updatedAt,omitempty"`
+	// Revision - revision number
+	Revision *int64 `json:"revision,omitempty"`
+}
+
+// MessagingRegions messaging Region
+type MessagingRegions struct {
+	Properties *MessagingRegionsProperties `json:"properties,omitempty"`
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for MessagingRegions.
+func (mr MessagingRegions) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mr.Properties != nil {
+		objectMap["properties"] = mr.Properties
+	}
+	if mr.Location != nil {
+		objectMap["location"] = mr.Location
+	}
+	if mr.Tags != nil {
+		objectMap["tags"] = mr.Tags
+	}
+	if mr.ID != nil {
+		objectMap["id"] = mr.ID
+	}
+	if mr.Name != nil {
+		objectMap["name"] = mr.Name
+	}
+	if mr.Type != nil {
+		objectMap["type"] = mr.Type
+	}
+	return json.Marshal(objectMap)
+}
+
+// MessagingRegionsListResult the response of the List MessagingRegions operation.
+type MessagingRegionsListResult struct {
+	autorest.Response `json:"-"`
+	// Value - Result of the List MessagingRegions type.
+	Value *[]MessagingRegions `json:"value,omitempty"`
+	// NextLink - Link to the next set of results. Not empty if Value contains incomplete list of MessagingRegions.
+	NextLink *string `json:"nextLink,omitempty"`
+}
+
+// MessagingRegionsListResultIterator provides access to a complete listing of MessagingRegions values.
+type MessagingRegionsListResultIterator struct {
+	i    int
+	page MessagingRegionsListResultPage
+}
+
+// Next advances to the next value.  If there was an error making
+// the request the iterator does not advance and the error is returned.
+func (iter *MessagingRegionsListResultIterator) Next() error {
+	iter.i++
+	if iter.i < len(iter.page.Values()) {
+		return nil
+	}
+	err := iter.page.Next()
+	if err != nil {
+		iter.i--
+		return err
+	}
+	iter.i = 0
+	return nil
+}
+
+// NotDone returns true if the enumeration should be started or is not yet complete.
+func (iter MessagingRegionsListResultIterator) NotDone() bool {
+	return iter.page.NotDone() && iter.i < len(iter.page.Values())
+}
+
+// Response returns the raw server response from the last page request.
+func (iter MessagingRegionsListResultIterator) Response() MessagingRegionsListResult {
+	return iter.page.Response()
+}
+
+// Value returns the current value or a zero-initialized value if the
+// iterator has advanced beyond the end of the collection.
+func (iter MessagingRegionsListResultIterator) Value() MessagingRegions {
+	if !iter.page.NotDone() {
+		return MessagingRegions{}
+	}
+	return iter.page.Values()[iter.i]
+}
+
+// IsEmpty returns true if the ListResult contains no values.
+func (mrlr MessagingRegionsListResult) IsEmpty() bool {
+	return mrlr.Value == nil || len(*mrlr.Value) == 0
+}
+
+// messagingRegionsListResultPreparer prepares a request to retrieve the next set of results.
+// It returns nil if no more results exist.
+func (mrlr MessagingRegionsListResult) messagingRegionsListResultPreparer() (*http.Request, error) {
+	if mrlr.NextLink == nil || len(to.String(mrlr.NextLink)) < 1 {
+		return nil, nil
+	}
+	return autorest.Prepare(&http.Request{},
+		autorest.AsJSON(),
+		autorest.AsGet(),
+		autorest.WithBaseURL(to.String(mrlr.NextLink)))
+}
+
+// MessagingRegionsListResultPage contains a page of MessagingRegions values.
+type MessagingRegionsListResultPage struct {
+	fn   func(MessagingRegionsListResult) (MessagingRegionsListResult, error)
+	mrlr MessagingRegionsListResult
+}
+
+// Next advances to the next page of values.  If there was an error making
+// the request the page does not advance and the error is returned.
+func (page *MessagingRegionsListResultPage) Next() error {
+	next, err := page.fn(page.mrlr)
+	if err != nil {
+		return err
+	}
+	page.mrlr = next
+	return nil
+}
+
+// NotDone returns true if the page enumeration should be started or is not yet complete.
+func (page MessagingRegionsListResultPage) NotDone() bool {
+	return !page.mrlr.IsEmpty()
+}
+
+// Response returns the raw server response from the last page request.
+func (page MessagingRegionsListResultPage) Response() MessagingRegionsListResult {
+	return page.mrlr
+}
+
+// Values returns the slice of values for the current page or nil if there are no values.
+func (page MessagingRegionsListResultPage) Values() []MessagingRegions {
+	if page.mrlr.IsEmpty() {
+		return nil
+	}
+	return *page.mrlr.Value
+}
+
+// MessagingRegionsProperties ...
+type MessagingRegionsProperties struct {
+	// Code - Region code
+	Code *string `json:"code,omitempty"`
+	// FullName - Full name of the region
+	FullName *string `json:"fullName,omitempty"`
+}
+
+// Model single item in List or Get Event Hub operation
+type Model struct {
+	autorest.Response `json:"-"`
 	// Properties - Properties supplied to the Create Or Update Event Hub operation.
 	*Properties `json:"properties,omitempty"`
+	// ID - Resource Id
+	ID *string `json:"id,omitempty"`
+	// Name - Resource name
+	Name *string `json:"name,omitempty"`
+	// Type - Resource type
+	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Model.
+func (mVar Model) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mVar.Properties != nil {
+		objectMap["properties"] = mVar.Properties
+	}
+	if mVar.ID != nil {
+		objectMap["id"] = mVar.ID
+	}
+	if mVar.Name != nil {
+		objectMap["name"] = mVar.Name
+	}
+	if mVar.Type != nil {
+		objectMap["type"] = mVar.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Model struct.
@@ -1126,52 +1547,52 @@ func (mVar *Model) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties Properties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var properties Properties
+				err = json.Unmarshal(*v, &properties)
+				if err != nil {
+					return err
+				}
+				mVar.Properties = &properties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				mVar.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				mVar.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				mVar.Type = &typeVar
+			}
 		}
-		mVar.Properties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		mVar.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		mVar.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		mVar.Type = &typeVar
 	}
 
 	return nil
 }
 
-// NamespacesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// NamespacesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type NamespacesCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -1183,22 +1604,39 @@ func (future NamespacesCreateOrUpdateFuture) Result(client NamespacesClient) (en
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return en, autorest.NewError("eventhub.NamespacesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return en, azure.NewAsyncOpIncompleteError("eventhub.NamespacesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		en, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	en, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1214,22 +1652,39 @@ func (future NamespacesDeleteFuture) Result(client NamespacesClient) (ar autores
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("eventhub.NamespacesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("eventhub.NamespacesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1251,8 +1706,8 @@ type OperationDisplay struct {
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult result of the request to list Event Hub operations. It contains a list of operations and a URL
-// link to get the next set of results.
+// OperationListResult result of the request to list Event Hub operations. It contains a list of operations and a
+// URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of Event Hub operations supported by the Microsoft.EventHub resource provider.
@@ -1372,8 +1827,8 @@ type Properties struct {
 	CaptureDescription *CaptureDescription `json:"captureDescription,omitempty"`
 }
 
-// RegenerateAccessKeyParameters parameters supplied to the Regenerate Authorization Rule operation, specifies which
-// key neeeds to be reset.
+// RegenerateAccessKeyParameters parameters supplied to the Regenerate Authorization Rule operation, specifies
+// which key neeeds to be reset.
 type RegenerateAccessKeyParameters struct {
 	// KeyType - The access key to regenerate. Possible values include: 'PrimaryKey', 'SecondaryKey'
 	KeyType KeyType `json:"keyType,omitempty"`
@@ -1403,14 +1858,35 @@ type Sku struct {
 
 // TrackedResource definition of Resource
 type TrackedResource struct {
+	// Location - Resource location
+	Location *string `json:"location,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Location - Resource location
-	Location *string `json:"location,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TrackedResource.
+func (tr TrackedResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tr.Location != nil {
+		objectMap["location"] = tr.Location
+	}
+	if tr.Tags != nil {
+		objectMap["tags"] = tr.Tags
+	}
+	if tr.ID != nil {
+		objectMap["id"] = tr.ID
+	}
+	if tr.Name != nil {
+		objectMap["name"] = tr.Name
+	}
+	if tr.Type != nil {
+		objectMap["type"] = tr.Type
+	}
+	return json.Marshal(objectMap)
 }

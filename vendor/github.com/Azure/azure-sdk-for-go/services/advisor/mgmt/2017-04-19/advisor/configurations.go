@@ -41,8 +41,8 @@ func NewConfigurationsClientWithBaseURI(baseURI string, subscriptionID string) C
 
 // CreateInResourceGroup sends the create in resource group request.
 //
-// configContract is the Azure Advisor configuration data structure. resourceGroup is the name of the Azure resource
-// group.
+// configContract is the Azure Advisor configuration data structure. resourceGroup is the name of the Azure
+// resource group.
 func (client ConfigurationsClient) CreateInResourceGroup(ctx context.Context, configContract ConfigData, resourceGroup string) (result ARMErrorResponseBody, err error) {
 	req, err := client.CreateInResourceGroupPreparer(ctx, configContract, resourceGroup)
 	if err != nil {
@@ -78,7 +78,7 @@ func (client ConfigurationsClient) CreateInResourceGroupPreparer(ctx context.Con
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.Advisor/configurations", pathParameters),
@@ -145,7 +145,7 @@ func (client ConfigurationsClient) CreateInSubscriptionPreparer(ctx context.Cont
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Advisor/configurations", pathParameters),
@@ -241,7 +241,8 @@ func (client ConfigurationsClient) ListByResourceGroupResponder(resp *http.Respo
 
 // ListBySubscription retrieve Azure Advisor configurations and also retrieve configurations of contained resource
 // groups.
-func (client ConfigurationsClient) ListBySubscription(ctx context.Context) (result ConfigurationListResult, err error) {
+func (client ConfigurationsClient) ListBySubscription(ctx context.Context) (result ConfigurationListResultPage, err error) {
+	result.fn = client.listBySubscriptionNextResults
 	req, err := client.ListBySubscriptionPreparer(ctx)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "ListBySubscription", nil, "Failure preparing request")
@@ -250,12 +251,12 @@ func (client ConfigurationsClient) ListBySubscription(ctx context.Context) (resu
 
 	resp, err := client.ListBySubscriptionSender(req)
 	if err != nil {
-		result.Response = autorest.Response{Response: resp}
+		result.clr.Response = autorest.Response{Response: resp}
 		err = autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "ListBySubscription", resp, "Failure sending request")
 		return
 	}
 
-	result, err = client.ListBySubscriptionResponder(resp)
+	result.clr, err = client.ListBySubscriptionResponder(resp)
 	if err != nil {
 		err = autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "ListBySubscription", resp, "Failure responding to request")
 	}
@@ -299,5 +300,32 @@ func (client ConfigurationsClient) ListBySubscriptionResponder(resp *http.Respon
 		autorest.ByUnmarshallingJSON(&result),
 		autorest.ByClosing())
 	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// listBySubscriptionNextResults retrieves the next set of results, if any.
+func (client ConfigurationsClient) listBySubscriptionNextResults(lastResults ConfigurationListResult) (result ConfigurationListResult, err error) {
+	req, err := lastResults.configurationListResultPreparer()
+	if err != nil {
+		return result, autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "listBySubscriptionNextResults", nil, "Failure preparing next results request")
+	}
+	if req == nil {
+		return
+	}
+	resp, err := client.ListBySubscriptionSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		return result, autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "listBySubscriptionNextResults", resp, "Failure sending next results request")
+	}
+	result, err = client.ListBySubscriptionResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "advisor.ConfigurationsClient", "listBySubscriptionNextResults", resp, "Failure responding to next results request")
+	}
+	return
+}
+
+// ListBySubscriptionComplete enumerates all values, automatically crossing page boundaries as required.
+func (client ConfigurationsClient) ListBySubscriptionComplete(ctx context.Context) (result ConfigurationListResultIterator, err error) {
+	result.page, err = client.ListBySubscription(ctx)
 	return
 }

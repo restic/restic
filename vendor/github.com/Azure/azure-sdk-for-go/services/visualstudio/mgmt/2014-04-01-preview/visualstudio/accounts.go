@@ -80,7 +80,7 @@ func (client AccountsClient) CheckNameAvailabilityPreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.visualstudio/checkNameAvailability", pathParameters),
@@ -149,7 +149,7 @@ func (client AccountsClient) CreateOrUpdatePreparer(ctx context.Context, resourc
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/microsoft.visualstudio/account/{resourceName}", pathParameters),
@@ -180,7 +180,8 @@ func (client AccountsClient) CreateOrUpdateResponder(resp *http.Response) (resul
 
 // Delete deletes a Visual Studio Team Services account resource.
 //
-// resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the resource.
+// resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the
+// resource.
 func (client AccountsClient) Delete(ctx context.Context, resourceGroupName string, resourceName string) (result autorest.Response, err error) {
 	req, err := client.DeletePreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
@@ -245,7 +246,8 @@ func (client AccountsClient) DeleteResponder(resp *http.Response) (result autore
 
 // Get gets the Visual Studio Team Services account resource details.
 //
-// resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the resource.
+// resourceGroupName is name of the resource group within the Azure subscription. resourceName is name of the
+// resource.
 func (client AccountsClient) Get(ctx context.Context, resourceGroupName string, resourceName string) (result AccountResource, err error) {
 	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {

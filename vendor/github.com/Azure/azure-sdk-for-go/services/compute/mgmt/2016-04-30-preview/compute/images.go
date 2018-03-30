@@ -42,8 +42,8 @@ func NewImagesClientWithBaseURI(baseURI string, subscriptionID string) ImagesCli
 
 // CreateOrUpdate create or update an image.
 //
-// resourceGroupName is the name of the resource group. imageName is the name of the image. parameters is parameters
-// supplied to the Create Image operation.
+// resourceGroupName is the name of the resource group. imageName is the name of the image. parameters is
+// parameters supplied to the Create Image operation.
 func (client ImagesClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, imageName string, parameters Image) (result ImagesCreateOrUpdateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
@@ -51,7 +51,7 @@ func (client ImagesClient) CreateOrUpdate(ctx context.Context, resourceGroupName
 				Chain: []validation.Constraint{{Target: "parameters.ImageProperties.StorageProfile", Name: validation.Null, Rule: false,
 					Chain: []validation.Constraint{{Target: "parameters.ImageProperties.StorageProfile.OsDisk", Name: validation.Null, Rule: true, Chain: nil}}},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "compute.ImagesClient", "CreateOrUpdate")
+		return result, validation.NewError("compute.ImagesClient", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, imageName, parameters)
@@ -83,7 +83,7 @@ func (client ImagesClient) CreateOrUpdatePreparer(ctx context.Context, resourceG
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/images/{imageName}", pathParameters),

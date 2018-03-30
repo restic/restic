@@ -41,8 +41,8 @@ func NewJobCollectionsClientWithBaseURI(baseURI string, subscriptionID string) J
 
 // CreateOrUpdate provisions a new job collection or updates an existing job collection.
 //
-// resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the job
-// collection definition.
+// resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the
+// job collection definition.
 func (client JobCollectionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, jobCollectionName, jobCollection)
 	if err != nil {
@@ -79,7 +79,7 @@ func (client JobCollectionsClient) CreateOrUpdatePreparer(ctx context.Context, r
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),
@@ -560,8 +560,8 @@ func (client JobCollectionsClient) ListBySubscriptionComplete(ctx context.Contex
 
 // Patch patches an existing job collection.
 //
-// resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the job
-// collection definition.
+// resourceGroupName is the resource group name. jobCollectionName is the job collection name. jobCollection is the
+// job collection definition.
 func (client JobCollectionsClient) Patch(ctx context.Context, resourceGroupName string, jobCollectionName string, jobCollection JobCollectionDefinition) (result JobCollectionDefinition, err error) {
 	req, err := client.PatchPreparer(ctx, resourceGroupName, jobCollectionName, jobCollection)
 	if err != nil {
@@ -598,7 +598,7 @@ func (client JobCollectionsClient) PatchPreparer(ctx context.Context, resourceGr
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Scheduler/jobCollections/{jobCollectionName}", pathParameters),

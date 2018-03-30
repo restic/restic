@@ -50,7 +50,7 @@ func (client NameAvailabilityClient) CheckNameAvailability(ctx context.Context, 
 		{TargetValue: checkNameAvailabilityInput,
 			Constraints: []validation.Constraint{{Target: "checkNameAvailabilityInput.Name", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "checkNameAvailabilityInput.Type", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "cdn.NameAvailabilityClient", "CheckNameAvailability")
+		return result, validation.NewError("cdn.NameAvailabilityClient", "CheckNameAvailability", err.Error())
 	}
 
 	req, err := client.CheckNameAvailabilityPreparer(ctx, checkNameAvailabilityInput)
@@ -82,7 +82,7 @@ func (client NameAvailabilityClient) CheckNameAvailabilityPreparer(ctx context.C
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/providers/Microsoft.Cdn/checkNameAvailability"),

@@ -80,7 +80,7 @@ func (client WorkflowAccessKeysClient) CreateOrUpdatePreparer(ctx context.Contex
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}", pathParameters),
@@ -246,8 +246,8 @@ func (client WorkflowAccessKeysClient) GetResponder(resp *http.Response) (result
 
 // List gets a list of workflow access keys.
 //
-// resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to be
-// included in the result.
+// resourceGroupName is the resource group name. workflowName is the workflow name. top is the number of items to
+// be included in the result.
 func (client WorkflowAccessKeysClient) List(ctx context.Context, resourceGroupName string, workflowName string, top *int32) (result WorkflowAccessKeyListResultPage, err error) {
 	result.fn = client.listNextResults
 	req, err := client.ListPreparer(ctx, resourceGroupName, workflowName, top)
@@ -451,7 +451,7 @@ func (client WorkflowAccessKeysClient) RegenerateSecretKeyPreparer(ctx context.C
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/workflows/{workflowName}/accessKeys/{accessKeyName}/regenerate", pathParameters),
