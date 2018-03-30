@@ -64,8 +64,9 @@ func formatDuration(d time.Duration) string {
 }
 
 func formatNode(prefix string, n *restic.Node, long bool) string {
+	nodepath := prefix + string(filepath.Separator) + n.Name
 	if !long {
-		return filepath.Join(prefix, n.Name)
+		return nodepath
 	}
 
 	var mode os.FileMode
@@ -91,6 +92,6 @@ func formatNode(prefix string, n *restic.Node, long bool) string {
 
 	return fmt.Sprintf("%s %5d %5d %6d %s %s%s",
 		mode|n.Mode, n.UID, n.GID, n.Size,
-		n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name),
+		n.ModTime.Format(TimeFormat), nodepath,
 		target)
 }

@@ -56,7 +56,8 @@ func printTree(ctx context.Context, repo *repository.Repository, id *restic.ID, 
 		Printf("%s\n", formatNode(prefix, entry, lsOptions.ListLong))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			if err = printTree(ctx, repo, entry.Subtree, filepath.Join(prefix, entry.Name)); err != nil {
+			entryPath := prefix + string(filepath.Separator) + entry.Name
+			if err = printTree(ctx, repo, entry.Subtree, entryPath); err != nil {
 				return err
 			}
 		}
@@ -84,7 +85,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
 
-		if err = printTree(gopts.ctx, repo, sn.Tree, string(filepath.Separator)); err != nil {
+		if err = printTree(gopts.ctx, repo, sn.Tree, ""); err != nil {
 			return err
 		}
 	}
