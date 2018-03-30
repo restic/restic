@@ -23,6 +23,7 @@ import (
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 
 	"github.com/golang/protobuf/ptypes"
+	tspb "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // A DocumentSnapshot contains document data and metadata.
@@ -41,6 +42,9 @@ type DocumentSnapshot struct {
 	// change to the document. It can also be compared to values from other
 	// documents and the read time of a query.
 	UpdateTime time.Time
+
+	// Read-only. The time at which the document was read.
+	ReadTime time.Time
 
 	c     *Client
 	proto *pb.Document
@@ -241,7 +245,7 @@ func extractTransformPathsFromStruct(v reflect.Value, prefix FieldPath) ([]Field
 	return paths, nil
 }
 
-func newDocumentSnapshot(ref *DocumentRef, proto *pb.Document, c *Client) (*DocumentSnapshot, error) {
+func newDocumentSnapshot(ref *DocumentRef, proto *pb.Document, c *Client, readTime *tspb.Timestamp) (*DocumentSnapshot, error) {
 	d := &DocumentSnapshot{
 		Ref:   ref,
 		c:     c,
@@ -257,5 +261,13 @@ func newDocumentSnapshot(ref *DocumentRef, proto *pb.Document, c *Client) (*Docu
 		return nil, err
 	}
 	d.UpdateTime = ts
+	// TODO(jba): remove nil check when all callers pass a read time.
+	if readTime != nil {
+		ts, err = ptypes.Timestamp(readTime)
+		if err != nil {
+			return nil, err
+		}
+		d.ReadTime = ts
+	}
 	return d, nil
 }

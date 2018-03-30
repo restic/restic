@@ -58,7 +58,7 @@ func (client LinksClient) CreateOrUpdate(ctx context.Context, resourceGroupName 
 					{Target: "parameters.LinkDefinition.TargetProfileType", Name: validation.Null, Rule: true, Chain: nil},
 					{Target: "parameters.LinkDefinition.ParticipantPropertyReferences", Name: validation.Null, Rule: true, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "customerinsights.LinksClient", "CreateOrUpdate")
+		return result, validation.NewError("customerinsights.LinksClient", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, hubName, linkName, parameters)
@@ -91,7 +91,7 @@ func (client LinksClient) CreateOrUpdatePreparer(ctx context.Context, resourceGr
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.CustomerInsights/hubs/{hubName}/links/{linkName}", pathParameters),

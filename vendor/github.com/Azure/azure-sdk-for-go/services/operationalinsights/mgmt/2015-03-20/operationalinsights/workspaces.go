@@ -31,13 +31,13 @@ type WorkspacesClient struct {
 }
 
 // NewWorkspacesClient creates an instance of the WorkspacesClient client.
-func NewWorkspacesClient(subscriptionID string) WorkspacesClient {
-	return NewWorkspacesClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewWorkspacesClient(subscriptionID string, purgeID string) WorkspacesClient {
+	return NewWorkspacesClientWithBaseURI(DefaultBaseURI, subscriptionID, purgeID)
 }
 
 // NewWorkspacesClientWithBaseURI creates an instance of the WorkspacesClient client.
-func NewWorkspacesClientWithBaseURI(baseURI string, subscriptionID string) WorkspacesClient {
-	return WorkspacesClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewWorkspacesClientWithBaseURI(baseURI string, subscriptionID string, purgeID string) WorkspacesClient {
+	return WorkspacesClient{NewWithBaseURI(baseURI, subscriptionID, purgeID)}
 }
 
 // GetSchema gets the schema for a given workspace.
@@ -50,7 +50,7 @@ func (client WorkspacesClient) GetSchema(ctx context.Context, resourceGroupName 
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "GetSchema")
+		return result, validation.NewError("operationalinsights.WorkspacesClient", "GetSchema", err.Error())
 	}
 
 	req, err := client.GetSchemaPreparer(ctx, resourceGroupName, workspaceName)
@@ -129,7 +129,7 @@ func (client WorkspacesClient) GetSearchResults(ctx context.Context, resourceGro
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}},
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Query", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "GetSearchResults")
+		return result, validation.NewError("operationalinsights.WorkspacesClient", "GetSearchResults", err.Error())
 	}
 
 	req, err := client.GetSearchResultsPreparer(ctx, resourceGroupName, workspaceName, parameters)
@@ -161,7 +161,7 @@ func (client WorkspacesClient) GetSearchResultsPreparer(ctx context.Context, res
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/search", pathParameters),
@@ -261,6 +261,89 @@ func (client WorkspacesClient) ListLinkTargetsResponder(resp *http.Response) (re
 	return
 }
 
+// Purge purges data in an Log Analytics workspace by a set of user-defined filters.
+//
+// resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
+// Analytics workspace name body is describes the body of a request to purge data in a single table of an Log
+// Analytics Workspace
+func (client WorkspacesClient) Purge(ctx context.Context, resourceGroupName string, workspaceName string, body WorkspacePurgeBody) (result WorkspacesPurgeFuture, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: resourceGroupName,
+			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
+				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}},
+		{TargetValue: body,
+			Constraints: []validation.Constraint{{Target: "body.Table", Name: validation.Null, Rule: true, Chain: nil},
+				{Target: "body.Filters", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
+		return result, validation.NewError("operationalinsights.WorkspacesClient", "Purge", err.Error())
+	}
+
+	req, err := client.PurgePreparer(ctx, resourceGroupName, workspaceName, body)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "Purge", nil, "Failure preparing request")
+		return
+	}
+
+	result, err = client.PurgeSender(req)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesClient", "Purge", result.Response(), "Failure sending request")
+		return
+	}
+
+	return
+}
+
+// PurgePreparer prepares the Purge request.
+func (client WorkspacesClient) PurgePreparer(ctx context.Context, resourceGroupName string, workspaceName string, body WorkspacePurgeBody) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+		"workspaceName":     autorest.Encode("path", workspaceName),
+	}
+
+	const APIVersion = "2015-03-20"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsContentType("application/json; charset=utf-8"),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.OperationalInsights/workspaces/{workspaceName}/purge", pathParameters),
+		autorest.WithJSON(body),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// PurgeSender sends the Purge request. The method will close the
+// http.Response Body if it receives an error.
+func (client WorkspacesClient) PurgeSender(req *http.Request) (future WorkspacesPurgeFuture, err error) {
+	sender := autorest.DecorateSender(client, azure.DoRetryWithRegistration(client.Client))
+	future.Future = azure.NewFuture(req)
+	future.req = req
+	_, err = future.Done(sender)
+	if err != nil {
+		return
+	}
+	err = autorest.Respond(future.Response(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted))
+	return
+}
+
+// PurgeResponder handles the response to the Purge request. The method always
+// closes the http.Response Body.
+func (client WorkspacesClient) PurgeResponder(resp *http.Response) (result SetObject, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // UpdateSearchResults gets updated search results for a given search query.
 //
 // resourceGroupName is the name of the resource group to get. The name is case insensitive. workspaceName is log
@@ -272,7 +355,7 @@ func (client WorkspacesClient) UpdateSearchResults(ctx context.Context, resource
 			Constraints: []validation.Constraint{{Target: "resourceGroupName", Name: validation.MaxLength, Rule: 90, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.MinLength, Rule: 1, Chain: nil},
 				{Target: "resourceGroupName", Name: validation.Pattern, Rule: `^[-\w\._\(\)]+$`, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "operationalinsights.WorkspacesClient", "UpdateSearchResults")
+		return result, validation.NewError("operationalinsights.WorkspacesClient", "UpdateSearchResults", err.Error())
 	}
 
 	req, err := client.UpdateSearchResultsPreparer(ctx, resourceGroupName, workspaceName, ID)

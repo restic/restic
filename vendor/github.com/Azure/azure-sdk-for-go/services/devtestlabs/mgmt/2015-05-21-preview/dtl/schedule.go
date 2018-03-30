@@ -74,7 +74,7 @@ func (client ScheduleClient) CreateOrUpdateResourcePreparer(ctx context.Context,
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),
@@ -319,8 +319,8 @@ func (client ScheduleClient) GetResourceResponder(resp *http.Response) (result S
 
 // List list schedules.
 //
-// resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to apply
-// on the operation.
+// resourceGroupName is the name of the resource group. labName is the name of the lab. filter is the filter to
+// apply on the operation.
 func (client ScheduleClient) List(ctx context.Context, resourceGroupName string, labName string, filter string, top *int32, orderBy string) (result ResponseWithContinuationSchedulePage, err error) {
 	result.fn = client.listNextResults
 	req, err := client.ListPreparer(ctx, resourceGroupName, labName, filter, top, orderBy)
@@ -462,7 +462,7 @@ func (client ScheduleClient) PatchResourcePreparer(ctx context.Context, resource
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.DevTestLab/labs/{labName}/schedules/{name}", pathParameters),

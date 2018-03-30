@@ -82,7 +82,7 @@ func (client ListManagementImageListsClient) CreatePreparer(ctx context.Context,
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithCustomBaseURL("https://{baseUrl}", urlParameters),
 		autorest.WithPath("/contentmoderator/lists/v1.0/imagelists"),
@@ -389,7 +389,7 @@ func (client ListManagementImageListsClient) UpdatePreparer(ctx context.Context,
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithCustomBaseURL("https://{baseUrl}", urlParameters),
 		autorest.WithPathParameters("/contentmoderator/lists/v1.0/imagelists/{listId}", pathParameters),

@@ -21,6 +21,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/civil"
@@ -540,6 +541,7 @@ func valuesToMap(vs []Value, schema Schema) (map[string]Value, error) {
 type StructSaver struct {
 	// Schema determines what fields of the struct are uploaded. It should
 	// match the table's schema.
+	// Schema is optional for StructSavers that are passed to Uploader.Put.
 	Schema Schema
 
 	// If non-empty, BigQuery will use InsertID to de-duplicate insertions
@@ -705,6 +707,16 @@ func CivilTimeString(t civil.Time) string {
 // statements.
 func CivilDateTimeString(dt civil.DateTime) string {
 	return dt.Date.String() + " " + CivilTimeString(dt.Time)
+}
+
+// parseCivilDateTime parses a date-time represented in a BigQuery SQL
+// compatible format and returns a civil.DateTime.
+func parseCivilDateTime(s string) (civil.DateTime, error) {
+	parts := strings.Fields(s)
+	if len(parts) != 2 {
+		return civil.DateTime{}, fmt.Errorf("bigquery: bad DATETIME value %q", s)
+	}
+	return civil.ParseDateTime(parts[0] + "T" + parts[1])
 }
 
 // convertRows converts a series of TableRows into a series of Value slices.

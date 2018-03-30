@@ -32,6 +32,11 @@ const (
 	WebHook EndpointType = "WebHook"
 )
 
+// PossibleEndpointTypeValues returns an array of possible values for the EndpointType const type.
+func PossibleEndpointTypeValues() []EndpointType {
+	return []EndpointType{WebHook}
+}
+
 // EventSubscriptionProvisioningState enumerates the values for event subscription provisioning state.
 type EventSubscriptionProvisioningState string
 
@@ -50,6 +55,11 @@ const (
 	Updating EventSubscriptionProvisioningState = "Updating"
 )
 
+// PossibleEventSubscriptionProvisioningStateValues returns an array of possible values for the EventSubscriptionProvisioningState const type.
+func PossibleEventSubscriptionProvisioningStateValues() []EventSubscriptionProvisioningState {
+	return []EventSubscriptionProvisioningState{Canceled, Creating, Deleting, Failed, Succeeded, Updating}
+}
+
 // OperationOrigin enumerates the values for operation origin.
 type OperationOrigin string
 
@@ -62,6 +72,11 @@ const (
 	UserAndSystem OperationOrigin = "UserAndSystem"
 )
 
+// PossibleOperationOriginValues returns an array of possible values for the OperationOrigin const type.
+func PossibleOperationOriginValues() []OperationOrigin {
+	return []OperationOrigin{System, User, UserAndSystem}
+}
+
 // ResourceRegionType enumerates the values for resource region type.
 type ResourceRegionType string
 
@@ -71,6 +86,11 @@ const (
 	// RegionalResource ...
 	RegionalResource ResourceRegionType = "RegionalResource"
 )
+
+// PossibleResourceRegionTypeValues returns an array of possible values for the ResourceRegionType const type.
+func PossibleResourceRegionTypeValues() []ResourceRegionType {
+	return []ResourceRegionType{GlobalResource, RegionalResource}
+}
 
 // TopicProvisioningState enumerates the values for topic provisioning state.
 type TopicProvisioningState string
@@ -90,6 +110,11 @@ const (
 	TopicProvisioningStateUpdating TopicProvisioningState = "Updating"
 )
 
+// PossibleTopicProvisioningStateValues returns an array of possible values for the TopicProvisioningState const type.
+func PossibleTopicProvisioningStateValues() []TopicProvisioningState {
+	return []TopicProvisioningState{TopicProvisioningStateCanceled, TopicProvisioningStateCreating, TopicProvisioningStateDeleting, TopicProvisioningStateFailed, TopicProvisioningStateSucceeded, TopicProvisioningStateUpdating}
+}
+
 // TopicTypeProvisioningState enumerates the values for topic type provisioning state.
 type TopicTypeProvisioningState string
 
@@ -108,17 +133,40 @@ const (
 	TopicTypeProvisioningStateUpdating TopicTypeProvisioningState = "Updating"
 )
 
+// PossibleTopicTypeProvisioningStateValues returns an array of possible values for the TopicTypeProvisioningState const type.
+func PossibleTopicTypeProvisioningStateValues() []TopicTypeProvisioningState {
+	return []TopicTypeProvisioningState{TopicTypeProvisioningStateCanceled, TopicTypeProvisioningStateCreating, TopicTypeProvisioningStateDeleting, TopicTypeProvisioningStateFailed, TopicTypeProvisioningStateSucceeded, TopicTypeProvisioningStateUpdating}
+}
+
 // EventSubscription event Subscription
 type EventSubscription struct {
 	autorest.Response `json:"-"`
+	// EventSubscriptionProperties - Properties of the event subscription
+	*EventSubscriptionProperties `json:"properties,omitempty"`
 	// ID - Fully qualified identifier of the resource
 	ID *string `json:"id,omitempty"`
 	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
-	// EventSubscriptionProperties - Properties of the event subscription
-	*EventSubscriptionProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for EventSubscription.
+func (es EventSubscription) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if es.EventSubscriptionProperties != nil {
+		objectMap["properties"] = es.EventSubscriptionProperties
+	}
+	if es.ID != nil {
+		objectMap["id"] = es.ID
+	}
+	if es.Name != nil {
+		objectMap["name"] = es.Name
+	}
+	if es.Type != nil {
+		objectMap["type"] = es.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for EventSubscription struct.
@@ -128,46 +176,45 @@ func (es *EventSubscription) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EventSubscriptionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var eventSubscriptionProperties EventSubscriptionProperties
+				err = json.Unmarshal(*v, &eventSubscriptionProperties)
+				if err != nil {
+					return err
+				}
+				es.EventSubscriptionProperties = &eventSubscriptionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				es.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				es.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				es.Type = &typeVar
+			}
 		}
-		es.EventSubscriptionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		es.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		es.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		es.Type = &typeVar
 	}
 
 	return nil
@@ -181,6 +228,18 @@ type EventSubscriptionDestination struct {
 	*EventSubscriptionDestinationProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for EventSubscriptionDestination.
+func (esd EventSubscriptionDestination) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if esd.EndpointType != "" {
+		objectMap["endpointType"] = esd.EndpointType
+	}
+	if esd.EventSubscriptionDestinationProperties != nil {
+		objectMap["properties"] = esd.EventSubscriptionDestinationProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for EventSubscriptionDestination struct.
 func (esd *EventSubscriptionDestination) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -188,26 +247,27 @@ func (esd *EventSubscriptionDestination) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["endpointType"]
-	if v != nil {
-		var endpointType EndpointType
-		err = json.Unmarshal(*m["endpointType"], &endpointType)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "endpointType":
+			if v != nil {
+				var endpointType EndpointType
+				err = json.Unmarshal(*v, &endpointType)
+				if err != nil {
+					return err
+				}
+				esd.EndpointType = endpointType
+			}
+		case "properties":
+			if v != nil {
+				var eventSubscriptionDestinationProperties EventSubscriptionDestinationProperties
+				err = json.Unmarshal(*v, &eventSubscriptionDestinationProperties)
+				if err != nil {
+					return err
+				}
+				esd.EventSubscriptionDestinationProperties = &eventSubscriptionDestinationProperties
+			}
 		}
-		esd.EndpointType = endpointType
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties EventSubscriptionDestinationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		esd.EventSubscriptionDestinationProperties = &properties
 	}
 
 	return nil
@@ -259,7 +319,8 @@ type EventSubscriptionProperties struct {
 	Labels *[]string `json:"labels,omitempty"`
 }
 
-// EventSubscriptionsCreateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// EventSubscriptionsCreateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type EventSubscriptionsCreateFuture struct {
 	azure.Future
 	req *http.Request
@@ -271,26 +332,44 @@ func (future EventSubscriptionsCreateFuture) Result(client EventSubscriptionsCli
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsCreateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return es, autorest.NewError("eventgrid.EventSubscriptionsCreateFuture", "Result", "asynchronous operation has not completed")
+		return es, azure.NewAsyncOpIncompleteError("eventgrid.EventSubscriptionsCreateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		es, err = client.CreateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsCreateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsCreateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	es, err = client.CreateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsCreateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// EventSubscriptionsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// EventSubscriptionsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type EventSubscriptionsDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -302,22 +381,39 @@ func (future EventSubscriptionsDeleteFuture) Result(client EventSubscriptionsCli
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("eventgrid.EventSubscriptionsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("eventgrid.EventSubscriptionsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -328,7 +424,8 @@ type EventSubscriptionsListResult struct {
 	Value *[]EventSubscription `json:"value,omitempty"`
 }
 
-// EventSubscriptionsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// EventSubscriptionsUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type EventSubscriptionsUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -340,22 +437,39 @@ func (future EventSubscriptionsUpdateFuture) Result(client EventSubscriptionsCli
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return es, autorest.NewError("eventgrid.EventSubscriptionsUpdateFuture", "Result", "asynchronous operation has not completed")
+		return es, azure.NewAsyncOpIncompleteError("eventgrid.EventSubscriptionsUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		es, err = client.UpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	es, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.EventSubscriptionsUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -371,14 +485,32 @@ type EventSubscriptionUpdateParameters struct {
 
 // EventType event Type for a subject under a topic
 type EventType struct {
+	// EventTypeProperties - Properties of the event type.
+	*EventTypeProperties `json:"properties,omitempty"`
 	// ID - Fully qualified identifier of the resource
 	ID *string `json:"id,omitempty"`
 	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
-	// EventTypeProperties - Properties of the event type.
-	*EventTypeProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for EventType.
+func (et EventType) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if et.EventTypeProperties != nil {
+		objectMap["properties"] = et.EventTypeProperties
+	}
+	if et.ID != nil {
+		objectMap["id"] = et.ID
+	}
+	if et.Name != nil {
+		objectMap["name"] = et.Name
+	}
+	if et.Type != nil {
+		objectMap["type"] = et.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for EventType struct.
@@ -388,46 +520,45 @@ func (et *EventType) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EventTypeProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var eventTypeProperties EventTypeProperties
+				err = json.Unmarshal(*v, &eventTypeProperties)
+				if err != nil {
+					return err
+				}
+				et.EventTypeProperties = &eventTypeProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				et.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				et.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				et.Type = &typeVar
+			}
 		}
-		et.EventTypeProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		et.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		et.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		et.Type = &typeVar
 	}
 
 	return nil
@@ -459,7 +590,7 @@ type Operation struct {
 	// Origin - Origin of the operation. Possible values include: 'User', 'System', 'UserAndSystem'
 	Origin OperationOrigin `json:"origin,omitempty"`
 	// Properties - Properties of the operation
-	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Properties interface{} `json:"properties,omitempty"`
 }
 
 // OperationInfo information about an operation
@@ -494,18 +625,42 @@ type Resource struct {
 // Topic eventGrid Topic
 type Topic struct {
 	autorest.Response `json:"-"`
+	// TopicProperties - Properties of the topic
+	*TopicProperties `json:"properties,omitempty"`
+	// Location - Location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags of the resource
+	Tags map[string]*string `json:"tags"`
 	// ID - Fully qualified identifier of the resource
 	ID *string `json:"id,omitempty"`
 	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
-	// Location - Location of the resource
-	Location *string `json:"location,omitempty"`
-	// Tags - Tags of the resource
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// TopicProperties - Properties of the topic
-	*TopicProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Topic.
+func (t Topic) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if t.TopicProperties != nil {
+		objectMap["properties"] = t.TopicProperties
+	}
+	if t.Location != nil {
+		objectMap["location"] = t.Location
+	}
+	if t.Tags != nil {
+		objectMap["tags"] = t.Tags
+	}
+	if t.ID != nil {
+		objectMap["id"] = t.ID
+	}
+	if t.Name != nil {
+		objectMap["name"] = t.Name
+	}
+	if t.Type != nil {
+		objectMap["type"] = t.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Topic struct.
@@ -515,66 +670,63 @@ func (t *Topic) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties TopicProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var topicProperties TopicProperties
+				err = json.Unmarshal(*v, &topicProperties)
+				if err != nil {
+					return err
+				}
+				t.TopicProperties = &topicProperties
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				t.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				t.Tags = tags
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				t.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				t.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				t.Type = &typeVar
+			}
 		}
-		t.TopicProperties = &properties
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		t.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		t.Tags = &tags
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		t.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		t.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		t.Type = &typeVar
 	}
 
 	return nil
@@ -606,22 +758,39 @@ func (future TopicsCreateOrUpdateFuture) Result(client TopicsClient) (t Topic, e
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return t, autorest.NewError("eventgrid.TopicsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return t, azure.NewAsyncOpIncompleteError("eventgrid.TopicsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		t, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventgrid.TopicsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	t, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -637,22 +806,39 @@ func (future TopicsDeleteFuture) Result(client TopicsClient) (ar autorest.Respon
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("eventgrid.TopicsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("eventgrid.TopicsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventgrid.TopicsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventgrid.TopicsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -675,14 +861,32 @@ type TopicsListResult struct {
 // TopicTypeInfo properties of a topic type info.
 type TopicTypeInfo struct {
 	autorest.Response `json:"-"`
+	// TopicTypeProperties - Properties of the topic type info
+	*TopicTypeProperties `json:"properties,omitempty"`
 	// ID - Fully qualified identifier of the resource
 	ID *string `json:"id,omitempty"`
 	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
-	// TopicTypeProperties - Properties of the topic type info
-	*TopicTypeProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TopicTypeInfo.
+func (tti TopicTypeInfo) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tti.TopicTypeProperties != nil {
+		objectMap["properties"] = tti.TopicTypeProperties
+	}
+	if tti.ID != nil {
+		objectMap["id"] = tti.ID
+	}
+	if tti.Name != nil {
+		objectMap["name"] = tti.Name
+	}
+	if tti.Type != nil {
+		objectMap["type"] = tti.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for TopicTypeInfo struct.
@@ -692,46 +896,45 @@ func (tti *TopicTypeInfo) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties TopicTypeProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var topicTypeProperties TopicTypeProperties
+				err = json.Unmarshal(*v, &topicTypeProperties)
+				if err != nil {
+					return err
+				}
+				tti.TopicTypeProperties = &topicTypeProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				tti.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				tti.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				tti.Type = &typeVar
+			}
 		}
-		tti.TopicTypeProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		tti.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		tti.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		tti.Type = &typeVar
 	}
 
 	return nil
@@ -760,14 +963,35 @@ type TopicTypesListResult struct {
 
 // TrackedResource definition of a Tracked Resource
 type TrackedResource struct {
+	// Location - Location of the resource
+	Location *string `json:"location,omitempty"`
+	// Tags - Tags of the resource
+	Tags map[string]*string `json:"tags"`
 	// ID - Fully qualified identifier of the resource
 	ID *string `json:"id,omitempty"`
 	// Name - Name of the resource
 	Name *string `json:"name,omitempty"`
 	// Type - Type of the resource
 	Type *string `json:"type,omitempty"`
-	// Location - Location of the resource
-	Location *string `json:"location,omitempty"`
-	// Tags - Tags of the resource
-	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TrackedResource.
+func (tr TrackedResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tr.Location != nil {
+		objectMap["location"] = tr.Location
+	}
+	if tr.Tags != nil {
+		objectMap["tags"] = tr.Tags
+	}
+	if tr.ID != nil {
+		objectMap["id"] = tr.ID
+	}
+	if tr.Name != nil {
+		objectMap["name"] = tr.Name
+	}
+	if tr.Type != nil {
+		objectMap["type"] = tr.Type
+	}
+	return json.Marshal(objectMap)
 }

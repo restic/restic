@@ -190,7 +190,8 @@ func TestMakeTargetURL(t *testing.T) {
 	for i, testCase := range testCases {
 		// Initialize a Minio client
 		c, _ := New(testCase.addr, "foo", "bar", testCase.secure)
-		u, err := c.makeTargetURL(testCase.bucketName, testCase.objectName, testCase.bucketLocation, testCase.queryValues)
+		isVirtualHost := c.isVirtualHostStyleRequest(*c.endpointURL, testCase.bucketName)
+		u, err := c.makeTargetURL(testCase.bucketName, testCase.objectName, testCase.bucketLocation, isVirtualHost, testCase.queryValues)
 		// Check the returned error
 		if testCase.expectedErr == nil && err != nil {
 			t.Fatalf("Test %d: Should succeed but failed with err = %v", i+1, err)

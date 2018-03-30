@@ -99,7 +99,11 @@ func newMock(t *testing.T) (*Client, *mockServer) {
 }
 
 func intval(i int) *pb.Value {
-	return &pb.Value{&pb.Value_IntegerValue{int64(i)}}
+	return int64val(int64(i))
+}
+
+func int64val(i int64) *pb.Value {
+	return &pb.Value{&pb.Value_IntegerValue{i}}
 }
 
 func boolval(b bool) *pb.Value {

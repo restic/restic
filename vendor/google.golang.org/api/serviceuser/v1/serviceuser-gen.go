@@ -1,4 +1,4 @@
-// Package serviceuser provides access to the Google Service User API.
+// Package serviceuser provides access to the Service User API.
 //
 // See https://cloud.google.com/service-management/
 //
@@ -727,8 +727,35 @@ func (s *BillingDestination) MarshalJSON() ([]byte, error) {
 // and
 // `google.rpc.context.OriginContext`.
 //
-// Available context types are defined in package
+// Available context types are defined in
+// package
 // `google.rpc.context`.
+//
+// This also provides mechanism to whitelist any protobuf message
+// extension that
+// can be sent in grpc metadata using
+// “x-goog-ext-<extension_id>-bin”
+// and
+// “x-goog-ext-<extension_id>-jspb” format. For example, list any
+// service
+// specific protobuf types that can appear in grpc metadata as follows
+// in your
+// yaml file:
+//
+// Example:
+//
+//     context:
+//       rules:
+//        - selector:
+// "google.example.library.v1.LibraryService.CreateBook"
+//          allowed_request_extensions:
+//          - google.foo.v1.NewExtension
+//          allowed_response_extensions:
+//          - google.foo.v1.NewExtension
+//
+// You can also specify extension ID instead of fully qualified
+// extension name
+// here.
 type Context struct {
 	// Rules: A list of RPC context rules that apply to individual API
 	// methods.
@@ -764,6 +791,16 @@ func (s *Context) MarshalJSON() ([]byte, error) {
 // for an individual API
 // element.
 type ContextRule struct {
+	// AllowedRequestExtensions: A list of full type names or extension IDs
+	// of extensions allowed in grpc
+	// side channel from client to backend.
+	AllowedRequestExtensions []string `json:"allowedRequestExtensions,omitempty"`
+
+	// AllowedResponseExtensions: A list of full type names or extension IDs
+	// of extensions allowed in grpc
+	// side channel from backend to client.
+	AllowedResponseExtensions []string `json:"allowedResponseExtensions,omitempty"`
+
 	// Provided: A list of full type names of provided contexts.
 	Provided []string `json:"provided,omitempty"`
 
@@ -775,20 +812,22 @@ type ContextRule struct {
 	// Refer to selector for syntax details.
 	Selector string `json:"selector,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Provided") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "AllowedRequestExtensions") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Provided") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "AllowedRequestExtensions")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -1034,11 +1073,7 @@ type DisableServiceRequest struct {
 // Text can be excluded from doc using the following
 // notation:
 // <pre><code>&#40;-- internal comment --&#41;</code></pre>
-// Comments can be made conditional using a visibility label. The
-// below
-// text will be only rendered if the `BETA` label is
-// available:
-// <pre><code>&#40;--BETA: comment for BETA users --&#41;</code></pre>
+//
 // A few directives are available in documentation. Note that
 // directives must appear on a single line to be properly
 // identified. The `include` directive includes a markdown file from
@@ -2377,8 +2412,6 @@ type MetricDescriptor struct {
 	//
 	// **Grammar**
 	//
-	// The grammar includes the dimensionless unit `1`, such as `1/s`.
-	//
 	// The grammar also includes these connectors:
 	//
 	// * `/`    division (as an infix operator, e.g. `1/s`).
@@ -2388,7 +2421,7 @@ type MetricDescriptor struct {
 	//
 	//     Expression = Component { "." Component } { "/" Component } ;
 	//
-	//     Component = [ PREFIX ] UNIT [ Annotation ]
+	//     Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
 	//               | Annotation
 	//               | "1"
 	//               ;
@@ -2402,6 +2435,10 @@ type MetricDescriptor struct {
 	//    `{requests}/s == 1/s`, `By{transmitted}/s == By/s`.
 	// * `NAME` is a sequence of non-blank printable ASCII characters not
 	//    containing '{' or '}'.
+	// * `1` represents dimensionless value 1, such as in `1/s`.
+	// * `%` represents dimensionless value 1/100, and annotates values
+	// giving
+	//    a percentage.
 	Unit string `json:"unit,omitempty"`
 
 	// ValueType: Whether the measurement is an integer, a floating-point
@@ -3557,9 +3594,6 @@ type Service struct {
 	// Usage: Configuration controlling usage of this service.
 	Usage *Usage `json:"usage,omitempty"`
 
-	// Visibility: API visibility configuration.
-	Visibility *Visibility `json:"visibility,omitempty"`
-
 	// ForceSendFields is a list of field names (e.g. "Apis") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -4137,119 +4171,6 @@ type UsageRule struct {
 
 func (s *UsageRule) MarshalJSON() ([]byte, error) {
 	type NoMethod UsageRule
-	raw := NoMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Visibility: `Visibility` defines restrictions for the visibility of
-// service
-// elements.  Restrictions are specified using visibility labels
-// (e.g., TRUSTED_TESTER) that are elsewhere linked to users and
-// projects.
-//
-// Users and projects can have access to more than one visibility label.
-// The
-// effective visibility for multiple labels is the union of each
-// label's
-// elements, plus any unrestricted elements.
-//
-// If an element and its parents have no restrictions, visibility
-// is
-// unconditionally granted.
-//
-// Example:
-//
-//     visibility:
-//       rules:
-//       - selector: google.calendar.Calendar.EnhancedSearch
-//         restriction: TRUSTED_TESTER
-//       - selector: google.calendar.Calendar.Delegate
-//         restriction: GOOGLE_INTERNAL
-//
-// Here, all methods are publicly visible except for the restricted
-// methods
-// EnhancedSearch and Delegate.
-type Visibility struct {
-	// Rules: A list of visibility rules that apply to individual API
-	// elements.
-	//
-	// **NOTE:** All service configuration rules follow "last one wins"
-	// order.
-	Rules []*VisibilityRule `json:"rules,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Rules") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Rules") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Visibility) MarshalJSON() ([]byte, error) {
-	type NoMethod Visibility
-	raw := NoMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// VisibilityRule: A visibility rule provides visibility configuration
-// for an individual API
-// element.
-type VisibilityRule struct {
-	// Restriction: A comma-separated list of visibility labels that apply
-	// to the `selector`.
-	// Any of the listed labels can be used to grant the visibility.
-	//
-	// If a rule has multiple labels, removing one of the labels but not all
-	// of
-	// them can break clients.
-	//
-	// Example:
-	//
-	//     visibility:
-	//       rules:
-	//       - selector: google.calendar.Calendar.EnhancedSearch
-	//         restriction: GOOGLE_INTERNAL, TRUSTED_TESTER
-	//
-	// Removing GOOGLE_INTERNAL from this restriction will break clients
-	// that
-	// rely on this method and only had access to it through
-	// GOOGLE_INTERNAL.
-	Restriction string `json:"restriction,omitempty"`
-
-	// Selector: Selects methods, messages, fields, enums, etc. to which
-	// this rule applies.
-	//
-	// Refer to selector for syntax details.
-	Selector string `json:"selector,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Restriction") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Restriction") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *VisibilityRule) MarshalJSON() ([]byte, error) {
-	type NoMethod VisibilityRule
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

@@ -53,7 +53,7 @@ func (client UsersClient) Create(ctx context.Context, parameters UserCreateParam
 					Chain: []validation.Constraint{{Target: "parameters.PasswordProfile.Password", Name: validation.Null, Rule: true, Chain: nil}}},
 				{Target: "parameters.UserPrincipalName", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.MailNickname", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "graphrbac.UsersClient", "Create")
+		return result, validation.NewError("graphrbac.UsersClient", "Create", err.Error())
 	}
 
 	req, err := client.CreatePreparer(ctx, parameters)
@@ -89,7 +89,7 @@ func (client UsersClient) CreatePreparer(ctx context.Context, parameters UserCre
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users", pathParameters),
@@ -249,12 +249,13 @@ func (client UsersClient) GetResponder(resp *http.Response) (result User, err er
 
 // GetMemberGroups gets a collection that contains the object IDs of the groups of which the user is a member.
 //
-// objectID is the object ID of the user for which to get group membership. parameters is user filtering parameters.
+// objectID is the object ID of the user for which to get group membership. parameters is user filtering
+// parameters.
 func (client UsersClient) GetMemberGroups(ctx context.Context, objectID string, parameters UserGetMemberGroupsParameters) (result UserGetMemberGroupsResult, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.SecurityEnabledOnly", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "graphrbac.UsersClient", "GetMemberGroups")
+		return result, validation.NewError("graphrbac.UsersClient", "GetMemberGroups", err.Error())
 	}
 
 	req, err := client.GetMemberGroupsPreparer(ctx, objectID, parameters)
@@ -291,7 +292,7 @@ func (client UsersClient) GetMemberGroupsPreparer(ctx context.Context, objectID 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users/{objectId}/getMemberGroups", pathParameters),
@@ -503,7 +504,7 @@ func (client UsersClient) UpdatePreparer(ctx context.Context, upnOrObjectID stri
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/users/{upnOrObjectId}", pathParameters),

@@ -9,7 +9,7 @@ import (
 func TestMaxTriesHappy(t *testing.T) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 17 + r.Intn(13)
-	bo := WithMaxTries(&ZeroBackOff{}, uint64(max))
+	bo := WithMaxRetries(&ZeroBackOff{}, uint64(max))
 
 	// Load up the tries count, but reset should clear the record
 	for ix := 0; ix < max/2; ix++ {
@@ -45,7 +45,7 @@ func TestMaxTriesHappy(t *testing.T) {
 
 func TestMaxTriesZero(t *testing.T) {
 	// It might not make sense, but its okay to send a zero
-	bo := WithMaxTries(&ZeroBackOff{}, uint64(0))
+	bo := WithMaxRetries(&ZeroBackOff{}, uint64(0))
 	for ix := 0; ix < 11; ix++ {
 		d := bo.NextBackOff()
 		if d == Stop {

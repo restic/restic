@@ -569,7 +569,7 @@ type Document struct {
 	// UpdateTime: Output only. The time at which the document was last
 	// changed.
 	//
-	// This value is initally set to the `create_time` then
+	// This value is initially set to the `create_time` then
 	// increases
 	// monotonically with each change to the document. It can also
 	// be
@@ -2425,10 +2425,12 @@ type Write struct {
 	// UpdateMask: The fields to update in this write.
 	//
 	// This field can be set only when the operation is `update`.
-	// None of the field paths in the mask may contain a reserved name.
-	// If the document exists on the server and has fields not referenced in
-	// the
-	// mask, they are left unchanged.
+	// If the mask is not set for an `update` and the document exists,
+	// any
+	// existing data will be overwritten.
+	// If the mask is set and the document on the server has fields not
+	// covered by
+	// the mask, they are left unchanged.
 	// Fields referenced in the mask, but not present in the input document,
 	// are
 	// deleted from the document on the server.

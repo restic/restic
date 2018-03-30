@@ -42,8 +42,8 @@ func NewComponentCurrentBillingFeaturesClientWithBaseURI(baseURI string, subscri
 
 // Get returns current billing features for an Application Insights component.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource.
 func (client ComponentCurrentBillingFeaturesClient) Get(ctx context.Context, resourceGroupName string, resourceName string) (result ApplicationInsightsComponentBillingFeatures, err error) {
 	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
@@ -82,7 +82,7 @@ func (client ComponentCurrentBillingFeaturesClient) GetPreparer(ctx context.Cont
 	preparer := autorest.CreatePreparer(
 		autorest.AsGet(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/currentbillingfeatures", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}/currentbillingfeatures", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
@@ -109,9 +109,9 @@ func (client ComponentCurrentBillingFeaturesClient) GetResponder(resp *http.Resp
 
 // Update update current billing features for an Application Insights component.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource. billingFeaturesProperties is properties that need to be specified to update billing features for an
-// Application Insights component.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource. billingFeaturesProperties is properties that need to be specified to update billing features
+// for an Application Insights component.
 func (client ComponentCurrentBillingFeaturesClient) Update(ctx context.Context, resourceGroupName string, resourceName string, billingFeaturesProperties ApplicationInsightsComponentBillingFeatures) (result ApplicationInsightsComponentBillingFeatures, err error) {
 	req, err := client.UpdatePreparer(ctx, resourceGroupName, resourceName, billingFeaturesProperties)
 	if err != nil {
@@ -148,10 +148,10 @@ func (client ComponentCurrentBillingFeaturesClient) UpdatePreparer(ctx context.C
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}/currentbillingfeatures", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}/currentbillingfeatures", pathParameters),
 		autorest.WithJSON(billingFeaturesProperties),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))

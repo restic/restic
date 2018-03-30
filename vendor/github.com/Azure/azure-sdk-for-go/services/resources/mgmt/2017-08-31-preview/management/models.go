@@ -1,4 +1,4 @@
-package management
+package managementgroups
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.
 //
@@ -40,6 +40,11 @@ const (
 	Subscription ChildType = "Subscription"
 )
 
+// PossibleChildTypeValues returns an array of possible values for the ChildType const type.
+func PossibleChildTypeValues() []ChildType {
+	return []ChildType{Account, Department, Enrollment, Subscription}
+}
+
 // ChildType1 enumerates the values for child type 1.
 type ChildType1 string
 
@@ -54,6 +59,11 @@ const (
 	ChildType1Subscription ChildType1 = "Subscription"
 )
 
+// PossibleChildType1Values returns an array of possible values for the ChildType1 const type.
+func PossibleChildType1Values() []ChildType1 {
+	return []ChildType1{ChildType1Account, ChildType1Department, ChildType1Enrollment, ChildType1Subscription}
+}
+
 // ManagementGroupType enumerates the values for management group type.
 type ManagementGroupType string
 
@@ -67,6 +77,36 @@ const (
 	// ManagementGroupTypeSubscription ...
 	ManagementGroupTypeSubscription ManagementGroupType = "Subscription"
 )
+
+// PossibleManagementGroupTypeValues returns an array of possible values for the ManagementGroupType const type.
+func PossibleManagementGroupTypeValues() []ManagementGroupType {
+	return []ManagementGroupType{ManagementGroupTypeAccount, ManagementGroupTypeDepartment, ManagementGroupTypeEnrollment, ManagementGroupTypeSubscription}
+}
+
+// ChildInfo the unique identifier (ID) of a management group.
+type ChildInfo struct {
+	// ChildType - Possible values include: 'Enrollment', 'Department', 'Account', 'Subscription'
+	ChildType ChildType `json:"childType,omitempty"`
+	// ChildID - The ID of the child resource (management group or subscription). E.g. /providers/Microsoft.Management/managementGroups/40000000-0000-0000-0000-000000000000
+	ChildID *string `json:"childId,omitempty"`
+	// DisplayName - The friendly name of the child resource.
+	DisplayName *string `json:"displayName,omitempty"`
+	// TenantID - (Optional) The AAD Tenant ID associated with the child resource.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+}
+
+// DetailsProperties the details properties of a management group.
+type DetailsProperties struct {
+	// Version - The version number of the object.
+	Version *float64 `json:"version,omitempty"`
+	// UpdatedTime - The date and time when this object was last updated.
+	UpdatedTime *date.Time `json:"updatedTime,omitempty"`
+	// UpdatedBy - The identity of the principal or process that updated the object.
+	UpdatedBy *string          `json:"updatedBy,omitempty"`
+	Parent    *ParentGroupInfo `json:"parent,omitempty"`
+	// ManagementGroupType - Possible values include: 'ManagementGroupTypeEnrollment', 'ManagementGroupTypeDepartment', 'ManagementGroupTypeAccount', 'ManagementGroupTypeSubscription'
+	ManagementGroupType ManagementGroupType `json:"managementGroupType,omitempty"`
+}
 
 // ErrorDetails the details of the error.
 type ErrorDetails struct {
@@ -83,183 +123,112 @@ type ErrorResponse struct {
 	Error *ErrorDetails `json:"error,omitempty"`
 }
 
-// Group the management group details.
-type Group struct {
+// Info the management group.
+type Info struct {
 	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
 	ID *string `json:"id,omitempty"`
 	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
 	Type *string `json:"type,omitempty"`
 	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
-	Name             *uuid.UUID `json:"name,omitempty"`
-	*GroupProperties `json:"properties,omitempty"`
+	Name            *uuid.UUID `json:"name,omitempty"`
+	*InfoProperties `json:"properties,omitempty"`
 }
 
-// UnmarshalJSON is the custom unmarshaler for Group struct.
-func (g *Group) UnmarshalJSON(body []byte) error {
+// MarshalJSON is the custom marshaler for Info.
+func (i Info) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if i.ID != nil {
+		objectMap["id"] = i.ID
+	}
+	if i.Type != nil {
+		objectMap["type"] = i.Type
+	}
+	if i.Name != nil {
+		objectMap["name"] = i.Name
+	}
+	if i.InfoProperties != nil {
+		objectMap["properties"] = i.InfoProperties
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for Info struct.
+func (i *Info) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
 	err := json.Unmarshal(body, &m)
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				i.ID = &ID
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				i.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name uuid.UUID
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				i.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var infoProperties InfoProperties
+				err = json.Unmarshal(*v, &infoProperties)
+				if err != nil {
+					return err
+				}
+				i.InfoProperties = &infoProperties
+			}
 		}
-		g.ID = &ID
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		g.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name uuid.UUID
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		g.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties GroupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		g.GroupProperties = &properties
 	}
 
 	return nil
 }
 
-// GroupChildInfo the unique identifier (ID) of a management group.
-type GroupChildInfo struct {
-	// ChildType - Possible values include: 'Enrollment', 'Department', 'Account', 'Subscription'
-	ChildType ChildType `json:"childType,omitempty"`
-	// ChildID - The ID of the child resource (management group or subscription). E.g. /providers/Microsoft.Management/managementGroups/40000000-0000-0000-0000-000000000000
-	ChildID *string `json:"childId,omitempty"`
-	// DisplayName - The friendly name of the child resource.
-	DisplayName *string `json:"displayName,omitempty"`
-	// TenantID - (Optional) The AAD Tenant ID associated with the child resource.
-	TenantID *uuid.UUID `json:"tenantId,omitempty"`
-}
-
-// GroupDetailsProperties the details properties of a management group.
-type GroupDetailsProperties struct {
-	// Version - The version number of the object.
-	Version *float64 `json:"version,omitempty"`
-	// UpdatedTime - The date and time when this object was last updated.
-	UpdatedTime *date.Time `json:"updatedTime,omitempty"`
-	// UpdatedBy - The identity of the principal or process that updated the object.
-	UpdatedBy *string          `json:"updatedBy,omitempty"`
-	Parent    *ParentGroupInfo `json:"parent,omitempty"`
-	// ManagementGroupType - Possible values include: 'ManagementGroupTypeEnrollment', 'ManagementGroupTypeDepartment', 'ManagementGroupTypeAccount', 'ManagementGroupTypeSubscription'
-	ManagementGroupType ManagementGroupType `json:"managementGroupType,omitempty"`
-}
-
-// GroupInfo the management group.
-type GroupInfo struct {
-	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
-	ID *string `json:"id,omitempty"`
-	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
-	Type *string `json:"type,omitempty"`
-	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
-	Name                 *uuid.UUID `json:"name,omitempty"`
-	*GroupInfoProperties `json:"properties,omitempty"`
-}
-
-// UnmarshalJSON is the custom unmarshaler for GroupInfo struct.
-func (gi *GroupInfo) UnmarshalJSON(body []byte) error {
-	var m map[string]*json.RawMessage
-	err := json.Unmarshal(body, &m)
-	if err != nil {
-		return err
-	}
-	var v *json.RawMessage
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		gi.ID = &ID
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		gi.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name uuid.UUID
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		gi.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties GroupInfoProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		gi.GroupInfoProperties = &properties
-	}
-
-	return nil
-}
-
-// GroupInfoProperties the generic properties of a management group.
-type GroupInfoProperties struct {
+// InfoProperties the generic properties of a management group.
+type InfoProperties struct {
 	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
 	TenantID *uuid.UUID `json:"tenantId,omitempty"`
 	// DisplayName - The friendly name of the management group.
 	DisplayName *string `json:"displayName,omitempty"`
 }
 
-// GroupListResult the result of listing management groups.
-type GroupListResult struct {
+// ListResult the result of listing management groups.
+type ListResult struct {
 	autorest.Response `json:"-"`
 	// Value - The list of management groups.
-	Value *[]GroupInfo `json:"value,omitempty"`
+	Value *[]Info `json:"value,omitempty"`
 	// NextLink - The URL to the next page of results.
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// GroupListResultIterator provides access to a complete listing of GroupInfo values.
-type GroupListResultIterator struct {
+// ListResultIterator provides access to a complete listing of Info values.
+type ListResultIterator struct {
 	i    int
-	page GroupListResultPage
+	page ListResultPage
 }
 
 // Next advances to the next value.  If there was an error making
 // the request the iterator does not advance and the error is returned.
-func (iter *GroupListResultIterator) Next() error {
+func (iter *ListResultIterator) Next() error {
 	iter.i++
 	if iter.i < len(iter.page.Values()) {
 		return nil
@@ -274,243 +243,151 @@ func (iter *GroupListResultIterator) Next() error {
 }
 
 // NotDone returns true if the enumeration should be started or is not yet complete.
-func (iter GroupListResultIterator) NotDone() bool {
+func (iter ListResultIterator) NotDone() bool {
 	return iter.page.NotDone() && iter.i < len(iter.page.Values())
 }
 
 // Response returns the raw server response from the last page request.
-func (iter GroupListResultIterator) Response() GroupListResult {
+func (iter ListResultIterator) Response() ListResult {
 	return iter.page.Response()
 }
 
 // Value returns the current value or a zero-initialized value if the
 // iterator has advanced beyond the end of the collection.
-func (iter GroupListResultIterator) Value() GroupInfo {
+func (iter ListResultIterator) Value() Info {
 	if !iter.page.NotDone() {
-		return GroupInfo{}
+		return Info{}
 	}
 	return iter.page.Values()[iter.i]
 }
 
 // IsEmpty returns true if the ListResult contains no values.
-func (glr GroupListResult) IsEmpty() bool {
-	return glr.Value == nil || len(*glr.Value) == 0
+func (lr ListResult) IsEmpty() bool {
+	return lr.Value == nil || len(*lr.Value) == 0
 }
 
-// groupListResultPreparer prepares a request to retrieve the next set of results.
+// listResultPreparer prepares a request to retrieve the next set of results.
 // It returns nil if no more results exist.
-func (glr GroupListResult) groupListResultPreparer() (*http.Request, error) {
-	if glr.NextLink == nil || len(to.String(glr.NextLink)) < 1 {
+func (lr ListResult) listResultPreparer() (*http.Request, error) {
+	if lr.NextLink == nil || len(to.String(lr.NextLink)) < 1 {
 		return nil, nil
 	}
 	return autorest.Prepare(&http.Request{},
 		autorest.AsJSON(),
 		autorest.AsGet(),
-		autorest.WithBaseURL(to.String(glr.NextLink)))
+		autorest.WithBaseURL(to.String(lr.NextLink)))
 }
 
-// GroupListResultPage contains a page of GroupInfo values.
-type GroupListResultPage struct {
-	fn  func(GroupListResult) (GroupListResult, error)
-	glr GroupListResult
+// ListResultPage contains a page of Info values.
+type ListResultPage struct {
+	fn func(ListResult) (ListResult, error)
+	lr ListResult
 }
 
 // Next advances to the next page of values.  If there was an error making
 // the request the page does not advance and the error is returned.
-func (page *GroupListResultPage) Next() error {
-	next, err := page.fn(page.glr)
+func (page *ListResultPage) Next() error {
+	next, err := page.fn(page.lr)
 	if err != nil {
 		return err
 	}
-	page.glr = next
+	page.lr = next
 	return nil
 }
 
 // NotDone returns true if the page enumeration should be started or is not yet complete.
-func (page GroupListResultPage) NotDone() bool {
-	return !page.glr.IsEmpty()
+func (page ListResultPage) NotDone() bool {
+	return !page.lr.IsEmpty()
 }
 
 // Response returns the raw server response from the last page request.
-func (page GroupListResultPage) Response() GroupListResult {
-	return page.glr
+func (page ListResultPage) Response() ListResult {
+	return page.lr
 }
 
 // Values returns the slice of values for the current page or nil if there are no values.
-func (page GroupListResultPage) Values() []GroupInfo {
-	if page.glr.IsEmpty() {
+func (page ListResultPage) Values() []Info {
+	if page.lr.IsEmpty() {
 		return nil
 	}
-	return *page.glr.Value
+	return *page.lr.Value
 }
 
-// GroupProperties the generic properties of a management group.
-type GroupProperties struct {
-	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
-	TenantID *uuid.UUID `json:"tenantId,omitempty"`
-	// DisplayName - The friendly name of the management group.
-	DisplayName *string                 `json:"displayName,omitempty"`
-	Details     *GroupDetailsProperties `json:"details,omitempty"`
-}
-
-// GroupPropertiesWithChildren the generic properties of a management group.
-type GroupPropertiesWithChildren struct {
-	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
-	TenantID *uuid.UUID `json:"tenantId,omitempty"`
-	// DisplayName - The friendly name of the management group.
-	DisplayName *string                 `json:"displayName,omitempty"`
-	Details     *GroupDetailsProperties `json:"details,omitempty"`
-	// Children - The list of children.
-	Children *[]GroupChildInfo `json:"children,omitempty"`
-}
-
-// GroupPropertiesWithHierarchy the generic properties of a management group.
-type GroupPropertiesWithHierarchy struct {
-	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
-	TenantID *uuid.UUID `json:"tenantId,omitempty"`
-	// DisplayName - The friendly name of the management group.
-	DisplayName *string                 `json:"displayName,omitempty"`
-	Details     *GroupDetailsProperties `json:"details,omitempty"`
-	// Children - The list of children.
-	Children *[]GroupRecursiveChildInfo `json:"children,omitempty"`
-}
-
-// GroupRecursiveChildInfo the unique identifier (ID) of a management group.
-type GroupRecursiveChildInfo struct {
-	// ChildType - Possible values include: 'ChildType1Enrollment', 'ChildType1Department', 'ChildType1Account', 'ChildType1Subscription'
-	ChildType ChildType `json:"childType,omitempty"`
-	// ChildID - The ID of the child resource (management group or subscription). E.g. /providers/Microsoft.Management/managementGroups/40000000-0000-0000-0000-000000000000
-	ChildID *string `json:"childId,omitempty"`
-	// DisplayName - The friendly name of the child resource.
-	DisplayName *string `json:"displayName,omitempty"`
-	// TenantID - (Optional) The AAD Tenant ID associated with the child resource.
-	TenantID *uuid.UUID `json:"tenantId,omitempty"`
-	// Children - The list of children.
-	Children *[]GroupRecursiveChildInfo `json:"children,omitempty"`
-}
-
-// GroupWithChildren the management group details.
-type GroupWithChildren struct {
+// ManagementGroup the management group details.
+type ManagementGroup struct {
 	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
 	ID *string `json:"id,omitempty"`
 	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
 	Type *string `json:"type,omitempty"`
 	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
-	Name                         *uuid.UUID `json:"name,omitempty"`
-	*GroupPropertiesWithChildren `json:"properties,omitempty"`
+	Name        *uuid.UUID `json:"name,omitempty"`
+	*Properties `json:"properties,omitempty"`
 }
 
-// UnmarshalJSON is the custom unmarshaler for GroupWithChildren struct.
-func (gwc *GroupWithChildren) UnmarshalJSON(body []byte) error {
+// MarshalJSON is the custom marshaler for ManagementGroup.
+func (mg ManagementGroup) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mg.ID != nil {
+		objectMap["id"] = mg.ID
+	}
+	if mg.Type != nil {
+		objectMap["type"] = mg.Type
+	}
+	if mg.Name != nil {
+		objectMap["name"] = mg.Name
+	}
+	if mg.Properties != nil {
+		objectMap["properties"] = mg.Properties
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for ManagementGroup struct.
+func (mg *ManagementGroup) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
 	err := json.Unmarshal(body, &m)
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				mg.ID = &ID
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				mg.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name uuid.UUID
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				mg.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var properties Properties
+				err = json.Unmarshal(*v, &properties)
+				if err != nil {
+					return err
+				}
+				mg.Properties = &properties
+			}
 		}
-		gwc.ID = &ID
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		gwc.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name uuid.UUID
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		gwc.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties GroupPropertiesWithChildren
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		gwc.GroupPropertiesWithChildren = &properties
-	}
-
-	return nil
-}
-
-// GroupWithHierarchy the management group details.
-type GroupWithHierarchy struct {
-	autorest.Response `json:"-"`
-	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
-	ID *string `json:"id,omitempty"`
-	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
-	Type *string `json:"type,omitempty"`
-	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
-	Name                          *uuid.UUID `json:"name,omitempty"`
-	*GroupPropertiesWithHierarchy `json:"properties,omitempty"`
-}
-
-// UnmarshalJSON is the custom unmarshaler for GroupWithHierarchy struct.
-func (gwh *GroupWithHierarchy) UnmarshalJSON(body []byte) error {
-	var m map[string]*json.RawMessage
-	err := json.Unmarshal(body, &m)
-	if err != nil {
-		return err
-	}
-	var v *json.RawMessage
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		gwh.ID = &ID
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		gwh.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name uuid.UUID
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		gwh.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties GroupPropertiesWithHierarchy
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		gwh.GroupPropertiesWithHierarchy = &properties
 	}
 
 	return nil
@@ -534,8 +411,8 @@ type OperationDisplay struct {
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult result listing  operations. It contains a list of operations and a URL link to get the next set
-// of results.
+// OperationListResult result listing  operations. It contains a list of operations and a URL link to get the next
+// set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of management operations supported by the Microsoft.Management resource provider.
@@ -643,4 +520,210 @@ type ParentGroupInfo struct {
 	ParentID *string `json:"parentId,omitempty"`
 	// DisplayName - The friendly name of the management group.
 	DisplayName *string `json:"displayName,omitempty"`
+}
+
+// Properties the generic properties of a management group.
+type Properties struct {
+	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// DisplayName - The friendly name of the management group.
+	DisplayName *string            `json:"displayName,omitempty"`
+	Details     *DetailsProperties `json:"details,omitempty"`
+}
+
+// PropertiesWithChildren the generic properties of a management group.
+type PropertiesWithChildren struct {
+	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// DisplayName - The friendly name of the management group.
+	DisplayName *string            `json:"displayName,omitempty"`
+	Details     *DetailsProperties `json:"details,omitempty"`
+	// Children - The list of children.
+	Children *[]ChildInfo `json:"children,omitempty"`
+}
+
+// PropertiesWithHierarchy the generic properties of a management group.
+type PropertiesWithHierarchy struct {
+	// TenantID - The AAD Tenant ID associated with the management group. E.g. 10000000-0000-0000-0000-000000000000
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// DisplayName - The friendly name of the management group.
+	DisplayName *string            `json:"displayName,omitempty"`
+	Details     *DetailsProperties `json:"details,omitempty"`
+	// Children - The list of children.
+	Children *[]RecursiveChildInfo `json:"children,omitempty"`
+}
+
+// RecursiveChildInfo the unique identifier (ID) of a management group.
+type RecursiveChildInfo struct {
+	// ChildType - Possible values include: 'ChildType1Enrollment', 'ChildType1Department', 'ChildType1Account', 'ChildType1Subscription'
+	ChildType ChildType1 `json:"childType,omitempty"`
+	// ChildID - The ID of the child resource (management group or subscription). E.g. /providers/Microsoft.Management/managementGroups/40000000-0000-0000-0000-000000000000
+	ChildID *string `json:"childId,omitempty"`
+	// DisplayName - The friendly name of the child resource.
+	DisplayName *string `json:"displayName,omitempty"`
+	// TenantID - (Optional) The AAD Tenant ID associated with the child resource.
+	TenantID *uuid.UUID `json:"tenantId,omitempty"`
+	// Children - The list of children.
+	Children *[]RecursiveChildInfo `json:"children,omitempty"`
+}
+
+// WithChildren the management group details.
+type WithChildren struct {
+	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
+	ID *string `json:"id,omitempty"`
+	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
+	Type *string `json:"type,omitempty"`
+	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
+	Name                    *uuid.UUID `json:"name,omitempty"`
+	*PropertiesWithChildren `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for WithChildren.
+func (wc WithChildren) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if wc.ID != nil {
+		objectMap["id"] = wc.ID
+	}
+	if wc.Type != nil {
+		objectMap["type"] = wc.Type
+	}
+	if wc.Name != nil {
+		objectMap["name"] = wc.Name
+	}
+	if wc.PropertiesWithChildren != nil {
+		objectMap["properties"] = wc.PropertiesWithChildren
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for WithChildren struct.
+func (wc *WithChildren) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				wc.ID = &ID
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				wc.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name uuid.UUID
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				wc.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var propertiesWithChildren PropertiesWithChildren
+				err = json.Unmarshal(*v, &propertiesWithChildren)
+				if err != nil {
+					return err
+				}
+				wc.PropertiesWithChildren = &propertiesWithChildren
+			}
+		}
+	}
+
+	return nil
+}
+
+// WithHierarchy the management group details.
+type WithHierarchy struct {
+	autorest.Response `json:"-"`
+	// ID - The ID of the management group. E.g. /providers/Microsoft.Management/managementGroups/20000000-0000-0000-0000-000000000000
+	ID *string `json:"id,omitempty"`
+	// Type - The type of the resource. E.g. /providers/Microsoft.Management/managementGroups
+	Type *string `json:"type,omitempty"`
+	// Name - The name of the management group. E.g. 20000000-0000-0000-0000-000000000000
+	Name                     *uuid.UUID `json:"name,omitempty"`
+	*PropertiesWithHierarchy `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for WithHierarchy.
+func (wh WithHierarchy) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if wh.ID != nil {
+		objectMap["id"] = wh.ID
+	}
+	if wh.Type != nil {
+		objectMap["type"] = wh.Type
+	}
+	if wh.Name != nil {
+		objectMap["name"] = wh.Name
+	}
+	if wh.PropertiesWithHierarchy != nil {
+		objectMap["properties"] = wh.PropertiesWithHierarchy
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for WithHierarchy struct.
+func (wh *WithHierarchy) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				wh.ID = &ID
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				wh.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name uuid.UUID
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				wh.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var propertiesWithHierarchy PropertiesWithHierarchy
+				err = json.Unmarshal(*v, &propertiesWithHierarchy)
+				if err != nil {
+					return err
+				}
+				wh.PropertiesWithHierarchy = &propertiesWithHierarchy
+			}
+		}
+	}
+
+	return nil
 }

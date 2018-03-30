@@ -42,8 +42,8 @@ func NewClustersClientWithBaseURI(baseURI string) ClustersClient {
 
 // Create create cluster resource
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource subscriptionID
-// is the customer subscription identifier parameters is the cluster resource.
+// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource
+// subscriptionID is the customer subscription identifier parameters is the cluster resource.
 func (client ClustersClient) Create(ctx context.Context, resourceGroupName string, clusterName string, subscriptionID string, parameters Cluster) (result ClustersCreateFuture, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
@@ -94,7 +94,7 @@ func (client ClustersClient) Create(ctx context.Context, resourceGroupName strin
 								}},
 						}},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicefabric.ClustersClient", "Create")
+		return result, validation.NewError("servicefabric.ClustersClient", "Create", err.Error())
 	}
 
 	req, err := client.CreatePreparer(ctx, resourceGroupName, clusterName, subscriptionID, parameters)
@@ -126,7 +126,7 @@ func (client ClustersClient) CreatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),
@@ -165,8 +165,8 @@ func (client ClustersClient) CreateResponder(resp *http.Response) (result Cluste
 
 // Delete delete cluster resource
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource subscriptionID
-// is the customer subscription identifier
+// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource
+// subscriptionID is the customer subscription identifier
 func (client ClustersClient) Delete(ctx context.Context, resourceGroupName string, clusterName string, subscriptionID string) (result autorest.Response, err error) {
 	req, err := client.DeletePreparer(ctx, resourceGroupName, clusterName, subscriptionID)
 	if err != nil {
@@ -231,8 +231,8 @@ func (client ClustersClient) DeleteResponder(resp *http.Response) (result autore
 
 // Get get cluster resource
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource subscriptionID
-// is the customer subscription identifier
+// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource
+// subscriptionID is the customer subscription identifier
 func (client ClustersClient) Get(ctx context.Context, resourceGroupName string, clusterName string, subscriptionID string) (result Cluster, err error) {
 	req, err := client.GetPreparer(ctx, resourceGroupName, clusterName, subscriptionID)
 	if err != nil {
@@ -427,9 +427,9 @@ func (client ClustersClient) ListByResourceGroupResponder(resp *http.Response) (
 
 // Update update cluster configuration
 //
-// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource subscriptionID
-// is the customer subscription identifier parameters is the parameters which contains the property value and property
-// name which used to update the cluster configuration.
+// resourceGroupName is the name of the resource group. clusterName is the name of the cluster resource
+// subscriptionID is the customer subscription identifier parameters is the parameters which contains the property
+// value and property name which used to update the cluster configuration.
 func (client ClustersClient) Update(ctx context.Context, resourceGroupName string, clusterName string, subscriptionID string, parameters ClusterUpdateParameters) (result ClustersUpdateFuture, err error) {
 	req, err := client.UpdatePreparer(ctx, resourceGroupName, clusterName, subscriptionID, parameters)
 	if err != nil {
@@ -460,7 +460,7 @@ func (client ClustersClient) UpdatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}", pathParameters),

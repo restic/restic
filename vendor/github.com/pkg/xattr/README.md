@@ -10,7 +10,7 @@ Extended attribute support for Go (linux + darwin + freebsd).
 
 
 ### Example
-```
+```go
   const path = "/tmp/myfile"
   const prefix = "user."
 

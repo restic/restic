@@ -127,7 +127,9 @@ func (b *ExponentialBackOff) NextBackOff() time.Duration {
 // GetElapsedTime returns the elapsed time since an ExponentialBackOff instance
 // is created and is reset when Reset() is called.
 //
-// The elapsed time is computed using time.Now().UnixNano().
+// The elapsed time is computed using time.Now().UnixNano(). It is
+// safe to call even while the backoff policy is used by a running
+// ticker.
 func (b *ExponentialBackOff) GetElapsedTime() time.Duration {
 	return b.Clock.Now().Sub(b.startTime)
 }

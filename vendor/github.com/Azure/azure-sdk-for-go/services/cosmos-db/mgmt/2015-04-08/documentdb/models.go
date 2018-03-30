@@ -38,6 +38,11 @@ const (
 	Parse DatabaseAccountKind = "Parse"
 )
 
+// PossibleDatabaseAccountKindValues returns an array of possible values for the DatabaseAccountKind const type.
+func PossibleDatabaseAccountKindValues() []DatabaseAccountKind {
+	return []DatabaseAccountKind{GlobalDocumentDB, MongoDB, Parse}
+}
+
 // DatabaseAccountOfferType enumerates the values for database account offer type.
 type DatabaseAccountOfferType string
 
@@ -45,6 +50,11 @@ const (
 	// Standard ...
 	Standard DatabaseAccountOfferType = "Standard"
 )
+
+// PossibleDatabaseAccountOfferTypeValues returns an array of possible values for the DatabaseAccountOfferType const type.
+func PossibleDatabaseAccountOfferTypeValues() []DatabaseAccountOfferType {
+	return []DatabaseAccountOfferType{Standard}
+}
 
 // DefaultConsistencyLevel enumerates the values for default consistency level.
 type DefaultConsistencyLevel string
@@ -62,6 +72,11 @@ const (
 	Strong DefaultConsistencyLevel = "Strong"
 )
 
+// PossibleDefaultConsistencyLevelValues returns an array of possible values for the DefaultConsistencyLevel const type.
+func PossibleDefaultConsistencyLevelValues() []DefaultConsistencyLevel {
+	return []DefaultConsistencyLevel{BoundedStaleness, ConsistentPrefix, Eventual, Session, Strong}
+}
+
 // KeyKind enumerates the values for key kind.
 type KeyKind string
 
@@ -75,6 +90,11 @@ const (
 	// SecondaryReadonly ...
 	SecondaryReadonly KeyKind = "secondaryReadonly"
 )
+
+// PossibleKeyKindValues returns an array of possible values for the KeyKind const type.
+func PossibleKeyKindValues() []KeyKind {
+	return []KeyKind{Primary, PrimaryReadonly, Secondary, SecondaryReadonly}
+}
 
 // PrimaryAggregationType enumerates the values for primary aggregation type.
 type PrimaryAggregationType string
@@ -93,6 +113,11 @@ const (
 	// Total ...
 	Total PrimaryAggregationType = "Total"
 )
+
+// PossiblePrimaryAggregationTypeValues returns an array of possible values for the PrimaryAggregationType const type.
+func PossiblePrimaryAggregationTypeValues() []PrimaryAggregationType {
+	return []PrimaryAggregationType{Average, Last, Maximum, Minimimum, None, Total}
+}
 
 // UnitType enumerates the values for unit type.
 type UnitType string
@@ -114,6 +139,17 @@ const (
 	Seconds UnitType = "Seconds"
 )
 
+// PossibleUnitTypeValues returns an array of possible values for the UnitType const type.
+func PossibleUnitTypeValues() []UnitType {
+	return []UnitType{Bytes, BytesPerSecond, Count, CountPerSecond, Milliseconds, Percent, Seconds}
+}
+
+// Capability cosmos DB capability object
+type Capability struct {
+	// Name - Name of the Cosmos DB capability. For example, "name": "EnableCassandra". Current values also include "EnableTable" and "EnableGremlin".
+	Name *string `json:"name,omitempty"`
+}
+
 // ConsistencyPolicy the consistency policy for the Cosmos DB database account.
 type ConsistencyPolicy struct {
 	// DefaultConsistencyLevel - The default consistency level and configuration settings of the Cosmos DB account. Possible values include: 'Eventual', 'Session', 'BoundedStaleness', 'Strong', 'ConsistentPrefix'
@@ -127,6 +163,9 @@ type ConsistencyPolicy struct {
 // DatabaseAccount an Azure Cosmos DB database account.
 type DatabaseAccount struct {
 	autorest.Response `json:"-"`
+	// Kind - Indicates the type of database account. This can only be set at database account creation. Possible values include: 'GlobalDocumentDB', 'MongoDB', 'Parse'
+	Kind                       DatabaseAccountKind `json:"kind,omitempty"`
+	*DatabaseAccountProperties `json:"properties,omitempty"`
 	// ID - The unique resource identifier of the database account.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the database account.
@@ -134,11 +173,35 @@ type DatabaseAccount struct {
 	// Type - The type of Azure resource.
 	Type *string `json:"type,omitempty"`
 	// Location - The location of the resource group to which the resource belongs.
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	// Kind - Indicates the type of database account. This can only be set at database account creation. Possible values include: 'GlobalDocumentDB', 'MongoDB', 'Parse'
-	Kind                       DatabaseAccountKind `json:"kind,omitempty"`
-	*DatabaseAccountProperties `json:"properties,omitempty"`
+	Location *string            `json:"location,omitempty"`
+	Tags     map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for DatabaseAccount.
+func (da DatabaseAccount) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if da.Kind != "" {
+		objectMap["kind"] = da.Kind
+	}
+	if da.DatabaseAccountProperties != nil {
+		objectMap["properties"] = da.DatabaseAccountProperties
+	}
+	if da.ID != nil {
+		objectMap["id"] = da.ID
+	}
+	if da.Name != nil {
+		objectMap["name"] = da.Name
+	}
+	if da.Type != nil {
+		objectMap["type"] = da.Type
+	}
+	if da.Location != nil {
+		objectMap["location"] = da.Location
+	}
+	if da.Tags != nil {
+		objectMap["tags"] = da.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for DatabaseAccount struct.
@@ -148,76 +211,72 @@ func (da *DatabaseAccount) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["kind"]
-	if v != nil {
-		var kind DatabaseAccountKind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "kind":
+			if v != nil {
+				var kind DatabaseAccountKind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				da.Kind = kind
+			}
+		case "properties":
+			if v != nil {
+				var databaseAccountProperties DatabaseAccountProperties
+				err = json.Unmarshal(*v, &databaseAccountProperties)
+				if err != nil {
+					return err
+				}
+				da.DatabaseAccountProperties = &databaseAccountProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				da.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				da.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				da.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				da.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				da.Tags = tags
+			}
 		}
-		da.Kind = kind
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DatabaseAccountProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		da.DatabaseAccountProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		da.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		da.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		da.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		da.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		da.Tags = &tags
 	}
 
 	return nil
@@ -233,6 +292,9 @@ type DatabaseAccountConnectionString struct {
 
 // DatabaseAccountCreateUpdateParameters parameters to create and update Cosmos DB database accounts.
 type DatabaseAccountCreateUpdateParameters struct {
+	// Kind - Indicates the type of database account. This can only be set at database account creation. Possible values include: 'GlobalDocumentDB', 'MongoDB', 'Parse'
+	Kind                                   DatabaseAccountKind `json:"kind,omitempty"`
+	*DatabaseAccountCreateUpdateProperties `json:"properties,omitempty"`
 	// ID - The unique resource identifier of the database account.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the database account.
@@ -240,11 +302,35 @@ type DatabaseAccountCreateUpdateParameters struct {
 	// Type - The type of Azure resource.
 	Type *string `json:"type,omitempty"`
 	// Location - The location of the resource group to which the resource belongs.
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
-	// Kind - Indicates the type of database account. This can only be set at database account creation. Possible values include: 'GlobalDocumentDB', 'MongoDB', 'Parse'
-	Kind                                   DatabaseAccountKind `json:"kind,omitempty"`
-	*DatabaseAccountCreateUpdateProperties `json:"properties,omitempty"`
+	Location *string            `json:"location,omitempty"`
+	Tags     map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for DatabaseAccountCreateUpdateParameters.
+func (dacup DatabaseAccountCreateUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dacup.Kind != "" {
+		objectMap["kind"] = dacup.Kind
+	}
+	if dacup.DatabaseAccountCreateUpdateProperties != nil {
+		objectMap["properties"] = dacup.DatabaseAccountCreateUpdateProperties
+	}
+	if dacup.ID != nil {
+		objectMap["id"] = dacup.ID
+	}
+	if dacup.Name != nil {
+		objectMap["name"] = dacup.Name
+	}
+	if dacup.Type != nil {
+		objectMap["type"] = dacup.Type
+	}
+	if dacup.Location != nil {
+		objectMap["location"] = dacup.Location
+	}
+	if dacup.Tags != nil {
+		objectMap["tags"] = dacup.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for DatabaseAccountCreateUpdateParameters struct.
@@ -254,76 +340,72 @@ func (dacup *DatabaseAccountCreateUpdateParameters) UnmarshalJSON(body []byte) e
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["kind"]
-	if v != nil {
-		var kind DatabaseAccountKind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "kind":
+			if v != nil {
+				var kind DatabaseAccountKind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				dacup.Kind = kind
+			}
+		case "properties":
+			if v != nil {
+				var databaseAccountCreateUpdateProperties DatabaseAccountCreateUpdateProperties
+				err = json.Unmarshal(*v, &databaseAccountCreateUpdateProperties)
+				if err != nil {
+					return err
+				}
+				dacup.DatabaseAccountCreateUpdateProperties = &databaseAccountCreateUpdateProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				dacup.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				dacup.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				dacup.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				dacup.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				dacup.Tags = tags
+			}
 		}
-		dacup.Kind = kind
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DatabaseAccountCreateUpdateProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		dacup.DatabaseAccountCreateUpdateProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		dacup.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		dacup.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		dacup.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		dacup.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		dacup.Tags = &tags
 	}
 
 	return nil
@@ -340,6 +422,8 @@ type DatabaseAccountCreateUpdateProperties struct {
 	IPRangeFilter *string `json:"ipRangeFilter,omitempty"`
 	// EnableAutomaticFailover - Enables automatic failover of the write region in the rare event that the region is unavailable due to an outage. Automatic failover will result in a new write region for the account and is chosen based on the failover priorities configured for the account.
 	EnableAutomaticFailover *bool `json:"enableAutomaticFailover,omitempty"`
+	// Capabilities - List of Cosmos DB capabilities for the account
+	Capabilities *[]Capability `json:"capabilities,omitempty"`
 }
 
 // DatabaseAccountListConnectionStringsResult the connection strings for the given database account.
@@ -359,6 +443,21 @@ type DatabaseAccountListKeysResult struct {
 	*DatabaseAccountListReadOnlyKeysResult `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for DatabaseAccountListKeysResult.
+func (dalkr DatabaseAccountListKeysResult) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dalkr.PrimaryMasterKey != nil {
+		objectMap["primaryMasterKey"] = dalkr.PrimaryMasterKey
+	}
+	if dalkr.SecondaryMasterKey != nil {
+		objectMap["secondaryMasterKey"] = dalkr.SecondaryMasterKey
+	}
+	if dalkr.DatabaseAccountListReadOnlyKeysResult != nil {
+		objectMap["properties"] = dalkr.DatabaseAccountListReadOnlyKeysResult
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for DatabaseAccountListKeysResult struct.
 func (dalkr *DatabaseAccountListKeysResult) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -366,36 +465,36 @@ func (dalkr *DatabaseAccountListKeysResult) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["primaryMasterKey"]
-	if v != nil {
-		var primaryMasterKey string
-		err = json.Unmarshal(*m["primaryMasterKey"], &primaryMasterKey)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "primaryMasterKey":
+			if v != nil {
+				var primaryMasterKey string
+				err = json.Unmarshal(*v, &primaryMasterKey)
+				if err != nil {
+					return err
+				}
+				dalkr.PrimaryMasterKey = &primaryMasterKey
+			}
+		case "secondaryMasterKey":
+			if v != nil {
+				var secondaryMasterKey string
+				err = json.Unmarshal(*v, &secondaryMasterKey)
+				if err != nil {
+					return err
+				}
+				dalkr.SecondaryMasterKey = &secondaryMasterKey
+			}
+		case "properties":
+			if v != nil {
+				var databaseAccountListReadOnlyKeysResult DatabaseAccountListReadOnlyKeysResult
+				err = json.Unmarshal(*v, &databaseAccountListReadOnlyKeysResult)
+				if err != nil {
+					return err
+				}
+				dalkr.DatabaseAccountListReadOnlyKeysResult = &databaseAccountListReadOnlyKeysResult
+			}
 		}
-		dalkr.PrimaryMasterKey = &primaryMasterKey
-	}
-
-	v = m["secondaryMasterKey"]
-	if v != nil {
-		var secondaryMasterKey string
-		err = json.Unmarshal(*m["secondaryMasterKey"], &secondaryMasterKey)
-		if err != nil {
-			return err
-		}
-		dalkr.SecondaryMasterKey = &secondaryMasterKey
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties DatabaseAccountListReadOnlyKeysResult
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		dalkr.DatabaseAccountListReadOnlyKeysResult = &properties
 	}
 
 	return nil
@@ -412,7 +511,59 @@ type DatabaseAccountListReadOnlyKeysResult struct {
 
 // DatabaseAccountPatchParameters parameters for patching Azure Cosmos DB database account properties.
 type DatabaseAccountPatchParameters struct {
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags                            map[string]*string `json:"tags"`
+	*DatabaseAccountPatchProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for DatabaseAccountPatchParameters.
+func (dapp DatabaseAccountPatchParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dapp.Tags != nil {
+		objectMap["tags"] = dapp.Tags
+	}
+	if dapp.DatabaseAccountPatchProperties != nil {
+		objectMap["properties"] = dapp.DatabaseAccountPatchProperties
+	}
+	return json.Marshal(objectMap)
+}
+
+// UnmarshalJSON is the custom unmarshaler for DatabaseAccountPatchParameters struct.
+func (dapp *DatabaseAccountPatchParameters) UnmarshalJSON(body []byte) error {
+	var m map[string]*json.RawMessage
+	err := json.Unmarshal(body, &m)
+	if err != nil {
+		return err
+	}
+	for k, v := range m {
+		switch k {
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				dapp.Tags = tags
+			}
+		case "properties":
+			if v != nil {
+				var databaseAccountPatchProperties DatabaseAccountPatchProperties
+				err = json.Unmarshal(*v, &databaseAccountPatchProperties)
+				if err != nil {
+					return err
+				}
+				dapp.DatabaseAccountPatchProperties = &databaseAccountPatchProperties
+			}
+		}
+	}
+
+	return nil
+}
+
+// DatabaseAccountPatchProperties properties to update Azure Cosmos DB database accounts.
+type DatabaseAccountPatchProperties struct {
+	// Capabilities - List of Cosmos DB capabilities for the account
+	Capabilities *[]Capability `json:"capabilities,omitempty"`
 }
 
 // DatabaseAccountProperties properties for the database account.
@@ -428,6 +579,8 @@ type DatabaseAccountProperties struct {
 	EnableAutomaticFailover *bool `json:"enableAutomaticFailover,omitempty"`
 	// ConsistencyPolicy - The consistency policy for the Cosmos DB database account.
 	ConsistencyPolicy *ConsistencyPolicy `json:"consistencyPolicy,omitempty"`
+	// Capabilities - List of Cosmos DB capabilities for the account
+	Capabilities *[]Capability `json:"capabilities,omitempty"`
 	// WriteLocations - An array that contains the write location for the Cosmos DB account.
 	WriteLocations *[]Location `json:"writeLocations,omitempty"`
 	// ReadLocations - An array that contains of the read locations enabled for the Cosmos DB account.
@@ -455,26 +608,44 @@ func (future DatabaseAccountsCreateOrUpdateFuture) Result(client DatabaseAccount
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return da, autorest.NewError("documentdb.DatabaseAccountsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return da, azure.NewAsyncOpIncompleteError("documentdb.DatabaseAccountsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		da, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	da, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DatabaseAccountsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// DatabaseAccountsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type DatabaseAccountsDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -486,22 +657,39 @@ func (future DatabaseAccountsDeleteFuture) Result(client DatabaseAccountsClient)
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("documentdb.DatabaseAccountsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("documentdb.DatabaseAccountsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -518,33 +706,52 @@ func (future DatabaseAccountsFailoverPriorityChangeFuture) Result(client Databas
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsFailoverPriorityChangeFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("documentdb.DatabaseAccountsFailoverPriorityChangeFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("documentdb.DatabaseAccountsFailoverPriorityChangeFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.FailoverPriorityChangeResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsFailoverPriorityChangeFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsFailoverPriorityChangeFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.FailoverPriorityChangeResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsFailoverPriorityChangeFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DatabaseAccountsListResult the List operation response, that contains the database accounts and their properties.
+// DatabaseAccountsListResult the List operation response, that contains the database accounts and their
+// properties.
 type DatabaseAccountsListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of database account and their properties.
 	Value *[]DatabaseAccount `json:"value,omitempty"`
 }
 
-// DatabaseAccountsPatchFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// DatabaseAccountsPatchFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type DatabaseAccountsPatchFuture struct {
 	azure.Future
 	req *http.Request
@@ -556,22 +763,39 @@ func (future DatabaseAccountsPatchFuture) Result(client DatabaseAccountsClient) 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsPatchFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return da, autorest.NewError("documentdb.DatabaseAccountsPatchFuture", "Result", "asynchronous operation has not completed")
+		return da, azure.NewAsyncOpIncompleteError("documentdb.DatabaseAccountsPatchFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		da, err = client.PatchResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsPatchFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsPatchFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	da, err = client.PatchResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsPatchFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -588,22 +812,39 @@ func (future DatabaseAccountsRegenerateKeyFuture) Result(client DatabaseAccounts
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsRegenerateKeyFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("documentdb.DatabaseAccountsRegenerateKeyFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("documentdb.DatabaseAccountsRegenerateKeyFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.RegenerateKeyResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsRegenerateKeyFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsRegenerateKeyFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.RegenerateKeyResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "documentdb.DatabaseAccountsRegenerateKeyFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -732,8 +973,8 @@ type OperationDisplay struct {
 	Description *string `json:"Description,omitempty"`
 }
 
-// OperationListResult result of the request to list Resource Provider operations. It contains a list of operations and
-// a URL link to get the next set of results.
+// OperationListResult result of the request to list Resource Provider operations. It contains a list of operations
+// and a URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of operations supported by the Resource Provider.
@@ -835,6 +1076,111 @@ func (page OperationListResultPage) Values() []Operation {
 	return *page.olr.Value
 }
 
+// PartitionMetric the metric values for a single partition.
+type PartitionMetric struct {
+	// PartitionID - The parition id (GUID identifier) of the metric values.
+	PartitionID *string `json:"partitionId,omitempty"`
+	// PartitionKeyRangeID - The partition key range id (integer identifier) of the metric values.
+	PartitionKeyRangeID *string `json:"partitionKeyRangeId,omitempty"`
+	// StartTime - The start time for the metric (ISO-8601 format).
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The end time for the metric (ISO-8601 format).
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TimeGrain - The time grain to be used to summarize the metric values.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Unit - The unit of the metric. Possible values include: 'Count', 'Bytes', 'Seconds', 'Percent', 'CountPerSecond', 'BytesPerSecond', 'Milliseconds'
+	Unit UnitType `json:"unit,omitempty"`
+	// Name - The name information for the metric.
+	Name *MetricName `json:"name,omitempty"`
+	// MetricValues - The metric values for the specified time window and timestep.
+	MetricValues *[]MetricValue `json:"metricValues,omitempty"`
+}
+
+// PartitionMetricListResult the response to a list partition metrics request.
+type PartitionMetricListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of partition-level metrics for the account.
+	Value *[]PartitionMetric `json:"value,omitempty"`
+}
+
+// PartitionUsage the partition level usage data for a usage request.
+type PartitionUsage struct {
+	// PartitionID - The parition id (GUID identifier) of the usages.
+	PartitionID *string `json:"partitionId,omitempty"`
+	// PartitionKeyRangeID - The partition key range id (integer identifier) of the usages.
+	PartitionKeyRangeID *string `json:"partitionKeyRangeId,omitempty"`
+	// Unit - The unit of the metric. Possible values include: 'Count', 'Bytes', 'Seconds', 'Percent', 'CountPerSecond', 'BytesPerSecond', 'Milliseconds'
+	Unit UnitType `json:"unit,omitempty"`
+	// Name - The name information for the metric.
+	Name *MetricName `json:"name,omitempty"`
+	// QuotaPeriod - The quota period used to summarize the usage values.
+	QuotaPeriod *string `json:"quotaPeriod,omitempty"`
+	// Limit - Maximum value for this metric
+	Limit *int32 `json:"limit,omitempty"`
+	// CurrentValue - Current value for this metric
+	CurrentValue *int32 `json:"currentValue,omitempty"`
+}
+
+// PartitionUsagesResult the response to a list partition level usage request.
+type PartitionUsagesResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of partition-level usages for the database. A usage is a point in time metric
+	Value *[]PartitionUsage `json:"value,omitempty"`
+}
+
+// PercentileMetric percentile Metric data
+type PercentileMetric struct {
+	// StartTime - The start time for the metric (ISO-8601 format).
+	StartTime *date.Time `json:"startTime,omitempty"`
+	// EndTime - The end time for the metric (ISO-8601 format).
+	EndTime *date.Time `json:"endTime,omitempty"`
+	// TimeGrain - The time grain to be used to summarize the metric values.
+	TimeGrain *string `json:"timeGrain,omitempty"`
+	// Unit - The unit of the metric. Possible values include: 'Count', 'Bytes', 'Seconds', 'Percent', 'CountPerSecond', 'BytesPerSecond', 'Milliseconds'
+	Unit UnitType `json:"unit,omitempty"`
+	// Name - The name information for the metric.
+	Name *MetricName `json:"name,omitempty"`
+	// MetricValues - The percentile metric values for the specified time window and timestep.
+	MetricValues *[]PercentileMetricValue `json:"metricValues,omitempty"`
+}
+
+// PercentileMetricListResult the response to a list percentile metrics request.
+type PercentileMetricListResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of percentile metrics for the account.
+	Value *[]PercentileMetric `json:"value,omitempty"`
+}
+
+// PercentileMetricValue represents percentile metrics values.
+type PercentileMetricValue struct {
+	// P10 - The 10th percentile value for the metric.
+	P10 *float64 `json:"P10,omitempty"`
+	// P25 - The 25th percentile value for the metric.
+	P25 *float64 `json:"P25,omitempty"`
+	// P50 - The 50th percentile value for the metric.
+	P50 *float64 `json:"P50,omitempty"`
+	// P75 - The 75th percentile value for the metric.
+	P75 *float64 `json:"P75,omitempty"`
+	// P90 - The 90th percentile value for the metric.
+	P90 *float64 `json:"P90,omitempty"`
+	// P95 - The 95th percentile value for the metric.
+	P95 *float64 `json:"P95,omitempty"`
+	// P99 - The 99th percentile value for the metric.
+	P99 *float64 `json:"P99,omitempty"`
+	// Count - The number of values for the metric.
+	Count *float64 `json:"_count,omitempty"`
+	// Average - The average value of the metric.
+	Average *float64 `json:"average,omitempty"`
+	// Maximum - The max value of the metric.
+	Maximum *float64 `json:"maximum,omitempty"`
+	// Minimum - The min value of the metric.
+	Minimum *float64 `json:"minimum,omitempty"`
+	// Timestamp - The metric timestamp (ISO-8601 format).
+	Timestamp *date.Time `json:"timestamp,omitempty"`
+	// Total - The total value of the metric.
+	Total *float64 `json:"total,omitempty"`
+}
+
 // Resource a database account resource.
 type Resource struct {
 	// ID - The unique resource identifier of the database account.
@@ -844,8 +1190,29 @@ type Resource struct {
 	// Type - The type of Azure resource.
 	Type *string `json:"type,omitempty"`
 	// Location - The location of the resource group to which the resource belongs.
-	Location *string             `json:"location,omitempty"`
-	Tags     *map[string]*string `json:"tags,omitempty"`
+	Location *string            `json:"location,omitempty"`
+	Tags     map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // Usage the usage data for a usage request.

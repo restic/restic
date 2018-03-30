@@ -75,7 +75,7 @@ func (client ClusterPackagesClient) RegisterPreparer(ctx context.Context, regist
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/Provision"),
@@ -140,7 +140,7 @@ func (client ClusterPackagesClient) UnregisterPreparer(ctx context.Context, unre
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/$/Unprovision"),

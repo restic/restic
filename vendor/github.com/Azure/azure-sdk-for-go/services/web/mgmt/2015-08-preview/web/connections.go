@@ -78,7 +78,7 @@ func (client ConnectionsClient) ConfirmConsentCodePreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/connections/{connectionName}/confirmConsentCode", pathParameters),
@@ -109,7 +109,8 @@ func (client ConnectionsClient) ConfirmConsentCodeResponder(resp *http.Response)
 
 // CreateOrUpdate creates or updates a connection.
 //
-// resourceGroupName is the resource group name. connectionName is the connection name. connection is the connection.
+// resourceGroupName is the resource group name. connectionName is the connection name. connection is the
+// connection.
 func (client ConnectionsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, connectionName string, connection Connection) (result Connection, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, connectionName, connection)
 	if err != nil {
@@ -146,7 +147,7 @@ func (client ConnectionsClient) CreateOrUpdatePreparer(ctx context.Context, reso
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/connections/{connectionName}", pathParameters),
@@ -445,7 +446,7 @@ func (client ConnectionsClient) ListConnectionKeysPreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/connections/{connectionName}/listConnectionKeys", pathParameters),
@@ -513,7 +514,7 @@ func (client ConnectionsClient) ListConsentLinksPreparer(ctx context.Context, re
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/connections/{connectionName}/listConsentLinks", pathParameters),

@@ -26,6 +26,21 @@ import (
 	"net/http"
 )
 
+// PurgeState enumerates the values for purge state.
+type PurgeState string
+
+const (
+	// Completed ...
+	Completed PurgeState = "Completed"
+	// Pending ...
+	Pending PurgeState = "Pending"
+)
+
+// PossiblePurgeStateValues returns an array of possible values for the PurgeState const type.
+func PossiblePurgeStateValues() []PurgeState {
+	return []PurgeState{Completed, Pending}
+}
+
 // SearchSortEnum enumerates the values for search sort enum.
 type SearchSortEnum string
 
@@ -35,6 +50,11 @@ const (
 	// Desc ...
 	Desc SearchSortEnum = "desc"
 )
+
+// PossibleSearchSortEnumValues returns an array of possible values for the SearchSortEnum const type.
+func PossibleSearchSortEnumValues() []SearchSortEnum {
+	return []SearchSortEnum{Asc, Desc}
+}
 
 // StorageInsightState enumerates the values for storage insight state.
 type StorageInsightState string
@@ -46,12 +66,17 @@ const (
 	OK StorageInsightState = "OK"
 )
 
+// PossibleStorageInsightStateValues returns an array of possible values for the StorageInsightState const type.
+func PossibleStorageInsightStateValues() []StorageInsightState {
+	return []StorageInsightState{ERROR, OK}
+}
+
 // CoreSummary the core summary of a search.
 type CoreSummary struct {
 	// Status - The status of a core summary.
-	Status *string `json:"Status,omitempty"`
+	Status *string `json:"status,omitempty"`
 	// NumberOfDocuments - The number of documents of a core summary.
-	NumberOfDocuments *int64 `json:"NumberOfDocuments,omitempty"`
+	NumberOfDocuments *int64 `json:"numberOfDocuments,omitempty"`
 }
 
 // LinkTarget metadata for a workspace that isn't linked to an Azure subscription.
@@ -72,6 +97,31 @@ type ListLinkTarget struct {
 	Value             *[]LinkTarget `json:"value,omitempty"`
 }
 
+// Operation supported operation of OperationsManagement resource provider.
+type Operation struct {
+	// Name - Operation name: {provider}/{resource}/{operation}
+	Name *string `json:"name,omitempty"`
+	// Display - Display metadata associated with the operation.
+	Display *OperationDisplay `json:"display,omitempty"`
+}
+
+// OperationDisplay display metadata associated with the operation.
+type OperationDisplay struct {
+	// Provider - Service provider: Microsoft OperationsManagement.
+	Provider *string `json:"provider,omitempty"`
+	// Resource - Resource on which the operation is performed etc.
+	Resource *string `json:"resource,omitempty"`
+	// Operation - Type of operation: get, read, delete, etc.
+	Operation *string `json:"operation,omitempty"`
+}
+
+// OperationListResult result of the request to list solution operations.
+type OperationListResult struct {
+	autorest.Response `json:"-"`
+	// Value - List of solution operations supported by the OperationsManagement resource provider.
+	Value *[]Operation `json:"value,omitempty"`
+}
+
 // ProxyResource common properties of proxy resource.
 type ProxyResource struct {
 	// ID - Resource ID.
@@ -81,7 +131,25 @@ type ProxyResource struct {
 	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for ProxyResource.
+func (pr ProxyResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if pr.ID != nil {
+		objectMap["id"] = pr.ID
+	}
+	if pr.Name != nil {
+		objectMap["name"] = pr.Name
+	}
+	if pr.Type != nil {
+		objectMap["type"] = pr.Type
+	}
+	if pr.Tags != nil {
+		objectMap["tags"] = pr.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // Resource the resource definition.
@@ -95,7 +163,28 @@ type Resource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // SavedSearch value object for saved search results.
@@ -103,10 +192,35 @@ type SavedSearch struct {
 	autorest.Response `json:"-"`
 	// ID - The id of the saved search.
 	ID *string `json:"id,omitempty"`
-	// Etag - The etag of the saved search.
-	Etag *string `json:"etag,omitempty"`
+	// Name - The name of the saved search.
+	Name *string `json:"name,omitempty"`
+	// Type - The type of the saved search.
+	Type *string `json:"type,omitempty"`
+	// ETag - The etag of the saved search.
+	ETag *string `json:"eTag,omitempty"`
 	// SavedSearchProperties - Gets or sets properties of the saved search.
 	*SavedSearchProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SavedSearch.
+func (ss SavedSearch) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ss.ID != nil {
+		objectMap["id"] = ss.ID
+	}
+	if ss.Name != nil {
+		objectMap["name"] = ss.Name
+	}
+	if ss.Type != nil {
+		objectMap["type"] = ss.Type
+	}
+	if ss.ETag != nil {
+		objectMap["eTag"] = ss.ETag
+	}
+	if ss.SavedSearchProperties != nil {
+		objectMap["properties"] = ss.SavedSearchProperties
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SavedSearch struct.
@@ -116,36 +230,54 @@ func (ss *SavedSearch) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				ss.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				ss.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ss.Type = &typeVar
+			}
+		case "eTag":
+			if v != nil {
+				var eTag string
+				err = json.Unmarshal(*v, &eTag)
+				if err != nil {
+					return err
+				}
+				ss.ETag = &eTag
+			}
+		case "properties":
+			if v != nil {
+				var savedSearchProperties SavedSearchProperties
+				err = json.Unmarshal(*v, &savedSearchProperties)
+				if err != nil {
+					return err
+				}
+				ss.SavedSearchProperties = &savedSearchProperties
+			}
 		}
-		ss.ID = &ID
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		ss.Etag = &etag
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties SavedSearchProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		ss.SavedSearchProperties = &properties
 	}
 
 	return nil
@@ -155,7 +287,7 @@ func (ss *SavedSearch) UnmarshalJSON(body []byte) error {
 type SavedSearchesListResult struct {
 	autorest.Response `json:"-"`
 	// Metadata - The metadata from search results.
-	Metadata *SearchMetadata `json:"__metadata,omitempty"`
+	Metadata *SearchMetadata `json:"metaData,omitempty"`
 	// Value - The array of result values.
 	Value *[]SavedSearch `json:"value,omitempty"`
 }
@@ -163,15 +295,15 @@ type SavedSearchesListResult struct {
 // SavedSearchProperties value object for saved search results.
 type SavedSearchProperties struct {
 	// Category - The category of the saved search. This helps the user to find a saved search faster.
-	Category *string `json:"Category,omitempty"`
+	Category *string `json:"category,omitempty"`
 	// DisplayName - Saved search display name.
-	DisplayName *string `json:"DisplayName,omitempty"`
+	DisplayName *string `json:"displayName,omitempty"`
 	// Query - The query expression for the saved search. Please see https://docs.microsoft.com/en-us/azure/log-analytics/log-analytics-search-reference for reference.
-	Query *string `json:"Query,omitempty"`
+	Query *string `json:"query,omitempty"`
 	// Version - The version number of the query lanuage. Only verion 1 is allowed here.
-	Version *int64 `json:"Version,omitempty"`
+	Version *int64 `json:"version,omitempty"`
 	// Tags - The tags attached to the saved search.
-	Tags *[]Tag `json:"Tags,omitempty"`
+	Tags *[]Tag `json:"tags,omitempty"`
 }
 
 // SearchError details for a search error.
@@ -186,7 +318,7 @@ type SearchError struct {
 type SearchGetSchemaResponse struct {
 	autorest.Response `json:"-"`
 	// Metadata - The metadata from search results.
-	Metadata *SearchMetadata `json:"__metadata,omitempty"`
+	Metadata *SearchMetadata `json:"metadata,omitempty"`
 	// Value - The array of result values.
 	Value *[]SearchSchemaValue `json:"value,omitempty"`
 }
@@ -202,7 +334,7 @@ type SearchHighlight struct {
 // SearchMetadata metadata for search results.
 type SearchMetadata struct {
 	// SearchID - The request id of the search.
-	SearchID *string `json:"RequestId,omitempty"`
+	SearchID *string `json:"requestId,omitempty"`
 	// ResultType - The search result type.
 	ResultType *string `json:"resultType,omitempty"`
 	// Total - The total number of search results.
@@ -212,15 +344,15 @@ type SearchMetadata struct {
 	// ID - The id of the search results request.
 	ID *string `json:"id,omitempty"`
 	// CoreSummaries - The core summaries.
-	CoreSummaries *[]CoreSummary `json:"CoreSummaries,omitempty"`
+	CoreSummaries *[]CoreSummary `json:"coreSummaries,omitempty"`
 	// Status - The status of the search results.
-	Status *string `json:"Status,omitempty"`
+	Status *string `json:"status,omitempty"`
 	// StartTime - The start time for the search.
-	StartTime *date.Time `json:"StartTime,omitempty"`
+	StartTime *date.Time `json:"startTime,omitempty"`
 	// LastUpdated - The time of last update.
-	LastUpdated *date.Time `json:"LastUpdated,omitempty"`
+	LastUpdated *date.Time `json:"lastUpdated,omitempty"`
 	// ETag - The ETag of the search results.
-	ETag *string `json:"ETag,omitempty"`
+	ETag *string `json:"eTag,omitempty"`
 	// Sort - How the results are sorted.
 	Sort *[]SearchSort `json:"sort,omitempty"`
 	// RequestTime - The request time.
@@ -265,9 +397,9 @@ type SearchResultsResponse struct {
 	// ID - The id of the search, which includes the full url.
 	ID *string `json:"id,omitempty"`
 	// Metadata - The metadata from search results.
-	Metadata *SearchMetadata `json:"__metadata,omitempty"`
+	Metadata *SearchMetadata `json:"metaData,omitempty"`
 	// Value - The array of result values.
-	Value *[]map[string]interface{} `json:"value,omitempty"`
+	Value *[]interface{} `json:"value,omitempty"`
 	// Error - The error.
 	Error *SearchError `json:"error,omitempty"`
 }
@@ -298,6 +430,12 @@ type SearchSort struct {
 	Order SearchSortEnum `json:"order,omitempty"`
 }
 
+// SetObject ...
+type SetObject struct {
+	autorest.Response `json:"-"`
+	Value             interface{} `json:"value,omitempty"`
+}
+
 // StorageAccount describes a storage account connection.
 type StorageAccount struct {
 	// ID - The Azure Resource Manager ID of the storage account resource.
@@ -309,6 +447,10 @@ type StorageAccount struct {
 // StorageInsight the top level storage insight resource container.
 type StorageInsight struct {
 	autorest.Response `json:"-"`
+	// StorageInsightProperties - Storage insight properties.
+	*StorageInsightProperties `json:"properties,omitempty"`
+	// ETag - The ETag of the storage insight.
+	ETag *string `json:"eTag,omitempty"`
 	// ID - Resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name.
@@ -316,11 +458,31 @@ type StorageInsight struct {
 	// Type - Resource type.
 	Type *string `json:"type,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// StorageInsightProperties - Storage insight properties.
-	*StorageInsightProperties `json:"properties,omitempty"`
-	// ETag - The ETag of the storage insight.
-	ETag *string `json:"eTag,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for StorageInsight.
+func (si StorageInsight) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if si.StorageInsightProperties != nil {
+		objectMap["properties"] = si.StorageInsightProperties
+	}
+	if si.ETag != nil {
+		objectMap["eTag"] = si.ETag
+	}
+	if si.ID != nil {
+		objectMap["id"] = si.ID
+	}
+	if si.Name != nil {
+		objectMap["name"] = si.Name
+	}
+	if si.Type != nil {
+		objectMap["type"] = si.Type
+	}
+	if si.Tags != nil {
+		objectMap["tags"] = si.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for StorageInsight struct.
@@ -330,66 +492,63 @@ func (si *StorageInsight) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties StorageInsightProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var storageInsightProperties StorageInsightProperties
+				err = json.Unmarshal(*v, &storageInsightProperties)
+				if err != nil {
+					return err
+				}
+				si.StorageInsightProperties = &storageInsightProperties
+			}
+		case "eTag":
+			if v != nil {
+				var eTag string
+				err = json.Unmarshal(*v, &eTag)
+				if err != nil {
+					return err
+				}
+				si.ETag = &eTag
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				si.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				si.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				si.Type = &typeVar
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				si.Tags = tags
+			}
 		}
-		si.StorageInsightProperties = &properties
-	}
-
-	v = m["eTag"]
-	if v != nil {
-		var eTag string
-		err = json.Unmarshal(*m["eTag"], &eTag)
-		if err != nil {
-			return err
-		}
-		si.ETag = &eTag
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		si.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		si.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		si.Type = &typeVar
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		si.Tags = &tags
 	}
 
 	return nil
@@ -520,9 +679,37 @@ type StorageInsightStatus struct {
 // Tag a tag of a saved search.
 type Tag struct {
 	// Name - The tag name.
-	Name *string `json:"Name,omitempty"`
+	Name *string `json:"name,omitempty"`
 	// Value - The tag value.
-	Value *string `json:"Value,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+// WorkspacePurgeBody describes the body of a purge request for an App Insights Workspace
+type WorkspacePurgeBody struct {
+	// Table - Table from which to purge data.
+	Table *string `json:"table,omitempty"`
+	// Filters - The set of columns and filters (queries) to run over them to purge the resulting data.
+	Filters *[]WorkspacePurgeBodyFilters `json:"filters,omitempty"`
+}
+
+// WorkspacePurgeBodyFilters user-defined filters to return data which will be purged from the table.
+type WorkspacePurgeBodyFilters struct {
+	// Column - The column of the table over which the given query should run
+	Column *string `json:"column,omitempty"`
+	// Filter - A query to to run over the provided table and column to purge the corresponding data.
+	Filter *string `json:"filter,omitempty"`
+}
+
+// WorkspacePurgeResponse response containing operationId for a specific purge action.
+type WorkspacePurgeResponse struct {
+	// OperationID - Id to use when querying for status for a particular purge operation.
+	OperationID *string `json:"operationId,omitempty"`
+}
+
+// WorkspacePurgeStatusResponse response containing status for a specific purge operation.
+type WorkspacePurgeStatusResponse struct {
+	// Status - Status of the operation represented by the requested Id. Possible values include: 'Pending', 'Completed'
+	Status PurgeState `json:"status,omitempty"`
 }
 
 // WorkspacesGetSearchResultsFuture an abstraction for monitoring and retrieving the results of a long-running
@@ -538,21 +725,86 @@ func (future WorkspacesGetSearchResultsFuture) Result(client WorkspacesClient) (
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesGetSearchResultsFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return srr, autorest.NewError("operationalinsights.WorkspacesGetSearchResultsFuture", "Result", "asynchronous operation has not completed")
+		return srr, azure.NewAsyncOpIncompleteError("operationalinsights.WorkspacesGetSearchResultsFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		srr, err = client.GetSearchResultsResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesGetSearchResultsFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesGetSearchResultsFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	srr, err = client.GetSearchResultsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesGetSearchResultsFuture", "Result", resp, "Failure responding to request")
+	}
+	return
+}
+
+// WorkspacesPurgeFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+type WorkspacesPurgeFuture struct {
+	azure.Future
+	req *http.Request
+}
+
+// Result returns the result of the asynchronous operation.
+// If the operation has not completed it will return an error.
+func (future WorkspacesPurgeFuture) Result(client WorkspacesClient) (so SetObject, err error) {
+	var done bool
+	done, err = future.Done(client)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesPurgeFuture", "Result", future.Response(), "Polling failure")
+		return
+	}
+	if !done {
+		return so, azure.NewAsyncOpIncompleteError("operationalinsights.WorkspacesPurgeFuture")
+	}
+	if future.PollingMethod() == azure.PollingLocation {
+		so, err = client.PurgeResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesPurgeFuture", "Result", future.Response(), "Failure responding to request")
+		}
+		return
+	}
+	var req *http.Request
+	var resp *http.Response
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesPurgeFuture", "Result", resp, "Failure sending request")
+		return
+	}
+	so, err = client.PurgeResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "operationalinsights.WorkspacesPurgeFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }

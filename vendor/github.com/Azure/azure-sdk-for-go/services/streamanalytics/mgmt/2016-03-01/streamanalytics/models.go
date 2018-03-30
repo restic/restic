@@ -38,6 +38,11 @@ const (
 	BindingTypeMicrosoftStreamAnalyticsJavascriptUdf BindingType = "Microsoft.StreamAnalytics/JavascriptUdf"
 )
 
+// PossibleBindingTypeValues returns an array of possible values for the BindingType const type.
+func PossibleBindingTypeValues() []BindingType {
+	return []BindingType{BindingTypeFunctionRetrieveDefaultDefinitionParameters, BindingTypeMicrosoftMachineLearningWebService, BindingTypeMicrosoftStreamAnalyticsJavascriptUdf}
+}
+
 // CompatibilityLevel enumerates the values for compatibility level.
 type CompatibilityLevel string
 
@@ -46,6 +51,11 @@ const (
 	OneFullStopZero CompatibilityLevel = "1.0"
 )
 
+// PossibleCompatibilityLevelValues returns an array of possible values for the CompatibilityLevel const type.
+func PossibleCompatibilityLevelValues() []CompatibilityLevel {
+	return []CompatibilityLevel{OneFullStopZero}
+}
+
 // Encoding enumerates the values for encoding.
 type Encoding string
 
@@ -53,6 +63,11 @@ const (
 	// UTF8 ...
 	UTF8 Encoding = "UTF8"
 )
+
+// PossibleEncodingValues returns an array of possible values for the Encoding const type.
+func PossibleEncodingValues() []Encoding {
+	return []Encoding{UTF8}
+}
 
 // EventsOutOfOrderPolicy enumerates the values for events out of order policy.
 type EventsOutOfOrderPolicy string
@@ -64,6 +79,11 @@ const (
 	Drop EventsOutOfOrderPolicy = "Drop"
 )
 
+// PossibleEventsOutOfOrderPolicyValues returns an array of possible values for the EventsOutOfOrderPolicy const type.
+func PossibleEventsOutOfOrderPolicyValues() []EventsOutOfOrderPolicy {
+	return []EventsOutOfOrderPolicy{Adjust, Drop}
+}
+
 // JSONOutputSerializationFormat enumerates the values for json output serialization format.
 type JSONOutputSerializationFormat string
 
@@ -74,6 +94,11 @@ const (
 	LineSeparated JSONOutputSerializationFormat = "LineSeparated"
 )
 
+// PossibleJSONOutputSerializationFormatValues returns an array of possible values for the JSONOutputSerializationFormat const type.
+func PossibleJSONOutputSerializationFormatValues() []JSONOutputSerializationFormat {
+	return []JSONOutputSerializationFormat{Array, LineSeparated}
+}
+
 // OutputErrorPolicy enumerates the values for output error policy.
 type OutputErrorPolicy string
 
@@ -83,6 +108,11 @@ const (
 	// OutputErrorPolicyStop ...
 	OutputErrorPolicyStop OutputErrorPolicy = "Stop"
 )
+
+// PossibleOutputErrorPolicyValues returns an array of possible values for the OutputErrorPolicy const type.
+func PossibleOutputErrorPolicyValues() []OutputErrorPolicy {
+	return []OutputErrorPolicy{OutputErrorPolicyDrop, OutputErrorPolicyStop}
+}
 
 // OutputStartMode enumerates the values for output start mode.
 type OutputStartMode string
@@ -96,6 +126,11 @@ const (
 	LastOutputEventTime OutputStartMode = "LastOutputEventTime"
 )
 
+// PossibleOutputStartModeValues returns an array of possible values for the OutputStartMode const type.
+func PossibleOutputStartModeValues() []OutputStartMode {
+	return []OutputStartMode{CustomTime, JobStartTime, LastOutputEventTime}
+}
+
 // SkuName enumerates the values for sku name.
 type SkuName string
 
@@ -103,6 +138,11 @@ const (
 	// Standard ...
 	Standard SkuName = "Standard"
 )
+
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{Standard}
+}
 
 // Type enumerates the values for type.
 type Type string
@@ -118,6 +158,11 @@ const (
 	TypeSerialization Type = "Serialization"
 )
 
+// PossibleTypeValues returns an array of possible values for the Type const type.
+func PossibleTypeValues() []Type {
+	return []Type{TypeAvro, TypeCsv, TypeJSON, TypeSerialization}
+}
+
 // TypeBasicFunctionBinding enumerates the values for type basic function binding.
 type TypeBasicFunctionBinding string
 
@@ -130,6 +175,11 @@ const (
 	TypeMicrosoftStreamAnalyticsJavascriptUdf TypeBasicFunctionBinding = "Microsoft.StreamAnalytics/JavascriptUdf"
 )
 
+// PossibleTypeBasicFunctionBindingValues returns an array of possible values for the TypeBasicFunctionBinding const type.
+func PossibleTypeBasicFunctionBindingValues() []TypeBasicFunctionBinding {
+	return []TypeBasicFunctionBinding{TypeFunctionBinding, TypeMicrosoftMachineLearningWebService, TypeMicrosoftStreamAnalyticsJavascriptUdf}
+}
+
 // TypeBasicFunctionProperties enumerates the values for type basic function properties.
 type TypeBasicFunctionProperties string
 
@@ -139,6 +189,11 @@ const (
 	// TypeScalar ...
 	TypeScalar TypeBasicFunctionProperties = "Scalar"
 )
+
+// PossibleTypeBasicFunctionPropertiesValues returns an array of possible values for the TypeBasicFunctionProperties const type.
+func PossibleTypeBasicFunctionPropertiesValues() []TypeBasicFunctionProperties {
+	return []TypeBasicFunctionProperties{TypeFunctionProperties, TypeScalar}
+}
 
 // TypeBasicInputProperties enumerates the values for type basic input properties.
 type TypeBasicInputProperties string
@@ -151,6 +206,11 @@ const (
 	// TypeStream ...
 	TypeStream TypeBasicInputProperties = "Stream"
 )
+
+// PossibleTypeBasicInputPropertiesValues returns an array of possible values for the TypeBasicInputProperties const type.
+func PossibleTypeBasicInputPropertiesValues() []TypeBasicInputProperties {
+	return []TypeBasicInputProperties{TypeInputProperties, TypeReference, TypeStream}
+}
 
 // TypeBasicOutputDataSource enumerates the values for type basic output data source.
 type TypeBasicOutputDataSource string
@@ -178,6 +238,11 @@ const (
 	TypePowerBI TypeBasicOutputDataSource = "PowerBI"
 )
 
+// PossibleTypeBasicOutputDataSourceValues returns an array of possible values for the TypeBasicOutputDataSource const type.
+func PossibleTypeBasicOutputDataSourceValues() []TypeBasicOutputDataSource {
+	return []TypeBasicOutputDataSource{TypeMicrosoftDataLakeAccounts, TypeMicrosoftServiceBusEventHub, TypeMicrosoftServiceBusQueue, TypeMicrosoftServiceBusTopic, TypeMicrosoftSQLServerDatabase, TypeMicrosoftStorageBlob, TypeMicrosoftStorageDocumentDB, TypeMicrosoftStorageTable, TypeOutputDataSource, TypePowerBI}
+}
+
 // TypeBasicReferenceInputDataSource enumerates the values for type basic reference input data source.
 type TypeBasicReferenceInputDataSource string
 
@@ -187,6 +252,11 @@ const (
 	// TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource ...
 	TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource TypeBasicReferenceInputDataSource = "ReferenceInputDataSource"
 )
+
+// PossibleTypeBasicReferenceInputDataSourceValues returns an array of possible values for the TypeBasicReferenceInputDataSource const type.
+func PossibleTypeBasicReferenceInputDataSourceValues() []TypeBasicReferenceInputDataSource {
+	return []TypeBasicReferenceInputDataSource{TypeBasicReferenceInputDataSourceTypeMicrosoftStorageBlob, TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource}
+}
 
 // TypeBasicStreamInputDataSource enumerates the values for type basic stream input data source.
 type TypeBasicStreamInputDataSource string
@@ -202,6 +272,11 @@ const (
 	TypeBasicStreamInputDataSourceTypeStreamInputDataSource TypeBasicStreamInputDataSource = "StreamInputDataSource"
 )
 
+// PossibleTypeBasicStreamInputDataSourceValues returns an array of possible values for the TypeBasicStreamInputDataSource const type.
+func PossibleTypeBasicStreamInputDataSourceValues() []TypeBasicStreamInputDataSource {
+	return []TypeBasicStreamInputDataSource{TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs, TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub, TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob, TypeBasicStreamInputDataSourceTypeStreamInputDataSource}
+}
+
 // UdfType enumerates the values for udf type.
 type UdfType string
 
@@ -210,24 +285,29 @@ const (
 	Scalar UdfType = "Scalar"
 )
 
-// AvroSerialization describes how data from an input is serialized or how data is serialized when written to an output
-// in Avro format.
+// PossibleUdfTypeValues returns an array of possible values for the UdfType const type.
+func PossibleUdfTypeValues() []UdfType {
+	return []UdfType{Scalar}
+}
+
+// AvroSerialization describes how data from an input is serialized or how data is serialized when written to an
+// output in Avro format.
 type AvroSerialization struct {
+	// Properties - The properties that are associated with the Avro serialization type. Required on PUT (CreateOrReplace) requests.
+	Properties interface{} `json:"properties,omitempty"`
 	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
 	Type Type `json:"type,omitempty"`
-	// Properties - The properties that are associated with the Avro serialization type. Required on PUT (CreateOrReplace) requests.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AvroSerialization.
 func (as AvroSerialization) MarshalJSON() ([]byte, error) {
 	as.Type = TypeAvro
-	type Alias AvroSerialization
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(as),
-	})
+	objectMap := make(map[string]interface{})
+	objectMap["properties"] = as.Properties
+	if as.Type != "" {
+		objectMap["type"] = as.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAvroSerialization is the BasicSerialization implementation for AvroSerialization.
@@ -257,21 +337,23 @@ func (as AvroSerialization) AsBasicSerialization() (BasicSerialization, bool) {
 
 // AzureDataLakeStoreOutputDataSource describes an Azure Data Lake Store output data source.
 type AzureDataLakeStoreOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// AzureDataLakeStoreOutputDataSourceProperties - The properties that are associated with an Azure Data Lake Store output. Required on PUT (CreateOrReplace) requests.
 	*AzureDataLakeStoreOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AzureDataLakeStoreOutputDataSource.
 func (adlsods AzureDataLakeStoreOutputDataSource) MarshalJSON() ([]byte, error) {
 	adlsods.Type = TypeMicrosoftDataLakeAccounts
-	type Alias AzureDataLakeStoreOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(adlsods),
-	})
+	objectMap := make(map[string]interface{})
+	if adlsods.AzureDataLakeStoreOutputDataSourceProperties != nil {
+		objectMap["properties"] = adlsods.AzureDataLakeStoreOutputDataSourceProperties
+	}
+	if adlsods.Type != "" {
+		objectMap["type"] = adlsods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for AzureDataLakeStoreOutputDataSource.
@@ -336,26 +418,27 @@ func (adlsods *AzureDataLakeStoreOutputDataSource) UnmarshalJSON(body []byte) er
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AzureDataLakeStoreOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var azureDataLakeStoreOutputDataSourceProperties AzureDataLakeStoreOutputDataSourceProperties
+				err = json.Unmarshal(*v, &azureDataLakeStoreOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				adlsods.AzureDataLakeStoreOutputDataSourceProperties = &azureDataLakeStoreOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				adlsods.Type = typeVar
+			}
 		}
-		adlsods.AzureDataLakeStoreOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		adlsods.Type = typeVar
 	}
 
 	return nil
@@ -363,12 +446,6 @@ func (adlsods *AzureDataLakeStoreOutputDataSource) UnmarshalJSON(body []byte) er
 
 // AzureDataLakeStoreOutputDataSourceProperties the properties that are associated with an Azure Data Lake Store.
 type AzureDataLakeStoreOutputDataSourceProperties struct {
-	// RefreshToken - A refresh token that can be used to obtain a valid access token that can then be used to authenticate with the data source. A valid refresh token is currently only obtainable via the Azure Portal. It is recommended to put a dummy string value here when creating the data source and then going to the Azure Portal to authenticate the data source which will update this property with a valid refresh token. Required on PUT (CreateOrReplace) requests.
-	RefreshToken *string `json:"refreshToken,omitempty"`
-	// TokenUserPrincipalName - The user principal name (UPN) of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
-	TokenUserPrincipalName *string `json:"tokenUserPrincipalName,omitempty"`
-	// TokenUserDisplayName - The user display name of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
-	TokenUserDisplayName *string `json:"tokenUserDisplayName,omitempty"`
 	// AccountName - The name of the Azure Data Lake Store account. Required on PUT (CreateOrReplace) requests.
 	AccountName *string `json:"accountName,omitempty"`
 	// TenantID - The tenant id of the user used to obtain the refresh token. Required on PUT (CreateOrReplace) requests.
@@ -379,25 +456,33 @@ type AzureDataLakeStoreOutputDataSourceProperties struct {
 	DateFormat *string `json:"dateFormat,omitempty"`
 	// TimeFormat - The time format. Wherever {time} appears in filePathPrefix, the value of this property is used as the time format instead.
 	TimeFormat *string `json:"timeFormat,omitempty"`
+	// RefreshToken - A refresh token that can be used to obtain a valid access token that can then be used to authenticate with the data source. A valid refresh token is currently only obtainable via the Azure Portal. It is recommended to put a dummy string value here when creating the data source and then going to the Azure Portal to authenticate the data source which will update this property with a valid refresh token. Required on PUT (CreateOrReplace) requests.
+	RefreshToken *string `json:"refreshToken,omitempty"`
+	// TokenUserPrincipalName - The user principal name (UPN) of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
+	TokenUserPrincipalName *string `json:"tokenUserPrincipalName,omitempty"`
+	// TokenUserDisplayName - The user display name of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
+	TokenUserDisplayName *string `json:"tokenUserDisplayName,omitempty"`
 }
 
 // AzureMachineLearningWebServiceFunctionBinding the binding to an Azure Machine Learning web service.
 type AzureMachineLearningWebServiceFunctionBinding struct {
-	// Type - Possible values include: 'TypeFunctionBinding', 'TypeMicrosoftStreamAnalyticsJavascriptUdf', 'TypeMicrosoftMachineLearningWebService'
-	Type TypeBasicFunctionBinding `json:"type,omitempty"`
 	// AzureMachineLearningWebServiceFunctionBindingProperties - The binding properties associated with an Azure Machine learning web service.
 	*AzureMachineLearningWebServiceFunctionBindingProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeFunctionBinding', 'TypeMicrosoftStreamAnalyticsJavascriptUdf', 'TypeMicrosoftMachineLearningWebService'
+	Type TypeBasicFunctionBinding `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AzureMachineLearningWebServiceFunctionBinding.
 func (amlwsfb AzureMachineLearningWebServiceFunctionBinding) MarshalJSON() ([]byte, error) {
 	amlwsfb.Type = TypeMicrosoftMachineLearningWebService
-	type Alias AzureMachineLearningWebServiceFunctionBinding
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(amlwsfb),
-	})
+	objectMap := make(map[string]interface{})
+	if amlwsfb.AzureMachineLearningWebServiceFunctionBindingProperties != nil {
+		objectMap["properties"] = amlwsfb.AzureMachineLearningWebServiceFunctionBindingProperties
+	}
+	if amlwsfb.Type != "" {
+		objectMap["type"] = amlwsfb.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsJavaScriptFunctionBinding is the BasicFunctionBinding implementation for AzureMachineLearningWebServiceFunctionBinding.
@@ -427,26 +512,27 @@ func (amlwsfb *AzureMachineLearningWebServiceFunctionBinding) UnmarshalJSON(body
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AzureMachineLearningWebServiceFunctionBindingProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var azureMachineLearningWebServiceFunctionBindingProperties AzureMachineLearningWebServiceFunctionBindingProperties
+				err = json.Unmarshal(*v, &azureMachineLearningWebServiceFunctionBindingProperties)
+				if err != nil {
+					return err
+				}
+				amlwsfb.AzureMachineLearningWebServiceFunctionBindingProperties = &azureMachineLearningWebServiceFunctionBindingProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicFunctionBinding
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				amlwsfb.Type = typeVar
+			}
 		}
-		amlwsfb.AzureMachineLearningWebServiceFunctionBindingProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicFunctionBinding
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		amlwsfb.Type = typeVar
 	}
 
 	return nil
@@ -467,8 +553,8 @@ type AzureMachineLearningWebServiceFunctionBindingProperties struct {
 	BatchSize *int32 `json:"batchSize,omitempty"`
 }
 
-// AzureMachineLearningWebServiceFunctionBindingRetrievalProperties the binding retrieval properties associated with an
-// Azure Machine learning web service.
+// AzureMachineLearningWebServiceFunctionBindingRetrievalProperties the binding retrieval properties associated
+// with an Azure Machine learning web service.
 type AzureMachineLearningWebServiceFunctionBindingRetrievalProperties struct {
 	// ExecuteEndpoint - The Request-Response execute endpoint of the Azure Machine Learning web service. Find out more here: https://docs.microsoft.com/en-us/azure/machine-learning/machine-learning-consume-web-services#request-response-service-rrs
 	ExecuteEndpoint *string `json:"executeEndpoint,omitempty"`
@@ -479,31 +565,33 @@ type AzureMachineLearningWebServiceFunctionBindingRetrievalProperties struct {
 // AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters the parameters needed to retrieve the
 // default function definition for an Azure Machine Learning web service function.
 type AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters struct {
-	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf', 'BindingTypeMicrosoftMachineLearningWebService'
-	BindingType BindingType `json:"bindingType,omitempty"`
 	// AzureMachineLearningWebServiceFunctionBindingRetrievalProperties - The binding retrieval properties associated with an Azure Machine learning web service.
 	*AzureMachineLearningWebServiceFunctionBindingRetrievalProperties `json:"bindingRetrievalProperties,omitempty"`
+	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftMachineLearningWebService', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf'
+	BindingType BindingType `json:"bindingType,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters.
 func (amlwsfrddp AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters) MarshalJSON() ([]byte, error) {
 	amlwsfrddp.BindingType = BindingTypeMicrosoftMachineLearningWebService
-	type Alias AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(amlwsfrddp),
-	})
-}
-
-// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters.
-func (amlwsfrddp AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
-	return nil, false
+	objectMap := make(map[string]interface{})
+	if amlwsfrddp.AzureMachineLearningWebServiceFunctionBindingRetrievalProperties != nil {
+		objectMap["bindingRetrievalProperties"] = amlwsfrddp.AzureMachineLearningWebServiceFunctionBindingRetrievalProperties
+	}
+	if amlwsfrddp.BindingType != "" {
+		objectMap["bindingType"] = amlwsfrddp.BindingType
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters.
 func (amlwsfrddp AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters) AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters() (*AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters, bool) {
 	return &amlwsfrddp, true
+}
+
+// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters.
+func (amlwsfrddp AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
+	return nil, false
 }
 
 // AsFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters.
@@ -523,26 +611,27 @@ func (amlwsfrddp *AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitio
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["bindingRetrievalProperties"]
-	if v != nil {
-		var bindingRetrievalProperties AzureMachineLearningWebServiceFunctionBindingRetrievalProperties
-		err = json.Unmarshal(*m["bindingRetrievalProperties"], &bindingRetrievalProperties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "bindingRetrievalProperties":
+			if v != nil {
+				var azureMachineLearningWebServiceFunctionBindingRetrievalProperties AzureMachineLearningWebServiceFunctionBindingRetrievalProperties
+				err = json.Unmarshal(*v, &azureMachineLearningWebServiceFunctionBindingRetrievalProperties)
+				if err != nil {
+					return err
+				}
+				amlwsfrddp.AzureMachineLearningWebServiceFunctionBindingRetrievalProperties = &azureMachineLearningWebServiceFunctionBindingRetrievalProperties
+			}
+		case "bindingType":
+			if v != nil {
+				var bindingType BindingType
+				err = json.Unmarshal(*v, &bindingType)
+				if err != nil {
+					return err
+				}
+				amlwsfrddp.BindingType = bindingType
+			}
 		}
-		amlwsfrddp.AzureMachineLearningWebServiceFunctionBindingRetrievalProperties = &bindingRetrievalProperties
-	}
-
-	v = m["bindingType"]
-	if v != nil {
-		var bindingType BindingType
-		err = json.Unmarshal(*m["bindingType"], &bindingType)
-		if err != nil {
-			return err
-		}
-		amlwsfrddp.BindingType = bindingType
 	}
 
 	return nil
@@ -592,21 +681,23 @@ type AzureSQLDatabaseDataSourceProperties struct {
 
 // AzureSQLDatabaseOutputDataSource describes an Azure SQL database output data source.
 type AzureSQLDatabaseOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// AzureSQLDatabaseOutputDataSourceProperties - The properties that are associated with an Azure SQL database output. Required on PUT (CreateOrReplace) requests.
 	*AzureSQLDatabaseOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AzureSQLDatabaseOutputDataSource.
 func (asdods AzureSQLDatabaseOutputDataSource) MarshalJSON() ([]byte, error) {
 	asdods.Type = TypeMicrosoftSQLServerDatabase
-	type Alias AzureSQLDatabaseOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(asdods),
-	})
+	objectMap := make(map[string]interface{})
+	if asdods.AzureSQLDatabaseOutputDataSourceProperties != nil {
+		objectMap["properties"] = asdods.AzureSQLDatabaseOutputDataSourceProperties
+	}
+	if asdods.Type != "" {
+		objectMap["type"] = asdods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for AzureSQLDatabaseOutputDataSource.
@@ -671,26 +762,27 @@ func (asdods *AzureSQLDatabaseOutputDataSource) UnmarshalJSON(body []byte) error
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AzureSQLDatabaseOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var azureSQLDatabaseOutputDataSourceProperties AzureSQLDatabaseOutputDataSourceProperties
+				err = json.Unmarshal(*v, &azureSQLDatabaseOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				asdods.AzureSQLDatabaseOutputDataSourceProperties = &azureSQLDatabaseOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				asdods.Type = typeVar
+			}
 		}
-		asdods.AzureSQLDatabaseOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		asdods.Type = typeVar
 	}
 
 	return nil
@@ -712,21 +804,23 @@ type AzureSQLDatabaseOutputDataSourceProperties struct {
 
 // AzureTableOutputDataSource describes an Azure Table output data source.
 type AzureTableOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// AzureTableOutputDataSourceProperties - The properties that are associated with an Azure Table output. Required on PUT (CreateOrReplace) requests.
 	*AzureTableOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for AzureTableOutputDataSource.
 func (atods AzureTableOutputDataSource) MarshalJSON() ([]byte, error) {
 	atods.Type = TypeMicrosoftStorageTable
-	type Alias AzureTableOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(atods),
-	})
+	objectMap := make(map[string]interface{})
+	if atods.AzureTableOutputDataSourceProperties != nil {
+		objectMap["properties"] = atods.AzureTableOutputDataSourceProperties
+	}
+	if atods.Type != "" {
+		objectMap["type"] = atods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for AzureTableOutputDataSource.
@@ -791,26 +885,27 @@ func (atods *AzureTableOutputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AzureTableOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var azureTableOutputDataSourceProperties AzureTableOutputDataSourceProperties
+				err = json.Unmarshal(*v, &azureTableOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				atods.AzureTableOutputDataSourceProperties = &azureTableOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				atods.Type = typeVar
+			}
 		}
-		atods.AzureTableOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		atods.Type = typeVar
 	}
 
 	return nil
@@ -850,21 +945,23 @@ type BlobDataSourceProperties struct {
 
 // BlobOutputDataSource describes a blob output data source.
 type BlobOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// BlobOutputDataSourceProperties - The properties that are associated with a blob output. Required on PUT (CreateOrReplace) requests.
 	*BlobOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for BlobOutputDataSource.
 func (bods BlobOutputDataSource) MarshalJSON() ([]byte, error) {
 	bods.Type = TypeMicrosoftStorageBlob
-	type Alias BlobOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(bods),
-	})
+	objectMap := make(map[string]interface{})
+	if bods.BlobOutputDataSourceProperties != nil {
+		objectMap["properties"] = bods.BlobOutputDataSourceProperties
+	}
+	if bods.Type != "" {
+		objectMap["type"] = bods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for BlobOutputDataSource.
@@ -929,26 +1026,27 @@ func (bods *BlobOutputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BlobOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var blobOutputDataSourceProperties BlobOutputDataSourceProperties
+				err = json.Unmarshal(*v, &blobOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				bods.BlobOutputDataSourceProperties = &blobOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				bods.Type = typeVar
+			}
 		}
-		bods.BlobOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		bods.Type = typeVar
 	}
 
 	return nil
@@ -970,21 +1068,23 @@ type BlobOutputDataSourceProperties struct {
 
 // BlobReferenceInputDataSource describes a blob input data source that contains reference data.
 type BlobReferenceInputDataSource struct {
-	// Type - Possible values include: 'TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource', 'TypeBasicReferenceInputDataSourceTypeMicrosoftStorageBlob'
-	Type TypeBasicReferenceInputDataSource `json:"type,omitempty"`
 	// BlobReferenceInputDataSourceProperties - The properties that are associated with a blob input containing reference data. Required on PUT (CreateOrReplace) requests.
 	*BlobReferenceInputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource', 'TypeBasicReferenceInputDataSourceTypeMicrosoftStorageBlob'
+	Type TypeBasicReferenceInputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for BlobReferenceInputDataSource.
 func (brids BlobReferenceInputDataSource) MarshalJSON() ([]byte, error) {
 	brids.Type = TypeBasicReferenceInputDataSourceTypeMicrosoftStorageBlob
-	type Alias BlobReferenceInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(brids),
-	})
+	objectMap := make(map[string]interface{})
+	if brids.BlobReferenceInputDataSourceProperties != nil {
+		objectMap["properties"] = brids.BlobReferenceInputDataSourceProperties
+	}
+	if brids.Type != "" {
+		objectMap["type"] = brids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsBlobReferenceInputDataSource is the BasicReferenceInputDataSource implementation for BlobReferenceInputDataSource.
@@ -1009,26 +1109,27 @@ func (brids *BlobReferenceInputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BlobReferenceInputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var blobReferenceInputDataSourceProperties BlobReferenceInputDataSourceProperties
+				err = json.Unmarshal(*v, &blobReferenceInputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				brids.BlobReferenceInputDataSourceProperties = &blobReferenceInputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicReferenceInputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				brids.Type = typeVar
+			}
 		}
-		brids.BlobReferenceInputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicReferenceInputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		brids.Type = typeVar
 	}
 
 	return nil
@@ -1051,21 +1152,23 @@ type BlobReferenceInputDataSourceProperties struct {
 
 // BlobStreamInputDataSource describes a blob input data source that contains stream data.
 type BlobStreamInputDataSource struct {
-	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
-	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 	// BlobStreamInputDataSourceProperties - The properties that are associated with a blob input containing stream data. Required on PUT (CreateOrReplace) requests.
 	*BlobStreamInputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
+	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for BlobStreamInputDataSource.
 func (bsids BlobStreamInputDataSource) MarshalJSON() ([]byte, error) {
 	bsids.Type = TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob
-	type Alias BlobStreamInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(bsids),
-	})
+	objectMap := make(map[string]interface{})
+	if bsids.BlobStreamInputDataSourceProperties != nil {
+		objectMap["properties"] = bsids.BlobStreamInputDataSourceProperties
+	}
+	if bsids.Type != "" {
+		objectMap["type"] = bsids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsIoTHubStreamInputDataSource is the BasicStreamInputDataSource implementation for BlobStreamInputDataSource.
@@ -1100,26 +1203,27 @@ func (bsids *BlobStreamInputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BlobStreamInputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var blobStreamInputDataSourceProperties BlobStreamInputDataSourceProperties
+				err = json.Unmarshal(*v, &blobStreamInputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				bsids.BlobStreamInputDataSourceProperties = &blobStreamInputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicStreamInputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				bsids.Type = typeVar
+			}
 		}
-		bsids.BlobStreamInputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicStreamInputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		bsids.Type = typeVar
 	}
 
 	return nil
@@ -1127,6 +1231,8 @@ func (bsids *BlobStreamInputDataSource) UnmarshalJSON(body []byte) error {
 
 // BlobStreamInputDataSourceProperties the properties that are associated with a blob input containing stream data.
 type BlobStreamInputDataSourceProperties struct {
+	// SourcePartitionCount - The partition count of the blob input data source. Range 1 - 256.
+	SourcePartitionCount *int32 `json:"sourcePartitionCount,omitempty"`
 	// StorageAccounts - A list of one or more Azure Storage accounts. Required on PUT (CreateOrReplace) requests.
 	StorageAccounts *[]StorageAccount `json:"storageAccounts,omitempty"`
 	// Container - The name of a container within the associated Storage account. This container contains either the blob(s) to be read from or written to. Required on PUT (CreateOrReplace) requests.
@@ -1137,28 +1243,28 @@ type BlobStreamInputDataSourceProperties struct {
 	DateFormat *string `json:"dateFormat,omitempty"`
 	// TimeFormat - The time format. Wherever {time} appears in pathPattern, the value of this property is used as the time format instead.
 	TimeFormat *string `json:"timeFormat,omitempty"`
-	// SourcePartitionCount - The partition count of the blob input data source. Range 1 - 256.
-	SourcePartitionCount *int32 `json:"sourcePartitionCount,omitempty"`
 }
 
-// CsvSerialization describes how data from an input is serialized or how data is serialized when written to an output
-// in CSV format.
+// CsvSerialization describes how data from an input is serialized or how data is serialized when written to an
+// output in CSV format.
 type CsvSerialization struct {
-	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
-	Type Type `json:"type,omitempty"`
 	// CsvSerializationProperties - The properties that are associated with the CSV serialization type. Required on PUT (CreateOrReplace) requests.
 	*CsvSerializationProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
+	Type Type `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for CsvSerialization.
 func (cs CsvSerialization) MarshalJSON() ([]byte, error) {
 	cs.Type = TypeCsv
-	type Alias CsvSerialization
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(cs),
-	})
+	objectMap := make(map[string]interface{})
+	if cs.CsvSerializationProperties != nil {
+		objectMap["properties"] = cs.CsvSerializationProperties
+	}
+	if cs.Type != "" {
+		objectMap["type"] = cs.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAvroSerialization is the BasicSerialization implementation for CsvSerialization.
@@ -1193,26 +1299,27 @@ func (cs *CsvSerialization) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties CsvSerializationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var csvSerializationProperties CsvSerializationProperties
+				err = json.Unmarshal(*v, &csvSerializationProperties)
+				if err != nil {
+					return err
+				}
+				cs.CsvSerializationProperties = &csvSerializationProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar Type
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cs.Type = typeVar
+			}
 		}
-		cs.CsvSerializationProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar Type
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cs.Type = typeVar
 	}
 
 	return nil
@@ -1226,7 +1333,8 @@ type CsvSerializationProperties struct {
 	Encoding Encoding `json:"encoding,omitempty"`
 }
 
-// DiagnosticCondition condition applicable to the resource, or to the job overall, that warrant customer attention.
+// DiagnosticCondition condition applicable to the resource, or to the job overall, that warrant customer
+// attention.
 type DiagnosticCondition struct {
 	// Since - The UTC timestamp of when the condition started. Customers should be able to find a corresponding event in the ops log around this time.
 	Since *string `json:"since,omitempty"`
@@ -1245,21 +1353,23 @@ type Diagnostics struct {
 
 // DocumentDbOutputDataSource describes a DocumentDB output data source.
 type DocumentDbOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// DocumentDbOutputDataSourceProperties - The properties that are associated with a DocumentDB output. Required on PUT (CreateOrReplace) requests.
 	*DocumentDbOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for DocumentDbOutputDataSource.
 func (ddods DocumentDbOutputDataSource) MarshalJSON() ([]byte, error) {
 	ddods.Type = TypeMicrosoftStorageDocumentDB
-	type Alias DocumentDbOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(ddods),
-	})
+	objectMap := make(map[string]interface{})
+	if ddods.DocumentDbOutputDataSourceProperties != nil {
+		objectMap["properties"] = ddods.DocumentDbOutputDataSourceProperties
+	}
+	if ddods.Type != "" {
+		objectMap["type"] = ddods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for DocumentDbOutputDataSource.
@@ -1324,26 +1434,27 @@ func (ddods *DocumentDbOutputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DocumentDbOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var documentDbOutputDataSourceProperties DocumentDbOutputDataSourceProperties
+				err = json.Unmarshal(*v, &documentDbOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				ddods.DocumentDbOutputDataSourceProperties = &documentDbOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ddods.Type = typeVar
+			}
 		}
-		ddods.DocumentDbOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ddods.Type = typeVar
 	}
 
 	return nil
@@ -1375,33 +1486,35 @@ type ErrorResponse struct {
 
 // EventHubDataSourceProperties the common properties that are associated with Event Hub data sources.
 type EventHubDataSourceProperties struct {
+	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
+	EventHubName *string `json:"eventHubName,omitempty"`
 	// ServiceBusNamespace - The namespace that is associated with the desired Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	ServiceBusNamespace *string `json:"serviceBusNamespace,omitempty"`
 	// SharedAccessPolicyName - The shared access policy name for the Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyName *string `json:"sharedAccessPolicyName,omitempty"`
 	// SharedAccessPolicyKey - The shared access policy key for the specified shared access policy. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyKey *string `json:"sharedAccessPolicyKey,omitempty"`
-	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
-	EventHubName *string `json:"eventHubName,omitempty"`
 }
 
 // EventHubOutputDataSource describes an Event Hub output data source.
 type EventHubOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// EventHubOutputDataSourceProperties - The properties that are associated with an Event Hub output. Required on PUT (CreateOrReplace) requests.
 	*EventHubOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EventHubOutputDataSource.
 func (ehods EventHubOutputDataSource) MarshalJSON() ([]byte, error) {
 	ehods.Type = TypeMicrosoftServiceBusEventHub
-	type Alias EventHubOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(ehods),
-	})
+	objectMap := make(map[string]interface{})
+	if ehods.EventHubOutputDataSourceProperties != nil {
+		objectMap["properties"] = ehods.EventHubOutputDataSourceProperties
+	}
+	if ehods.Type != "" {
+		objectMap["type"] = ehods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for EventHubOutputDataSource.
@@ -1466,26 +1579,27 @@ func (ehods *EventHubOutputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EventHubOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var eventHubOutputDataSourceProperties EventHubOutputDataSourceProperties
+				err = json.Unmarshal(*v, &eventHubOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				ehods.EventHubOutputDataSourceProperties = &eventHubOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ehods.Type = typeVar
+			}
 		}
-		ehods.EventHubOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ehods.Type = typeVar
 	}
 
 	return nil
@@ -1493,35 +1607,37 @@ func (ehods *EventHubOutputDataSource) UnmarshalJSON(body []byte) error {
 
 // EventHubOutputDataSourceProperties the properties that are associated with an Event Hub output.
 type EventHubOutputDataSourceProperties struct {
+	// PartitionKey - The key/column that is used to determine to which partition to send event data.
+	PartitionKey *string `json:"partitionKey,omitempty"`
+	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
+	EventHubName *string `json:"eventHubName,omitempty"`
 	// ServiceBusNamespace - The namespace that is associated with the desired Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	ServiceBusNamespace *string `json:"serviceBusNamespace,omitempty"`
 	// SharedAccessPolicyName - The shared access policy name for the Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyName *string `json:"sharedAccessPolicyName,omitempty"`
 	// SharedAccessPolicyKey - The shared access policy key for the specified shared access policy. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyKey *string `json:"sharedAccessPolicyKey,omitempty"`
-	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
-	EventHubName *string `json:"eventHubName,omitempty"`
-	// PartitionKey - The key/column that is used to determine to which partition to send event data.
-	PartitionKey *string `json:"partitionKey,omitempty"`
 }
 
 // EventHubStreamInputDataSource describes an Event Hub input data source that contains stream data.
 type EventHubStreamInputDataSource struct {
-	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
-	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 	// EventHubStreamInputDataSourceProperties - The properties that are associated with an Event Hub input containing stream data. Required on PUT (CreateOrReplace) requests.
 	*EventHubStreamInputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
+	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for EventHubStreamInputDataSource.
 func (ehsids EventHubStreamInputDataSource) MarshalJSON() ([]byte, error) {
 	ehsids.Type = TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub
-	type Alias EventHubStreamInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(ehsids),
-	})
+	objectMap := make(map[string]interface{})
+	if ehsids.EventHubStreamInputDataSourceProperties != nil {
+		objectMap["properties"] = ehsids.EventHubStreamInputDataSourceProperties
+	}
+	if ehsids.Type != "" {
+		objectMap["type"] = ehsids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsIoTHubStreamInputDataSource is the BasicStreamInputDataSource implementation for EventHubStreamInputDataSource.
@@ -1556,58 +1672,59 @@ func (ehsids *EventHubStreamInputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EventHubStreamInputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var eventHubStreamInputDataSourceProperties EventHubStreamInputDataSourceProperties
+				err = json.Unmarshal(*v, &eventHubStreamInputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				ehsids.EventHubStreamInputDataSourceProperties = &eventHubStreamInputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicStreamInputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ehsids.Type = typeVar
+			}
 		}
-		ehsids.EventHubStreamInputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicStreamInputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ehsids.Type = typeVar
 	}
 
 	return nil
 }
 
-// EventHubStreamInputDataSourceProperties the properties that are associated with a Event Hub input containing stream
-// data.
+// EventHubStreamInputDataSourceProperties the properties that are associated with a Event Hub input containing
+// stream data.
 type EventHubStreamInputDataSourceProperties struct {
+	// ConsumerGroupName - The name of an Event Hub Consumer Group that should be used to read events from the Event Hub. Specifying distinct consumer group names for multiple inputs allows each of those inputs to receive the same events from the Event Hub. If not specified, the input uses the Event Hub’s default consumer group.
+	ConsumerGroupName *string `json:"consumerGroupName,omitempty"`
+	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
+	EventHubName *string `json:"eventHubName,omitempty"`
 	// ServiceBusNamespace - The namespace that is associated with the desired Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	ServiceBusNamespace *string `json:"serviceBusNamespace,omitempty"`
 	// SharedAccessPolicyName - The shared access policy name for the Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyName *string `json:"sharedAccessPolicyName,omitempty"`
 	// SharedAccessPolicyKey - The shared access policy key for the specified shared access policy. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyKey *string `json:"sharedAccessPolicyKey,omitempty"`
-	// EventHubName - The name of the Event Hub. Required on PUT (CreateOrReplace) requests.
-	EventHubName *string `json:"eventHubName,omitempty"`
-	// ConsumerGroupName - The name of an Event Hub Consumer Group that should be used to read events from the Event Hub. Specifying distinct consumer group names for multiple inputs allows each of those inputs to receive the same events from the Event Hub. If not specified, the input uses the Event Hub’s default consumer group.
-	ConsumerGroupName *string `json:"consumerGroupName,omitempty"`
 }
 
 // Function a function object, containing all information associated with the named function. All functions are
 // contained under a streaming job.
 type Function struct {
 	autorest.Response `json:"-"`
+	// Properties - The properties that are associated with a function.
+	Properties BasicFunctionProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Properties - The properties that are associated with a function.
-	Properties BasicFunctionProperties `json:"properties,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for Function struct.
@@ -1617,45 +1734,44 @@ func (f *Function) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		properties, err := unmarshalBasicFunctionProperties(*m["properties"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				properties, err := unmarshalBasicFunctionProperties(*v)
+				if err != nil {
+					return err
+				}
+				f.Properties = properties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				f.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				f.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				f.Type = &typeVar
+			}
 		}
-		f.Properties = properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		f.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		f.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		f.Type = &typeVar
 	}
 
 	return nil
@@ -1669,8 +1785,8 @@ type BasicFunctionBinding interface {
 	AsFunctionBinding() (*FunctionBinding, bool)
 }
 
-// FunctionBinding the physical binding of the function. For example, in the Azure Machine Learning web service’s case,
-// this describes the endpoint.
+// FunctionBinding the physical binding of the function. For example, in the Azure Machine Learning web service’s
+// case, this describes the endpoint.
 type FunctionBinding struct {
 	// Type - Possible values include: 'TypeFunctionBinding', 'TypeMicrosoftStreamAnalyticsJavascriptUdf', 'TypeMicrosoftMachineLearningWebService'
 	Type TypeBasicFunctionBinding `json:"type,omitempty"`
@@ -1720,12 +1836,11 @@ func unmarshalBasicFunctionBindingArray(body []byte) ([]BasicFunctionBinding, er
 // MarshalJSON is the custom marshaler for FunctionBinding.
 func (fb FunctionBinding) MarshalJSON() ([]byte, error) {
 	fb.Type = TypeFunctionBinding
-	type Alias FunctionBinding
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(fb),
-	})
+	objectMap := make(map[string]interface{})
+	if fb.Type != "" {
+		objectMap["type"] = fb.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsJavaScriptFunctionBinding is the BasicFunctionBinding implementation for FunctionBinding.
@@ -1918,12 +2033,14 @@ func unmarshalBasicFunctionPropertiesArray(body []byte) ([]BasicFunctionProperti
 // MarshalJSON is the custom marshaler for FunctionProperties.
 func (fp FunctionProperties) MarshalJSON() ([]byte, error) {
 	fp.Type = TypeFunctionProperties
-	type Alias FunctionProperties
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(fp),
-	})
+	objectMap := make(map[string]interface{})
+	if fp.Etag != nil {
+		objectMap["etag"] = fp.Etag
+	}
+	if fp.Type != "" {
+		objectMap["type"] = fp.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsScalarFunctionProperties is the BasicFunctionProperties implementation for FunctionProperties.
@@ -1944,15 +2061,15 @@ func (fp FunctionProperties) AsBasicFunctionProperties() (BasicFunctionPropertie
 // BasicFunctionRetrieveDefaultDefinitionParameters parameters used to specify the type of function to retrieve the
 // default definition for.
 type BasicFunctionRetrieveDefaultDefinitionParameters interface {
-	AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool)
 	AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters() (*AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters, bool)
+	AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool)
 	AsFunctionRetrieveDefaultDefinitionParameters() (*FunctionRetrieveDefaultDefinitionParameters, bool)
 }
 
-// FunctionRetrieveDefaultDefinitionParameters parameters used to specify the type of function to retrieve the default
-// definition for.
+// FunctionRetrieveDefaultDefinitionParameters parameters used to specify the type of function to retrieve the
+// default definition for.
 type FunctionRetrieveDefaultDefinitionParameters struct {
-	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf', 'BindingTypeMicrosoftMachineLearningWebService'
+	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftMachineLearningWebService', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf'
 	BindingType BindingType `json:"bindingType,omitempty"`
 }
 
@@ -1964,14 +2081,14 @@ func unmarshalBasicFunctionRetrieveDefaultDefinitionParameters(body []byte) (Bas
 	}
 
 	switch m["bindingType"] {
-	case string(BindingTypeMicrosoftStreamAnalyticsJavascriptUdf):
-		var jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters
-		err := json.Unmarshal(body, &jsfrddp)
-		return jsfrddp, err
 	case string(BindingTypeMicrosoftMachineLearningWebService):
 		var amlwsfrddp AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters
 		err := json.Unmarshal(body, &amlwsfrddp)
 		return amlwsfrddp, err
+	case string(BindingTypeMicrosoftStreamAnalyticsJavascriptUdf):
+		var jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters
+		err := json.Unmarshal(body, &jsfrddp)
+		return jsfrddp, err
 	default:
 		var frddp FunctionRetrieveDefaultDefinitionParameters
 		err := json.Unmarshal(body, &frddp)
@@ -2000,21 +2117,20 @@ func unmarshalBasicFunctionRetrieveDefaultDefinitionParametersArray(body []byte)
 // MarshalJSON is the custom marshaler for FunctionRetrieveDefaultDefinitionParameters.
 func (frddp FunctionRetrieveDefaultDefinitionParameters) MarshalJSON() ([]byte, error) {
 	frddp.BindingType = BindingTypeFunctionRetrieveDefaultDefinitionParameters
-	type Alias FunctionRetrieveDefaultDefinitionParameters
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(frddp),
-	})
-}
-
-// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for FunctionRetrieveDefaultDefinitionParameters.
-func (frddp FunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
-	return nil, false
+	objectMap := make(map[string]interface{})
+	if frddp.BindingType != "" {
+		objectMap["bindingType"] = frddp.BindingType
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for FunctionRetrieveDefaultDefinitionParameters.
 func (frddp FunctionRetrieveDefaultDefinitionParameters) AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters() (*AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters, bool) {
+	return nil, false
+}
+
+// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for FunctionRetrieveDefaultDefinitionParameters.
+func (frddp FunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
 	return nil, false
 }
 
@@ -2040,37 +2156,54 @@ func (future FunctionsTestFuture) Result(client FunctionsClient) (rts ResourceTe
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.FunctionsTestFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return rts, autorest.NewError("streamanalytics.FunctionsTestFuture", "Result", "asynchronous operation has not completed")
+		return rts, azure.NewAsyncOpIncompleteError("streamanalytics.FunctionsTestFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		rts, err = client.TestResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.FunctionsTestFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.FunctionsTestFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	rts, err = client.TestResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.FunctionsTestFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// Input an input object, containing all information associated with the named input. All inputs are contained under a
-// streaming job.
+// Input an input object, containing all information associated with the named input. All inputs are contained
+// under a streaming job.
 type Input struct {
 	autorest.Response `json:"-"`
+	// Properties - The properties that are associated with an input. Required on PUT (CreateOrReplace) requests.
+	Properties BasicInputProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Properties - The properties that are associated with an input. Required on PUT (CreateOrReplace) requests.
-	Properties BasicInputProperties `json:"properties,omitempty"`
 }
 
 // UnmarshalJSON is the custom unmarshaler for Input struct.
@@ -2080,45 +2213,44 @@ func (i *Input) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		properties, err := unmarshalBasicInputProperties(*m["properties"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				properties, err := unmarshalBasicInputProperties(*v)
+				if err != nil {
+					return err
+				}
+				i.Properties = properties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				i.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				i.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				i.Type = &typeVar
+			}
 		}
-		i.Properties = properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		i.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		i.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		i.Type = &typeVar
 	}
 
 	return nil
@@ -2289,12 +2421,18 @@ func unmarshalBasicInputPropertiesArray(body []byte) ([]BasicInputProperties, er
 // MarshalJSON is the custom marshaler for InputProperties.
 func (IP InputProperties) MarshalJSON() ([]byte, error) {
 	IP.Type = TypeInputProperties
-	type Alias InputProperties
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(IP),
-	})
+	objectMap := make(map[string]interface{})
+	objectMap["serialization"] = IP.Serialization
+	if IP.Diagnostics != nil {
+		objectMap["diagnostics"] = IP.Diagnostics
+	}
+	if IP.Etag != nil {
+		objectMap["etag"] = IP.Etag
+	}
+	if IP.Type != "" {
+		objectMap["type"] = IP.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsReferenceInputProperties is the BasicInputProperties implementation for InputProperties.
@@ -2324,45 +2462,44 @@ func (IP *InputProperties) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["serialization"]
-	if v != nil {
-		serialization, err := unmarshalBasicSerialization(*m["serialization"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "serialization":
+			if v != nil {
+				serialization, err := unmarshalBasicSerialization(*v)
+				if err != nil {
+					return err
+				}
+				IP.Serialization = serialization
+			}
+		case "diagnostics":
+			if v != nil {
+				var diagnostics Diagnostics
+				err = json.Unmarshal(*v, &diagnostics)
+				if err != nil {
+					return err
+				}
+				IP.Diagnostics = &diagnostics
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				IP.Etag = &etag
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicInputProperties
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				IP.Type = typeVar
+			}
 		}
-		IP.Serialization = serialization
-	}
-
-	v = m["diagnostics"]
-	if v != nil {
-		var diagnostics Diagnostics
-		err = json.Unmarshal(*m["diagnostics"], &diagnostics)
-		if err != nil {
-			return err
-		}
-		IP.Diagnostics = &diagnostics
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		IP.Etag = &etag
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicInputProperties
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		IP.Type = typeVar
 	}
 
 	return nil
@@ -2380,42 +2517,61 @@ func (future InputsTestFuture) Result(client InputsClient) (rts ResourceTestStat
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.InputsTestFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return rts, autorest.NewError("streamanalytics.InputsTestFuture", "Result", "asynchronous operation has not completed")
+		return rts, azure.NewAsyncOpIncompleteError("streamanalytics.InputsTestFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		rts, err = client.TestResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.InputsTestFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.InputsTestFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	rts, err = client.TestResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.InputsTestFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // IoTHubStreamInputDataSource describes an IoT Hub input data source that contains stream data.
 type IoTHubStreamInputDataSource struct {
-	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
-	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 	// IoTHubStreamInputDataSourceProperties - The properties that are associated with an IoT Hub input containing stream data. Required on PUT (CreateOrReplace) requests.
 	*IoTHubStreamInputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeBasicStreamInputDataSourceTypeStreamInputDataSource', 'TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs', 'TypeBasicStreamInputDataSourceTypeMicrosoftServiceBusEventHub', 'TypeBasicStreamInputDataSourceTypeMicrosoftStorageBlob'
+	Type TypeBasicStreamInputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for IoTHubStreamInputDataSource.
 func (ithsids IoTHubStreamInputDataSource) MarshalJSON() ([]byte, error) {
 	ithsids.Type = TypeBasicStreamInputDataSourceTypeMicrosoftDevicesIotHubs
-	type Alias IoTHubStreamInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(ithsids),
-	})
+	objectMap := make(map[string]interface{})
+	if ithsids.IoTHubStreamInputDataSourceProperties != nil {
+		objectMap["properties"] = ithsids.IoTHubStreamInputDataSourceProperties
+	}
+	if ithsids.Type != "" {
+		objectMap["type"] = ithsids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsIoTHubStreamInputDataSource is the BasicStreamInputDataSource implementation for IoTHubStreamInputDataSource.
@@ -2450,26 +2606,27 @@ func (ithsids *IoTHubStreamInputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties IoTHubStreamInputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var ioTHubStreamInputDataSourceProperties IoTHubStreamInputDataSourceProperties
+				err = json.Unmarshal(*v, &ioTHubStreamInputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				ithsids.IoTHubStreamInputDataSourceProperties = &ioTHubStreamInputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicStreamInputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ithsids.Type = typeVar
+			}
 		}
-		ithsids.IoTHubStreamInputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicStreamInputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ithsids.Type = typeVar
 	}
 
 	return nil
@@ -2492,21 +2649,23 @@ type IoTHubStreamInputDataSourceProperties struct {
 
 // JavaScriptFunctionBinding the binding to a JavaScript function.
 type JavaScriptFunctionBinding struct {
-	// Type - Possible values include: 'TypeFunctionBinding', 'TypeMicrosoftStreamAnalyticsJavascriptUdf', 'TypeMicrosoftMachineLearningWebService'
-	Type TypeBasicFunctionBinding `json:"type,omitempty"`
 	// JavaScriptFunctionBindingProperties - The binding properties associated with a JavaScript function.
 	*JavaScriptFunctionBindingProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeFunctionBinding', 'TypeMicrosoftStreamAnalyticsJavascriptUdf', 'TypeMicrosoftMachineLearningWebService'
+	Type TypeBasicFunctionBinding `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for JavaScriptFunctionBinding.
 func (jsfb JavaScriptFunctionBinding) MarshalJSON() ([]byte, error) {
 	jsfb.Type = TypeMicrosoftStreamAnalyticsJavascriptUdf
-	type Alias JavaScriptFunctionBinding
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(jsfb),
-	})
+	objectMap := make(map[string]interface{})
+	if jsfb.JavaScriptFunctionBindingProperties != nil {
+		objectMap["properties"] = jsfb.JavaScriptFunctionBindingProperties
+	}
+	if jsfb.Type != "" {
+		objectMap["type"] = jsfb.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsJavaScriptFunctionBinding is the BasicFunctionBinding implementation for JavaScriptFunctionBinding.
@@ -2536,26 +2695,27 @@ func (jsfb *JavaScriptFunctionBinding) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties JavaScriptFunctionBindingProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var javaScriptFunctionBindingProperties JavaScriptFunctionBindingProperties
+				err = json.Unmarshal(*v, &javaScriptFunctionBindingProperties)
+				if err != nil {
+					return err
+				}
+				jsfb.JavaScriptFunctionBindingProperties = &javaScriptFunctionBindingProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicFunctionBinding
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				jsfb.Type = typeVar
+			}
 		}
-		jsfb.JavaScriptFunctionBindingProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicFunctionBinding
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		jsfb.Type = typeVar
 	}
 
 	return nil
@@ -2567,7 +2727,8 @@ type JavaScriptFunctionBindingProperties struct {
 	Script *string `json:"script,omitempty"`
 }
 
-// JavaScriptFunctionBindingRetrievalProperties the binding retrieval properties associated with a JavaScript function.
+// JavaScriptFunctionBindingRetrievalProperties the binding retrieval properties associated with a JavaScript
+// function.
 type JavaScriptFunctionBindingRetrievalProperties struct {
 	// Script - The JavaScript code containing a single function definition. For example: 'function (x, y) { return x + y; }'.
 	Script *string `json:"script,omitempty"`
@@ -2578,31 +2739,33 @@ type JavaScriptFunctionBindingRetrievalProperties struct {
 // JavaScriptFunctionRetrieveDefaultDefinitionParameters the parameters needed to retrieve the default function
 // definition for a JavaScript function.
 type JavaScriptFunctionRetrieveDefaultDefinitionParameters struct {
-	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf', 'BindingTypeMicrosoftMachineLearningWebService'
-	BindingType BindingType `json:"bindingType,omitempty"`
 	// JavaScriptFunctionBindingRetrievalProperties - The binding retrieval properties associated with a JavaScript function.
 	*JavaScriptFunctionBindingRetrievalProperties `json:"bindingRetrievalProperties,omitempty"`
+	// BindingType - Possible values include: 'BindingTypeFunctionRetrieveDefaultDefinitionParameters', 'BindingTypeMicrosoftMachineLearningWebService', 'BindingTypeMicrosoftStreamAnalyticsJavascriptUdf'
+	BindingType BindingType `json:"bindingType,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for JavaScriptFunctionRetrieveDefaultDefinitionParameters.
 func (jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters) MarshalJSON() ([]byte, error) {
 	jsfrddp.BindingType = BindingTypeMicrosoftStreamAnalyticsJavascriptUdf
-	type Alias JavaScriptFunctionRetrieveDefaultDefinitionParameters
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(jsfrddp),
-	})
-}
-
-// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for JavaScriptFunctionRetrieveDefaultDefinitionParameters.
-func (jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
-	return &jsfrddp, true
+	objectMap := make(map[string]interface{})
+	if jsfrddp.JavaScriptFunctionBindingRetrievalProperties != nil {
+		objectMap["bindingRetrievalProperties"] = jsfrddp.JavaScriptFunctionBindingRetrievalProperties
+	}
+	if jsfrddp.BindingType != "" {
+		objectMap["bindingType"] = jsfrddp.BindingType
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for JavaScriptFunctionRetrieveDefaultDefinitionParameters.
 func (jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters) AsAzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters() (*AzureMachineLearningWebServiceFunctionRetrieveDefaultDefinitionParameters, bool) {
 	return nil, false
+}
+
+// AsJavaScriptFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for JavaScriptFunctionRetrieveDefaultDefinitionParameters.
+func (jsfrddp JavaScriptFunctionRetrieveDefaultDefinitionParameters) AsJavaScriptFunctionRetrieveDefaultDefinitionParameters() (*JavaScriptFunctionRetrieveDefaultDefinitionParameters, bool) {
+	return &jsfrddp, true
 }
 
 // AsFunctionRetrieveDefaultDefinitionParameters is the BasicFunctionRetrieveDefaultDefinitionParameters implementation for JavaScriptFunctionRetrieveDefaultDefinitionParameters.
@@ -2622,49 +2785,52 @@ func (jsfrddp *JavaScriptFunctionRetrieveDefaultDefinitionParameters) UnmarshalJ
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["bindingRetrievalProperties"]
-	if v != nil {
-		var bindingRetrievalProperties JavaScriptFunctionBindingRetrievalProperties
-		err = json.Unmarshal(*m["bindingRetrievalProperties"], &bindingRetrievalProperties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "bindingRetrievalProperties":
+			if v != nil {
+				var javaScriptFunctionBindingRetrievalProperties JavaScriptFunctionBindingRetrievalProperties
+				err = json.Unmarshal(*v, &javaScriptFunctionBindingRetrievalProperties)
+				if err != nil {
+					return err
+				}
+				jsfrddp.JavaScriptFunctionBindingRetrievalProperties = &javaScriptFunctionBindingRetrievalProperties
+			}
+		case "bindingType":
+			if v != nil {
+				var bindingType BindingType
+				err = json.Unmarshal(*v, &bindingType)
+				if err != nil {
+					return err
+				}
+				jsfrddp.BindingType = bindingType
+			}
 		}
-		jsfrddp.JavaScriptFunctionBindingRetrievalProperties = &bindingRetrievalProperties
-	}
-
-	v = m["bindingType"]
-	if v != nil {
-		var bindingType BindingType
-		err = json.Unmarshal(*m["bindingType"], &bindingType)
-		if err != nil {
-			return err
-		}
-		jsfrddp.BindingType = bindingType
 	}
 
 	return nil
 }
 
-// JSONSerialization describes how data from an input is serialized or how data is serialized when written to an output
-// in JSON format.
+// JSONSerialization describes how data from an input is serialized or how data is serialized when written to an
+// output in JSON format.
 type JSONSerialization struct {
-	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
-	Type Type `json:"type,omitempty"`
 	// JSONSerializationProperties - The properties that are associated with the JSON serialization type. Required on PUT (CreateOrReplace) requests.
 	*JSONSerializationProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
+	Type Type `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for JSONSerialization.
 func (js JSONSerialization) MarshalJSON() ([]byte, error) {
 	js.Type = TypeJSON
-	type Alias JSONSerialization
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(js),
-	})
+	objectMap := make(map[string]interface{})
+	if js.JSONSerializationProperties != nil {
+		objectMap["properties"] = js.JSONSerializationProperties
+	}
+	if js.Type != "" {
+		objectMap["type"] = js.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAvroSerialization is the BasicSerialization implementation for JSONSerialization.
@@ -2699,26 +2865,27 @@ func (js *JSONSerialization) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties JSONSerializationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var JSONSerializationProperties JSONSerializationProperties
+				err = json.Unmarshal(*v, &JSONSerializationProperties)
+				if err != nil {
+					return err
+				}
+				js.JSONSerializationProperties = &JSONSerializationProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar Type
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				js.Type = typeVar
+			}
 		}
-		js.JSONSerializationProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar Type
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		js.Type = typeVar
 	}
 
 	return nil
@@ -2763,8 +2930,8 @@ type OperationDisplay struct {
 	Description *string `json:"description,omitempty"`
 }
 
-// OperationListResult result of the request to list Stream Analytics operations. It contains a list of operations and
-// a URL link to get the next set of results.
+// OperationListResult result of the request to list Stream Analytics operations. It contains a list of operations
+// and a URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of Stream Analytics operations supported by the Microsoft.StreamAnalytics resource provider.
@@ -2870,14 +3037,32 @@ func (page OperationListResultPage) Values() []Operation {
 // under a streaming job.
 type Output struct {
 	autorest.Response `json:"-"`
+	// OutputProperties - The properties that are associated with an output. Required on PUT (CreateOrReplace) requests.
+	*OutputProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// OutputProperties - The properties that are associated with an output. Required on PUT (CreateOrReplace) requests.
-	*OutputProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Output.
+func (o Output) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if o.OutputProperties != nil {
+		objectMap["properties"] = o.OutputProperties
+	}
+	if o.ID != nil {
+		objectMap["id"] = o.ID
+	}
+	if o.Name != nil {
+		objectMap["name"] = o.Name
+	}
+	if o.Type != nil {
+		objectMap["type"] = o.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Output struct.
@@ -2887,46 +3072,45 @@ func (o *Output) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties OutputProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var outputProperties OutputProperties
+				err = json.Unmarshal(*v, &outputProperties)
+				if err != nil {
+					return err
+				}
+				o.OutputProperties = &outputProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				o.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				o.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				o.Type = &typeVar
+			}
 		}
-		o.OutputProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		o.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		o.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		o.Type = &typeVar
 	}
 
 	return nil
@@ -3024,12 +3208,11 @@ func unmarshalBasicOutputDataSourceArray(body []byte) ([]BasicOutputDataSource, 
 // MarshalJSON is the custom marshaler for OutputDataSource.
 func (ods OutputDataSource) MarshalJSON() ([]byte, error) {
 	ods.Type = TypeOutputDataSource
-	type Alias OutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(ods),
-	})
+	objectMap := make(map[string]interface{})
+	if ods.Type != "" {
+		objectMap["type"] = ods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for OutputDataSource.
@@ -3208,44 +3391,43 @@ func (op *OutputProperties) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["datasource"]
-	if v != nil {
-		datasource, err := unmarshalBasicOutputDataSource(*m["datasource"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "datasource":
+			if v != nil {
+				datasource, err := unmarshalBasicOutputDataSource(*v)
+				if err != nil {
+					return err
+				}
+				op.Datasource = datasource
+			}
+		case "serialization":
+			if v != nil {
+				serialization, err := unmarshalBasicSerialization(*v)
+				if err != nil {
+					return err
+				}
+				op.Serialization = serialization
+			}
+		case "diagnostics":
+			if v != nil {
+				var diagnostics Diagnostics
+				err = json.Unmarshal(*v, &diagnostics)
+				if err != nil {
+					return err
+				}
+				op.Diagnostics = &diagnostics
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				op.Etag = &etag
+			}
 		}
-		op.Datasource = datasource
-	}
-
-	v = m["serialization"]
-	if v != nil {
-		serialization, err := unmarshalBasicSerialization(*m["serialization"])
-		if err != nil {
-			return err
-		}
-		op.Serialization = serialization
-	}
-
-	v = m["diagnostics"]
-	if v != nil {
-		var diagnostics Diagnostics
-		err = json.Unmarshal(*m["diagnostics"], &diagnostics)
-		if err != nil {
-			return err
-		}
-		op.Diagnostics = &diagnostics
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		op.Etag = &etag
 	}
 
 	return nil
@@ -3263,42 +3445,61 @@ func (future OutputsTestFuture) Result(client OutputsClient) (rts ResourceTestSt
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.OutputsTestFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return rts, autorest.NewError("streamanalytics.OutputsTestFuture", "Result", "asynchronous operation has not completed")
+		return rts, azure.NewAsyncOpIncompleteError("streamanalytics.OutputsTestFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		rts, err = client.TestResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.OutputsTestFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.OutputsTestFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	rts, err = client.TestResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.OutputsTestFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // PowerBIOutputDataSource describes a Power BI output data source.
 type PowerBIOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// PowerBIOutputDataSourceProperties - The properties that are associated with a Power BI output. Required on PUT (CreateOrReplace) requests.
 	*PowerBIOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for PowerBIOutputDataSource.
 func (pbods PowerBIOutputDataSource) MarshalJSON() ([]byte, error) {
 	pbods.Type = TypePowerBI
-	type Alias PowerBIOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(pbods),
-	})
+	objectMap := make(map[string]interface{})
+	if pbods.PowerBIOutputDataSourceProperties != nil {
+		objectMap["properties"] = pbods.PowerBIOutputDataSourceProperties
+	}
+	if pbods.Type != "" {
+		objectMap["type"] = pbods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for PowerBIOutputDataSource.
@@ -3363,26 +3564,27 @@ func (pbods *PowerBIOutputDataSource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties PowerBIOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var powerBIOutputDataSourceProperties PowerBIOutputDataSourceProperties
+				err = json.Unmarshal(*v, &powerBIOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				pbods.PowerBIOutputDataSourceProperties = &powerBIOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				pbods.Type = typeVar
+			}
 		}
-		pbods.PowerBIOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		pbods.Type = typeVar
 	}
 
 	return nil
@@ -3390,12 +3592,6 @@ func (pbods *PowerBIOutputDataSource) UnmarshalJSON(body []byte) error {
 
 // PowerBIOutputDataSourceProperties the properties that are associated with a Power BI output.
 type PowerBIOutputDataSourceProperties struct {
-	// RefreshToken - A refresh token that can be used to obtain a valid access token that can then be used to authenticate with the data source. A valid refresh token is currently only obtainable via the Azure Portal. It is recommended to put a dummy string value here when creating the data source and then going to the Azure Portal to authenticate the data source which will update this property with a valid refresh token. Required on PUT (CreateOrReplace) requests.
-	RefreshToken *string `json:"refreshToken,omitempty"`
-	// TokenUserPrincipalName - The user principal name (UPN) of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
-	TokenUserPrincipalName *string `json:"tokenUserPrincipalName,omitempty"`
-	// TokenUserDisplayName - The user display name of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
-	TokenUserDisplayName *string `json:"tokenUserDisplayName,omitempty"`
 	// Dataset - The name of the Power BI dataset. Required on PUT (CreateOrReplace) requests.
 	Dataset *string `json:"dataset,omitempty"`
 	// Table - The name of the Power BI table under the specified dataset. Required on PUT (CreateOrReplace) requests.
@@ -3404,6 +3600,12 @@ type PowerBIOutputDataSourceProperties struct {
 	GroupID *string `json:"groupId,omitempty"`
 	// GroupName - The name of the Power BI group. Use this property to help remember which specific Power BI group id was used.
 	GroupName *string `json:"groupName,omitempty"`
+	// RefreshToken - A refresh token that can be used to obtain a valid access token that can then be used to authenticate with the data source. A valid refresh token is currently only obtainable via the Azure Portal. It is recommended to put a dummy string value here when creating the data source and then going to the Azure Portal to authenticate the data source which will update this property with a valid refresh token. Required on PUT (CreateOrReplace) requests.
+	RefreshToken *string `json:"refreshToken,omitempty"`
+	// TokenUserPrincipalName - The user principal name (UPN) of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
+	TokenUserPrincipalName *string `json:"tokenUserPrincipalName,omitempty"`
+	// TokenUserDisplayName - The user display name of the user that was used to obtain the refresh token. Use this property to help remember which user was used to obtain the refresh token.
+	TokenUserDisplayName *string `json:"tokenUserDisplayName,omitempty"`
 }
 
 // BasicReferenceInputDataSource describes an input data source that contains reference data.
@@ -3458,12 +3660,11 @@ func unmarshalBasicReferenceInputDataSourceArray(body []byte) ([]BasicReferenceI
 // MarshalJSON is the custom marshaler for ReferenceInputDataSource.
 func (rids ReferenceInputDataSource) MarshalJSON() ([]byte, error) {
 	rids.Type = TypeBasicReferenceInputDataSourceTypeReferenceInputDataSource
-	type Alias ReferenceInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(rids),
-	})
+	objectMap := make(map[string]interface{})
+	if rids.Type != "" {
+		objectMap["type"] = rids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsBlobReferenceInputDataSource is the BasicReferenceInputDataSource implementation for ReferenceInputDataSource.
@@ -3483,6 +3684,8 @@ func (rids ReferenceInputDataSource) AsBasicReferenceInputDataSource() (BasicRef
 
 // ReferenceInputProperties the properties that are associated with an input containing reference data.
 type ReferenceInputProperties struct {
+	// Datasource - Describes an input data source that contains reference data. Required on PUT (CreateOrReplace) requests.
+	Datasource BasicReferenceInputDataSource `json:"datasource,omitempty"`
 	// Serialization - Describes how data from an input is serialized or how data is serialized when written to an output. Required on PUT (CreateOrReplace) requests.
 	Serialization BasicSerialization `json:"serialization,omitempty"`
 	// Diagnostics - Describes conditions applicable to the Input, Output, or the job overall, that warrant customer attention.
@@ -3491,19 +3694,24 @@ type ReferenceInputProperties struct {
 	Etag *string `json:"etag,omitempty"`
 	// Type - Possible values include: 'TypeInputProperties', 'TypeReference', 'TypeStream'
 	Type TypeBasicInputProperties `json:"type,omitempty"`
-	// Datasource - Describes an input data source that contains reference data. Required on PUT (CreateOrReplace) requests.
-	Datasource BasicReferenceInputDataSource `json:"datasource,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for ReferenceInputProperties.
 func (rip ReferenceInputProperties) MarshalJSON() ([]byte, error) {
 	rip.Type = TypeReference
-	type Alias ReferenceInputProperties
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(rip),
-	})
+	objectMap := make(map[string]interface{})
+	objectMap["datasource"] = rip.Datasource
+	objectMap["serialization"] = rip.Serialization
+	if rip.Diagnostics != nil {
+		objectMap["diagnostics"] = rip.Diagnostics
+	}
+	if rip.Etag != nil {
+		objectMap["etag"] = rip.Etag
+	}
+	if rip.Type != "" {
+		objectMap["type"] = rip.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsReferenceInputProperties is the BasicInputProperties implementation for ReferenceInputProperties.
@@ -3533,54 +3741,52 @@ func (rip *ReferenceInputProperties) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["datasource"]
-	if v != nil {
-		datasource, err := unmarshalBasicReferenceInputDataSource(*m["datasource"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "datasource":
+			if v != nil {
+				datasource, err := unmarshalBasicReferenceInputDataSource(*v)
+				if err != nil {
+					return err
+				}
+				rip.Datasource = datasource
+			}
+		case "serialization":
+			if v != nil {
+				serialization, err := unmarshalBasicSerialization(*v)
+				if err != nil {
+					return err
+				}
+				rip.Serialization = serialization
+			}
+		case "diagnostics":
+			if v != nil {
+				var diagnostics Diagnostics
+				err = json.Unmarshal(*v, &diagnostics)
+				if err != nil {
+					return err
+				}
+				rip.Diagnostics = &diagnostics
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				rip.Etag = &etag
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicInputProperties
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				rip.Type = typeVar
+			}
 		}
-		rip.Datasource = datasource
-	}
-
-	v = m["serialization"]
-	if v != nil {
-		serialization, err := unmarshalBasicSerialization(*m["serialization"])
-		if err != nil {
-			return err
-		}
-		rip.Serialization = serialization
-	}
-
-	v = m["diagnostics"]
-	if v != nil {
-		var diagnostics Diagnostics
-		err = json.Unmarshal(*m["diagnostics"], &diagnostics)
-		if err != nil {
-			return err
-		}
-		rip.Diagnostics = &diagnostics
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		rip.Etag = &etag
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicInputProperties
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		rip.Type = typeVar
 	}
 
 	return nil
@@ -3597,7 +3803,28 @@ type Resource struct {
 	// Location - Resource location. Required on PUT (CreateOrReplace) requests.
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // ResourceTestStatus describes the status of the test operation along with error information, if applicable.
@@ -3626,35 +3853,35 @@ func (sfc *ScalarFunctionConfiguration) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["inputs"]
-	if v != nil {
-		var inputs []FunctionInput
-		err = json.Unmarshal(*m["inputs"], &inputs)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "inputs":
+			if v != nil {
+				var inputs []FunctionInput
+				err = json.Unmarshal(*v, &inputs)
+				if err != nil {
+					return err
+				}
+				sfc.Inputs = &inputs
+			}
+		case "output":
+			if v != nil {
+				var output FunctionOutput
+				err = json.Unmarshal(*v, &output)
+				if err != nil {
+					return err
+				}
+				sfc.Output = &output
+			}
+		case "binding":
+			if v != nil {
+				binding, err := unmarshalBasicFunctionBinding(*v)
+				if err != nil {
+					return err
+				}
+				sfc.Binding = binding
+			}
 		}
-		sfc.Inputs = &inputs
-	}
-
-	v = m["output"]
-	if v != nil {
-		var output FunctionOutput
-		err = json.Unmarshal(*m["output"], &output)
-		if err != nil {
-			return err
-		}
-		sfc.Output = &output
-	}
-
-	v = m["binding"]
-	if v != nil {
-		binding, err := unmarshalBasicFunctionBinding(*m["binding"])
-		if err != nil {
-			return err
-		}
-		sfc.Binding = binding
 	}
 
 	return nil
@@ -3662,23 +3889,28 @@ func (sfc *ScalarFunctionConfiguration) UnmarshalJSON(body []byte) error {
 
 // ScalarFunctionProperties the properties that are associated with a scalar function.
 type ScalarFunctionProperties struct {
+	// ScalarFunctionConfiguration - Describes the configuration of the scalar function.
+	*ScalarFunctionConfiguration `json:"properties,omitempty"`
 	// Etag - The current entity tag for the function. This is an opaque string. You can use it to detect whether the resource has changed between requests. You can also use it in the If-Match or If-None-Match headers for write operations for optimistic concurrency.
 	Etag *string `json:"etag,omitempty"`
 	// Type - Possible values include: 'TypeFunctionProperties', 'TypeScalar'
 	Type TypeBasicFunctionProperties `json:"type,omitempty"`
-	// ScalarFunctionConfiguration - Describes the configuration of the scalar function.
-	*ScalarFunctionConfiguration `json:"properties,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for ScalarFunctionProperties.
 func (sfp ScalarFunctionProperties) MarshalJSON() ([]byte, error) {
 	sfp.Type = TypeScalar
-	type Alias ScalarFunctionProperties
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(sfp),
-	})
+	objectMap := make(map[string]interface{})
+	if sfp.ScalarFunctionConfiguration != nil {
+		objectMap["properties"] = sfp.ScalarFunctionConfiguration
+	}
+	if sfp.Etag != nil {
+		objectMap["etag"] = sfp.Etag
+	}
+	if sfp.Type != "" {
+		objectMap["type"] = sfp.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsScalarFunctionProperties is the BasicFunctionProperties implementation for ScalarFunctionProperties.
@@ -3703,36 +3935,36 @@ func (sfp *ScalarFunctionProperties) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ScalarFunctionConfiguration
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var scalarFunctionConfiguration ScalarFunctionConfiguration
+				err = json.Unmarshal(*v, &scalarFunctionConfiguration)
+				if err != nil {
+					return err
+				}
+				sfp.ScalarFunctionConfiguration = &scalarFunctionConfiguration
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				sfp.Etag = &etag
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicFunctionProperties
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sfp.Type = typeVar
+			}
 		}
-		sfp.ScalarFunctionConfiguration = &properties
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		sfp.Etag = &etag
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicFunctionProperties
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sfp.Type = typeVar
 	}
 
 	return nil
@@ -3747,7 +3979,8 @@ type BasicSerialization interface {
 	AsSerialization() (*Serialization, bool)
 }
 
-// Serialization describes how data from an input is serialized or how data is serialized when written to an output.
+// Serialization describes how data from an input is serialized or how data is serialized when written to an
+// output.
 type Serialization struct {
 	// Type - Possible values include: 'TypeSerialization', 'TypeAvro', 'TypeJSON', 'TypeCsv'
 	Type Type `json:"type,omitempty"`
@@ -3801,12 +4034,11 @@ func unmarshalBasicSerializationArray(body []byte) ([]BasicSerialization, error)
 // MarshalJSON is the custom marshaler for Serialization.
 func (s Serialization) MarshalJSON() ([]byte, error) {
 	s.Type = TypeSerialization
-	type Alias Serialization
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(s),
-	})
+	objectMap := make(map[string]interface{})
+	if s.Type != "" {
+		objectMap["type"] = s.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAvroSerialization is the BasicSerialization implementation for Serialization.
@@ -3847,21 +4079,23 @@ type ServiceBusDataSourceProperties struct {
 
 // ServiceBusQueueOutputDataSource describes a Service Bus Queue output data source.
 type ServiceBusQueueOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// ServiceBusQueueOutputDataSourceProperties - The properties that are associated with a Service Bus Queue output. Required on PUT (CreateOrReplace) requests.
 	*ServiceBusQueueOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for ServiceBusQueueOutputDataSource.
 func (sbqods ServiceBusQueueOutputDataSource) MarshalJSON() ([]byte, error) {
 	sbqods.Type = TypeMicrosoftServiceBusQueue
-	type Alias ServiceBusQueueOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(sbqods),
-	})
+	objectMap := make(map[string]interface{})
+	if sbqods.ServiceBusQueueOutputDataSourceProperties != nil {
+		objectMap["properties"] = sbqods.ServiceBusQueueOutputDataSourceProperties
+	}
+	if sbqods.Type != "" {
+		objectMap["type"] = sbqods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for ServiceBusQueueOutputDataSource.
@@ -3926,26 +4160,27 @@ func (sbqods *ServiceBusQueueOutputDataSource) UnmarshalJSON(body []byte) error 
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ServiceBusQueueOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var serviceBusQueueOutputDataSourceProperties ServiceBusQueueOutputDataSourceProperties
+				err = json.Unmarshal(*v, &serviceBusQueueOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				sbqods.ServiceBusQueueOutputDataSourceProperties = &serviceBusQueueOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sbqods.Type = typeVar
+			}
 		}
-		sbqods.ServiceBusQueueOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sbqods.Type = typeVar
 	}
 
 	return nil
@@ -3953,35 +4188,37 @@ func (sbqods *ServiceBusQueueOutputDataSource) UnmarshalJSON(body []byte) error 
 
 // ServiceBusQueueOutputDataSourceProperties the properties that are associated with a Service Bus Queue output.
 type ServiceBusQueueOutputDataSourceProperties struct {
+	// QueueName - The name of the Service Bus Queue. Required on PUT (CreateOrReplace) requests.
+	QueueName *string `json:"queueName,omitempty"`
+	// PropertyColumns - A string array of the names of output columns to be attached to Service Bus messages as custom properties.
+	PropertyColumns *[]string `json:"propertyColumns,omitempty"`
 	// ServiceBusNamespace - The namespace that is associated with the desired Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	ServiceBusNamespace *string `json:"serviceBusNamespace,omitempty"`
 	// SharedAccessPolicyName - The shared access policy name for the Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyName *string `json:"sharedAccessPolicyName,omitempty"`
 	// SharedAccessPolicyKey - The shared access policy key for the specified shared access policy. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyKey *string `json:"sharedAccessPolicyKey,omitempty"`
-	// QueueName - The name of the Service Bus Queue. Required on PUT (CreateOrReplace) requests.
-	QueueName *string `json:"queueName,omitempty"`
-	// PropertyColumns - A string array of the names of output columns to be attached to Service Bus messages as custom properties.
-	PropertyColumns *[]string `json:"propertyColumns,omitempty"`
 }
 
 // ServiceBusTopicOutputDataSource describes a Service Bus Topic output data source.
 type ServiceBusTopicOutputDataSource struct {
-	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
-	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 	// ServiceBusTopicOutputDataSourceProperties - The properties that are associated with a Service Bus Topic output. Required on PUT (CreateOrReplace) requests.
 	*ServiceBusTopicOutputDataSourceProperties `json:"properties,omitempty"`
+	// Type - Possible values include: 'TypeOutputDataSource', 'TypeMicrosoftDataLakeAccounts', 'TypePowerBI', 'TypeMicrosoftServiceBusTopic', 'TypeMicrosoftServiceBusQueue', 'TypeMicrosoftStorageDocumentDB', 'TypeMicrosoftSQLServerDatabase', 'TypeMicrosoftServiceBusEventHub', 'TypeMicrosoftStorageTable', 'TypeMicrosoftStorageBlob'
+	Type TypeBasicOutputDataSource `json:"type,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for ServiceBusTopicOutputDataSource.
 func (sbtods ServiceBusTopicOutputDataSource) MarshalJSON() ([]byte, error) {
 	sbtods.Type = TypeMicrosoftServiceBusTopic
-	type Alias ServiceBusTopicOutputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(sbtods),
-	})
+	objectMap := make(map[string]interface{})
+	if sbtods.ServiceBusTopicOutputDataSourceProperties != nil {
+		objectMap["properties"] = sbtods.ServiceBusTopicOutputDataSourceProperties
+	}
+	if sbtods.Type != "" {
+		objectMap["type"] = sbtods.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsAzureDataLakeStoreOutputDataSource is the BasicOutputDataSource implementation for ServiceBusTopicOutputDataSource.
@@ -4046,26 +4283,27 @@ func (sbtods *ServiceBusTopicOutputDataSource) UnmarshalJSON(body []byte) error 
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ServiceBusTopicOutputDataSourceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var serviceBusTopicOutputDataSourceProperties ServiceBusTopicOutputDataSourceProperties
+				err = json.Unmarshal(*v, &serviceBusTopicOutputDataSourceProperties)
+				if err != nil {
+					return err
+				}
+				sbtods.ServiceBusTopicOutputDataSourceProperties = &serviceBusTopicOutputDataSourceProperties
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicOutputDataSource
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sbtods.Type = typeVar
+			}
 		}
-		sbtods.ServiceBusTopicOutputDataSourceProperties = &properties
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicOutputDataSource
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sbtods.Type = typeVar
 	}
 
 	return nil
@@ -4073,16 +4311,16 @@ func (sbtods *ServiceBusTopicOutputDataSource) UnmarshalJSON(body []byte) error 
 
 // ServiceBusTopicOutputDataSourceProperties the properties that are associated with a Service Bus Topic output.
 type ServiceBusTopicOutputDataSourceProperties struct {
+	// TopicName - The name of the Service Bus Topic. Required on PUT (CreateOrReplace) requests.
+	TopicName *string `json:"topicName,omitempty"`
+	// PropertyColumns - A string array of the names of output columns to be attached to Service Bus messages as custom properties.
+	PropertyColumns *[]string `json:"propertyColumns,omitempty"`
 	// ServiceBusNamespace - The namespace that is associated with the desired Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	ServiceBusNamespace *string `json:"serviceBusNamespace,omitempty"`
 	// SharedAccessPolicyName - The shared access policy name for the Event Hub, Service Bus Queue, Service Bus Topic, etc. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyName *string `json:"sharedAccessPolicyName,omitempty"`
 	// SharedAccessPolicyKey - The shared access policy key for the specified shared access policy. Required on PUT (CreateOrReplace) requests.
 	SharedAccessPolicyKey *string `json:"sharedAccessPolicyKey,omitempty"`
-	// TopicName - The name of the Service Bus Topic. Required on PUT (CreateOrReplace) requests.
-	TopicName *string `json:"topicName,omitempty"`
-	// PropertyColumns - A string array of the names of output columns to be attached to Service Bus messages as custom properties.
-	PropertyColumns *[]string `json:"propertyColumns,omitempty"`
 }
 
 // Sku the properties that are associated with a SKU.
@@ -4110,6 +4348,8 @@ type StorageAccount struct {
 // StreamingJob a streamng job object, containing all information associated with the named streaming job.
 type StreamingJob struct {
 	autorest.Response `json:"-"`
+	// StreamingJobProperties - The properties that are associated with a streaming job.  Required on PUT (CreateOrReplace) requests.
+	*StreamingJobProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -4119,9 +4359,31 @@ type StreamingJob struct {
 	// Location - Resource location. Required on PUT (CreateOrReplace) requests.
 	Location *string `json:"location,omitempty"`
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// StreamingJobProperties - The properties that are associated with a streaming job.  Required on PUT (CreateOrReplace) requests.
-	*StreamingJobProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for StreamingJob.
+func (sj StreamingJob) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if sj.StreamingJobProperties != nil {
+		objectMap["properties"] = sj.StreamingJobProperties
+	}
+	if sj.ID != nil {
+		objectMap["id"] = sj.ID
+	}
+	if sj.Name != nil {
+		objectMap["name"] = sj.Name
+	}
+	if sj.Type != nil {
+		objectMap["type"] = sj.Type
+	}
+	if sj.Location != nil {
+		objectMap["location"] = sj.Location
+	}
+	if sj.Tags != nil {
+		objectMap["tags"] = sj.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for StreamingJob struct.
@@ -4131,66 +4393,63 @@ func (sj *StreamingJob) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties StreamingJobProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var streamingJobProperties StreamingJobProperties
+				err = json.Unmarshal(*v, &streamingJobProperties)
+				if err != nil {
+					return err
+				}
+				sj.StreamingJobProperties = &streamingJobProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				sj.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				sj.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sj.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				sj.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				sj.Tags = tags
+			}
 		}
-		sj.StreamingJobProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		sj.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		sj.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sj.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		sj.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		sj.Tags = &tags
 	}
 
 	return nil
@@ -4353,22 +4612,39 @@ func (future StreamingJobsCreateOrReplaceFuture) Result(client StreamingJobsClie
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsCreateOrReplaceFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return sj, autorest.NewError("streamanalytics.StreamingJobsCreateOrReplaceFuture", "Result", "asynchronous operation has not completed")
+		return sj, azure.NewAsyncOpIncompleteError("streamanalytics.StreamingJobsCreateOrReplaceFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		sj, err = client.CreateOrReplaceResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsCreateOrReplaceFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsCreateOrReplaceFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	sj, err = client.CreateOrReplaceResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsCreateOrReplaceFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4384,22 +4660,39 @@ func (future StreamingJobsDeleteFuture) Result(client StreamingJobsClient) (ar a
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("streamanalytics.StreamingJobsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("streamanalytics.StreamingJobsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4415,22 +4708,39 @@ func (future StreamingJobsStartFuture) Result(client StreamingJobsClient) (ar au
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStartFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("streamanalytics.StreamingJobsStartFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("streamanalytics.StreamingJobsStartFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.StartResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStartFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStartFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.StartResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStartFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4446,22 +4756,39 @@ func (future StreamingJobsStopFuture) Result(client StreamingJobsClient) (ar aut
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStopFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("streamanalytics.StreamingJobsStopFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("streamanalytics.StreamingJobsStopFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.StopResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStopFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStopFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.StopResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "streamanalytics.StreamingJobsStopFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4527,12 +4854,11 @@ func unmarshalBasicStreamInputDataSourceArray(body []byte) ([]BasicStreamInputDa
 // MarshalJSON is the custom marshaler for StreamInputDataSource.
 func (sids StreamInputDataSource) MarshalJSON() ([]byte, error) {
 	sids.Type = TypeBasicStreamInputDataSourceTypeStreamInputDataSource
-	type Alias StreamInputDataSource
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(sids),
-	})
+	objectMap := make(map[string]interface{})
+	if sids.Type != "" {
+		objectMap["type"] = sids.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsIoTHubStreamInputDataSource is the BasicStreamInputDataSource implementation for StreamInputDataSource.
@@ -4562,6 +4888,8 @@ func (sids StreamInputDataSource) AsBasicStreamInputDataSource() (BasicStreamInp
 
 // StreamInputProperties the properties that are associated with an input containing stream data.
 type StreamInputProperties struct {
+	// Datasource - Describes an input data source that contains stream data. Required on PUT (CreateOrReplace) requests.
+	Datasource BasicStreamInputDataSource `json:"datasource,omitempty"`
 	// Serialization - Describes how data from an input is serialized or how data is serialized when written to an output. Required on PUT (CreateOrReplace) requests.
 	Serialization BasicSerialization `json:"serialization,omitempty"`
 	// Diagnostics - Describes conditions applicable to the Input, Output, or the job overall, that warrant customer attention.
@@ -4570,19 +4898,24 @@ type StreamInputProperties struct {
 	Etag *string `json:"etag,omitempty"`
 	// Type - Possible values include: 'TypeInputProperties', 'TypeReference', 'TypeStream'
 	Type TypeBasicInputProperties `json:"type,omitempty"`
-	// Datasource - Describes an input data source that contains stream data. Required on PUT (CreateOrReplace) requests.
-	Datasource BasicStreamInputDataSource `json:"datasource,omitempty"`
 }
 
 // MarshalJSON is the custom marshaler for StreamInputProperties.
 func (sip StreamInputProperties) MarshalJSON() ([]byte, error) {
 	sip.Type = TypeStream
-	type Alias StreamInputProperties
-	return json.Marshal(&struct {
-		Alias
-	}{
-		Alias: (Alias)(sip),
-	})
+	objectMap := make(map[string]interface{})
+	objectMap["datasource"] = sip.Datasource
+	objectMap["serialization"] = sip.Serialization
+	if sip.Diagnostics != nil {
+		objectMap["diagnostics"] = sip.Diagnostics
+	}
+	if sip.Etag != nil {
+		objectMap["etag"] = sip.Etag
+	}
+	if sip.Type != "" {
+		objectMap["type"] = sip.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // AsReferenceInputProperties is the BasicInputProperties implementation for StreamInputProperties.
@@ -4612,54 +4945,52 @@ func (sip *StreamInputProperties) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["datasource"]
-	if v != nil {
-		datasource, err := unmarshalBasicStreamInputDataSource(*m["datasource"])
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "datasource":
+			if v != nil {
+				datasource, err := unmarshalBasicStreamInputDataSource(*v)
+				if err != nil {
+					return err
+				}
+				sip.Datasource = datasource
+			}
+		case "serialization":
+			if v != nil {
+				serialization, err := unmarshalBasicSerialization(*v)
+				if err != nil {
+					return err
+				}
+				sip.Serialization = serialization
+			}
+		case "diagnostics":
+			if v != nil {
+				var diagnostics Diagnostics
+				err = json.Unmarshal(*v, &diagnostics)
+				if err != nil {
+					return err
+				}
+				sip.Diagnostics = &diagnostics
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				sip.Etag = &etag
+			}
+		case "type":
+			if v != nil {
+				var typeVar TypeBasicInputProperties
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sip.Type = typeVar
+			}
 		}
-		sip.Datasource = datasource
-	}
-
-	v = m["serialization"]
-	if v != nil {
-		serialization, err := unmarshalBasicSerialization(*m["serialization"])
-		if err != nil {
-			return err
-		}
-		sip.Serialization = serialization
-	}
-
-	v = m["diagnostics"]
-	if v != nil {
-		var diagnostics Diagnostics
-		err = json.Unmarshal(*m["diagnostics"], &diagnostics)
-		if err != nil {
-			return err
-		}
-		sip.Diagnostics = &diagnostics
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		sip.Etag = &etag
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar TypeBasicInputProperties
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sip.Type = typeVar
 	}
 
 	return nil
@@ -4677,14 +5008,32 @@ type SubResource struct {
 
 // SubscriptionQuota describes the current quota for the subscription.
 type SubscriptionQuota struct {
+	// SubscriptionQuotaProperties - Describes the properties of the quota.
+	*SubscriptionQuotaProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// SubscriptionQuotaProperties - Describes the properties of the quota.
-	*SubscriptionQuotaProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SubscriptionQuota.
+func (sq SubscriptionQuota) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if sq.SubscriptionQuotaProperties != nil {
+		objectMap["properties"] = sq.SubscriptionQuotaProperties
+	}
+	if sq.ID != nil {
+		objectMap["id"] = sq.ID
+	}
+	if sq.Name != nil {
+		objectMap["name"] = sq.Name
+	}
+	if sq.Type != nil {
+		objectMap["type"] = sq.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SubscriptionQuota struct.
@@ -4694,46 +5043,45 @@ func (sq *SubscriptionQuota) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SubscriptionQuotaProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var subscriptionQuotaProperties SubscriptionQuotaProperties
+				err = json.Unmarshal(*v, &subscriptionQuotaProperties)
+				if err != nil {
+					return err
+				}
+				sq.SubscriptionQuotaProperties = &subscriptionQuotaProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				sq.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				sq.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sq.Type = &typeVar
+			}
 		}
-		sq.SubscriptionQuotaProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		sq.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		sq.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sq.Type = &typeVar
 	}
 
 	return nil
@@ -4747,8 +5095,8 @@ type SubscriptionQuotaProperties struct {
 	CurrentCount *int32 `json:"currentCount,omitempty"`
 }
 
-// SubscriptionQuotasListResult result of the GetQuotas operation. It contains a list of quotas for the subscription in
-// a particular region.
+// SubscriptionQuotasListResult result of the GetQuotas operation. It contains a list of quotas for the
+// subscription in a particular region.
 type SubscriptionQuotasListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of quotas for the subscription in a particular region.
@@ -4759,14 +5107,32 @@ type SubscriptionQuotasListResult struct {
 // transformations are contained under a streaming job.
 type Transformation struct {
 	autorest.Response `json:"-"`
+	// TransformationProperties - The properties that are associated with a transformation. Required on PUT (CreateOrReplace) requests.
+	*TransformationProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
 	Name *string `json:"name,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// TransformationProperties - The properties that are associated with a transformation. Required on PUT (CreateOrReplace) requests.
-	*TransformationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Transformation.
+func (t Transformation) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if t.TransformationProperties != nil {
+		objectMap["properties"] = t.TransformationProperties
+	}
+	if t.ID != nil {
+		objectMap["id"] = t.ID
+	}
+	if t.Name != nil {
+		objectMap["name"] = t.Name
+	}
+	if t.Type != nil {
+		objectMap["type"] = t.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Transformation struct.
@@ -4776,46 +5142,45 @@ func (t *Transformation) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties TransformationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var transformationProperties TransformationProperties
+				err = json.Unmarshal(*v, &transformationProperties)
+				if err != nil {
+					return err
+				}
+				t.TransformationProperties = &transformationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				t.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				t.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				t.Type = &typeVar
+			}
 		}
-		t.TransformationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		t.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		t.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		t.Type = &typeVar
 	}
 
 	return nil

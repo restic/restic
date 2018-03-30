@@ -42,16 +42,25 @@ type LoadConfig struct {
 
 	// If non-nil, the destination table is partitioned by time.
 	TimePartitioning *TimePartitioning
+
+	// Custom encryption configuration (e.g., Cloud KMS keys).
+	DestinationEncryptionConfig *EncryptionConfig
+
+	// SchemaUpdateOptions allows the schema of the destination table to be
+	// updated as a side effect of the load job.
+	SchemaUpdateOptions []string
 }
 
 func (l *LoadConfig) toBQ() (*bq.JobConfiguration, io.Reader) {
 	config := &bq.JobConfiguration{
 		Labels: l.Labels,
 		Load: &bq.JobConfigurationLoad{
-			CreateDisposition: string(l.CreateDisposition),
-			WriteDisposition:  string(l.WriteDisposition),
-			DestinationTable:  l.Dst.toBQ(),
-			TimePartitioning:  l.TimePartitioning.toBQ(),
+			CreateDisposition:                  string(l.CreateDisposition),
+			WriteDisposition:                   string(l.WriteDisposition),
+			DestinationTable:                   l.Dst.toBQ(),
+			TimePartitioning:                   l.TimePartitioning.toBQ(),
+			DestinationEncryptionConfiguration: l.DestinationEncryptionConfig.toBQ(),
+			SchemaUpdateOptions:                l.SchemaUpdateOptions,
 		},
 	}
 	media := l.Src.populateLoadConfig(config.Load)
@@ -60,11 +69,13 @@ func (l *LoadConfig) toBQ() (*bq.JobConfiguration, io.Reader) {
 
 func bqToLoadConfig(q *bq.JobConfiguration, c *Client) *LoadConfig {
 	lc := &LoadConfig{
-		Labels:            q.Labels,
-		CreateDisposition: TableCreateDisposition(q.Load.CreateDisposition),
-		WriteDisposition:  TableWriteDisposition(q.Load.WriteDisposition),
-		Dst:               bqToTable(q.Load.DestinationTable, c),
-		TimePartitioning:  bqToTimePartitioning(q.Load.TimePartitioning),
+		Labels:                      q.Labels,
+		CreateDisposition:           TableCreateDisposition(q.Load.CreateDisposition),
+		WriteDisposition:            TableWriteDisposition(q.Load.WriteDisposition),
+		Dst:                         bqToTable(q.Load.DestinationTable, c),
+		TimePartitioning:            bqToTimePartitioning(q.Load.TimePartitioning),
+		DestinationEncryptionConfig: bqToEncryptionConfig(q.Load.DestinationEncryptionConfiguration),
+		SchemaUpdateOptions:         q.Load.SchemaUpdateOptions,
 	}
 	var fc *FileConfig
 	if len(q.Load.SourceUris) == 0 {
@@ -120,7 +131,7 @@ func (l *Loader) Run(ctx context.Context) (*Job, error) {
 func (l *Loader) newJob() (*bq.Job, io.Reader) {
 	config, media := l.LoadConfig.toBQ()
 	return &bq.Job{
-		JobReference:  l.JobIDConfig.createJobRef(l.c.projectID),
+		JobReference:  l.JobIDConfig.createJobRef(l.c),
 		Configuration: config,
 	}, media
 }

@@ -76,7 +76,7 @@ func (client GlobalClient) CheckNameAvailabilityPreparer(ctx context.Context, re
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/checknameavailability", pathParameters),
@@ -653,8 +653,8 @@ func (client GlobalClient) GetAllSitesComplete(ctx context.Context) (result Site
 
 // GetSubscriptionGeoRegions sends the get subscription geo regions request.
 //
-// sku is filter only to regions that support this sku linuxWorkersEnabled is filter only to regions that support linux
-// workers
+// sku is filter only to regions that support this sku linuxWorkersEnabled is filter only to regions that support
+// linux workers
 func (client GlobalClient) GetSubscriptionGeoRegions(ctx context.Context, sku string, linuxWorkersEnabled *bool) (result GeoRegionCollectionPage, err error) {
 	result.fn = client.getSubscriptionGeoRegionsNextResults
 	req, err := client.GetSubscriptionGeoRegionsPreparer(ctx, sku, linuxWorkersEnabled)
@@ -1041,7 +1041,7 @@ func (client GlobalClient) UpdateSubscriptionPublishingCredentialsPreparer(ctx c
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Web/publishingCredentials", pathParameters),

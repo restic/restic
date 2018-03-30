@@ -33,6 +33,69 @@ make backwards-incompatible changes.
 
 ## News
 
+_March 22, 2018_
+
+*v0.20.*
+
+- bigquery: Support SchemaUpdateOptions for load jobs.
+
+- bigtable:
+  - Add SampleRowKeys.
+  - cbt: Support union, intersection GCPolicy.
+  - Retry admin RPCS.
+  - Add trace spans to retries.
+  
+- datastore: Add OpenCensus tracing.
+
+- firestore:
+  - Fix queries involving Null and NaN.
+  - Allow Timestamp protobuffers for time values.
+
+- logging: Add a WriteTimeout option.
+
+- spanner: Support Batch API.
+
+- storage: Add OpenCensus tracing.
+  
+
+_February 26, 2018_
+
+*v0.19.0*
+
+- bigquery:
+  - Support customer-managed encryption keys.
+
+- bigtable:
+  - Improved emulator support.
+  - Support GetCluster.
+
+- datastore:
+  - Add general mutations.
+  - Support pointer struct fields.
+  - Support transaction options.
+
+- firestore:
+  - Add Transaction.GetAll.
+  - Support document cursors.
+
+- logging:
+  - Support concurrent RPCs to the service.
+  - Support per-entry resources.
+
+- profiler:
+  - Add config options to disable heap and thread profiling.
+  - Read the project ID from $GOOGLE_CLOUD_PROJECT when it's set.
+
+- pubsub:
+  - BEHAVIOR CHANGE: Release flow control after ack/nack (instead of after the
+    callback returns).
+  - Add SubscriptionInProject.
+  - Add OpenCensus instrumentation for streaming pull.
+
+- storage:
+  - Support CORS.
+
+
 _January 18, 2018_
 
 *v0.18.0*
@@ -97,45 +160,6 @@ _December 11, 2017_
   - TimePartitioning supports "Field".
 
 
-_October 30, 2017_
-
-*v0.16.0*
-
-- Other bigquery changes:
-  - `JobIterator.Next` returns `*Job`; removed `JobInfo` (BREAKING CHANGE).
-  - UseStandardSQL is deprecated; set UseLegacySQL to true if you need
-    Legacy SQL.
-  - Uploader.Put will generate a random insert ID if you do not provide one.
-  - Support time partitioning for load jobs.
-  - Support dry-run queries.
-  - A `Job` remembers its last retrieved status.
-  - Support retrieving job configuration.
-  - Support labels for jobs and tables.
-  - Support dataset access lists.
-  - Improve support for external data sources, including data from Bigtable and
-    Google Sheets, and tables with external data.
-  - Support updating a table's view configuration.
-  - Fix uploading civil times with nanoseconds.
-
-- storage:
-  - Support PubSub notifications.
-  - Support Requester Pays buckets.
-
-- profiler: Support goroutine and mutex profile types.
-
-
-_October 3, 2017_
-
-*v0.15.0*
-
-- firestore: beta release. See the
-  [announcement](https://firebase.googleblog.com/2017/10/introducing-cloud-firestore.html).
-
-- errorreporting: The existing package has been redesigned.
-
-- errors: This package has been removed. Use errorreporting.
-
-
 [Older news](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/old-news.md)
 
 ## Supported APIs
@@ -143,7 +167,7 @@ _October 3, 2017_
 Google API                       | Status       | Package
 ---------------------------------|--------------|-----------------------------------------------------------
 [BigQuery][cloud-bigquery]       | stable       | [`cloud.google.com/go/bigquery`][cloud-bigquery-ref]
-[Bigtable][cloud-bigtable]       | beta         | [`cloud.google.com/go/bigtable`][cloud-bigtable-ref]
+[Bigtable][cloud-bigtable]       | stable       | [`cloud.google.com/go/bigtable`][cloud-bigtable-ref]
 [Container][cloud-container]     | alpha        | [`cloud.google.com/go/container/apiv1`][cloud-container-ref]
 [Data Loss Prevention][cloud-dlp]| alpha        | [`cloud.google.com/go/dlp/apiv2beta1`][cloud-dlp-ref]
 [Datastore][cloud-datastore]     | stable       | [`cloud.google.com/go/datastore`][cloud-datastore-ref]
@@ -153,7 +177,7 @@ Google API                       | Status       | Package
 [Language][cloud-language]       | stable       | [`cloud.google.com/go/language/apiv1`][cloud-language-ref]
 [Logging][cloud-logging]         | stable       | [`cloud.google.com/go/logging`][cloud-logging-ref]
 [Monitoring][cloud-monitoring]   | beta         | [`cloud.google.com/go/monitoring/apiv3`][cloud-monitoring-ref]
-[OS Login][cloud-oslogin]              | alpha        | [`cloud.google.com/compute/docs/oslogin/rest`][cloud-oslogin-ref]
+[OS Login][cloud-oslogin]        | alpha        | [`cloud.google.com/compute/docs/oslogin/rest`][cloud-oslogin-ref]
 [Pub/Sub][cloud-pubsub]          | beta         | [`cloud.google.com/go/pubsub`][cloud-pubsub-ref]
 [Spanner][cloud-spanner]         | stable       | [`cloud.google.com/go/spanner`][cloud-spanner-ref]
 [Speech][cloud-speech]           | stable       | [`cloud.google.com/go/speech/apiv1`][cloud-speech-ref]

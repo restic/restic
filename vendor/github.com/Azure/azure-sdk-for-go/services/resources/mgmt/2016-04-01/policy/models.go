@@ -36,6 +36,11 @@ const (
 	NotSpecified Type = "NotSpecified"
 )
 
+// PossibleTypeValues returns an array of possible values for the Type const type.
+func PossibleTypeValues() []Type {
+	return []Type{BuiltIn, Custom, NotSpecified}
+}
+
 // Assignment the policy assignment.
 type Assignment struct {
 	autorest.Response `json:"-"`
@@ -49,6 +54,24 @@ type Assignment struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for Assignment.
+func (a Assignment) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if a.AssignmentProperties != nil {
+		objectMap["properties"] = a.AssignmentProperties
+	}
+	if a.ID != nil {
+		objectMap["id"] = a.ID
+	}
+	if a.Type != nil {
+		objectMap["type"] = a.Type
+	}
+	if a.Name != nil {
+		objectMap["name"] = a.Name
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for Assignment struct.
 func (a *Assignment) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -56,46 +79,45 @@ func (a *Assignment) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AssignmentProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var assignmentProperties AssignmentProperties
+				err = json.Unmarshal(*v, &assignmentProperties)
+				if err != nil {
+					return err
+				}
+				a.AssignmentProperties = &assignmentProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				a.ID = &ID
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				a.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				a.Name = &name
+			}
 		}
-		a.AssignmentProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		a.ID = &ID
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		a.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		a.Name = &name
 	}
 
 	return nil
@@ -224,6 +246,21 @@ type Definition struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for Definition.
+func (d Definition) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if d.DefinitionProperties != nil {
+		objectMap["properties"] = d.DefinitionProperties
+	}
+	if d.ID != nil {
+		objectMap["id"] = d.ID
+	}
+	if d.Name != nil {
+		objectMap["name"] = d.Name
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for Definition struct.
 func (d *Definition) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -231,36 +268,36 @@ func (d *Definition) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DefinitionProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var definitionProperties DefinitionProperties
+				err = json.Unmarshal(*v, &definitionProperties)
+				if err != nil {
+					return err
+				}
+				d.DefinitionProperties = &definitionProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				d.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				d.Name = &name
+			}
 		}
-		d.DefinitionProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		d.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		d.Name = &name
 	}
 
 	return nil
@@ -377,5 +414,5 @@ type DefinitionProperties struct {
 	// Description - The policy definition description.
 	Description *string `json:"description,omitempty"`
 	// PolicyRule - The policy rule.
-	PolicyRule *map[string]interface{} `json:"policyRule,omitempty"`
+	PolicyRule interface{} `json:"policyRule,omitempty"`
 }

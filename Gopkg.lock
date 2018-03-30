@@ -4,53 +4,44 @@
 [[projects]]
   branch = "master"
   name = "bazil.org/fuse"
-  packages = [
-    ".",
-    "fs",
-    "fuseutil"
-  ]
+  packages = [".","fs","fuseutil"]
   revision = "371fbbdaa8987b715bdd21d6adc4c9b20155f748"
 
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "767c40d6a2e058483c25fa193e963a22da17236d"
-  version = "v0.18.0"
+  revision = "4b98a6370e36d7a85192e7bad08a4ebd82eac2a8"
+  version = "v0.20.0"
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
-  packages = ["storage"]
-  revision = "eae258195456be76b2ec9ad2ee2ab63cdda365d9"
-  version = "v12.2.0-beta"
+  packages = ["storage","version"]
+  revision = "56332fec5b308fbb6615fa1af6117394cdba186d"
+  version = "v15.0.0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = [
-    "autorest",
-    "autorest/adal",
-    "autorest/azure",
-    "autorest/date"
-  ]
-  revision = "c2a68353555b68de3ee8455a4fd3e890a0ac6d99"
-  version = "v9.8.1"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
+  revision = "ed4b7f5bf1ec0c9ede1fda2681d96771282f2862"
+  version = "v10.4.0"
 
 [[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
-  revision = "61153c768f31ee5f130071d08fc82b85208528de"
-  version = "v1.1.0"
+  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
+  version = "v2.0.0"
 
 [[projects]]
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
-  revision = "1d903dcb749992f3741d744c0f8376b4bd7eb3e1"
-  version = "v1.0.7"
+  revision = "20f5889cbdc3c73dbd2862796665e7c465ade7d1"
+  version = "v1.0.8"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   branch = "master"
@@ -67,14 +58,14 @@
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
-  version = "v1.32.0"
+  revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
+  version = "v1.33.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "c65a0412e71e8b9b3bfd22925720d23c0f054237"
+  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -96,33 +87,21 @@
 
 [[projects]]
   name = "github.com/kurin/blazer"
-  packages = [
-    "b2",
-    "base",
-    "internal/b2types",
-    "internal/blog"
-  ]
+  packages = ["b2","base","internal/b2types","internal/blog"]
   revision = "cd0304efa98725679cf68422cefa328d3d96f2f4"
   version = "v0.3.0"
 
 [[projects]]
   name = "github.com/marstr/guid"
   packages = ["."]
-  revision = "8bdf7d1a087ccc975cf37dd6507da50698fd19ca"
+  revision = "8bd9a64bf37eb297b492a4101fb28e80ac0b290f"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/minio/minio-go"
-  packages = [
-    ".",
-    "pkg/credentials",
-    "pkg/encrypt",
-    "pkg/policy",
-    "pkg/s3signer",
-    "pkg/s3utils",
-    "pkg/set"
-  ]
-  revision = "14f1d472d115bac5ca4804094aa87484a72ced61"
-  version = "4.0.6"
+  packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
+  revision = "66252c2a3c15f7b90cc8493d497a04ac3b6e3606"
+  version = "5.0.0"
 
 [[projects]]
   branch = "master"
@@ -134,7 +113,7 @@
   branch = "master"
   name = "github.com/ncw/swift"
   packages = ["."]
-  revision = "ae9f0ea1605b9aa6434ed5c731ca35d83ba67c55"
+  revision = "b2a7479cf26fa841ff90dd932d0221cb5c50782d"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -151,14 +130,14 @@
 [[projects]]
   name = "github.com/pkg/sftp"
   packages = ["."]
-  revision = "f6a9258a0f570c3a76681b897b6ded57cb0dfa88"
-  version = "1.2.0"
+  revision = "49488377fa2f14143ba3067cf7555f60f6c7b550"
+  version = "1.5.0"
 
 [[projects]]
   name = "github.com/pkg/xattr"
   packages = ["."]
-  revision = "23c75e3f6c1d8b13b3dd905b011a7f38a06044b7"
-  version = "v0.2.1"
+  revision = "1d7b7ffe7c46974a836eb583b7452f22de1c18cf"
+  version = "v0.2.3"
 
 [[projects]]
   name = "github.com/restic/chunker"
@@ -169,8 +148,8 @@
 [[projects]]
   name = "github.com/russross/blackfriday"
   packages = ["."]
-  revision = "4048872b16cc0fc2c5fd9eacf0ed2c2fedaa0c8c"
-  version = "v1.5"
+  revision = "55d61fa8aa702f59229e6cff85793c22e580eaf5"
+  version = "v1.5.1"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
@@ -181,17 +160,14 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
-  version = "v1.0.4"
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/spf13/cobra"
-  packages = [
-    ".",
-    "doc"
-  ]
-  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
-  version = "v0.0.1"
+  packages = [".","doc"]
+  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
+  version = "v0.0.2"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -202,111 +178,56 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "curve25519",
-    "ed25519",
-    "ed25519/internal/edwards25519",
-    "internal/chacha20",
-    "pbkdf2",
-    "poly1305",
-    "scrypt",
-    "ssh",
-    "ssh/terminal"
-  ]
-  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
+  packages = ["argon2","blake2b","curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp",
-    "idna",
-    "lex/httplex"
-  ]
-  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
+  packages = ["context","context/ctxhttp","idna","lex/httplex"]
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt"
-  ]
-  revision = "b28fcf2b08a19742b43084fb40ab78ac6c3d8067"
+  packages = [".","google","internal","jws","jwt"]
+  revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sync"
   packages = ["errgroup"]
-  revision = "fd80eb99c8f653c847d294a001bdf2a3a6f768f5"
+  revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows"
-  ]
-  revision = "af50095a40f9041b3b38960738837185c26e9419"
+  packages = ["unix","windows"]
+  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/text"
-  packages = [
-    "collate",
-    "collate/build",
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "secure/bidirule",
-    "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable"
-  ]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
-  packages = [
-    "gensupport",
-    "googleapi",
-    "googleapi/internal/uritemplates",
-    "storage/v1"
-  ]
-  revision = "65b0d8655182691ad23b4fac11e6f7b897d9b634"
+  packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
+  revision = "dbbc13f71100fa6ece308335445fca6bb0dd5c2f"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch"
-  ]
+  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [[projects]]
-  branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"

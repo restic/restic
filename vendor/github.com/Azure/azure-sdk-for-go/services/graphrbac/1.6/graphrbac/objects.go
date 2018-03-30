@@ -110,7 +110,7 @@ func (client ObjectsClient) GetObjectsByObjectIds(ctx context.Context, parameter
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.IncludeDirectoryObjectReferences", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "graphrbac.ObjectsClient", "GetObjectsByObjectIds")
+		return result, validation.NewError("graphrbac.ObjectsClient", "GetObjectsByObjectIds", err.Error())
 	}
 
 	result.fn = func(lastResult GetObjectsResult) (GetObjectsResult, error) {
@@ -152,7 +152,7 @@ func (client ObjectsClient) GetObjectsByObjectIdsPreparer(ctx context.Context, p
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{tenantID}/getObjectsByObjectIds", pathParameters),

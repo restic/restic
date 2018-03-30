@@ -79,7 +79,7 @@ func (client IntegrationAccountsClient) CreateOrUpdatePreparer(ctx context.Conte
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),
@@ -432,8 +432,8 @@ func (client IntegrationAccountsClient) ListBySubscriptionComplete(ctx context.C
 
 // ListCallbackURL lists the integration account callback URL.
 //
-// resourceGroupName is the resource group name. integrationAccountName is the integration account name. parameters is
-// the callback URL parameters.
+// resourceGroupName is the resource group name. integrationAccountName is the integration account name. parameters
+// is the callback URL parameters.
 func (client IntegrationAccountsClient) ListCallbackURL(ctx context.Context, resourceGroupName string, integrationAccountName string, parameters ListCallbackURLParameters) (result CallbackURL, err error) {
 	req, err := client.ListCallbackURLPreparer(ctx, resourceGroupName, integrationAccountName, parameters)
 	if err != nil {
@@ -470,7 +470,7 @@ func (client IntegrationAccountsClient) ListCallbackURLPreparer(ctx context.Cont
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}/listCallbackUrl", pathParameters),
@@ -539,7 +539,7 @@ func (client IntegrationAccountsClient) UpdatePreparer(ctx context.Context, reso
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Logic/integrationAccounts/{integrationAccountName}", pathParameters),

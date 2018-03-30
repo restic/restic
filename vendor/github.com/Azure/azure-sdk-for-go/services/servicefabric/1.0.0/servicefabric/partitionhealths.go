@@ -153,7 +153,7 @@ func (client PartitionHealthsClient) SendPreparer(ctx context.Context, partition
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Partitions/{partitionId}/$/ReportHealth", pathParameters),

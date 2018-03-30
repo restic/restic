@@ -115,17 +115,21 @@ type QueryConfig struct {
 	// call LastStatus on the returned job to get statistics. Calling Status on a
 	// dry-run job will fail.
 	DryRun bool
+
+	// Custom encryption configuration (e.g., Cloud KMS keys).
+	DestinationEncryptionConfig *EncryptionConfig
 }
 
 func (qc *QueryConfig) toBQ() (*bq.JobConfiguration, error) {
 	qconf := &bq.JobConfigurationQuery{
-		Query:              qc.Q,
-		CreateDisposition:  string(qc.CreateDisposition),
-		WriteDisposition:   string(qc.WriteDisposition),
-		AllowLargeResults:  qc.AllowLargeResults,
-		Priority:           string(qc.Priority),
-		MaximumBytesBilled: qc.MaxBytesBilled,
-		TimePartitioning:   qc.TimePartitioning.toBQ(),
+		Query:                              qc.Q,
+		CreateDisposition:                  string(qc.CreateDisposition),
+		WriteDisposition:                   string(qc.WriteDisposition),
+		AllowLargeResults:                  qc.AllowLargeResults,
+		Priority:                           string(qc.Priority),
+		MaximumBytesBilled:                 qc.MaxBytesBilled,
+		TimePartitioning:                   qc.TimePartitioning.toBQ(),
+		DestinationEncryptionConfiguration: qc.DestinationEncryptionConfig.toBQ(),
 	}
 	if len(qc.TableDefinitions) > 0 {
 		qconf.TableDefinitions = make(map[string]bq.ExternalDataConfiguration)
@@ -274,7 +278,7 @@ func (q *Query) newJob() (*bq.Job, error) {
 		return nil, err
 	}
 	return &bq.Job{
-		JobReference:  q.JobIDConfig.createJobRef(q.client.projectID),
+		JobReference:  q.JobIDConfig.createJobRef(q.client),
 		Configuration: config,
 	}, nil
 }

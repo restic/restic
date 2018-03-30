@@ -121,7 +121,7 @@ func (s *server) CreateTable(ctx context.Context, req *btapb.CreateTableRequest)
 	s.mu.Lock()
 	if _, ok := s.tables[tbl]; ok {
 		s.mu.Unlock()
-		return nil, grpc.Errorf(codes.AlreadyExists, "table %q already exists", tbl)
+		return nil, status.Errorf(codes.AlreadyExists, "table %q already exists", tbl)
 	}
 	s.tables[tbl] = newTable(req)
 	s.mu.Unlock()
@@ -151,7 +151,7 @@ func (s *server) GetTable(ctx context.Context, req *btapb.GetTableRequest) (*bta
 	tblIns, ok := s.tables[tbl]
 	s.mu.Unlock()
 	if !ok {
-		return nil, grpc.Errorf(codes.NotFound, "table %q not found", tbl)
+		return nil, status.Errorf(codes.NotFound, "table %q not found", tbl)
 	}
 
 	return &btapb.Table{
@@ -177,7 +177,7 @@ func (s *server) ModifyColumnFamilies(ctx context.Context, req *btapb.ModifyColu
 	tbl, ok := s.tables[req.Name]
 	s.mu.Unlock()
 	if !ok {
-		return nil, grpc.Errorf(codes.NotFound, "table %q not found", req.Name)
+		return nil, status.Errorf(codes.NotFound, "table %q not found", req.Name)
 	}
 
 	tbl.mu.Lock()
@@ -186,7 +186,7 @@ func (s *server) ModifyColumnFamilies(ctx context.Context, req *btapb.ModifyColu
 	for _, mod := range req.Modifications {
 		if create := mod.GetCreate(); create != nil {
 			if _, ok := tbl.families[mod.Id]; ok {
-				return nil, grpc.Errorf(codes.AlreadyExists, "family %q already exists", mod.Id)
+				return nil, status.Errorf(codes.AlreadyExists, "family %q already exists", mod.Id)
 			}
 			newcf := &columnFamily{
 				name:   req.Name + "/columnFamilies/" + mod.Id,
@@ -218,6 +218,7 @@ func (s *server) ModifyColumnFamilies(ctx context.Context, req *btapb.ModifyColu
 	return &btapb.Table{
 		Name:           tblName,
 		ColumnFamilies: toColumnFamilies(tbl.families),
+		Granularity:    btapb.Table_TimestampGranularity(btapb.Table_MILLIS),
 	}, nil
 }
 
@@ -415,7 +416,7 @@ func streamRow(stream btpb.Bigtable_ReadRowsServer, r *row, f *btpb.RowFilter) (
 	// We can't have a cell with just COMMIT set, which would imply a new empty cell.
 	// So modify the last cell to have the COMMIT flag set.
 	if len(rrr.Chunks) > 0 {
-		rrr.Chunks[len(rrr.Chunks)-1].RowStatus = &btpb.ReadRowsResponse_CellChunk_CommitRow{true}
+		rrr.Chunks[len(rrr.Chunks)-1].RowStatus = &btpb.ReadRowsResponse_CellChunk_CommitRow{CommitRow: true}
 	}
 
 	return true, stream.Send(rrr)
@@ -429,6 +430,10 @@ func filterRow(f *btpb.RowFilter, r *row) bool {
 	}
 	// Handle filters that apply beyond just including/excluding cells.
 	switch f := f.Filter.(type) {
+	case *btpb.RowFilter_BlockAllFilter:
+		return !f.BlockAllFilter
+	case *btpb.RowFilter_PassAllFilter:
+		return f.PassAllFilter
 	case *btpb.RowFilter_Chain_:
 		for _, sub := range f.Chain.Filters {
 			if !filterRow(sub, r) {

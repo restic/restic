@@ -52,22 +52,23 @@ func main() {
 
 | Bucket operations                                 | Object operations                                   | Encrypted Object operations                 | Presigned operations                          | Bucket Policy/Notification Operations                         | Client custom settings                                |
 | :---                                              | :---                                                | :---                                        | :---                                          | :---                                                          | :---                                                  |
-| [`MakeBucket`](#MakeBucket)                       | [`GetObject`](#GetObject)                           | [`NewSymmetricKey`](#NewSymmetricKey)       | [`PresignedGetObject`](#PresignedGetObject)   | [`SetBucketPolicy`](#SetBucketPolicy)                         | [`SetAppInfo`](#SetAppInfo)                           |
-| [`ListBuckets`](#ListBuckets)                     | [`PutObject`](#PutObject)                           | [`NewAsymmetricKey`](#NewAsymmetricKey)     | [`PresignedPutObject`](#PresignedPutObject)   | [`GetBucketPolicy`](#GetBucketPolicy)                         | [`SetCustomTransport`](#SetCustomTransport)           |
-| [`BucketExists`](#BucketExists)                   | [`CopyObject`](#CopyObject)                         | [`GetEncryptedObject`](#GetEncryptedObject) | [`PresignedPostPolicy`](#PresignedPostPolicy) | [`ListBucketPolicies`](#ListBucketPolicies)                   | [`TraceOn`](#TraceOn)                                 |
-| [`RemoveBucket`](#RemoveBucket)                   | [`StatObject`](#StatObject)                         | [`PutEncryptedObject`](#PutEncryptedObject) |                                               | [`SetBucketNotification`](#SetBucketNotification)             | [`TraceOff`](#TraceOff)                               |
-| [`ListObjects`](#ListObjects)                     | [`RemoveObject`](#RemoveObject)                     | [`NewSSEInfo`](#NewSSEInfo)               |                                               | [`GetBucketNotification`](#GetBucketNotification)             | [`SetS3TransferAccelerate`](#SetS3TransferAccelerate) |
-| [`ListObjectsV2`](#ListObjectsV2)                 | [`RemoveObjects`](#RemoveObjects)                   | [`FPutEncryptedObject`](#FPutEncryptedObject)    |                                               | [`RemoveAllBucketNotification`](#RemoveAllBucketNotification) |                                                       |
+| [`MakeBucket`](#MakeBucket)                       | [`GetObject`](#GetObject)              |   [`GetObject`](#GetObject)     | [`PresignedGetObject`](#PresignedGetObject)   | [`SetBucketPolicy`](#SetBucketPolicy)                         | [`SetAppInfo`](#SetAppInfo)                           |
+| [`ListBuckets`](#ListBuckets)                     | [`PutObject`](#PutObject)                           | [`PutObject`](#PutObject)    | [`PresignedPutObject`](#PresignedPutObject)   | [`GetBucketPolicy`](#GetBucketPolicy)                         | [`SetCustomTransport`](#SetCustomTransport)           |
+| [`BucketExists`](#BucketExists)                   | [`CopyObject`](#CopyObject)                         | [`CopyObject`](#CopyObject) | [`PresignedPostPolicy`](#PresignedPostPolicy) | [`ListBucketPolicies`](#ListBucketPolicies)                   | [`TraceOn`](#TraceOn)                                 |
+| [`RemoveBucket`](#RemoveBucket)                   | [`StatObject`](#StatObject)                         | [`StatObject`](#StatObject) |                                               | [`SetBucketNotification`](#SetBucketNotification)             | [`TraceOff`](#TraceOff)                               |
+| [`ListObjects`](#ListObjects)                     | [`RemoveObject`](#RemoveObject)                     |                |                                               | [`GetBucketNotification`](#GetBucketNotification)             | [`SetS3TransferAccelerate`](#SetS3TransferAccelerate) |
+| [`ListObjectsV2`](#ListObjectsV2)                 | [`RemoveObjects`](#RemoveObjects)                   |    |                                               | [`RemoveAllBucketNotification`](#RemoveAllBucketNotification) |                                                       |
 | [`ListIncompleteUploads`](#ListIncompleteUploads) | [`RemoveIncompleteUpload`](#RemoveIncompleteUpload) |                                             |                                               | [`ListenBucketNotification`](#ListenBucketNotification)       |                                                       |
-|                                                   | [`FPutObject`](#FPutObject)                         |                                             |                                               |                                                               |                                                       |
-|                                                   | [`FGetObject`](#FGetObject)                         |                                             |                                               |                                                               |                                                       |
-|                                                   | [`ComposeObject`](#ComposeObject)                   |                                             |                                               |                                                               |                                                       |
-|                                                   | [`NewSourceInfo`](#NewSourceInfo)                   |                                             |                                               |                                                               |                                                       |
-|                                                   | [`NewDestinationInfo`](#NewDestinationInfo)         |                                             |                                               |                                                               |                                                       |
-|   | [`PutObjectWithContext`](#PutObjectWithContext)  | |   |   |
-|   | [`GetObjectWithContext`](#GetObjectWithContext)  | |   |   |
-|   | [`FPutObjectWithContext`](#FPutObjectWithContext)  | |   |   |
-|   | [`FGetObjectWithContext`](#FGetObjectWithContext)  | |   |   |
+|                                                   | [`FPutObject`](#FPutObject)                         |    [`FPutObject`](#FPutObject)                                         |                                               |                                                               |                                                       |
+|                                                   | [`FGetObject`](#FGetObject)                         |    [`FGetObject`](#FGetObject)                                         |                                               |                                                               |                                                       |
+|                                                   | [`ComposeObject`](#ComposeObject)                   |    [`ComposeObject`](#ComposeObject)                                         |                                               |                                                               |                                                       |
+|                                                   | [`NewSourceInfo`](#NewSourceInfo)                   |    [`NewSourceInfo`](#NewSourceInfo)                                         |                                               |                                                               |                                                       |
+|                                                   | [`NewDestinationInfo`](#NewDestinationInfo)         |    [`NewDestinationInfo`](#NewDestinationInfo)                                         |                                               |                                                               |                                                       |
+|   | [`PutObjectWithContext`](#PutObjectWithContext)  | [`PutObjectWithContext`](#PutObjectWithContext) |   |   |
+|   | [`GetObjectWithContext`](#GetObjectWithContext)  | [`GetObjectWithContext`](#GetObjectWithContext) |   |   |
+|   | [`FPutObjectWithContext`](#FPutObjectWithContext)  | [`FPutObjectWithContext`](#FPutObjectWithContext) |   |   |
+|   | [`FGetObjectWithContext`](#FGetObjectWithContext)  | [`FGetObjectWithContext`](#FGetObjectWithContext) |   |   |
+|   | [`RemoveObjectsWithContext`](#RemoveObjectsWithContext)  | |   |   |
 ## 1. Constructor
 <a name="Minio"></a>
 
@@ -86,16 +87,27 @@ __Parameters__
 ### NewWithRegion(endpoint, accessKeyID, secretAccessKey string, ssl bool, region string) (*Client, error)
 Initializes minio client, with region configured. Unlike New(), NewWithRegion avoids bucket-location lookup operations and it is slightly faster. Use this function when your application deals with a single region.
 
+### NewWithOptions(endpoint string, options *Options) (*Client, error)
+Initializes minio client with options configured.
+
 __Parameters__
 
 |Param   |Type   |Description   |
 |:---|:---| :---|
 |`endpoint`   | _string_  |S3 compatible object storage endpoint |
-|`accessKeyID`  |_string_   |Access key for the object storage |
-|`secretAccessKey`  | _string_  |Secret key for the object storage |
-|`ssl` | _bool_  | If 'true' API requests will be secure (HTTPS), and insecure (HTTP) otherwise |
-|`region`| _string_ | Region for the object storage |
+|`opts`  |_minio.Options_   | Options for constructing a new client|
 
+__minio.Options__
+
+|Field | Type | Description |
+|:--- |:--- | :--- |
+| `opts.Creds` | _*credentials.Credentials_ | Access Credentials|
+| `opts.Secure` | _bool_ | If 'true' API requests will be secure (HTTPS), and insecure (HTTP) otherwise |
+| `opts.Region` | _string_ | region |
+| `opts.BucketLookup` | _BucketLookupType_ | Bucket lookup type can be one of the following values |
+| |  | _minio.BucketLookupDNS_ |
+| |  | _minio.BucketLookupPath_ |
+| |  | _minio.BucketLookupAuto_ |
 ## 2. Bucket operations
 
 <a name="MakeBucket"></a>
@@ -380,7 +392,7 @@ __minio.GetObjectOptions__
 
 |Field | Type | Description |
 |:---|:---|:---|
-| `opts.Materials` | _encrypt.Materials_ | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
+| `opts.ServerSideEncryption` | _encrypt.ServerSide_ | Interface provided by `encrypt` package to specify server-side-encryption. (For more information see https://godoc.org/github.com/minio/minio-go) |
 
 __Return Value__
 
@@ -513,42 +525,6 @@ if err != nil {
 }
 ```
 
-<a name="FGetEncryptedObject"></a>
-### FGetEncryptedObject(bucketName, objectName, filePath string, materials encrypt.Materials) error
-Identical to FGetObject operation, but decrypts an encrypted request
-
-__Parameters__
-
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`bucketName`  | _string_  |Name of the bucket |
-|`objectName` | _string_  |Name of the object  |
-|`filePath` | _string_  |Path to download object to |
-|`materials` | _encrypt.Materials_ | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
-
-
-__Example__
-
-
-```go
-// Generate a master symmetric key
-key := encrypt.NewSymmetricKey([]byte("my-secret-key-00"))
-
-// Build the CBC encryption material
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(key)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-err = minioClient.FGetEncryptedObject("mybucket", "myobject", "/tmp/myobject", cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-```
-
 <a name="PutObject"></a>
 ### PutObject(bucketName, objectName string, reader io.Reader, objectSize int64,opts PutObjectOptions) (n int, err error)
 Uploads objects that are less than 64MiB in a single PUT operation. For objects that are greater than 64MiB in size, PutObject seamlessly uploads the object as parts of 64MiB or more depending on the actual file size. The max upload size for an object is 5TB.
@@ -573,8 +549,9 @@ __minio.PutObjectOptions__
 | `opts.ContentType` | _string_ | Content type of object, e.g "application/text" |
 | `opts.ContentEncoding` | _string_ | Content encoding of object, e.g "gzip" |
 | `opts.ContentDisposition` | _string_ | Content disposition of object, "inline" |
+| `opts.ContentLanguage` | _string_ | Content language of object, e.g "French" |
 | `opts.CacheControl` | _string_ | Used to specify directives for caching mechanisms in both requests and responses e.g "max-age=600"|
-| `opts.EncryptMaterials` | _encrypt.Materials_ | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
+| `opts.ServerSideEncryption` | _encrypt.ServerSide_ | Interface provided by `encrypt` package to specify server-side-encryption. (For more information see https://godoc.org/github.com/minio/minio-go) |
 | `opts.StorageClass` | _string_ | Specify storage class for the object. Supported values for Minio server are `REDUCED_REDUNDANCY` and `STANDARD` |
 
 __Example__
@@ -618,7 +595,7 @@ __Parameters__
 |`objectName` | _string_  |Name of the object   |
 |`reader` | _io.Reader_  |Any Go type that implements io.Reader |
 |`objectSize`| _int64_ | size of the object being uploaded. Pass -1 if stream size is unknown |
-|`opts` | _minio.PutObjectOptions_  |Pointer to struct that allows user to set optional custom metadata, content-type, content-encoding,content-disposition and cache-control headers, pass encryption module for encrypting objects, and optionally configure number of threads for multipart put operation. |
+|`opts` | _minio.PutObjectOptions_  |Pointer to struct that allows user to set optional custom metadata, content-type, content-encoding, content-disposition, content-language and cache-control headers, pass encryption module for encrypting objects, and optionally configure number of threads for multipart put operation. |
 
 
 __Example__
@@ -746,27 +723,27 @@ __Example__
 ```go
 // Prepare source decryption key (here we assume same key to
 // decrypt all source objects.)
-decKey := minio.NewSSEInfo([]byte{1, 2, 3}, "")
+sseSrc := encrypt.DefaultPBKDF([]byte("password"), []byte("salt"))
 
 // Source objects to concatenate. We also specify decryption
 // key for each
-src1 := minio.NewSourceInfo("bucket1", "object1", &decKey)
+src1 := minio.NewSourceInfo("bucket1", "object1", sseSrc)
 src1.SetMatchETagCond("31624deb84149d2f8ef9c385918b653a")
 
-src2 := minio.NewSourceInfo("bucket2", "object2", &decKey)
+src2 := minio.NewSourceInfo("bucket2", "object2", sseSrc)
 src2.SetMatchETagCond("f8ef9c385918b653a31624deb84149d2")
 
-src3 := minio.NewSourceInfo("bucket3", "object3", &decKey)
+src3 := minio.NewSourceInfo("bucket3", "object3", sseSrc)
 src3.SetMatchETagCond("5918b653a31624deb84149d2f8ef9c38")
 
 // Create slice of sources.
 srcs := []minio.SourceInfo{src1, src2, src3}
 
 // Prepare destination encryption key
-encKey := minio.NewSSEInfo([]byte{8, 9, 0}, "")
+sseDst := encrypt.DefaultPBKDF([]byte("new-password"), []byte("new-salt"))
 
 // Create destination info
-dst, err := minio.NewDestinationInfo("bucket", "object", &encKey, nil)
+dst, err := minio.NewDestinationInfo("bucket", "object", sseDst, nil)
 if err != nil {
     fmt.Println(err)
     return
@@ -792,7 +769,7 @@ __Parameters__
 | :---          | :---             | :---                                                             |
 | `bucket`      | _string_         | Name of the source bucket                                        |
 | `object`      | _string_         | Name of the source object                                        |
-| `decryptSSEC` | _*minio.SSEInfo_ | Decryption info for the source object (`nil` without encryption) |
+| `sse` | _*encrypt.ServerSide_ | Interface provided by `encrypt` package to specify server-side-encryption. (For more information see https://godoc.org/github.com/minio/minio-go) |
 
 __Example__
 
@@ -817,8 +794,8 @@ if err != nil {
 
 ```go
 // With decryption parameter.
-decKey := minio.NewSSEInfo([]byte{1,2,3}, "")
-src := minio.NewSourceInfo("bucket", "object", &decKey)
+sseSrc := encrypt.DefaultPBKDF([]byte("password"), []byte("salt"))
+src := minio.NewSourceInfo("bucket", "object", sseSrc)
 
 // Destination object
 dst, err := minio.NewDestinationInfo("my-bucketname", "my-objectname", nil, nil)
@@ -845,7 +822,7 @@ __Parameters__
 | :---          | :---                | :---                                                                                                           |
 | `bucket`      | _string_            | Name of the destination bucket                                                                                 |
 | `object`      | _string_            | Name of the destination object                                                                                 |
-| `encryptSSEC` | _*minio.SSEInfo_    | Encryption info for the source object (`nil` without encryption)                                               |
+| `sse` | _*encrypt.ServerSide_ | Interface provided by `encrypt` package to specify server-side-encryption. (For more information see https://godoc.org/github.com/minio/minio-go) |                                              |
 | `userMeta`    | _map[string]string_ | User metadata to be set on the destination. If nil, with only one source, user-metadata is copied from source. |
 
 __Example__
@@ -871,8 +848,8 @@ if err != nil {
 src := minio.NewSourceInfo("bucket", "object", nil)
 
 // With encryption parameter.
-encKey := minio.NewSSEInfo([]byte{1,2,3}, "")
-dst, err := minio.NewDestinationInfo("bucket", "object", &encKey, nil)
+sseDst := encrypt.DefaultPBKDF([]byte("password"), []byte("salt"))
+dst, err := minio.NewDestinationInfo("bucket", "object", sseDst, nil)
 if err != nil {
     fmt.Println(err)
     return
@@ -900,7 +877,7 @@ __Parameters__
 |`bucketName`  | _string_  |Name of the bucket  |
 |`objectName` | _string_  |Name of the object |
 |`filePath` | _string_  |Path to file to be uploaded |
-|`opts` | _minio.PutObjectOptions_  |Pointer to struct that allows user to set optional custom metadata, content-type, content-encoding,content-disposition and cache-control headers, pass encryption module for encrypting objects, and optionally configure number of threads for multipart put operation.  |
+|`opts` | _minio.PutObjectOptions_  |Pointer to struct that allows user to set optional custom metadata, content-type, content-encoding, content-disposition, content-language and cache-control headers, pass encryption module for encrypting objects, and optionally configure number of threads for multipart put operation.  |
 
 
 __Example__
@@ -1050,6 +1027,47 @@ for rErr := range minioClient.RemoveObjects("mybucket", objectsCh) {
 }
 ```
 
+<a name="RemoveObjectsWithContext"></a>
+### RemoveObjectsWithContext(ctx context.Context, bucketName string, objectsCh chan string) (errorCh <-chan RemoveObjectError)
+*Identical to RemoveObjects operation, but accepts a context for request cancellation.*
+
+Parameters
+
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`ctx`  | _context.Context_  |Request context  |
+|`bucketName`  | _string_  |Name of the bucket  |
+|`objectsCh` |  _chan string_  | Channel of objects to be removed  | 
+
+
+__Return Values__
+
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`errorCh` | _<-chan minio.RemoveObjectError_  | Receive-only channel of errors observed during deletion.  |
+
+```go
+objectsCh := make(chan string)
+ctx, cancel := context.WithTimeout(context.Background(), 100 * time.Second)
+defer cancel()
+
+// Send object names that are needed to be removed to objectsCh
+go func() {
+	defer close(objectsCh)
+	// List all objects from a bucket-name with a matching prefix.
+	for object := range minioClient.ListObjects("my-bucketname", "my-prefixname", true, nil) {
+		if object.Err != nil {
+			log.Fatalln(object.Err)
+		}
+		objectsCh <- object.Key
+	}
+}()
+
+for rErr := range minioClient.RemoveObjects(ctx, "my-bucketname", objectsCh) {
+    fmt.Println("Error detected during deletion: ", rErr)
+}
+```
+
 <a name="RemoveIncompleteUpload"></a>
 ### RemoveIncompleteUpload(bucketName, objectName string) error
 Removes a partially uploaded object.
@@ -1072,283 +1090,6 @@ if err != nil {
     return
 }
 ```
-
-## 4. Encrypted object operations
-
-<a name="NewSymmetricKey"></a>
-### NewSymmetricKey(key []byte) *encrypt.SymmetricKey
-
-__Parameters__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`key`  | _string_  |Name of the bucket  |
-
-
-__Return Value__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`symmetricKey`  | _*encrypt.SymmetricKey_ | represents a symmetric key structure which can be used to encrypt and decrypt data |
-
-```go
-symKey := encrypt.NewSymmetricKey([]byte("my-secret-key-00"))
-
-// Build the CBC encryption material with symmetric key.
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(symKey)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-fmt.Println("Successfully initialized Symmetric key CBC materials", cbcMaterials)
-
-object, err := minioClient.GetEncryptedObject("mybucket", "myobject", cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-defer object.Close()
-```
-
-<a name="NewAsymmetricKey"></a>
-### NewAsymmetricKey(privateKey []byte, publicKey[]byte) (*encrypt.AsymmetricKey, error)
-
-__Parameters__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`privateKey` | _[]byte_ | Private key data  |
-|`publicKey`  | _[]byte_ | Public key data  |
-
-
-__Return Value__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`asymmetricKey`  | _*encrypt.AsymmetricKey_ | represents an asymmetric key structure which can be used to encrypt and decrypt data |
-|`err`  | _error_ |  Standard Error |
-
-
-```go
-privateKey, err := ioutil.ReadFile("private.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-publicKey, err := ioutil.ReadFile("public.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Initialize the asymmetric key
-asymmetricKey, err := encrypt.NewAsymmetricKey(privateKey, publicKey)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Build the CBC encryption material for asymmetric key.
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(asymmetricKey)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-fmt.Println("Successfully initialized Asymmetric key CBC materials", cbcMaterials)
-
-object, err := minioClient.GetEncryptedObject("mybucket", "myobject", cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-defer object.Close()
-```
-
-<a name="GetEncryptedObject"></a>
-### GetEncryptedObject(bucketName, objectName string, encryptMaterials encrypt.Materials) (io.ReadCloser, error)
-
-Returns the decrypted stream of the object data based of the given encryption materials. Most of the common errors occur when reading the stream.
-
-__Parameters__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`bucketName`  | _string_  | Name of the bucket  |
-|`objectName` | _string_  | Name of the object  |
-|`encryptMaterials` | _encrypt.Materials_ | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
-
-
-__Return Value__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`stream`  | _io.ReadCloser_ | Returns the deciphered object reader, caller should close after reading. |
-|`err`  | _error | Returns errors. |
-
-
-__Example__
-
-
-```go
-// Generate a master symmetric key
-key := encrypt.NewSymmetricKey([]byte("my-secret-key-00"))
-
-// Build the CBC encryption material
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(key)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-object, err := minioClient.GetEncryptedObject("mybucket", "myobject", cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-defer object.Close()
-
-localFile, err := os.Create("/tmp/local-file.jpg")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-defer localFile.Close()
-
-if _, err = io.Copy(localFile, object); err != nil {
-    fmt.Println(err)
-    return
-}
-```
-
-<a name="PutEncryptedObject"></a>
-
-### PutEncryptedObject(bucketName, objectName string, reader io.Reader, encryptMaterials encrypt.Materials) (n int, err error)
-Encrypt and upload an object.
-
-__Parameters__
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`bucketName`  | _string_  |Name of the bucket  |
-|`objectName` | _string_  |Name of the object   |
-|`reader` | _io.Reader_  |Any Go type that implements io.Reader |
-|`encryptMaterials` | _encrypt.Materials_  | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go) |
-
-__Example__
-
-```go
-// Load a private key
-privateKey, err := ioutil.ReadFile("private.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Load a public key
-publicKey, err := ioutil.ReadFile("public.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Build an asymmetric key
-key, err := encrypt.NewAsymmetricKey(privateKey, publicKey)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Build the CBC encryption module
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(key)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Open a file to upload
-file, err := os.Open("my-testfile")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-defer file.Close()
-
-// Upload the encrypted form of the file
-n, err := minioClient.PutEncryptedObject("mybucket", "myobject", file, cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-fmt.Println("Successfully uploaded encrypted bytes: ", n)
-```
-
-<a name="FPutEncryptedObject"></a>
-### FPutEncryptedObject(bucketName, objectName, filePath, encryptMaterials encrypt.Materials) (n int, err error)
-Encrypt and upload an object from a file.
-
-__Parameters__
-
-
-|Param   |Type   |Description   |
-|:---|:---| :---|
-|`bucketName`  | _string_  |Name of the bucket  |
-|`objectName` | _string_  |Name of the object |
-|`filePath` | _string_  |Path to file to be uploaded |
-|`encryptMaterials` | _encrypt.Materials_  | Interface provided by `encrypt` package to encrypt a stream of data (For more information see https://godoc.org/github.com/minio/minio-go)The module that encrypts data |
-
-__Example__
-
-
-```go
-// Load a private key
-privateKey, err := ioutil.ReadFile("private.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Load a public key
-publicKey, err := ioutil.ReadFile("public.key")
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Build an asymmetric key
-key, err := encrypt.NewAsymmetricKey(privateKey, publicKey)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-// Build the CBC encryption module
-cbcMaterials, err := encrypt.NewCBCSecureMaterials(key)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-
-n, err := minioClient.FPutEncryptedObject("mybucket", "myobject.csv", "/tmp/otherobject.csv", cbcMaterials)
-if err != nil {
-    fmt.Println(err)
-    return
-}
-fmt.Println("Successfully uploaded encrypted bytes: ", n)
-```
-
-<a name="NewSSEInfo"></a>
-
-### NewSSEInfo(key []byte, algo string) SSEInfo
-Create a key object for use as encryption or decryption parameter in operations involving server-side-encryption with customer provided key (SSE-C).
-
-__Parameters__
-
-| Param  | Type     | Description                                                                                          |
-| :---   | :---     | :---                                                                                                 |
-| `key`  | _[]byte_ | Byte-slice of the raw, un-encoded binary key                                                         |
-| `algo` | _string_ | Algorithm to use in encryption or decryption with the given key. Can be empty (defaults to `AES256`) |
-
 
 ## 5. Presigned operations
 

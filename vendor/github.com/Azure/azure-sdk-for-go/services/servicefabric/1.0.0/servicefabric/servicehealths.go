@@ -146,7 +146,7 @@ func (client ServiceHealthsClient) SendPreparer(ctx context.Context, serviceName
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Services/{serviceName}/$/ReportHealth", pathParameters),

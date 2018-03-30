@@ -1,4 +1,4 @@
-// Package speech provides access to the Google Cloud Speech API.
+// Package speech provides access to the Cloud Speech API.
 //
 // See https://cloud.google.com/speech/
 //

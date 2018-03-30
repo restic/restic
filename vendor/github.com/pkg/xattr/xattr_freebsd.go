@@ -51,7 +51,7 @@ func List(path string) ([]string, error) {
 
 // Set associates name and data together as an attribute of path.
 func Set(path, name string, data []byte) error {
-	var dataval *byte = nil
+	var dataval *byte
 	datalen := len(data)
 	if datalen > 0 {
 		dataval = &data[0]
@@ -72,6 +72,14 @@ func Remove(path, name string) error {
 		return &Error{"xattr.Remove", path, name, err}
 	}
 	return nil
+}
+
+// Supported checks if filesystem supports extended attributes
+func Supported(path string) bool {
+	if _, err := extattr_list_file(path, EXTATTR_NAMESPACE_USER, nil, 0); err != nil {
+		return err != syscall.ENOTSUP
+	}
+	return true
 }
 
 // attrListToStrings converts a sequnce of attribute name entries to a []string.

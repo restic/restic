@@ -35,6 +35,11 @@ const (
 	Hot AccessTier = "Hot"
 )
 
+// PossibleAccessTierValues returns an array of possible values for the AccessTier const type.
+func PossibleAccessTierValues() []AccessTier {
+	return []AccessTier{Cool, Hot}
+}
+
 // AccountStatus enumerates the values for account status.
 type AccountStatus string
 
@@ -45,6 +50,11 @@ const (
 	Unavailable AccountStatus = "unavailable"
 )
 
+// PossibleAccountStatusValues returns an array of possible values for the AccountStatus const type.
+func PossibleAccountStatusValues() []AccountStatus {
+	return []AccountStatus{Available, Unavailable}
+}
+
 // Action enumerates the values for action.
 type Action string
 
@@ -52,6 +62,11 @@ const (
 	// Allow ...
 	Allow Action = "Allow"
 )
+
+// PossibleActionValues returns an array of possible values for the Action const type.
+func PossibleActionValues() []Action {
+	return []Action{Allow}
+}
 
 // Bypass enumerates the values for bypass.
 type Bypass string
@@ -67,6 +82,11 @@ const (
 	None Bypass = "None"
 )
 
+// PossibleBypassValues returns an array of possible values for the Bypass const type.
+func PossibleBypassValues() []Bypass {
+	return []Bypass{AzureServices, Logging, Metrics, None}
+}
+
 // DefaultAction enumerates the values for default action.
 type DefaultAction string
 
@@ -76,6 +96,11 @@ const (
 	// DefaultActionDeny ...
 	DefaultActionDeny DefaultAction = "Deny"
 )
+
+// PossibleDefaultActionValues returns an array of possible values for the DefaultAction const type.
+func PossibleDefaultActionValues() []DefaultAction {
+	return []DefaultAction{DefaultActionAllow, DefaultActionDeny}
+}
 
 // HTTPProtocol enumerates the values for http protocol.
 type HTTPProtocol string
@@ -87,6 +112,11 @@ const (
 	Httpshttp HTTPProtocol = "https,http"
 )
 
+// PossibleHTTPProtocolValues returns an array of possible values for the HTTPProtocol const type.
+func PossibleHTTPProtocolValues() []HTTPProtocol {
+	return []HTTPProtocol{HTTPS, Httpshttp}
+}
+
 // KeyPermission enumerates the values for key permission.
 type KeyPermission string
 
@@ -96,6 +126,11 @@ const (
 	// Read ...
 	Read KeyPermission = "Read"
 )
+
+// PossibleKeyPermissionValues returns an array of possible values for the KeyPermission const type.
+func PossibleKeyPermissionValues() []KeyPermission {
+	return []KeyPermission{Full, Read}
+}
 
 // KeySource enumerates the values for key source.
 type KeySource string
@@ -107,6 +142,11 @@ const (
 	MicrosoftStorage KeySource = "Microsoft.Storage"
 )
 
+// PossibleKeySourceValues returns an array of possible values for the KeySource const type.
+func PossibleKeySourceValues() []KeySource {
+	return []KeySource{MicrosoftKeyvault, MicrosoftStorage}
+}
+
 // Kind enumerates the values for kind.
 type Kind string
 
@@ -116,6 +156,11 @@ const (
 	// Storage ...
 	Storage Kind = "Storage"
 )
+
+// PossibleKindValues returns an array of possible values for the Kind const type.
+func PossibleKindValues() []Kind {
+	return []Kind{BlobStorage, Storage}
+}
 
 // Permissions enumerates the values for permissions.
 type Permissions string
@@ -139,6 +184,11 @@ const (
 	W Permissions = "w"
 )
 
+// PossiblePermissionsValues returns an array of possible values for the Permissions const type.
+func PossiblePermissionsValues() []Permissions {
+	return []Permissions{A, C, D, L, P, R, U, W}
+}
+
 // ProvisioningState enumerates the values for provisioning state.
 type ProvisioningState string
 
@@ -151,6 +201,11 @@ const (
 	Succeeded ProvisioningState = "Succeeded"
 )
 
+// PossibleProvisioningStateValues returns an array of possible values for the ProvisioningState const type.
+func PossibleProvisioningStateValues() []ProvisioningState {
+	return []ProvisioningState{Creating, ResolvingDNS, Succeeded}
+}
+
 // Reason enumerates the values for reason.
 type Reason string
 
@@ -161,6 +216,11 @@ const (
 	AlreadyExists Reason = "AlreadyExists"
 )
 
+// PossibleReasonValues returns an array of possible values for the Reason const type.
+func PossibleReasonValues() []Reason {
+	return []Reason{AccountNameInvalid, AlreadyExists}
+}
+
 // ReasonCode enumerates the values for reason code.
 type ReasonCode string
 
@@ -170,6 +230,11 @@ const (
 	// QuotaID ...
 	QuotaID ReasonCode = "QuotaId"
 )
+
+// PossibleReasonCodeValues returns an array of possible values for the ReasonCode const type.
+func PossibleReasonCodeValues() []ReasonCode {
+	return []ReasonCode{NotAvailableForSubscription, QuotaID}
+}
 
 // Services enumerates the values for services.
 type Services string
@@ -185,6 +250,11 @@ const (
 	T Services = "t"
 )
 
+// PossibleServicesValues returns an array of possible values for the Services const type.
+func PossibleServicesValues() []Services {
+	return []Services{B, F, Q, T}
+}
+
 // SignedResource enumerates the values for signed resource.
 type SignedResource string
 
@@ -199,6 +269,11 @@ const (
 	SignedResourceS SignedResource = "s"
 )
 
+// PossibleSignedResourceValues returns an array of possible values for the SignedResource const type.
+func PossibleSignedResourceValues() []SignedResource {
+	return []SignedResource{SignedResourceB, SignedResourceC, SignedResourceF, SignedResourceS}
+}
+
 // SignedResourceTypes enumerates the values for signed resource types.
 type SignedResourceTypes string
 
@@ -210,6 +285,11 @@ const (
 	// SignedResourceTypesS ...
 	SignedResourceTypesS SignedResourceTypes = "s"
 )
+
+// PossibleSignedResourceTypesValues returns an array of possible values for the SignedResourceTypes const type.
+func PossibleSignedResourceTypesValues() []SignedResourceTypes {
+	return []SignedResourceTypes{SignedResourceTypesC, SignedResourceTypesO, SignedResourceTypesS}
+}
 
 // SkuName enumerates the values for sku name.
 type SkuName string
@@ -227,6 +307,11 @@ const (
 	StandardZRS SkuName = "Standard_ZRS"
 )
 
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{PremiumLRS, StandardGRS, StandardLRS, StandardRAGRS, StandardZRS}
+}
+
 // SkuTier enumerates the values for sku tier.
 type SkuTier string
 
@@ -236,6 +321,11 @@ const (
 	// Standard ...
 	Standard SkuTier = "Standard"
 )
+
+// PossibleSkuTierValues returns an array of possible values for the SkuTier const type.
+func PossibleSkuTierValues() []SkuTier {
+	return []SkuTier{Premium, Standard}
+}
 
 // State enumerates the values for state.
 type State string
@@ -252,6 +342,11 @@ const (
 	// StateSucceeded ...
 	StateSucceeded State = "succeeded"
 )
+
+// PossibleStateValues returns an array of possible values for the State const type.
+func PossibleStateValues() []State {
+	return []State{StateDeprovisioning, StateFailed, StateNetworkSourceDeleted, StateProvisioning, StateSucceeded}
+}
 
 // UsageUnit enumerates the values for usage unit.
 type UsageUnit string
@@ -271,9 +366,22 @@ const (
 	Seconds UsageUnit = "Seconds"
 )
 
+// PossibleUsageUnitValues returns an array of possible values for the UsageUnit const type.
+func PossibleUsageUnitValues() []UsageUnit {
+	return []UsageUnit{Bytes, BytesPerSecond, Count, CountsPerSecond, Percent, Seconds}
+}
+
 // Account the storage account.
 type Account struct {
 	autorest.Response `json:"-"`
+	// Sku - Gets the SKU.
+	Sku *Sku `json:"sku,omitempty"`
+	// Kind - Gets the Kind. Possible values include: 'Storage', 'BlobStorage'
+	Kind Kind `json:"kind,omitempty"`
+	// Identity - The identity of the resource.
+	Identity *Identity `json:"identity,omitempty"`
+	// AccountProperties - Properties of the storage account.
+	*AccountProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -283,15 +391,40 @@ type Account struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Tags assigned to a resource; can be used for viewing and grouping a resource (across resource groups).
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// Sku - Gets the SKU.
-	Sku *Sku `json:"sku,omitempty"`
-	// Kind - Gets the Kind. Possible values include: 'Storage', 'BlobStorage'
-	Kind Kind `json:"kind,omitempty"`
-	// Identity - The identity of the resource.
-	Identity *Identity `json:"identity,omitempty"`
-	// AccountProperties - Properties of the storage account.
-	*AccountProperties `json:"properties,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Account.
+func (a Account) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if a.Sku != nil {
+		objectMap["sku"] = a.Sku
+	}
+	if a.Kind != "" {
+		objectMap["kind"] = a.Kind
+	}
+	if a.Identity != nil {
+		objectMap["identity"] = a.Identity
+	}
+	if a.AccountProperties != nil {
+		objectMap["properties"] = a.AccountProperties
+	}
+	if a.ID != nil {
+		objectMap["id"] = a.ID
+	}
+	if a.Name != nil {
+		objectMap["name"] = a.Name
+	}
+	if a.Type != nil {
+		objectMap["type"] = a.Type
+	}
+	if a.Location != nil {
+		objectMap["location"] = a.Location
+	}
+	if a.Tags != nil {
+		objectMap["tags"] = a.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Account struct.
@@ -301,96 +434,90 @@ func (a *Account) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				a.Sku = &sku
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				a.Kind = kind
+			}
+		case "identity":
+			if v != nil {
+				var identity Identity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				a.Identity = &identity
+			}
+		case "properties":
+			if v != nil {
+				var accountProperties AccountProperties
+				err = json.Unmarshal(*v, &accountProperties)
+				if err != nil {
+					return err
+				}
+				a.AccountProperties = &accountProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				a.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				a.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				a.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				a.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				a.Tags = tags
+			}
 		}
-		a.Sku = &sku
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		a.Kind = kind
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity Identity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		a.Identity = &identity
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccountProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		a.AccountProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		a.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		a.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		a.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		a.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		a.Tags = &tags
 	}
 
 	return nil
@@ -413,11 +540,35 @@ type AccountCreateParameters struct {
 	// Location - Required. Gets or sets the location of the resource. This will be one of the supported and registered Azure Geo Regions (e.g. West US, East US, Southeast Asia, etc.). The geo region of a resource cannot be changed once it is created, but if an identical geo region is specified on update, the request will succeed.
 	Location *string `json:"location,omitempty"`
 	// Tags - Gets or sets a list of key value pairs that describe the resource. These tags can be used for viewing and grouping this resource (across resource groups). A maximum of 15 tags can be provided for a resource. Each tag must have a key with a length no greater than 128 characters and a value with a length no greater than 256 characters.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Identity - The identity of the resource.
 	Identity *Identity `json:"identity,omitempty"`
 	// AccountPropertiesCreateParameters - The parameters used to create the storage account.
 	*AccountPropertiesCreateParameters `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AccountCreateParameters.
+func (acp AccountCreateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if acp.Sku != nil {
+		objectMap["sku"] = acp.Sku
+	}
+	if acp.Kind != "" {
+		objectMap["kind"] = acp.Kind
+	}
+	if acp.Location != nil {
+		objectMap["location"] = acp.Location
+	}
+	if acp.Tags != nil {
+		objectMap["tags"] = acp.Tags
+	}
+	if acp.Identity != nil {
+		objectMap["identity"] = acp.Identity
+	}
+	if acp.AccountPropertiesCreateParameters != nil {
+		objectMap["properties"] = acp.AccountPropertiesCreateParameters
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AccountCreateParameters struct.
@@ -427,66 +578,63 @@ func (acp *AccountCreateParameters) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				acp.Sku = &sku
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				acp.Kind = kind
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				acp.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				acp.Tags = tags
+			}
+		case "identity":
+			if v != nil {
+				var identity Identity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				acp.Identity = &identity
+			}
+		case "properties":
+			if v != nil {
+				var accountPropertiesCreateParameters AccountPropertiesCreateParameters
+				err = json.Unmarshal(*v, &accountPropertiesCreateParameters)
+				if err != nil {
+					return err
+				}
+				acp.AccountPropertiesCreateParameters = &accountPropertiesCreateParameters
+			}
 		}
-		acp.Sku = &sku
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		acp.Kind = kind
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		acp.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		acp.Tags = &tags
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity Identity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		acp.Identity = &identity
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccountPropertiesCreateParameters
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		acp.AccountPropertiesCreateParameters = &properties
 	}
 
 	return nil
@@ -614,22 +762,39 @@ func (future AccountsCreateFuture) Result(client AccountsClient) (a Account, err
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storage.AccountsCreateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return a, autorest.NewError("storage.AccountsCreateFuture", "Result", "asynchronous operation has not completed")
+		return a, azure.NewAsyncOpIncompleteError("storage.AccountsCreateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		a, err = client.CreateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storage.AccountsCreateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storage.AccountsCreateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	a, err = client.CreateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storage.AccountsCreateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -638,11 +803,29 @@ type AccountUpdateParameters struct {
 	// Sku - Gets or sets the SKU name. Note that the SKU name cannot be updated to Standard_ZRS or Premium_LRS, nor can accounts of those sku names be updated to any other value.
 	Sku *Sku `json:"sku,omitempty"`
 	// Tags - Gets or sets a list of key value pairs that describe the resource. These tags can be used in viewing and grouping this resource (across resource groups). A maximum of 15 tags can be provided for a resource. Each tag must have a key no greater in length than 128 characters and a value no greater in length than 256 characters.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Identity - The identity of the resource.
 	Identity *Identity `json:"identity,omitempty"`
 	// AccountPropertiesUpdateParameters - The parameters used when updating a storage account.
 	*AccountPropertiesUpdateParameters `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AccountUpdateParameters.
+func (aup AccountUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if aup.Sku != nil {
+		objectMap["sku"] = aup.Sku
+	}
+	if aup.Tags != nil {
+		objectMap["tags"] = aup.Tags
+	}
+	if aup.Identity != nil {
+		objectMap["identity"] = aup.Identity
+	}
+	if aup.AccountPropertiesUpdateParameters != nil {
+		objectMap["properties"] = aup.AccountPropertiesUpdateParameters
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AccountUpdateParameters struct.
@@ -652,46 +835,45 @@ func (aup *AccountUpdateParameters) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				aup.Sku = &sku
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				aup.Tags = tags
+			}
+		case "identity":
+			if v != nil {
+				var identity Identity
+				err = json.Unmarshal(*v, &identity)
+				if err != nil {
+					return err
+				}
+				aup.Identity = &identity
+			}
+		case "properties":
+			if v != nil {
+				var accountPropertiesUpdateParameters AccountPropertiesUpdateParameters
+				err = json.Unmarshal(*v, &accountPropertiesUpdateParameters)
+				if err != nil {
+					return err
+				}
+				aup.AccountPropertiesUpdateParameters = &accountPropertiesUpdateParameters
+			}
 		}
-		aup.Sku = &sku
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		aup.Tags = &tags
-	}
-
-	v = m["identity"]
-	if v != nil {
-		var identity Identity
-		err = json.Unmarshal(*m["identity"], &identity)
-		if err != nil {
-			return err
-		}
-		aup.Identity = &identity
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccountPropertiesUpdateParameters
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		aup.AccountPropertiesUpdateParameters = &properties
 	}
 
 	return nil
@@ -854,6 +1036,24 @@ type Operation struct {
 	*OperationProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for Operation.
+func (o Operation) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if o.Name != nil {
+		objectMap["name"] = o.Name
+	}
+	if o.Display != nil {
+		objectMap["display"] = o.Display
+	}
+	if o.Origin != nil {
+		objectMap["origin"] = o.Origin
+	}
+	if o.OperationProperties != nil {
+		objectMap["properties"] = o.OperationProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for Operation struct.
 func (o *Operation) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -861,46 +1061,45 @@ func (o *Operation) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				o.Name = &name
+			}
+		case "display":
+			if v != nil {
+				var display OperationDisplay
+				err = json.Unmarshal(*v, &display)
+				if err != nil {
+					return err
+				}
+				o.Display = &display
+			}
+		case "origin":
+			if v != nil {
+				var origin string
+				err = json.Unmarshal(*v, &origin)
+				if err != nil {
+					return err
+				}
+				o.Origin = &origin
+			}
+		case "properties":
+			if v != nil {
+				var operationProperties OperationProperties
+				err = json.Unmarshal(*v, &operationProperties)
+				if err != nil {
+					return err
+				}
+				o.OperationProperties = &operationProperties
+			}
 		}
-		o.Name = &name
-	}
-
-	v = m["display"]
-	if v != nil {
-		var display OperationDisplay
-		err = json.Unmarshal(*m["display"], &display)
-		if err != nil {
-			return err
-		}
-		o.Display = &display
-	}
-
-	v = m["origin"]
-	if v != nil {
-		var origin string
-		err = json.Unmarshal(*m["origin"], &origin)
-		if err != nil {
-			return err
-		}
-		o.Origin = &origin
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties OperationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		o.OperationProperties = &properties
 	}
 
 	return nil
@@ -941,7 +1140,28 @@ type Resource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Tags - Tags assigned to a resource; can be used for viewing and grouping a resource (across resource groups).
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // Restriction the restriction because of which SKU cannot be used.

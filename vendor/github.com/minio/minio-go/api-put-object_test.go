@@ -40,6 +40,7 @@ func TestPutObjectOptionsValidate(t *testing.T) {
 		{"Content-Encoding", "gzip", false},
 		{"Cache-Control", "blah", false},
 		{"Content-Disposition", "something", false},
+		{"Content-Language", "somelanguage", false},
 
 		// Valid metadata names.
 		{"my-custom-header", "blah", true},

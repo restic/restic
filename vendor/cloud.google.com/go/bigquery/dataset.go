@@ -91,6 +91,10 @@ func (d *Dataset) Create(ctx context.Context, md *DatasetMetadata) error {
 		return err
 	}
 	ds.DatasetReference = &bq.DatasetReference{DatasetId: d.DatasetID}
+	// Use Client.Location as a default.
+	if ds.Location == "" {
+		ds.Location = d.c.Location
+	}
 	call := d.c.bqs.Datasets.Insert(d.ProjectID, ds).Context(ctx)
 	setClientHeader(call.Header())
 	_, err = call.Do()

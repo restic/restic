@@ -42,8 +42,8 @@ func NewClientWithBaseURI(baseURI string, subscriptionID string) Client {
 
 // CreateOrUpdate create a Redis cache, or replace (overwrite/recreate, with potential downtime) an existing cache.
 //
-// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is parameters
-// supplied to the CreateOrUpdate Redis operation.
+// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is
+// parameters supplied to the CreateOrUpdate Redis operation.
 func (client Client) CreateOrUpdate(ctx context.Context, resourceGroupName string, name string, parameters CreateOrUpdateParameters) (result ResourceWithAccessKey, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
@@ -51,7 +51,7 @@ func (client Client) CreateOrUpdate(ctx context.Context, resourceGroupName strin
 				Chain: []validation.Constraint{{Target: "parameters.Properties.Sku", Name: validation.Null, Rule: true,
 					Chain: []validation.Constraint{{Target: "parameters.Properties.Sku.Capacity", Name: validation.Null, Rule: true, Chain: nil}}},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "redis.Client", "CreateOrUpdate")
+		return result, validation.NewError("redis.Client", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, name, parameters)
@@ -89,7 +89,7 @@ func (client Client) CreateOrUpdatePreparer(ctx context.Context, resourceGroupNa
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}", pathParameters),
@@ -186,8 +186,8 @@ func (client Client) DeleteResponder(resp *http.Response) (result autorest.Respo
 // ForceReboot reboot specified Redis node(s). This operation requires write permission to the cache resource. There
 // can be potential data loss.
 //
-// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is specifies
-// which Redis node(s) to reboot.
+// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is
+// specifies which Redis node(s) to reboot.
 func (client Client) ForceReboot(ctx context.Context, resourceGroupName string, name string, parameters RebootParameters) (result autorest.Response, err error) {
 	req, err := client.ForceRebootPreparer(ctx, resourceGroupName, name, parameters)
 	if err != nil {
@@ -224,7 +224,7 @@ func (client Client) ForceRebootPreparer(ctx context.Context, resourceGroupName 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/forceReboot", pathParameters),
@@ -570,8 +570,8 @@ func (client Client) ListKeysResponder(resp *http.Response) (result ListKeysResu
 // RegenerateKey regenerate the access keys for a Redis cache. This operation requires write permission to the cache
 // resource.
 //
-// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is specifies
-// which key to reset.
+// resourceGroupName is the name of the resource group. name is the name of the Redis cache. parameters is
+// specifies which key to reset.
 func (client Client) RegenerateKey(ctx context.Context, resourceGroupName string, name string, parameters RegenerateKeyParameters) (result ListKeysResult, err error) {
 	req, err := client.RegenerateKeyPreparer(ctx, resourceGroupName, name, parameters)
 	if err != nil {
@@ -608,7 +608,7 @@ func (client Client) RegenerateKeyPreparer(ctx context.Context, resourceGroupNam
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Cache/Redis/{name}/regenerateKey", pathParameters),

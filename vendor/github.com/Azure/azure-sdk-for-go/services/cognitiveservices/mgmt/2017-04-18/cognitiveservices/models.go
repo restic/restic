@@ -34,26 +34,23 @@ const (
 	Key2 KeyName = "Key2"
 )
 
+// PossibleKeyNameValues returns an array of possible values for the KeyName const type.
+func PossibleKeyNameValues() []KeyName {
+	return []KeyName{Key1, Key2}
+}
+
 // Kind enumerates the values for kind.
 type Kind string
 
 const (
-	// Academic ...
-	Academic Kind = "Academic"
-	// BingAutosuggest ...
-	BingAutosuggest Kind = "Bing.Autosuggest"
 	// BingAutosuggestv7 ...
 	BingAutosuggestv7 Kind = "Bing.Autosuggest.v7"
 	// BingCustomSearch ...
 	BingCustomSearch Kind = "Bing.CustomSearch"
-	// BingSearch ...
-	BingSearch Kind = "Bing.Search"
 	// BingSearchv7 ...
 	BingSearchv7 Kind = "Bing.Search.v7"
 	// BingSpeech ...
 	BingSpeech Kind = "Bing.Speech"
-	// BingSpellCheck ...
-	BingSpellCheck Kind = "Bing.SpellCheck"
 	// BingSpellCheckv7 ...
 	BingSpellCheckv7 Kind = "Bing.SpellCheck.v7"
 	// ComputerVision ...
@@ -62,18 +59,20 @@ const (
 	ContentModerator Kind = "ContentModerator"
 	// CustomSpeech ...
 	CustomSpeech Kind = "CustomSpeech"
+	// CustomVisionPrediction ...
+	CustomVisionPrediction Kind = "CustomVision.Prediction"
+	// CustomVisionTraining ...
+	CustomVisionTraining Kind = "CustomVision.Training"
 	// Emotion ...
 	Emotion Kind = "Emotion"
 	// Face ...
 	Face Kind = "Face"
 	// LUIS ...
 	LUIS Kind = "LUIS"
-	// Recommendations ...
-	Recommendations Kind = "Recommendations"
+	// QnAMaker ...
+	QnAMaker Kind = "QnAMaker"
 	// SpeakerRecognition ...
 	SpeakerRecognition Kind = "SpeakerRecognition"
-	// Speech ...
-	Speech Kind = "Speech"
 	// SpeechTranslation ...
 	SpeechTranslation Kind = "SpeechTranslation"
 	// TextAnalytics ...
@@ -83,6 +82,11 @@ const (
 	// WebLM ...
 	WebLM Kind = "WebLM"
 )
+
+// PossibleKindValues returns an array of possible values for the Kind const type.
+func PossibleKindValues() []Kind {
+	return []Kind{BingAutosuggestv7, BingCustomSearch, BingSearchv7, BingSpeech, BingSpellCheckv7, ComputerVision, ContentModerator, CustomSpeech, CustomVisionPrediction, CustomVisionTraining, Emotion, Face, LUIS, QnAMaker, SpeakerRecognition, SpeechTranslation, TextAnalytics, TextTranslation, WebLM}
+}
 
 // ProvisioningState enumerates the values for provisioning state.
 type ProvisioningState string
@@ -101,6 +105,30 @@ const (
 	// Succeeded ...
 	Succeeded ProvisioningState = "Succeeded"
 )
+
+// PossibleProvisioningStateValues returns an array of possible values for the ProvisioningState const type.
+func PossibleProvisioningStateValues() []ProvisioningState {
+	return []ProvisioningState{Creating, Deleting, Failed, Moving, ResolvingDNS, Succeeded}
+}
+
+// QuotaUsageStatus enumerates the values for quota usage status.
+type QuotaUsageStatus string
+
+const (
+	// Blocked ...
+	Blocked QuotaUsageStatus = "Blocked"
+	// Included ...
+	Included QuotaUsageStatus = "Included"
+	// InOverage ...
+	InOverage QuotaUsageStatus = "InOverage"
+	// Unknown ...
+	Unknown QuotaUsageStatus = "Unknown"
+)
+
+// PossibleQuotaUsageStatusValues returns an array of possible values for the QuotaUsageStatus const type.
+func PossibleQuotaUsageStatusValues() []QuotaUsageStatus {
+	return []QuotaUsageStatus{Blocked, Included, InOverage, Unknown}
+}
 
 // SkuName enumerates the values for sku name.
 type SkuName string
@@ -130,6 +158,11 @@ const (
 	S6 SkuName = "S6"
 )
 
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{F0, P0, P1, P2, S0, S1, S2, S3, S4, S5, S6}
+}
+
 // SkuTier enumerates the values for sku tier.
 type SkuTier string
 
@@ -142,8 +175,38 @@ const (
 	Standard SkuTier = "Standard"
 )
 
-// Account cognitive Services Account is an Azure resource representing the provisioned account, its type, location and
-// SKU.
+// PossibleSkuTierValues returns an array of possible values for the SkuTier const type.
+func PossibleSkuTierValues() []SkuTier {
+	return []SkuTier{Free, Premium, Standard}
+}
+
+// UnitType enumerates the values for unit type.
+type UnitType string
+
+const (
+	// Bytes ...
+	Bytes UnitType = "Bytes"
+	// BytesPerSecond ...
+	BytesPerSecond UnitType = "BytesPerSecond"
+	// Count ...
+	Count UnitType = "Count"
+	// CountPerSecond ...
+	CountPerSecond UnitType = "CountPerSecond"
+	// Milliseconds ...
+	Milliseconds UnitType = "Milliseconds"
+	// Percent ...
+	Percent UnitType = "Percent"
+	// Seconds ...
+	Seconds UnitType = "Seconds"
+)
+
+// PossibleUnitTypeValues returns an array of possible values for the UnitType const type.
+func PossibleUnitTypeValues() []UnitType {
+	return []UnitType{Bytes, BytesPerSecond, Count, CountPerSecond, Milliseconds, Percent, Seconds}
+}
+
+// Account cognitive Services Account is an Azure resource representing the provisioned account, its type, location
+// and SKU.
 type Account struct {
 	autorest.Response `json:"-"`
 	// Etag - Entity Tag
@@ -161,9 +224,42 @@ type Account struct {
 	// Sku - The SKU of Cognitive Services account.
 	Sku *Sku `json:"sku,omitempty"`
 	// Tags - Gets or sets a list of key value pairs that describe the resource. These tags can be used in viewing and grouping this resource (across resource groups). A maximum of 15 tags can be provided for a resource. Each tag must have a key no greater than 128 characters and value no greater than 256 characters.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Account.
+func (a Account) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if a.Etag != nil {
+		objectMap["etag"] = a.Etag
+	}
+	if a.ID != nil {
+		objectMap["id"] = a.ID
+	}
+	if a.Kind != nil {
+		objectMap["kind"] = a.Kind
+	}
+	if a.Location != nil {
+		objectMap["location"] = a.Location
+	}
+	if a.Name != nil {
+		objectMap["name"] = a.Name
+	}
+	if a.AccountProperties != nil {
+		objectMap["properties"] = a.AccountProperties
+	}
+	if a.Sku != nil {
+		objectMap["sku"] = a.Sku
+	}
+	if a.Tags != nil {
+		objectMap["tags"] = a.Tags
+	}
+	if a.Type != nil {
+		objectMap["type"] = a.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Account struct.
@@ -173,96 +269,90 @@ func (a *Account) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				a.Etag = &etag
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				a.ID = &ID
+			}
+		case "kind":
+			if v != nil {
+				var kind string
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				a.Kind = &kind
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				a.Location = &location
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				a.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var accountProperties AccountProperties
+				err = json.Unmarshal(*v, &accountProperties)
+				if err != nil {
+					return err
+				}
+				a.AccountProperties = &accountProperties
+			}
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				a.Sku = &sku
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				a.Tags = tags
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				a.Type = &typeVar
+			}
 		}
-		a.Etag = &etag
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		a.ID = &ID
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind string
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		a.Kind = &kind
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		a.Location = &location
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		a.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccountProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		a.AccountProperties = &properties
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		a.Sku = &sku
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		a.Tags = &tags
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		a.Type = &typeVar
 	}
 
 	return nil
@@ -272,14 +362,33 @@ func (a *Account) UnmarshalJSON(body []byte) error {
 type AccountCreateParameters struct {
 	// Sku - Required. Gets or sets the SKU of the resource.
 	Sku *Sku `json:"sku,omitempty"`
-	// Kind - Required. Gets or sets the Kind of the resource. Possible values include: 'Academic', 'BingAutosuggest', 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheck', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'Emotion', 'Face', 'LUIS', 'Recommendations', 'SpeakerRecognition', 'Speech', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
+	// Kind - Required. Gets or sets the Kind of the resource. Possible values include: 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'CustomVisionPrediction', 'CustomVisionTraining', 'Emotion', 'Face', 'LUIS', 'QnAMaker', 'SpeakerRecognition', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
 	Kind Kind `json:"kind,omitempty"`
 	// Location - Required. Gets or sets the location of the resource. This will be one of the supported and registered Azure Geo Regions (e.g. West US, East US, Southeast Asia, etc.). The geo region of a resource cannot be changed once it is created, but if an identical geo region is specified on update the request will succeed.
 	Location *string `json:"location,omitempty"`
 	// Tags - Gets or sets a list of key value pairs that describe the resource. These tags can be used in viewing and grouping this resource (across resource groups). A maximum of 15 tags can be provided for a resource. Each tag must have a key no greater than 128 characters and value no greater than 256 characters.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Properties - Must exist in the request. Must be an empty object. Must not be null.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Properties interface{} `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AccountCreateParameters.
+func (acp AccountCreateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if acp.Sku != nil {
+		objectMap["sku"] = acp.Sku
+	}
+	if acp.Kind != "" {
+		objectMap["kind"] = acp.Kind
+	}
+	if acp.Location != nil {
+		objectMap["location"] = acp.Location
+	}
+	if acp.Tags != nil {
+		objectMap["tags"] = acp.Tags
+	}
+	objectMap["properties"] = acp.Properties
+	return json.Marshal(objectMap)
 }
 
 // AccountEnumerateSkusResult the list of cognitive services accounts operation response.
@@ -415,14 +524,26 @@ type AccountUpdateParameters struct {
 	// Sku - Gets or sets the SKU of the resource.
 	Sku *Sku `json:"sku,omitempty"`
 	// Tags - Gets or sets a list of key value pairs that describe the resource. These tags can be used in viewing and grouping this resource (across resource groups). A maximum of 15 tags can be provided for a resource. Each tag must have a key no greater than 128 characters and value no greater than 256 characters.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for AccountUpdateParameters.
+func (aup AccountUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if aup.Sku != nil {
+		objectMap["sku"] = aup.Sku
+	}
+	if aup.Tags != nil {
+		objectMap["tags"] = aup.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // CheckSkuAvailabilityParameter check SKU availability parameter.
 type CheckSkuAvailabilityParameter struct {
 	// Skus - The SKU of the resource.
 	Skus *[]SkuName `json:"skus,omitempty"`
-	// Kind - The Kind of the resource. Possible values include: 'Academic', 'BingAutosuggest', 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheck', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'Emotion', 'Face', 'LUIS', 'Recommendations', 'SpeakerRecognition', 'Speech', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
+	// Kind - The Kind of the resource. Possible values include: 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'CustomVisionPrediction', 'CustomVisionTraining', 'Emotion', 'Face', 'LUIS', 'QnAMaker', 'SpeakerRecognition', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
 	Kind Kind `json:"kind,omitempty"`
 	// Type - The Type of the resource.
 	Type *string `json:"type,omitempty"`
@@ -430,7 +551,7 @@ type CheckSkuAvailabilityParameter struct {
 
 // CheckSkuAvailabilityResult check SKU availability result.
 type CheckSkuAvailabilityResult struct {
-	// Kind - The Kind of the resource. Possible values include: 'Academic', 'BingAutosuggest', 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheck', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'Emotion', 'Face', 'LUIS', 'Recommendations', 'SpeakerRecognition', 'Speech', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
+	// Kind - The Kind of the resource. Possible values include: 'BingAutosuggestv7', 'BingCustomSearch', 'BingSearchv7', 'BingSpeech', 'BingSpellCheckv7', 'ComputerVision', 'ContentModerator', 'CustomSpeech', 'CustomVisionPrediction', 'CustomVisionTraining', 'Emotion', 'Face', 'LUIS', 'QnAMaker', 'SpeakerRecognition', 'SpeechTranslation', 'TextAnalytics', 'TextTranslation', 'WebLM'
 	Kind Kind `json:"kind,omitempty"`
 	// Type - The Type of the resource.
 	Type *string `json:"type,omitempty"`
@@ -465,6 +586,14 @@ type ErrorBody struct {
 	Message *string `json:"message,omitempty"`
 }
 
+// MetricName a metric name.
+type MetricName struct {
+	// Value - The name of the metric.
+	Value *string `json:"value,omitempty"`
+	// LocalizedValue - The friendly name of the metric.
+	LocalizedValue *string `json:"localizedValue,omitempty"`
+}
+
 // OperationDisplayInfo the operation supported by Cognitive Services.
 type OperationDisplayInfo struct {
 	// Description - The description of the operation.
@@ -486,7 +615,7 @@ type OperationEntity struct {
 	// Origin - The origin of the operation.
 	Origin *string `json:"origin,omitempty"`
 	// Properties - Additional properties.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Properties interface{} `json:"properties,omitempty"`
 }
 
 // OperationEntityListResult the list of cognitive services accounts operation response.
@@ -611,4 +740,29 @@ type Sku struct {
 	Name SkuName `json:"name,omitempty"`
 	// Tier - Gets the sku tier. This is based on the SKU name. Possible values include: 'Free', 'Standard', 'Premium'
 	Tier SkuTier `json:"tier,omitempty"`
+}
+
+// Usage the usage data for a usage request.
+type Usage struct {
+	// Unit - The unit of the metric. Possible values include: 'Count', 'Bytes', 'Seconds', 'Percent', 'CountPerSecond', 'BytesPerSecond', 'Milliseconds'
+	Unit UnitType `json:"unit,omitempty"`
+	// Name - The name information for the metric.
+	Name *MetricName `json:"name,omitempty"`
+	// QuotaPeriod - The quota period used to summarize the usage values.
+	QuotaPeriod *string `json:"quotaPeriod,omitempty"`
+	// Limit - Maximum value for this metric.
+	Limit *float64 `json:"limit,omitempty"`
+	// CurrentValue - Current value for this metric.
+	CurrentValue *float64 `json:"currentValue,omitempty"`
+	// NextResetTime - Next reset time for current quota.
+	NextResetTime *string `json:"nextResetTime,omitempty"`
+	// Status - Cognitive Services account quota usage status. Possible values include: 'Included', 'Blocked', 'InOverage', 'Unknown'
+	Status QuotaUsageStatus `json:"status,omitempty"`
+}
+
+// UsagesResult the response to a list usage request.
+type UsagesResult struct {
+	autorest.Response `json:"-"`
+	// Value - The list of usages for Cognitive Service account.
+	Value *[]Usage `json:"value,omitempty"`
 }

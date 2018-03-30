@@ -42,7 +42,8 @@ func NewSubnetsClientWithBaseURI(baseURI string, subscriptionID string) SubnetsC
 // CreateOrUpdate the Put Subnet operation creates/updates a subnet in thespecified virtual network
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is the name of the virtual network.
-// subnetName is the name of the subnet. subnetParameters is parameters supplied to the create/update Subnet operation
+// subnetName is the name of the subnet. subnetParameters is parameters supplied to the create/update Subnet
+// operation
 func (client SubnetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, virtualNetworkName string, subnetName string, subnetParameters Subnet) (result SubnetsCreateOrUpdateFuture, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, virtualNetworkName, subnetName, subnetParameters)
 	if err != nil {
@@ -74,7 +75,7 @@ func (client SubnetsClient) CreateOrUpdatePreparer(ctx context.Context, resource
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Network/virtualNetworks/{virtualNetworkName}/subnets/{subnetName}", pathParameters),

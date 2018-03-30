@@ -118,8 +118,8 @@ func (client DeployedApplicationHealthsClient) GetResponder(resp *http.Response)
 
 // Send send deployed application health
 //
-// nodeName is the name of the node applicationName is the name of the application deployedApplicationHealthReport is
-// the report of the deployed application health
+// nodeName is the name of the node applicationName is the name of the application deployedApplicationHealthReport
+// is the report of the deployed application health
 func (client DeployedApplicationHealthsClient) Send(ctx context.Context, nodeName string, applicationName string, deployedApplicationHealthReport DeployedApplicationHealthReport) (result String, err error) {
 	req, err := client.SendPreparer(ctx, nodeName, applicationName, deployedApplicationHealthReport)
 	if err != nil {
@@ -158,7 +158,7 @@ func (client DeployedApplicationHealthsClient) SendPreparer(ctx context.Context,
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/Nodes/{nodeName}/$/GetApplications/{applicationName}/$/ReportHealth", pathParameters),

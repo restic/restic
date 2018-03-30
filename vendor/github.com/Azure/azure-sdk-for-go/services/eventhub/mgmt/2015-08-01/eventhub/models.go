@@ -38,6 +38,11 @@ const (
 	Send AccessRights = "Send"
 )
 
+// PossibleAccessRightsValues returns an array of possible values for the AccessRights const type.
+func PossibleAccessRightsValues() []AccessRights {
+	return []AccessRights{Listen, Manage, Send}
+}
+
 // EntityStatus enumerates the values for entity status.
 type EntityStatus string
 
@@ -61,6 +66,11 @@ const (
 	// Unknown ...
 	Unknown EntityStatus = "Unknown"
 )
+
+// PossibleEntityStatusValues returns an array of possible values for the EntityStatus const type.
+func PossibleEntityStatusValues() []EntityStatus {
+	return []EntityStatus{Active, Creating, Deleting, Disabled, ReceiveDisabled, Renaming, Restoring, SendDisabled, Unknown}
+}
 
 // NamespaceState enumerates the values for namespace state.
 type NamespaceState string
@@ -94,6 +104,11 @@ const (
 	NamespaceStateUnknown NamespaceState = "Unknown"
 )
 
+// PossibleNamespaceStateValues returns an array of possible values for the NamespaceState const type.
+func PossibleNamespaceStateValues() []NamespaceState {
+	return []NamespaceState{NamespaceStateActivating, NamespaceStateActive, NamespaceStateCreated, NamespaceStateCreating, NamespaceStateDisabled, NamespaceStateDisabling, NamespaceStateEnabling, NamespaceStateFailed, NamespaceStateRemoved, NamespaceStateRemoving, NamespaceStateSoftDeleted, NamespaceStateSoftDeleting, NamespaceStateUnknown}
+}
+
 // Policykey enumerates the values for policykey.
 type Policykey string
 
@@ -104,6 +119,11 @@ const (
 	SecondaryKey Policykey = "SecondaryKey"
 )
 
+// PossiblePolicykeyValues returns an array of possible values for the Policykey const type.
+func PossiblePolicykeyValues() []Policykey {
+	return []Policykey{PrimaryKey, SecondaryKey}
+}
+
 // SkuName enumerates the values for sku name.
 type SkuName string
 
@@ -113,6 +133,11 @@ const (
 	// Standard ...
 	Standard SkuName = "Standard"
 )
+
+// PossibleSkuNameValues returns an array of possible values for the SkuName const type.
+func PossibleSkuNameValues() []SkuName {
+	return []SkuName{Basic, Standard}
+}
 
 // SkuTier enumerates the values for sku tier.
 type SkuTier string
@@ -125,6 +150,11 @@ const (
 	// SkuTierStandard ...
 	SkuTierStandard SkuTier = "Standard"
 )
+
+// PossibleSkuTierValues returns an array of possible values for the SkuTier const type.
+func PossibleSkuTierValues() []SkuTier {
+	return []SkuTier{SkuTierBasic, SkuTierPremium, SkuTierStandard}
+}
 
 // UnavailableReason enumerates the values for unavailable reason.
 type UnavailableReason string
@@ -143,6 +173,11 @@ const (
 	// TooManyNamespaceInCurrentSubscription ...
 	TooManyNamespaceInCurrentSubscription UnavailableReason = "TooManyNamespaceInCurrentSubscription"
 )
+
+// PossibleUnavailableReasonValues returns an array of possible values for the UnavailableReason const type.
+func PossibleUnavailableReasonValues() []UnavailableReason {
+	return []UnavailableReason{InvalidName, NameInLockdown, NameInUse, None, SubscriptionIsDisabled, TooManyNamespaceInCurrentSubscription}
+}
 
 // CheckNameAvailabilityParameter parameter supplied to check Namespace name availability operation
 type CheckNameAvailabilityParameter struct {
@@ -172,6 +207,24 @@ type ConsumerGroupCreateOrUpdateParameters struct {
 	*ConsumerGroupProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for ConsumerGroupCreateOrUpdateParameters.
+func (cgcoup ConsumerGroupCreateOrUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cgcoup.Location != nil {
+		objectMap["location"] = cgcoup.Location
+	}
+	if cgcoup.Type != nil {
+		objectMap["type"] = cgcoup.Type
+	}
+	if cgcoup.Name != nil {
+		objectMap["name"] = cgcoup.Name
+	}
+	if cgcoup.ConsumerGroupProperties != nil {
+		objectMap["properties"] = cgcoup.ConsumerGroupProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for ConsumerGroupCreateOrUpdateParameters struct.
 func (cgcoup *ConsumerGroupCreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -179,46 +232,45 @@ func (cgcoup *ConsumerGroupCreateOrUpdateParameters) UnmarshalJSON(body []byte) 
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				cgcoup.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cgcoup.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cgcoup.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var consumerGroupProperties ConsumerGroupProperties
+				err = json.Unmarshal(*v, &consumerGroupProperties)
+				if err != nil {
+					return err
+				}
+				cgcoup.ConsumerGroupProperties = &consumerGroupProperties
+			}
 		}
-		cgcoup.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cgcoup.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cgcoup.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties ConsumerGroupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		cgcoup.ConsumerGroupProperties = &properties
 	}
 
 	return nil
@@ -340,7 +392,8 @@ type ConsumerGroupProperties struct {
 
 // ConsumerGroupResource single item in List or Get Consumer group operation
 type ConsumerGroupResource struct {
-	autorest.Response `json:"-"`
+	autorest.Response        `json:"-"`
+	*ConsumerGroupProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -348,8 +401,28 @@ type ConsumerGroupResource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Type - Resource type
-	Type                     *string `json:"type,omitempty"`
-	*ConsumerGroupProperties `json:"properties,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ConsumerGroupResource.
+func (cgr ConsumerGroupResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cgr.ConsumerGroupProperties != nil {
+		objectMap["properties"] = cgr.ConsumerGroupProperties
+	}
+	if cgr.ID != nil {
+		objectMap["id"] = cgr.ID
+	}
+	if cgr.Name != nil {
+		objectMap["name"] = cgr.Name
+	}
+	if cgr.Location != nil {
+		objectMap["location"] = cgr.Location
+	}
+	if cgr.Type != nil {
+		objectMap["type"] = cgr.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ConsumerGroupResource struct.
@@ -359,56 +432,54 @@ func (cgr *ConsumerGroupResource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ConsumerGroupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var consumerGroupProperties ConsumerGroupProperties
+				err = json.Unmarshal(*v, &consumerGroupProperties)
+				if err != nil {
+					return err
+				}
+				cgr.ConsumerGroupProperties = &consumerGroupProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cgr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cgr.Name = &name
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				cgr.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cgr.Type = &typeVar
+			}
 		}
-		cgr.ConsumerGroupProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		cgr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cgr.Name = &name
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		cgr.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cgr.Type = &typeVar
 	}
 
 	return nil
@@ -425,6 +496,24 @@ type CreateOrUpdateParameters struct {
 	*Properties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for CreateOrUpdateParameters.
+func (coup CreateOrUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if coup.Location != nil {
+		objectMap["location"] = coup.Location
+	}
+	if coup.Type != nil {
+		objectMap["type"] = coup.Type
+	}
+	if coup.Name != nil {
+		objectMap["name"] = coup.Name
+	}
+	if coup.Properties != nil {
+		objectMap["properties"] = coup.Properties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for CreateOrUpdateParameters struct.
 func (coup *CreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -432,46 +521,45 @@ func (coup *CreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				coup.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				coup.Type = &typeVar
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				coup.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var properties Properties
+				err = json.Unmarshal(*v, &properties)
+				if err != nil {
+					return err
+				}
+				coup.Properties = &properties
+			}
 		}
-		coup.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		coup.Type = &typeVar
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		coup.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties Properties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		coup.Properties = &properties
 	}
 
 	return nil
@@ -585,8 +673,26 @@ type NamespaceCreateOrUpdateParameters struct {
 	Location *string `json:"location,omitempty"`
 	Sku      *Sku    `json:"sku,omitempty"`
 	// Tags - Namespace tags.
-	Tags                 *map[string]*string `json:"tags,omitempty"`
+	Tags                 map[string]*string `json:"tags"`
 	*NamespaceProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for NamespaceCreateOrUpdateParameters.
+func (ncoup NamespaceCreateOrUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ncoup.Location != nil {
+		objectMap["location"] = ncoup.Location
+	}
+	if ncoup.Sku != nil {
+		objectMap["sku"] = ncoup.Sku
+	}
+	if ncoup.Tags != nil {
+		objectMap["tags"] = ncoup.Tags
+	}
+	if ncoup.NamespaceProperties != nil {
+		objectMap["properties"] = ncoup.NamespaceProperties
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for NamespaceCreateOrUpdateParameters struct.
@@ -596,46 +702,45 @@ func (ncoup *NamespaceCreateOrUpdateParameters) UnmarshalJSON(body []byte) error
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				ncoup.Location = &location
+			}
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				ncoup.Sku = &sku
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				ncoup.Tags = tags
+			}
+		case "properties":
+			if v != nil {
+				var namespaceProperties NamespaceProperties
+				err = json.Unmarshal(*v, &namespaceProperties)
+				if err != nil {
+					return err
+				}
+				ncoup.NamespaceProperties = &namespaceProperties
+			}
 		}
-		ncoup.Location = &location
-	}
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
-		}
-		ncoup.Sku = &sku
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		ncoup.Tags = &tags
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties NamespaceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		ncoup.NamespaceProperties = &properties
 	}
 
 	return nil
@@ -763,7 +868,11 @@ type NamespaceProperties struct {
 
 // NamespaceResource single Namespace item in List or Get Operation
 type NamespaceResource struct {
-	autorest.Response `json:"-"`
+	autorest.Response    `json:"-"`
+	Sku                  *Sku `json:"sku,omitempty"`
+	*NamespaceProperties `json:"properties,omitempty"`
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -772,10 +881,33 @@ type NamespaceResource struct {
 	Location *string `json:"location,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Tags - Resource tags
-	Tags                 *map[string]*string `json:"tags,omitempty"`
-	Sku                  *Sku                `json:"sku,omitempty"`
-	*NamespaceProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for NamespaceResource.
+func (nr NamespaceResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if nr.Sku != nil {
+		objectMap["sku"] = nr.Sku
+	}
+	if nr.NamespaceProperties != nil {
+		objectMap["properties"] = nr.NamespaceProperties
+	}
+	if nr.Tags != nil {
+		objectMap["tags"] = nr.Tags
+	}
+	if nr.ID != nil {
+		objectMap["id"] = nr.ID
+	}
+	if nr.Name != nil {
+		objectMap["name"] = nr.Name
+	}
+	if nr.Location != nil {
+		objectMap["location"] = nr.Location
+	}
+	if nr.Type != nil {
+		objectMap["type"] = nr.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for NamespaceResource struct.
@@ -785,82 +917,79 @@ func (nr *NamespaceResource) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["sku"]
-	if v != nil {
-		var sku Sku
-		err = json.Unmarshal(*m["sku"], &sku)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "sku":
+			if v != nil {
+				var sku Sku
+				err = json.Unmarshal(*v, &sku)
+				if err != nil {
+					return err
+				}
+				nr.Sku = &sku
+			}
+		case "properties":
+			if v != nil {
+				var namespaceProperties NamespaceProperties
+				err = json.Unmarshal(*v, &namespaceProperties)
+				if err != nil {
+					return err
+				}
+				nr.NamespaceProperties = &namespaceProperties
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				nr.Tags = tags
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				nr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				nr.Name = &name
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				nr.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				nr.Type = &typeVar
+			}
 		}
-		nr.Sku = &sku
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties NamespaceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		nr.NamespaceProperties = &properties
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		nr.Tags = &tags
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		nr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		nr.Name = &name
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		nr.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		nr.Type = &typeVar
 	}
 
 	return nil
 }
 
-// NamespacesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// NamespacesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type NamespacesCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -872,22 +1001,39 @@ func (future NamespacesCreateOrUpdateFuture) Result(client NamespacesClient) (nr
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return nr, autorest.NewError("eventhub.NamespacesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return nr, azure.NewAsyncOpIncompleteError("eventhub.NamespacesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		nr, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	nr, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -903,31 +1049,60 @@ func (future NamespacesDeleteFuture) Result(client NamespacesClient) (ar autores
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("eventhub.NamespacesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("eventhub.NamespacesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "eventhub.NamespacesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // NamespaceUpdateParameter parameters supplied to the Patch/update Namespace operation.
 type NamespaceUpdateParameter struct {
 	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
 	// Sku - The sku of the created Namespace
 	Sku *Sku `json:"sku,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for NamespaceUpdateParameter.
+func (nup NamespaceUpdateParameter) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if nup.Tags != nil {
+		objectMap["tags"] = nup.Tags
+	}
+	if nup.Sku != nil {
+		objectMap["sku"] = nup.Sku
+	}
+	return json.Marshal(objectMap)
 }
 
 // Operation a Event Hub REST API operation
@@ -948,8 +1123,8 @@ type OperationDisplay struct {
 	Operation *string `json:"operation,omitempty"`
 }
 
-// OperationListResult result of the request to list Event Hub operations. It contains a list of operations and a URL
-// link to get the next set of results.
+// OperationListResult result of the request to list Event Hub operations. It contains a list of operations and a
+// URL link to get the next set of results.
 type OperationListResult struct {
 	autorest.Response `json:"-"`
 	// Value - List of Event Hub operations supported by the Microsoft.EventHub resource provider.
@@ -1103,6 +1278,7 @@ type ResourceListKeys struct {
 // ResourceType single item in List or Get Event Hub operation
 type ResourceType struct {
 	autorest.Response `json:"-"`
+	*Properties       `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -1110,8 +1286,28 @@ type ResourceType struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Type - Resource type
-	Type        *string `json:"type,omitempty"`
-	*Properties `json:"properties,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ResourceType.
+func (rt ResourceType) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if rt.Properties != nil {
+		objectMap["properties"] = rt.Properties
+	}
+	if rt.ID != nil {
+		objectMap["id"] = rt.ID
+	}
+	if rt.Name != nil {
+		objectMap["name"] = rt.Name
+	}
+	if rt.Location != nil {
+		objectMap["location"] = rt.Location
+	}
+	if rt.Type != nil {
+		objectMap["type"] = rt.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ResourceType struct.
@@ -1121,56 +1317,54 @@ func (rt *ResourceType) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties Properties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var properties Properties
+				err = json.Unmarshal(*v, &properties)
+				if err != nil {
+					return err
+				}
+				rt.Properties = &properties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				rt.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				rt.Name = &name
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				rt.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				rt.Type = &typeVar
+			}
 		}
-		rt.Properties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		rt.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		rt.Name = &name
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		rt.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		rt.Type = &typeVar
 	}
 
 	return nil
@@ -1186,6 +1380,21 @@ type SharedAccessAuthorizationRuleCreateOrUpdateParameters struct {
 	*SharedAccessAuthorizationRuleProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for SharedAccessAuthorizationRuleCreateOrUpdateParameters.
+func (saarcoup SharedAccessAuthorizationRuleCreateOrUpdateParameters) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if saarcoup.Location != nil {
+		objectMap["location"] = saarcoup.Location
+	}
+	if saarcoup.Name != nil {
+		objectMap["name"] = saarcoup.Name
+	}
+	if saarcoup.SharedAccessAuthorizationRuleProperties != nil {
+		objectMap["properties"] = saarcoup.SharedAccessAuthorizationRuleProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for SharedAccessAuthorizationRuleCreateOrUpdateParameters struct.
 func (saarcoup *SharedAccessAuthorizationRuleCreateOrUpdateParameters) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -1193,36 +1402,36 @@ func (saarcoup *SharedAccessAuthorizationRuleCreateOrUpdateParameters) Unmarshal
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				saarcoup.Location = &location
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				saarcoup.Name = &name
+			}
+		case "properties":
+			if v != nil {
+				var sharedAccessAuthorizationRuleProperties SharedAccessAuthorizationRuleProperties
+				err = json.Unmarshal(*v, &sharedAccessAuthorizationRuleProperties)
+				if err != nil {
+					return err
+				}
+				saarcoup.SharedAccessAuthorizationRuleProperties = &sharedAccessAuthorizationRuleProperties
+			}
 		}
-		saarcoup.Location = &location
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		saarcoup.Name = &name
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties SharedAccessAuthorizationRuleProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		saarcoup.SharedAccessAuthorizationRuleProperties = &properties
 	}
 
 	return nil
@@ -1339,7 +1548,8 @@ type SharedAccessAuthorizationRuleProperties struct {
 
 // SharedAccessAuthorizationRuleResource single item in a List or Get AuthorizationRule operation
 type SharedAccessAuthorizationRuleResource struct {
-	autorest.Response `json:"-"`
+	autorest.Response                        `json:"-"`
+	*SharedAccessAuthorizationRuleProperties `json:"properties,omitempty"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -1347,8 +1557,28 @@ type SharedAccessAuthorizationRuleResource struct {
 	// Location - Resource location
 	Location *string `json:"location,omitempty"`
 	// Type - Resource type
-	Type                                     *string `json:"type,omitempty"`
-	*SharedAccessAuthorizationRuleProperties `json:"properties,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SharedAccessAuthorizationRuleResource.
+func (saarr SharedAccessAuthorizationRuleResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if saarr.SharedAccessAuthorizationRuleProperties != nil {
+		objectMap["properties"] = saarr.SharedAccessAuthorizationRuleProperties
+	}
+	if saarr.ID != nil {
+		objectMap["id"] = saarr.ID
+	}
+	if saarr.Name != nil {
+		objectMap["name"] = saarr.Name
+	}
+	if saarr.Location != nil {
+		objectMap["location"] = saarr.Location
+	}
+	if saarr.Type != nil {
+		objectMap["type"] = saarr.Type
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SharedAccessAuthorizationRuleResource struct.
@@ -1358,56 +1588,54 @@ func (saarr *SharedAccessAuthorizationRuleResource) UnmarshalJSON(body []byte) e
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SharedAccessAuthorizationRuleProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var sharedAccessAuthorizationRuleProperties SharedAccessAuthorizationRuleProperties
+				err = json.Unmarshal(*v, &sharedAccessAuthorizationRuleProperties)
+				if err != nil {
+					return err
+				}
+				saarr.SharedAccessAuthorizationRuleProperties = &sharedAccessAuthorizationRuleProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				saarr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				saarr.Name = &name
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				saarr.Location = &location
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				saarr.Type = &typeVar
+			}
 		}
-		saarr.SharedAccessAuthorizationRuleProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		saarr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		saarr.Name = &name
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		saarr.Location = &location
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		saarr.Type = &typeVar
 	}
 
 	return nil
@@ -1425,6 +1653,8 @@ type Sku struct {
 
 // TrackedResource definition of Resource
 type TrackedResource struct {
+	// Tags - Resource tags
+	Tags map[string]*string `json:"tags"`
 	// ID - Resource Id
 	ID *string `json:"id,omitempty"`
 	// Name - Resource name
@@ -1433,6 +1663,25 @@ type TrackedResource struct {
 	Location *string `json:"location,omitempty"`
 	// Type - Resource type
 	Type *string `json:"type,omitempty"`
-	// Tags - Resource tags
-	Tags *map[string]*string `json:"tags,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TrackedResource.
+func (tr TrackedResource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if tr.Tags != nil {
+		objectMap["tags"] = tr.Tags
+	}
+	if tr.ID != nil {
+		objectMap["id"] = tr.ID
+	}
+	if tr.Name != nil {
+		objectMap["name"] = tr.Name
+	}
+	if tr.Location != nil {
+		objectMap["location"] = tr.Location
+	}
+	if tr.Type != nil {
+		objectMap["type"] = tr.Type
+	}
+	return json.Marshal(objectMap)
 }

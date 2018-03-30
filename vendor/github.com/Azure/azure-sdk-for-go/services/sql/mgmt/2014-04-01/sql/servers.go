@@ -50,7 +50,7 @@ func (client ServersClient) CheckNameAvailability(ctx context.Context, parameter
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Name", Name: validation.Null, Rule: true, Chain: nil},
 				{Target: "parameters.Type", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "sql.ServersClient", "CheckNameAvailability")
+		return result, validation.NewError("sql.ServersClient", "CheckNameAvailability", err.Error())
 	}
 
 	req, err := client.CheckNameAvailabilityPreparer(ctx, parameters)
@@ -86,7 +86,7 @@ func (client ServersClient) CheckNameAvailabilityPreparer(ctx context.Context, p
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Sql/checkNameAvailability", pathParameters),

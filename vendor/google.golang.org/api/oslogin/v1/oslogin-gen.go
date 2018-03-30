@@ -1,4 +1,4 @@
-// Package oslogin provides access to the Google Cloud OS Login API.
+// Package oslogin provides access to the Cloud OS Login API.
 //
 // See https://cloud.google.com/compute/docs/oslogin/rest/
 //

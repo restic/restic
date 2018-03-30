@@ -36,6 +36,11 @@ const (
 	Enabled AlertEmailNotificationStatus = "Enabled"
 )
 
+// PossibleAlertEmailNotificationStatusValues returns an array of possible values for the AlertEmailNotificationStatus const type.
+func PossibleAlertEmailNotificationStatusValues() []AlertEmailNotificationStatus {
+	return []AlertEmailNotificationStatus{Disabled, Enabled}
+}
+
 // AlertScope enumerates the values for alert scope.
 type AlertScope string
 
@@ -45,6 +50,11 @@ const (
 	// AlertScopeResource ...
 	AlertScopeResource AlertScope = "Resource"
 )
+
+// PossibleAlertScopeValues returns an array of possible values for the AlertScope const type.
+func PossibleAlertScopeValues() []AlertScope {
+	return []AlertScope{AlertScopeDevice, AlertScopeResource}
+}
 
 // AlertSeverity enumerates the values for alert severity.
 type AlertSeverity string
@@ -58,6 +68,11 @@ const (
 	Warning AlertSeverity = "Warning"
 )
 
+// PossibleAlertSeverityValues returns an array of possible values for the AlertSeverity const type.
+func PossibleAlertSeverityValues() []AlertSeverity {
+	return []AlertSeverity{Critical, Informational, Warning}
+}
+
 // AlertSourceType enumerates the values for alert source type.
 type AlertSourceType string
 
@@ -68,6 +83,11 @@ const (
 	AlertSourceTypeResource AlertSourceType = "Resource"
 )
 
+// PossibleAlertSourceTypeValues returns an array of possible values for the AlertSourceType const type.
+func PossibleAlertSourceTypeValues() []AlertSourceType {
+	return []AlertSourceType{AlertSourceTypeDevice, AlertSourceTypeResource}
+}
+
 // AlertStatus enumerates the values for alert status.
 type AlertStatus string
 
@@ -77,6 +97,11 @@ const (
 	// Cleared ...
 	Cleared AlertStatus = "Cleared"
 )
+
+// PossibleAlertStatusValues returns an array of possible values for the AlertStatus const type.
+func PossibleAlertStatusValues() []AlertStatus {
+	return []AlertStatus{Active, Cleared}
+}
 
 // AuthenticationType enumerates the values for authentication type.
 type AuthenticationType string
@@ -92,6 +117,11 @@ const (
 	NTLM AuthenticationType = "NTLM"
 )
 
+// PossibleAuthenticationTypeValues returns an array of possible values for the AuthenticationType const type.
+func PossibleAuthenticationTypeValues() []AuthenticationType {
+	return []AuthenticationType{Basic, Invalid, None, NTLM}
+}
+
 // AuthorizationEligibility enumerates the values for authorization eligibility.
 type AuthorizationEligibility string
 
@@ -102,6 +132,11 @@ const (
 	InEligible AuthorizationEligibility = "InEligible"
 )
 
+// PossibleAuthorizationEligibilityValues returns an array of possible values for the AuthorizationEligibility const type.
+func PossibleAuthorizationEligibilityValues() []AuthorizationEligibility {
+	return []AuthorizationEligibility{Eligible, InEligible}
+}
+
 // AuthorizationStatus enumerates the values for authorization status.
 type AuthorizationStatus string
 
@@ -111,6 +146,11 @@ const (
 	// AuthorizationStatusEnabled ...
 	AuthorizationStatusEnabled AuthorizationStatus = "Enabled"
 )
+
+// PossibleAuthorizationStatusValues returns an array of possible values for the AuthorizationStatus const type.
+func PossibleAuthorizationStatusValues() []AuthorizationStatus {
+	return []AuthorizationStatus{AuthorizationStatusDisabled, AuthorizationStatusEnabled}
+}
 
 // BackupJobCreationType enumerates the values for backup job creation type.
 type BackupJobCreationType string
@@ -124,6 +164,11 @@ const (
 	BySSM BackupJobCreationType = "BySSM"
 )
 
+// PossibleBackupJobCreationTypeValues returns an array of possible values for the BackupJobCreationType const type.
+func PossibleBackupJobCreationTypeValues() []BackupJobCreationType {
+	return []BackupJobCreationType{Adhoc, BySchedule, BySSM}
+}
+
 // BackupPolicyCreationType enumerates the values for backup policy creation type.
 type BackupPolicyCreationType string
 
@@ -133,6 +178,11 @@ const (
 	// BackupPolicyCreationTypeBySSM ...
 	BackupPolicyCreationTypeBySSM BackupPolicyCreationType = "BySSM"
 )
+
+// PossibleBackupPolicyCreationTypeValues returns an array of possible values for the BackupPolicyCreationType const type.
+func PossibleBackupPolicyCreationTypeValues() []BackupPolicyCreationType {
+	return []BackupPolicyCreationType{BackupPolicyCreationTypeBySaaS, BackupPolicyCreationTypeBySSM}
+}
 
 // BackupStatus enumerates the values for backup status.
 type BackupStatus string
@@ -144,6 +194,11 @@ const (
 	BackupStatusEnabled BackupStatus = "Enabled"
 )
 
+// PossibleBackupStatusValues returns an array of possible values for the BackupStatus const type.
+func PossibleBackupStatusValues() []BackupStatus {
+	return []BackupStatus{BackupStatusDisabled, BackupStatusEnabled}
+}
+
 // BackupType enumerates the values for backup type.
 type BackupType string
 
@@ -153,6 +208,11 @@ const (
 	// LocalSnapshot ...
 	LocalSnapshot BackupType = "LocalSnapshot"
 )
+
+// PossibleBackupTypeValues returns an array of possible values for the BackupType const type.
+func PossibleBackupTypeValues() []BackupType {
+	return []BackupType{CloudSnapshot, LocalSnapshot}
+}
 
 // ControllerID enumerates the values for controller id.
 type ControllerID string
@@ -168,6 +228,11 @@ const (
 	ControllerIDUnknown ControllerID = "Unknown"
 )
 
+// PossibleControllerIDValues returns an array of possible values for the ControllerID const type.
+func PossibleControllerIDValues() []ControllerID {
+	return []ControllerID{ControllerIDController0, ControllerIDController1, ControllerIDNone, ControllerIDUnknown}
+}
+
 // ControllerPowerStateAction enumerates the values for controller power state action.
 type ControllerPowerStateAction string
 
@@ -179,6 +244,11 @@ const (
 	// Start ...
 	Start ControllerPowerStateAction = "Start"
 )
+
+// PossibleControllerPowerStateActionValues returns an array of possible values for the ControllerPowerStateAction const type.
+func PossibleControllerPowerStateActionValues() []ControllerPowerStateAction {
+	return []ControllerPowerStateAction{Restart, Shutdown, Start}
+}
 
 // ControllerStatus enumerates the values for controller status.
 type ControllerStatus string
@@ -197,6 +267,11 @@ const (
 	// ControllerStatusWarning ...
 	ControllerStatusWarning ControllerStatus = "Warning"
 )
+
+// PossibleControllerStatusValues returns an array of possible values for the ControllerStatus const type.
+func PossibleControllerStatusValues() []ControllerStatus {
+	return []ControllerStatus{ControllerStatusFailure, ControllerStatusNotPresent, ControllerStatusOk, ControllerStatusPoweredOff, ControllerStatusRecovering, ControllerStatusWarning}
+}
 
 // DayOfWeek enumerates the values for day of week.
 type DayOfWeek string
@@ -218,6 +293,11 @@ const (
 	Wednesday DayOfWeek = "Wednesday"
 )
 
+// PossibleDayOfWeekValues returns an array of possible values for the DayOfWeek const type.
+func PossibleDayOfWeekValues() []DayOfWeek {
+	return []DayOfWeek{Friday, Monday, Saturday, Sunday, Thursday, Tuesday, Wednesday}
+}
+
 // DeviceConfigurationStatus enumerates the values for device configuration status.
 type DeviceConfigurationStatus string
 
@@ -227,6 +307,11 @@ const (
 	// Pending ...
 	Pending DeviceConfigurationStatus = "Pending"
 )
+
+// PossibleDeviceConfigurationStatusValues returns an array of possible values for the DeviceConfigurationStatus const type.
+func PossibleDeviceConfigurationStatusValues() []DeviceConfigurationStatus {
+	return []DeviceConfigurationStatus{Complete, Pending}
+}
 
 // DeviceStatus enumerates the values for device status.
 type DeviceStatus string
@@ -256,6 +341,11 @@ const (
 	Unknown DeviceStatus = "Unknown"
 )
 
+// PossibleDeviceStatusValues returns an array of possible values for the DeviceStatus const type.
+func PossibleDeviceStatusValues() []DeviceStatus {
+	return []DeviceStatus{Creating, Deactivated, Deactivating, Deleted, MaintenanceMode, Offline, Online, Provisioning, ReadyToSetup, RequiresAttention, Unknown}
+}
+
 // DeviceType enumerates the values for device type.
 type DeviceType string
 
@@ -267,6 +357,11 @@ const (
 	// DeviceTypeSeries8000VirtualAppliance ...
 	DeviceTypeSeries8000VirtualAppliance DeviceType = "Series8000VirtualAppliance"
 )
+
+// PossibleDeviceTypeValues returns an array of possible values for the DeviceType const type.
+func PossibleDeviceTypeValues() []DeviceType {
+	return []DeviceType{DeviceTypeInvalid, DeviceTypeSeries8000PhysicalAppliance, DeviceTypeSeries8000VirtualAppliance}
+}
 
 // EncryptionAlgorithm enumerates the values for encryption algorithm.
 type EncryptionAlgorithm string
@@ -280,6 +375,11 @@ const (
 	EncryptionAlgorithmRSAESPKCS1V15 EncryptionAlgorithm = "RSAES_PKCS1_v_1_5"
 )
 
+// PossibleEncryptionAlgorithmValues returns an array of possible values for the EncryptionAlgorithm const type.
+func PossibleEncryptionAlgorithmValues() []EncryptionAlgorithm {
+	return []EncryptionAlgorithm{EncryptionAlgorithmAES256, EncryptionAlgorithmNone, EncryptionAlgorithmRSAESPKCS1V15}
+}
+
 // EncryptionStatus enumerates the values for encryption status.
 type EncryptionStatus string
 
@@ -289,6 +389,11 @@ const (
 	// EncryptionStatusEnabled ...
 	EncryptionStatusEnabled EncryptionStatus = "Enabled"
 )
+
+// PossibleEncryptionStatusValues returns an array of possible values for the EncryptionStatus const type.
+func PossibleEncryptionStatusValues() []EncryptionStatus {
+	return []EncryptionStatus{EncryptionStatusDisabled, EncryptionStatusEnabled}
+}
 
 // FeatureSupportStatus enumerates the values for feature support status.
 type FeatureSupportStatus string
@@ -301,6 +406,11 @@ const (
 	// UnsupportedDeviceVersion ...
 	UnsupportedDeviceVersion FeatureSupportStatus = "UnsupportedDeviceVersion"
 )
+
+// PossibleFeatureSupportStatusValues returns an array of possible values for the FeatureSupportStatus const type.
+func PossibleFeatureSupportStatusValues() []FeatureSupportStatus {
+	return []FeatureSupportStatus{NotAvailable, Supported, UnsupportedDeviceVersion}
+}
 
 // HardwareComponentStatus enumerates the values for hardware component status.
 type HardwareComponentStatus string
@@ -322,6 +432,11 @@ const (
 	HardwareComponentStatusWarning HardwareComponentStatus = "Warning"
 )
 
+// PossibleHardwareComponentStatusValues returns an array of possible values for the HardwareComponentStatus const type.
+func PossibleHardwareComponentStatusValues() []HardwareComponentStatus {
+	return []HardwareComponentStatus{HardwareComponentStatusFailure, HardwareComponentStatusNotPresent, HardwareComponentStatusOk, HardwareComponentStatusPoweredOff, HardwareComponentStatusRecovering, HardwareComponentStatusUnknown, HardwareComponentStatusWarning}
+}
+
 // InEligibilityCategory enumerates the values for in eligibility category.
 type InEligibilityCategory string
 
@@ -333,6 +448,11 @@ const (
 	// RolloverPending ...
 	RolloverPending InEligibilityCategory = "RolloverPending"
 )
+
+// PossibleInEligibilityCategoryValues returns an array of possible values for the InEligibilityCategory const type.
+func PossibleInEligibilityCategoryValues() []InEligibilityCategory {
+	return []InEligibilityCategory{DeviceNotOnline, NotSupportedAppliance, RolloverPending}
+}
 
 // ISCSIAndCloudStatus enumerates the values for iscsi and cloud status.
 type ISCSIAndCloudStatus string
@@ -348,6 +468,11 @@ const (
 	ISCSIAndCloudStatusIscsiEnabled ISCSIAndCloudStatus = "IscsiEnabled"
 )
 
+// PossibleISCSIAndCloudStatusValues returns an array of possible values for the ISCSIAndCloudStatus const type.
+func PossibleISCSIAndCloudStatusValues() []ISCSIAndCloudStatus {
+	return []ISCSIAndCloudStatus{ISCSIAndCloudStatusCloudEnabled, ISCSIAndCloudStatusDisabled, ISCSIAndCloudStatusIscsiAndCloudEnabled, ISCSIAndCloudStatusIscsiEnabled}
+}
+
 // JobStatus enumerates the values for job status.
 type JobStatus string
 
@@ -361,6 +486,11 @@ const (
 	// Succeeded ...
 	Succeeded JobStatus = "Succeeded"
 )
+
+// PossibleJobStatusValues returns an array of possible values for the JobStatus const type.
+func PossibleJobStatusValues() []JobStatus {
+	return []JobStatus{Canceled, Failed, Running, Succeeded}
+}
 
 // JobType enumerates the values for job type.
 type JobType string
@@ -388,6 +518,11 @@ const (
 	SupportPackageLogs JobType = "SupportPackageLogs"
 )
 
+// PossibleJobTypeValues returns an array of possible values for the JobType const type.
+func PossibleJobTypeValues() []JobType {
+	return []JobType{CloneVolume, CreateCloudAppliance, CreateLocallyPinnedVolume, FailoverVolumeContainers, InstallUpdates, ManualBackup, ModifyVolume, RestoreBackup, ScheduledBackup, SupportPackageLogs}
+}
+
 // KeyRolloverStatus enumerates the values for key rollover status.
 type KeyRolloverStatus string
 
@@ -398,6 +533,11 @@ const (
 	Required KeyRolloverStatus = "Required"
 )
 
+// PossibleKeyRolloverStatusValues returns an array of possible values for the KeyRolloverStatus const type.
+func PossibleKeyRolloverStatusValues() []KeyRolloverStatus {
+	return []KeyRolloverStatus{NotRequired, Required}
+}
+
 // Kind enumerates the values for kind.
 type Kind string
 
@@ -405,6 +545,11 @@ const (
 	// Series8000 ...
 	Series8000 Kind = "Series8000"
 )
+
+// PossibleKindValues returns an array of possible values for the Kind const type.
+func PossibleKindValues() []Kind {
+	return []Kind{Series8000}
+}
 
 // ManagerType enumerates the values for manager type.
 type ManagerType string
@@ -415,6 +560,11 @@ const (
 	// HelsinkiV1 ...
 	HelsinkiV1 ManagerType = "HelsinkiV1"
 )
+
+// PossibleManagerTypeValues returns an array of possible values for the ManagerType const type.
+func PossibleManagerTypeValues() []ManagerType {
+	return []ManagerType{GardaV1, HelsinkiV1}
+}
 
 // MetricAggregationType enumerates the values for metric aggregation type.
 type MetricAggregationType string
@@ -434,6 +584,11 @@ const (
 	MetricAggregationTypeTotal MetricAggregationType = "Total"
 )
 
+// PossibleMetricAggregationTypeValues returns an array of possible values for the MetricAggregationType const type.
+func PossibleMetricAggregationTypeValues() []MetricAggregationType {
+	return []MetricAggregationType{MetricAggregationTypeAverage, MetricAggregationTypeLast, MetricAggregationTypeMaximum, MetricAggregationTypeMinimum, MetricAggregationTypeNone, MetricAggregationTypeTotal}
+}
+
 // MetricUnit enumerates the values for metric unit.
 type MetricUnit string
 
@@ -452,6 +607,11 @@ const (
 	Seconds MetricUnit = "Seconds"
 )
 
+// PossibleMetricUnitValues returns an array of possible values for the MetricUnit const type.
+func PossibleMetricUnitValues() []MetricUnit {
+	return []MetricUnit{Bytes, BytesPerSecond, Count, CountPerSecond, Percent, Seconds}
+}
+
 // MonitoringStatus enumerates the values for monitoring status.
 type MonitoringStatus string
 
@@ -461,6 +621,11 @@ const (
 	// MonitoringStatusEnabled ...
 	MonitoringStatusEnabled MonitoringStatus = "Enabled"
 )
+
+// PossibleMonitoringStatusValues returns an array of possible values for the MonitoringStatus const type.
+func PossibleMonitoringStatusValues() []MonitoringStatus {
+	return []MonitoringStatus{MonitoringStatusDisabled, MonitoringStatusEnabled}
+}
 
 // NetInterfaceID enumerates the values for net interface id.
 type NetInterfaceID string
@@ -482,6 +647,11 @@ const (
 	NetInterfaceIDInvalid NetInterfaceID = "Invalid"
 )
 
+// PossibleNetInterfaceIDValues returns an array of possible values for the NetInterfaceID const type.
+func PossibleNetInterfaceIDValues() []NetInterfaceID {
+	return []NetInterfaceID{NetInterfaceIDData0, NetInterfaceIDData1, NetInterfaceIDData2, NetInterfaceIDData3, NetInterfaceIDData4, NetInterfaceIDData5, NetInterfaceIDInvalid}
+}
+
 // NetInterfaceStatus enumerates the values for net interface status.
 type NetInterfaceStatus string
 
@@ -491,6 +661,11 @@ const (
 	// NetInterfaceStatusEnabled ...
 	NetInterfaceStatusEnabled NetInterfaceStatus = "Enabled"
 )
+
+// PossibleNetInterfaceStatusValues returns an array of possible values for the NetInterfaceStatus const type.
+func PossibleNetInterfaceStatusValues() []NetInterfaceStatus {
+	return []NetInterfaceStatus{NetInterfaceStatusDisabled, NetInterfaceStatusEnabled}
+}
 
 // NetworkMode enumerates the values for network mode.
 type NetworkMode string
@@ -506,6 +681,11 @@ const (
 	NetworkModeIPV6 NetworkMode = "IPV6"
 )
 
+// PossibleNetworkModeValues returns an array of possible values for the NetworkMode const type.
+func PossibleNetworkModeValues() []NetworkMode {
+	return []NetworkMode{NetworkModeBOTH, NetworkModeInvalid, NetworkModeIPV4, NetworkModeIPV6}
+}
+
 // OperationStatus enumerates the values for operation status.
 type OperationStatus string
 
@@ -520,6 +700,11 @@ const (
 	OperationStatusUpdating OperationStatus = "Updating"
 )
 
+// PossibleOperationStatusValues returns an array of possible values for the OperationStatus const type.
+func PossibleOperationStatusValues() []OperationStatus {
+	return []OperationStatus{OperationStatusDeleting, OperationStatusNone, OperationStatusRestoring, OperationStatusUpdating}
+}
+
 // OwnerShipStatus enumerates the values for owner ship status.
 type OwnerShipStatus string
 
@@ -529,6 +714,11 @@ const (
 	// Owned ...
 	Owned OwnerShipStatus = "Owned"
 )
+
+// PossibleOwnerShipStatusValues returns an array of possible values for the OwnerShipStatus const type.
+func PossibleOwnerShipStatusValues() []OwnerShipStatus {
+	return []OwnerShipStatus{NotOwned, Owned}
+}
 
 // RecurrenceType enumerates the values for recurrence type.
 type RecurrenceType string
@@ -544,6 +734,11 @@ const (
 	Weekly RecurrenceType = "Weekly"
 )
 
+// PossibleRecurrenceTypeValues returns an array of possible values for the RecurrenceType const type.
+func PossibleRecurrenceTypeValues() []RecurrenceType {
+	return []RecurrenceType{Daily, Hourly, Minutes, Weekly}
+}
+
 // RemoteManagementModeConfiguration enumerates the values for remote management mode configuration.
 type RemoteManagementModeConfiguration string
 
@@ -558,6 +753,11 @@ const (
 	RemoteManagementModeConfigurationUnknown RemoteManagementModeConfiguration = "Unknown"
 )
 
+// PossibleRemoteManagementModeConfigurationValues returns an array of possible values for the RemoteManagementModeConfiguration const type.
+func PossibleRemoteManagementModeConfigurationValues() []RemoteManagementModeConfiguration {
+	return []RemoteManagementModeConfiguration{RemoteManagementModeConfigurationDisabled, RemoteManagementModeConfigurationHTTPSAndHTTPEnabled, RemoteManagementModeConfigurationHTTPSEnabled, RemoteManagementModeConfigurationUnknown}
+}
+
 // ScheduledBackupStatus enumerates the values for scheduled backup status.
 type ScheduledBackupStatus string
 
@@ -567,6 +767,11 @@ const (
 	// ScheduledBackupStatusEnabled ...
 	ScheduledBackupStatusEnabled ScheduledBackupStatus = "Enabled"
 )
+
+// PossibleScheduledBackupStatusValues returns an array of possible values for the ScheduledBackupStatus const type.
+func PossibleScheduledBackupStatusValues() []ScheduledBackupStatus {
+	return []ScheduledBackupStatus{ScheduledBackupStatusDisabled, ScheduledBackupStatusEnabled}
+}
 
 // ScheduleStatus enumerates the values for schedule status.
 type ScheduleStatus string
@@ -578,6 +783,11 @@ const (
 	ScheduleStatusEnabled ScheduleStatus = "Enabled"
 )
 
+// PossibleScheduleStatusValues returns an array of possible values for the ScheduleStatus const type.
+func PossibleScheduleStatusValues() []ScheduleStatus {
+	return []ScheduleStatus{ScheduleStatusDisabled, ScheduleStatusEnabled}
+}
+
 // SslStatus enumerates the values for ssl status.
 type SslStatus string
 
@@ -587,6 +797,11 @@ const (
 	// SslStatusEnabled ...
 	SslStatusEnabled SslStatus = "Enabled"
 )
+
+// PossibleSslStatusValues returns an array of possible values for the SslStatus const type.
+func PossibleSslStatusValues() []SslStatus {
+	return []SslStatus{SslStatusDisabled, SslStatusEnabled}
+}
 
 // TargetEligibilityResultCode enumerates the values for target eligibility result code.
 type TargetEligibilityResultCode string
@@ -608,6 +823,11 @@ const (
 	TargetSourceIncompatibleVersionError TargetEligibilityResultCode = "TargetSourceIncompatibleVersionError"
 )
 
+// PossibleTargetEligibilityResultCodeValues returns an array of possible values for the TargetEligibilityResultCode const type.
+func PossibleTargetEligibilityResultCodeValues() []TargetEligibilityResultCode {
+	return []TargetEligibilityResultCode{LocalToTieredVolumesConversionWarning, TargetAndSourceCannotBeSameError, TargetInsufficientCapacityError, TargetInsufficientLocalVolumeMemoryError, TargetInsufficientTieredVolumeMemoryError, TargetIsNotOnlineError, TargetSourceIncompatibleVersionError}
+}
+
 // TargetEligibilityStatus enumerates the values for target eligibility status.
 type TargetEligibilityStatus string
 
@@ -617,6 +837,11 @@ const (
 	// TargetEligibilityStatusNotEligible ...
 	TargetEligibilityStatusNotEligible TargetEligibilityStatus = "NotEligible"
 )
+
+// PossibleTargetEligibilityStatusValues returns an array of possible values for the TargetEligibilityStatus const type.
+func PossibleTargetEligibilityStatusValues() []TargetEligibilityStatus {
+	return []TargetEligibilityStatus{TargetEligibilityStatusEligible, TargetEligibilityStatusNotEligible}
+}
 
 // VirtualMachineAPIType enumerates the values for virtual machine api type.
 type VirtualMachineAPIType string
@@ -628,6 +853,11 @@ const (
 	Classic VirtualMachineAPIType = "Classic"
 )
 
+// PossibleVirtualMachineAPITypeValues returns an array of possible values for the VirtualMachineAPIType const type.
+func PossibleVirtualMachineAPITypeValues() []VirtualMachineAPIType {
+	return []VirtualMachineAPIType{Arm, Classic}
+}
+
 // VolumeStatus enumerates the values for volume status.
 type VolumeStatus string
 
@@ -637,6 +867,11 @@ const (
 	// VolumeStatusOnline ...
 	VolumeStatusOnline VolumeStatus = "Online"
 )
+
+// PossibleVolumeStatusValues returns an array of possible values for the VolumeStatus const type.
+func PossibleVolumeStatusValues() []VolumeStatus {
+	return []VolumeStatus{VolumeStatusOffline, VolumeStatusOnline}
+}
 
 // VolumeType enumerates the values for volume type.
 type VolumeType string
@@ -650,9 +885,16 @@ const (
 	Tiered VolumeType = "Tiered"
 )
 
+// PossibleVolumeTypeValues returns an array of possible values for the VolumeType const type.
+func PossibleVolumeTypeValues() []VolumeType {
+	return []VolumeType{Archival, LocallyPinned, Tiered}
+}
+
 // AccessControlRecord the access control record.
 type AccessControlRecord struct {
 	autorest.Response `json:"-"`
+	// AccessControlRecordProperties - The properties of access control record.
+	*AccessControlRecordProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -661,8 +903,27 @@ type AccessControlRecord struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// AccessControlRecordProperties - The properties of access control record.
-	*AccessControlRecordProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AccessControlRecord.
+func (acr AccessControlRecord) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if acr.AccessControlRecordProperties != nil {
+		objectMap["properties"] = acr.AccessControlRecordProperties
+	}
+	if acr.ID != nil {
+		objectMap["id"] = acr.ID
+	}
+	if acr.Name != nil {
+		objectMap["name"] = acr.Name
+	}
+	if acr.Type != nil {
+		objectMap["type"] = acr.Type
+	}
+	if acr.Kind != "" {
+		objectMap["kind"] = acr.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AccessControlRecord struct.
@@ -672,56 +933,54 @@ func (acr *AccessControlRecord) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AccessControlRecordProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var accessControlRecordProperties AccessControlRecordProperties
+				err = json.Unmarshal(*v, &accessControlRecordProperties)
+				if err != nil {
+					return err
+				}
+				acr.AccessControlRecordProperties = &accessControlRecordProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				acr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				acr.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				acr.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				acr.Kind = kind
+			}
 		}
-		acr.AccessControlRecordProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		acr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		acr.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		acr.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		acr.Kind = kind
 	}
 
 	return nil
@@ -742,8 +1001,8 @@ type AccessControlRecordProperties struct {
 	VolumeCount *int32 `json:"volumeCount,omitempty"`
 }
 
-// AccessControlRecordsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// AccessControlRecordsCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type AccessControlRecordsCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -755,22 +1014,39 @@ func (future AccessControlRecordsCreateOrUpdateFuture) Result(client AccessContr
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return acr, autorest.NewError("storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return acr, azure.NewAsyncOpIncompleteError("storsimple.AccessControlRecordsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		acr, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	acr, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -787,22 +1063,39 @@ func (future AccessControlRecordsDeleteFuture) Result(client AccessControlRecord
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.AccessControlRecordsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.AccessControlRecordsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.AccessControlRecordsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -818,6 +1111,8 @@ type AcsConfiguration struct {
 
 // Alert the alert.
 type Alert struct {
+	// AlertProperties - The properties of the alert.
+	*AlertProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -826,8 +1121,27 @@ type Alert struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// AlertProperties - The properties of the alert.
-	*AlertProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Alert.
+func (a Alert) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if a.AlertProperties != nil {
+		objectMap["properties"] = a.AlertProperties
+	}
+	if a.ID != nil {
+		objectMap["id"] = a.ID
+	}
+	if a.Name != nil {
+		objectMap["name"] = a.Name
+	}
+	if a.Type != nil {
+		objectMap["type"] = a.Type
+	}
+	if a.Kind != "" {
+		objectMap["kind"] = a.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Alert struct.
@@ -837,56 +1151,54 @@ func (a *Alert) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AlertProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var alertProperties AlertProperties
+				err = json.Unmarshal(*v, &alertProperties)
+				if err != nil {
+					return err
+				}
+				a.AlertProperties = &alertProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				a.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				a.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				a.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				a.Kind = kind
+			}
 		}
-		a.AlertProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		a.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		a.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		a.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		a.Kind = kind
 	}
 
 	return nil
@@ -1059,12 +1371,62 @@ type AlertProperties struct {
 	// ErrorDetails - The details of the error for which the alert was raised
 	ErrorDetails *AlertErrorDetails `json:"errorDetails,omitempty"`
 	// DetailedInformation - More details about the alert
-	DetailedInformation *map[string]*string `json:"detailedInformation,omitempty"`
+	DetailedInformation map[string]*string `json:"detailedInformation"`
+}
+
+// MarshalJSON is the custom marshaler for AlertProperties.
+func (ap AlertProperties) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ap.Title != nil {
+		objectMap["title"] = ap.Title
+	}
+	if ap.Scope != "" {
+		objectMap["scope"] = ap.Scope
+	}
+	if ap.AlertType != nil {
+		objectMap["alertType"] = ap.AlertType
+	}
+	if ap.AppearedAtTime != nil {
+		objectMap["appearedAtTime"] = ap.AppearedAtTime
+	}
+	if ap.AppearedAtSourceTime != nil {
+		objectMap["appearedAtSourceTime"] = ap.AppearedAtSourceTime
+	}
+	if ap.ClearedAtTime != nil {
+		objectMap["clearedAtTime"] = ap.ClearedAtTime
+	}
+	if ap.ClearedAtSourceTime != nil {
+		objectMap["clearedAtSourceTime"] = ap.ClearedAtSourceTime
+	}
+	if ap.Source != nil {
+		objectMap["source"] = ap.Source
+	}
+	if ap.Recommendation != nil {
+		objectMap["recommendation"] = ap.Recommendation
+	}
+	if ap.ResolutionReason != nil {
+		objectMap["resolutionReason"] = ap.ResolutionReason
+	}
+	if ap.Severity != "" {
+		objectMap["severity"] = ap.Severity
+	}
+	if ap.Status != "" {
+		objectMap["status"] = ap.Status
+	}
+	if ap.ErrorDetails != nil {
+		objectMap["errorDetails"] = ap.ErrorDetails
+	}
+	if ap.DetailedInformation != nil {
+		objectMap["detailedInformation"] = ap.DetailedInformation
+	}
+	return json.Marshal(objectMap)
 }
 
 // AlertSettings the alert settings.
 type AlertSettings struct {
 	autorest.Response `json:"-"`
+	// AlertNotificationProperties - The properties of the alert notification settings.
+	*AlertNotificationProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -1073,8 +1435,27 @@ type AlertSettings struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// AlertNotificationProperties - The properties of the alert notification settings.
-	*AlertNotificationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for AlertSettings.
+func (as AlertSettings) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if as.AlertNotificationProperties != nil {
+		objectMap["properties"] = as.AlertNotificationProperties
+	}
+	if as.ID != nil {
+		objectMap["id"] = as.ID
+	}
+	if as.Name != nil {
+		objectMap["name"] = as.Name
+	}
+	if as.Type != nil {
+		objectMap["type"] = as.Type
+	}
+	if as.Kind != "" {
+		objectMap["kind"] = as.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for AlertSettings struct.
@@ -1084,56 +1465,54 @@ func (as *AlertSettings) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties AlertNotificationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var alertNotificationProperties AlertNotificationProperties
+				err = json.Unmarshal(*v, &alertNotificationProperties)
+				if err != nil {
+					return err
+				}
+				as.AlertNotificationProperties = &alertNotificationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				as.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				as.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				as.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				as.Kind = kind
+			}
 		}
-		as.AlertNotificationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		as.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		as.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		as.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		as.Kind = kind
 	}
 
 	return nil
@@ -1168,12 +1547,12 @@ type AvailableProviderOperation struct {
 	// Origin - The intended executor of the operation; governs the display of the operation in the RBAC UX and the audit logs UX. Default value is "user,system"
 	Origin *string `json:"origin,omitempty"`
 	// Properties - Reserved for future use.
-	Properties *map[string]interface{} `json:"properties,omitempty"`
+	Properties interface{} `json:"properties,omitempty"`
 }
 
-// AvailableProviderOperationDisplay contains the localized display information for this particular operation/action.
-// These value will be used by several clients for (a) custom role definitions for RBAC, (b) complex query filters for
-// the event service and (c) audit history/records for management operations.
+// AvailableProviderOperationDisplay contains the localized display information for this particular
+// operation/action. These value will be used by several clients for (a) custom role definitions for RBAC, (b)
+// complex query filters for the event service and (c) audit history/records for management operations.
 type AvailableProviderOperationDisplay struct {
 	// Provider - The localized friendly form of the resource provider name - it is expected to also include the publisher/company responsible. It should use Title Casing and begin with 'Microsoft' for 1st party services.
 	Provider *string `json:"provider,omitempty"`
@@ -1194,7 +1573,8 @@ type AvailableProviderOperationList struct {
 	NextLink *string `json:"nextLink,omitempty"`
 }
 
-// AvailableProviderOperationListIterator provides access to a complete listing of AvailableProviderOperation values.
+// AvailableProviderOperationListIterator provides access to a complete listing of AvailableProviderOperation
+// values.
 type AvailableProviderOperationListIterator struct {
 	i    int
 	page AvailableProviderOperationListPage
@@ -1289,6 +1669,8 @@ func (page AvailableProviderOperationListPage) Values() []AvailableProviderOpera
 
 // Backup the backup.
 type Backup struct {
+	// BackupProperties - The properties of the backup.
+	*BackupProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -1297,8 +1679,27 @@ type Backup struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// BackupProperties - The properties of the backup.
-	*BackupProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Backup.
+func (b Backup) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if b.BackupProperties != nil {
+		objectMap["properties"] = b.BackupProperties
+	}
+	if b.ID != nil {
+		objectMap["id"] = b.ID
+	}
+	if b.Name != nil {
+		objectMap["name"] = b.Name
+	}
+	if b.Type != nil {
+		objectMap["type"] = b.Type
+	}
+	if b.Kind != "" {
+		objectMap["kind"] = b.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Backup struct.
@@ -1308,56 +1709,54 @@ func (b *Backup) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BackupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var backupProperties BackupProperties
+				err = json.Unmarshal(*v, &backupProperties)
+				if err != nil {
+					return err
+				}
+				b.BackupProperties = &backupProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				b.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				b.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				b.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				b.Kind = kind
+			}
 		}
-		b.BackupProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		b.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		b.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		b.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		b.Kind = kind
 	}
 
 	return nil
@@ -1493,7 +1892,8 @@ func (page BackupListPage) Values() []Backup {
 	return *page.bl.Value
 }
 
-// BackupPoliciesBackupNowFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// BackupPoliciesBackupNowFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type BackupPoliciesBackupNowFuture struct {
 	azure.Future
 	req *http.Request
@@ -1505,22 +1905,39 @@ func (future BackupPoliciesBackupNowFuture) Result(client BackupPoliciesClient) 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesBackupNowFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupPoliciesBackupNowFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupPoliciesBackupNowFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.BackupNowResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesBackupNowFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesBackupNowFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.BackupNowResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesBackupNowFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1537,22 +1954,39 @@ func (future BackupPoliciesCreateOrUpdateFuture) Result(client BackupPoliciesCli
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return bp, autorest.NewError("storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return bp, azure.NewAsyncOpIncompleteError("storsimple.BackupPoliciesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		bp, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	bp, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1568,28 +2002,47 @@ func (future BackupPoliciesDeleteFuture) Result(client BackupPoliciesClient) (ar
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupPoliciesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupPoliciesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupPoliciesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // BackupPolicy the backup policy.
 type BackupPolicy struct {
 	autorest.Response `json:"-"`
+	// BackupPolicyProperties - The properties of the backup policy.
+	*BackupPolicyProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -1598,8 +2051,27 @@ type BackupPolicy struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// BackupPolicyProperties - The properties of the backup policy.
-	*BackupPolicyProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for BackupPolicy.
+func (bp BackupPolicy) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if bp.BackupPolicyProperties != nil {
+		objectMap["properties"] = bp.BackupPolicyProperties
+	}
+	if bp.ID != nil {
+		objectMap["id"] = bp.ID
+	}
+	if bp.Name != nil {
+		objectMap["name"] = bp.Name
+	}
+	if bp.Type != nil {
+		objectMap["type"] = bp.Type
+	}
+	if bp.Kind != "" {
+		objectMap["kind"] = bp.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for BackupPolicy struct.
@@ -1609,56 +2081,54 @@ func (bp *BackupPolicy) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BackupPolicyProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var backupPolicyProperties BackupPolicyProperties
+				err = json.Unmarshal(*v, &backupPolicyProperties)
+				if err != nil {
+					return err
+				}
+				bp.BackupPolicyProperties = &backupPolicyProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				bp.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				bp.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				bp.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				bp.Kind = kind
+			}
 		}
-		bp.BackupPolicyProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		bp.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		bp.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		bp.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		bp.Kind = kind
 	}
 
 	return nil
@@ -1710,6 +2180,8 @@ type BackupProperties struct {
 // BackupSchedule the backup schedule.
 type BackupSchedule struct {
 	autorest.Response `json:"-"`
+	// BackupScheduleProperties - The properties of the backup schedule.
+	*BackupScheduleProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -1718,8 +2190,27 @@ type BackupSchedule struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// BackupScheduleProperties - The properties of the backup schedule.
-	*BackupScheduleProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for BackupSchedule.
+func (bs BackupSchedule) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if bs.BackupScheduleProperties != nil {
+		objectMap["properties"] = bs.BackupScheduleProperties
+	}
+	if bs.ID != nil {
+		objectMap["id"] = bs.ID
+	}
+	if bs.Name != nil {
+		objectMap["name"] = bs.Name
+	}
+	if bs.Type != nil {
+		objectMap["type"] = bs.Type
+	}
+	if bs.Kind != "" {
+		objectMap["kind"] = bs.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for BackupSchedule struct.
@@ -1729,56 +2220,54 @@ func (bs *BackupSchedule) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BackupScheduleProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var backupScheduleProperties BackupScheduleProperties
+				err = json.Unmarshal(*v, &backupScheduleProperties)
+				if err != nil {
+					return err
+				}
+				bs.BackupScheduleProperties = &backupScheduleProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				bs.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				bs.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				bs.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				bs.Kind = kind
+			}
 		}
-		bs.BackupScheduleProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		bs.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		bs.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		bs.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		bs.Kind = kind
 	}
 
 	return nil
@@ -1820,26 +2309,44 @@ func (future BackupSchedulesCreateOrUpdateFuture) Result(client BackupSchedulesC
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return bs, autorest.NewError("storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return bs, azure.NewAsyncOpIncompleteError("storsimple.BackupSchedulesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		bs, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	bs, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// BackupSchedulesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// BackupSchedulesDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type BackupSchedulesDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -1851,22 +2358,39 @@ func (future BackupSchedulesDeleteFuture) Result(client BackupSchedulesClient) (
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupSchedulesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupSchedulesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupSchedulesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1882,22 +2406,39 @@ func (future BackupsCloneFuture) Result(client BackupsClient) (ar autorest.Respo
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsCloneFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupsCloneFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupsCloneFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.CloneResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupsCloneFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsCloneFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.CloneResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsCloneFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1913,22 +2454,39 @@ func (future BackupsDeleteFuture) Result(client BackupsClient) (ar autorest.Resp
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1944,22 +2502,39 @@ func (future BackupsRestoreFuture) Result(client BackupsClient) (ar autorest.Res
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsRestoreFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BackupsRestoreFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BackupsRestoreFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.RestoreResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BackupsRestoreFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsRestoreFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.RestoreResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BackupsRestoreFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -1986,6 +2561,8 @@ type BandwidthSchedule struct {
 // BandwidthSetting the bandwidth setting.
 type BandwidthSetting struct {
 	autorest.Response `json:"-"`
+	// BandwidthRateSettingProperties - The properties of the bandwidth setting.
+	*BandwidthRateSettingProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -1994,8 +2571,27 @@ type BandwidthSetting struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// BandwidthRateSettingProperties - The properties of the bandwidth setting.
-	*BandwidthRateSettingProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for BandwidthSetting.
+func (bs BandwidthSetting) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if bs.BandwidthRateSettingProperties != nil {
+		objectMap["properties"] = bs.BandwidthRateSettingProperties
+	}
+	if bs.ID != nil {
+		objectMap["id"] = bs.ID
+	}
+	if bs.Name != nil {
+		objectMap["name"] = bs.Name
+	}
+	if bs.Type != nil {
+		objectMap["type"] = bs.Type
+	}
+	if bs.Kind != "" {
+		objectMap["kind"] = bs.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for BandwidthSetting struct.
@@ -2005,56 +2601,54 @@ func (bs *BandwidthSetting) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties BandwidthRateSettingProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var bandwidthRateSettingProperties BandwidthRateSettingProperties
+				err = json.Unmarshal(*v, &bandwidthRateSettingProperties)
+				if err != nil {
+					return err
+				}
+				bs.BandwidthRateSettingProperties = &bandwidthRateSettingProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				bs.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				bs.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				bs.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				bs.Kind = kind
+			}
 		}
-		bs.BandwidthRateSettingProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		bs.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		bs.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		bs.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		bs.Kind = kind
 	}
 
 	return nil
@@ -2080,26 +2674,44 @@ func (future BandwidthSettingsCreateOrUpdateFuture) Result(client BandwidthSetti
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return bs, autorest.NewError("storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return bs, azure.NewAsyncOpIncompleteError("storsimple.BandwidthSettingsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		bs, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	bs, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// BandwidthSettingsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// BandwidthSettingsDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type BandwidthSettingsDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -2111,22 +2723,39 @@ func (future BandwidthSettingsDeleteFuture) Result(client BandwidthSettingsClien
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.BandwidthSettingsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.BandwidthSettingsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.BandwidthSettingsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2202,6 +2831,8 @@ type CloudAppliance struct {
 
 // CloudApplianceConfiguration the cloud appliance configuration
 type CloudApplianceConfiguration struct {
+	// CloudApplianceConfigurationProperties - The properties.
+	*CloudApplianceConfigurationProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -2210,8 +2841,27 @@ type CloudApplianceConfiguration struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// CloudApplianceConfigurationProperties - The properties.
-	*CloudApplianceConfigurationProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for CloudApplianceConfiguration.
+func (cac CloudApplianceConfiguration) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cac.CloudApplianceConfigurationProperties != nil {
+		objectMap["properties"] = cac.CloudApplianceConfigurationProperties
+	}
+	if cac.ID != nil {
+		objectMap["id"] = cac.ID
+	}
+	if cac.Name != nil {
+		objectMap["name"] = cac.Name
+	}
+	if cac.Type != nil {
+		objectMap["type"] = cac.Type
+	}
+	if cac.Kind != "" {
+		objectMap["kind"] = cac.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for CloudApplianceConfiguration struct.
@@ -2221,56 +2871,54 @@ func (cac *CloudApplianceConfiguration) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties CloudApplianceConfigurationProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var cloudApplianceConfigurationProperties CloudApplianceConfigurationProperties
+				err = json.Unmarshal(*v, &cloudApplianceConfigurationProperties)
+				if err != nil {
+					return err
+				}
+				cac.CloudApplianceConfigurationProperties = &cloudApplianceConfigurationProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cac.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cac.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cac.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				cac.Kind = kind
+			}
 		}
-		cac.CloudApplianceConfigurationProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		cac.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cac.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cac.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		cac.Kind = kind
 	}
 
 	return nil
@@ -2309,7 +2957,8 @@ type CloudApplianceSettings struct {
 	ChannelIntegrityKey *AsymmetricEncryptedSecret `json:"channelIntegrityKey,omitempty"`
 }
 
-// CloudAppliancesProvisionFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// CloudAppliancesProvisionFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type CloudAppliancesProvisionFuture struct {
 	azure.Future
 	req *http.Request
@@ -2321,27 +2970,46 @@ func (future CloudAppliancesProvisionFuture) Result(client CloudAppliancesClient
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesProvisionFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.CloudAppliancesProvisionFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.CloudAppliancesProvisionFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.ProvisionResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesProvisionFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesProvisionFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.ProvisionResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.CloudAppliancesProvisionFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // ConfigureDeviceRequest the mandatory device configuration request.
 type ConfigureDeviceRequest struct {
+	// ConfigureDeviceRequestProperties - The properties of the configure device request.
+	*ConfigureDeviceRequestProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -2350,8 +3018,27 @@ type ConfigureDeviceRequest struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// ConfigureDeviceRequestProperties - The properties of the configure device request.
-	*ConfigureDeviceRequestProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ConfigureDeviceRequest.
+func (cdr ConfigureDeviceRequest) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cdr.ConfigureDeviceRequestProperties != nil {
+		objectMap["properties"] = cdr.ConfigureDeviceRequestProperties
+	}
+	if cdr.ID != nil {
+		objectMap["id"] = cdr.ID
+	}
+	if cdr.Name != nil {
+		objectMap["name"] = cdr.Name
+	}
+	if cdr.Type != nil {
+		objectMap["type"] = cdr.Type
+	}
+	if cdr.Kind != "" {
+		objectMap["kind"] = cdr.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ConfigureDeviceRequest struct.
@@ -2361,56 +3048,54 @@ func (cdr *ConfigureDeviceRequest) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ConfigureDeviceRequestProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var configureDeviceRequestProperties ConfigureDeviceRequestProperties
+				err = json.Unmarshal(*v, &configureDeviceRequestProperties)
+				if err != nil {
+					return err
+				}
+				cdr.ConfigureDeviceRequestProperties = &configureDeviceRequestProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cdr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cdr.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cdr.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				cdr.Kind = kind
+			}
 		}
-		cdr.ConfigureDeviceRequestProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		cdr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cdr.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cdr.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		cdr.Kind = kind
 	}
 
 	return nil
@@ -2432,6 +3117,8 @@ type ConfigureDeviceRequestProperties struct {
 
 // ControllerPowerStateChangeRequest the controller power state change request.
 type ControllerPowerStateChangeRequest struct {
+	// ControllerPowerStateChangeRequestProperties - The properties of the controller power state change request.
+	*ControllerPowerStateChangeRequestProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -2440,8 +3127,27 @@ type ControllerPowerStateChangeRequest struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// ControllerPowerStateChangeRequestProperties - The properties of the controller power state change request.
-	*ControllerPowerStateChangeRequestProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ControllerPowerStateChangeRequest.
+func (cpscr ControllerPowerStateChangeRequest) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if cpscr.ControllerPowerStateChangeRequestProperties != nil {
+		objectMap["properties"] = cpscr.ControllerPowerStateChangeRequestProperties
+	}
+	if cpscr.ID != nil {
+		objectMap["id"] = cpscr.ID
+	}
+	if cpscr.Name != nil {
+		objectMap["name"] = cpscr.Name
+	}
+	if cpscr.Type != nil {
+		objectMap["type"] = cpscr.Type
+	}
+	if cpscr.Kind != "" {
+		objectMap["kind"] = cpscr.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ControllerPowerStateChangeRequest struct.
@@ -2451,56 +3157,54 @@ func (cpscr *ControllerPowerStateChangeRequest) UnmarshalJSON(body []byte) error
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ControllerPowerStateChangeRequestProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var controllerPowerStateChangeRequestProperties ControllerPowerStateChangeRequestProperties
+				err = json.Unmarshal(*v, &controllerPowerStateChangeRequestProperties)
+				if err != nil {
+					return err
+				}
+				cpscr.ControllerPowerStateChangeRequestProperties = &controllerPowerStateChangeRequestProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				cpscr.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				cpscr.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				cpscr.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				cpscr.Kind = kind
+			}
 		}
-		cpscr.ControllerPowerStateChangeRequestProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		cpscr.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		cpscr.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		cpscr.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		cpscr.Kind = kind
 	}
 
 	return nil
@@ -2518,8 +3222,8 @@ type ControllerPowerStateChangeRequestProperties struct {
 	Controller1State ControllerStatus `json:"controller1State,omitempty"`
 }
 
-// DataStatistics the additional details related to the data related statistics of a job. Currently applicable only for
-// Backup, Clone and Restore jobs.
+// DataStatistics the additional details related to the data related statistics of a job. Currently applicable only
+// for Backup, Clone and Restore jobs.
 type DataStatistics struct {
 	// TotalData - The total bytes of data to be processed, as part of the job.
 	TotalData *int64 `json:"totalData,omitempty"`
@@ -2534,6 +3238,8 @@ type DataStatistics struct {
 // Device the StorSimple device.
 type Device struct {
 	autorest.Response `json:"-"`
+	// DeviceProperties - The properties of the StorSimple device.
+	*DeviceProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -2542,8 +3248,27 @@ type Device struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// DeviceProperties - The properties of the StorSimple device.
-	*DeviceProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Device.
+func (d Device) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if d.DeviceProperties != nil {
+		objectMap["properties"] = d.DeviceProperties
+	}
+	if d.ID != nil {
+		objectMap["id"] = d.ID
+	}
+	if d.Name != nil {
+		objectMap["name"] = d.Name
+	}
+	if d.Type != nil {
+		objectMap["type"] = d.Type
+	}
+	if d.Kind != "" {
+		objectMap["kind"] = d.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Device struct.
@@ -2553,56 +3278,54 @@ func (d *Device) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DeviceProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var deviceProperties DeviceProperties
+				err = json.Unmarshal(*v, &deviceProperties)
+				if err != nil {
+					return err
+				}
+				d.DeviceProperties = &deviceProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				d.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				d.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				d.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				d.Kind = kind
+			}
 		}
-		d.DeviceProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		d.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		d.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		d.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		d.Kind = kind
 	}
 
 	return nil
@@ -2629,6 +3352,15 @@ type DevicePatch struct {
 	*DevicePatchProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for DevicePatch.
+func (dp DevicePatch) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if dp.DevicePatchProperties != nil {
+		objectMap["properties"] = dp.DevicePatchProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for DevicePatch struct.
 func (dp *DevicePatch) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -2636,16 +3368,18 @@ func (dp *DevicePatch) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties DevicePatchProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var devicePatchProperties DevicePatchProperties
+				err = json.Unmarshal(*v, &devicePatchProperties)
+				if err != nil {
+					return err
+				}
+				dp.DevicePatchProperties = &devicePatchProperties
+			}
 		}
-		dp.DevicePatchProperties = &properties
 	}
 
 	return nil
@@ -2737,22 +3471,39 @@ func (future DevicesConfigureFuture) Result(client DevicesClient) (ar autorest.R
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesConfigureFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesConfigureFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesConfigureFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.ConfigureResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesConfigureFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesConfigureFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.ConfigureResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesConfigureFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2768,22 +3519,39 @@ func (future DevicesDeactivateFuture) Result(client DevicesClient) (ar autorest.
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeactivateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesDeactivateFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesDeactivateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeactivateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesDeactivateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeactivateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeactivateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeactivateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2799,22 +3567,39 @@ func (future DevicesDeleteFuture) Result(client DevicesClient) (ar autorest.Resp
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2831,22 +3616,39 @@ func (future DeviceSettingsCreateOrUpdateAlertSettingsFuture) Result(client Devi
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return as, autorest.NewError("storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", "asynchronous operation has not completed")
+		return as, azure.NewAsyncOpIncompleteError("storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		as, err = client.CreateOrUpdateAlertSettingsResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	as, err = client.CreateOrUpdateAlertSettingsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateAlertSettingsFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2863,27 +3665,44 @@ func (future DeviceSettingsCreateOrUpdateTimeSettingsFuture) Result(client Devic
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ts, autorest.NewError("storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", "asynchronous operation has not completed")
+		return ts, azure.NewAsyncOpIncompleteError("storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ts, err = client.CreateOrUpdateTimeSettingsResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ts, err = client.CreateOrUpdateTimeSettingsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsCreateOrUpdateTimeSettingsFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DeviceSettingsSyncRemotemanagementCertificateFuture an abstraction for monitoring and retrieving the results of a
-// long-running operation.
+// DeviceSettingsSyncRemotemanagementCertificateFuture an abstraction for monitoring and retrieving the results of
+// a long-running operation.
 type DeviceSettingsSyncRemotemanagementCertificateFuture struct {
 	azure.Future
 	req *http.Request
@@ -2895,27 +3714,44 @@ func (future DeviceSettingsSyncRemotemanagementCertificateFuture) Result(client 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.SyncRemotemanagementCertificateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.SyncRemotemanagementCertificateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsSyncRemotemanagementCertificateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DeviceSettingsUpdateNetworkSettingsFuture an abstraction for monitoring and retrieving the results of a long-running
-// operation.
+// DeviceSettingsUpdateNetworkSettingsFuture an abstraction for monitoring and retrieving the results of a
+// long-running operation.
 type DeviceSettingsUpdateNetworkSettingsFuture struct {
 	azure.Future
 	req *http.Request
@@ -2927,22 +3763,39 @@ func (future DeviceSettingsUpdateNetworkSettingsFuture) Result(client DeviceSett
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ns, autorest.NewError("storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", "asynchronous operation has not completed")
+		return ns, azure.NewAsyncOpIncompleteError("storsimple.DeviceSettingsUpdateNetworkSettingsFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ns, err = client.UpdateNetworkSettingsResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ns, err = client.UpdateNetworkSettingsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateNetworkSettingsFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2959,22 +3812,39 @@ func (future DeviceSettingsUpdateSecuritySettingsFuture) Result(client DeviceSet
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ss, autorest.NewError("storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", "asynchronous operation has not completed")
+		return ss, azure.NewAsyncOpIncompleteError("storsimple.DeviceSettingsUpdateSecuritySettingsFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ss, err = client.UpdateSecuritySettingsResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ss, err = client.UpdateSecuritySettingsResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DeviceSettingsUpdateSecuritySettingsFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -2990,26 +3860,44 @@ func (future DevicesFailoverFuture) Result(client DevicesClient) (ar autorest.Re
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesFailoverFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesFailoverFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesFailoverFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.FailoverResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesFailoverFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesFailoverFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.FailoverResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesFailoverFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DevicesInstallUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// DevicesInstallUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type DevicesInstallUpdatesFuture struct {
 	azure.Future
 	req *http.Request
@@ -3021,26 +3909,44 @@ func (future DevicesInstallUpdatesFuture) Result(client DevicesClient) (ar autor
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesInstallUpdatesFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesInstallUpdatesFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesInstallUpdatesFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.InstallUpdatesResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesInstallUpdatesFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesInstallUpdatesFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.InstallUpdatesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesInstallUpdatesFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// DevicesScanForUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// DevicesScanForUpdatesFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type DevicesScanForUpdatesFuture struct {
 	azure.Future
 	req *http.Request
@@ -3052,22 +3958,39 @@ func (future DevicesScanForUpdatesFuture) Result(client DevicesClient) (ar autor
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesScanForUpdatesFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.DevicesScanForUpdatesFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.DevicesScanForUpdatesFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.ScanForUpdatesResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.DevicesScanForUpdatesFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesScanForUpdatesFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.ScanForUpdatesResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.DevicesScanForUpdatesFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -3094,6 +4017,8 @@ type DNSSettings struct {
 // EncryptionSettings the encryption settings.
 type EncryptionSettings struct {
 	autorest.Response `json:"-"`
+	// EncryptionSettingsProperties - The properties of the encryption settings.
+	*EncryptionSettingsProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -3102,8 +4027,27 @@ type EncryptionSettings struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// EncryptionSettingsProperties - The properties of the encryption settings.
-	*EncryptionSettingsProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for EncryptionSettings.
+func (es EncryptionSettings) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if es.EncryptionSettingsProperties != nil {
+		objectMap["properties"] = es.EncryptionSettingsProperties
+	}
+	if es.ID != nil {
+		objectMap["id"] = es.ID
+	}
+	if es.Name != nil {
+		objectMap["name"] = es.Name
+	}
+	if es.Type != nil {
+		objectMap["type"] = es.Type
+	}
+	if es.Kind != "" {
+		objectMap["kind"] = es.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for EncryptionSettings struct.
@@ -3113,56 +4057,54 @@ func (es *EncryptionSettings) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties EncryptionSettingsProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var encryptionSettingsProperties EncryptionSettingsProperties
+				err = json.Unmarshal(*v, &encryptionSettingsProperties)
+				if err != nil {
+					return err
+				}
+				es.EncryptionSettingsProperties = &encryptionSettingsProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				es.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				es.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				es.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				es.Kind = kind
+			}
 		}
-		es.EncryptionSettingsProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		es.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		es.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		es.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		es.Kind = kind
 	}
 
 	return nil
@@ -3176,8 +4118,8 @@ type EncryptionSettingsProperties struct {
 	KeyRolloverStatus KeyRolloverStatus `json:"keyRolloverStatus,omitempty"`
 }
 
-// FailoverRequest the request object for triggering a failover of volume containers, from a source device to a target
-// device.
+// FailoverRequest the request object for triggering a failover of volume containers, from a source device to a
+// target device.
 type FailoverRequest struct {
 	// TargetDeviceID - The ARM path ID of the device which will act as the failover target.
 	TargetDeviceID *string `json:"targetDeviceId,omitempty"`
@@ -3234,7 +4176,8 @@ type FailoverTarget struct {
 	EligibilityResult *TargetEligibilityResult `json:"eligibilityResult,omitempty"`
 }
 
-// FailoverTargetsList the list of all devices in a resource and their eligibility status as a failover target device.
+// FailoverTargetsList the list of all devices in a resource and their eligibility status as a failover target
+// device.
 type FailoverTargetsList struct {
 	autorest.Response `json:"-"`
 	// Value - The list of all the failover targets.
@@ -3276,6 +4219,8 @@ type HardwareComponent struct {
 
 // HardwareComponentGroup the hardware component group.
 type HardwareComponentGroup struct {
+	// HardwareComponentGroupProperties - The properties of the hardware component group.
+	*HardwareComponentGroupProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -3284,8 +4229,27 @@ type HardwareComponentGroup struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// HardwareComponentGroupProperties - The properties of the hardware component group.
-	*HardwareComponentGroupProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for HardwareComponentGroup.
+func (hcg HardwareComponentGroup) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if hcg.HardwareComponentGroupProperties != nil {
+		objectMap["properties"] = hcg.HardwareComponentGroupProperties
+	}
+	if hcg.ID != nil {
+		objectMap["id"] = hcg.ID
+	}
+	if hcg.Name != nil {
+		objectMap["name"] = hcg.Name
+	}
+	if hcg.Type != nil {
+		objectMap["type"] = hcg.Type
+	}
+	if hcg.Kind != "" {
+		objectMap["kind"] = hcg.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for HardwareComponentGroup struct.
@@ -3295,56 +4259,54 @@ func (hcg *HardwareComponentGroup) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties HardwareComponentGroupProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var hardwareComponentGroupProperties HardwareComponentGroupProperties
+				err = json.Unmarshal(*v, &hardwareComponentGroupProperties)
+				if err != nil {
+					return err
+				}
+				hcg.HardwareComponentGroupProperties = &hardwareComponentGroupProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				hcg.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				hcg.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				hcg.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				hcg.Kind = kind
+			}
 		}
-		hcg.HardwareComponentGroupProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		hcg.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		hcg.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		hcg.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		hcg.Kind = kind
 	}
 
 	return nil
@@ -3367,8 +4329,8 @@ type HardwareComponentGroupProperties struct {
 	Components *[]HardwareComponent `json:"components,omitempty"`
 }
 
-// HardwareComponentGroupsChangeControllerPowerStateFuture an abstraction for monitoring and retrieving the results of
-// a long-running operation.
+// HardwareComponentGroupsChangeControllerPowerStateFuture an abstraction for monitoring and retrieving the results
+// of a long-running operation.
 type HardwareComponentGroupsChangeControllerPowerStateFuture struct {
 	azure.Future
 	req *http.Request
@@ -3380,36 +4342,45 @@ func (future HardwareComponentGroupsChangeControllerPowerStateFuture) Result(cli
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.ChangeControllerPowerStateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.ChangeControllerPowerStateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.HardwareComponentGroupsChangeControllerPowerStateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
 // Job the job.
 type Job struct {
 	autorest.Response `json:"-"`
-	// ID - The path ID that uniquely identifies the object.
-	ID *string `json:"id,omitempty"`
-	// Name - The name of the object.
-	Name *string `json:"name,omitempty"`
-	// Type - The hierarchical type of the object.
-	Type *string `json:"type,omitempty"`
-	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
-	Kind Kind `json:"kind,omitempty"`
 	// Status - The current status of the job. Possible values include: 'Running', 'Succeeded', 'Failed', 'Canceled'
 	Status JobStatus `json:"status,omitempty"`
 	// StartTime - The UTC time at which the job was started.
@@ -3422,6 +4393,50 @@ type Job struct {
 	Error *JobErrorDetails `json:"error,omitempty"`
 	// JobProperties - The properties of the job.
 	*JobProperties `json:"properties,omitempty"`
+	// ID - The path ID that uniquely identifies the object.
+	ID *string `json:"id,omitempty"`
+	// Name - The name of the object.
+	Name *string `json:"name,omitempty"`
+	// Type - The hierarchical type of the object.
+	Type *string `json:"type,omitempty"`
+	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
+	Kind Kind `json:"kind,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Job.
+func (j Job) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if j.Status != "" {
+		objectMap["status"] = j.Status
+	}
+	if j.StartTime != nil {
+		objectMap["startTime"] = j.StartTime
+	}
+	if j.EndTime != nil {
+		objectMap["endTime"] = j.EndTime
+	}
+	if j.PercentComplete != nil {
+		objectMap["percentComplete"] = j.PercentComplete
+	}
+	if j.Error != nil {
+		objectMap["error"] = j.Error
+	}
+	if j.JobProperties != nil {
+		objectMap["properties"] = j.JobProperties
+	}
+	if j.ID != nil {
+		objectMap["id"] = j.ID
+	}
+	if j.Name != nil {
+		objectMap["name"] = j.Name
+	}
+	if j.Type != nil {
+		objectMap["type"] = j.Type
+	}
+	if j.Kind != "" {
+		objectMap["kind"] = j.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Job struct.
@@ -3431,106 +4446,99 @@ func (j *Job) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["status"]
-	if v != nil {
-		var status JobStatus
-		err = json.Unmarshal(*m["status"], &status)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "status":
+			if v != nil {
+				var status JobStatus
+				err = json.Unmarshal(*v, &status)
+				if err != nil {
+					return err
+				}
+				j.Status = status
+			}
+		case "startTime":
+			if v != nil {
+				var startTime date.Time
+				err = json.Unmarshal(*v, &startTime)
+				if err != nil {
+					return err
+				}
+				j.StartTime = &startTime
+			}
+		case "endTime":
+			if v != nil {
+				var endTime date.Time
+				err = json.Unmarshal(*v, &endTime)
+				if err != nil {
+					return err
+				}
+				j.EndTime = &endTime
+			}
+		case "percentComplete":
+			if v != nil {
+				var percentComplete int32
+				err = json.Unmarshal(*v, &percentComplete)
+				if err != nil {
+					return err
+				}
+				j.PercentComplete = &percentComplete
+			}
+		case "error":
+			if v != nil {
+				var errorVar JobErrorDetails
+				err = json.Unmarshal(*v, &errorVar)
+				if err != nil {
+					return err
+				}
+				j.Error = &errorVar
+			}
+		case "properties":
+			if v != nil {
+				var jobProperties JobProperties
+				err = json.Unmarshal(*v, &jobProperties)
+				if err != nil {
+					return err
+				}
+				j.JobProperties = &jobProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				j.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				j.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				j.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				j.Kind = kind
+			}
 		}
-		j.Status = status
-	}
-
-	v = m["startTime"]
-	if v != nil {
-		var startTime date.Time
-		err = json.Unmarshal(*m["startTime"], &startTime)
-		if err != nil {
-			return err
-		}
-		j.StartTime = &startTime
-	}
-
-	v = m["endTime"]
-	if v != nil {
-		var endTime date.Time
-		err = json.Unmarshal(*m["endTime"], &endTime)
-		if err != nil {
-			return err
-		}
-		j.EndTime = &endTime
-	}
-
-	v = m["percentComplete"]
-	if v != nil {
-		var percentComplete int32
-		err = json.Unmarshal(*m["percentComplete"], &percentComplete)
-		if err != nil {
-			return err
-		}
-		j.PercentComplete = &percentComplete
-	}
-
-	v = m["error"]
-	if v != nil {
-		var errorVar JobErrorDetails
-		err = json.Unmarshal(*m["error"], &errorVar)
-		if err != nil {
-			return err
-		}
-		j.Error = &errorVar
-	}
-
-	v = m["properties"]
-	if v != nil {
-		var properties JobProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
-		}
-		j.JobProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		j.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		j.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		j.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		j.Kind = kind
 	}
 
 	return nil
@@ -3704,22 +4712,39 @@ func (future JobsCancelFuture) Result(client JobsClient) (ar autorest.Response, 
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.JobsCancelFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.JobsCancelFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.JobsCancelFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.CancelResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.JobsCancelFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.JobsCancelFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.CancelResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.JobsCancelFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -3752,6 +4777,10 @@ type ListFailoverTargetsRequest struct {
 // Manager the StorSimple Manager.
 type Manager struct {
 	autorest.Response `json:"-"`
+	// ManagerProperties - The properties of the StorSimple Manager.
+	*ManagerProperties `json:"properties,omitempty"`
+	// Etag - The etag of the manager.
+	Etag *string `json:"etag,omitempty"`
 	// ID - The resource ID.
 	ID *string `json:"id,omitempty"`
 	// Name - The resource name.
@@ -3761,11 +4790,34 @@ type Manager struct {
 	// Location - The geo location of the resource.
 	Location *string `json:"location,omitempty"`
 	// Tags - The tags attached to the resource.
-	Tags *map[string]*string `json:"tags,omitempty"`
-	// ManagerProperties - The properties of the StorSimple Manager.
-	*ManagerProperties `json:"properties,omitempty"`
-	// Etag - The etag of the manager.
-	Etag *string `json:"etag,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Manager.
+func (mVar Manager) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mVar.ManagerProperties != nil {
+		objectMap["properties"] = mVar.ManagerProperties
+	}
+	if mVar.Etag != nil {
+		objectMap["etag"] = mVar.Etag
+	}
+	if mVar.ID != nil {
+		objectMap["id"] = mVar.ID
+	}
+	if mVar.Name != nil {
+		objectMap["name"] = mVar.Name
+	}
+	if mVar.Type != nil {
+		objectMap["type"] = mVar.Type
+	}
+	if mVar.Location != nil {
+		objectMap["location"] = mVar.Location
+	}
+	if mVar.Tags != nil {
+		objectMap["tags"] = mVar.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Manager struct.
@@ -3775,76 +4827,72 @@ func (mVar *Manager) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ManagerProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var managerProperties ManagerProperties
+				err = json.Unmarshal(*v, &managerProperties)
+				if err != nil {
+					return err
+				}
+				mVar.ManagerProperties = &managerProperties
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				mVar.Etag = &etag
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				mVar.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				mVar.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				mVar.Type = &typeVar
+			}
+		case "location":
+			if v != nil {
+				var location string
+				err = json.Unmarshal(*v, &location)
+				if err != nil {
+					return err
+				}
+				mVar.Location = &location
+			}
+		case "tags":
+			if v != nil {
+				var tags map[string]*string
+				err = json.Unmarshal(*v, &tags)
+				if err != nil {
+					return err
+				}
+				mVar.Tags = tags
+			}
 		}
-		mVar.ManagerProperties = &properties
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		mVar.Etag = &etag
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		mVar.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		mVar.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		mVar.Type = &typeVar
-	}
-
-	v = m["location"]
-	if v != nil {
-		var location string
-		err = json.Unmarshal(*m["location"], &location)
-		if err != nil {
-			return err
-		}
-		mVar.Location = &location
-	}
-
-	v = m["tags"]
-	if v != nil {
-		var tags map[string]*string
-		err = json.Unmarshal(*m["tags"], &tags)
-		if err != nil {
-			return err
-		}
-		mVar.Tags = &tags
 	}
 
 	return nil
@@ -3853,6 +4901,10 @@ func (mVar *Manager) UnmarshalJSON(body []byte) error {
 // ManagerExtendedInfo the extended info of the manager.
 type ManagerExtendedInfo struct {
 	autorest.Response `json:"-"`
+	// ManagerExtendedInfoProperties - The extended info properties.
+	*ManagerExtendedInfoProperties `json:"properties,omitempty"`
+	// Etag - The etag of the resource.
+	Etag *string `json:"etag,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -3861,10 +4913,30 @@ type ManagerExtendedInfo struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// ManagerExtendedInfoProperties - The extended info properties.
-	*ManagerExtendedInfoProperties `json:"properties,omitempty"`
-	// Etag - The etag of the resource.
-	Etag *string `json:"etag,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for ManagerExtendedInfo.
+func (mei ManagerExtendedInfo) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mei.ManagerExtendedInfoProperties != nil {
+		objectMap["properties"] = mei.ManagerExtendedInfoProperties
+	}
+	if mei.Etag != nil {
+		objectMap["etag"] = mei.Etag
+	}
+	if mei.ID != nil {
+		objectMap["id"] = mei.ID
+	}
+	if mei.Name != nil {
+		objectMap["name"] = mei.Name
+	}
+	if mei.Type != nil {
+		objectMap["type"] = mei.Type
+	}
+	if mei.Kind != "" {
+		objectMap["kind"] = mei.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for ManagerExtendedInfo struct.
@@ -3874,66 +4946,63 @@ func (mei *ManagerExtendedInfo) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties ManagerExtendedInfoProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var managerExtendedInfoProperties ManagerExtendedInfoProperties
+				err = json.Unmarshal(*v, &managerExtendedInfoProperties)
+				if err != nil {
+					return err
+				}
+				mei.ManagerExtendedInfoProperties = &managerExtendedInfoProperties
+			}
+		case "etag":
+			if v != nil {
+				var etag string
+				err = json.Unmarshal(*v, &etag)
+				if err != nil {
+					return err
+				}
+				mei.Etag = &etag
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				mei.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				mei.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				mei.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				mei.Kind = kind
+			}
 		}
-		mei.ManagerExtendedInfoProperties = &properties
-	}
-
-	v = m["etag"]
-	if v != nil {
-		var etag string
-		err = json.Unmarshal(*m["etag"], &etag)
-		if err != nil {
-			return err
-		}
-		mei.Etag = &etag
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		mei.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		mei.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		mei.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		mei.Kind = kind
 	}
 
 	return nil
@@ -3971,7 +5040,16 @@ type ManagerList struct {
 // ManagerPatch the StorSimple Manager patch.
 type ManagerPatch struct {
 	// Tags - The tags attached to the Manager.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for ManagerPatch.
+func (mp ManagerPatch) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if mp.Tags != nil {
+		objectMap["tags"] = mp.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // ManagerProperties the properties of the StorSimple Manager.
@@ -4147,6 +5225,8 @@ type NetworkInterfaceData0Settings struct {
 // NetworkSettings represents the network settings of a device.
 type NetworkSettings struct {
 	autorest.Response `json:"-"`
+	// NetworkSettingsProperties - The properties of network settings of a device.
+	*NetworkSettingsProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4155,8 +5235,27 @@ type NetworkSettings struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// NetworkSettingsProperties - The properties of network settings of a device.
-	*NetworkSettingsProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for NetworkSettings.
+func (ns NetworkSettings) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ns.NetworkSettingsProperties != nil {
+		objectMap["properties"] = ns.NetworkSettingsProperties
+	}
+	if ns.ID != nil {
+		objectMap["id"] = ns.ID
+	}
+	if ns.Name != nil {
+		objectMap["name"] = ns.Name
+	}
+	if ns.Type != nil {
+		objectMap["type"] = ns.Type
+	}
+	if ns.Kind != "" {
+		objectMap["kind"] = ns.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for NetworkSettings struct.
@@ -4166,56 +5265,54 @@ func (ns *NetworkSettings) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties NetworkSettingsProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var networkSettingsProperties NetworkSettingsProperties
+				err = json.Unmarshal(*v, &networkSettingsProperties)
+				if err != nil {
+					return err
+				}
+				ns.NetworkSettingsProperties = &networkSettingsProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				ns.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				ns.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ns.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				ns.Kind = kind
+			}
 		}
-		ns.NetworkSettingsProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		ns.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		ns.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ns.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		ns.Kind = kind
 	}
 
 	return nil
@@ -4227,6 +5324,15 @@ type NetworkSettingsPatch struct {
 	*NetworkSettingsPatchProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for NetworkSettingsPatch.
+func (nsp NetworkSettingsPatch) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if nsp.NetworkSettingsPatchProperties != nil {
+		objectMap["properties"] = nsp.NetworkSettingsPatchProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for NetworkSettingsPatch struct.
 func (nsp *NetworkSettingsPatch) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -4234,16 +5340,18 @@ func (nsp *NetworkSettingsPatch) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties NetworkSettingsPatchProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var networkSettingsPatchProperties NetworkSettingsPatchProperties
+				err = json.Unmarshal(*v, &networkSettingsPatchProperties)
+				if err != nil {
+					return err
+				}
+				nsp.NetworkSettingsPatchProperties = &networkSettingsPatchProperties
+			}
 		}
-		nsp.NetworkSettingsPatchProperties = &properties
 	}
 
 	return nil
@@ -4327,7 +5435,28 @@ type Resource struct {
 	// Location - The geo location of the resource.
 	Location *string `json:"location,omitempty"`
 	// Tags - The tags attached to the resource.
-	Tags *map[string]*string `json:"tags,omitempty"`
+	Tags map[string]*string `json:"tags"`
+}
+
+// MarshalJSON is the custom marshaler for Resource.
+func (r Resource) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if r.ID != nil {
+		objectMap["id"] = r.ID
+	}
+	if r.Name != nil {
+		objectMap["name"] = r.Name
+	}
+	if r.Type != nil {
+		objectMap["type"] = r.Type
+	}
+	if r.Location != nil {
+		objectMap["location"] = r.Location
+	}
+	if r.Tags != nil {
+		objectMap["tags"] = r.Tags
+	}
+	return json.Marshal(objectMap)
 }
 
 // ScheduleRecurrence the schedule recurrence.
@@ -4349,6 +5478,8 @@ type SecondaryDNSSettings struct {
 // SecuritySettings the security settings of a device.
 type SecuritySettings struct {
 	autorest.Response `json:"-"`
+	// SecuritySettingsProperties - The properties of the security settings of a device.
+	*SecuritySettingsProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4357,8 +5488,27 @@ type SecuritySettings struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// SecuritySettingsProperties - The properties of the security settings of a device.
-	*SecuritySettingsProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for SecuritySettings.
+func (ss SecuritySettings) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ss.SecuritySettingsProperties != nil {
+		objectMap["properties"] = ss.SecuritySettingsProperties
+	}
+	if ss.ID != nil {
+		objectMap["id"] = ss.ID
+	}
+	if ss.Name != nil {
+		objectMap["name"] = ss.Name
+	}
+	if ss.Type != nil {
+		objectMap["type"] = ss.Type
+	}
+	if ss.Kind != "" {
+		objectMap["kind"] = ss.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for SecuritySettings struct.
@@ -4368,56 +5518,54 @@ func (ss *SecuritySettings) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SecuritySettingsProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var securitySettingsProperties SecuritySettingsProperties
+				err = json.Unmarshal(*v, &securitySettingsProperties)
+				if err != nil {
+					return err
+				}
+				ss.SecuritySettingsProperties = &securitySettingsProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				ss.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				ss.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ss.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				ss.Kind = kind
+			}
 		}
-		ss.SecuritySettingsProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		ss.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		ss.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ss.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		ss.Kind = kind
 	}
 
 	return nil
@@ -4429,6 +5577,15 @@ type SecuritySettingsPatch struct {
 	*SecuritySettingsPatchProperties `json:"properties,omitempty"`
 }
 
+// MarshalJSON is the custom marshaler for SecuritySettingsPatch.
+func (ssp SecuritySettingsPatch) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ssp.SecuritySettingsPatchProperties != nil {
+		objectMap["properties"] = ssp.SecuritySettingsPatchProperties
+	}
+	return json.Marshal(objectMap)
+}
+
 // UnmarshalJSON is the custom unmarshaler for SecuritySettingsPatch struct.
 func (ssp *SecuritySettingsPatch) UnmarshalJSON(body []byte) error {
 	var m map[string]*json.RawMessage
@@ -4436,16 +5593,18 @@ func (ssp *SecuritySettingsPatch) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties SecuritySettingsPatchProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var securitySettingsPatchProperties SecuritySettingsPatchProperties
+				err = json.Unmarshal(*v, &securitySettingsPatchProperties)
+				if err != nil {
+					return err
+				}
+				ssp.SecuritySettingsPatchProperties = &securitySettingsPatchProperties
+			}
 		}
-		ssp.SecuritySettingsPatchProperties = &properties
 	}
 
 	return nil
@@ -4482,6 +5641,8 @@ type SendTestAlertEmailRequest struct {
 // StorageAccountCredential the storage account credential.
 type StorageAccountCredential struct {
 	autorest.Response `json:"-"`
+	// StorageAccountCredentialProperties - The storage account credential properties.
+	*StorageAccountCredentialProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4490,8 +5651,27 @@ type StorageAccountCredential struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// StorageAccountCredentialProperties - The storage account credential properties.
-	*StorageAccountCredentialProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for StorageAccountCredential.
+func (sac StorageAccountCredential) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if sac.StorageAccountCredentialProperties != nil {
+		objectMap["properties"] = sac.StorageAccountCredentialProperties
+	}
+	if sac.ID != nil {
+		objectMap["id"] = sac.ID
+	}
+	if sac.Name != nil {
+		objectMap["name"] = sac.Name
+	}
+	if sac.Type != nil {
+		objectMap["type"] = sac.Type
+	}
+	if sac.Kind != "" {
+		objectMap["kind"] = sac.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for StorageAccountCredential struct.
@@ -4501,56 +5681,54 @@ func (sac *StorageAccountCredential) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties StorageAccountCredentialProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var storageAccountCredentialProperties StorageAccountCredentialProperties
+				err = json.Unmarshal(*v, &storageAccountCredentialProperties)
+				if err != nil {
+					return err
+				}
+				sac.StorageAccountCredentialProperties = &storageAccountCredentialProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				sac.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				sac.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				sac.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				sac.Kind = kind
+			}
 		}
-		sac.StorageAccountCredentialProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		sac.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		sac.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		sac.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		sac.Kind = kind
 	}
 
 	return nil
@@ -4588,22 +5766,39 @@ func (future StorageAccountCredentialsCreateOrUpdateFuture) Result(client Storag
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return sac, autorest.NewError("storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return sac, azure.NewAsyncOpIncompleteError("storsimple.StorageAccountCredentialsCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		sac, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	sac, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4620,22 +5815,39 @@ func (future StorageAccountCredentialsDeleteFuture) Result(client StorageAccount
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.StorageAccountCredentialsDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.StorageAccountCredentialsDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.StorageAccountCredentialsDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -4650,8 +5862,8 @@ type SymmetricEncryptedSecret struct {
 	EncryptionAlgorithm EncryptionAlgorithm `json:"encryptionAlgorithm,omitempty"`
 }
 
-// TargetEligibilityErrorMessage the error/warning message due to which the device is ineligible as a failover target
-// device.
+// TargetEligibilityErrorMessage the error/warning message due to which the device is ineligible as a failover
+// target device.
 type TargetEligibilityErrorMessage struct {
 	// Message - The localized error message stating the reason why the device is not eligible as a target device.
 	Message *string `json:"message,omitempty"`
@@ -4682,6 +5894,8 @@ type Time struct {
 // TimeSettings the time settings of a device.
 type TimeSettings struct {
 	autorest.Response `json:"-"`
+	// TimeSettingsProperties - The properties of the time settings of a device.
+	*TimeSettingsProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4690,8 +5904,27 @@ type TimeSettings struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// TimeSettingsProperties - The properties of the time settings of a device.
-	*TimeSettingsProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for TimeSettings.
+func (ts TimeSettings) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if ts.TimeSettingsProperties != nil {
+		objectMap["properties"] = ts.TimeSettingsProperties
+	}
+	if ts.ID != nil {
+		objectMap["id"] = ts.ID
+	}
+	if ts.Name != nil {
+		objectMap["name"] = ts.Name
+	}
+	if ts.Type != nil {
+		objectMap["type"] = ts.Type
+	}
+	if ts.Kind != "" {
+		objectMap["kind"] = ts.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for TimeSettings struct.
@@ -4701,56 +5934,54 @@ func (ts *TimeSettings) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties TimeSettingsProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var timeSettingsProperties TimeSettingsProperties
+				err = json.Unmarshal(*v, &timeSettingsProperties)
+				if err != nil {
+					return err
+				}
+				ts.TimeSettingsProperties = &timeSettingsProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				ts.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				ts.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				ts.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				ts.Kind = kind
+			}
 		}
-		ts.TimeSettingsProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		ts.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		ts.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		ts.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		ts.Kind = kind
 	}
 
 	return nil
@@ -4769,6 +6000,8 @@ type TimeSettingsProperties struct {
 // Updates the updates profile of a device.
 type Updates struct {
 	autorest.Response `json:"-"`
+	// UpdatesProperties - The properties of the updates profile.
+	*UpdatesProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4777,8 +6010,27 @@ type Updates struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// UpdatesProperties - The properties of the updates profile.
-	*UpdatesProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Updates.
+func (u Updates) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if u.UpdatesProperties != nil {
+		objectMap["properties"] = u.UpdatesProperties
+	}
+	if u.ID != nil {
+		objectMap["id"] = u.ID
+	}
+	if u.Name != nil {
+		objectMap["name"] = u.Name
+	}
+	if u.Type != nil {
+		objectMap["type"] = u.Type
+	}
+	if u.Kind != "" {
+		objectMap["kind"] = u.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Updates struct.
@@ -4788,56 +6040,54 @@ func (u *Updates) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties UpdatesProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var updatesProperties UpdatesProperties
+				err = json.Unmarshal(*v, &updatesProperties)
+				if err != nil {
+					return err
+				}
+				u.UpdatesProperties = &updatesProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				u.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				u.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				u.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				u.Kind = kind
+			}
 		}
-		u.UpdatesProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		u.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		u.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		u.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		u.Kind = kind
 	}
 
 	return nil
@@ -4872,6 +6122,8 @@ type VMImage struct {
 // Volume the volume.
 type Volume struct {
 	autorest.Response `json:"-"`
+	// VolumeProperties - The properties of the volume.
+	*VolumeProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4880,8 +6132,27 @@ type Volume struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// VolumeProperties - The properties of the volume.
-	*VolumeProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for Volume.
+func (vVar Volume) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vVar.VolumeProperties != nil {
+		objectMap["properties"] = vVar.VolumeProperties
+	}
+	if vVar.ID != nil {
+		objectMap["id"] = vVar.ID
+	}
+	if vVar.Name != nil {
+		objectMap["name"] = vVar.Name
+	}
+	if vVar.Type != nil {
+		objectMap["type"] = vVar.Type
+	}
+	if vVar.Kind != "" {
+		objectMap["kind"] = vVar.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for Volume struct.
@@ -4891,56 +6162,54 @@ func (vVar *Volume) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VolumeProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var volumeProperties VolumeProperties
+				err = json.Unmarshal(*v, &volumeProperties)
+				if err != nil {
+					return err
+				}
+				vVar.VolumeProperties = &volumeProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vVar.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vVar.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vVar.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				vVar.Kind = kind
+			}
 		}
-		vVar.VolumeProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vVar.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vVar.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vVar.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		vVar.Kind = kind
 	}
 
 	return nil
@@ -4949,6 +6218,8 @@ func (vVar *Volume) UnmarshalJSON(body []byte) error {
 // VolumeContainer the volume container.
 type VolumeContainer struct {
 	autorest.Response `json:"-"`
+	// VolumeContainerProperties - The volume container properties.
+	*VolumeContainerProperties `json:"properties,omitempty"`
 	// ID - The path ID that uniquely identifies the object.
 	ID *string `json:"id,omitempty"`
 	// Name - The name of the object.
@@ -4957,8 +6228,27 @@ type VolumeContainer struct {
 	Type *string `json:"type,omitempty"`
 	// Kind - The Kind of the object. Currently only Series8000 is supported. Possible values include: 'Series8000'
 	Kind Kind `json:"kind,omitempty"`
-	// VolumeContainerProperties - The volume container properties.
-	*VolumeContainerProperties `json:"properties,omitempty"`
+}
+
+// MarshalJSON is the custom marshaler for VolumeContainer.
+func (vc VolumeContainer) MarshalJSON() ([]byte, error) {
+	objectMap := make(map[string]interface{})
+	if vc.VolumeContainerProperties != nil {
+		objectMap["properties"] = vc.VolumeContainerProperties
+	}
+	if vc.ID != nil {
+		objectMap["id"] = vc.ID
+	}
+	if vc.Name != nil {
+		objectMap["name"] = vc.Name
+	}
+	if vc.Type != nil {
+		objectMap["type"] = vc.Type
+	}
+	if vc.Kind != "" {
+		objectMap["kind"] = vc.Kind
+	}
+	return json.Marshal(objectMap)
 }
 
 // UnmarshalJSON is the custom unmarshaler for VolumeContainer struct.
@@ -4968,63 +6258,61 @@ func (vc *VolumeContainer) UnmarshalJSON(body []byte) error {
 	if err != nil {
 		return err
 	}
-	var v *json.RawMessage
-
-	v = m["properties"]
-	if v != nil {
-		var properties VolumeContainerProperties
-		err = json.Unmarshal(*m["properties"], &properties)
-		if err != nil {
-			return err
+	for k, v := range m {
+		switch k {
+		case "properties":
+			if v != nil {
+				var volumeContainerProperties VolumeContainerProperties
+				err = json.Unmarshal(*v, &volumeContainerProperties)
+				if err != nil {
+					return err
+				}
+				vc.VolumeContainerProperties = &volumeContainerProperties
+			}
+		case "id":
+			if v != nil {
+				var ID string
+				err = json.Unmarshal(*v, &ID)
+				if err != nil {
+					return err
+				}
+				vc.ID = &ID
+			}
+		case "name":
+			if v != nil {
+				var name string
+				err = json.Unmarshal(*v, &name)
+				if err != nil {
+					return err
+				}
+				vc.Name = &name
+			}
+		case "type":
+			if v != nil {
+				var typeVar string
+				err = json.Unmarshal(*v, &typeVar)
+				if err != nil {
+					return err
+				}
+				vc.Type = &typeVar
+			}
+		case "kind":
+			if v != nil {
+				var kind Kind
+				err = json.Unmarshal(*v, &kind)
+				if err != nil {
+					return err
+				}
+				vc.Kind = kind
+			}
 		}
-		vc.VolumeContainerProperties = &properties
-	}
-
-	v = m["id"]
-	if v != nil {
-		var ID string
-		err = json.Unmarshal(*m["id"], &ID)
-		if err != nil {
-			return err
-		}
-		vc.ID = &ID
-	}
-
-	v = m["name"]
-	if v != nil {
-		var name string
-		err = json.Unmarshal(*m["name"], &name)
-		if err != nil {
-			return err
-		}
-		vc.Name = &name
-	}
-
-	v = m["type"]
-	if v != nil {
-		var typeVar string
-		err = json.Unmarshal(*m["type"], &typeVar)
-		if err != nil {
-			return err
-		}
-		vc.Type = &typeVar
-	}
-
-	v = m["kind"]
-	if v != nil {
-		var kind Kind
-		err = json.Unmarshal(*m["kind"], &kind)
-		if err != nil {
-			return err
-		}
-		vc.Kind = kind
 	}
 
 	return nil
 }
 
-// VolumeContainerFailoverMetadata the metadata of the volume container, that is being considered as part of a failover
-// set.
+// VolumeContainerFailoverMetadata the metadata of the volume container, that is being considered as part of a
+// failover set.
 type VolumeContainerFailoverMetadata struct {
 	// VolumeContainerID - The path ID of the volume container.
 	VolumeContainerID *string `json:"volumeContainerId,omitempty"`
@@ -5072,26 +6360,44 @@ func (future VolumeContainersCreateOrUpdateFuture) Result(client VolumeContainer
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vc, autorest.NewError("storsimple.VolumeContainersCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vc, azure.NewAsyncOpIncompleteError("storsimple.VolumeContainersCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vc, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vc, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
-// VolumeContainersDeleteFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VolumeContainersDeleteFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VolumeContainersDeleteFuture struct {
 	azure.Future
 	req *http.Request
@@ -5103,22 +6409,39 @@ func (future VolumeContainersDeleteFuture) Result(client VolumeContainersClient)
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.VolumeContainersDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.VolumeContainersDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumeContainersDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5169,7 +6492,8 @@ type VolumeProperties struct {
 	BackupPolicyIds *[]string `json:"backupPolicyIds,omitempty"`
 }
 
-// VolumesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running operation.
+// VolumesCreateOrUpdateFuture an abstraction for monitoring and retrieving the results of a long-running
+// operation.
 type VolumesCreateOrUpdateFuture struct {
 	azure.Future
 	req *http.Request
@@ -5181,22 +6505,39 @@ func (future VolumesCreateOrUpdateFuture) Result(client VolumesClient) (vVar Vol
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesCreateOrUpdateFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return vVar, autorest.NewError("storsimple.VolumesCreateOrUpdateFuture", "Result", "asynchronous operation has not completed")
+		return vVar, azure.NewAsyncOpIncompleteError("storsimple.VolumesCreateOrUpdateFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		vVar, err = client.CreateOrUpdateResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.VolumesCreateOrUpdateFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesCreateOrUpdateFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	vVar, err = client.CreateOrUpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesCreateOrUpdateFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 
@@ -5212,22 +6553,39 @@ func (future VolumesDeleteFuture) Result(client VolumesClient) (ar autorest.Resp
 	var done bool
 	done, err = future.Done(client)
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesDeleteFuture", "Result", future.Response(), "Polling failure")
 		return
 	}
 	if !done {
-		return ar, autorest.NewError("storsimple.VolumesDeleteFuture", "Result", "asynchronous operation has not completed")
+		return ar, azure.NewAsyncOpIncompleteError("storsimple.VolumesDeleteFuture")
 	}
 	if future.PollingMethod() == azure.PollingLocation {
 		ar, err = client.DeleteResponder(future.Response())
+		if err != nil {
+			err = autorest.NewErrorWithError(err, "storsimple.VolumesDeleteFuture", "Result", future.Response(), "Failure responding to request")
+		}
 		return
 	}
+	var req *http.Request
 	var resp *http.Response
-	resp, err = autorest.SendWithSender(client, autorest.ChangeToGet(future.req),
+	if future.PollingURL() != "" {
+		req, err = http.NewRequest(http.MethodGet, future.PollingURL(), nil)
+		if err != nil {
+			return
+		}
+	} else {
+		req = autorest.ChangeToGet(future.req)
+	}
+	resp, err = autorest.SendWithSender(client, req,
 		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesDeleteFuture", "Result", resp, "Failure sending request")
 		return
 	}
 	ar, err = client.DeleteResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "storsimple.VolumesDeleteFuture", "Result", resp, "Failure responding to request")
+	}
 	return
 }
 

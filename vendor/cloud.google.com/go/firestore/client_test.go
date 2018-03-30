@@ -17,10 +17,11 @@ package firestore
 import (
 	"testing"
 
+	tspb "github.com/golang/protobuf/ptypes/timestamp"
 	"golang.org/x/net/context"
 	pb "google.golang.org/genproto/googleapis/firestore/v1beta1"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var testClient = &Client{
@@ -92,10 +93,23 @@ func TestClientCollDocErrors(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	ctx := context.Background()
-	const dbPath = "projects/projectID/databases/(default)"
 	c, srv := newMock(t)
 	defer c.Close()
+	const dbPath = "projects/projectID/databases/(default)"
+	req := &pb.BatchGetDocumentsRequest{
+		Database: dbPath,
+		Documents: []string{
+			dbPath + "/documents/C/a",
+			dbPath + "/documents/C/b",
+			dbPath + "/documents/C/c",
+		},
+	}
+	testGetAll(t, c, srv, dbPath, func(drs []*DocumentRef) ([]*DocumentSnapshot, error) {
+		return c.GetAll(context.Background(), drs)
+	}, req)
+}
+
+func testGetAll(t *testing.T, c *Client, srv *mockServer, dbPath string, getAll func([]*DocumentRef) ([]*DocumentSnapshot, error), req *pb.BatchGetDocumentsRequest) {
 	wantPBDocs := []*pb.Document{
 		{
 			Name:       dbPath + "/documents/C/a",
@@ -111,25 +125,21 @@ func TestGetAll(t *testing.T) {
 			Fields:     map[string]*pb.Value{"f": intval(1)},
 		},
 	}
-	srv.addRPC(
-		&pb.BatchGetDocumentsRequest{
-			Database: dbPath,
-			Documents: []string{
-				dbPath + "/documents/C/a",
-				dbPath + "/documents/C/b",
-				dbPath + "/documents/C/c",
-			},
-		},
+	wantReadTimes := []*tspb.Timestamp{aTimestamp, aTimestamp2, aTimestamp3}
+	srv.addRPC(req,
 		[]interface{}{
 			// deliberately put these out of order
 			&pb.BatchGetDocumentsResponse{
-				Result: &pb.BatchGetDocumentsResponse_Found{wantPBDocs[2]},
+				Result:   &pb.BatchGetDocumentsResponse_Found{wantPBDocs[2]},
+				ReadTime: aTimestamp3,
 			},
 			&pb.BatchGetDocumentsResponse{
-				Result: &pb.BatchGetDocumentsResponse_Found{wantPBDocs[0]},
+				Result:   &pb.BatchGetDocumentsResponse_Found{wantPBDocs[0]},
+				ReadTime: aTimestamp,
 			},
 			&pb.BatchGetDocumentsResponse{
-				Result: &pb.BatchGetDocumentsResponse_Missing{dbPath + "/documents/C/b"},
+				Result:   &pb.BatchGetDocumentsResponse_Missing{dbPath + "/documents/C/b"},
+				ReadTime: aTimestamp2,
 			},
 		},
 	)
@@ -138,7 +148,7 @@ func TestGetAll(t *testing.T) {
 	for _, name := range []string{"a", "b", "c"} {
 		docRefs = append(docRefs, coll.Doc(name))
 	}
-	docs, err := c.GetAll(ctx, docRefs)
+	docs, err := getAll(docRefs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +158,7 @@ func TestGetAll(t *testing.T) {
 	for i, got := range docs {
 		var want *DocumentSnapshot
 		if wantPBDocs[i] != nil {
-			want, err = newDocumentSnapshot(docRefs[i], wantPBDocs[i], c)
+			want, err = newDocumentSnapshot(docRefs[i], wantPBDocs[i], c, wantReadTimes[i])
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -176,7 +186,7 @@ func TestGetAllErrors(t *testing.T) {
 			Database:  dbPath,
 			Documents: []string{docPath},
 		},
-		[]interface{}{grpc.Errorf(codes.Internal, "")},
+		[]interface{}{status.Errorf(codes.Internal, "")},
 	)
 	_, err := c.GetAll(ctx, []*DocumentRef{c.Doc("C/a")})
 	codeEq(t, "GetAll #1", codes.Internal, err)
@@ -190,10 +200,12 @@ func TestGetAllErrors(t *testing.T) {
 		},
 		[]interface{}{
 			&pb.BatchGetDocumentsResponse{
-				Result: &pb.BatchGetDocumentsResponse_Found{&pb.Document{Name: docPath}},
+				Result:   &pb.BatchGetDocumentsResponse_Found{&pb.Document{Name: docPath}},
+				ReadTime: aTimestamp,
 			},
 			&pb.BatchGetDocumentsResponse{
-				Result: &pb.BatchGetDocumentsResponse_Missing{docPath},
+				Result:   &pb.BatchGetDocumentsResponse_Missing{docPath},
+				ReadTime: aTimestamp,
 			},
 		},
 	)

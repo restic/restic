@@ -260,7 +260,7 @@ func (client VersionClient) Put(ctx context.Context, subscriptionID string, reso
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.VersionProperties", Name: validation.Null, Rule: false,
 				Chain: []validation.Constraint{{Target: "parameters.VersionProperties.AppPackageURL", Name: validation.Null, Rule: true, Chain: nil}}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "servicefabric.VersionClient", "Put")
+		return result, validation.NewError("servicefabric.VersionClient", "Put", err.Error())
 	}
 
 	req, err := client.PutPreparer(ctx, subscriptionID, resourceGroupName, clusterName, applicationTypeName, version, parameters)
@@ -294,7 +294,7 @@ func (client VersionClient) PutPreparer(ctx context.Context, subscriptionID stri
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ServiceFabric/clusters/{clusterName}/applicationTypes/{applicationTypeName}/versions/{version}", pathParameters),

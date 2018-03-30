@@ -22,8 +22,9 @@ package main
 import (
 	"log"
 
-	"github.com/minio/minio-go"
 	"github.com/minio/minio-go/pkg/encrypt"
+
+	"github.com/minio/minio-go"
 )
 
 func main() {
@@ -40,38 +41,16 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Specify a local file that we will upload
-	filePath := "my-testfile"
+	filePath := "my-testfile"                  // Specify a local file that we will upload
+	bucketname := "my-bucketname"              // Specify a bucket name - the bucket must already exist
+	objectName := "my-objectname"              // Specify a object name
+	password := "correct horse battery staple" // Specify your password. DO NOT USE THIS ONE - USE YOUR OWN.
 
-	//// Build an asymmetric key from private and public files
-	//
-	// privateKey, err := ioutil.ReadFile("private.key")
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	//
-	// publicKey, err := ioutil.ReadFile("public.key")
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	//
-	// asymmetricKey, err := NewAsymmetricKey(privateKey, publicKey)
-	// if err != nil {
-	//	t.Fatal(err)
-	// }
-	////
-
-	// Build a symmetric key
-	symmetricKey := encrypt.NewSymmetricKey([]byte("my-secret-key-00"))
-
-	// Build encryption materials which will encrypt uploaded data
-	cbcMaterials, err := encrypt.NewCBCSecureMaterials(symmetricKey)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// New SSE-C where the cryptographic key is derived from a password and the objectname + bucketname as salt
+	encryption := encrypt.DefaultPBKDF([]byte(password), []byte(bucketname+objectName))
 
 	// Encrypt file content and upload to the server
-	n, err := s3Client.FPutEncryptedObject("my-bucketname", "my-objectname", filePath, cbcMaterials)
+	n, err := s3Client.FPutObject(bucketname, objectName, filePath, minio.PutObjectOptions{ServerSideEncryption: encryption})
 	if err != nil {
 		log.Fatalln(err)
 	}

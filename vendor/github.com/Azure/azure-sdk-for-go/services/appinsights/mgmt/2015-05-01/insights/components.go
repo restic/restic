@@ -43,13 +43,14 @@ func NewComponentsClientWithBaseURI(baseURI string, subscriptionID string) Compo
 // CreateOrUpdate creates (or updates) an Application Insights component. Note: You cannot specify a different value
 // for InstrumentationKey nor AppId in the Put operation.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource. insightProperties is properties that need to be specified to create an Application Insights component.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource. insightProperties is properties that need to be specified to create an Application Insights
+// component.
 func (client ComponentsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, insightProperties ApplicationInsightsComponent) (result ApplicationInsightsComponent, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: insightProperties,
 			Constraints: []validation.Constraint{{Target: "insightProperties.Kind", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "insights.ComponentsClient", "CreateOrUpdate")
+		return result, validation.NewError("insights.ComponentsClient", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, resourceName, insightProperties)
@@ -87,10 +88,10 @@ func (client ComponentsClient) CreateOrUpdatePreparer(ctx context.Context, resou
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}", pathParameters),
 		autorest.WithJSON(insightProperties),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
@@ -118,8 +119,8 @@ func (client ComponentsClient) CreateOrUpdateResponder(resp *http.Response) (res
 
 // Delete deletes an Application Insights component.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource.
 func (client ComponentsClient) Delete(ctx context.Context, resourceGroupName string, resourceName string) (result autorest.Response, err error) {
 	req, err := client.DeletePreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
@@ -158,7 +159,7 @@ func (client ComponentsClient) DeletePreparer(ctx context.Context, resourceGroup
 	preparer := autorest.CreatePreparer(
 		autorest.AsDelete(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
@@ -184,8 +185,8 @@ func (client ComponentsClient) DeleteResponder(resp *http.Response) (result auto
 
 // Get returns an Application Insights component.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource.
 func (client ComponentsClient) Get(ctx context.Context, resourceGroupName string, resourceName string) (result ApplicationInsightsComponent, err error) {
 	req, err := client.GetPreparer(ctx, resourceGroupName, resourceName)
 	if err != nil {
@@ -224,7 +225,7 @@ func (client ComponentsClient) GetPreparer(ctx context.Context, resourceGroupNam
 	preparer := autorest.CreatePreparer(
 		autorest.AsGet(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
@@ -239,6 +240,76 @@ func (client ComponentsClient) GetSender(req *http.Request) (*http.Response, err
 // GetResponder handles the response to the Get request. The method always
 // closes the http.Response Body.
 func (client ComponentsClient) GetResponder(resp *http.Response) (result ApplicationInsightsComponent, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// GetPurgeStatus gets the status of a previously submitted purge using the id returned from the original purge
+// request.
+//
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource. purgeID is in a purge status request, this is the Id of the operation the status of which is
+// returned.
+func (client ComponentsClient) GetPurgeStatus(ctx context.Context, resourceGroupName string, resourceName string, purgeID string) (result ComponentPurgeStatusResponse, err error) {
+	req, err := client.GetPurgeStatusPreparer(ctx, resourceGroupName, resourceName, purgeID)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "GetPurgeStatus", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.GetPurgeStatusSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "GetPurgeStatus", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.GetPurgeStatusResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "GetPurgeStatus", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// GetPurgeStatusPreparer prepares the GetPurgeStatus request.
+func (client ComponentsClient) GetPurgeStatusPreparer(ctx context.Context, resourceGroupName string, resourceName string, purgeID string) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"purgeId":           autorest.Encode("path", purgeID),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"resourceName":      autorest.Encode("path", resourceName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2015-05-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsGet(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}/operations/{purgeId}", pathParameters),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// GetPurgeStatusSender sends the GetPurgeStatus request. The method will close the
+// http.Response Body if it receives an error.
+func (client ComponentsClient) GetPurgeStatusSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// GetPurgeStatusResponder handles the response to the GetPurgeStatus request. The method always
+// closes the http.Response Body.
+func (client ComponentsClient) GetPurgeStatusResponder(resp *http.Response) (result ComponentPurgeStatusResponse, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),
@@ -287,7 +358,7 @@ func (client ComponentsClient) ListPreparer(ctx context.Context) (*http.Request,
 	preparer := autorest.CreatePreparer(
 		autorest.AsGet(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/microsoft.insights/components", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.Insights/components", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
@@ -380,7 +451,7 @@ func (client ComponentsClient) ListByResourceGroupPreparer(ctx context.Context, 
 	preparer := autorest.CreatePreparer(
 		autorest.AsGet(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components", pathParameters),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))
 }
@@ -432,10 +503,87 @@ func (client ComponentsClient) ListByResourceGroupComplete(ctx context.Context, 
 	return
 }
 
+// Purge purges data in an Application Insights component by a set of user-defined filters.
+//
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource. body is describes the body of a request to purge data in a single table of an Application
+// Insights component
+func (client ComponentsClient) Purge(ctx context.Context, resourceGroupName string, resourceName string, body ComponentPurgeBody) (result ComponentPurgeResponse, err error) {
+	if err := validation.Validate([]validation.Validation{
+		{TargetValue: body,
+			Constraints: []validation.Constraint{{Target: "body.Table", Name: validation.Null, Rule: true, Chain: nil},
+				{Target: "body.Filters", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
+		return result, validation.NewError("insights.ComponentsClient", "Purge", err.Error())
+	}
+
+	req, err := client.PurgePreparer(ctx, resourceGroupName, resourceName, body)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "Purge", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.PurgeSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "Purge", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.PurgeResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ComponentsClient", "Purge", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// PurgePreparer prepares the Purge request.
+func (client ComponentsClient) PurgePreparer(ctx context.Context, resourceGroupName string, resourceName string, body ComponentPurgeBody) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"resourceName":      autorest.Encode("path", resourceName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2015-05-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsContentType("application/json; charset=utf-8"),
+		autorest.AsPost(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}/purge", pathParameters),
+		autorest.WithJSON(body),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// PurgeSender sends the Purge request. The method will close the
+// http.Response Body if it receives an error.
+func (client ComponentsClient) PurgeSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// PurgeResponder handles the response to the Purge request. The method always
+// closes the http.Response Body.
+func (client ComponentsClient) PurgeResponder(resp *http.Response) (result ComponentPurgeResponse, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK, http.StatusAccepted),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
 // UpdateTags updates an existing component's tags. To update other fields use the CreateOrUpdate method.
 //
-// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights component
-// resource. componentTags is updated tag information to set into the component instance.
+// resourceGroupName is the name of the resource group. resourceName is the name of the Application Insights
+// component resource. componentTags is updated tag information to set into the component instance.
 func (client ComponentsClient) UpdateTags(ctx context.Context, resourceGroupName string, resourceName string, componentTags TagsResource) (result ApplicationInsightsComponent, err error) {
 	req, err := client.UpdateTagsPreparer(ctx, resourceGroupName, resourceName, componentTags)
 	if err != nil {
@@ -472,10 +620,10 @@ func (client ComponentsClient) UpdateTagsPreparer(ctx context.Context, resourceG
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
-		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/components/{resourceName}", pathParameters),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Insights/components/{resourceName}", pathParameters),
 		autorest.WithJSON(componentTags),
 		autorest.WithQueryParameters(queryParameters))
 	return preparer.Prepare((&http.Request{}).WithContext(ctx))

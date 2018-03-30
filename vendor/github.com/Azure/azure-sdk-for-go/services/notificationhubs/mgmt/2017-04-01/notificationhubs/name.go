@@ -48,7 +48,7 @@ func (client NameClient) CheckAvailability(ctx context.Context, parameters Check
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: parameters,
 			Constraints: []validation.Constraint{{Target: "parameters.Name", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "notificationhubs.NameClient", "CheckAvailability")
+		return result, validation.NewError("notificationhubs.NameClient", "CheckAvailability", err.Error())
 	}
 
 	req, err := client.CheckAvailabilityPreparer(ctx, parameters)
@@ -84,7 +84,7 @@ func (client NameClient) CheckAvailabilityPreparer(ctx context.Context, paramete
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/providers/Microsoft.NotificationHubs/checkNameAvailability", pathParameters),

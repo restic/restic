@@ -17,6 +17,7 @@ package datastore
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/internal/testutil"
 
@@ -755,3 +756,131 @@ func TestKeyLoader(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadPointers(t *testing.T) {
+	for _, test := range []struct {
+		desc string
+		in   []Property
+		want Pointers
+	}{
+		{
+			desc: "nil properties load as nil pointers",
+			in: []Property{
+				Property{Name: "Pi", Value: nil},
+				Property{Name: "Ps", Value: nil},
+				Property{Name: "Pb", Value: nil},
+				Property{Name: "Pf", Value: nil},
+				Property{Name: "Pg", Value: nil},
+				Property{Name: "Pt", Value: nil},
+			},
+			want: Pointers{},
+		},
+		{
+			desc: "missing properties load as nil pointers",
+			in:   []Property(nil),
+			want: Pointers{},
+		},
+		{
+			desc: "non-nil properties load as the appropriate values",
+			in: []Property{
+				Property{Name: "Pi", Value: int64(1)},
+				Property{Name: "Ps", Value: "x"},
+				Property{Name: "Pb", Value: true},
+				Property{Name: "Pf", Value: 3.14},
+				Property{Name: "Pg", Value: GeoPoint{Lat: 1, Lng: 2}},
+				Property{Name: "Pt", Value: time.Unix(100, 0)},
+			},
+			want: func() Pointers {
+				p := populatedPointers()
+				*p.Pi = 1
+				*p.Ps = "x"
+				*p.Pb = true
+				*p.Pf = 3.14
+				*p.Pg = GeoPoint{Lat: 1, Lng: 2}
+				*p.Pt = time.Unix(100, 0)
+				return *p
+			}(),
+		},
+	} {
+		var got Pointers
+		if err := LoadStruct(&got, test.in); err != nil {
+			t.Fatalf("%s: %v", test.desc, err)
+		}
+		if !testutil.Equal(got, test.want) {
+			t.Errorf("%s:\ngot  %+v\nwant %+v", test.desc, got, test.want)
+		}
+	}
+}
+
+func TestLoadNonArrayIntoSlice(t *testing.T) {
+	// Loading a non-array value into a slice field results in a slice of size 1.
+	var got struct{ S []string }
+	if err := LoadStruct(&got, []Property{{Name: "S", Value: "x"}}); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"x"}; !testutil.Equal(got.S, want) {
+		t.Errorf("got %#v, want %#v", got.S, want)
+	}
+}
+
+func TestLoadEmptyArrayIntoSlice(t *testing.T) {
+	// Loading an empty array into a slice field is a no-op.
+	var got = struct{ S []string }{[]string{"x"}}
+	if err := LoadStruct(&got, []Property{{Name: "S", Value: []interface{}{}}}); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"x"}; !testutil.Equal(got.S, want) {
+		t.Errorf("got %#v, want %#v", got.S, want)
+	}
+}
+
+func TestLoadNull(t *testing.T) {
+	// Loading a Datastore Null into a basic type (int, float, etc.) results in a zero value.
+	// Loading a Null into a slice of basic type results in a slice of size 1 containing the zero value.
+	// (As expected from the behavior of slices and nulls with basic types.)
+	type S struct {
+		I int64
+		F float64
+		S string
+		B bool
+		A []string
+	}
+	got := S{
+		I: 1,
+		F: 1.0,
+		S: "1",
+		B: true,
+		A: []string{"X"},
+	}
+	want := S{A: []string{""}}
+	props := []Property{{Name: "I"}, {Name: "F"}, {Name: "S"}, {Name: "B"}, {Name: "A"}}
+	if err := LoadStruct(&got, props); err != nil {
+		t.Fatal(err)
+	}
+	if !testutil.Equal(got, want) {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+
+	// Loading a Null into a pointer to struct field results in a nil field.
+	got2 := struct{ X *S }{X: &S{}}
+	if err := LoadStruct(&got2, []Property{{Name: "X"}}); err != nil {
+		t.Fatal(err)
+	}
+	if got2.X != nil {
+		t.Errorf("got %v, want nil", got2.X)
+	}
+
+	// Loading a Null into a struct field is an error.
+	got3 := struct{ X S }{}
+	err := LoadStruct(&got3, []Property{{Name: "X"}})
+	if err == nil {
+		t.Error("got nil, want error")
+	}
+}
+
+// 	var got2 struct{ S []Pet }
+// 	if err := LoadStruct(&got2, []Property{{Name: "S", Value: nil}}); err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// }

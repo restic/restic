@@ -26,6 +26,205 @@ import (
 	"github.com/minio/minio-go/pkg/set"
 )
 
+// TestUnmarshalBucketPolicy tests unmarsheling various examples
+// of bucket policies, to verify the correctness of BucketAccessPolicy
+// struct defined in this package.
+func TestUnmarshalBucketPolicy(t *testing.T) {
+	var testCases = []struct {
+		policyData    string
+		shouldSucceed bool
+	}{
+		// Test 1
+		{policyData: `{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"AddCannedAcl",
+      "Effect":"Allow",
+      "Principal": {"AWS": ["arn:aws:iam::111122223333:root","arn:aws:iam::444455556666:root"]},
+      "Action":["s3:PutObject","s3:PutObjectAcl"],
+      "Resource":["arn:aws:s3:::examplebucket/*"],
+      "Condition":{"StringEquals":{"s3:x-amz-acl":["public-read"]}}
+    }
+  ]
+}`, shouldSucceed: true},
+		// Test 2
+		{policyData: `{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"AddPerm",
+      "Effect":"Allow",
+      "Principal": "*",
+      "Action":["s3:GetObject"],
+      "Resource":["arn:aws:s3:::examplebucket/*"]
+    }
+  ]
+}`, shouldSucceed: true},
+		// Test 3
+		{policyData: `{
+  "Version": "2012-10-17",
+  "Id": "S3PolicyId1",
+  "Statement": [
+    {
+      "Sid": "IPAllow",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": "arn:aws:s3:::examplebucket/*",
+      "Condition": {
+         "IpAddress": {"aws:SourceIp": "54.240.143.0/24"},
+         "NotIpAddress": {"aws:SourceIp": "54.240.143.188/32"}
+      }
+    }
+  ]
+}`, shouldSucceed: true},
+		// Test 4
+		{policyData: `{
+  "Id":"PolicyId2",
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"AllowIPmix",
+      "Effect":"Allow",
+      "Principal":"*",
+      "Action":"s3:*",
+      "Resource":"arn:aws:s3:::examplebucket/*",
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": [
+            "54.240.143.0/24",
+            "2001:DB8:1234:5678::/64"
+          ]
+        },
+        "NotIpAddress": {
+          "aws:SourceIp": [
+             "54.240.143.128/30",
+             "2001:DB8:1234:5678:ABCD::/80"
+          ]
+        }
+      }
+    }
+  ]
+}`, shouldSucceed: true},
+		// Test 5
+		{policyData: `{
+  "Version":"2012-10-17",
+  "Id":"http referer policy example",
+  "Statement":[
+    {
+      "Sid":"Allow get requests originating from www.example.com and example.com.",
+      "Effect":"Allow",
+      "Principal":"*",
+      "Action":"s3:GetObject",
+      "Resource":"arn:aws:s3:::examplebucket/*",
+      "Condition":{
+        "StringLike":{"aws:Referer":["http://www.example.com/*","http://example.com/*"]}
+      }
+    }
+  ]
+}`, shouldSucceed: true},
+		// Test 6
+		{policyData: `{
+   "Version": "2012-10-17",
+   "Id": "http referer policy example",
+   "Statement": [
+     {
+       "Sid": "Allow get requests referred by www.example.com and example.com.",
+       "Effect": "Allow",
+       "Principal": "*",
+       "Action": "s3:GetObject",
+       "Resource": "arn:aws:s3:::examplebucket/*",
+       "Condition": {
+         "StringLike": {"aws:Referer": ["http://www.example.com/*","http://example.com/*"]}
+       }
+     },
+      {
+        "Sid": "Explicit deny to ensure requests are allowed only from specific referer.",
+        "Effect": "Deny",
+        "Principal": "*",
+        "Action": "s3:*",
+        "Resource": "arn:aws:s3:::examplebucket/*",
+        "Condition": {
+          "StringNotLike": {"aws:Referer": ["http://www.example.com/*","http://example.com/*"]}
+        }
+      }
+   ]
+}`, shouldSucceed: true},
+
+		// Test 7
+		{policyData: `{
+   "Version":"2012-10-17",
+   "Id":"PolicyForCloudFrontPrivateContent",
+   "Statement":[
+     {
+       "Sid":" Grant a CloudFront Origin Identity access to support private content",
+       "Effect":"Allow",
+       "Principal":{"CanonicalUser":"79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be"},
+       "Action":"s3:GetObject",
+       "Resource":"arn:aws:s3:::example-bucket/*"
+     }
+   ]
+}`, shouldSucceed: true},
+		// Test 8
+		{policyData: `{
+   "Version":"2012-10-17",
+   "Statement":[
+     {
+       "Sid":"111",
+       "Effect":"Allow",
+       "Principal":{"AWS":"1111111111"},
+       "Action":"s3:PutObject",
+       "Resource":"arn:aws:s3:::examplebucket/*"
+     },
+     {
+       "Sid":"112",
+       "Effect":"Deny",
+       "Principal":{"AWS":"1111111111" },
+       "Action":"s3:PutObject",
+       "Resource":"arn:aws:s3:::examplebucket/*",
+       "Condition": {
+         "StringNotEquals": {"s3:x-amz-grant-full-control":["emailAddress=xyz@amazon.com"]}
+       }
+     }
+   ]
+}`, shouldSucceed: true},
+		// Test 9
+		{policyData: `{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"InventoryAndAnalyticsExamplePolicy",
+      "Effect":"Allow",
+      "Principal": {"Service": "s3.amazonaws.com"},
+      "Action":["s3:PutObject"],
+      "Resource":["arn:aws:s3:::destination-bucket/*"],
+      "Condition": {
+          "ArnLike": {
+              "aws:SourceArn": "arn:aws:s3:::source-bucket"
+           },
+         "StringEquals": {
+             "aws:SourceAccount": "1234567890",
+             "s3:x-amz-acl": "bucket-owner-full-control"
+          }
+       }
+    }
+  ]
+}`, shouldSucceed: true},
+	}
+
+	for i, testCase := range testCases {
+		var policy BucketAccessPolicy
+		err := json.Unmarshal([]byte(testCase.policyData), &policy)
+		if testCase.shouldSucceed && err != nil {
+			t.Fatalf("Test %d: expected to succeed but it has an error: %v", i+1, err)
+		}
+		if !testCase.shouldSucceed && err == nil {
+			t.Fatalf("Test %d: expected to fail but succeeded", i+1)
+		}
+	}
+}
+
 // isValidStatement() is called and the result is validated.
 func TestIsValidStatement(t *testing.T) {
 	testCases := []struct {
@@ -1469,7 +1668,7 @@ func TestListBucketPolicies(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		policyRules := GetPolicies(testCase.statements, testCase.bucketName)
+		policyRules := GetPolicies(testCase.statements, testCase.bucketName, "")
 		if !reflect.DeepEqual(testCase.expectedResult, policyRules) {
 			t.Fatalf("%+v:\n expected: %+v, got: %+v", testCase, testCase.expectedResult, policyRules)
 		}

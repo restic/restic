@@ -41,8 +41,8 @@ func NewDiagnosticSettingsClientWithBaseURI(baseURI string, subscriptionID strin
 
 // CreateOrUpdate creates or updates diagnostic settings for the specified resource.
 //
-// resourceURI is the identifier of the resource. parameters is parameters supplied to the operation. name is the name
-// of the diagnostic setting.
+// resourceURI is the identifier of the resource. parameters is parameters supplied to the operation. name is the
+// name of the diagnostic setting.
 func (client DiagnosticSettingsClient) CreateOrUpdate(ctx context.Context, resourceURI string, parameters DiagnosticSettingsResource, name string) (result DiagnosticSettingsResource, err error) {
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceURI, parameters, name)
 	if err != nil {
@@ -78,7 +78,7 @@ func (client DiagnosticSettingsClient) CreateOrUpdatePreparer(ctx context.Contex
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/{resourceUri}/providers/microsoft.insights/diagnosticSettings/{name}", pathParameters),

@@ -35,6 +35,8 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // TODO(djd): Make test entity clean up more robust: some test entities may
@@ -1051,6 +1053,51 @@ func TestTransaction(t *testing.T) {
 	}
 }
 
+func TestReadOnlyTransaction(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Integration tests skipped in short mode")
+	}
+	ctx := context.Background()
+	client := newClient(ctx, t, nil)
+	defer client.Close()
+
+	type value struct{ N int }
+
+	// Put a value.
+	const n = 5
+	v := &value{N: n}
+	key, err := client.Put(ctx, IncompleteKey("roTxn", nil), v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Delete(ctx, key)
+
+	// Read it from a read-only transaction.
+	_, err = client.RunInTransaction(ctx, func(tx *Transaction) error {
+		if err := tx.Get(key, v); err != nil {
+			return err
+		}
+		return nil
+	}, ReadOnly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.N != n {
+		t.Fatalf("got %d, want %d", v.N, n)
+	}
+
+	// Attempting to write from a read-only transaction is an error.
+	_, err = client.RunInTransaction(ctx, func(tx *Transaction) error {
+		if _, err := tx.Put(key, v); err != nil {
+			return err
+		}
+		return nil
+	}, ReadOnly)
+	if err == nil {
+		t.Fatal("got nil, want error")
+	}
+}
+
 func TestNilPointers(t *testing.T) {
 	ctx := context.Background()
 	client := newTestClient(ctx, t)
@@ -1113,5 +1160,118 @@ func TestNestedRepeatedElementNoIndex(t *testing.T) {
 	}
 	if err := client.Delete(ctx, key); err != nil {
 		t.Fatalf("client.Delete: %v", err)
+	}
+}
+
+func TestPointerFields(t *testing.T) {
+	ctx := context.Background()
+	client := newTestClient(ctx, t)
+	defer client.Close()
+
+	want := populatedPointers()
+	key, err := client.Put(ctx, IncompleteKey("pointers", nil), want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got Pointers
+	if err := client.Get(ctx, key, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Pi == nil || *got.Pi != *want.Pi {
+		t.Errorf("Pi: got %v, want %v", got.Pi, *want.Pi)
+	}
+	if got.Ps == nil || *got.Ps != *want.Ps {
+		t.Errorf("Ps: got %v, want %v", got.Ps, *want.Ps)
+	}
+	if got.Pb == nil || *got.Pb != *want.Pb {
+		t.Errorf("Pb: got %v, want %v", got.Pb, *want.Pb)
+	}
+	if got.Pf == nil || *got.Pf != *want.Pf {
+		t.Errorf("Pf: got %v, want %v", got.Pf, *want.Pf)
+	}
+	if got.Pg == nil || *got.Pg != *want.Pg {
+		t.Errorf("Pg: got %v, want %v", got.Pg, *want.Pg)
+	}
+	if got.Pt == nil || !got.Pt.Equal(*want.Pt) {
+		t.Errorf("Pt: got %v, want %v", got.Pt, *want.Pt)
+	}
+}
+
+func TestMutate(t *testing.T) {
+	// test Client.Mutate
+	testMutate(t, func(ctx context.Context, client *Client, muts ...*Mutation) ([]*Key, error) {
+		return client.Mutate(ctx, muts...)
+	})
+	// test Transaction.Mutate
+	testMutate(t, func(ctx context.Context, client *Client, muts ...*Mutation) ([]*Key, error) {
+		var pkeys []*PendingKey
+		commit, err := client.RunInTransaction(ctx, func(tx *Transaction) error {
+			var err error
+			pkeys, err = tx.Mutate(muts...)
+			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+		var keys []*Key
+		for _, pk := range pkeys {
+			keys = append(keys, commit.Key(pk))
+		}
+		return keys, nil
+	})
+}
+
+func testMutate(t *testing.T, mutate func(ctx context.Context, client *Client, muts ...*Mutation) ([]*Key, error)) {
+	ctx := context.Background()
+	client := newTestClient(ctx, t)
+	defer client.Close()
+
+	type T struct{ I int }
+
+	check := func(k *Key, want interface{}) {
+		var x T
+		err := client.Get(ctx, k, &x)
+		switch want := want.(type) {
+		case error:
+			if err != want {
+				t.Errorf("key %s: got error %v, want %v", k, err, want)
+			}
+		case int:
+			if err != nil {
+				t.Fatalf("key %s: %v", k, err)
+			}
+			if x.I != want {
+				t.Errorf("key %s: got %d, want %d", k, x.I, want)
+			}
+		default:
+			panic("check: bad arg")
+		}
+	}
+
+	keys, err := mutate(ctx, client,
+		NewInsert(IncompleteKey("t", nil), &T{1}),
+		NewUpsert(IncompleteKey("t", nil), &T{2}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(keys[0], 1)
+	check(keys[1], 2)
+
+	_, err = mutate(ctx, client,
+		NewUpdate(keys[0], &T{3}),
+		NewDelete(keys[1]),
+	)
+	check(keys[0], 3)
+	check(keys[1], ErrNoSuchEntity)
+
+	_, err = mutate(ctx, client, NewInsert(keys[0], &T{4}))
+	if got, want := status.Code(err), codes.AlreadyExists; got != want {
+		t.Errorf("Insert existing key: got %s, want %s", got, want)
+	}
+
+	_, err = mutate(ctx, client, NewUpdate(keys[1], &T{4}))
+	if got, want := status.Code(err), codes.NotFound; got != want {
+		t.Errorf("Update non-existing key: got %s, want %s", got, want)
 	}
 }

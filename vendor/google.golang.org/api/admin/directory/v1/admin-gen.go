@@ -1132,6 +1132,7 @@ type ChromeOsDevice struct {
 	// SupportEndDate: Final date the device will be supported (Read-only)
 	SupportEndDate string `json:"supportEndDate,omitempty"`
 
+	// TpmVersionInfo: Trusted Platform Module (TPM) (Read-only)
 	TpmVersionInfo *ChromeOsDeviceTpmVersionInfo `json:"tpmVersionInfo,omitempty"`
 
 	// WillAutoRenew: Will Chromebook auto renew after support end date
@@ -1200,7 +1201,7 @@ type ChromeOsDeviceDeviceFiles struct {
 	// CreateTime: Date and time the file was created
 	CreateTime string `json:"createTime,omitempty"`
 
-	// DownloadUrl: File downlod URL
+	// DownloadUrl: File download URL
 	DownloadUrl string `json:"downloadUrl,omitempty"`
 
 	// Name: File name
@@ -1263,17 +1264,25 @@ func (s *ChromeOsDeviceRecentUsers) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// ChromeOsDeviceTpmVersionInfo: Trusted Platform Module (TPM)
+// (Read-only)
 type ChromeOsDeviceTpmVersionInfo struct {
+	// Family: TPM family.
 	Family string `json:"family,omitempty"`
 
+	// FirmwareVersion: TPM firmware version.
 	FirmwareVersion string `json:"firmwareVersion,omitempty"`
 
+	// Manufacturer: TPM manufacturer code.
 	Manufacturer string `json:"manufacturer,omitempty"`
 
+	// SpecLevel: TPM specification level.
 	SpecLevel string `json:"specLevel,omitempty"`
 
+	// TpmModel: TPM model number.
 	TpmModel string `json:"tpmModel,omitempty"`
 
+	// VendorSpecific: Vendor-specific information such as Vendor ID.
 	VendorSpecific string `json:"vendorSpecific,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Family") to
@@ -1740,6 +1749,8 @@ func (s *Feature) MarshalJSON() ([]byte, error) {
 
 // FeatureInstance: JSON template for a "feature instance".
 type FeatureInstance struct {
+	// Feature: The feature that this is an instance of. A calendar resource
+	// may have multiple instances of a feature.
 	Feature *Feature `json:"feature,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Feature") to
@@ -2035,7 +2046,8 @@ func (s *Members) MarshalJSON() ([]byte, error) {
 // MembersHasMember: JSON template for Has Member response in Directory
 // API.
 type MembersHasMember struct {
-	// IsMember: Identifies whether given user is a member or not.
+	// IsMember: Identifies whether the given user is a member of the group.
+	// Membership can be direct or nested.
 	IsMember bool `json:"isMember,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -8766,7 +8778,8 @@ type MembersHasMemberCall struct {
 	header_      http.Header
 }
 
-// HasMember: Checks Membership of an user within a Group
+// HasMember: Checks whether the given user is a member of the group.
+// Membership can be direct or nested.
 func (r *MembersService) HasMember(groupKey string, memberKey string) *MembersHasMemberCall {
 	c := &MembersHasMemberCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.groupKey = groupKey
@@ -8869,7 +8882,7 @@ func (c *MembersHasMemberCall) Do(opts ...googleapi.CallOption) (*MembersHasMemb
 	}
 	return ret, nil
 	// {
-	//   "description": "Checks Membership of an user within a Group",
+	//   "description": "Checks whether the given user is a member of the group. Membership can be direct or nested.",
 	//   "httpMethod": "GET",
 	//   "id": "directory.members.hasMember",
 	//   "parameterOrder": [
@@ -8878,13 +8891,13 @@ func (c *MembersHasMemberCall) Do(opts ...googleapi.CallOption) (*MembersHasMemb
 	//   ],
 	//   "parameters": {
 	//     "groupKey": {
-	//       "description": "Email or immutable Id of the group",
+	//       "description": "Identifies the group in the API request. The value can be the group's email address, group alias, or the unique group ID.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "memberKey": {
-	//       "description": "Email or immutable Id of the member",
+	//       "description": "Identifies the user member in the API request. The value can be the user's primary email address, alias, or unique ID.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
@@ -12578,6 +12591,20 @@ func (r *ResourcesBuildingsService) List(customer string) *ResourcesBuildingsLis
 	return c
 }
 
+// MaxResults sets the optional parameter "maxResults": Maximum number
+// of results to return.
+func (c *ResourcesBuildingsListCall) MaxResults(maxResults int64) *ResourcesBuildingsListCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Token to specify
+// the next page in the list.
+func (c *ResourcesBuildingsListCall) PageToken(pageToken string) *ResourcesBuildingsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -12684,6 +12711,19 @@ func (c *ResourcesBuildingsListCall) Do(opts ...googleapi.CallOption) (*Building
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "maxResults": {
+	//       "description": "Maximum number of results to return.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "maximum": "500",
+	//       "minimum": "1",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "Token to specify the next page in the list.",
+	//       "location": "query",
+	//       "type": "string"
 	//     }
 	//   },
 	//   "path": "customer/{customer}/resources/buildings",
@@ -12696,6 +12736,27 @@ func (c *ResourcesBuildingsListCall) Do(opts ...googleapi.CallOption) (*Building
 	//   ]
 	// }
 
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ResourcesBuildingsListCall) Pages(ctx context.Context, f func(*Buildings) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
 }
 
 // method id "directory.resources.buildings.patch":
@@ -13418,8 +13479,11 @@ func (c *ResourcesCalendarsListCall) PageToken(pageToken string) *ResourcesCalen
 // filter results. Should be of the form "field operator value" where
 // field can be any of supported fields and operators can be any of
 // supported operations. Operators include '=' for exact match and ':'
-// for prefix match where applicable. For prefix match, the value should
-// always be followed by a *.
+// for prefix match or HAS match where applicable. For prefix match, the
+// value should always be followed by a *. Supported fields include
+// generatedResourceName, name, buildingId,
+// featureInstances.feature.name. For example buildingId=US-NYC-9TH AND
+// featureInstances.feature.name:Phone.
 func (c *ResourcesCalendarsListCall) Query(query string) *ResourcesCalendarsListCall {
 	c.urlParams_.Set("query", query)
 	return c
@@ -13551,7 +13615,7 @@ func (c *ResourcesCalendarsListCall) Do(opts ...googleapi.CallOption) (*Calendar
 	//       "type": "string"
 	//     },
 	//     "query": {
-	//       "description": "String query used to filter results. Should be of the form \"field operator value\" where field can be any of supported fields and operators can be any of supported operations. Operators include '=' for exact match and ':' for prefix match where applicable. For prefix match, the value should always be followed by a *.",
+	//       "description": "String query used to filter results. Should be of the form \"field operator value\" where field can be any of supported fields and operators can be any of supported operations. Operators include '=' for exact match and ':' for prefix match or HAS match where applicable. For prefix match, the value should always be followed by a *. Supported fields include generatedResourceName, name, buildingId, featureInstances.feature.name. For example buildingId=US-NYC-9TH AND featureInstances.feature.name:Phone.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -14287,6 +14351,13 @@ func (r *ResourcesFeaturesService) List(customer string) *ResourcesFeaturesListC
 	return c
 }
 
+// MaxResults sets the optional parameter "maxResults": Maximum number
+// of results to return.
+func (c *ResourcesFeaturesListCall) MaxResults(maxResults int64) *ResourcesFeaturesListCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
 // PageToken sets the optional parameter "pageToken": Token to specify
 // the next page in the list.
 func (c *ResourcesFeaturesListCall) PageToken(pageToken string) *ResourcesFeaturesListCall {
@@ -14400,6 +14471,14 @@ func (c *ResourcesFeaturesListCall) Do(opts ...googleapi.CallOption) (*Features,
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "maxResults": {
+	//       "description": "Maximum number of results to return.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "maximum": "500",
+	//       "minimum": "1",
+	//       "type": "integer"
 	//     },
 	//     "pageToken": {
 	//       "description": "Token to specify the next page in the list.",

@@ -41,8 +41,8 @@ func NewCertificatesClientWithBaseURI(baseURI string, subscriptionID string) Cer
 
 // CreateOrUpdateCertificate sends the create or update certificate request.
 //
-// resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details of
-// certificate if it exists already.
+// resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details
+// of certificate if it exists already.
 func (client CertificatesClient) CreateOrUpdateCertificate(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
 	req, err := client.CreateOrUpdateCertificatePreparer(ctx, resourceGroupName, name, certificateEnvelope)
 	if err != nil {
@@ -79,7 +79,7 @@ func (client CertificatesClient) CreateOrUpdateCertificatePreparer(ctx context.C
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
@@ -148,7 +148,7 @@ func (client CertificatesClient) CreateOrUpdateCsrPreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),
@@ -601,8 +601,8 @@ func (client CertificatesClient) GetCsrsResponder(resp *http.Response) (result L
 
 // UpdateCertificate sends the update certificate request.
 //
-// resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details of
-// certificate if it exists already.
+// resourceGroupName is name of the resource group name is name of the certificate. certificateEnvelope is details
+// of certificate if it exists already.
 func (client CertificatesClient) UpdateCertificate(ctx context.Context, resourceGroupName string, name string, certificateEnvelope Certificate) (result Certificate, err error) {
 	req, err := client.UpdateCertificatePreparer(ctx, resourceGroupName, name, certificateEnvelope)
 	if err != nil {
@@ -639,7 +639,7 @@ func (client CertificatesClient) UpdateCertificatePreparer(ctx context.Context, 
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/certificates/{name}", pathParameters),
@@ -708,7 +708,7 @@ func (client CertificatesClient) UpdateCsrPreparer(ctx context.Context, resource
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPatch(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Web/csrs/{name}", pathParameters),

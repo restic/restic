@@ -24,7 +24,7 @@ import (
 )
 
 // Tests signature calculation.
-func TestSignatureCalculation(t *testing.T) {
+func TestSignatureCalculationV4(t *testing.T) {
 	req, err := http.NewRequest("GET", "https://s3.amazonaws.com", nil)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -39,16 +39,6 @@ func TestSignatureCalculation(t *testing.T) {
 		t.Fatal("Error: anonymous credentials should not have Signature query resource.")
 	}
 
-	req = SignV2(*req, "", "")
-	if req.Header.Get("Authorization") != "" {
-		t.Fatal("Error: anonymous credentials should not have Authorization header.")
-	}
-
-	req = PreSignV2(*req, "", "", 0)
-	if strings.Contains(req.URL.RawQuery, "Signature") {
-		t.Fatal("Error: anonymous credentials should not have Signature query resource.")
-	}
-
 	req = SignV4(*req, "ACCESS-KEY", "SECRET-KEY", "", "us-east-1")
 	if req.Header.Get("Authorization") == "" {
 		t.Fatal("Error: normal credentials should have Authorization header.")
@@ -58,14 +48,42 @@ func TestSignatureCalculation(t *testing.T) {
 	if !strings.Contains(req.URL.RawQuery, "X-Amz-Signature") {
 		t.Fatal("Error: normal credentials should have Signature query resource.")
 	}
+}
 
-	req = SignV2(*req, "ACCESS-KEY", "SECRET-KEY")
-	if req.Header.Get("Authorization") == "" {
-		t.Fatal("Error: normal credentials should have Authorization header.")
+func TestSignatureCalculationV2(t *testing.T) {
+
+	var testCases = []struct {
+		endpointURL string
+		virtualHost bool
+	}{
+		{endpointURL: "https://s3.amazonaws.com/", virtualHost: false},
+		{endpointURL: "https://testbucket.s3.amazonaws.com/", virtualHost: true},
 	}
 
-	req = PreSignV2(*req, "ACCESS-KEY", "SECRET-KEY", 0)
-	if !strings.Contains(req.URL.RawQuery, "Signature") {
-		t.Fatal("Error: normal credentials should not have Signature query resource.")
+	for i, testCase := range testCases {
+		req, err := http.NewRequest("GET", testCase.endpointURL, nil)
+		if err != nil {
+			t.Fatalf("Test %d, Error: %v", i+1, err)
+		}
+
+		req = SignV2(*req, "", "", testCase.virtualHost)
+		if req.Header.Get("Authorization") != "" {
+			t.Fatalf("Test %d, Error: anonymous credentials should not have Authorization header.", i+1)
+		}
+
+		req = PreSignV2(*req, "", "", 0, testCase.virtualHost)
+		if strings.Contains(req.URL.RawQuery, "Signature") {
+			t.Fatalf("Test %d, Error: anonymous credentials should not have Signature query resource.", i+1)
+		}
+
+		req = SignV2(*req, "ACCESS-KEY", "SECRET-KEY", testCase.virtualHost)
+		if req.Header.Get("Authorization") == "" {
+			t.Fatalf("Test %d, Error: normal credentials should have Authorization header.", i+1)
+		}
+
+		req = PreSignV2(*req, "ACCESS-KEY", "SECRET-KEY", 0, testCase.virtualHost)
+		if !strings.Contains(req.URL.RawQuery, "Signature") {
+			t.Fatalf("Test %d, Error: normal credentials should not have Signature query resource.", i+1)
+		}
 	}
 }

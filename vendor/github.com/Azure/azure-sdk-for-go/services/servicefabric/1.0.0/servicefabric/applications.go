@@ -75,7 +75,7 @@ func (client ApplicationsClient) CreatePreparer(ctx context.Context, application
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPath("/Applications/$/Create"),

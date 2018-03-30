@@ -42,8 +42,8 @@ func NewActionGroupsClientWithBaseURI(baseURI string, subscriptionID string) Act
 
 // CreateOrUpdate create a new action group or update an existing one.
 //
-// resourceGroupName is the name of the resource group. actionGroupName is the name of the action group. actionGroup is
-// the action group to create or use for the update.
+// resourceGroupName is the name of the resource group. actionGroupName is the name of the action group.
+// actionGroup is the action group to create or use for the update.
 func (client ActionGroupsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, actionGroupName string, actionGroup ActionGroupResource) (result ActionGroupResource, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: actionGroup,
@@ -52,7 +52,7 @@ func (client ActionGroupsClient) CreateOrUpdate(ctx context.Context, resourceGro
 					Chain: []validation.Constraint{{Target: "actionGroup.ActionGroup.GroupShortName", Name: validation.MaxLength, Rule: 15, Chain: nil}}},
 					{Target: "actionGroup.ActionGroup.Enabled", Name: validation.Null, Rule: true, Chain: nil},
 				}}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "insights.ActionGroupsClient", "CreateOrUpdate")
+		return result, validation.NewError("insights.ActionGroupsClient", "CreateOrUpdate", err.Error())
 	}
 
 	req, err := client.CreateOrUpdatePreparer(ctx, resourceGroupName, actionGroupName, actionGroup)
@@ -90,7 +90,7 @@ func (client ActionGroupsClient) CreateOrUpdatePreparer(ctx context.Context, res
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPut(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}", pathParameters),
@@ -186,13 +186,13 @@ func (client ActionGroupsClient) DeleteResponder(resp *http.Response) (result au
 
 // EnableReceiver enable a receiver in an action group. This changes the receiver's status from Disabled to Enabled.
 //
-// resourceGroupName is the name of the resource group. actionGroupName is the name of the action group. enableRequest
-// is the receiver to re-enable.
+// resourceGroupName is the name of the resource group. actionGroupName is the name of the action group.
+// enableRequest is the receiver to re-enable.
 func (client ActionGroupsClient) EnableReceiver(ctx context.Context, resourceGroupName string, actionGroupName string, enableRequest EnableRequest) (result autorest.Response, err error) {
 	if err := validation.Validate([]validation.Validation{
 		{TargetValue: enableRequest,
 			Constraints: []validation.Constraint{{Target: "enableRequest.ReceiverName", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "insights.ActionGroupsClient", "EnableReceiver")
+		return result, validation.NewError("insights.ActionGroupsClient", "EnableReceiver", err.Error())
 	}
 
 	req, err := client.EnableReceiverPreparer(ctx, resourceGroupName, actionGroupName, enableRequest)
@@ -230,7 +230,7 @@ func (client ActionGroupsClient) EnableReceiverPreparer(ctx context.Context, res
 	}
 
 	preparer := autorest.CreatePreparer(
-		autorest.AsJSON(),
+		autorest.AsContentType("application/json; charset=utf-8"),
 		autorest.AsPost(),
 		autorest.WithBaseURL(client.BaseURI),
 		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}/subscribe", pathParameters),
@@ -441,6 +441,75 @@ func (client ActionGroupsClient) ListBySubscriptionIDSender(req *http.Request) (
 // ListBySubscriptionIDResponder handles the response to the ListBySubscriptionID request. The method always
 // closes the http.Response Body.
 func (client ActionGroupsClient) ListBySubscriptionIDResponder(resp *http.Response) (result ActionGroupList, err error) {
+	err = autorest.Respond(
+		resp,
+		client.ByInspecting(),
+		azure.WithErrorUnlessStatusCode(http.StatusOK),
+		autorest.ByUnmarshallingJSON(&result),
+		autorest.ByClosing())
+	result.Response = autorest.Response{Response: resp}
+	return
+}
+
+// Update updates an existing action group's tags. To update other fields use the CreateOrUpdate method.
+//
+// resourceGroupName is the name of the resource group. actionGroupName is the name of the action group.
+// actionGroupPatch is parameters supplied to the operation.
+func (client ActionGroupsClient) Update(ctx context.Context, resourceGroupName string, actionGroupName string, actionGroupPatch ActionGroupPatchBody) (result ActionGroupResource, err error) {
+	req, err := client.UpdatePreparer(ctx, resourceGroupName, actionGroupName, actionGroupPatch)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "Update", nil, "Failure preparing request")
+		return
+	}
+
+	resp, err := client.UpdateSender(req)
+	if err != nil {
+		result.Response = autorest.Response{Response: resp}
+		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "Update", resp, "Failure sending request")
+		return
+	}
+
+	result, err = client.UpdateResponder(resp)
+	if err != nil {
+		err = autorest.NewErrorWithError(err, "insights.ActionGroupsClient", "Update", resp, "Failure responding to request")
+	}
+
+	return
+}
+
+// UpdatePreparer prepares the Update request.
+func (client ActionGroupsClient) UpdatePreparer(ctx context.Context, resourceGroupName string, actionGroupName string, actionGroupPatch ActionGroupPatchBody) (*http.Request, error) {
+	pathParameters := map[string]interface{}{
+		"actionGroupName":   autorest.Encode("path", actionGroupName),
+		"resourceGroupName": autorest.Encode("path", resourceGroupName),
+		"subscriptionId":    autorest.Encode("path", client.SubscriptionID),
+	}
+
+	const APIVersion = "2017-04-01"
+	queryParameters := map[string]interface{}{
+		"api-version": APIVersion,
+	}
+
+	preparer := autorest.CreatePreparer(
+		autorest.AsContentType("application/json; charset=utf-8"),
+		autorest.AsPatch(),
+		autorest.WithBaseURL(client.BaseURI),
+		autorest.WithPathParameters("/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/microsoft.insights/actionGroups/{actionGroupName}", pathParameters),
+		autorest.WithJSON(actionGroupPatch),
+		autorest.WithQueryParameters(queryParameters))
+	return preparer.Prepare((&http.Request{}).WithContext(ctx))
+}
+
+// UpdateSender sends the Update request. The method will close the
+// http.Response Body if it receives an error.
+func (client ActionGroupsClient) UpdateSender(req *http.Request) (*http.Response, error) {
+	return autorest.SendWithSender(client, req,
+		azure.DoRetryWithRegistration(client.Client))
+}
+
+// UpdateResponder handles the response to the Update request. The method always
+// closes the http.Response Body.
+func (client ActionGroupsClient) UpdateResponder(resp *http.Response) (result ActionGroupResource, err error) {
 	err = autorest.Respond(
 		resp,
 		client.ByInspecting(),

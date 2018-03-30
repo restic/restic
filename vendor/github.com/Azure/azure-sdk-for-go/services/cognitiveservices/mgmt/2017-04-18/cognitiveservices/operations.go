@@ -30,13 +30,13 @@ type OperationsClient struct {
 }
 
 // NewOperationsClient creates an instance of the OperationsClient client.
-func NewOperationsClient(subscriptionID string) OperationsClient {
-	return NewOperationsClientWithBaseURI(DefaultBaseURI, subscriptionID)
+func NewOperationsClient(subscriptionID string, filter string) OperationsClient {
+	return NewOperationsClientWithBaseURI(DefaultBaseURI, subscriptionID, filter)
 }
 
 // NewOperationsClientWithBaseURI creates an instance of the OperationsClient client.
-func NewOperationsClientWithBaseURI(baseURI string, subscriptionID string) OperationsClient {
-	return OperationsClient{NewWithBaseURI(baseURI, subscriptionID)}
+func NewOperationsClientWithBaseURI(baseURI string, subscriptionID string, filter string) OperationsClient {
+	return OperationsClient{NewWithBaseURI(baseURI, subscriptionID, filter)}
 }
 
 // List lists all the available Cognitive Services account operations.

@@ -1,10 +1,10 @@
-// Package management implements the Azure ARM Management service API version 2017-08-31-preview.
+// Package managementgroups implements the Azure ARM Managementgroups service API version 2017-08-31-preview.
 //
 // The Azure Management Groups API enables consolidation of multiple
 // subscriptions/resources into an organizational hierarchy and centrally
 // manage access control, policies, alerting and reporting for those resources.
 //
-package management
+package managementgroups
 
 // Copyright (c) Microsoft and contributors.  All rights reserved.
 //
@@ -29,11 +29,11 @@ import (
 )
 
 const (
-	// DefaultBaseURI is the default URI used for the service Management
+	// DefaultBaseURI is the default URI used for the service Managementgroups
 	DefaultBaseURI = "https://management.azure.com"
 )
 
-// BaseClient is the base client for Management.
+// BaseClient is the base client for Managementgroups.
 type BaseClient struct {
 	autorest.Client
 	BaseURI string
