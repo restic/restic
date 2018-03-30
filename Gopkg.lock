@@ -130,8 +130,8 @@
 [[projects]]
   name = "github.com/pkg/sftp"
   packages = ["."]
-  revision = "f6a9258a0f570c3a76681b897b6ded57cb0dfa88"
-  version = "1.2.0"
+  revision = "49488377fa2f14143ba3067cf7555f60f6c7b550"
+  version = "1.5.0"
 
 [[projects]]
   name = "github.com/pkg/xattr"
