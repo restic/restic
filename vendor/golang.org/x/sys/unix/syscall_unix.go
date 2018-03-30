@@ -7,6 +7,7 @@
 package unix
 
 import (
+	"bytes"
 	"runtime"
 	"sync"
 	"syscall"
@@ -50,15 +51,13 @@ func errnoErr(e syscall.Errno) error {
 	return e
 }
 
-// clen returns the index of the first NULL byte in n or len(n) if n contains no
-// NULL byte or len(n) if n contains no NULL byte
+// clen returns the index of the first NULL byte in n or len(n) if n contains no NULL byte.
 func clen(n []byte) int {
-	for i := 0; i < len(n); i++ {
-		if n[i] == 0 {
-			return i
-		}
+	i := bytes.IndexByte(n, 0)
+	if i == -1 {
+		i = len(n)
 	}
-	return len(n)
+	return i
 }
 
 // Mmap manager, for use by operating system-specific implementations.
@@ -149,16 +148,19 @@ func Write(fd int, p []byte) (n int, err error) {
 // creation of IPv6 sockets to return EAFNOSUPPORT.
 var SocketDisableIPv6 bool
 
+// Sockaddr represents a socket address.
 type Sockaddr interface {
 	sockaddr() (ptr unsafe.Pointer, len _Socklen, err error) // lowercase; only we can define Sockaddrs
 }
 
+// SockaddrInet4 implements the Sockaddr interface for AF_INET type sockets.
 type SockaddrInet4 struct {
 	Port int
 	Addr [4]byte
 	raw  RawSockaddrInet4
 }
 
+// SockaddrInet6 implements the Sockaddr interface for AF_INET6 type sockets.
 type SockaddrInet6 struct {
 	Port   int
 	ZoneId uint32
@@ -166,6 +168,7 @@ type SockaddrInet6 struct {
 	raw    RawSockaddrInet6
 }
 
+// SockaddrUnix implements the Sockaddr interface for AF_UNIX type sockets.
 type SockaddrUnix struct {
 	Name string
 	raw  RawSockaddrUnix
@@ -201,6 +204,20 @@ func GetsockoptInt(fd, level, opt int) (value int, err error) {
 	vallen := _Socklen(4)
 	err = getsockopt(fd, level, opt, unsafe.Pointer(&n), &vallen)
 	return int(n), err
+}
+
+func GetsockoptLinger(fd, level, opt int) (*Linger, error) {
+	var linger Linger
+	vallen := _Socklen(SizeofLinger)
+	err := getsockopt(fd, level, opt, unsafe.Pointer(&linger), &vallen)
+	return &linger, err
+}
+
+func GetsockoptTimeval(fd, level, opt int) (*Timeval, error) {
+	var tv Timeval
+	vallen := _Socklen(unsafe.Sizeof(tv))
+	err := getsockopt(fd, level, opt, unsafe.Pointer(&tv), &vallen)
+	return &tv, err
 }
 
 func Recvfrom(fd int, p []byte, flags int) (n int, from Sockaddr, err error) {
@@ -301,4 +318,13 @@ func SetNonblock(fd int, nonblocking bool) (err error) {
 	}
 	_, err = fcntl(fd, F_SETFL, flag)
 	return err
+}
+
+// Exec calls execve(2), which replaces the calling executable in the process
+// tree. argv0 should be the full path to an executable ("/bin/ls") and the
+// executable name should also be the first argument in argv (["ls", "-l"]).
+// envv are the environment variables that should be passed to the new
+// process (["USER=go", "PWD=/tmp"]).
+func Exec(argv0 string, argv []string, envv []string) error {
+	return syscall.Exec(argv0, argv, envv)
 }
