@@ -136,8 +136,8 @@
 [[projects]]
   name = "github.com/pkg/xattr"
   packages = ["."]
-  revision = "23c75e3f6c1d8b13b3dd905b011a7f38a06044b7"
-  version = "v0.2.1"
+  revision = "1d7b7ffe7c46974a836eb583b7452f22de1c18cf"
+  version = "v0.2.3"
 
 [[projects]]
   name = "github.com/restic/chunker"

@@ -12,11 +12,15 @@ const UserPrefix = "user."
 
 func Test(t *testing.T) {
 	tmp, err := ioutil.TempFile("", "")
-
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmp.Name())
+
+	// Check if filesystem supports extended attributes
+	if !Supported(tmp.Name()) {
+		t.Skip("Skipping test - filesystem does not support extended attributes")
+	}
 
 	err = Set(tmp.Name(), UserPrefix+"test", []byte("test-attr-value"))
 	if err != nil {
@@ -62,6 +66,11 @@ func TestNoData(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmp.Name())
+
+	// Check if filesystem supports extended attributes
+	if !Supported(tmp.Name()) {
+		t.Skip("Skipping test - filesystem does not support extended attributes")
+	}
 
 	err = Set(tmp.Name(), UserPrefix+"test", []byte{})
 	if err != nil {

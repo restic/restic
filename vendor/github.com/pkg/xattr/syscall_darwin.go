@@ -8,7 +8,6 @@ import (
 )
 
 func getxattr(path string, name string, value *byte, size int, pos int, options int) (int, error) {
-
 	r0, _, e1 := syscall.Syscall6(syscall.SYS_GETXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))), uintptr(unsafe.Pointer(syscall.StringBytePtr(name))), uintptr(unsafe.Pointer(value)), uintptr(size), uintptr(pos), uintptr(options))
 	if e1 != syscall.Errno(0) {
 		return int(r0), e1
