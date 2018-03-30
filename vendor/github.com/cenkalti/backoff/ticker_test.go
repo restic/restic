@@ -30,6 +30,10 @@ func TestTicker(t *testing.T) {
 
 	b := NewExponentialBackOff()
 	ticker := NewTicker(b)
+	elapsed := b.GetElapsedTime()
+	if elapsed > time.Second {
+		t.Errorf("elapsed time too large: %v", elapsed)
+	}
 
 	var err error
 	for _ = range ticker.C {
