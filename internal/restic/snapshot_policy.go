@@ -1,8 +1,10 @@
 package restic
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -15,6 +17,37 @@ type ExpirePolicy struct {
 	Monthly int       // keep the last n monthly snapshots
 	Yearly  int       // keep the last n yearly snapshots
 	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
+}
+
+func (e ExpirePolicy) String() (s string) {
+	var keeps []string
+	if e.Last > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d snapshots", e.Last))
+	}
+	if e.Hourly > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d hourly", e.Hourly))
+	}
+	if e.Daily > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d daily", e.Daily))
+	}
+	if e.Weekly > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d weekly", e.Weekly))
+	}
+	if e.Monthly > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d monthly", e.Monthly))
+	}
+	if e.Yearly > 0 {
+		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
+	}
+
+	s = "keep the last "
+	for _, k := range keeps {
+		s += k + ", "
+	}
+	s = strings.Trim(s, ", ")
+	s += " snapshots"
+
+	return s
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
