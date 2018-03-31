@@ -635,6 +635,10 @@ func lookupGroup(gid string) (string, error) {
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	stat, ok := toStatT(fi.Sys())
 	if !ok {
+		// fill minimal info with current values for uid, gid
+		node.UID = uint32(os.Getuid())
+		node.GID = uint32(os.Getgid())
+		node.ChangeTime = node.ModTime
 		return nil
 	}
 
