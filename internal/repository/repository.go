@@ -413,50 +413,71 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		r.idx.Insert(idx)
 	}
 
-	if r.Cache != nil {
-		// clear old index files
-		err := r.Cache.Clear(restic.IndexFile, validIndex)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
-		}
-
-		packs := restic.NewIDSet()
-		for _, idx := range r.idx.All() {
-			for id := range idx.Packs() {
-				packs.Insert(id)
-			}
-		}
-
-		// clear old data files
-		err = r.Cache.Clear(restic.DataFile, packs)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
-		}
-
-		treePacks := restic.NewIDSet()
-		for _, idx := range r.idx.All() {
-			for _, id := range idx.TreePacks() {
-				treePacks.Insert(id)
-			}
-		}
-
-		// use readahead
-		cache := r.Cache.(*cache.Cache)
-		cache.PerformReadahead = func(h restic.Handle) bool {
-			if h.Type != restic.DataFile {
-				return false
-			}
-
-			id, err := restic.ParseID(h.Name)
-			if err != nil {
-				return false
-			}
-
-			return treePacks.Has(id)
-		}
+	err := r.PrepareCache(validIndex)
+	if err != nil {
+		return err
 	}
 
 	return <-errCh
+}
+
+// PrepareCache initializes the local cache. indexIDs is the list of IDs of
+// index files still present in the repo.
+func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
+	if r.Cache == nil {
+		return nil
+	}
+
+	// clear old index files
+	err := r.Cache.Clear(restic.IndexFile, indexIDs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
+	}
+
+	packs := restic.NewIDSet()
+	for _, idx := range r.idx.All() {
+		for id := range idx.Packs() {
+			packs.Insert(id)
+		}
+	}
+
+	// clear old data files
+	err = r.Cache.Clear(restic.DataFile, packs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
+	}
+
+	treePacks := restic.NewIDSet()
+	for _, idx := range r.idx.All() {
+		for _, id := range idx.TreePacks() {
+			treePacks.Insert(id)
+		}
+	}
+
+	// use readahead
+	debug.Log("using readahead")
+	cache := r.Cache.(*cache.Cache)
+	cache.PerformReadahead = func(h restic.Handle) bool {
+		if h.Type != restic.DataFile {
+			debug.Log("no readahead for %v, is not data file", h)
+			return false
+		}
+
+		id, err := restic.ParseID(h.Name)
+		if err != nil {
+			debug.Log("no readahead for %v, invalid ID", h)
+			return false
+		}
+
+		if treePacks.Has(id) {
+			debug.Log("perform readahead for %v", h)
+			return true
+		}
+		debug.Log("no readahead for %v, not tree file", h)
+		return false
+	}
+
+	return nil
 }
 
 // LoadIndex loads the index id from backend and returns it.
