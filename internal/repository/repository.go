@@ -331,8 +331,20 @@ func (r *Repository) Index() restic.Index {
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.Index) {
+func (r *Repository) SetIndex(i restic.Index) error {
 	r.idx = i.(*MasterIndex)
+
+	ids := restic.NewIDSet()
+	for _, idx := range r.idx.All() {
+		id, err := idx.ID()
+		if err != nil {
+			debug.Log("not using index, ID() returned error %v", err)
+			continue
+		}
+		ids.Insert(id)
+	}
+
+	return r.PrepareCache(ids)
 }
 
 // SaveIndex saves an index in the repository.
@@ -427,6 +439,8 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 	if r.Cache == nil {
 		return nil
 	}
+
+	debug.Log("prepare cache with %d index files", len(indexIDs))
 
 	// clear old index files
 	err := r.Cache.Clear(restic.IndexFile, indexIDs)
