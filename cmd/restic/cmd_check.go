@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -117,15 +119,52 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 	return readProgress
 }
 
+// prepareCheckCache configures a special cache directory for check.
+//
+//  * if --with-cache is specified, the default cache is used
+//  * if the user explicitely requested --no-cache, we don't use any cache
+//  * by default, we use a cache in a temporary directory that is deleted after the check
+func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func()) {
+	cleanup = func() {}
+	if opts.WithCache {
+		// use the default cache, no setup needed
+		return cleanup
+	}
+
+	if gopts.NoCache {
+		// don't use any cache, no setup needed
+		return cleanup
+	}
+
+	// use a cache in a temporary directory
+	tempdir, err := ioutil.TempDir("", "restic-check-cache-")
+	if err != nil {
+		// if an error occurs, don't use any cache
+		Warnf("unable to create temporary directory for cache during check, disabling cache: %v\n", err)
+		gopts.NoCache = true
+		return cleanup
+	}
+
+	gopts.CacheDir = tempdir
+	Verbosef("using temporary cache in %v\n", tempdir)
+
+	cleanup = func() {
+		err := fs.RemoveAll(tempdir)
+		if err != nil {
+			Warnf("error removing temporary cache directory: %v\n", err)
+		}
+	}
+
+	return cleanup
+}
+
 func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("check has no arguments")
 	}
 
-	if !opts.WithCache {
-		// do not use a cache for the checker
-		gopts.NoCache = true
-	}
+	cleanup := prepareCheckCache(opts, &gopts)
+	defer cleanup()
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {
