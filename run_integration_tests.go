@@ -97,6 +97,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"github.com/golang/dep/cmd/dep",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
+		"github.com/ncw/rclone",
 	}
 
 	for _, pkg := range pkgs {
@@ -191,6 +192,7 @@ func (env *TravisEnvironment) RunTests() error {
 		"restic/backend/rest.TestBackendREST",
 		"restic/backend/sftp.TestBackendSFTP",
 		"restic/backend/s3.TestBackendMinio",
+		"restic/backend/rclone.TestBackendRclone",
 	}
 
 	// if the test s3 repository is available, make sure that the test is not skipped

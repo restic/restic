@@ -65,7 +65,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
-	bg, err := startForeground(cmd)
+	bg, err := backend.StartForeground(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "cmd.Start")
 	}
@@ -179,7 +179,12 @@ func (r *SFTP) IsNotExist(err error) bool {
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 	if cfg.Command != "" {
-		return SplitShellArgs(cfg.Command)
+		args, err := backend.SplitShellStrings(cfg.Command)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return args[0], args[1:], nil
 	}
 
 	cmd = "ssh"

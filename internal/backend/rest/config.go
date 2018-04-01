@@ -32,6 +32,10 @@ func ParseConfig(s string) (interface{}, error) {
 	}
 
 	s = s[5:]
+	if !strings.HasSuffix(s, "/") {
+		s += "/"
+	}
+
 	u, err := url.Parse(s)
 
 	if err != nil {

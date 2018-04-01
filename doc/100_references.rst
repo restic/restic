@@ -672,8 +672,8 @@ The following values are valid for ``{type}``:
 The API version is selected via the ``Accept`` HTTP header in the request. The
 following values are defined:
 
- * ``application/vnd.x.restic.rest.v1+json`` or empty: Select API version 1
- * ``application/vnd.x.restic.rest.v2+json``: Select API version 2
+ * ``application/vnd.x.restic.rest.v1`` or empty: Select API version 1
+ * ``application/vnd.x.restic.rest.v2``: Select API version 2
 
 The server will respond with the value of the highest version it supports in
 the ``Content-Type`` HTTP response header for the HTTP requests which should
@@ -681,7 +681,7 @@ return JSON. Any different value for this header means API version 1.
 
 The placeholder ``{path}`` in this document is a path to the repository, so
 that multiple different repositories can be accessed. The default path is
-``/``.
+``/``. The path must end with a slash.
 
 POST {path}?create=true
 =======================
