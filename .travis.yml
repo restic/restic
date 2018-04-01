@@ -1,33 +1,24 @@
 language: go
 sudo: false
 
-go:
-  - "1.8.x"
-  - "1.9.x"
-  - "1.10"
-
-os:
-  - linux
-  - osx
-
-env:
-  matrix:
-    RESTIC_TEST_FUSE=0
-
 matrix:
-  exclude:
-    - os: osx
-      go: "1.8.x"
-    - os: osx
-      go: "1.9.x"
-    - os: linux
-      go: "1.10"
   include:
     - os: linux
-      go: "1.10"
+      go: "1.8.x"
+      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+
+    - os: linux
+      go: "1.9.x"
+      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+
+    # only run fuse and cloud backends tests on Travis for the latest Go on Linux
+    - os: linux
+      go: "1.10.x"
       sudo: true
-      env:
-        RESTIC_TEST_FUSE=1
+
+    - os: osx
+      go: "1.10.x"
+      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
 
 branches:
   only:
