@@ -576,7 +576,7 @@ func TestBackupExclude(t *testing.T) {
 }
 
 const (
-	incrementalFirstWrite  = 6 * 1042 * 1024
+	incrementalFirstWrite  = 10 * 1042 * 1024
 	incrementalSecondWrite = 1 * 1042 * 1024
 	incrementalThirdWrite  = 1 * 1042 * 1024
 )
