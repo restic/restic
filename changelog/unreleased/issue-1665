@@ -1,0 +1,27 @@
+Enhancement: Improve cache handling for `restic check`
+
+For safety reasons, restic does not use a local metadata cache for the `restic
+check` command, so that data is loaded from the repository and restic can check
+it's in good condition. When the cache is disabled, restic will fetch each tiny
+blob needed for checking the integrity using a separate backend request. For
+non-local backends, that will take a long time, and depending on the backend
+(e.g. B2) may also be much more expensive.
+
+This PR adds a few commits which will change the behavior as follows:
+
+ * When `restic check` is called without any additional parameters, it will
+   build a new cache in a temporary directory, which is removed at the end of
+   the check. This way, we'll get readahead for metadata files (so restic will
+   fetch the whole file when the first blob from the file is requested), but
+   all data is freshly fetched from the storage backend. This is the default
+   behavior and will work for almost all users.
+
+ * When `restic check` is called with `--with-cache`, the default on-disc cache
+   is used. This behavior hasn't changed since the cache was introduced.
+
+ * When `--no-cache` is specified, restic falls back to the old behavior, and
+   read all tiny blobs in separate requests.
+
+https://github.com/restic/restic/issues/1665
+https://github.com/restic/restic/issues/1694
+https://github.com/restic/restic/pull/1696

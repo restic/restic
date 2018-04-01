@@ -164,7 +164,11 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 		}
 	}
 
-	c.repo.SetIndex(c.masterIndex)
+	err := c.repo.SetIndex(c.masterIndex)
+	if err != nil {
+		debug.Log("SetIndex returned error: %v", err)
+		errs = append(errs, err)
+	}
 
 	return hints, errs
 }

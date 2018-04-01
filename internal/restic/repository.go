@@ -15,7 +15,7 @@ type Repository interface {
 
 	Key() *crypto.Key
 
-	SetIndex(Index)
+	SetIndex(Index) error
 
 	Index() Index
 	SaveFullIndex(context.Context) error
