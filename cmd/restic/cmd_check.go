@@ -164,7 +164,10 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	defer cleanup()
+	AddCleanupHandler(func() error {
+		cleanup()
+		return nil
+	})
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {
