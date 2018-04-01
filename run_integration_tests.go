@@ -25,6 +25,17 @@ var ForbiddenImports = map[string]bool{
 	"errors": true,
 }
 
+// CloudBackends contains a map of backend tests for cloud services to one
+// of the essential environment variables which must be present in order to
+// test it.
+var CloudBackends = map[string]string{
+	"restic/backend/s3.TestBackendS3":       "RESTIC_TEST_S3_REPOSITORY",
+	"restic/backend/swift.TestBackendSwift": "RESTIC_TEST_SWIFT",
+	"restic/backend/b2.TestBackendB2":       "RESTIC_TEST_B2_REPOSITORY",
+	"restic/backend/gs.TestBackendGS":       "RESTIC_TEST_GS_REPOSITORY",
+	"restic/backend/azure.TestBackendAzure": "RESTIC_TEST_AZURE_REPOSITORY",
+}
+
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
 
 func init() {
@@ -132,6 +143,18 @@ func (env *TravisEnvironment) Prepare() error {
 		msg("gox: OS/ARCH %v\n", env.goxOSArch)
 	}
 
+	// do not run cloud tests on darwin
+	if os.Getenv("RESTIC_TEST_CLOUD_BACKENDS") == "0" {
+		msg("skipping cloud backend tests\n")
+
+		for _, name := range CloudBackends {
+			err := os.Unsetenv(name)
+			if err != nil {
+				msg("    error unsetting %v: %v\n", name, err)
+			}
+		}
+	}
+
 	// extract credentials file for GCS tests
 	if b64data := os.Getenv("RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64"); b64data != "" {
 		buf, err := base64.StdEncoding.DecodeString(b64data)
@@ -176,12 +199,6 @@ func (env *TravisEnvironment) Teardown() error {
 
 // RunTests starts the tests for Travis.
 func (env *TravisEnvironment) RunTests() error {
-	// do not run fuse tests on darwin
-	if runtime.GOOS == "darwin" {
-		msg("skip fuse integration tests on %v\n", runtime.GOOS)
-		_ = os.Setenv("RESTIC_TEST_FUSE", "0")
-	}
-
 	env.env["GOPATH"] = os.Getenv("GOPATH")
 	if env.gcsCredentialsFile != "" {
 		env.env["GOOGLE_APPLICATION_CREDENTIALS"] = env.gcsCredentialsFile
@@ -195,32 +212,14 @@ func (env *TravisEnvironment) RunTests() error {
 		"restic/backend/rclone.TestBackendRclone",
 	}
 
-	// if the test s3 repository is available, make sure that the test is not skipped
-	if os.Getenv("RESTIC_TEST_S3_REPOSITORY") != "" {
-		ensureTests = append(ensureTests, "restic/backend/s3.TestBackendS3")
-	} else {
-		msg("S3 repository not available\n")
-	}
-
-	// if the test swift service is available, make sure that the test is not skipped
-	if os.Getenv("RESTIC_TEST_SWIFT") != "" {
-		ensureTests = append(ensureTests, "restic/backend/swift.TestBackendSwift")
-	} else {
-		msg("Swift service not available\n")
-	}
-
-	// if the test b2 repository is available, make sure that the test is not skipped
-	if os.Getenv("RESTIC_TEST_B2_REPOSITORY") != "" {
-		ensureTests = append(ensureTests, "restic/backend/b2.TestBackendB2")
-	} else {
-		msg("B2 repository not available\n")
-	}
-
-	// if the test gs repository is available, make sure that the test is not skipped
-	if os.Getenv("RESTIC_TEST_GS_REPOSITORY") != "" {
-		ensureTests = append(ensureTests, "restic/backend/gs.TestBackendGS")
-	} else {
-		msg("GS repository not available\n")
+	// make sure that cloud backends for which we have credentials are not
+	// silently skipped.
+	for pkg, env := range CloudBackends {
+		if _, ok := os.LookupEnv(env); ok {
+			ensureTests = append(ensureTests, pkg)
+		} else {
+			msg("credentials for %v are not available, skipping\n", pkg)
+		}
 	}
 
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
