@@ -10,7 +10,7 @@ import (
 // Config contains all configuration necessary to start rclone.
 type Config struct {
 	Program     string `option:"program" help:"path to rclone (default: rclone)"`
-	Args        string `option:"args"    help:"arguments for running rclone (default: serve restic --stdio)"`
+	Args        string `option:"args"    help:"arguments for running rclone (default: serve restic --stdio --b2-hard-delete --drive-use-trash=false)"`
 	Remote      string
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }

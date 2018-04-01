@@ -447,7 +447,10 @@ For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 The rclone backend has two additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
- * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio``
+ * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete --drive-use-trash=false``
+
+The reason why the two last parameters (``--b2-hard-delete`` and
+``--drive-use-trash=false``) can be found in the corresponding GitHub `issue #1657`_.
 
 In order to start rclone, restic will build a list of arguments by joining the
 following lists (in this order): ``rclone.program``, ``rclone.args`` and as the
@@ -459,14 +462,14 @@ So, calling restic like this
 .. code-block:: console
 
     $ restic -o rclone.program="/path/to/rclone" \
-      -o rclone.args="serve restic --stdio --bwlimit 1M --verbose" \
+      -o rclone.args="serve restic --stdio --bwlimit 1M --b2-hard-delete --verbose" \
       -r rclone:b2:foo/bar
 
 runs rclone as follows:
 
 .. code-block:: console
 
-    $ /path/to/rclone serve restic --stdio --bwlimit 1M --verbose b2:foo/bar
+    $ /path/to/rclone serve restic --stdio --bwlimit 1M --b2-hard-delete --verbose b2:foo/bar
 
 Manually setting ``rclone.program`` also allows running a remote instance of
 rclone e.g. via SSH on a server, for example:
@@ -487,6 +490,7 @@ repository specification):
 .. _rclone: https://rclone.org/
 .. _configure: https://rclone.org/docs/
 .. _configured with environment variables: https://rclone.org/docs/#environment-variables
+.. _issue #1657: https://github.com/restic/restic/pull/1657#issuecomment-377707486
 
 Password prompt on Windows
 **************************

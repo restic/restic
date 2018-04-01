@@ -108,7 +108,9 @@ func New(cfg Config) (*Backend, error) {
 
 		args = append(args, a...)
 	} else {
-		args = append(args, "serve", "restic", "--stdio")
+		args = append(args,
+			"serve", "restic", "--stdio",
+			"--b2-hard-delete", "--drive-use-trash=false")
 	}
 
 	// finally, add the remote
