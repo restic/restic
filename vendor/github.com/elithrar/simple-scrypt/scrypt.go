@@ -214,8 +214,7 @@ func Cost(hash []byte) (Params, error) {
 	return params, err
 }
 
-// Calibrate returns the hardest parameters (not weaker than the given params),
-// allowed by the given limits.
+// Calibrate returns the hardest parameters, allowed by the given limits.
 // The returned params will not use more memory than the given (MiB);
 // will not take more time than the given timeout, but more than timeout/2.
 //
@@ -242,54 +241,69 @@ func Calibrate(timeout time.Duration, memMiBytes int, params Params) (Params, er
 	}
 	password := []byte("weakpassword")
 
-	// First, we calculate the minimal required time.
+	// r is fixed to 8 and should not be used to tune the memory usage
+	// if the cache lines of future processors are bigger, then r should be increased
+	// see: https://blog.filippo.io/the-scrypt-parameters/
+	p.R = 8
+
+	// Scrypt runs p independent mixing functions with a memory requirement of roughly
+	// 128 * r * N. Depending on the implementation these can be run sequentially or parallel.
+	// The go implementation runs them sequentially, therefore p can be used to adjust the execution time of scrypt.
+
+	// we start with p=1 and only increase it if we have to
+	p.P = 1
+
+	// Memory usage is at least 128 * r * N, see
+	// http://blog.ircmaxell.com/2014/03/why-i-dont-recommend-scrypt.html
+	// or https://drupal.org/comment/4675994#comment-4675994
+
+	// calculate N based on the desired memory usage
+	memBytes := memMiBytes << 20
+	p.N = 1
+	for 128*int64(p.R)*int64(p.N) < int64(memBytes) {
+		p.N <<= 1
+	}
+	p.N >>= 1
+
+	// calculate the current execution time
 	start := time.Now()
 	if _, err := scrypt.Key(password, salt, p.N, p.R, p.P, p.DKLen); err != nil {
 		return p, err
 	}
 	dur := time.Since(start)
 
-	for dur < timeout && p.N < maxInt>>1 {
-		p.N <<= 1
-	}
+	// reduce N if scrypt takes to long
+	for dur > timeout {
+		p.N >>= 1
 
-	// Memory usage is at least 128 * r * N, see
-	// http://blog.ircmaxell.com/2014/03/why-i-dont-recommend-scrypt.html
-	// or https://drupal.org/comment/4675994#comment-4675994
-
-	var again bool
-	memBytes := memMiBytes << 20
-	// If we'd use more memory then the allowed, we can tune the memory usage
-	for 128*int64(p.R)*int64(p.N) > int64(memBytes) {
-		if p.R > 1 {
-			// by lowering r
-			p.R--
-		} else if p.N > 16 {
-			again = true
-			p.N >>= 1
-		} else {
-			break
-		}
-	}
-	if !again {
-		return p, p.Check()
-	}
-
-	// We have to compensate the lowering of N, by increasing p.
-	for i := 0; i < 10 && p.P > 0; i++ {
-		start := time.Now()
+		start = time.Now()
 		if _, err := scrypt.Key(password, salt, p.N, p.R, p.P, p.DKLen); err != nil {
 			return p, err
 		}
-		dur := time.Since(start)
-		if dur < timeout/2 {
-			p.P = int(float64(p.P)*float64(timeout/dur) + 1)
-		} else if dur > timeout && p.P > 1 {
-			p.P--
-		} else {
-			break
-		}
+		dur = time.Since(start)
 	}
+
+	// try to reach desired timeout by increasing p
+	// the further away we are from timeout the bigger the steps should be
+	for dur < timeout {
+		// the theoretical optimal p; can not be used because of inaccurate measuring
+		optimalP := int(int64(timeout) / (int64(dur) / int64(p.P)))
+
+		if optimalP > p.P+1 {
+			// use average between optimal p and current p
+			p.P = (p.P + optimalP) / 2
+		} else {
+			p.P++
+		}
+
+		start = time.Now()
+		if _, err := scrypt.Key(password, salt, p.N, p.R, p.P, p.DKLen); err != nil {
+			return p, err
+		}
+		dur = time.Since(start)
+	}
+	// lower by one to get shorter duration than timeout
+	p.P--
 
 	return p, p.Check()
 }
