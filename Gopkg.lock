@@ -52,8 +52,8 @@
 [[projects]]
   name = "github.com/elithrar/simple-scrypt"
   packages = ["."]
-  revision = "2325946f714c95de4a6088202c402fbdfa64163b"
-  version = "v1.2.0"
+  revision = "d150773194090feb6c897805a7bcea8d49544e2c"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -184,7 +184,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","idna","lex/httplex"]
+  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","lex/httplex"]
   revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
