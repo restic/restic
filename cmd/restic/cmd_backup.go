@@ -246,6 +246,17 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return errors.Fatal("filename is invalid (may not contain a directory, slash or backslash)")
 	}
 
+	var t time.Time
+	if opts.TimeStamp != "" {
+		parsedT, err := time.Parse("2006-01-02 15:04:05", opts.TimeStamp)
+		if err != nil {
+			return err
+		}
+		t = parsedT
+	} else {
+		t = time.Now()
+	}
+
 	if gopts.password == "" {
 		return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 	}
@@ -270,6 +281,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		Repository: repo,
 		Tags:       opts.Tags,
 		Hostname:   opts.Hostname,
+		TimeStamp:  t,
 	}
 
 	_, id, err := r.Archive(gopts.ctx, fn, os.Stdin, newArchiveStdinProgress(gopts))
