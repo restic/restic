@@ -17,8 +17,9 @@ import (
 type Reader struct {
 	restic.Repository
 
-	Tags     []string
-	Hostname string
+	Tags      []string
+	Hostname  string
+	TimeStamp time.Time
 }
 
 // Archive reads data from the reader and saves it to the repo.
@@ -26,9 +27,8 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 	if name == "" {
 		return nil, restic.ID{}, errors.New("no filename given")
 	}
-
 	debug.Log("start archiving %s", name)
-	sn, err := restic.NewSnapshot([]string{name}, r.Tags, r.Hostname, time.Now())
+	sn, err := restic.NewSnapshot([]string{name}, r.Tags, r.Hostname, r.TimeStamp)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
