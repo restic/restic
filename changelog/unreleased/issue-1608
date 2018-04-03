@@ -1,0 +1,7 @@
+Bugfix: Respect time stamp for new backup when reading from stdin
+
+When reading backups from stdin (via `restic backup --stdin`), restic now uses
+the time stamp for the new backup passed in `--time`.
+
+https://github.com/restic/restic/issues/1608
+https://github.com/restic/restic/pull/1703
