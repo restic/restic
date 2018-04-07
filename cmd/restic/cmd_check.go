@@ -197,7 +197,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if dupFound {
-		Printf("\nrun `restic rebuild-index' to correct this\n")
+		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
 	}
 
 	if len(errs) > 0 {
@@ -208,14 +208,24 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	errorsFound := false
+	orphanedPacks := 0
 	errChan := make(chan error)
 
 	Verbosef("check all packs\n")
 	go chkr.Packs(gopts.ctx, errChan)
 
 	for err := range errChan {
+		if checker.IsOrphanedPack(err) {
+			orphanedPacks++
+			Verbosef("%v\n", err)
+			continue
+		}
 		errorsFound = true
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
+	if orphanedPacks > 0 {
+		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
 	Verbosef("check snapshots, trees and blobs\n")

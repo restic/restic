@@ -1,0 +1,7 @@
+Enhancement: Improve messages `restic check` prints
+
+Some messages `restic check` prints are not really errors, so from now on
+restic does not treat them as errors any more and exits cleanly.
+
+https://github.com/restic/restic/pull/1709
+https://forum.restic.net/t/what-is-the-standard-procedure-to-follow-if-a-backup-or-restore-is-interrupted/571/2
