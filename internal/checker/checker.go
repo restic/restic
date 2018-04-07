@@ -181,7 +181,17 @@ type PackError struct {
 }
 
 func (e PackError) Error() string {
-	return "pack " + e.ID.String() + ": " + e.Err.Error()
+	return "pack " + e.ID.Str() + ": " + e.Err.Error()
+}
+
+// IsOrphanedPack returns true if the error describes a pack which is not
+// contained in any index.
+func IsOrphanedPack(err error) bool {
+	if e, ok := errors.Cause(err).(PackError); ok && e.Orphaned {
+		return true
+	}
+
+	return false
 }
 
 // Packs checks that all packs referenced in the index are still available and
