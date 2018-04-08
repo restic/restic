@@ -8,7 +8,7 @@ import (
 
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, chunker.MinSize)
+		return make([]byte, chunker.MaxSize/3)
 	},
 }
 

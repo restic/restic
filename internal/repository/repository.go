@@ -214,11 +214,11 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	// get buf from the pool
 	ciphertext := getBuf()
-	defer freeBuf(ciphertext)
 
 	ciphertext = ciphertext[:0]
 	nonce := crypto.NewRandomNonce()
 	ciphertext = append(ciphertext, nonce...)
+	defer freeBuf(ciphertext)
 
 	// encrypt blob
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
