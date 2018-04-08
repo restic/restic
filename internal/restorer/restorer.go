@@ -2,7 +2,6 @@ package restorer
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 
 	"github.com/restic/restic/internal/errors"
@@ -40,9 +39,15 @@ func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
 	return r, nil
 }
 
-// restoreTo restores a tree from the repo to a destination. target is the path in
-// the file system, location within the snapshot.
-func (res *Restorer) restoreTo(ctx context.Context, target, location string, treeID restic.ID, idx *restic.HardlinkIndex) error {
+type treeVisitor struct {
+	enterDir  func(node *restic.Node, target, location string) error
+	visitNode func(node *restic.Node, target, location string) error
+	leaveDir  func(node *restic.Node, target, location string) error
+}
+
+// traverseTree traverses a tree from the repo and calls treeVisitor.
+// target is the path in the file system, location within the snapshot.
+func (res *Restorer) traverseTree(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) error {
 	debug.Log("%v %v %v", target, location, treeID)
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -85,32 +90,65 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
 		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
-		if node.Type == "dir" && childMayBeSelected {
+		sanitizeError := func(err error) error {
+			if err != nil {
+				err = res.Error(nodeTarget, node, err)
+			}
+			return err
+		}
+
+		enteredDir := false
+		if node.Type == "dir" {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
-			err = res.restoreTo(ctx, nodeTarget, nodeLocation, *node.Subtree, idx)
-			if err != nil {
-				err = res.Error(nodeLocation, node, err)
+			// ifedorenko: apparently a dir can be selected explicitly or implicitly when a child is selected
+			// to support implicit selection, visit the directory from within visitor#visitNode
+			if selectedForRestore {
+				enteredDir = true
+				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
+				if err != nil {
+					return err
+				}
+			} else {
+				_visitor := visitor
+				visitor = treeVisitor{
+					enterDir: _visitor.enterDir,
+					visitNode: func(node *restic.Node, nodeTarget, nodeLocation string) error {
+						if !enteredDir {
+							enteredDir = true
+							derr := sanitizeError(_visitor.enterDir(node, nodeTarget, nodeLocation))
+							if derr != nil {
+								return derr
+							}
+						}
+						return _visitor.visitNode(node, nodeTarget, nodeLocation)
+					},
+					leaveDir: _visitor.leaveDir,
+				}
+			}
+
+			if childMayBeSelected {
+				err = sanitizeError(res.traverseTree(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor))
 				if err != nil {
 					return err
 				}
 			}
 		}
 
-		if selectedForRestore {
-			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
+		if selectedForRestore && node.Type != "dir" {
+			err = sanitizeError(visitor.visitNode(node, nodeTarget, nodeLocation))
 			if err != nil {
 				err = res.Error(nodeLocation, node, errors.Wrap(err, "restoreNodeTo"))
 				if err != nil {
 					return err
 				}
 			}
+		}
 
-			// Restore directory timestamp at the end. If we would do it earlier, restoring files within
-			// the directory would overwrite the timestamp of the directory they are in.
-			err = node.RestoreTimestamps(nodeTarget)
+		if enteredDir {
+			err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
 			if err != nil {
 				err = res.Error(nodeLocation, node, errors.Wrap(err, "RestoreTimestamps"))
 				if err != nil {
@@ -124,33 +162,26 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 }
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string, idx *restic.HardlinkIndex) error {
-	debug.Log("%v %v %v", node.Name, target, location)
+	debug.Log("restoreNode %v %v %v", node.Name, target, location)
 
 	err := node.CreateAt(ctx, target, res.repo, idx)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", target, err)
 	}
-
-	// Did it fail because of ENOENT?
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		debug.Log("create intermediate paths")
-
-		// Create parent directories and retry
-		err = fs.MkdirAll(filepath.Dir(target), 0700)
-		if err == nil || os.IsExist(errors.Cause(err)) {
-			err = node.CreateAt(ctx, target, res.repo, idx)
-		}
+	if err == nil {
+		err = res.restoreNodeMetadataTo(node, target, location)
 	}
 
+	return err
+}
+
+func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
+	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
+	err := node.RestoreMetadata(target)
 	if err != nil {
-		debug.Log("error %v", err)
-		err = res.Error(location, node, err)
-		if err != nil {
-			return err
-		}
+		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}
-
-	return nil
+	return err
 }
 
 // RestoreTo creates the directories and files in the snapshot below dst.
@@ -165,7 +196,22 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := restic.NewHardlinkIndex()
-	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
+	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+		enterDir: func(node *restic.Node, target, location string) error {
+			// create dir with default permissions
+			// #leaveDir restores dir metadata after visiting all children
+			return fs.MkdirAll(target, 0700)
+		},
+		visitNode: func(node *restic.Node, target, location string) error {
+			return res.restoreNodeTo(ctx, node, target, location, idx)
+		},
+		leaveDir: func(node *restic.Node, target, location string) error {
+			// Restore directory permissions and timestamp at the end. If we did it earlier
+			// - children restore could fail because of restictive directory permission
+			// - children restore could overwrite the timestamp of the directory they are in
+			return res.restoreNodeMetadataTo(node, target, location)
+		},
+	})
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

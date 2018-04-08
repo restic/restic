@@ -134,7 +134,7 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 	return nil
 }
 
-// CreateAt creates the node at the given path and restores all the meta data.
+// CreateAt creates the node at the given path but does NOT restore node meta data.
 func (node *Node) CreateAt(ctx context.Context, path string, repo Repository, idx *HardlinkIndex) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
@@ -169,6 +169,11 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo Repository, id
 		return errors.Errorf("filetype %q not implemented!\n", node.Type)
 	}
 
+	return nil
+}
+
+// RestoreMetadata restores node metadata
+func (node Node) RestoreMetadata(path string) error {
 	err := node.restoreMetadata(path)
 	if err != nil {
 		debug.Log("restoreMetadata(%s) error %v", path, err)
@@ -192,12 +197,10 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
-	if node.Type != "dir" {
-		if err := node.RestoreTimestamps(path); err != nil {
-			debug.Log("error restoring timestamps for dir %v: %v", path, err)
-			if firsterr != nil {
-				firsterr = err
-			}
+	if err := node.RestoreTimestamps(path); err != nil {
+		debug.Log("error restoring timestamps for dir %v: %v", path, err)
+		if firsterr != nil {
+			firsterr = err
 		}
 	}
 
