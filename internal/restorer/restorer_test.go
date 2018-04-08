@@ -340,7 +340,7 @@ func TestRestorer(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, tempdir)
+			err = res.RestoreTo(ctx, tempdir, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -446,7 +446,7 @@ func TestRestorerRelative(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, "restore")
+			err = res.RestoreTo(ctx, "restore", false)
 			if err != nil {
 				t.Fatal(err)
 			}

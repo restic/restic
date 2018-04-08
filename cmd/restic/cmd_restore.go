@@ -28,13 +28,14 @@ repository.
 
 // RestoreOptions collects all options for the restore command.
 type RestoreOptions struct {
-	Exclude []string
-	Include []string
-	Target  string
-	Host    string
-	Paths   []string
-	Tags    restic.TagLists
-	Verify  bool
+	Exclude        []string
+	Include        []string
+	Target         string
+	Host           string
+	Paths          []string
+	Tags           restic.TagLists
+	Verify         bool
+	SingleThreaded bool
 }
 
 var restoreOptions RestoreOptions
@@ -51,6 +52,7 @@ func init() {
 	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
+	flags.BoolVar(&restoreOptions.SingleThreaded, "singlethreaded", false, "use single-threaded (legacy) restore implementation")
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
@@ -155,7 +157,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	err = res.RestoreTo(ctx, opts.Target)
+	err = res.RestoreTo(ctx, opts.Target, opts.SingleThreaded)
 	if err == nil && opts.Verify {
 		Verbosef("verifying files in %s\n", opts.Target)
 		var count int
