@@ -44,12 +44,13 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	return id
 }
 
-func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node) restic.ID {
+func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode uint64) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	tree := &restic.Tree{}
 	for name, n := range nodes {
+		inode++
 		var id restic.ID
 		switch node := n.(type) {
 		case File:
@@ -61,9 +62,11 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node) restic
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
 				Content: []restic.ID{id},
+				Size:    uint64(len(n.(File).Data)),
+				Inode:   inode,
 			})
 		case Dir:
-			id = saveDir(t, repo, node.Nodes)
+			id = saveDir(t, repo, node.Nodes, inode)
 
 			mode := node.Mode
 			if mode == 0 {
@@ -95,7 +98,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	treeID := saveDir(t, repo, snapshot.Nodes)
+	treeID := saveDir(t, repo, snapshot.Nodes, 0)
 
 	err := repo.Flush(ctx)
 	if err != nil {
