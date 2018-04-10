@@ -425,6 +425,10 @@ func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileI
 	walker := r.c.Walk(basedir)
 	for walker.Step() {
 		if walker.Err() != nil {
+			if r.IsNotExist(walker.Err()) {
+				debug.Log("ignoring non-existing directory")
+				return nil
+			}
 			return walker.Err()
 		}
 
