@@ -104,6 +104,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
   name = "github.com/minio/minio-go"
   packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
   revision = "66252c2a3c15f7b90cc8493d497a04ac3b6e3606"
@@ -238,6 +244,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d3d59414a33bb8ecc6d88a681c782a87244a565cc9d0f85615cfa0704c02800a"
+  inputs-digest = "a270b39954b9dad18c46f097be5816ca58ae1f387940b673b387d30934ce4ed4"
   solver-name = "gps-cdcl"
   solver-version = 1
