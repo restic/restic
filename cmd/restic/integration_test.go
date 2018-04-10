@@ -736,12 +736,22 @@ func TestRestoreLatest(t *testing.T) {
 
 	opts := BackupOptions{}
 
-	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	// chdir manually here so we can get the current directory. This is not the
+	// same as the temp dir returned by ioutil.TempDir() on darwin.
+	back := fs.TestChdir(t, filepath.Dir(env.testdata))
+	defer back()
+
+	curdir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testRunBackup(t, "", []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	os.Remove(p)
 	rtest.OK(t, appendRandomData(p, 101))
-	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	// Restore latest without any filters
@@ -749,16 +759,18 @@ func TestRestoreLatest(t *testing.T) {
 	rtest.OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", "testfile.c"), int64(101)))
 
 	// Setup test files in different directories backed up in different snapshots
-	p1 := filepath.Join(env.testdata, "p1/testfile.c")
+	p1 := filepath.Join(curdir, filepath.FromSlash("p1/testfile.c"))
+
 	rtest.OK(t, os.MkdirAll(filepath.Dir(p1), 0755))
 	rtest.OK(t, appendRandomData(p1, 102))
-	testRunBackup(t, env.testdata, []string{"p1"}, opts, env.gopts)
+	testRunBackup(t, "", []string{"p1"}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	p2 := filepath.Join(env.testdata, "p2/testfile.c")
+	p2 := filepath.Join(curdir, filepath.FromSlash("p2/testfile.c"))
+
 	rtest.OK(t, os.MkdirAll(filepath.Dir(p2), 0755))
 	rtest.OK(t, appendRandomData(p2, 103))
-	testRunBackup(t, env.testdata, []string{"p2"}, opts, env.gopts)
+	testRunBackup(t, "", []string{"p2"}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	p1rAbs := filepath.Join(env.base, "restore1", "p1/testfile.c")
