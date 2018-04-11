@@ -75,6 +75,9 @@ Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
 to make sure the internal structure of the repository is free of errors.
 
+Including and Excluding Files 
+*****************************
+
 You can exclude folders and files by specifying exclude patterns, currently
 the exclude options are:
 
