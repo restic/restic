@@ -16,6 +16,8 @@ type Restorer struct {
 	repo Repository
 	sn   *Snapshot
 
+	fr *FileRestorer
+
 	Error        func(dir string, node *Node, err error) error
 	SelectFilter func(item string, dstpath string, node *Node) (selectedForRestore bool, childMayBeSelected bool)
 }
@@ -35,6 +37,8 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	r.fr = newFileRestorer(repo)
 
 	return r, nil
 }
@@ -94,6 +98,10 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 		}
 
 		if selectedForRestore {
+			if node.Type == "file" && res.fr != nil {
+				res.fr.AddFile(node, target, nodeTarget)
+				continue
+			}
 			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
 			if err != nil {
 				return err
@@ -153,7 +161,19 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := NewHardlinkIndex()
-	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
+	err = res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
+	if err != nil {
+		return err
+	}
+
+	if res.fr != nil {
+		err = res.fr.RestoreFiles(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

@@ -60,6 +60,8 @@ type Index interface {
 	Lookup(ID, BlobType) ([]PackedBlob, bool)
 	Count(BlobType) uint
 
+	ListPack(id ID) (list []PackedBlob)
+
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This
 	// blocks any modification of the index.
