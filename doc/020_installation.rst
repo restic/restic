@@ -190,35 +190,27 @@ compiler. Building restic with gccgo may work, but is not supported.
 Autocompletion
 **************
 
-Restic can write out a bash compatible autocompletion script:
+Restic can write out man pages and bash/zsh compatible autocompletion scripts:
 
 .. code-block:: console
 
-    $ ./restic autocomplete --help
-    The "autocomplete" command generates a shell autocompletion script.
+    $ ./restic generate --help
 
-    NOTE: The current version supports Bash only.
-          This should work for *nix systems with Bash installed.
-
-By default, the file is written directly to ``/etc/bash_completion.d/``
-for convenience, and the command may need superuser rights, e.g.
-
-.. code-block:: console
-
-    $ sudo restic autocomplete
+    The "generate" command writes automatically generated files like the man pages
+    and the auto-completion files for bash and zsh).
 
     Usage:
-      restic autocomplete [flags]
+      restic generate [command] [flags]
 
     Flags:
-          --completionfile string   autocompletion file (default "/etc/bash_completion.d/restic.sh")
+          --bash-completion file   write bash completion file
+      -h, --help                   help for generate
+          --man directory          write man pages to directory
+          --zsh-completion file    write zsh completion file
 
-    Global Flags:
-          --json                   set output mode to JSON for commands that support it
-          --no-lock                do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value       set extended option (key=value, can be specified multiple times)
-      -p, --password-file string   read the repository password from a file
-      -q, --quiet                  do not output comprehensive progress report
-      -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+Example for using sudo to write a bash completion script directly to the system-wide location:
 
+.. code-block:: console
 
+    $ sudo ./restic generate --bash-completion /etc/bash_completion.d/restic
+    writing bash completion file to /etc/bash_completion.d/restic
