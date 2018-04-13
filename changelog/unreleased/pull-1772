@@ -1,0 +1,6 @@
+Enhancement: Add restore --verify to verify restored file content
+
+Restore will print error message if restored file content does not match
+expected SHA256 checksum
+
+https://github.com/restic/restic/pull/1772
