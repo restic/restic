@@ -1,0 +1,7 @@
+Enhancement: Add --new-password-file flag for non-interactive password changes
+
+This makes it possible to change a repository password without being prompted.
+
+https://github.com/restic/restic/issues/827
+https://github.com/restic/restic/pull/1720
+https://forum.restic.net/t/changing-repo-password-without-prompt/591
