@@ -64,7 +64,10 @@ func CleanupHandler(c <-chan os.Signal) {
 		fmt.Fprintf(stderr, "%ssignal %v received, cleaning up\n", ClearLine(), s)
 
 		code := 0
-		if s != syscall.SIGINT {
+
+		if s == syscall.SIGINT {
+			code = 130
+		} else {
 			code = 1
 		}
 
