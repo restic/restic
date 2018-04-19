@@ -517,45 +517,6 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 	return true
 }
 
-// IsNewer returns true of the file has been updated since the last Stat().
-func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
-	if node.Type != "file" {
-		debug.Log("node %v is newer: not file", path)
-		return true
-	}
-
-	tpe := nodeTypeFromFileInfo(fi)
-	if node.Name != fi.Name() || node.Type != tpe {
-		debug.Log("node %v is newer: name or type changed", path)
-		return true
-	}
-
-	size := uint64(fi.Size())
-
-	extendedStat, ok := toStatT(fi.Sys())
-	if !ok {
-		if !node.ModTime.Equal(fi.ModTime()) ||
-			node.Size != size {
-			debug.Log("node %v is newer: timestamp or size changed", path)
-			return true
-		}
-		return false
-	}
-
-	inode := extendedStat.ino()
-
-	if !node.ModTime.Equal(fi.ModTime()) ||
-		!node.ChangeTime.Equal(changeTime(extendedStat)) ||
-		node.Inode != uint64(inode) ||
-		node.Size != size {
-		debug.Log("node %v is newer: timestamp, size or inode changed", path)
-		return true
-	}
-
-	debug.Log("node %v is not newer", path)
-	return false
-}
-
 func (node *Node) fillUser(stat statT) error {
 	node.UID = stat.uid()
 	node.GID = stat.gid()
