@@ -1,0 +1,4 @@
+Enhancement: Add stats command to get information about a repository
+
+https://github.com/restic/restic/issues/874
+https://github.com/restic/restic/pull/1729
