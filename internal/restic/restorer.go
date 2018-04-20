@@ -76,6 +76,11 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 			continue
 		}
 
+		// sockets cannot be restored
+		if node.Type == "socket" {
+			continue
+		}
+
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
 		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
@@ -96,14 +101,20 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 		if selectedForRestore {
 			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
 			if err != nil {
-				return err
+				err = res.Error(nodeLocation, node, errors.Wrap(err, "restoreNodeTo"))
+				if err != nil {
+					return err
+				}
 			}
 
 			// Restore directory timestamp at the end. If we would do it earlier, restoring files within
 			// the directory would overwrite the timestamp of the directory they are in.
 			err = node.RestoreTimestamps(nodeTarget)
 			if err != nil {
-				return err
+				err = res.Error(nodeLocation, node, errors.Wrap(err, "RestoreTimestamps"))
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
