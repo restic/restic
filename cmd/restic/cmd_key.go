@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -23,8 +26,13 @@ The "key" command manages keys (passwords) for accessing the repository.
 	},
 }
 
+var newPasswordFile string
+
 func init() {
 	cmdRoot.AddCommand(cmdKey)
+
+	flags := cmdKey.Flags()
+	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
 }
 
 func listKeys(ctx context.Context, s *repository.Repository) error {
@@ -62,6 +70,10 @@ var testKeyNewPassword string
 func getNewPassword(gopts GlobalOptions) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
+	}
+
+	if newPasswordFile != "" {
+		return loadPasswordFromFile(newPasswordFile)
 	}
 
 	// Since we already have an open repository, temporary remove the password
@@ -181,4 +193,12 @@ func runKey(gopts GlobalOptions, args []string) error {
 	}
 
 	return nil
+}
+
+func loadPasswordFromFile(pwdFile string) (string, error) {
+	s, err := ioutil.ReadFile(pwdFile)
+	if os.IsNotExist(err) {
+		return "", errors.Fatalf("%s does not exist", pwdFile)
+	}
+	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
