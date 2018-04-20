@@ -52,6 +52,7 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 }
 
 func testRunBackup(t testing.TB, target []string, opts BackupOptions, gopts GlobalOptions) {
+	gopts.stdout = ioutil.Discard
 	t.Logf("backing up %v", target)
 	rtest.OK(t, runBackup(opts, gopts, target))
 }
