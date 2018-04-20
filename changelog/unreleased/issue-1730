@@ -1,0 +1,11 @@
+Bugfix: Ignore sockets for restore
+
+We've received a report and correct the behavior in which the restore code
+aborted restoring a directory when a socket was encountered. Unix domain socket
+files cannot be restored (they are created on the fly once a process starts
+listening). The error handling was corrected, and in addition we're now
+ignoring sockets during restore.
+
+https://github.com/restic/restic/issues/1730
+https://github.com/restic/restic/pull/1731
+
