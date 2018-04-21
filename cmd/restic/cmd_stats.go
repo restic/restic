@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -51,7 +52,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 	// create a container for the stats, and other state
 	// needed while walking the trees
-	stats := &statsContainer{idSet: restic.NewIDSet()}
+	stats := &statsContainer{uniqueFiles: make(map[fileID]struct{}), idSet: make(restic.IDSet)}
 
 	// iterate every snapshot in the repo
 	err = repo.List(ctx, restic.SnapshotFile, func(snapshotID restic.ID, size int64) error {
@@ -96,10 +97,18 @@ func walkTree(ctx context.Context, repo restic.Repository, treeID restic.ID, sta
 	}
 
 	for _, node := range tree.Nodes {
-		// update our stats to account for this node
-		stats.TotalOriginalSize += node.Size
-		stats.TotalCount++
+		// only count this file if we haven't visited it before
+		fid := makeFileID(node)
+		if _, ok := stats.uniqueFiles[fid]; !ok {
+			// mark the file as visited
+			stats.uniqueFiles[fid] = struct{}{}
 
+			// update our stats to account for this node
+			stats.TotalOriginalSize += node.Size
+			stats.TotalCount++
+		}
+
+		// visit subtrees (i.e. directory contents)
 		if node.Subtree != nil {
 			err = walkTree(ctx, repo, *node.Subtree, stats)
 			if err != nil {
@@ -111,6 +120,14 @@ func walkTree(ctx context.Context, repo restic.Repository, treeID restic.ID, sta
 	return nil
 }
 
+func makeFileID(node *restic.Node) fileID {
+	var bb []byte
+	for _, c := range node.Content {
+		bb = append(bb, []byte(c[:])...)
+	}
+	return sha256.Sum256(bb)
+}
+
 // statsContainer holds information during a walk of a repository
 // to collect information about it, as well as state needed
 // for a successful and efficient walk.
@@ -118,4 +135,7 @@ type statsContainer struct {
 	TotalCount        uint64 `json:"total_count"`
 	TotalOriginalSize uint64 `json:"total_original_size"`
 	idSet             restic.IDSet
+	uniqueFiles       map[fileID]struct{}
 }
+
+type fileID [32]byte
