@@ -43,8 +43,7 @@ type GlobalOptions struct {
 	Repo          string
 	PasswordFile  string
 	Quiet         bool
-	Verbose       bool
-	Debug         bool
+	Verbose       int
 	NoLock        bool
 	JSON          bool
 	CacheDir      string
@@ -90,8 +89,7 @@ func init() {
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
-	f.BoolVarP(&globalOptions.Verbose, "verbose", "v", false, "be verbose")
-	f.BoolVar(&globalOptions.Debug, "debug", false, "be very verbose")
+	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")

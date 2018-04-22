@@ -30,19 +30,19 @@ directories in an encrypted repository stored on different backends.
 	DisableAutoGenTag: true,
 
 	PersistentPreRunE: func(c *cobra.Command, args []string) error {
-		// set verbosity
+		// set verbosity, default is one
 		globalOptions.verbosity = 1
-		if globalOptions.Quiet && (globalOptions.Verbose || globalOptions.Debug) {
-			return errors.Fatal("--quiet and --verbose or --debug cannot be specified at the same time")
+		if globalOptions.Quiet && (globalOptions.Verbose > 1) {
+			return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
 		}
 
 		switch {
+		case globalOptions.Verbose >= 2:
+			globalOptions.verbosity = 3
+		case globalOptions.Verbose > 0:
+			globalOptions.verbosity = 2
 		case globalOptions.Quiet:
 			globalOptions.verbosity = 0
-		case globalOptions.Verbose:
-			globalOptions.verbosity = 2
-		case globalOptions.Debug:
-			globalOptions.verbosity = 3
 		}
 
 		// parse extended options

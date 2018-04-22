@@ -2,7 +2,6 @@ package archiver
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -274,7 +273,6 @@ func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *restic.Tree) (res
 	repo.m.Lock()
 	repo.saved[h]++
 	repo.m.Unlock()
-	fmt.Printf("savetree %v", h)
 	return id, err
 }
 
