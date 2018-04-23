@@ -171,6 +171,7 @@ var expireTests = []restic.ExpirePolicy{
 	{Tags: []restic.TagList{{"foo"}}},
 	{Tags: []restic.TagList{{"foo", "bar"}}},
 	{Tags: []restic.TagList{{"foo"}, {"bar"}}},
+	{NewerThan: parseTimeUTC("2016-01-01 01:00:00")},
 }
 
 func TestApplyPolicy(t *testing.T) {

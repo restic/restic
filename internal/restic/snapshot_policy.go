@@ -10,13 +10,14 @@ import (
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last    int       // keep the last n snapshots
-	Hourly  int       // keep the last n hourly snapshots
-	Daily   int       // keep the last n daily snapshots
-	Weekly  int       // keep the last n weekly snapshots
-	Monthly int       // keep the last n monthly snapshots
-	Yearly  int       // keep the last n yearly snapshots
-	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
+	Last      int       // keep the last n snapshots
+	Hourly    int       // keep the last n hourly snapshots
+	Daily     int       // keep the last n daily snapshots
+	Weekly    int       // keep the last n weekly snapshots
+	Monthly   int       // keep the last n monthly snapshots
+	Yearly    int       // keep the last n yearly snapshots
+	NewerThan time.Time // keep snapshots newer than this time
+	Tags      []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
 func (e ExpirePolicy) String() (s string) {
@@ -39,15 +40,11 @@ func (e ExpirePolicy) String() (s string) {
 	if e.Yearly > 0 {
 		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
 	}
-
-	s = "keep the last "
-	for _, k := range keeps {
-		s += k + ", "
+	if !e.NewerThan.IsZero() {
+		keeps = append(keeps, fmt.Sprintf("snapshots newer than %s", e.NewerThan))
 	}
-	s = strings.Trim(s, ", ")
-	s += " snapshots"
 
-	return s
+	return fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
@@ -131,6 +128,11 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 			if cur.HasTags(l) {
 				keepSnap = true
 			}
+		}
+
+		// If a timestamp is specified, it's a hard cutoff for older snapshots.
+		if !p.NewerThan.IsZero() && cur.Time.After(p.NewerThan) {
+			keepSnap = true
 		}
 
 		// Now update the other buckets and see if they have some counts left.
