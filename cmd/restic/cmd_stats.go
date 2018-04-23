@@ -191,11 +191,12 @@ func statsWalkTree(ctx context.Context, repo restic.Repository, treeID restic.ID
 					for _, blobID := range node.Content {
 						// ensure we have this file (by path) in our map; in this
 						// mode, a file is unique by both contents and path
-						if _, ok := stats.fileBlobs[fpath]; !ok {
-							stats.fileBlobs[fpath] = restic.NewIDSet()
+						nodePath := filepath.Join(fpath, node.Name)
+						if _, ok := stats.fileBlobs[nodePath]; !ok {
+							stats.fileBlobs[nodePath] = restic.NewIDSet()
 							stats.TotalFileCount++
 						}
-						if _, ok := stats.fileBlobs[fpath][blobID]; !ok {
+						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
 							// TODO: Is the blob type always 'data' in this case?
 							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
 							if !found {
@@ -205,7 +206,7 @@ func statsWalkTree(ctx context.Context, repo restic.Repository, treeID restic.ID
 							// count the blob's size, then add this blob by this
 							// file (path) so we don't double-count it
 							stats.TotalSize += uint64(blobSize)
-							stats.fileBlobs[fpath].Insert(blobID)
+							stats.fileBlobs[nodePath].Insert(blobID)
 
 							// this mode also counts total unique blob _references_ per file
 							stats.TotalBlobCount++
