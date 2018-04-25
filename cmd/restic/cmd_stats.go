@@ -197,7 +197,7 @@ func statsWalkTree(ctx context.Context, repo restic.Repository, treeID restic.ID
 							stats.TotalFileCount++
 						}
 						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
-							// TODO: Is the blob type always 'data' in this case?
+							// is always a data blob since we're accessing it via a file's Content array
 							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
 							if !found {
 								return fmt.Errorf("blob %s not found for tree %s", blobID, treeID)
