@@ -95,6 +95,10 @@ func (t *Terminal) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			if IsProcessBackground() {
+				// ignore all messages, do nothing, we are in the background process group
+				continue
+			}
 			t.undoStatus(statusLines)
 
 			err := t.wr.Flush()
@@ -105,6 +109,10 @@ func (t *Terminal) run(ctx context.Context) {
 			return
 
 		case msg := <-t.msg:
+			if IsProcessBackground() {
+				// ignore all messages, do nothing, we are in the background process group
+				continue
+			}
 			t.undoStatus(statusLines)
 
 			var dst io.Writer
@@ -144,6 +152,10 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
+			if IsProcessBackground() {
+				// ignore all messages, do nothing, we are in the background process group
+				continue
+			}
 			t.undoStatus(statusLines)
 
 			statusBuf.Reset()
