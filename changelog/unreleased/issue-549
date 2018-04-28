@@ -25,6 +25,10 @@ once (which prints a bit more detail what restic is doing) or twice (which
 prints a line for each file/directory restic encountered, together with some
 statistics).
 
+Another issue that was resolved is the new code only reads two files at most.
+The old code would read way too many files in parallel, thereby slowing down
+the backup process on spinning discs a lot.
+
 https://github.com/restic/restic/issues/549
 https://github.com/restic/restic/issues/1286
 https://github.com/restic/restic/issues/446
