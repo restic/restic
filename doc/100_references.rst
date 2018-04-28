@@ -625,14 +625,15 @@ are deleted, the particular snapshot vanished and all snapshots
 depending on data that has been added in the snapshot cannot be restored
 completely. Restic is not designed to detect this attack.
 
+******
 Local Cache
-===========
+******
 
 In order to speed up certain operations, restic manages a local cache of data.
 This document describes the data structures for the local cache with version 1.
 
 Versions
---------
+========
 
 The cache directory is selected according to the `XDG base dir specification
 <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`__.
@@ -646,11 +647,20 @@ a lower version number is found the cache is recreated with the current
 version. If a higher version number is found the cache is ignored and left as
 is.
 
-Snapshots and Indexes
----------------------
+Snapshots, Data and Indexes
+===========================
 
 Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,
 ``data`` and  ``index``, as read from the repository.
+
+Expiry
+======
+
+Whenever a cache directory for a repo is used, that directory's modification
+timestamp is updated to the current time. By looking at the modification
+timestamps of the repo cache directories it is easy to decide which directories
+are old and haven't been used in a long time. Those are probably stale and can
+be removed.
 
 
 ************
@@ -798,24 +808,3 @@ Returns "200 OK" if the blob with the given name and type has been
 deleted from the repository, an HTTP error otherwise.
 
 
-*****
-Talks
-*****
-
-The following talks will be or have been given about restic:
-
--  2016-01-31: Lightning Talk at the Go Devroom at FOSDEM 2016,
-   Brussels, Belgium
--  2016-01-29: `restic - Backups mal
-   richtig <https://media.ccc.de/v/c4.openchaos.2016.01.restic>`__:
-   Public lecture in German at `CCC Cologne
-   e.V. <https://koeln.ccc.de>`__ in Cologne, Germany
--  2015-08-23: `A Solution to the Backup
-   Inconvenience <https://programm.froscon.de/2015/events/1515.html>`__:
-   Lecture at `FROSCON 2015 <https://www.froscon.de>`__ in Bonn, Germany
--  2015-02-01: `Lightning Talk at FOSDEM
-   2015 <https://www.youtube.com/watch?v=oM-MfeflUZ8&t=11m40s>`__: A
-   short introduction (with slightly outdated command line)
--  2015-01-27: `Talk about restic at CCC
-   Aachen <https://videoag.fsmpi.rwth-aachen.de/?view=player&lectureid=4442#content>`__
-   (in German)

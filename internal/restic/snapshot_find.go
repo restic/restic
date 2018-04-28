@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
@@ -14,13 +15,25 @@ var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags and hostname filters.
 func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostname string) (ID, error) {
+	var err error
+	absTargets := make([]string, 0, len(targets))
+	for _, target := range targets {
+		if !filepath.IsAbs(target) {
+			target, err = filepath.Abs(target)
+			if err != nil {
+				return ID{}, errors.Wrap(err, "Abs")
+			}
+		}
+		absTargets = append(absTargets, target)
+	}
+
 	var (
 		latest   time.Time
 		latestID ID
 		found    bool
 	)
 
-	err := repo.List(ctx, SnapshotFile, func(snapshotID ID, size int64) error {
+	err = repo.List(ctx, SnapshotFile, func(snapshotID ID, size int64) error {
 		snapshot, err := LoadSnapshot(ctx, repo, snapshotID)
 		if err != nil {
 			return errors.Errorf("Error loading snapshot %v: %v", snapshotID.Str(), err)
@@ -33,7 +46,7 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 			return nil
 		}
 
-		if !snapshot.HasPaths(targets) {
+		if !snapshot.HasPaths(absTargets) {
 			return nil
 		}
 

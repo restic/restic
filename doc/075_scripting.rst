@@ -26,10 +26,10 @@ times. The command ``snapshots`` may be used for this purpose:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots
-    Fatal: unable to open config file: Stat: stat /tmp/backup/config: no such file or directory
+    $ restic -r /srv/restic-repo snapshots
+    Fatal: unable to open config file: Stat: stat /srv/restic-repo/config: no such file or directory
     Is there a repository at the following location?
-    /tmp/backup
+    /srv/restic-repo
 
 If a repository does not exist, restic will return a non-zero exit code
 and print an error message. Note that restic will also return a non-zero

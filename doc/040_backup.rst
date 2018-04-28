@@ -21,17 +21,27 @@ again:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup ~/work
+    $ restic -r /srv/restic-repo --verbose backup ~/work
+    open repository
     enter password for repository:
-    scan [/home/user/work]
-    scanned 764 directories, 1816 files in 0:00
-    [0:29] 100.00%  54.732 MiB/s  1.582 GiB / 1.582 GiB  2580 / 2580 items  0 errors  ETA 0:00
-    duration: 0:29, 54.47MiB/s
+    password is correct
+    lock repository
+    load index files
+    start scan
+    start backup
+    scan finished in 1.837s
+    processed 1.720 GiB in 0:12
+    Files:        5307 new,     0 changed,     0 unmodified
+    Dirs:         1867 new,     0 changed,     0 unmodified
+    Added:      1.700 GiB
     snapshot 40dc1520 saved
 
 As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
+
+If you don't pass the ``--verbose`` option, restic will print less data (but
+you'll still get a nice live status display).
 
 If you run the command again, restic will create another snapshot of
 your data, but this time it's even faster. This is de-duplication at
@@ -39,25 +49,60 @@ work!
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup ~/work
+    $ restic -r /srv/restic-repo backup --verbose ~/work
+    open repository
     enter password for repository:
-    using parent snapshot 40dc1520aa6a07b7b3ae561786770a01951245d2367241e71e9485f18ae8228c
-    scan [/home/user/work]
-    scanned 764 directories, 1816 files in 0:00
-    [0:00] 100.00%  0B/s  1.582 GiB / 1.582 GiB  2580 / 2580 items  0 errors  ETA 0:00
-    duration: 0:00, 6572.38MiB/s
+    password is correct
+    lock repository
+    load index files
+    using parent snapshot d875ae93
+    start scan
+    start backup
+    scan finished in 1.881s
+    processed 1.720 GiB in 0:03
+    Files:           0 new,     0 changed,  5307 unmodified
+    Dirs:            0 new,     0 changed,  1867 unmodified
+    Added:      0 B
     snapshot 79766175 saved
 
-You can even backup individual files in the same repository.
+You can even backup individual files in the same repository (not passing
+``--verbose`` means less output):
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup ~/work.txt
-    scan [/home/user/work.txt]
-    scanned 0 directories, 1 files in 0:00
-    [0:00] 100.00%  0B/s  220B / 220B  1 / 1 items  0 errors  ETA 0:00
-    duration: 0:00, 0.03MiB/s
-    snapshot 31f7bd63 saved
+    $ restic -r /srv/restic-repo backup ~/work.txt
+    enter password for repository:
+    password is correct
+    snapshot 249d0210 saved
+
+If you're interested in what restic does, pass ``--verbose`` twice (or
+``--verbose 2``) to display detailed information about each file and directory
+restic encounters:
+
+.. code-block:: console
+
+    $ echo 'more data foo bar' >> ~/work.txt
+
+    $ restic -r /srv/restic-repo backup --verbose --verbose ~/work.txt
+    open repository
+    enter password for repository:
+    password is correct
+    lock repository
+    load index files
+    using parent snapshot f3f8d56b
+    start scan
+    start backup
+    scan finished in 2.115s
+    modified  /home/user/work.txt, saved in 0.007s (22 B added)
+    modified  /home/user/, saved in 0.008s (0 B added, 378 B metadata)
+    modified  /home/, saved in 0.009s (0 B added, 375 B metadata)
+    processed 22 B in 0:02
+    Files:           0 new,     1 changed,     0 unmodified
+    Dirs:            0 new,     2 changed,     0 unmodified
+    Data Blobs:      1 new
+    Tree Blobs:      3 new
+    Added:      1.116 KiB
+    snapshot 8dc503fc saved
 
 In fact several hosts may use the same repository to backup directories
 and files leading to a greater de-duplication.
@@ -87,33 +132,53 @@ the exclude options are:
 -  ``--exclude-if-present`` Specified one or more times to exclude a folders content
    if it contains a given file (optionally having a given header)
 
-Basic example:
+ Let's say we have a file called ``excludes.txt`` with the following content:
 
-.. code-block:: console
-
-    $ cat exclude
+::
     # exclude go-files
     *.go
     # exclude foo/x/y/z/bar foo/x/bar foo/bar
     foo/**/bar
-    $ restic -r /tmp/backup backup ~/work --exclude="*.c" --exclude-file=exclude
+
+It can be used like this:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup ~/work --exclude="*.c" --exclude-file=excludes.txt
+
+This instruct restic to exclude files matching the following criteria:
+
+ * All files matching ``*.go`` (second line in ``excludes.txt``)
+ * All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
+ * All files matching ``*.c`` (parameter ``--exclude``)
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
 Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
-see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for syntax.
-Patterns are tested against the full path of a file/dir to be saved, not only
-against the relative path below the argument given to restic backup.
-Patterns need to match on complete path components. (``foo`` matches
-``/dir1/foo/dir2/file`` and ``/dir/foo`` but does not match ``/dir/foobar`` or
-``barfoo``.) A trailing ``/`` is ignored. A leading ``/`` anchors the
-pattern at the root directory. (``/bin`` matches ``/bin/bash`` but does not
-match ``/usr/bin/restic``.) Regular wildcards cannot be used to match over the
-directory separator ``/``. (``b*ash`` matches ``/bin/bash`` but does not match
-``/bin/ash``.) However ``**`` matches arbitrary subdirectories. (``foo/**/bar``
-matches ``/dir1/foo/dir2/bar/file``, ``/foo/bar/file`` and ``/tmp/foo/bar``.)
-Environment-variables in exclude-files are expanded with
-`os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__.
+see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
+syntax. Patterns are tested against the full path of a file/dir to be saved,
+even if restic is passed a relative path to save. Environment-variables in
+exclude-files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__.
+
+Patterns need to match on complete path components. For example, the pattern ``foo``:
+
+ * matches ``/dir1/foo/dir2/file`` and ``/dir/foo``
+ * does not match ``/dir/foobar`` or ``barfoo``
+   
+A trailing ``/`` is ignored, a leading ``/`` anchors the
+pattern at the root directory. This means, ``/bin`` matches ``/bin/bash`` but
+does not match ``/usr/bin/restic``.
+
+Regular wildcards cannot be used to match over the
+directory separator ``/``. For example: ``b*ash`` matches ``/bin/bash`` but does not match
+``/bin/ash``.
+
+For this, the special wildcard ``**`` can be used to match arbitrary
+sub-directories: The pattern ``foo/**/bar`` matches:
+
+ * ``/dir1/foo/dir2/bar/file``
+ * ``/foo/bar/file`` 
+ * ``/tmp/foo/bar``
 
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
@@ -122,15 +187,15 @@ backup ``/sys`` or ``/dev`` on a Linux system:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --one-file-system /
+    $ restic -r /srv/restic-repo backup --one-file-system /
 
 By using the ``--files-from`` option you can read the files you want to
 backup from a file. This is especially useful if a lot of files have to
 be backed up that are not in the same folder or are maybe pre-filtered
 by other software.
 
-For example maybe you want to backup files that have a certain filename
-in them:
+For example maybe you want to backup files which have a name that matches a
+certain pattern:
 
 .. code-block:: console
 
@@ -140,14 +205,14 @@ You can then use restic to backup the filtered files:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup
+    $ restic -r /srv/restic-repo backup --files-from /tmp/files_to_backup
 
 Incidentally you can also combine ``--files-from`` with the normal files
 args:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
+    $ restic -r /srv/restic-repo backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
 Paths in the listing file can be absolute or relative.
 
@@ -159,7 +224,7 @@ and displays a small statistic, just pass the command two snapshot IDs:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup diff 5845b002 2ab627a6
+    $ restic -r /srv/restic-repo diff 5845b002 2ab627a6
     password is correct
     comparing snapshot ea657ce5 to 2ab627a6:
 
@@ -206,7 +271,7 @@ this mode of operation, just supply the option ``--stdin`` to the
 
 .. code-block:: console
 
-    $ mysqldump [...] | restic -r /tmp/backup backup --stdin
+    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
 
 This creates a new snapshot of the output of ``mysqldump``. You can then
 use e.g. the fuse mounting option (see below) to mount the repository
@@ -217,7 +282,7 @@ specified with ``--stdin-filename``, e.g. like this:
 
 .. code-block:: console
 
-    $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filename production.sql
+    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --stdin-filename production.sql
 
 Tags for backup
 ***************
@@ -227,7 +292,7 @@ information. Just specify the tags for a snapshot one by one with ``--tag``:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --tag projectX --tag foo --tag bar ~/work
+    $ restic -r /srv/restic-repo backup --tag projectX --tag foo --tag bar ~/work
     [...]
 
 The tags can later be used to keep (or forget) snapshots with the ``forget``

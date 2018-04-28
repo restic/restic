@@ -18,6 +18,7 @@ var (
 	listenMemoryProfile string
 	memProfilePath      string
 	cpuProfilePath      string
+	traceProfilePath    string
 	insecure            bool
 )
 
@@ -26,6 +27,7 @@ func init() {
 	f.StringVar(&listenMemoryProfile, "listen-profile", "", "listen on this `address:port` for memory profiling")
 	f.StringVar(&memProfilePath, "mem-profile", "", "write memory profile to `dir`")
 	f.StringVar(&cpuProfilePath, "cpu-profile", "", "write cpu profile to `dir`")
+	f.StringVar(&traceProfilePath, "trace-profile", "", "write trace to `dir`")
 	f.BoolVar(&insecure, "insecure-kdf", false, "use insecure KDF settings")
 }
 
@@ -46,7 +48,18 @@ func runDebug() error {
 		}()
 	}
 
-	if memProfilePath != "" && cpuProfilePath != "" {
+	profilesEnabled := 0
+	if memProfilePath != "" {
+		profilesEnabled++
+	}
+	if cpuProfilePath != "" {
+		profilesEnabled++
+	}
+	if traceProfilePath != "" {
+		profilesEnabled++
+	}
+
+	if profilesEnabled > 1 {
 		return errors.Fatal("only one profile (memory or CPU) may be activated at the same time")
 	}
 
@@ -58,6 +71,8 @@ func runDebug() error {
 		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.MemProfile, profile.ProfilePath(memProfilePath))
 	} else if cpuProfilePath != "" {
 		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.CPUProfile, profile.ProfilePath(cpuProfilePath))
+	} else if traceProfilePath != "" {
+		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.TraceProfile, profile.ProfilePath(traceProfilePath))
 	}
 
 	if prof != nil {

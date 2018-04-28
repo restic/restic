@@ -23,7 +23,7 @@ command to restore the contents of the latest snapshot to
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
@@ -33,7 +33,7 @@ backup for a specific host, path or both.
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore latest --target /tmp/restore-art --path "/home/art" --host luigi
+    $ restic -r /srv/restic-repo restore latest --target /tmp/restore-art --path "/home/art" --host luigi
     enter password for repository:
     restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-art
 
@@ -42,7 +42,7 @@ files in the snapshot. For example, to restore a single file:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work --include /work/foo
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work --include /work/foo
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
@@ -58,9 +58,9 @@ command to serve the repository with FUSE:
 .. code-block:: console
 
     $ mkdir /mnt/restic
-    $ restic -r /tmp/backup mount /mnt/restic
+    $ restic -r /srv/restic-repo mount /mnt/restic
     enter password for repository:
-    Now serving /tmp/backup at /mnt/restic
+    Now serving /srv/restic-repo at /mnt/restic
     Don't forget to umount after quitting!
 
 Mounting repositories via FUSE is not possible on OpenBSD, Solaris/illumos
@@ -80,4 +80,4 @@ the data directly. This can be achieved by using the `dump` command, like this:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup dump latest production.sql | mysql
+    $ restic -r /srv/restic-repo dump latest production.sql | mysql

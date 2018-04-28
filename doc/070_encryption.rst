@@ -16,8 +16,8 @@ Encryption
 
 
 *"The design might not be perfect, but it’s good. Encryption is a first-class feature,
-the implementation looks sane and I guess the deduplication trade-off is worth it. So… I’m going to use restic for 
-my personal backups.*" `Filippo Valsorda`_
+the implementation looks sane and I guess the deduplication trade-off is worth
+it. So… I’m going to use restic for my personal backups.*" `Filippo Valsorda`_
 
 .. _Filippo Valsorda: https://blog.filippo.io/restic-cryptography/
 
@@ -31,19 +31,19 @@ per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup key list
+    $ restic -r /srv/restic-repo key list
     enter password for repository:
      ID          User        Host        Created
     ----------------------------------------------------------------------
     *eb78040b    username    kasimir   2015-08-12 13:29:57
 
-    $ restic -r /tmp/backup key add
+    $ restic -r /srv/restic-repo key add
     enter password for repository:
     enter password for new key:
     enter password again:
     saved new key as <Key of username@kasimir, created on 2015-08-12 13:35:05.316831933 +0200 CEST>
 
-    $ restic -r backup key list
+    $ restic -r /srv/restic-repo key list
     enter password for repository:
      ID          User        Host        Created
     ----------------------------------------------------------------------

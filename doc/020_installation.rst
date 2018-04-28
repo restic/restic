@@ -145,9 +145,17 @@ Admin rights.
 Docker Container
 ****************
 
+We're maintaining a bare docker container with just a few files and the restic
+binary, you can get it with `docker pull` like this:
+
+.. code-block:: console
+
+    $ docker pull restic/restic
+
 .. note::
-   | A docker container is available as a contribution (Thank you!).
-   | You can find it at https://github.com/Lobaro/restic-backup-docker
+   | Another docker container which offers more configuration options is
+   | available as a contribution (Thank you!). You can find it at
+   | https://github.com/Lobaro/restic-backup-docker
 
 From Source
 ***********
@@ -173,7 +181,7 @@ You can easily cross-compile restic for all supported platforms, just
 supply the target OS and platform via the command-line options like this
 (for Windows and FreeBSD respectively):
 
-::
+.. code-block:: console
 
     $ go run build.go --goos windows --goarch amd64
 

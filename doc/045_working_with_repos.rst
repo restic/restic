@@ -22,7 +22,7 @@ Now, you can list all the snapshots stored in the repository:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots
+    $ restic -r /srv/restic-repo snapshots
     enter password for repository:
     ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
@@ -36,7 +36,7 @@ You can filter the listing by directory path:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots --path="/srv"
+    $ restic -r /srv/restic-repo snapshots --path="/srv"
     enter password for repository:
     ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
@@ -47,7 +47,7 @@ Or filter by host:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots --host luigi
+    $ restic -r /srv/restic-repo snapshots --host luigi
     enter password for repository:
     ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
@@ -74,7 +74,7 @@ backup data is consistent and the integrity is unharmed:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup check
+    $ restic -r /srv/restic-repo check
     Load indexes
     ciphertext verification failed
 
@@ -83,7 +83,7 @@ yield the same error:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work
+    $ restic -r /srv/restic-repo restore 79766175 --target /tmp/restore-work
     Load indexes
     ciphertext verification failed
 
@@ -93,7 +93,7 @@ data files:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup check --read-data
+    $ restic -r /srv/restic-repo check --read-data
     load indexes
     check all packs
     check snapshots, trees and blobs
@@ -107,9 +107,9 @@ commands check all repository data files over 5 separate invocations:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup check --read-data-subset=1/5
-    $ restic -r /tmp/backup check --read-data-subset=2/5
-    $ restic -r /tmp/backup check --read-data-subset=3/5
-    $ restic -r /tmp/backup check --read-data-subset=4/5
-    $ restic -r /tmp/backup check --read-data-subset=5/5
+    $ restic -r /srv/restic-repo check --read-data-subset=1/5
+    $ restic -r /srv/restic-repo check --read-data-subset=2/5
+    $ restic -r /srv/restic-repo check --read-data-subset=3/5
+    $ restic -r /srv/restic-repo check --read-data-subset=4/5
+    $ restic -r /srv/restic-repo check --read-data-subset=5/5
 

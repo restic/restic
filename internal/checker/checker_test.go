@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
-	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
@@ -326,10 +325,8 @@ func TestCheckerModifiedData(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	arch := archiver.New(repo)
-	_, id, err := arch.Snapshot(context.TODO(), nil, []string{"."}, nil, "localhost", nil, time.Now())
-	test.OK(t, err)
-	t.Logf("archived as %v", id.Str())
+	sn := archiver.TestSnapshot(t, repo, ".", nil)
+	t.Logf("archived as %v", sn.ID().Str())
 
 	beError := &errorBackend{Backend: repo.Backend()}
 	checkRepo := repository.New(beError)

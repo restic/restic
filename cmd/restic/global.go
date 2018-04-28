@@ -43,6 +43,7 @@ type GlobalOptions struct {
 	Repo          string
 	PasswordFile  string
 	Quiet         bool
+	Verbose       int
 	NoLock        bool
 	JSON          bool
 	CacheDir      string
@@ -58,6 +59,13 @@ type GlobalOptions struct {
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
+
+	// verbosity is set as follows:
+	//  0 means: don't print any messages except errors, this is used when --quiet is specified
+	//  1 is the default: print essential messages
+	//  2 means: print more messages, report minor things, this is used when --verbose is specified
+	//  3 means: print very detailed debug messages, this is used when --debug is specified
+	verbosity uint
 
 	Options []string
 
@@ -81,6 +89,7 @@ func init() {
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
+	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
@@ -173,11 +182,9 @@ func Printf(format string, args ...interface{}) {
 
 // Verbosef calls Printf to write the message when the verbose flag is set.
 func Verbosef(format string, args ...interface{}) {
-	if globalOptions.Quiet {
-		return
+	if globalOptions.verbosity >= 1 {
+		Printf(format, args...)
 	}
-
-	Printf(format, args...)
 }
 
 // PrintProgress wraps fmt.Printf to handle the difference in writing progress

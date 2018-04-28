@@ -1,24 +1,10 @@
 package fs
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"time"
 )
-
-// File is an open file on a file system.
-type File interface {
-	io.Reader
-	io.Writer
-	io.Closer
-
-	Fd() uintptr
-	Readdirnames(n int) ([]string, error)
-	Readdir(int) ([]os.FileInfo, error)
-	Seek(int64, int) (int64, error)
-	Stat() (os.FileInfo, error)
-}
 
 // Mkdir creates a new directory with the specified name and permission bits.
 // If there is an error, it will be of type *PathError.

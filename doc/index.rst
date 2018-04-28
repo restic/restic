@@ -16,5 +16,6 @@ Restic Documentation
    080_examples
    090_participating
    100_references
+   110_talks
    faq
    manual_rest
