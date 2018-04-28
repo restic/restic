@@ -35,7 +35,7 @@ repository like this:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots
+    $ restic -r /srv/restic-repo snapshots
     enter password for repository:
     ID        Date                 Host      Tags  Directory
     ----------------------------------------------------------------------
@@ -50,7 +50,7 @@ command and specify the snapshot ID on the command line:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup forget bdbd3439
+    $ restic -r /srv/restic-repo forget bdbd3439
     enter password for repository:
     removed snapshot d3f01f63
 
@@ -58,7 +58,7 @@ Afterwards this snapshot is removed:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots
+    $ restic -r /srv/restic-repo snapshots
     enter password for repository:
     ID        Date                 Host     Tags  Directory
     ----------------------------------------------------------------------
@@ -73,7 +73,7 @@ command must be run:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup prune
+    $ restic -r /srv/restic-repo prune
     enter password for repository:
 
     counting files in repo

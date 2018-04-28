@@ -19,6 +19,7 @@ Usage help is available:
       backup        Create a new backup of files and/or directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
+      diff          Show differences between two snapshots
       dump          Print a backed-up file to stdout
       find          Find a file or directory
       forget        Remove snapshots from the repository
@@ -39,23 +40,23 @@ Usage help is available:
       version       Print version information
 
     Flags:
-          --cacert stringSlice      path to load root certificates from (default: use system certificates)
-          --cache-dir string        set the cache directory
-      -h, --help                    help for restic
-          --json                    set output mode to JSON for commands that support it
-          --limit-download int      limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int        limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                do not use a local cache
-          --no-lock                 do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value        set extended option (key=value, can be specified multiple times)
-      -p, --password-file string    read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                   do not output comprehensive progress report
-      -r, --repo string             repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --cacert stringSlice       path to load root certificates from (default: use system certificates)
+          --cache-dir string         set the cache directory
+          --cleanup-cache            auto remove old cache directories
+      -h, --help                     help for restic
+          --json                     set output mode to JSON for commands that support it
+          --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                 do not use a local cache
+          --no-lock                  do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value         set extended option (key=value, can be specified multiple times)
+      -p, --password-file string     read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                    do not output comprehensive progress report
+      -r, --repo string              repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
-
+      -v, --verbose count[=-1]       be verbose (can be specified multiple times)
 
     Use "restic [command] --help" for more information about a command.
-
 
 Similar to programs such as ``git``, restic has a number of
 sub-commands. You can see these commands in the listing above. Each
@@ -87,21 +88,23 @@ command:
           --stdin-filename string            file name to use when reading from stdin (default "stdin")
           --tag tag                          add a tag for the new snapshot (can be specified multiple times)
           --time string                      time of the backup (ex. '2012-11-01 22:08:41') (default: now)
+          --with-atime                       store the atime for all files and directories
 
     Global Flags:
-          --cacert stringSlice      path to load root certificates from (default: use system certificates)
-          --cache-dir string        set the cache directory
-          --json                    set output mode to JSON for commands that support it
-          --limit-download int      limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int        limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                do not use a local cache
-          --no-lock                 do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value        set extended option (key=value, can be specified multiple times)
-      -p, --password-file string    read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                   do not output comprehensive progress report
-      -r, --repo string             repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --tls-client-cert string  path to a TLS client certificate
-          --tls-client-key string   path to a TLS client certificate key
+          --cacert stringSlice       path to load root certificates from (default: use system certificates)
+          --cache-dir string         set the cache directory
+          --cleanup-cache            auto remove old cache directories
+          --json                     set output mode to JSON for commands that support it
+          --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                 do not use a local cache
+          --no-lock                  do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value         set extended option (key=value, can be specified multiple times)
+      -p, --password-file string     read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                    do not output comprehensive progress report
+      -r, --repo string              repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
+      -v, --verbose n[=-1]           be verbose (specify --verbose multiple times or level n)
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
@@ -128,7 +131,7 @@ command does that:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup tag --set NL --set CH 590c8fc8
+    $ restic -r /srv/restic-repo tag --set NL --set CH 590c8fc8
     create exclusive lock for repository
     modified tags on 1 snapshots
 
@@ -141,19 +144,19 @@ So we can add and remove tags incrementally like this:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup tag --tag NL --remove CH
+    $ restic -r /srv/restic-repo tag --tag NL --remove CH
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-    $ restic -r /tmp/backup tag --tag NL --add UK
+    $ restic -r /srv/restic-repo tag --tag NL --add UK
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-    $ restic -r /tmp/backup tag --tag NL --remove NL
+    $ restic -r /srv/restic-repo tag --tag NL --remove NL
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-    $ restic -r /tmp/backup tag --tag NL --add SOMETHING
+    $ restic -r /srv/restic-repo tag --tag NL --add SOMETHING
     no snapshots were modified
 
 Under the hood
@@ -170,7 +173,7 @@ locks with the following command:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup list snapshots
+    $ restic -r /srv/restic-repo list snapshots
     d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
 
 The ``find`` command searches for a given
@@ -191,7 +194,7 @@ objects or their raw content.
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup cat snapshot d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
+    $ restic -r /srv/restic-repo cat snapshot d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
     enter password for repository:
     {
       "time": "2015-08-12T12:52:44.091448856+02:00",
@@ -242,7 +245,7 @@ lists all snapshots as JSON and uses ``jq`` to pretty-print the result:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup snapshots --json | jq .
+    $ restic -r /srv/restic-repo snapshots --json | jq .
     [
       {
         "time": "2017-03-11T09:57:43.26630619+01:00",
@@ -283,7 +286,7 @@ instead of the default, set the environment variable like this:
 .. code-block:: console
 
     $ export TMPDIR=/var/tmp/restic-tmp
-    $ restic -r /tmp/backup backup ~/work
+    $ restic -r /srv/restic-repo backup ~/work
 
 
 

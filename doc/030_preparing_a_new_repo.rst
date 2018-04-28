@@ -15,20 +15,24 @@ Preparing a new repository
 ##########################
 
 The place where your backups will be saved at is called a "repository".
-This chapter explains how to create ("init") such a repository.
+This chapter explains how to create ("init") such a repository. The repository
+can be stored locally, or on some remote server or service. We'll first cover
+using a local repository, the remaining sections of this chapter cover all the
+other options. You can skip to the next chapter once you've read the relevant
+section here.
 
 Local
 *****
 
-In order to create a repository at ``/tmp/backup``, run the following
+In order to create a repository at ``/srv/restic-repo``, run the following
 command and enter the same password twice:
 
 .. code-block:: console
 
-    $ restic init --repo /tmp/backup
+    $ restic init --repo /srv/restic-repo
     enter password for new backend:
     enter password again:
-    created restic backend 085b3c76b9 at /tmp/backup
+    created restic backend 085b3c76b9 at /srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -55,10 +59,10 @@ simply be achieved by changing the URL scheme in the ``init`` command:
 
 .. code-block:: console
 
-    $ restic -r sftp:user@host:/tmp/backup init
+    $ restic -r sftp:user@host:/srv/restic-repo init
     enter password for new backend:
     enter password again:
-    created restic backend f1c6108821 at sftp:user@host:/tmp/backup
+    created restic backend f1c6108821 at sftp:user@host:/srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -87,7 +91,7 @@ specify the user name in this case):
 
 ::
 
-    $ restic -r sftp:foo:/tmp/backup init
+    $ restic -r sftp:foo:/srv/restic-repo init
 
 You can also add an entry with a special host name which does not exist,
 just for use with restic, and use the ``Hostname`` option to set the
@@ -104,7 +108,7 @@ Then use it in the backend specification:
 
 ::
 
-    $ restic -r sftp:restic-backup-host:/tmp/backup init
+    $ restic -r sftp:restic-backup-host:/srv/restic-repo init
 
 Last, if you'd like to use an entirely different program to create the
 SFTP connection, you can specify the command to be run with the option
@@ -509,5 +513,5 @@ On MSYS2, you can install ``winpty`` as follows:
 .. code-block:: console
 
     $ pacman -S winpty
-    $ winpty restic -r /tmp/backup init
+    $ winpty restic -r /srv/restic-repo init
 
