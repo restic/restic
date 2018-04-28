@@ -1,0 +1,36 @@
+Enhancement: Rework archiver code
+
+The core archiver code and the complementary code for the `backup` command was
+rewritten completely. This resolves very annoying issues such as 549.
+
+Basically, with the old code, restic took the last path component of each
+to-be-saved file or directory as the top-level file/directory within the
+snapshot. This meant that when called as `restic backup /home/user/foo`, the
+snapshot would contain the files in the directory `/home/user/foo` as `/foo`.
+
+This is not the case any more with the new archiver code. Now, restic works
+very similar to what `tar` does: When restic is called with an absolute path to
+save, then it'll preserve the directory structure within the snapshot. For the
+example above, the snapshot would contain the files in the directory within
+`/home/user/foo` in the snapshot. For relative directories, it only preserves
+the relative path components. So `restic backup user/foo` will save the files
+as `/user/foo` in the snapshot.
+
+While we were at it, the status display and notification system was completely
+rewritten. By default, restic now shows which files are currently read (unless
+`--quiet` is specified) in a multi-line status display.
+
+The `backup` command also gained a new option: `--verbose`. It can be specified
+once (which prints a bit more detail what restic is doing) or twice (which
+prints a line for each file/directory restic encountered, together with some
+statistics).
+
+https://github.com/restic/restic/issues/549
+https://github.com/restic/restic/issues/1286
+https://github.com/restic/restic/issues/446
+https://github.com/restic/restic/issues/1344
+https://github.com/restic/restic/issues/1416
+https://github.com/restic/restic/issues/1456
+https://github.com/restic/restic/issues/1145
+https://github.com/restic/restic/issues/1160
+https://github.com/restic/restic/pull/1494
