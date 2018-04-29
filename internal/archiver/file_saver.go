@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// FutureFile is returned by SaveFile and will return the data once it
+// FutureFile is returned by Save and will return the data once it
 // has been processed.
 type FutureFile struct {
 	ch  <-chan saveFileResponse
