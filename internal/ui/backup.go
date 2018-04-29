@@ -147,7 +147,7 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 	} else {
 		var eta string
 
-		if secs > 0 {
+		if secs > 0 && processed.Bytes < total.Bytes {
 			eta = fmt.Sprintf(" ETA %s", formatSeconds(secs))
 		}
 
