@@ -172,7 +172,7 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	b := Buffer{Data: buf}
+	b := &Buffer{Data: buf}
 	res := arch.blobSaver.Save(ctx, restic.TreeBlob, b)
 	if res.Err() != nil {
 		return restic.ID{}, s, res.Err()

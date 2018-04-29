@@ -45,7 +45,7 @@ func NewBlobSaver(ctx context.Context, repo Saver, workers uint) *BlobSaver {
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. The second return parameter is true if the blob was
 // previously unknown.
-func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf Buffer) FutureBlob {
+func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
 	ch := make(chan saveBlobResponse, 1)
 	s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}
 
@@ -91,7 +91,7 @@ func (s *FutureBlob) Length() int {
 
 type saveBlobJob struct {
 	restic.BlobType
-	buf Buffer
+	buf *Buffer
 	ch  chan<- saveBlobResponse
 }
 
