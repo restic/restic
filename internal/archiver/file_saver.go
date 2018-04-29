@@ -63,20 +63,25 @@ type FileSaver struct {
 
 // NewFileSaver returns a new file saver. A worker pool with workers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, workers uint) *FileSaver {
-	ch := make(chan saveFileJob, workers)
+func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+	ch := make(chan saveFileJob, fileWorkers)
+
+	poolSize := fileWorkers
+	if blobWorkers > fileWorkers {
+		poolSize = blobWorkers
+	}
 
 	s := &FileSaver{
 		fs:           fs,
 		blobSaver:    blobSaver,
-		saveFilePool: NewBufferPool(ctx, 3*int(workers), chunker.MaxSize/4),
+		saveFilePool: NewBufferPool(ctx, int(poolSize)*3/2, chunker.MaxSize/2),
 		pol:          pol,
 		ch:           ch,
 
 		CompleteBlob: func(string, uint64) {},
 	}
 
-	for i := uint(0); i < workers; i++ {
+	for i := uint(0); i < fileWorkers; i++ {
 		s.wg.Add(1)
 		go s.worker(ctx, &s.wg, ch)
 	}

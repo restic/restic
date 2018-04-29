@@ -720,7 +720,11 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
 func (arch *Archiver) runWorkers(ctx context.Context) {
 	arch.blobSaver = NewBlobSaver(ctx, arch.Repo, arch.Options.SaveBlobConcurrency)
-	arch.fileSaver = NewFileSaver(ctx, arch.FS, arch.blobSaver, arch.Repo.Config().ChunkerPolynomial, arch.Options.FileReadConcurrency)
+	arch.fileSaver = NewFileSaver(ctx,
+		arch.FS,
+		arch.blobSaver,
+		arch.Repo.Config().ChunkerPolynomial,
+		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
