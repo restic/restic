@@ -750,7 +750,7 @@ Details
 
  * Enhancement #1073: Add `migrate` cmd to migrate from `s3legacy` to `default` layout
 
-   The `migrate` command for chaning the `s3legacy` layout to the `default` layout for s3
+   The `migrate` command for changing the `s3legacy` layout to the `default` layout for s3
    backends has been improved: It can now be restarted with `restic migrate --force s3_layout`
    and automatically retries operations on error.
 
