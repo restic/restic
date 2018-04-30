@@ -1,0 +1,7 @@
+Bugfix: Correctly parse the argument to --tls-client-cert
+
+Previously, the --tls-client-cert method attempt to read ARGV[1] (hardcoded)
+instead of the argument that was passed to it. This has been corrected.
+
+https://github.com/restic/restic/issues/1745
+https://github.com/restic/restic/pull/1746
