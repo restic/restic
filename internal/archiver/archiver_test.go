@@ -608,7 +608,12 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			node, stats, err := arch.SaveDir(ctx, "/", fi, test.target, nil)
+			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			node, stats, err := ft.Node(), ft.Stats(), ft.Err()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -681,7 +686,12 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		node, stats, err := arch.SaveDir(ctx, "/", fi, tempdir, nil)
+		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		node, stats, err := ft.Node(), ft.Stats(), ft.Err()
 		if err != nil {
 			t.Fatal(err)
 		}

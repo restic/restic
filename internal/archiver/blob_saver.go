@@ -27,7 +27,7 @@ type BlobSaver struct {
 // NewBlobSaver returns a new blob. A worker pool is started, it is stopped
 // when ctx is cancelled.
 func NewBlobSaver(ctx context.Context, repo Saver, workers uint) *BlobSaver {
-	ch := make(chan saveBlobJob, 2*int(workers))
+	ch := make(chan saveBlobJob)
 	s := &BlobSaver{
 		repo:       repo,
 		knownBlobs: restic.NewBlobSet(),
