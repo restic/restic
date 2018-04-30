@@ -9,19 +9,19 @@ import (
 // be called so the underlying slice is put back into the pool.
 type Buffer struct {
 	Data []byte
-	Put  func([]byte)
+	Put  func(*Buffer)
 }
 
 // Release puts the buffer back into the pool it came from.
-func (b Buffer) Release() {
+func (b *Buffer) Release() {
 	if b.Put != nil {
-		b.Put(b.Data)
+		b.Put(b)
 	}
 }
 
 // BufferPool implements a limited set of reusable buffers.
 type BufferPool struct {
-	ch          chan []byte
+	ch          chan *Buffer
 	chM         sync.Mutex
 	defaultSize int
 	clearOnce   sync.Once
@@ -33,7 +33,7 @@ type BufferPool struct {
 // back.
 func NewBufferPool(ctx context.Context, max int, defaultSize int) *BufferPool {
 	b := &BufferPool{
-		ch:          make(chan []byte, max),
+		ch:          make(chan *Buffer, max),
 		defaultSize: defaultSize,
 	}
 	go func() {
@@ -44,36 +44,35 @@ func NewBufferPool(ctx context.Context, max int, defaultSize int) *BufferPool {
 }
 
 // Get returns a new buffer, either from the pool or newly allocated.
-func (pool *BufferPool) Get() Buffer {
-	b := Buffer{Put: pool.put}
-
+func (pool *BufferPool) Get() *Buffer {
 	pool.chM.Lock()
 	defer pool.chM.Unlock()
 	select {
 	case buf := <-pool.ch:
-		b.Data = buf
+		return buf
 	default:
-		b.Data = make([]byte, pool.defaultSize)
+	}
+
+	b := &Buffer{
+		Put:  pool.Put,
+		Data: make([]byte, pool.defaultSize),
 	}
 
 	return b
 }
 
-func (pool *BufferPool) put(b []byte) {
+// Put returns a buffer to the pool for reuse.
+func (pool *BufferPool) Put(b *Buffer) {
+	if cap(b.Data) > pool.defaultSize {
+		return
+	}
+
 	pool.chM.Lock()
 	defer pool.chM.Unlock()
 	select {
 	case pool.ch <- b:
 	default:
 	}
-}
-
-// Put returns a buffer to the pool for reuse.
-func (pool *BufferPool) Put(b Buffer) {
-	if cap(b.Data) > pool.defaultSize {
-		return
-	}
-	pool.put(b.Data)
 }
 
 // clear empties the buffer so that all items can be garbage collected.

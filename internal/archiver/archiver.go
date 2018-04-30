@@ -50,6 +50,7 @@ type Archiver struct {
 
 	blobSaver *BlobSaver
 	fileSaver *FileSaver
+	treeSaver *TreeSaver
 
 	// Error is called for all errors that occur during backup.
 	Error ErrorFunc
@@ -86,6 +87,10 @@ type Options struct {
 	// concurrently. If it's set to zero, the default is the number of CPUs
 	// available in the system.
 	SaveBlobConcurrency uint
+
+	// SaveTreeConcurrency sets how many trees are marshalled and saved to the
+	// repo concurrently.
+	SaveTreeConcurrency uint
 }
 
 // ApplyDefaults returns a copy of o with the default options set for all unset
@@ -100,6 +105,12 @@ func (o Options) ApplyDefaults() Options {
 
 	if o.SaveBlobConcurrency == 0 {
 		o.SaveBlobConcurrency = uint(runtime.NumCPU())
+	}
+
+	if o.SaveTreeConcurrency == 0 {
+		// use a relatively high concurrency here, having multiple SaveTree
+		// workers is cheap
+		o.SaveTreeConcurrency = o.SaveBlobConcurrency * 20
 	}
 
 	return o
@@ -172,7 +183,7 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	b := Buffer{Data: buf}
+	b := &Buffer{Data: buf}
 	res := arch.blobSaver.Save(ctx, restic.TreeBlob, b)
 	if res.Err() != nil {
 		return restic.ID{}, s, res.Err()
@@ -212,24 +223,20 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) *resti
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree) (*restic.Node, ItemStats, error) {
+func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree) (d FutureTree, err error) {
 	debug.Log("%v %v", snPath, dir)
-
-	var s ItemStats
 
 	treeNode, err := arch.nodeFromFileInfo(dir, fi)
 	if err != nil {
-		return nil, s, err
+		return FutureTree{}, err
 	}
 
 	names, err := readdirnames(arch.FS, dir)
 	if err != nil {
-		return nil, s, err
+		return FutureTree{}, err
 	}
 
-	var futures []FutureNode
-
-	tree := restic.NewTree()
+	nodes := make([]FutureNode, 0, len(names))
 
 	for _, name := range names {
 		pathname := arch.FS.Join(dir, name)
@@ -245,54 +252,22 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 				continue
 			}
 
-			return nil, s, err
+			return FutureTree{}, err
 		}
 
 		if excluded {
 			continue
 		}
 
-		futures = append(futures, fn)
+		nodes = append(nodes, fn)
 	}
 
-	for _, fn := range futures {
-		fn.wait()
+	ft := arch.treeSaver.Save(ctx, snPath, treeNode, nodes)
 
-		// return the error if it wasn't ignored
-		if fn.err != nil {
-			fn.err = arch.error(fn.target, fn.fi, fn.err)
-			if fn.err == nil {
-				// ignore error
-				continue
-			}
-
-			return nil, s, fn.err
-		}
-
-		// when the error is ignored, the node could not be saved, so ignore it
-		if fn.node == nil {
-			debug.Log("%v excluded: %v", fn.snPath, fn.target)
-			continue
-		}
-
-		err := tree.Insert(fn.node)
-		if err != nil {
-			return nil, s, err
-		}
-	}
-
-	id, treeStats, err := arch.saveTree(ctx, tree)
-	if err != nil {
-		return nil, ItemStats{}, err
-	}
-
-	s.Add(treeStats)
-
-	treeNode.Subtree = &id
-	return treeNode, s, nil
+	return ft, nil
 }
 
-// FutureNode holds a reference to a node or a FutureFile.
+// FutureNode holds a reference to a node, FutureFile, or FutureTree.
 type FutureNode struct {
 	snPath, target string
 
@@ -306,14 +281,31 @@ type FutureNode struct {
 
 	isFile bool
 	file   FutureFile
+	isDir  bool
+	dir    FutureTree
 }
 
-func (fn *FutureNode) wait() {
-	if fn.isFile {
+func (fn *FutureNode) wait(ctx context.Context) {
+	switch {
+	case fn.isFile:
 		// wait for and collect the data for the file
 		fn.node = fn.file.Node()
 		fn.err = fn.file.Err()
 		fn.stats = fn.file.Stats()
+
+		// ensure the other stuff can be garbage-collected
+		fn.file = FutureFile{}
+		fn.isFile = false
+
+	case fn.isDir:
+		// wait for and collect the data for the dir
+		fn.node = fn.dir.Node()
+		fn.err = fn.dir.Err()
+		fn.stats = fn.dir.Stats()
+
+		// ensure the other stuff can be garbage-collected
+		fn.dir = FutureTree{}
+		fn.isDir = false
 	}
 }
 
@@ -324,6 +316,8 @@ func (fn *FutureNode) wait() {
 //
 // snPath is the path within the current snapshot.
 func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
+	start := time.Now()
+
 	fn = FutureNode{
 		snPath: snPath,
 		target: target,
@@ -340,7 +334,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	var fi os.FileInfo
 	var errFI error
 
-	file, errOpen := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+	file, errOpen := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW|fs.O_NONBLOCK, 0)
 	if errOpen == nil {
 		fi, errFI = file.Stat()
 	}
@@ -400,7 +394,9 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		snItem := snPath + "/"
 		start := time.Now()
 		oldSubtree := arch.loadSubtree(ctx, previous)
-		fn.node, fn.stats, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
+
+		fn.isDir = true
+		fn.dir, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
@@ -428,6 +424,8 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return fn, false, errors.Wrap(err, "Close")
 		}
 	}
+
+	debug.Log("return after %.3f", time.Since(start).Seconds())
 
 	return fn, false, nil
 }
@@ -564,9 +562,11 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		arch.CompleteItem(snItem, oldNode, node, nodeStats, time.Since(start))
 	}
 
+	debug.Log("waiting on %d nodes", len(futureNodes))
+
 	// process all futures
 	for name, fn := range futureNodes {
-		fn.wait()
+		fn.wait(ctx)
 
 		// return the error, or ignore it
 		if fn.err != nil {
@@ -720,10 +720,16 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
 func (arch *Archiver) runWorkers(ctx context.Context) {
 	arch.blobSaver = NewBlobSaver(ctx, arch.Repo, arch.Options.SaveBlobConcurrency)
-	arch.fileSaver = NewFileSaver(ctx, arch.FS, arch.blobSaver, arch.Repo.Config().ChunkerPolynomial, arch.Options.FileReadConcurrency)
-	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 
+	arch.fileSaver = NewFileSaver(ctx,
+		arch.FS,
+		arch.blobSaver,
+		arch.Repo.Config().ChunkerPolynomial,
+		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
+	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
+
+	arch.treeSaver = NewTreeSaver(ctx, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.error)
 }
 
 // Snapshot saves several targets and returns a snapshot.

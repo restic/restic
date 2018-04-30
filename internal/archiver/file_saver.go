@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// FutureFile is returned by SaveFile and will return the data once it
+// FutureFile is returned by Save and will return the data once it
 // has been processed.
 type FutureFile struct {
 	ch  <-chan saveFileResponse
@@ -61,22 +61,26 @@ type FileSaver struct {
 	NodeFromFileInfo func(filename string, fi os.FileInfo) (*restic.Node, error)
 }
 
-// NewFileSaver returns a new file saver. A worker pool with workers is
+// NewFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, workers uint) *FileSaver {
-	ch := make(chan saveFileJob, workers)
+func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+	ch := make(chan saveFileJob)
+
+	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
+
+	poolSize := fileWorkers + blobWorkers
 
 	s := &FileSaver{
 		fs:           fs,
 		blobSaver:    blobSaver,
-		saveFilePool: NewBufferPool(ctx, 3*int(workers), chunker.MaxSize/4),
+		saveFilePool: NewBufferPool(ctx, int(poolSize), chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
 
 		CompleteBlob: func(string, uint64) {},
 	}
 
-	for i := uint(0); i < workers; i++ {
+	for i := uint(0); i < fileWorkers; i++ {
 		s.wg.Add(1)
 		go s.worker(ctx, &s.wg, ch)
 	}
@@ -151,6 +155,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			buf.Release()
 			break
 		}
+
 		buf.Data = chunk.Data
 
 		size += uint64(chunk.Length)

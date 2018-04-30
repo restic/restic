@@ -94,7 +94,7 @@ func init() {
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
-	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
+	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
 	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a file containing PEM encoded TLS client certificate and private key")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
@@ -355,7 +355,11 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	}
 
 	if stdoutIsTerminal() {
-		Verbosef("password is correct\n")
+		id := s.Config().ID
+		if len(id) > 8 {
+			id = id[:8]
+		}
+		Verbosef("repository %v opened successfully, password is correct\n", id)
 	}
 
 	if opts.NoCache {

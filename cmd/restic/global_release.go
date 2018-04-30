@@ -1,4 +1,4 @@
-// +build !debug
+// +build !debug,!profile
 
 package main
 

@@ -40,6 +40,7 @@ type Backup struct {
 	processedCh chan counter
 	errCh       chan struct{}
 	workerCh    chan fileWorkerMessage
+	clearStatus chan struct{}
 
 	summary struct {
 		sync.Mutex
@@ -68,6 +69,7 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		processedCh: make(chan counter),
 		errCh:       make(chan struct{}),
 		workerCh:    make(chan fileWorkerMessage),
+		clearStatus: make(chan struct{}),
 	}
 }
 
@@ -90,6 +92,9 @@ func (b *Backup) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
+		case <-b.clearStatus:
+			started = false
+			b.term.SetStatus([]string{""})
 		case t, ok := <-b.totalCh:
 			if ok {
 				total = t
@@ -147,7 +152,7 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 	} else {
 		var eta string
 
-		if secs > 0 {
+		if secs > 0 && processed.Bytes < total.Bytes {
 			eta = fmt.Sprintf(" ETA %s", formatSeconds(secs))
 		}
 
@@ -332,6 +337,8 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *Backup) Finish() {
+	b.clearStatus <- struct{}{}
+
 	b.V("processed %s in %s", formatBytes(b.totalBytes), formatDuration(time.Since(b.start)))
 	b.V("\n")
 	b.V("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
