@@ -24,7 +24,7 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 				return ID{}, errors.Wrap(err, "Abs")
 			}
 		}
-		absTargets = append(absTargets, target)
+		absTargets = append(absTargets, filepath.Clean(target))
 	}
 
 	var (
