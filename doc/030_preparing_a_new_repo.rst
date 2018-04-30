@@ -439,7 +439,7 @@ listing similar to the following:
         448 bar/baz/keys/4bf9c78049de689d73a56ed0546f83b8416795295cda12ec7fb9465af3900b44
 
 Rclone can be `configured with environment variables`_, so for instance
-configuring a bandwidth limit for rclone cat be achieve by setting the
+configuring a bandwidth limit for rclone can be achieved by setting the
 ``RCLONE_BWLIMIT`` environment variable:
 
 .. code-block:: console
@@ -453,7 +453,7 @@ The rclone backend has two additional options:
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
  * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete --drive-use-trash=false``
 
-The reason why the two last parameters (``--b2-hard-delete`` and
+The reason for the two last parameters (``--b2-hard-delete`` and
 ``--drive-use-trash=false``) can be found in the corresponding GitHub `issue #1657`_.
 
 In order to start rclone, restic will build a list of arguments by joining the
