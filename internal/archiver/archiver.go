@@ -334,7 +334,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	var fi os.FileInfo
 	var errFI error
 
-	file, errOpen := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+	file, errOpen := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW|fs.O_NONBLOCK, 0)
 	if errOpen == nil {
 		fi, errFI = file.Stat()
 	}
