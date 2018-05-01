@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,6 +29,7 @@ import (
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -235,8 +235,8 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 // resolvePassword determines the password to be used for opening the repository.
 func resolvePassword(opts GlobalOptions, env string) (string, error) {
 	if opts.PasswordFile != "" {
-		s, err := ioutil.ReadFile(opts.PasswordFile)
-		if os.IsNotExist(err) {
+		s, err := textfile.Read(opts.PasswordFile)
+		if os.IsNotExist(errors.Cause(err)) {
 			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
 		}
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")

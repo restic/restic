@@ -1,0 +1,12 @@
+Enhancement: Support UTF-16 encoding and process Byte Order Mark
+
+On Windows, text editors commonly leave a Byte Order Mark at the beginning of
+the file to define which encoding is used (oftentimes UTF-16). We've added code
+to support processing the BOMs in text files, like the exclude files, the
+password file and the file passed via `--files-from`. This does not apply to
+any file being saved in a backup, those are not touched and archived as they
+are.
+
+https://github.com/restic/restic/issues/1433
+https://github.com/restic/restic/issues/1738
+https://github.com/restic/restic/pull/1748
