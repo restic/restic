@@ -7,7 +7,6 @@ import (
 	"path"
 	"runtime"
 	"sort"
-	"syscall"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -331,42 +330,58 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 	fn.absTarget = abstarget
 
-	var fi os.FileInfo
-	var errFI error
-
-	file, errOpen := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW|fs.O_NONBLOCK, 0)
-	if errOpen == nil {
-		fi, errFI = file.Stat()
-	}
-
+	fi, err := arch.FS.Lstat(target)
 	if !arch.Select(abstarget, fi) {
 		debug.Log("%v is excluded", target)
-		if file != nil {
-			_ = file.Close()
-		}
 		return FutureNode{}, true, nil
 	}
 
-	if errOpen != nil {
-		debug.Log("  open error %#v", errOpen)
-		// test if the open failed because target is a symbolic link or a socket
-		if e, ok := errOpen.(*os.PathError); ok && (e.Err == syscall.ELOOP || e.Err == syscall.ENXIO) {
-			// in this case, redo the stat and carry on
-			fi, errFI = arch.FS.Lstat(target)
-		} else {
-			return FutureNode{}, false, errors.Wrap(errOpen, "OpenFile")
+	if err != nil {
+		debug.Log("lstat() for %v returned error: %v", target, err)
+		err = arch.error(abstarget, fi, err)
+		if err != nil {
+			return FutureNode{}, false, errors.Wrap(err, "Lstat")
 		}
-	}
-
-	if errFI != nil {
-		_ = file.Close()
-		return FutureNode{}, false, errors.Wrap(errFI, "Stat")
+		return FutureNode{}, true, nil
 	}
 
 	switch {
 	case fs.IsRegularFile(fi):
 		debug.Log("  %v regular file", target)
 		start := time.Now()
+
+		// reopen file and do an fstat() on the open file to check it is still
+		// a file (and has not been exchanged for e.g. a symlink)
+		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW|fs.O_NONBLOCK, 0)
+		if err != nil {
+			debug.Log("Openfile() for %v returned error: %v", target, err)
+			err = arch.error(abstarget, fi, err)
+			if err != nil {
+				return FutureNode{}, false, errors.Wrap(err, "Lstat")
+			}
+			return FutureNode{}, true, nil
+		}
+
+		fi, err = file.Stat()
+		if err != nil {
+			debug.Log("stat() on opened file %v returned error: %v", target, err)
+			_ = file.Close()
+			err = arch.error(abstarget, fi, err)
+			if err != nil {
+				return FutureNode{}, false, errors.Wrap(err, "Lstat")
+			}
+			return FutureNode{}, true, nil
+		}
+
+		// make sure it's still a file
+		if !fs.IsRegularFile(fi) {
+			err = errors.Errorf("file %v changed type, refusing to archive")
+			err = arch.error(abstarget, fi, err)
+			if err != nil {
+				return FutureNode{}, false, err
+			}
+			return FutureNode{}, true, nil
+		}
 
 		// use previous node if the file hasn't changed
 		if previous != nil && !fileChanged(fi, previous) {
@@ -386,8 +401,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			arch.CompleteItem(snPath, previous, node, stats, time.Since(start))
 		})
 
-		file = nil
-
 	case fi.IsDir():
 		debug.Log("  %v dir", target)
 
@@ -400,7 +413,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
-			_ = file.Close()
 			return FutureNode{}, false, err
 		}
 
@@ -413,15 +425,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		fn.node, err = arch.nodeFromFileInfo(target, fi)
 		if err != nil {
-			_ = file.Close()
 			return FutureNode{}, false, err
-		}
-	}
-
-	if file != nil {
-		err = file.Close()
-		if err != nil {
-			return fn, false, errors.Wrap(err, "Close")
 		}
 	}
 
