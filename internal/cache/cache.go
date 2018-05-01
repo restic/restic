@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -156,14 +157,25 @@ func updateTimestamp(d string) error {
 	return fs.Chtimes(d, t, t)
 }
 
-const maxCacheAge = 30 * 24 * time.Hour
+// MaxCacheAge is the default age (30 days) after which cache directories are considered old.
+const MaxCacheAge = 30 * 24 * time.Hour
 
-// Old returns a list of cache directories with a modification time of more
-// than 30 days ago.
-func Old(basedir string) ([]string, error) {
-	var oldCacheDirs []string
+func validCacheDirName(s string) bool {
+	r := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+	if !r.MatchString(s) {
+		return false
+	}
 
+	return true
+}
+
+// listCacheDirs returns the list of cache directories.
+func listCacheDirs(basedir string) ([]os.FileInfo, error) {
 	f, err := fs.Open(basedir)
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -173,27 +185,63 @@ func Old(basedir string) ([]string, error) {
 		return nil, err
 	}
 
-	oldest := time.Now().Add(-maxCacheAge)
-	for _, fi := range entries {
-		if !fi.IsDir() {
-			continue
-		}
-
-		if !fi.ModTime().Before(oldest) {
-			continue
-		}
-
-		oldCacheDirs = append(oldCacheDirs, fi.Name())
-	}
-
 	err = f.Close()
 	if err != nil {
 		return nil, err
 	}
 
+	result := make([]os.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		if !validCacheDirName(entry.Name()) {
+			continue
+		}
+
+		result = append(result, entry)
+	}
+
+	return result, nil
+}
+
+// All returns a list of cache directories.
+func All(basedir string) (dirs []os.FileInfo, err error) {
+	return listCacheDirs(basedir)
+}
+
+// OlderThan returns the list of cache directories older than max.
+func OlderThan(basedir string, max time.Duration) ([]os.FileInfo, error) {
+	entries, err := listCacheDirs(basedir)
+	if err != nil {
+		return nil, err
+	}
+
+	var oldCacheDirs []os.FileInfo
+	for _, fi := range entries {
+		if !IsOld(fi.ModTime(), max) {
+			continue
+		}
+
+		oldCacheDirs = append(oldCacheDirs, fi)
+	}
+
 	debug.Log("%d old cache dirs found", len(oldCacheDirs))
 
 	return oldCacheDirs, nil
+}
+
+// Old returns a list of cache directories with a modification time of more
+// than 30 days ago.
+func Old(basedir string) ([]os.FileInfo, error) {
+	return OlderThan(basedir, MaxCacheAge)
+}
+
+// IsOld returns true if the timestamp is considered old.
+func IsOld(t time.Time, maxAge time.Duration) bool {
+	oldest := time.Now().Add(-maxAge)
+	return t.Before(oldest)
 }
 
 // errNoSuchFile is returned when a file is not cached.
