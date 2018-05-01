@@ -329,7 +329,10 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 	b.totalCh <- counter{Files: s.Files, Dirs: s.Dirs, Bytes: s.Bytes}
 
 	if item == "" {
-		b.V("scan finished in %.3fs", time.Since(b.start).Seconds())
+		b.V("scan finished in %.3fs: %v files, %s",
+			time.Since(b.start).Seconds(),
+			s.Files, formatBytes(s.Bytes),
+		)
 		close(b.totalCh)
 		return
 	}
@@ -339,12 +342,16 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 func (b *Backup) Finish() {
 	b.clearStatus <- struct{}{}
 
-	b.V("processed %s in %s", formatBytes(b.totalBytes), formatDuration(time.Since(b.start)))
-	b.V("\n")
-	b.V("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
-	b.V("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
-	b.VV("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
-	b.VV("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	b.V("Added:      %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
-	b.V("\n")
+	b.P("\n")
+	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
+	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
+	b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
+	b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
+	b.P("Added:      %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
+	b.P("\n")
+	b.P("processed %v files, %v in %s",
+		b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
+		formatBytes(b.totalBytes),
+		formatDuration(time.Since(b.start)),
+	)
 }
