@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -40,4 +41,23 @@ func TestChdir(t testing.TB, dest string) (back func()) {
 			t.Fatal(err)
 		}
 	}
+}
+
+// TestTempFile returns a new temporary file, which is removed when cleanup()
+// is called.
+func TestTempFile(t testing.TB, prefix string) (File, func()) {
+	f, err := ioutil.TempFile("", prefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cleanup := func() {
+		_ = f.Close()
+		err = Remove(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	return f, cleanup
 }
