@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -28,7 +27,7 @@ type TransportOptions struct {
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
 // blocks.
 func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
-	data, err := ioutil.ReadFile(os.Args[1])
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "ReadFile")
 	}
