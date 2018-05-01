@@ -1,0 +1,8 @@
+Enhancement: Add `cache` command to list cache dirs
+
+The command `cache` was added, it allows listing restic's cache directoriers
+together with the last usage. It also allows removing old cache dirs without
+having to access a repo, via `restic cache --cleanup`
+
+https://github.com/restic/restic/issues/1721
+https://github.com/restic/restic/pull/1749

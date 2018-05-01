@@ -390,7 +390,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		Printf("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
 
 		for _, item := range oldCacheDirs {
-			dir := filepath.Join(c.Base, item)
+			dir := filepath.Join(c.Base, item.Name())
 			err = fs.RemoveAll(dir)
 			if err != nil {
 				Warnf("unable to remove %v: %v\n", dir, err)
