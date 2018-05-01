@@ -2,8 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
-	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -127,19 +129,24 @@ func readLinesFromFile(filename string) ([]string, error) {
 		return nil, nil
 	}
 
-	var r io.Reader = os.Stdin
-	if filename != "-" {
-		f, err := os.Open(filename)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		r = f
+	var (
+		data []byte
+		err  error
+	)
+
+	if filename == "-" {
+		data, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		data, err = textfile.Read(filename)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	var lines []string
 
-	scanner := bufio.NewScanner(r)
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		// ignore empty lines
@@ -232,18 +239,12 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 	var excludes []string
 	for _, filename := range excludeFiles {
 		err := func() (err error) {
-			file, err := fs.Open(filename)
+			data, err := textfile.Read(filename)
 			if err != nil {
 				return err
 			}
-			defer func() {
-				// return pre-close error if there was one
-				if errClose := file.Close(); err == nil {
-					err = errClose
-				}
-			}()
 
-			scanner := bufio.NewScanner(file)
+			scanner := bufio.NewScanner(bytes.NewReader(data))
 			for scanner.Scan() {
 				line := strings.TrimSpace(scanner.Text())
 
