@@ -427,7 +427,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	sc.Error = p.ScannerError
 	sc.Result = p.ReportTotal
 
-	p.V("start scan")
+	p.V("start scan on %v", targets)
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
@@ -464,7 +464,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return uploader.Upload(gopts.ctx, t.Context(gopts.ctx), 30*time.Second)
 	})
 
-	p.V("start backup")
+	p.V("start backup on %v", targets)
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
 	if err != nil {
 		return err
