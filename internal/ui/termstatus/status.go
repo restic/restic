@@ -44,14 +44,19 @@ type fder interface {
 // a file (e.g. via shell output redirection) or is just an io.Writer (not the
 // open *os.File for stdout), no status lines are printed. The status lines and
 // normal output (via Print/Printf) are written to wr, error messages are
-// written to errWriter.
-func New(wr io.Writer, errWriter io.Writer) *Terminal {
+// written to errWriter. If disableStatus is set to true, no status messages
+// are printed even if the terminal supports it.
+func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	t := &Terminal{
 		wr:        bufio.NewWriter(wr),
 		errWriter: errWriter,
 		buf:       bytes.NewBuffer(nil),
 		msg:       make(chan message),
 		status:    make(chan status),
+	}
+
+	if disableStatus {
+		return t
 	}
 
 	if d, ok := wr.(fder); ok && canUpdateStatus(d.Fd()) {

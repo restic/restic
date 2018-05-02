@@ -59,7 +59,7 @@ func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions
 	defer cancel()
 
 	var wg errgroup.Group
-	term := termstatus.New(gopts.stdout, gopts.stderr)
+	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
 	wg.Go(func() error { term.Run(ctx); return nil })
 
 	gopts.stdout = ioutil.Discard
