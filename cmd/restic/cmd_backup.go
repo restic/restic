@@ -48,7 +48,7 @@ given as the arguments.
 		}
 
 		var t tomb.Tomb
-		term := termstatus.New(globalOptions.stdout, globalOptions.stderr)
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
 		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
 
 		err := runBackup(backupOptions, globalOptions, term, args)
