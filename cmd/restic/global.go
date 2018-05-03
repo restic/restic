@@ -43,7 +43,6 @@ var version = "compiled manually"
 type GlobalOptions struct {
 	config.Config
 
-	PasswordFile  string
 	Quiet         bool
 	Verbose       int
 	NoLock        bool
@@ -91,8 +90,8 @@ func init() {
 
 	// these fields are embedded in config.Config and queried via f.Get[...]()
 	f.StringP("repo", "r", "", "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
+	f.StringP("password-file", "p", "", "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 
-	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")

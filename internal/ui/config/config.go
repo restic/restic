@@ -15,9 +15,9 @@ import (
 
 // Config contains configuration items read from a file.
 type Config struct {
-	Repo         string `config:"repo"     flag:"repo" env:"RESTIC_REPOSITORY"`
-	Password     string `config:"password"             env:"RESTIC_PASSWORD"`
-	PasswordFile string `config:`
+	Repo         string `config:"repo"          flag:"repo"          env:"RESTIC_REPOSITORY"`
+	Password     string `config:"password"                           env:"RESTIC_PASSWORD"`
+	PasswordFile string `config:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
 	Backends map[string]Backend `config:"backend"`
 	Backup   *Backup            `config:"backup"`
