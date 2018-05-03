@@ -104,7 +104,7 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 
 		// return the error if it wasn't ignored
 		if fn.err != nil {
-			debug.Log("err for %v: %v", fn.node.Name, fn.err)
+			debug.Log("err for %v: %v", fn.snPath, fn.err)
 			fn.err = s.errFn(fn.target, fn.fi, fn.err)
 			if fn.err == nil {
 				// ignore error
