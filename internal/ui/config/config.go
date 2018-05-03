@@ -20,7 +20,7 @@ type Config struct {
 	PasswordFile string `config:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
 	Backends map[string]Backend `config:"backend"`
-	Backup   *Backup            `config:"backup"`
+	Backup   Backup             `config:"backup"`
 }
 
 // Backend is a configured backend to store a repository.
@@ -31,7 +31,8 @@ type Backend struct {
 
 // Backup sets the options for the "backup" command.
 type Backup struct {
-	Target []string `config:"target"`
+	Target   []string `config:"target"`
+	Excludes []string `config:"exclude" flag:"exclude"`
 }
 
 // listTags returns the all the top-level tags with the name tagname of obj.
@@ -190,6 +191,13 @@ func ApplyFlags(cfg interface{}, fset *pflag.FlagSet) error {
 				return
 			}
 			field.SetString(v)
+		case "stringArray":
+			v, err := fset.GetStringArray(flag.Name)
+			if err != nil {
+				visitError = err
+				return
+			}
+			field.SetSlice(v)
 		default:
 			visitError = errors.Errorf("flag %v has unknown type %v", flag.Name, flag.Value.Type())
 			return

@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
@@ -45,6 +46,8 @@ directories in an encrypted repository stored on different backends.
 		if err != nil {
 			return err
 		}
+
+		spew.Dump(globalOptions.Config)
 
 		// set verbosity, default is one
 		globalOptions.verbosity = 1

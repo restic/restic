@@ -21,6 +21,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/config"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -43,6 +44,11 @@ given as the arguments.
 	},
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		err := config.ApplyFlags(&backupOptions.Config, cmd.Flags())
+		if err != nil {
+			return err
+		}
+
 		if backupOptions.Stdin && backupOptions.FilesFrom == "-" {
 			return errors.Fatal("cannot use both `--stdin` and `--files-from -`")
 		}
@@ -51,7 +57,7 @@ given as the arguments.
 		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
 		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
 
-		err := runBackup(backupOptions, globalOptions, term, args)
+		err = runBackup(backupOptions, globalOptions, term, args)
 		if err != nil {
 			return err
 		}
@@ -62,9 +68,10 @@ given as the arguments.
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
+	Config config.Backup
+
 	Parent           string
 	Force            bool
-	Excludes         []string
 	ExcludeFiles     []string
 	ExcludeOtherFS   bool
 	ExcludeIfPresent []string
@@ -86,7 +93,9 @@ func init() {
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
-	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+
+	f.StringArrayP("exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
@@ -188,12 +197,12 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot
-func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, excludes []string, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS {
 		f, err := rejectByDevice(targets)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		fs = append(fs, f)
 	}
@@ -202,19 +211,21 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 	if repo.Cache != nil {
 		f, err := rejectResticCache(repo)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		fs = append(fs, f)
 	}
 
+	excludes = append(excludes, opts.Config.Excludes...)
+
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
-		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
+		excludes = append(excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
 	}
 
-	if len(opts.Excludes) > 0 {
-		fs = append(fs, rejectByPattern(opts.Excludes))
+	if len(excludes) > 0 {
+		fs = append(fs, rejectByPattern(excludes))
 	}
 
 	if opts.ExcludeCaches {
@@ -224,13 +235,13 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 	for _, spec := range opts.ExcludeIfPresent {
 		f, err := rejectIfPresent(spec)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		fs = append(fs, f)
 	}
 
-	return fs, nil
+	return fs, excludes, nil
 }
 
 // readExcludePatternsFromFiles reads all exclude files and returns the list of
@@ -381,7 +392,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup
-	rejectFuncs, err := collectRejectFuncs(opts, repo, targets)
+	rejectFuncs, excludes, err := collectRejectFuncs(opts, repo, targets)
 	if err != nil {
 		return err
 	}
@@ -443,7 +454,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	snapshotOpts := archiver.SnapshotOptions{
-		Excludes:       opts.Excludes,
+		Excludes:       excludes,
 		Tags:           opts.Tags,
 		Time:           timeStamp,
 		Hostname:       opts.Hostname,
