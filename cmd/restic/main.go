@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/config"
 
 	"github.com/spf13/cobra"
 
@@ -29,7 +30,22 @@ directories in an encrypted repository stored on different backends.
 	SilenceUsage:      true,
 	DisableAutoGenTag: true,
 
-	PersistentPreRunE: func(c *cobra.Command, args []string) error {
+	PersistentPreRunE: func(c *cobra.Command, args []string) (err error) {
+		globalOptions.Config, err = config.Load("restic.conf")
+		if err != nil {
+			return err
+		}
+
+		err = config.ApplyEnv(&globalOptions.Config, os.Environ())
+		if err != nil {
+			return err
+		}
+
+		err = config.ApplyFlags(&globalOptions.Config, c.Flags())
+		if err != nil {
+			return err
+		}
+
 		// set verbosity, default is one
 		globalOptions.verbosity = 1
 		if globalOptions.Quiet && (globalOptions.Verbose > 1) {

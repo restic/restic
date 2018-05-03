@@ -1,0 +1,10 @@
+{
+  "Backends": null,
+  "Repo": "",
+  "Backup": {
+    "Target": [
+      "foo",
+      "/home/user"
+    ]
+  }
+}

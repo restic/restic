@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/config"
 )
 
 type dirEntry struct {
@@ -209,7 +210,9 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = GlobalOptions{
-		Repo:     env.repo,
+		Config: config.Config{
+			Repo: env.repo,
+		},
 		Quiet:    true,
 		CacheDir: env.cache,
 		ctx:      context.Background(),

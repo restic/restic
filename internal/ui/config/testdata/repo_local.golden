@@ -1,9 +1,10 @@
 {
-  "Quiet": false,
-  "Repos": {
+  "Backends": {
     "test": {
       "Backend": "local",
       "Path": "/foo/bar/baz"
     }
-  }
+  },
+  "Repo": "test",
+  "Backup": null
 }

@@ -30,6 +30,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui/config"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -40,7 +41,8 @@ var version = "compiled manually"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo          string
+	config.Config
+
 	PasswordFile  string
 	Quiet         bool
 	Verbose       int
@@ -86,7 +88,10 @@ func init() {
 	})
 
 	f := cmdRoot.PersistentFlags()
-	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
+
+	// these fields are embedded in config.Config and queried via f.Get[...]()
+	f.StringP("repo", "r", "", "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
+
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
