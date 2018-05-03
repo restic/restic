@@ -15,11 +15,12 @@ import (
 
 // Config contains configuration items read from a file.
 type Config struct {
-	Repo     string `hcl:"repo" flag:"repo" env:"RESTIC_REPOSITORY"`
-	Password string `hcl:"password" env:"RESTIC_PASSWORD"`
+	Repo         string `config:"repo"     flag:"repo" env:"RESTIC_REPOSITORY"`
+	Password     string `config:"password"             env:"RESTIC_PASSWORD"`
+	PasswordFile string `config:`
 
-	Backends map[string]Backend `hcl:"backend"`
-	Backup   *Backup            `hcl:"backup"`
+	Backends map[string]Backend `config:"backend"`
+	Backup   *Backup            `config:"backup"`
 }
 
 // Backend is a configured backend to store a repository.
@@ -30,7 +31,7 @@ type Backend struct {
 
 // Backup sets the options for the "backup" command.
 type Backup struct {
-	Target []string `hcl:"target"`
+	Target []string `config:"target"`
 }
 
 // listTags returns the all the top-level tags with the name tagname of obj.
@@ -78,8 +79,8 @@ func Parse(buf []byte) (cfg Config, err error) {
 	root := parsed.Node.(*ast.ObjectList)
 
 	checks := map[string]map[string]struct{}{
-		"":       listTags(cfg, "hcl"),
-		"backup": listTags(Backup{}, "hcl"),
+		"":       listTags(cfg, "config"),
+		"backup": listTags(Backup{}, "config"),
 	}
 
 	for name, valid := range checks {
