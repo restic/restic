@@ -1,7 +1,10 @@
 Enhancement: Rework archiver code
 
 The core archiver code and the complementary code for the `backup` command was
-rewritten completely. This resolves very annoying issues such as 549.
+rewritten completely. This resolves very annoying issues such as 549. The first
+backup with this release of restic will likely result in all files being
+re-read locally, so it will take a lot longer. The next backup after that will
+be fast again.
 
 Basically, with the old code, restic took the last path component of each
 to-be-saved file or directory as the top-level file/directory within the
