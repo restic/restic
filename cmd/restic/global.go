@@ -238,17 +238,17 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 }
 
 // resolvePassword determines the password to be used for opening the repository.
-func resolvePassword(opts GlobalOptions, env string) (string, error) {
+func resolvePassword(opts GlobalOptions) (string, error) {
+	if opts.Password != "" {
+		return opts.Password, nil
+	}
+
 	if opts.PasswordFile != "" {
 		s, err := textfile.Read(opts.PasswordFile)
 		if os.IsNotExist(errors.Cause(err)) {
 			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
 		}
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
-	}
-
-	if pwd := os.Getenv(env); pwd != "" {
-		return pwd, nil
 	}
 
 	return "", nil

@@ -15,7 +15,8 @@ import (
 
 // Config contains configuration items read from a file.
 type Config struct {
-	Repo string `hcl:"repo" flag:"repo" env:"RESTIC_REPOSITORY"`
+	Repo     string `hcl:"repo" flag:"repo" env:"RESTIC_REPOSITORY"`
+	Password string `hcl:"password" env:"RESTIC_PASSWORD"`
 
 	Backends map[string]Backend `hcl:"backend"`
 	Backup   *Backup            `hcl:"backup"`
