@@ -365,11 +365,16 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	p.V("lock repository")
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		p.V("NOT locking repository as requested")
+		Warnf("WARNING: No lock file is being created, this may lead to data loss on parallel prune operations!\n")
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+	} else {
+		p.V("lock repository")
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup
