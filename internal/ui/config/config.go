@@ -15,12 +15,12 @@ import (
 
 // Config contains configuration items read from a file.
 type Config struct {
-	Repo         string `config:"repo"          flag:"repo"          env:"RESTIC_REPOSITORY"`
-	Password     string `config:"password"                           env:"RESTIC_PASSWORD"`
-	PasswordFile string `config:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
+	Repo         string `hcl:"repo"          flag:"repo"          env:"RESTIC_REPOSITORY"`
+	Password     string `hcl:"password"                           env:"RESTIC_PASSWORD"`
+	PasswordFile string `hcl:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
-	Backends map[string]Backend `config:"backend"`
-	Backup   Backup             `config:"backup"`
+	Backends map[string]Backend `hcl:"backend"`
+	Backup   Backup             `hcl:"backup"`
 }
 
 // Backend is a configured backend to store a repository.
@@ -31,8 +31,8 @@ type Backend struct {
 
 // Backup sets the options for the "backup" command.
 type Backup struct {
-	Target   []string `config:"target"`
-	Excludes []string `config:"exclude" flag:"exclude"`
+	Target   []string `hcl:"target"`
+	Excludes []string `hcl:"exclude" flag:"exclude"`
 }
 
 // listTags returns the all the top-level tags with the name tagname of obj.
