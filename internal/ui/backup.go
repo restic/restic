@@ -150,16 +150,18 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 			processed.Files, formatBytes(processed.Bytes), errors,
 		)
 	} else {
-		var eta string
+		var eta, percent string
 
 		if secs > 0 && processed.Bytes < total.Bytes {
 			eta = fmt.Sprintf(" ETA %s", formatSeconds(secs))
+			percent = formatPercent(processed.Bytes, total.Bytes)
+			percent += "  "
 		}
 
 		// include totals
-		status = fmt.Sprintf("[%s] %s  %v files %s, total %v files %v, %d errors%s",
+		status = fmt.Sprintf("[%s] %s%v files %s, total %v files %v, %d errors%s",
 			formatDuration(time.Since(b.start)),
-			formatPercent(processed.Bytes, total.Bytes),
+			percent,
 			processed.Files,
 			formatBytes(processed.Bytes),
 			total.Files,
