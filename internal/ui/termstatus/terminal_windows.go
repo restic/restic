@@ -8,11 +8,29 @@ import (
 	"unsafe"
 )
 
-// clearLines clears the current line and n lines above it.
-func clearLines(wr io.Writer, fd uintptr) clearLinesFunc {
+// clearCurrentLine removes all characters from the current line and resets the
+// cursor position to the first column.
+func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
-		return windowsClearLines
+		return windowsClearCurrentLine
+	}
+
+	// check if the output file type is a pipe (0x0003)
+	if getFileType(fd) != fileTypePipe {
+		// return empty func, update state is not possible on this terminal
+		return func(io.Writer, uintptr) {}
+	}
+
+	// assume we're running in mintty/cygwin
+	return posixClearCurrentLine
+}
+
+// moveCursorUp moves the cursor to the line n lines above the current one.
+func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
+	// easy case, the terminal is cmd or psh, without redirection
+	if isWindowsTerminal(fd) {
+		return windowsMoveCursorUp
 	}
 
 	// check if the output file type is a pipe (0x0003)
@@ -22,7 +40,7 @@ func clearLines(wr io.Writer, fd uintptr) clearLinesFunc {
 	}
 
 	// assume we're running in mintty/cygwin
-	return posixClearLines
+	return posixMoveCursorUp
 }
 
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -60,22 +78,27 @@ type (
 	}
 )
 
-// windowsClearLines clears the current line and n lines above it.
-func windowsClearLines(wr io.Writer, fd uintptr, n int) {
+// windowsClearCurrentLine removes all characters from the current line and
+// resets the cursor position to the first column.
+func windowsClearCurrentLine(wr io.Writer, fd uintptr) {
 	var info consoleScreenBufferInfo
 	procGetConsoleScreenBufferInfo.Call(fd, uintptr(unsafe.Pointer(&info)))
 
-	for i := 0; i <= n; i++ {
-		// clear the line
-		cursor := coord{
-			x: info.window.left,
-			y: info.cursorPosition.y - short(i),
-		}
-		var count, w dword
-		count = dword(info.size.x)
-		procFillConsoleOutputAttribute.Call(fd, uintptr(info.attributes), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
-		procFillConsoleOutputCharacter.Call(fd, uintptr(' '), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
+	// clear the line
+	cursor := coord{
+		x: info.window.left,
+		y: info.cursorPosition.y,
 	}
+	var count, w dword
+	count = dword(info.size.x)
+	procFillConsoleOutputAttribute.Call(fd, uintptr(info.attributes), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
+	procFillConsoleOutputCharacter.Call(fd, uintptr(' '), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
+}
+
+// windowsMoveCursorUp moves the cursor to the line n lines above the current one.
+func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
+	var info consoleScreenBufferInfo
+	procGetConsoleScreenBufferInfo.Call(fd, uintptr(unsafe.Pointer(&info)))
 
 	// move cursor up by n lines and to the first column
 	info.cursorPosition.y -= short(n)

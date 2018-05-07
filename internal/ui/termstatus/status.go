@@ -21,10 +21,14 @@ type Terminal struct {
 	msg             chan message
 	status          chan status
 	canUpdateStatus bool
-	clearLines      clearLinesFunc
-}
 
-type clearLinesFunc func(wr io.Writer, fd uintptr, n int)
+	// will be closed when the goroutine which runs Run() terminates, so it'll
+	// yield a default value immediately
+	closed chan struct{}
+
+	clearCurrentLine func(io.Writer, uintptr)
+	moveCursorUp     func(io.Writer, uintptr, int)
+}
 
 type message struct {
 	line string
@@ -53,6 +57,7 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		buf:       bytes.NewBuffer(nil),
 		msg:       make(chan message),
 		status:    make(chan status),
+		closed:    make(chan struct{}),
 	}
 
 	if disableStatus {
@@ -63,7 +68,8 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		// only use the fancy status code when we're running on a real terminal.
 		t.canUpdateStatus = true
 		t.fd = d.Fd()
-		t.clearLines = clearLines(wr, t.fd)
+		t.clearCurrentLine = clearCurrentLine(wr, t.fd)
+		t.moveCursorUp = moveCursorUp(wr, t.fd)
 	}
 
 	return t
@@ -72,6 +78,7 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 // Run updates the screen. It should be run in a separate goroutine. When
 // ctx is cancelled, the status lines are cleanly removed.
 func (t *Terminal) Run(ctx context.Context) {
+	defer close(t.closed)
 	if t.canUpdateStatus {
 		t.run(ctx)
 		return
@@ -80,23 +87,13 @@ func (t *Terminal) Run(ctx context.Context) {
 	t.runWithoutStatus(ctx)
 }
 
-func countLines(buf []byte) int {
-	lines := 0
-	sc := bufio.NewScanner(bytes.NewReader(buf))
-	for sc.Scan() {
-		lines++
-	}
-	return lines
-}
-
 type stringWriter interface {
 	WriteString(string) (int, error)
 }
 
 // run listens on the channels and updates the terminal screen.
 func (t *Terminal) run(ctx context.Context) {
-	statusBuf := bytes.NewBuffer(nil)
-	statusLines := 0
+	var status []string
 	for {
 		select {
 		case <-ctx.Done():
@@ -104,12 +101,7 @@ func (t *Terminal) run(ctx context.Context) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
-			t.undoStatus(statusLines)
-
-			err := t.wr.Flush()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-			}
+			t.undoStatus(len(status))
 
 			return
 
@@ -118,14 +110,14 @@ func (t *Terminal) run(ctx context.Context) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
-			t.undoStatus(statusLines)
+			t.clearCurrentLine(t.wr, t.fd)
 
 			var dst io.Writer
 			if msg.err {
 				dst = t.errWriter
 
 				// assume t.wr and t.errWriter are different, so we need to
-				// flush the removal of the status lines first.
+				// flush clearing the current line
 				err := t.wr.Flush()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
@@ -146,10 +138,7 @@ func (t *Terminal) run(ctx context.Context) {
 				continue
 			}
 
-			_, err = t.wr.Write(statusBuf.Bytes())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-			}
+			t.writeStatus(status)
 
 			err = t.wr.Flush()
 			if err != nil {
@@ -161,24 +150,37 @@ func (t *Terminal) run(ctx context.Context) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
-			t.undoStatus(statusLines)
 
-			statusBuf.Reset()
-			for _, line := range stat.lines {
-				statusBuf.WriteString(line)
-			}
-			statusLines = len(stat.lines)
-
-			_, err := t.wr.Write(statusBuf.Bytes())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-			}
-
-			err = t.wr.Flush()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-			}
+			status = status[:0]
+			status = append(status, stat.lines...)
+			t.writeStatus(status)
 		}
+	}
+}
+
+func (t *Terminal) writeStatus(status []string) {
+	for _, line := range status {
+		t.clearCurrentLine(t.wr, t.fd)
+
+		_, err := t.wr.WriteString(line)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+		}
+
+		// flush is needed so that the current line is updated
+		err = t.wr.Flush()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+		}
+	}
+
+	if len(status) > 0 {
+		t.moveCursorUp(t.wr, t.fd, len(status)-1)
+	}
+
+	err := t.wr.Flush()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 	}
 }
 
@@ -227,12 +229,27 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 }
 
 func (t *Terminal) undoStatus(lines int) {
-	if lines == 0 {
-		return
+	for i := 0; i < lines; i++ {
+		t.clearCurrentLine(t.wr, t.fd)
+
+		_, err := t.wr.WriteRune('\n')
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
+		}
+
+		// flush is needed so that the current line is updated
+		err = t.wr.Flush()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+		}
 	}
 
-	lines--
-	t.clearLines(t.wr, t.fd, lines)
+	t.moveCursorUp(t.wr, t.fd, lines)
+
+	err := t.wr.Flush()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+	}
 }
 
 // Print writes a line to the terminal.
@@ -242,7 +259,10 @@ func (t *Terminal) Print(line string) {
 		line += "\n"
 	}
 
-	t.msg <- message{line: line}
+	select {
+	case t.msg <- message{line: line}:
+	case <-t.closed:
+	}
 }
 
 // Printf uses fmt.Sprintf to write a line to the terminal.
@@ -258,7 +278,10 @@ func (t *Terminal) Error(line string) {
 		line += "\n"
 	}
 
-	t.msg <- message{line: line, err: true}
+	select {
+	case t.msg <- message{line: line, err: true}:
+	case <-t.closed:
+	}
 }
 
 // Errorf uses fmt.Sprintf to write an error line to the terminal.
@@ -294,5 +317,8 @@ func (t *Terminal) SetStatus(lines []string) {
 	last := len(lines) - 1
 	lines[last] = strings.TrimRight(lines[last], "\n")
 
-	t.status <- status{lines: lines}
+	select {
+	case t.status <- status{lines: lines}:
+	case <-t.closed:
+	}
 }
