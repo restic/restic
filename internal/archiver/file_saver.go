@@ -189,9 +189,8 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	}
 
 	for _, res := range results {
-		// test if the context has been cancelled, return the error
 		if res.Err() != nil {
-			return saveFileResponse{err: ctx.Err()}
+			return saveFileResponse{err: res.Err()}
 		}
 
 		if !res.Known() {
