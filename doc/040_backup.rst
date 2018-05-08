@@ -135,6 +135,7 @@ the exclude options are:
  Let's say we have a file called ``excludes.txt`` with the following content:
 
 ::
+
     # exclude go-files
     *.go
     # exclude foo/x/y/z/bar foo/x/bar foo/bar
@@ -164,7 +165,7 @@ Patterns need to match on complete path components. For example, the pattern ``f
 
  * matches ``/dir1/foo/dir2/file`` and ``/dir/foo``
  * does not match ``/dir/foobar`` or ``barfoo``
-   
+
 A trailing ``/`` is ignored, a leading ``/`` anchors the
 pattern at the root directory. This means, ``/bin`` matches ``/bin/bash`` but
 does not match ``/usr/bin/restic``.
