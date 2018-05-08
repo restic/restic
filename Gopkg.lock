@@ -191,7 +191,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["argon2","blake2b","curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
-  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
+  revision = "4ec37c66abab2c7e02ae775328b2ff001c3f025a"
 
 [[projects]]
   branch = "master"
@@ -214,8 +214,8 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
-  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
+  packages = ["cpu","unix","windows"]
+  revision = "7db1c3b1a98089d0071c84f646ff5c96aad43682"
 
 [[projects]]
   name = "golang.org/x/text"

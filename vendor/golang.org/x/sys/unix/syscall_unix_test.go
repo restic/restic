@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"testing"
 	"time"
 
@@ -57,6 +58,44 @@ func _() {
 		_ = unix.F_SETLK
 		_ = unix.F_SETLKW
 	)
+}
+
+func TestErrnoSignalName(t *testing.T) {
+	testErrors := []struct {
+		num  syscall.Errno
+		name string
+	}{
+		{syscall.EPERM, "EPERM"},
+		{syscall.EINVAL, "EINVAL"},
+		{syscall.ENOENT, "ENOENT"},
+	}
+
+	for _, te := range testErrors {
+		t.Run(fmt.Sprintf("%d/%s", te.num, te.name), func(t *testing.T) {
+			e := unix.ErrnoName(te.num)
+			if e != te.name {
+				t.Errorf("ErrnoName(%d) returned %s, want %s", te.num, e, te.name)
+			}
+		})
+	}
+
+	testSignals := []struct {
+		num  syscall.Signal
+		name string
+	}{
+		{syscall.SIGHUP, "SIGHUP"},
+		{syscall.SIGPIPE, "SIGPIPE"},
+		{syscall.SIGSEGV, "SIGSEGV"},
+	}
+
+	for _, ts := range testSignals {
+		t.Run(fmt.Sprintf("%d/%s", ts.num, ts.name), func(t *testing.T) {
+			s := unix.SignalName(ts.num)
+			if s != ts.name {
+				t.Errorf("SignalName(%d) returned %s, want %s", ts.num, s, ts.name)
+			}
+		})
+	}
 }
 
 // TestFcntlFlock tests whether the file locking structure matches

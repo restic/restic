@@ -4,10 +4,6 @@ sudo: false
 matrix:
   include:
     - os: linux
-      go: "1.8.x"
-      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
-
-    - os: linux
       go: "1.9.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
 

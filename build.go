@@ -53,7 +53,7 @@ var config = Config{
 		"github.com/restic/restic/internal/...",
 		"github.com/restic/restic/cmd/...",
 	},
-	MinVersion: GoVersion{Major: 1, Minor: 8, Patch: 0}, // minimum Go version supported
+	MinVersion: GoVersion{Major: 1, Minor: 9, Patch: 0}, // minimum Go version supported
 }
 
 // Config configures the build.

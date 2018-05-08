@@ -1,0 +1,8 @@
+Enhancement: Allow saving OneDrive folders in Windows
+
+Restic now contains a bugfix to two libraries, which allows saving OneDrive
+folders in Windows. In order to use the newer versions of the libraries, the
+minimal version required to compile restic is now Go 1.9.
+
+https://github.com/restic/restic/issues/1758
+https://github.com/restic/restic/pull/1765

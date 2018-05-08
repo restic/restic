@@ -312,6 +312,12 @@ func UtimesNanoAt(dirfd int, path string, ts []Timespec, flags int) error {
 
 //sys	fcntl(fd int, cmd int, arg int) (val int, err error)
 
+// FcntlInt performs a fcntl syscall on fd with the provided command and argument.
+func FcntlInt(fd uintptr, cmd, arg int) (int, error) {
+	valptr, _, err := sysvicall6(uintptr(unsafe.Pointer(&procfcntl)), 3, uintptr(fd), uintptr(cmd), uintptr(arg), 0, 0, 0)
+	return int(valptr), err
+}
+
 // FcntlFlock performs a fcntl syscall for the F_GETLK, F_SETLK or F_SETLKW command.
 func FcntlFlock(fd uintptr, cmd int, lk *Flock_t) error {
 	_, _, e1 := sysvicall6(uintptr(unsafe.Pointer(&procfcntl)), 3, uintptr(fd), uintptr(cmd), uintptr(unsafe.Pointer(lk)), 0, 0, 0)
