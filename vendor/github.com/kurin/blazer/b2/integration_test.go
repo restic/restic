@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -734,26 +733,7 @@ func TestWriteEmpty(t *testing.T) {
 	}
 }
 
-type rtCounter struct {
-	rt    http.RoundTripper
-	trips int
-	sync.Mutex
-}
-
-func (rt *rtCounter) RoundTrip(r *http.Request) (*http.Response, error) {
-	rt.Lock()
-	defer rt.Unlock()
-	rt.trips++
-	return rt.rt.RoundTrip(r)
-}
-
 func TestAttrsNoRoundtrip(t *testing.T) {
-	rt := &rtCounter{rt: defaultTransport}
-	defaultTransport = rt
-	defer func() {
-		defaultTransport = rt.rt
-	}()
-
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
@@ -774,7 +754,10 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 		t.Fatalf("unexpected objects: got %d, want 1", len(objs))
 	}
 
-	trips := rt.trips
+	var trips int
+	for range bucket.c.Status().table()["1m"] {
+		trips += 1
+	}
 	attrs, err := objs[0].Attrs(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -783,8 +766,12 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 		t.Errorf("got the wrong object: got %q, want %q", attrs.Name, smallFileName)
 	}
 
-	if trips != rt.trips {
-		t.Errorf("Attrs() should not have caused any net traffic, but it did: old %d, new %d", trips, rt.trips)
+	var newTrips int
+	for range bucket.c.Status().table()["1m"] {
+		newTrips += 1
+	}
+	if trips != newTrips {
+		t.Errorf("Attrs() should not have caused any net traffic, but it did: old %d, new %d", trips, newTrips)
 	}
 }
 
@@ -837,8 +824,8 @@ func TestSmallUploadsFewRoundtrips(t *testing.T) {
 		}
 	}
 	si := bucket.c.Status()
-	getURL := si.MethodCalls["b2_get_upload_url"]
-	uploadFile := si.MethodCalls["b2_upload_file"]
+	getURL := si.RPCs[0].CountByMethod()["b2_get_upload_url"]
+	uploadFile := si.RPCs[0].CountByMethod()["b2_upload_file"]
 	if getURL >= uploadFile {
 		t.Errorf("too many calls to b2_get_upload_url")
 	}
@@ -879,6 +866,37 @@ func TestListUnfinishedLargeFiles(t *testing.T) {
 	}
 	if len(fs) != 1 {
 		t.Errorf("ListUnfinishedLargeFiles: got %d, want 1", len(fs))
+	}
+}
+
+func TestReauthPreservesOptions(t *testing.T) {
+	ctx := context.Background()
+	bucket, done := startLiveTest(ctx, t)
+	defer done()
+
+	var first []ClientOption
+	opts := bucket.r.(*beRoot).options
+	for _, o := range opts {
+		first = append(first, o)
+	}
+
+	if err := bucket.r.reauthorizeAccount(ctx); err != nil {
+		t.Fatalf("reauthorizeAccount: %v", err)
+	}
+
+	second := bucket.r.(*beRoot).options
+	if len(second) != len(first) {
+		t.Fatalf("options mismatch: got %d options, wanted %d", len(second), len(first))
+	}
+
+	var f, s clientOptions
+	for i := range first {
+		first[i](&f)
+		second[i](&s)
+	}
+
+	if !f.eq(s) {
+		t.Errorf("options mismatch: got %v, want %v", s, f)
 	}
 }
 

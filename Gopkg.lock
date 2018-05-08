@@ -93,9 +93,9 @@
 
 [[projects]]
   name = "github.com/kurin/blazer"
-  packages = ["b2","base","internal/b2types","internal/blog"]
-  revision = "cd0304efa98725679cf68422cefa328d3d96f2f4"
-  version = "v0.3.0"
+  packages = ["b2","base","internal/b2assets","internal/b2types","internal/blog","x/window"]
+  revision = "b7c9cf27cae3aec98c2caaeb5181608bfe05b17c"
+  version = "v0.3.1"
 
 [[projects]]
   name = "github.com/marstr/guid"
