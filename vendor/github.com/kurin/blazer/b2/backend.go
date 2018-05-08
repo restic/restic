@@ -37,6 +37,7 @@ type beRootInterface interface {
 type beRoot struct {
 	account, key string
 	b2i          b2RootInterface
+	options      []ClientOption
 }
 
 type beBucketInterface interface {
@@ -156,13 +157,14 @@ func (r *beRoot) authorizeAccount(ctx context.Context, account, key string, opts
 		}
 		r.account = account
 		r.key = key
+		r.options = opts
 		return nil
 	}
 	return withBackoff(ctx, r, f)
 }
 
 func (r *beRoot) reauthorizeAccount(ctx context.Context) error {
-	return r.authorizeAccount(ctx, r.account, r.key)
+	return r.authorizeAccount(ctx, r.account, r.key, r.options...)
 }
 
 func (r *beRoot) createBucket(ctx context.Context, name, btype string, info map[string]string, rules []LifecycleRule) (beBucketInterface, error) {
