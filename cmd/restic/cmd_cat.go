@@ -58,7 +58,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			// find snapshot id with prefix
 			id, err = restic.FindSnapshot(repo, args[1])
 			if err != nil {
-				return err
+				return errors.Fatalf("could not find snapshot: %v\n", err)
 			}
 		}
 	}
