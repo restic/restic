@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	restictest "github.com/restic/restic/internal/test"
+	tomb "gopkg.in/tomb.v2"
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
@@ -34,11 +35,11 @@ func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo rest
 }
 
 func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	var tmb tomb.Tomb
+	ctx := tmb.Context(context.Background())
 
 	arch := New(repo, filesystem, Options{})
-	arch.runWorkers(ctx)
+	arch.runWorkers(ctx, &tmb)
 
 	var (
 		completeCallbackNode  *restic.Node
@@ -71,6 +72,12 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	res := arch.fileSaver.Save(ctx, "/", file, fi, start, complete)
 	if res.Err() != nil {
 		t.Fatal(res.Err())
+	}
+
+	tmb.Kill(nil)
+	err = tmb.Wait()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	err = repo.Flush(ctx)
@@ -586,14 +593,14 @@ func TestArchiverSaveDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			var tmb tomb.Tomb
+			ctx := tmb.Context(context.Background())
 
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
 			arch := New(repo, fs.Track{fs.Local{}}, Options{})
-			arch.runWorkers(ctx)
+			arch.runWorkers(ctx, &tmb)
 
 			chdir := tempdir
 			if test.chdir != "" {
@@ -613,7 +620,10 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			node, stats, err := ft.Node(), ft.Stats(), ft.Err()
+			node, stats := ft.Node(), ft.Stats()
+
+			tmb.Kill(nil)
+			err = tmb.Wait()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -675,11 +685,11 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
 	for i := 0; i < 5; i++ {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		var tmb tomb.Tomb
+		ctx := tmb.Context(context.Background())
 
 		arch := New(repo, fs.Track{fs.Local{}}, Options{})
-		arch.runWorkers(ctx)
+		arch.runWorkers(ctx, &tmb)
 
 		fi, err := fs.Lstat(tempdir)
 		if err != nil {
@@ -691,7 +701,10 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		node, stats, err := ft.Node(), ft.Stats(), ft.Err()
+		node, stats := ft.Node(), ft.Stats()
+
+		tmb.Kill(nil)
+		err = tmb.Wait()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -828,8 +841,8 @@ func TestArchiverSaveTree(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			var tmb tomb.Tomb
+			ctx := tmb.Context(context.Background())
 
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
@@ -837,7 +850,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			testFS := fs.Track{fs.Local{}}
 
 			arch := New(repo, testFS, Options{})
-			arch.runWorkers(ctx)
+			arch.runWorkers(ctx, &tmb)
 
 			back := fs.TestChdir(t, tempdir)
 			defer back()
@@ -857,6 +870,12 @@ func TestArchiverSaveTree(t *testing.T) {
 			}
 
 			treeID, err := repo.SaveTree(ctx, tree)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tmb.Kill(nil)
+			err = tmb.Wait()
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -262,6 +262,11 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 	b.summary.Unlock()
 
 	if current == nil {
+		// error occurred, tell the status display to remove the line
+		b.workerCh <- fileWorkerMessage{
+			filename: item,
+			done:     true,
+		}
 		return
 	}
 

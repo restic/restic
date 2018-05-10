@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"sync"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/debug"
@@ -12,6 +11,11 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
+
+// Goer starts a function in a goroutine.
+type Goer interface {
+	Go(func() error)
+}
 
 // FutureFile is returned by Save and will return the data once it
 // has been processed.
@@ -54,7 +58,6 @@ type FileSaver struct {
 	pol chunker.Pol
 
 	ch chan<- saveFileJob
-	wg sync.WaitGroup
 
 	CompleteBlob func(filename string, bytes uint64)
 
@@ -63,7 +66,7 @@ type FileSaver struct {
 
 // NewFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+func NewFileSaver(ctx context.Context, g Goer, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -81,8 +84,10 @@ func NewFileSaver(ctx context.Context, fs fs.FS, blobSaver *BlobSaver, pol chunk
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
-		s.wg.Add(1)
-		go s.worker(ctx, &s.wg, ch)
+		g.Go(func() error {
+			s.worker(ctx, ch)
+			return nil
+		})
 	}
 
 	return s
@@ -95,13 +100,19 @@ type CompleteFunc func(*restic.Node, ItemStats)
 // file is closed by Save.
 func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os.FileInfo, start func(), complete CompleteFunc) FutureFile {
 	ch := make(chan saveFileResponse, 1)
-	s.ch <- saveFileJob{
+	job := saveFileJob{
 		snPath:   snPath,
 		file:     file,
 		fi:       fi,
 		start:    start,
 		complete: complete,
 		ch:       ch,
+	}
+
+	select {
+	case s.ch <- job:
+	case <-ctx.Done():
+		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
 	}
 
 	return FutureFile{ch: ch}
@@ -189,11 +200,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	}
 
 	for _, res := range results {
-		// test if the context has been cancelled, return the error
-		if res.Err() != nil {
-			return saveFileResponse{err: ctx.Err()}
-		}
-
+		res.Wait(ctx)
 		if !res.Known() {
 			stats.DataBlobs++
 			stats.DataSize += uint64(res.Length())
@@ -210,11 +217,10 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	}
 }
 
-func (s *FileSaver) worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan saveFileJob) {
+func (s *FileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 	// a worker has one chunker which is reused for each file (because it contains a rather large buffer)
 	chnker := chunker.New(nil, s.pol)
 
-	defer wg.Done()
 	for {
 		var job saveFileJob
 		select {
