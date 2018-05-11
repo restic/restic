@@ -18,8 +18,6 @@ import (
 // TODO evaluate memory footprint for larger repositories, say 10M packs/10M files
 // TODO consider replacing pack file cache with blob cache
 // TODO avoid decrypting the same blob multiple times
-// TODO remove `restore --singlethreaded` and review/simplify hardlink support
-//      (node.CreateAt shouldn't take HardlinkIndex)
 // TODO evaluate disabled debug logging overhead for large repositories
 // TODO consider logging snapshot-relative path to reduce log clutter
 

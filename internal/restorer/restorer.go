@@ -140,10 +140,10 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string, idx *restic.HardlinkIndex) error {
+func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
 	debug.Log("restoreNode %v %v %v", node.Name, target, location)
 
-	err := node.CreateAt(ctx, target, res.repo, idx)
+	err := node.CreateAt(ctx, target, res.repo)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", target, err)
 	}
@@ -163,9 +163,20 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 	return err
 }
 
+func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
+	if err := fs.Remove(path); !os.IsNotExist(err) {
+		return errors.Wrap(err, "RemoveCreateHardlink")
+	}
+	err := fs.Link(target, path)
+	if err != nil {
+		return errors.Wrap(err, "CreateHardlink")
+	}
+	return res.restoreNodeMetadataTo(node, target, location)
+}
+
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(ctx context.Context, dst string, singlethreaded bool) error {
+func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	var err error
 	if !filepath.IsAbs(dst) {
 		dst, err = filepath.Abs(dst)
@@ -180,31 +191,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string, singlethreaded b
 	noop := func(node *restic.Node, target, location string) error { return nil }
 
 	idx := restic.NewHardlinkIndex()
-	if singlethreaded {
-		return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-			enterDir: func(node *restic.Node, target, location string) error {
-				// create dir with default permissions
-				// #leaveDir restores dir metadata after visiting all children
-				return fs.MkdirAll(target, 0700)
-			},
-
-			visitNode: func(node *restic.Node, target, location string) error {
-				// create parent dir with default permissions
-				// #leaveDir restores dir metadata after visiting all children
-				err := fs.MkdirAll(filepath.Dir(target), 0700)
-				if err != nil {
-					return err
-				}
-
-				return res.restoreNodeTo(ctx, node, target, location, idx)
-			},
-
-			// Restore directory permissions and timestamp at the end. If we did it earlier
-			// - children restore could fail because of restictive directory permission
-			// - children restore could overwrite the timestamp of the directory they are in
-			leaveDir: restoreNodeMetadata,
-		})
-	}
 
 	filerestorer := newFileRestorer(res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
 
@@ -258,15 +244,15 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string, singlethreaded b
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: noop,
 		visitNode: func(node *restic.Node, target, location string) error {
-			isHardlink := func() bool {
-				return idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != target
+			if idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != target {
+				return res.restoreHardlinkAt(node, idx.GetFilename(node.Inode, node.DeviceID), target, location)
 			}
 
-			if node.Type != "file" || isHardlink() {
-				return res.restoreNodeTo(ctx, node, target, location, idx)
+			if node.Type != "file" {
+				return res.restoreNodeTo(ctx, node, target, location)
 			}
 
-			return node.RestoreMetadata(target)
+			return res.restoreNodeMetadataTo(node, target, location)
 		},
 		leaveDir: restoreNodeMetadata,
 	})

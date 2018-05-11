@@ -7,9 +7,5 @@ Implementation uses threads to download and process miltiple remote
 files concurrently. To further reduce restore time, each remote
 file is downloaded using single repository request.
 
-Old restore implementation can be enabled with `--signethreaded` flag.
-Use `--verify` restore flag to read restored files and verify their
-content checksum.
-
 https://github.com/restic/restic/issues/1605
 https://github.com/restic/restic/pull/1719
