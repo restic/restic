@@ -185,6 +185,7 @@ func isDirExcludedByFile(dir, tagFilename, header string) bool {
 func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
 	deviceMap = make(map[string]uint64)
 	for _, item := range items {
+		item = filepath.Clean(item)
 		fi, err := fs.Lstat(item)
 		if err != nil {
 			return nil, err
@@ -214,6 +215,8 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 		if fi == nil {
 			return false
 		}
+
+		item = filepath.Clean(item)
 
 		id, err := fs.DeviceID(fi)
 		if err != nil {
